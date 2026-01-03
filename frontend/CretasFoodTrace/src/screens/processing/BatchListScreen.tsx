@@ -8,6 +8,7 @@ import { processingApiClient as processingAPI, BatchResponse } from '../../servi
 import { handleError } from '../../utils/errorHandler';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
+import { useTranslation } from 'react-i18next';
 
 type BatchListScreenProps = ProcessingScreenProps<'BatchList'>;
 
@@ -26,15 +27,16 @@ interface SupervisorUser {
 type SupervisorData = string | SupervisorUser;
 
 // 辅助函数：获取supervisor显示名称
-const getSupervisorName = (supervisor: SupervisorData | undefined): string => {
-  if (!supervisor) return '未指定';
+const getSupervisorName = (supervisor: SupervisorData | undefined, t: (key: string) => string): string => {
+  if (!supervisor) return t('batchList.labels.notAssigned');
   if (typeof supervisor === 'string') return supervisor;
-  return supervisor.fullName || supervisor.username || '未指定';
+  return supervisor.fullName || supervisor.username || t('batchList.labels.notAssigned');
 };
 
 export default function BatchListScreen() {
   const navigation = useNavigation<BatchListScreenProps['navigation']>();
   const route = useRoute<BatchListScreenProps['route']>();
+  const { t } = useTranslation('processing');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -68,7 +70,7 @@ export default function BatchListScreen() {
     } catch (error) {
       handleError(error, { showAlert: false, logError: true });
       setError({
-        message: error instanceof Error ? error.message : '加载批次列表失败',
+        message: error instanceof Error ? error.message : t('batchList.messages.loadFailed'),
         canRetry: true,
       });
       setBatches([]);
@@ -86,9 +88,7 @@ export default function BatchListScreen() {
   const filteredBatches = batches.filter(batch => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      const supervisorName = typeof batch.supervisor === 'string'
-        ? batch.supervisor
-        : batch.supervisor?.fullName || batch.supervisor?.username || '';
+      const supervisorName = getSupervisorName(batch.supervisor as SupervisorData, t);
       return (
         batch.batchNumber?.toLowerCase().includes(query) ||
         batch.productType?.toLowerCase().includes(query) ||
@@ -117,24 +117,24 @@ export default function BatchListScreen() {
         <View style={styles.cardBody}>
           <View style={styles.row}>
             <View style={styles.col}>
-              <Text style={styles.label}>产品</Text>
-              <Text style={styles.value}>{item.productType || '待定'}</Text>
+              <Text style={styles.label}>{t('batchList.labels.product')}</Text>
+              <Text style={styles.value}>{item.productType || t('batchList.labels.pending')}</Text>
             </View>
             <View style={styles.col}>
-              <Text style={styles.label}>负责人</Text>
+              <Text style={styles.label}>{t('batchList.labels.supervisor')}</Text>
               <Text style={styles.value}>
-                {getSupervisorName(item.supervisor as SupervisorData)}
+                {getSupervisorName(item.supervisor as SupervisorData, t)}
               </Text>
             </View>
           </View>
 
           <View style={styles.progressRow}>
              <View style={styles.col}>
-                <Text style={styles.label}>目标产量</Text>
+                <Text style={styles.label}>{t('batchList.labels.targetQuantity')}</Text>
                 <Text style={styles.value}>{item.targetQuantity} kg</Text>
              </View>
              <View style={styles.col}>
-                <Text style={styles.label}>实际产量</Text>
+                <Text style={styles.label}>{t('batchList.labels.actualQuantity')}</Text>
                 <Text style={[styles.value, item.actualQuantity ? styles.highlight : {}]}>
                     {item.actualQuantity || 0} kg
                 </Text>
@@ -149,12 +149,12 @@ export default function BatchListScreen() {
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="批次列表" titleStyle={{ fontWeight: '600' }} />
+        <Appbar.Content title={t('batchList.title')} titleStyle={{ fontWeight: '600' }} />
       </Appbar.Header>
 
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="搜索批次..."
+          placeholder={t('batchList.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
@@ -168,9 +168,9 @@ export default function BatchListScreen() {
         value={selectedStatus}
         onValueChange={setSelectedStatus}
         buttons={[
-          { value: 'all', label: '全部' },
-          { value: 'in_progress', label: '进行中' },
-          { value: 'completed', label: '已完成' },
+          { value: 'all', label: t('batchList.filter.all') },
+          { value: 'in_progress', label: t('batchList.filter.inProgress') },
+          { value: 'completed', label: t('batchList.filter.completed') },
         ]}
         style={styles.segmentedButtons}
         density="small"
@@ -189,13 +189,13 @@ export default function BatchListScreen() {
                 <IconButton icon="alert-circle-outline" size={48} iconColor={theme.colors.error} />
                 <Text style={styles.errorText}>{error.message}</Text>
                 {error.canRetry && (
-                  <NeoButton variant="outline" onPress={fetchBatches} style={styles.retryButton}>重试</NeoButton>
+                  <NeoButton variant="outline" onPress={fetchBatches} style={styles.retryButton}>{t('common.retry')}</NeoButton>
                 )}
               </>
             ) : (
               <>
                 <Text style={styles.emptyText}>
-                  {searchQuery ? '未找到匹配的批次' : loading ? '加载中...' : '暂无批次数据'}
+                  {searchQuery ? t('batchList.empty.noMatch') : loading ? t('batchList.empty.loading') : t('batchList.empty.noData')}
                 </Text>
                 {!loading && !searchQuery && (
                   <NeoButton
@@ -203,7 +203,7 @@ export default function BatchListScreen() {
                     onPress={() => (navigation as any).navigate('ProductionPlanManagement')}
                     style={styles.emptyButton}
                   >
-                    前往生产计划
+                    {t('batchList.empty.goToProductionPlan')}
                   </NeoButton>
                 )}
               </>

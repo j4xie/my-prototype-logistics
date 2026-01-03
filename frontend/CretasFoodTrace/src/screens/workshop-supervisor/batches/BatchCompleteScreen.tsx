@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSBatchesStackParamList, 'BatchComplete'>;
 
 export function BatchCompleteScreen() {
+  const { t } = useTranslation('workshop');
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
 
@@ -43,15 +45,15 @@ export function BatchCompleteScreen() {
 
   const handleComplete = () => {
     Alert.alert(
-      '确认完成',
-      `确定完成批次 ${batch.batchNumber} 吗？`,
+      t('batchComplete.alerts.confirmTitle'),
+      t('batchComplete.alerts.confirmMessage', { batchNumber: batch.batchNumber }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认完成',
+          text: t('common.confirm'),
           onPress: () => {
-            Alert.alert('成功', '批次已完成！', [
-              { text: '确定', onPress: () => navigation.goBack() }
+            Alert.alert(t('batchComplete.alerts.successTitle'), t('batchComplete.alerts.successMessage'), [
+              { text: t('common.confirm'), onPress: () => navigation.goBack() }
             ]);
           },
         },
@@ -70,7 +72,7 @@ export function BatchCompleteScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>完成批次</Text>
+        <Text style={styles.headerTitle}>{t('batchComplete.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -79,7 +81,7 @@ export function BatchCompleteScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <Icon source="check-decagram" size={32} color="#52c41a" />
-            <Text style={styles.summaryTitle}>批次生产完成</Text>
+            <Text style={styles.summaryTitle}>{t('batchComplete.summary.title')}</Text>
           </View>
           <Text style={styles.batchNumber}>{batch.batchNumber}</Text>
           <Text style={styles.productName}>{batch.productName}</Text>
@@ -87,15 +89,15 @@ export function BatchCompleteScreen() {
 
         {/* 生产数据 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>生产数据汇总</Text>
+          <Text style={styles.sectionTitle}>{t('batchComplete.summary.productionData')}</Text>
           <View style={styles.dataCard}>
             <View style={styles.dataRow}>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>目标产量</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.targetQuantity')}</Text>
                 <Text style={styles.dataValue}>{batch.targetQuantity} kg</Text>
               </View>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>实际产量</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.actualQuantity')}</Text>
                 <Text style={[styles.dataValue, { color: '#1890ff' }]}>
                   {batch.actualQuantity} kg
                 </Text>
@@ -103,13 +105,13 @@ export function BatchCompleteScreen() {
             </View>
             <View style={styles.dataRow}>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>合格数量</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.qualifiedQuantity')}</Text>
                 <Text style={[styles.dataValue, { color: '#52c41a' }]}>
                   {batch.qualifiedQuantity} kg
                 </Text>
               </View>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>合格率</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.qualityRate')}</Text>
                 <Text style={[styles.dataValue, { color: '#52c41a' }]}>
                   {batch.qualityRate}%
                 </Text>
@@ -117,12 +119,12 @@ export function BatchCompleteScreen() {
             </View>
             <View style={styles.dataRow}>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>总耗时</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.totalTime')}</Text>
                 <Text style={styles.dataValue}>{batch.totalTime}</Text>
               </View>
               <View style={styles.dataItem}>
-                <Text style={styles.dataLabel}>参与人数</Text>
-                <Text style={styles.dataValue}>{batch.workers} 人</Text>
+                <Text style={styles.dataLabel}>{t('batchComplete.data.workers')}</Text>
+                <Text style={styles.dataValue}>{batch.workers} {t('batchComplete.data.people')}</Text>
               </View>
             </View>
           </View>
@@ -130,7 +132,7 @@ export function BatchCompleteScreen() {
 
         {/* 确认清单 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>完成确认</Text>
+          <Text style={styles.sectionTitle}>{t('batchComplete.checklist.title')}</Text>
           <View style={styles.checklistCard}>
             <TouchableOpacity
               style={styles.checkItem}
@@ -141,7 +143,7 @@ export function BatchCompleteScreen() {
                 size={24}
                 color={confirmChecks.qualityCheck ? '#52c41a' : '#ccc'}
               />
-              <Text style={styles.checkText}>质检已完成</Text>
+              <Text style={styles.checkText}>{t('batchComplete.checklist.qualityCheck')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.checkItem}
@@ -152,7 +154,7 @@ export function BatchCompleteScreen() {
                 size={24}
                 color={confirmChecks.dataComplete ? '#52c41a' : '#ccc'}
               />
-              <Text style={styles.checkText}>数据已录入完整</Text>
+              <Text style={styles.checkText}>{t('batchComplete.checklist.dataComplete')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.checkItem}
@@ -163,7 +165,7 @@ export function BatchCompleteScreen() {
                 size={24}
                 color={confirmChecks.equipmentReset ? '#52c41a' : '#ccc'}
               />
-              <Text style={styles.checkText}>设备已复位清洁</Text>
+              <Text style={styles.checkText}>{t('batchComplete.checklist.equipmentReset')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -177,7 +179,7 @@ export function BatchCompleteScreen() {
           disabled={!allChecked}
         >
           <Icon source="check-circle" size={24} color="#fff" />
-          <Text style={styles.completeBtnText}>确认完成批次</Text>
+          <Text style={styles.completeBtnText}>{t('batchComplete.actions.confirm')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

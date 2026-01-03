@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -105,6 +106,7 @@ interface BatchDetail {
 }
 
 export function WHBatchDetailScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
@@ -178,7 +180,7 @@ export function WHBatchDetailScreen() {
         });
       }
     } catch (error) {
-      handleError(error, { title: '加载批次详情失败' });
+      handleError(error, { title: t('messages.loadBatchDetailFailed') });
     } finally {
       setLoading(false);
     }
@@ -197,13 +199,13 @@ export function WHBatchDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>批次详情</Text>
+            <Text style={styles.headerTitle}>{t('batch.detail.title')}</Text>
           </View>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载批次详情...</Text>
+          <Text style={styles.loadingText}>{t('batch.detail.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -218,12 +220,12 @@ export function WHBatchDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>批次详情</Text>
+            <Text style={styles.headerTitle}>{t('batch.detail.title')}</Text>
           </View>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>暂无批次数据</Text>
+          <Text style={styles.loadingText}>{t('batch.detail.noData')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -253,7 +255,7 @@ export function WHBatchDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>批次详情</Text>
+          <Text style={styles.headerTitle}>{t('batch.detail.title')}</Text>
           <Text style={styles.headerSubtitle}>{batchDetail.batchNumber}</Text>
         </View>
         <View style={styles.headerRight} />
@@ -273,38 +275,38 @@ export function WHBatchDetailScreen() {
               {batchDetail.statusLabel}
             </Text>
             <Text style={styles.statusDesc}>
-              剩余 {batchDetail.expiryDays} 天 | 建议优先消耗
+              {t('batch.detail.daysRemaining', { days: batchDetail.expiryDays })}
             </Text>
           </View>
         </Surface>
 
         {/* 批次信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>批次信息</Text>
+          <Text style={styles.sectionTitle}>{t('batch.detail.batchInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>批次号</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.batchNumber')}</Text>
             <Text style={styles.infoValue}>{batchDetail.batchNumber}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>物料名称</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.materialName')}</Text>
             <Text style={styles.infoValue}>{batchDetail.materialName}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>物料类型</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.materialType')}</Text>
             <Text style={styles.infoValue}>{batchDetail.materialType}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>当前数量</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.currentQty')}</Text>
             <Text style={[styles.infoValue, styles.highlightValue]}>
               {batchDetail.currentQty} kg
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>初始数量</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.initialQty')}</Text>
             <Text style={styles.infoValue}>{batchDetail.initialQty} kg</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>已消耗</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.consumed')}</Text>
             <Text style={styles.infoValue}>
               {batchDetail.consumed} kg ({batchDetail.consumedPercent}%)
             </Text>
@@ -313,69 +315,69 @@ export function WHBatchDetailScreen() {
 
         {/* 时间信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>时间信息</Text>
+          <Text style={styles.sectionTitle}>{t('batch.detail.timeInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>入库日期</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.inboundDate')}</Text>
             <Text style={styles.infoValue}>{batchDetail.inboundTime}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>生产日期</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.productionDate')}</Text>
             <Text style={styles.infoValue}>{batchDetail.productionDate}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>保质期</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.shelfLife')}</Text>
             <Text style={styles.infoValue}>{batchDetail.shelfLife}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>到期日期</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.expiryDate')}</Text>
             <Text style={[styles.infoValue, { color: "#f57c00" }]}>
-              {batchDetail.expiryDate} ({batchDetail.expiryDays}天后)
+              {batchDetail.expiryDate} {t('batch.detail.daysLater', { days: batchDetail.expiryDays })}
             </Text>
           </View>
         </View>
 
         {/* 储存信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>储存信息</Text>
+          <Text style={styles.sectionTitle}>{t('batch.detail.storageInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>库位</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.location')}</Text>
             <Text style={styles.infoValue}>{batchDetail.location}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>储存温度</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.temperature')}</Text>
             <Text style={[styles.infoValue, { color: "#4CAF50" }]}>
-              {batchDetail.temperature} ({batchDetail.tempStatus})
+              {batchDetail.temperature} ({t('batch.detail.tempStatus')})
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>质量等级</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.qualityGrade')}</Text>
             <Text style={styles.infoValue}>{batchDetail.qualityGrade}</Text>
           </View>
         </View>
 
         {/* 来源信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>来源信息</Text>
+          <Text style={styles.sectionTitle}>{t('batch.detail.sourceInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>供应商</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.supplier')}</Text>
             <Text style={styles.infoValue}>{batchDetail.supplier}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>入库单号</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.inboundNumber')}</Text>
             <Text style={[styles.infoValue, { color: "#4CAF50" }]}>
               {batchDetail.inboundNumber}
             </Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>质检员</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.inspector')}</Text>
             <Text style={styles.infoValue}>{batchDetail.inspector}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>单价</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.unitPrice')}</Text>
             <Text style={styles.infoValue}>¥{batchDetail.unitPrice}/kg</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>批次价值</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.batchValue')}</Text>
             <Text style={[styles.infoValue, styles.highlightValue]}>
               ¥{batchDetail.batchValue.toLocaleString()}
             </Text>
@@ -387,10 +389,10 @@ export function WHBatchDetailScreen() {
           <View style={styles.aiHeader}>
             <View style={styles.aiTitleRow}>
               <Text style={styles.aiIcon}>🤖</Text>
-              <Text style={styles.aiTitle}>AI 质量关联分析</Text>
+              <Text style={styles.aiTitle}>{t('batch.detail.aiAnalysis')}</Text>
             </View>
             <View style={styles.aiBadge}>
-              <Text style={styles.aiBadgeText}>智能分析</Text>
+              <Text style={styles.aiBadgeText}>{t('batch.detail.smartAnalysis')}</Text>
             </View>
           </View>
 
@@ -398,7 +400,7 @@ export function WHBatchDetailScreen() {
           <View style={styles.qualityScoreCard}>
             <View style={styles.qualityScoreMain}>
               <Text style={styles.qualityScoreValue}>{batchDetail.qualityScore}</Text>
-              <Text style={styles.qualityScoreLabel}>质量评分</Text>
+              <Text style={styles.qualityScoreLabel}>{t('batch.detail.qualityScore')}</Text>
             </View>
             <View style={styles.qualityDetails}>
               {batchDetail.qualityDetails.map((detail, index) => (
@@ -417,7 +419,7 @@ export function WHBatchDetailScreen() {
 
           {/* 关联因素 */}
           <View style={styles.correlationCard}>
-            <Text style={styles.correlationTitle}>📊 关联因素分析</Text>
+            <Text style={styles.correlationTitle}>📊 {t('batch.detail.correlationAnalysis')}</Text>
             {batchDetail.correlationFactors.map((factor, index) => (
               <View
                 key={index}
@@ -450,7 +452,7 @@ export function WHBatchDetailScreen() {
 
         {/* 消耗记录 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>消耗记录</Text>
+          <Text style={styles.sectionTitle}>{t('batch.detail.consumptionLog')}</Text>
           <View style={styles.timeline}>
             {batchDetail.consumptionLogs.map((log, index) => (
               <View key={log.id} style={styles.timelineItem}>
@@ -481,7 +483,7 @@ export function WHBatchDetailScreen() {
             style={styles.actionBtn}
             labelStyle={{ color: "#666" }}
           >
-            追溯查询
+            {t('batch.detail.actions.trace')}
           </Button>
           <Button
             mode="outlined"
@@ -489,7 +491,7 @@ export function WHBatchDetailScreen() {
             style={[styles.actionBtn, styles.warningActionBtn]}
             labelStyle={{ color: "#f57c00" }}
           >
-            过期处理
+            {t('batch.detail.actions.expireHandle')}
           </Button>
         </View>
 

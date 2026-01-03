@@ -1,0 +1,258 @@
+{
+  "dashboard": {
+    "title": "Report Center",
+    "reportFeatures": "Report Features",
+    "reportFeaturesDescription": "Comprehensive reports covering production, quality, cost and other dimensions. Supports real-time monitoring and trend analysis.",
+    "quickActions": "Quick Actions",
+    "dataExport": "Data Export",
+    "monthlySummary": "Monthly Summary",
+    "annualReport": "Annual Report"
+  },
+  "categories": {
+    "production": {
+      "title": "Production Report",
+      "description": "Processing batches, output statistics, production progress"
+    },
+    "quality": {
+      "title": "Quality Report",
+      "description": "Inspection records, pass rate, issue analysis"
+    },
+    "cost": {
+      "title": "Cost Report",
+      "description": "Cost analysis, material consumption, cost comparison"
+    },
+    "efficiency": {
+      "title": "Efficiency Report",
+      "description": "Equipment OEE, personnel efficiency, work hours analysis"
+    },
+    "trend": {
+      "title": "Trend Analysis",
+      "description": "Historical trends, period comparison, growth analysis"
+    },
+    "personnel": {
+      "title": "Personnel Report",
+      "description": "Staff statistics, attendance rate, department distribution"
+    },
+    "kpi": {
+      "title": "KPI Metrics",
+      "description": "Key performance indicators, target achievement rate"
+    },
+    "forecast": {
+      "title": "Forecast Report",
+      "description": "AI prediction, demand forecast, inventory alerts"
+    },
+    "anomaly": {
+      "title": "Anomaly Report",
+      "description": "Anomaly detection, quality issues, equipment failures"
+    },
+    "realtime": {
+      "title": "Real-time Monitoring",
+      "description": "Real-time data, current status, instant statistics"
+    }
+  },
+  "production": {
+    "title": "Production Report",
+    "timeRange": "Time Range",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "productionStats": "Production Statistics",
+    "productionBatches": "Production Batches",
+    "totalOutput": "Total Output (kg)",
+    "completionRate": "Completion Rate",
+    "avgOutput": "Average Output",
+    "recentCompletedBatches": "Recent Completed Batches",
+    "batchNumber": "Batch No.",
+    "product": "Product",
+    "output": "Output",
+    "status": "Status",
+    "noStatsData": "No statistics available",
+    "noBatchRecords": "No batch records",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "loadFailed": "Load Failed",
+    "loadProductionDataFailed": "Failed to load production data. Please try again later.",
+    "error": "Error"
+  },
+  "quality": {
+    "title": "Quality Report",
+    "timeRange": "Time Range",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "qualityStats": "Quality Statistics",
+    "totalInspections": "Total Inspections",
+    "passed": "Passed",
+    "failed": "Failed",
+    "conditional": "Conditional",
+    "passRate": "Pass Rate",
+    "recentInspectionRecords": "Recent Inspection Records",
+    "batchNumber": "Batch No.",
+    "inspector": "Inspector",
+    "result": "Result",
+    "noStatsData": "No statistics available",
+    "noInspectionRecords": "No inspection records",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "loadFailed": "Load Failed",
+    "loadQualityDataFailed": "Failed to load quality data. Please try again later.",
+    "error": "Error"
+  },
+  "cost": {
+    "title": "Cost Report",
+    "timeRange": "Time Range",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "costOverview": "Cost Overview",
+    "totalCost": "Total Cost",
+    "materialCost": "Material Cost",
+    "laborCost": "Labor Cost",
+    "overheadCost": "Overhead Cost",
+    "avgCostPerBatch": "Average Cost per Batch",
+    "batchCostDetails": "Batch Cost Details",
+    "batchNumber": "Batch No.",
+    "product": "Product",
+    "noCostData": "No cost data available",
+    "noBatchData": "No batch data available",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "error": "Error"
+  },
+  "efficiency": {
+    "title": "Efficiency Report",
+    "timeRange": "Time Range",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "efficiencyMetrics": "Efficiency Metrics",
+    "equipmentOEE": "Equipment OEE",
+    "equipmentUtilization": "Equipment Utilization",
+    "laborEfficiency": "Labor Efficiency",
+    "overallEfficiency": "Overall Efficiency",
+    "noEfficiencyData": "No efficiency data available",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "loadFailed": "Load Failed",
+    "error": "Error"
+  },
+  "trend": {
+    "title": "Trend Analysis",
+    "timeRange": "Time Range",
+    "week": "Week",
+    "month": "Month",
+    "quarter": "Quarter",
+    "year": "Year",
+    "trendAnalysis": "Trend Analysis",
+    "comingSoon": "Historical trends, period comparison, and growth analysis features coming soon"
+  },
+  "personnel": {
+    "title": "Personnel Report",
+    "timeRange": "Time Range",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "personnelOverview": "Personnel Overview",
+    "totalEmployees": "Total Employees",
+    "present": "Present",
+    "absent": "Absent",
+    "activeDepartments": "Active Departments",
+    "avgAttendanceRate": "Average Attendance Rate",
+    "workHoursRanking": "Work Hours Ranking (TOP 10)",
+    "name": "Name",
+    "department": "Department",
+    "workHours": "Work Hours",
+    "attendanceRate": "Attendance Rate",
+    "noPersonnelData": "No personnel data available",
+    "noWorkHoursData": "No work hours data available",
+    "cannotGetFactoryInfo": "Unable to get factory info. Please log in again.",
+    "loadFailed": "Load Failed",
+    "error": "Error"
+  },
+  "kpi": {
+    "title": "KPI Metrics",
+    "keyPerformanceIndicators": "Key Performance Indicators",
+    "productionCompletionRate": "Production Completion Rate",
+    "qualityPassRate": "Quality Pass Rate",
+    "equipmentUtilizationRate": "Equipment Utilization Rate",
+    "onTimeDeliveryRate": "On-Time Delivery Rate"
+  },
+  "forecast": {
+    "title": "Forecast Report",
+    "aiSmartForecast": "AI Smart Forecast",
+    "description": "AI-powered predictive analysis based on DeepSeek AI",
+    "features": "Forecast Features",
+    "demandForecast": "Demand Forecast",
+    "inventoryAlert": "Inventory Alert",
+    "productionPlanOptimization": "Production Plan Optimization",
+    "costTrendForecast": "Cost Trend Forecast"
+  },
+  "anomaly": {
+    "title": "Anomaly Report",
+    "equipmentAlerts": "Equipment Alerts",
+    "equipment": "Equipment",
+    "type": "Type",
+    "severity": "Severity",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low",
+    "noAlertData": "No alert data available",
+    "cannotGetFactoryInfo": "Unable to get factory info",
+    "error": "Error"
+  },
+  "realtime": {
+    "title": "Real-time Monitoring",
+    "realtimeData": "Real-time Data",
+    "activeBatches": "Active Batches",
+    "activeEquipment": "Active Equipment",
+    "lastUpdate": "Last Update",
+    "autoRefresh": "Auto Refresh (every 30s)",
+    "noRealtimeData": "No real-time data available",
+    "cannotGetFactoryInfo": "Unable to get factory info",
+    "error": "Error"
+  },
+  "export": {
+    "title": "Data Export",
+    "selectReportType": "Select Report Type",
+    "selectExportFormat": "Select Export Format",
+    "dateRange": "Date Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "reportTypes": {
+      "production": {
+        "label": "Production Report",
+        "description": "Batch No., Product, Consumption, Output, Conversion Rate, Status"
+      },
+      "cost": {
+        "label": "Cost Report",
+        "description": "Batch No., Cost Details, Unit Cost, Variance, Overrun"
+      },
+      "attendance": {
+        "label": "Work Hours Report",
+        "description": "Employee, Department, Work Type, Hours, Overtime"
+      }
+    },
+    "formats": {
+      "excel": "Excel",
+      "pdf": "PDF",
+      "csv": "CSV"
+    },
+    "preview": "Preview",
+    "export": "Export",
+    "exporting": "Exporting...",
+    "exportSuccess": "Export Successful",
+    "exportFailed": "Export Failed",
+    "pleaseSelectDateRange": "Please select date range",
+    "noFactoryInfo": "Unable to get factory info"
+  },
+  "status": {
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "pending": "Pending",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noData": "No Data",
+    "refresh": "Refresh",
+    "export": "Export",
+    "error": "Error"
+  }
+}

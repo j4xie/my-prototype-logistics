@@ -41,7 +41,7 @@ public class UrgentInsertController {
     @PostMapping("/slots")
     @Operation(summary = "获取可插单时段", description = "根据产品类型、数量、交期查询可用的插单时段")
     public ResponseEntity<Map<String, Object>> getAvailableSlots(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @Valid @RequestBody GetInsertSlotsRequest request) {
 
         log.info("获取插单时段: factoryId={}, productTypeId={}, requiredQuantity={}, deadline={}",
@@ -64,8 +64,8 @@ public class UrgentInsertController {
     @PostMapping("/slots/{slotId}/analyze")
     @Operation(summary = "分析插单影响", description = "分析选择特定时段进行插单对现有计划的影响")
     public ResponseEntity<Map<String, Object>> analyzeImpact(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "时段ID") @PathVariable String slotId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "时段ID", example = "SLOT-2025-001") @PathVariable String slotId,
             @Valid @RequestBody GetInsertSlotsRequest request) {
 
         log.info("分析插单影响: factoryId={}, slotId={}", factoryId, slotId);
@@ -86,7 +86,7 @@ public class UrgentInsertController {
     @PostMapping("/confirm")
     @Operation(summary = "确认紧急插单", description = "确认选定的时段并创建生产计划")
     public ResponseEntity<Map<String, Object>> confirmInsert(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @Valid @RequestBody ConfirmUrgentInsertRequest request,
             HttpServletRequest httpRequest) {
 
@@ -109,7 +109,7 @@ public class UrgentInsertController {
     @PostMapping("/force")
     @Operation(summary = "强制插入", description = "强制插入（跳过影响检查），生成待审批的生产计划")
     public ResponseEntity<Map<String, Object>> forceInsert(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @Valid @RequestBody ConfirmUrgentInsertRequest request,
             HttpServletRequest httpRequest) {
 
@@ -132,8 +132,8 @@ public class UrgentInsertController {
     @GetMapping("/slots/{slotId}")
     @Operation(summary = "获取时段详情", description = "获取单个插单时段的详细信息")
     public ResponseEntity<Map<String, Object>> getSlotDetail(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "时段ID") @PathVariable String slotId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "时段ID", example = "SLOT-2025-001") @PathVariable String slotId) {
 
         log.info("获取时段详情: factoryId={}, slotId={}", factoryId, slotId);
 
@@ -153,8 +153,8 @@ public class UrgentInsertController {
     @PostMapping("/slots/{slotId}/select")
     @Operation(summary = "选中时段", description = "标记时段为已选中，防止其他用户同时选择")
     public ResponseEntity<Map<String, Object>> selectSlot(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "时段ID") @PathVariable String slotId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "时段ID", example = "SLOT-2025-001") @PathVariable String slotId) {
 
         log.info("选中时段: factoryId={}, slotId={}", factoryId, slotId);
 
@@ -173,8 +173,8 @@ public class UrgentInsertController {
     @PostMapping("/slots/{slotId}/release")
     @Operation(summary = "释放时段", description = "释放已选中的时段，使其可以被其他用户选择")
     public ResponseEntity<Map<String, Object>> releaseSlot(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "时段ID") @PathVariable String slotId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "时段ID", example = "SLOT-2025-001") @PathVariable String slotId) {
 
         log.info("释放时段: factoryId={}, slotId={}", factoryId, slotId);
 
@@ -193,8 +193,8 @@ public class UrgentInsertController {
     @PostMapping("/slots/generate")
     @Operation(summary = "生成插单时段", description = "根据当前排产情况生成可用的插单时段")
     public ResponseEntity<Map<String, Object>> generateSlots(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @RequestParam(defaultValue = "24") int hoursAhead) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "提前小时数", example = "24") @RequestParam(defaultValue = "24") int hoursAhead) {
 
         log.info("生成插单时段: factoryId={}, hoursAhead={}", factoryId, hoursAhead);
 
@@ -214,7 +214,7 @@ public class UrgentInsertController {
     @DeleteMapping("/slots/expired")
     @Operation(summary = "清理过期时段", description = "清理已过期的插单时段")
     public ResponseEntity<Map<String, Object>> cleanupExpiredSlots(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         log.info("清理过期时段: factoryId={}", factoryId);
 
@@ -234,7 +234,7 @@ public class UrgentInsertController {
     @GetMapping("/statistics")
     @Operation(summary = "获取紧急插单统计", description = "获取紧急插单相关的统计信息")
     public ResponseEntity<Map<String, Object>> getStatistics(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         log.info("获取紧急插单统计: factoryId={}", factoryId);
 

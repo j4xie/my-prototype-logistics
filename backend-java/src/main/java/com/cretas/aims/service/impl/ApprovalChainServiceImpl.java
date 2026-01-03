@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.config.ApprovalChainConfigRepository;
 import com.cretas.aims.service.ApprovalChainService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import javax.persistence.EntityNotFoundException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -80,7 +80,7 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
         log.info("更新审批链配置 - factoryId={}, configId={}", factoryId, configId);
 
         ApprovalChainConfig existing = approvalChainConfigRepository.findById(configId)
-                .orElseThrow(() -> new EntityNotFoundException("配置不存在: " + configId));
+                .orElseThrow(() -> new EntityNotFoundException("Approval chain config", configId));
 
         // 验证工厂ID
         if (!existing.getFactoryId().equals(factoryId)) {
@@ -152,7 +152,7 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
         log.info("删除审批链配置 - factoryId={}, configId={}", factoryId, configId);
 
         ApprovalChainConfig existing = approvalChainConfigRepository.findById(configId)
-                .orElseThrow(() -> new EntityNotFoundException("配置不存在: " + configId));
+                .orElseThrow(() -> new EntityNotFoundException("Approval chain config", configId));
 
         if (!existing.getFactoryId().equals(factoryId)) {
             throw new IllegalArgumentException("无权删除其他工厂的配置");
@@ -171,7 +171,7 @@ public class ApprovalChainServiceImpl implements ApprovalChainService {
         log.info("切换审批链配置状态 - factoryId={}, configId={}, enabled={}", factoryId, configId, enabled);
 
         ApprovalChainConfig existing = approvalChainConfigRepository.findById(configId)
-                .orElseThrow(() -> new EntityNotFoundException("配置不存在: " + configId));
+                .orElseThrow(() -> new EntityNotFoundException("Approval chain config", configId));
 
         if (!existing.getFactoryId().equals(factoryId)) {
             throw new IllegalArgumentException("无权修改其他工厂的配置");

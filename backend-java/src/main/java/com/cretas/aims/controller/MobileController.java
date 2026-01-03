@@ -52,18 +52,18 @@ public class MobileController {
     }
 
     @PostMapping("/auth/refresh")
-    @Operation(summary = "刷新访问令牌")
+    @Operation(summary = "刷新访问令牌", description = "使用刷新令牌获取新的访问令牌")
     public ApiResponse<MobileDTO.LoginResponse> refreshToken(
-            @RequestParam @Parameter(description = "刷新令牌") String refreshToken) {
+            @RequestParam @Parameter(description = "刷新令牌", example = "eyJhbGciOiJIUzI1NiJ9...") String refreshToken) {
         log.debug("刷新令牌");
         MobileDTO.LoginResponse response = mobileService.refreshToken(refreshToken);
         return ApiResponse.success(response);
     }
 
     @PostMapping("/auth/logout")
-    @Operation(summary = "用户登出")
+    @Operation(summary = "用户登出", description = "登出当前用户，可选择性地清除指定设备的登录状态")
     public ApiResponse<Void> logout(
-            @RequestParam(required = false) @Parameter(description = "设备ID") String deviceId) {
+            @RequestParam(required = false) @Parameter(description = "设备ID", example = "device-uuid-12345") String deviceId) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("用户登出: userId={}, deviceId={}", userId, deviceId);
         mobileService.logout(userId, deviceId);
@@ -133,11 +133,11 @@ public class MobileController {
     // ==================== 文件上传接口 ====================
 
     @PostMapping("/upload")
-    @Operation(summary = "移动端文件上传")
+    @Operation(summary = "移动端文件上传", description = "上传图片、文档等文件，支持多文件批量上传")
     public ApiResponse<MobileDTO.UploadResponse> uploadFiles(
             @RequestParam("files") List<MultipartFile> files,
-            @RequestParam(required = false) @Parameter(description = "文件分类") String category,
-            @RequestParam(required = false) @Parameter(description = "元数据") String metadata) {
+            @RequestParam(required = false) @Parameter(description = "文件分类", example = "quality_photo") String category,
+            @RequestParam(required = false) @Parameter(description = "元数据JSON", example = "{\"batchId\":\"BATCH-001\"}") String metadata) {
         log.info("文件上传: count={}, category={}", files.size(), category);
         MobileDTO.UploadResponse response = mobileService.uploadFiles(files, category, metadata);
         return ApiResponse.success(response);
@@ -146,9 +146,9 @@ public class MobileController {
     // ==================== 仪表盘数据接口 ====================
 
     @GetMapping("/dashboard/{factoryId}")
-    @Operation(summary = "获取移动端仪表盘数据")
+    @Operation(summary = "获取移动端仪表盘数据", description = "获取工厂概览数据，包括今日产量、设备状态、待处理任务等")
     public ApiResponse<MobileDTO.DashboardData> getMobileDashboard(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.debug("获取移动端仪表盘数据: factoryId={}, userId={}", factoryId, userId);
         MobileDTO.DashboardData data = mobileService.getDashboardData(factoryId, userId);
@@ -158,9 +158,9 @@ public class MobileController {
     // ==================== 数据同步接口 ====================
 
     @PostMapping("/sync/{factoryId}")
-    @Operation(summary = "数据同步")
+    @Operation(summary = "数据同步", description = "同步移动端离线数据到服务器")
     public ApiResponse<MobileDTO.SyncResponse> syncData(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody MobileDTO.SyncRequest request) {
         log.info("数据同步: factoryId={}", factoryId);
         MobileDTO.SyncResponse response = mobileService.syncData(factoryId, request);
@@ -168,9 +168,9 @@ public class MobileController {
     }
 
     @GetMapping("/offline/{factoryId}")
-    @Operation(summary = "获取离线数据包")
+    @Operation(summary = "获取离线数据包", description = "获取工厂离线数据包，供移动端缓存使用")
     public ApiResponse<MobileDTO.OfflineDataPackage> getOfflineDataPackage(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("获取离线数据包: factoryId={}, userId={}", factoryId, userId);
         MobileDTO.OfflineDataPackage data = mobileService.getOfflineDataPackage(factoryId, userId);
@@ -190,9 +190,9 @@ public class MobileController {
     }
 
     @DeleteMapping("/push/unregister")
-    @Operation(summary = "取消推送通知注册")
+    @Operation(summary = "取消推送通知注册", description = "取消设备的推送通知订阅")
     public ApiResponse<Void> unregisterPushNotification(
-            @RequestParam @Parameter(description = "设备令牌") String deviceToken) {
+            @RequestParam @Parameter(description = "设备令牌", example = "FCM_token_xxxxx") String deviceToken) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("取消推送: userId={}, token={}", userId, deviceToken);
         mobileService.unregisterPushNotification(userId, deviceToken);
@@ -211,9 +211,9 @@ public class MobileController {
     }
 
     @DeleteMapping("/devices/{deviceId}")
-    @Operation(summary = "移除设备")
+    @Operation(summary = "移除设备", description = "从账户中移除已登录的设备")
     public ApiResponse<Void> removeDevice(
-            @PathVariable @Parameter(description = "设备ID") String deviceId) {
+            @PathVariable @Parameter(description = "设备ID", example = "device-uuid-12345") String deviceId) {
         Long userId = SecurityUtils.getCurrentUserId();
         log.info("移除设备: userId={}, deviceId={}", userId, deviceId);
         mobileService.removeDevice(userId, deviceId);
@@ -223,10 +223,10 @@ public class MobileController {
     // ==================== 版本管理接口 ====================
 
     @GetMapping("/version/check")
-    @Operation(summary = "检查应用版本")
+    @Operation(summary = "检查应用版本", description = "检查是否有新版本可更新")
     public ApiResponse<MobileDTO.VersionCheckResponse> checkVersion(
-            @RequestParam @Parameter(description = "当前版本") String currentVersion,
-            @RequestParam @Parameter(description = "平台") String platform) {
+            @RequestParam @Parameter(description = "当前版本", example = "1.0.0") String currentVersion,
+            @RequestParam @Parameter(description = "平台: ios/android", example = "android") String platform) {
         log.debug("检查版本: current={}, platform={}", currentVersion, platform);
         MobileDTO.VersionCheckResponse response = mobileService.checkVersion(currentVersion, platform);
         return ApiResponse.success(response);
@@ -235,10 +235,10 @@ public class MobileController {
     // ==================== 配置接口 ====================
 
     @GetMapping("/config/{factoryId}")
-    @Operation(summary = "获取移动端配置")
+    @Operation(summary = "获取移动端配置", description = "获取工厂的移动端配置信息，如功能开关、主题等")
     public ApiResponse<Object> getMobileConfig(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "平台") String platform) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "平台: ios/android", example = "android") String platform) {
         log.debug("获取配置: factoryId={}, platform={}", factoryId, platform);
         Object config = mobileService.getMobileConfig(factoryId, platform);
         return ApiResponse.success(config);
@@ -291,9 +291,9 @@ public class MobileController {
      * 验证Token
      */
     @GetMapping("/auth/validate")
-    @Operation(summary = "验证令牌")
+    @Operation(summary = "验证令牌", description = "验证JWT令牌是否有效")
     public ApiResponse<Boolean> validateToken(
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization) {
         String token = TokenUtils.extractToken(authorization);
         boolean isValid = mobileService.validateToken(token);
@@ -304,9 +304,9 @@ public class MobileController {
      * 获取当前用户信息
      */
     @GetMapping("/auth/me")
-    @Operation(summary = "获取当前用户信息")
+    @Operation(summary = "获取当前用户信息", description = "根据Token获取当前登录用户的详细信息")
     public ApiResponse<UserDTO> getCurrentUser(
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization) {
         String token = TokenUtils.extractToken(authorization);
         UserDTO user = mobileService.getUserFromToken(token);
@@ -317,13 +317,13 @@ public class MobileController {
      * 修改密码
      */
     @PostMapping("/auth/change-password")
-    @Operation(summary = "修改密码")
+    @Operation(summary = "修改密码", description = "修改当前用户的登录密码")
     public ApiResponse<Void> changePassword(
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
-            @Parameter(description = "原密码", required = true)
+            @Parameter(description = "原密码", required = true, example = "OldPass@123")
             @RequestParam String oldPassword,
-            @Parameter(description = "新密码", required = true)
+            @Parameter(description = "新密码", required = true, example = "NewPass@456")
             @RequestParam String newPassword) {
         String token = TokenUtils.extractToken(authorization);
         UserDTO user = mobileService.getUserFromToken(token);
@@ -336,13 +336,13 @@ public class MobileController {
      * 重置密码（管理员功能）
      */
     @PostMapping("/auth/reset-password")
-    @Operation(summary = "重置密码（管理员）")
+    @Operation(summary = "重置密码（管理员）", description = "管理员重置指定用户的密码")
     public ApiResponse<Void> resetPassword(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @RequestParam String factoryId,
-            @Parameter(description = "用户名", required = true)
+            @Parameter(description = "用户名", required = true, example = "worker001")
             @RequestParam String username,
-            @Parameter(description = "新密码", required = true)
+            @Parameter(description = "新密码", required = true, example = "NewPass@123")
             @RequestParam String newPassword) {
         log.info("重置密码: factoryId={}, username={}", factoryId, username);
         mobileService.resetPassword(factoryId, username, newPassword);
@@ -355,11 +355,11 @@ public class MobileController {
      * 获取人员总览统计
      */
     @GetMapping("/{factoryId}/personnel/statistics")
-    @Operation(summary = "获取人员总览统计")
+    @Operation(summary = "获取人员总览统计", description = "获取工厂人员出勤、工时等统计数据")
     public ApiResponse<MobileDTO.PersonnelStatistics> getPersonnelStatistics(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam(required = false) @Parameter(description = "开始日期 YYYY-MM-DD") String startDate,
-            @RequestParam(required = false) @Parameter(description = "结束日期 YYYY-MM-DD") String endDate) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "开始日期", example = "2025-01-01") String startDate,
+            @RequestParam(required = false) @Parameter(description = "结束日期", example = "2025-01-31") String endDate) {
         log.info("获取人员统计: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
         MobileDTO.PersonnelStatistics statistics = mobileService.getPersonnelStatistics(factoryId, startDate, endDate);
         return ApiResponse.success(statistics);
@@ -369,12 +369,12 @@ public class MobileController {
      * 获取工时排行榜
      */
     @GetMapping("/{factoryId}/personnel/work-hours-ranking")
-    @Operation(summary = "获取工时排行榜")
+    @Operation(summary = "获取工时排行榜", description = "获取员工工时排名，默认返回前10名")
     public ApiResponse<List<MobileDTO.WorkHoursRankingItem>> getWorkHoursRanking(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam @Parameter(description = "开始日期 YYYY-MM-DD", required = true) String startDate,
-            @RequestParam @Parameter(description = "结束日期 YYYY-MM-DD", required = true) String endDate,
-            @RequestParam(defaultValue = "10") @Parameter(description = "返回前N名") Integer limit) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "开始日期", required = true, example = "2025-01-01") String startDate,
+            @RequestParam @Parameter(description = "结束日期", required = true, example = "2025-01-31") String endDate,
+            @RequestParam(defaultValue = "10") @Parameter(description = "返回前N名", example = "10") Integer limit) {
         log.info("获取工时排行: factoryId={}, startDate={}, endDate={}, limit={}", factoryId, startDate, endDate, limit);
         List<MobileDTO.WorkHoursRankingItem> ranking = mobileService.getWorkHoursRanking(factoryId, startDate, endDate, limit);
         return ApiResponse.success(ranking);
@@ -384,12 +384,12 @@ public class MobileController {
      * 获取加班统计
      */
     @GetMapping("/{factoryId}/personnel/overtime-statistics")
-    @Operation(summary = "获取加班统计")
+    @Operation(summary = "获取加班统计", description = "获取员工加班时长统计，可按部门筛选")
     public ApiResponse<MobileDTO.OvertimeStatistics> getOvertimeStatistics(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam @Parameter(description = "开始日期 YYYY-MM-DD", required = true) String startDate,
-            @RequestParam @Parameter(description = "结束日期 YYYY-MM-DD", required = true) String endDate,
-            @RequestParam(required = false) @Parameter(description = "部门ID筛选") String departmentId) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "开始日期", required = true, example = "2025-01-01") String startDate,
+            @RequestParam @Parameter(description = "结束日期", required = true, example = "2025-01-31") String endDate,
+            @RequestParam(required = false) @Parameter(description = "部门ID筛选", example = "DEPT001") String departmentId) {
         log.info("获取加班统计: factoryId={}, startDate={}, endDate={}, departmentId={}", factoryId, startDate, endDate, departmentId);
         MobileDTO.OvertimeStatistics statistics = mobileService.getOvertimeStatistics(factoryId, startDate, endDate, departmentId);
         return ApiResponse.success(statistics);
@@ -399,12 +399,12 @@ public class MobileController {
      * 获取人员绩效统计
      */
     @GetMapping("/{factoryId}/personnel/performance")
-    @Operation(summary = "获取人员绩效统计")
+    @Operation(summary = "获取人员绩效统计", description = "获取员工绩效评分，可指定单个员工查看详情")
     public ApiResponse<List<MobileDTO.PerformanceItem>> getPersonnelPerformance(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam @Parameter(description = "开始日期 YYYY-MM-DD", required = true) String startDate,
-            @RequestParam @Parameter(description = "结束日期 YYYY-MM-DD", required = true) String endDate,
-            @RequestParam(required = false) @Parameter(description = "用户ID") Long userId) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "开始日期", required = true, example = "2025-01-01") String startDate,
+            @RequestParam @Parameter(description = "结束日期", required = true, example = "2025-01-31") String endDate,
+            @RequestParam(required = false) @Parameter(description = "用户ID", example = "1") Long userId) {
         log.info("获取人员绩效: factoryId={}, startDate={}, endDate={}, userId={}", factoryId, startDate, endDate, userId);
         List<MobileDTO.PerformanceItem> performance = mobileService.getPersonnelPerformance(factoryId, startDate, endDate, userId);
         return ApiResponse.success(performance);
@@ -416,10 +416,10 @@ public class MobileController {
      * 获取批次成本对比数据
      */
     @GetMapping("/{factoryId}/processing/cost-comparison")
-    @Operation(summary = "获取批次成本对比数据")
+    @Operation(summary = "获取批次成本对比数据", description = "对比多个生产批次的成本数据")
     public ApiResponse<List<MobileDTO.BatchCostData>> getBatchCostComparison(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam @Parameter(description = "批次ID列表（逗号分隔）", required = true) String batchIds) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "批次ID列表（逗号分隔）", required = true, example = "BATCH-001,BATCH-002") String batchIds) {
         log.info("获取批次成本对比: factoryId={}, batchIds={}", factoryId, batchIds);
 
         // 解析批次ID列表
@@ -436,10 +436,10 @@ public class MobileController {
      * 确认设备告警
      */
     @PostMapping("/{factoryId}/equipment/alerts/{alertId}/acknowledge")
-    @Operation(summary = "确认设备告警")
+    @Operation(summary = "确认设备告警", description = "确认已收到告警，进入处理流程")
     public ApiResponse<MobileDTO.AlertResponse> acknowledgeAlert(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @PathVariable @Parameter(description = "告警ID（支持数字ID或动态ID如MAINT_1）", required = true) String alertId,
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "告警ID", required = true, example = "123") String alertId,
             @RequestBody(required = false) MobileDTO.AcknowledgeAlertRequest request,
             @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
@@ -453,10 +453,10 @@ public class MobileController {
      * 解决设备告警
      */
     @PostMapping("/{factoryId}/equipment/alerts/{alertId}/resolve")
-    @Operation(summary = "解决设备告警")
+    @Operation(summary = "解决设备告警", description = "标记告警已解决，需提供解决方案")
     public ApiResponse<MobileDTO.AlertResponse> resolveAlert(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @PathVariable @Parameter(description = "告警ID（支持数字ID或动态ID如MAINT_1）", required = true) String alertId,
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "告警ID", required = true, example = "123") String alertId,
             @RequestBody(required = false) MobileDTO.ResolveAlertRequest request,
             @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
@@ -472,8 +472,8 @@ public class MobileController {
     @PostMapping("/{factoryId}/equipment/alerts/{alertId}/ignore")
     @Operation(summary = "忽略设备告警", description = "标记告警为已忽略，不再显示在活跃告警列表中")
     public ApiResponse<MobileDTO.AlertResponse> ignoreAlert(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @PathVariable @Parameter(description = "告警ID", required = true) String alertId,
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "告警ID", required = true, example = "123") String alertId,
             @RequestBody(required = false) @Parameter(description = "忽略原因（可选）") MobileDTO.IgnoreAlertRequest request,
             @RequestAttribute("userId") Long userId,
             @RequestAttribute("username") String username) {
@@ -534,8 +534,8 @@ public class MobileController {
     @GetMapping("/{factoryId}/equipment-alerts/statistics")
     @Operation(summary = "获取告警统计", description = "获取设备告警的统计信息，包括总数、按严重程度分类、按类型分类等")
     public ApiResponse<Map<String, Object>> getAlertStatistics(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestParam(required = false, defaultValue = "week") @Parameter(description = "时间范围: today, week, month, all") String timeRange) {
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestParam(required = false, defaultValue = "week") @Parameter(description = "时间范围", example = "week") String timeRange) {
         log.info("获取告警统计: factoryId={}, timeRange={}", factoryId, timeRange);
 
         // 查询所有告警
@@ -638,10 +638,10 @@ public class MobileController {
      * 提交用户反馈
      */
     @PostMapping("/{factoryId}/feedback")
-    @Operation(summary = "提交用户反馈")
+    @Operation(summary = "提交用户反馈", description = "提交问题反馈、功能建议等")
     public ApiResponse<MobileDTO.FeedbackResponse> submitFeedback(
-            @PathVariable @Parameter(description = "工厂ID", required = true) String factoryId,
-            @RequestBody @Parameter(description = "反馈内容", required = true) MobileDTO.SubmitFeedbackRequest request,
+            @PathVariable @Parameter(description = "工厂ID", required = true, example = "F001") String factoryId,
+            @RequestBody MobileDTO.SubmitFeedbackRequest request,
             @RequestAttribute("userId") Long userId) {
         log.info("提交用户反馈: factoryId={}, userId={}, type={}", factoryId, userId, request.getType());
 

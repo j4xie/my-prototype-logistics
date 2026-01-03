@@ -142,6 +142,7 @@ export type ManagementStackParamList = {
   MaterialConversionDetail: { materialTypeId: string; materialName: string };  // 原料转换率详情页
   WorkTypeManagement: undefined;
   AISettings: undefined;
+  IntentConfig: undefined;  // AI意图配置管理
   DepartmentManagement: undefined;
   UserManagement: undefined;
   WhitelistManagement: undefined;
@@ -284,6 +285,8 @@ export type FAManagementStackParamList = {
   EncodingRuleConfig: undefined;
   // 质检项配置
   QualityCheckItemConfig: undefined;
+  // SOP 流程配置
+  SopConfig: undefined;
 };
 
 export type FAProfileStackParamList = {

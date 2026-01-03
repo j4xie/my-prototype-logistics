@@ -4,6 +4,7 @@ import com.cretas.aims.entity.config.ConfigChangeSet;
 import com.cretas.aims.entity.config.ConfigChangeSet.ChangeStatus;
 import com.cretas.aims.entity.config.ConfigChangeSet.ConfigType;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.config.ConfigChangeSetRepository;
 import com.cretas.aims.service.ConfigChangeSetService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -88,7 +89,7 @@ public class ConfigChangeSetServiceImpl implements ConfigChangeSetService {
     @Override
     public ConfigChangeSet getChangeSetById(String changeSetId) {
         return changeSetRepository.findById(changeSetId)
-                .orElseThrow(() -> new BusinessException("变更集不存在: " + changeSetId));
+                .orElseThrow(() -> new EntityNotFoundException("Config change set", changeSetId));
     }
 
     @Override

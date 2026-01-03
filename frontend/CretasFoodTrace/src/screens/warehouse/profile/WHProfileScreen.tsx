@@ -24,6 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
 import { dashboardApiClient } from "../../../services/api/dashboardApiClient";
@@ -52,6 +53,7 @@ interface TodayStat {
 }
 
 export function WHProfileScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
@@ -59,16 +61,16 @@ export function WHProfileScreen() {
   // 状态管理
   const [loading, setLoading] = useState(true);
   const [todayStats, setTodayStats] = useState<TodayStat[]>([
-    { label: "入库单", value: 0 },
-    { label: "出库单", value: 0 },
-    { label: "盘点", value: 0 },
-    { label: "异常", value: 0 },
+    { label: t('profile.stats.inbound'), value: 0 },
+    { label: t('profile.stats.outbound'), value: 0 },
+    { label: t('profile.stats.check'), value: 0 },
+    { label: t('profile.stats.alert'), value: 0 },
   ]);
 
   // 用户信息
   const userInfo = {
     name: user?.username || "陈仓管",
-    role: "仓储管理员",
+    role: t('profile.role'),
     factory: user?.factoryId || "白垩纪食品加工厂",
     avatar: user?.username?.charAt(0).toUpperCase() || "U",
   };
@@ -88,25 +90,25 @@ export function WHProfileScreen() {
 
       if (overview) {
         setTodayStats([
-          { label: "入库单", value: overview.todayInbound || overview.pendingBatches || 0 },
-          { label: "出库单", value: overview.todayOutbound || overview.completedBatches || 0 },
-          { label: "盘点", value: overview.todayInventoryChecks || 0 },
-          { label: "异常", value: overview.activeAlerts || overview.pendingAlerts || 0 },
+          { label: t('profile.stats.inbound'), value: overview.todayInbound || overview.pendingBatches || 0 },
+          { label: t('profile.stats.outbound'), value: overview.todayOutbound || overview.completedBatches || 0 },
+          { label: t('profile.stats.check'), value: overview.todayInventoryChecks || 0 },
+          { label: t('profile.stats.alert'), value: overview.activeAlerts || overview.pendingAlerts || 0 },
         ]);
       }
     } catch (error) {
-      handleError(error, { title: '加载统计数据失败' });
+      handleError(error, { title: t('profile.loadStatsError') });
       // 使用默认值
       setTodayStats([
-        { label: "入库单", value: 0 },
-        { label: "出库单", value: 0 },
-        { label: "盘点", value: 0 },
-        { label: "异常", value: 0 },
+        { label: t('profile.stats.inbound'), value: 0 },
+        { label: t('profile.stats.outbound'), value: 0 },
+        { label: t('profile.stats.check'), value: 0 },
+        { label: t('profile.stats.alert'), value: 0 },
       ]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadTodayStats();
@@ -115,29 +117,29 @@ export function WHProfileScreen() {
   // 菜单配置
   const menuSections: MenuSection[] = [
     {
-      title: "常用功能",
+      title: t('profile.sections.commonFeatures'),
       items: [
         {
           key: "io-stats",
-          label: "出入库统计",
+          label: t('profile.menu.ioStats'),
           icon: "chart-bar",
           screen: "WHOperationLog",
         },
         {
           key: "operation-log",
-          label: "操作记录",
+          label: t('profile.menu.operationLog'),
           icon: "history",
           screen: "WHOperationLog",
         },
         {
           key: "check-record",
-          label: "盘点记录",
+          label: t('profile.menu.checkRecord'),
           icon: "clipboard-check-outline",
           screen: "WHOperationLog",
         },
         {
           key: "expire-handle",
-          label: "过期处理",
+          label: t('profile.menu.expireHandle'),
           icon: "clock-alert-outline",
           badge: 4,
           screen: "WHOperationLog",
@@ -145,65 +147,65 @@ export function WHProfileScreen() {
       ],
     },
     {
-      title: "系统功能",
+      title: t('profile.sections.systemFeatures'),
       items: [
         {
           key: "settings",
-          label: "设置",
+          label: t('profile.menu.settings'),
           icon: "cog-outline",
           screen: "WHSettings",
         },
         {
           key: "temp-monitor",
-          label: "温控监控",
+          label: t('profile.menu.tempMonitor'),
           icon: "thermometer",
           screen: "WHSettings",
         },
         {
           key: "scan",
-          label: "扫码作业",
+          label: t('profile.menu.scan'),
           icon: "qrcode-scan",
           screen: "WHSettings",
         },
         {
           key: "recall",
-          label: "召回管理",
+          label: t('profile.menu.recall'),
           icon: "package-variant-closed-remove",
           screen: "WHRecallManage",
         },
       ],
     },
     {
-      title: "帮助与反馈",
+      title: t('profile.sections.helpFeedback'),
       items: [
         {
           key: "help",
-          label: "使用帮助",
+          label: t('profile.menu.help'),
           icon: "help-circle-outline",
-          onPress: () => Alert.alert("使用帮助", "功能开发中..."),
+          onPress: () => Alert.alert(t('profile.dialogs.helpTitle'), t('profile.dialogs.helpMessage')),
         },
         {
           key: "feedback",
-          label: "意见反馈",
+          label: t('profile.menu.feedback'),
           icon: "message-text-outline",
-          onPress: () => Alert.alert("意见反馈", "功能开发中..."),
+          onPress: () => Alert.alert(t('profile.dialogs.feedbackTitle'), t('profile.dialogs.feedbackMessage')),
         },
         {
           key: "about",
-          label: "关于",
+          label: t('profile.menu.about'),
           icon: "information-outline",
-          description: "v1.0.0",
-          onPress: () => Alert.alert("关于", "白垩纪食品溯源系统 v1.0.0"),
+          description: t('profile.version'),
+          onPress: () => Alert.alert(t('profile.dialogs.aboutTitle'), t('profile.dialogs.aboutMessage')),
         },
       ],
     },
   ];
 
   const handleLogout = () => {
-    Alert.alert("退出登录", "确定要退出登录吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('profile.dialogs.logoutTitle'), t('profile.dialogs.logoutMessage'), [
+      { text: t('profile.dialogs.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('profile.dialogs.confirm'),
         style: "destructive",
         onPress: () => {
           logout();
@@ -225,12 +227,12 @@ export function WHProfileScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>我的</Text>
+          <Text style={styles.headerTitle}>{t('profile.title')}</Text>
           <Text style={styles.headerSubtitle}>{userInfo.role}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('profile.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -240,7 +242,7 @@ export function WHProfileScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>我的</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
         <Text style={styles.headerSubtitle}>{userInfo.role}</Text>
       </View>
 
@@ -263,20 +265,20 @@ export function WHProfileScreen() {
             style={styles.editButton}
             onPress={() => navigation.navigate("WHProfileEdit")}
           >
-            <Text style={styles.editButtonText}>编辑</Text>
+            <Text style={styles.editButtonText}>{t('profile.edit')}</Text>
           </TouchableOpacity>
         </Surface>
 
         {/* 今日统计 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>今日统计</Text>
+          <Text style={styles.sectionTitle}>{t('profile.todayStats')}</Text>
           <View style={styles.statsRow}>
             {todayStats.map((stat, index) => (
               <View key={stat.label} style={styles.statItem}>
                 <Text
                   style={[
                     styles.statValue,
-                    stat.label === "异常" && styles.statValueDanger,
+                    stat.label === t('profile.stats.alert') && styles.statValueDanger,
                   ]}
                 >
                   {stat.value}
@@ -338,7 +340,7 @@ export function WHProfileScreen() {
             labelStyle={styles.logoutButtonLabel}
             icon="logout"
           >
-            退出登录
+            {t('profile.logout')}
           </Button>
         </View>
 

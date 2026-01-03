@@ -26,6 +26,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { ManagementStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import employeeAIApiClient, {

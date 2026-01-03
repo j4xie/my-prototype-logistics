@@ -25,6 +25,7 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import {
   formTemplateApiClient,
   FormTemplate,
@@ -38,15 +39,15 @@ import {
   SchemaGenerateRequest,
 } from '../../../services/api/formAssistantApiClient';
 
-// 实体类型显示名称映射
-const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
-  QUALITY_CHECK: '质检表单',
-  MATERIAL_BATCH: '原料批次',
-  PROCESSING_BATCH: '生产批次',
-  SHIPMENT: '出货单',
-  EQUIPMENT: '设备信息',
-  DISPOSAL_RECORD: '报废处理',
-};
+// 实体类型代码列表（用于映射翻译key）
+const ENTITY_TYPE_CODES: EntityType[] = [
+  'QUALITY_CHECK',
+  'MATERIAL_BATCH',
+  'PROCESSING_BATCH',
+  'SHIPMENT',
+  'EQUIPMENT',
+  'DISPOSAL_RECORD',
+];
 
 // 实体类型图标映射
 const ENTITY_TYPE_ICONS: Record<EntityType, string> = {
@@ -91,8 +92,22 @@ function FieldPreview({ field, onRemove }: FieldPreviewProps) {
   );
 }
 
+// 获取实体类型翻译key
+const getEntityTypeKey = (entityType: EntityType): string => {
+  const keys: Record<EntityType, string> = {
+    QUALITY_CHECK: 'schemaConfig.entityTypes.qualityCheck',
+    MATERIAL_BATCH: 'schemaConfig.entityTypes.materialBatch',
+    PROCESSING_BATCH: 'schemaConfig.entityTypes.processingBatch',
+    SHIPMENT: 'schemaConfig.entityTypes.shipment',
+    EQUIPMENT: 'schemaConfig.entityTypes.equipment',
+    DISPOSAL_RECORD: 'schemaConfig.entityTypes.disposalRecord',
+  };
+  return keys[entityType];
+};
+
 export function SchemaConfigScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('home');
 
   // 状态
   const [loading, setLoading] = useState(true);
@@ -125,7 +140,7 @@ export function SchemaConfigScreen() {
       setTemplates(templateList.content || []);
     } catch (error) {
       console.error('加载数据失败:', error);
-      Alert.alert('加载失败', '无法获取模板配置信息');
+      Alert.alert(t('schemaConfig.loadFailed'), t('schemaConfig.loadFailedMessage'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -152,7 +167,7 @@ export function SchemaConfigScreen() {
   // AI 生成字段
   const handleGenerateFields = async () => {
     if (!userInput.trim() || !selectedEntityType) {
-      Alert.alert('提示', '请输入字段描述');
+      Alert.alert(t('common.tip'), t('schemaConfig.enterFieldDescription'));
       return;
     }
 
@@ -181,11 +196,11 @@ export function SchemaConfigScreen() {
       if (response.success && response.fields.length > 0) {
         setGeneratedFields(response.fields);
       } else {
-        Alert.alert('生成失败', response.message || 'AI 未能生成有效字段');
+        Alert.alert(t('schemaConfig.generateFailed'), response.message || t('schemaConfig.aiNoValidFields'));
       }
     } catch (error) {
       console.error('AI生成失败:', error);
-      Alert.alert('生成失败', '与 AI 服务通信失败');
+      Alert.alert(t('schemaConfig.generateFailed'), t('schemaConfig.aiServiceError'));
     } finally {
       setGenerating(false);
     }
@@ -199,7 +214,7 @@ export function SchemaConfigScreen() {
   // 保存生成的字段
   const handleSaveFields = async () => {
     if (generatedFields.length === 0 || !selectedEntityType) {
-      Alert.alert('提示', '没有可保存的字段');
+      Alert.alert(t('common.tip'), t('schemaConfig.noFieldsToSave'));
       return;
     }
 
@@ -238,19 +253,19 @@ export function SchemaConfigScreen() {
 
       // 保存到后端
       await formTemplateApiClient.createOrUpdateTemplate(selectedEntityType, {
-        name: ENTITY_TYPE_LABELS[selectedEntityType] + ' (AI增强)',
+        name: t(getEntityTypeKey(selectedEntityType)) + ' (AI)',
         schemaJson: JSON.stringify(existingSchema),
-        description: `AI生成字段: ${generatedFields.map((f) => f.title).join(', ')}`,
+        description: `AI: ${generatedFields.map((f) => f.title).join(', ')}`,
       });
 
-      Alert.alert('保存成功', `已添加 ${generatedFields.length} 个字段到 ${ENTITY_TYPE_LABELS[selectedEntityType]}`);
+      Alert.alert(t('schemaConfig.saveSuccess'), t('schemaConfig.fieldsAdded', { count: generatedFields.length, type: t(getEntityTypeKey(selectedEntityType)) }));
       setDialogVisible(false);
       setGeneratedFields([]);
       setUserInput('');
       loadData();
     } catch (error) {
       console.error('保存失败:', error);
-      Alert.alert('保存失败', '无法保存到服务器');
+      Alert.alert(t('schemaConfig.saveFailed'), t('schemaConfig.saveFailedMessage'));
     } finally {
       setSaving(false);
     }
@@ -267,7 +282,7 @@ export function SchemaConfigScreen() {
       setVersions(history.content || []);
     } catch (error) {
       console.error('加载版本历史失败:', error);
-      Alert.alert('加载失败', '无法获取版本历史');
+      Alert.alert(t('schemaConfig.loadFailed'), t('schemaConfig.versionHistoryLoadFailed'));
     } finally {
       setLoadingVersions(false);
     }
@@ -278,26 +293,26 @@ export function SchemaConfigScreen() {
     if (!selectedTemplate) return;
 
     Alert.alert(
-      '确认回滚',
-      `确定要回滚到版本 ${version} 吗？当前版本将被保存为历史记录。`,
+      t('schemaConfig.confirmRollback'),
+      t('schemaConfig.rollbackConfirmMessage', { version }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认回滚',
+          text: t('schemaConfig.confirmRollbackBtn'),
           style: 'destructive',
           onPress: async () => {
             try {
               await formTemplateApiClient.rollbackToVersion(
                 selectedTemplate.id,
                 version,
-                '用户手动回滚'
+                t('schemaConfig.userManualRollback')
               );
-              Alert.alert('回滚成功', `已回滚到版本 ${version}`);
+              Alert.alert(t('schemaConfig.rollbackSuccess'), t('schemaConfig.rolledBackTo', { version }));
               setVersionModalVisible(false);
               loadData();
             } catch (error) {
               console.error('回滚失败:', error);
-              Alert.alert('回滚失败', '无法回滚到指定版本');
+              Alert.alert(t('schemaConfig.rollbackFailed'), t('schemaConfig.rollbackFailedMessage'));
             }
           },
         },
@@ -307,7 +322,7 @@ export function SchemaConfigScreen() {
 
   // 渲染实体类型卡片
   const renderEntityCard = (entityType: EntityType) => {
-    const template = templates.find((t) => t.entityType === entityType);
+    const template = templates.find((tp) => tp.entityType === entityType);
     const isConfigured = statistics?.configuredEntityTypes.includes(entityType);
     const color = ENTITY_TYPE_COLORS[entityType];
 
@@ -318,9 +333,9 @@ export function SchemaConfigScreen() {
             <Icon source={ENTITY_TYPE_ICONS[entityType]} size={24} color={color} />
           </View>
           <View style={styles.entityInfo}>
-            <Text style={styles.entityTitle}>{ENTITY_TYPE_LABELS[entityType]}</Text>
+            <Text style={styles.entityTitle}>{t(getEntityTypeKey(entityType))}</Text>
             <Text style={styles.entityStatus}>
-              {isConfigured ? `版本 ${template?.version || 1}` : '使用默认配置'}
+              {isConfigured ? t('schemaConfig.version', { version: template?.version || 1 }) : t('schemaConfig.usingDefault')}
             </Text>
           </View>
           {isConfigured && (
@@ -336,7 +351,7 @@ export function SchemaConfigScreen() {
             onPress={() => openAIDialog(entityType)}
           >
             <Icon source="robot" size={18} color={color} />
-            <Text style={[styles.entityButtonText, { color }]}>AI 添加字段</Text>
+            <Text style={[styles.entityButtonText, { color }]}>{t('schemaConfig.aiAddFields')}</Text>
           </TouchableOpacity>
 
           {template && (
@@ -345,7 +360,7 @@ export function SchemaConfigScreen() {
               onPress={() => openVersionHistory(template)}
             >
               <Icon source="history" size={18} color="#666" />
-              <Text style={[styles.entityButtonText, { color: '#666' }]}>版本历史</Text>
+              <Text style={[styles.entityButtonText, { color: '#666' }]}>{t('schemaConfig.versionHistory')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -358,7 +373,7 @@ export function SchemaConfigScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -374,8 +389,8 @@ export function SchemaConfigScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>表单配置</Text>
-          <Text style={styles.subtitle}>AI 智能创建字段，自定义表单模板</Text>
+          <Text style={styles.title}>{t('schemaConfig.title')}</Text>
+          <Text style={styles.subtitle}>{t('schemaConfig.subtitle')}</Text>
         </View>
 
         {/* 统计卡片 */}
@@ -384,15 +399,15 @@ export function SchemaConfigScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{statistics.totalCount}</Text>
-                <Text style={styles.statLabel}>已配置模板</Text>
+                <Text style={styles.statLabel}>{t('schemaConfig.stats.configured')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{statistics.aiGeneratedCount}</Text>
-                <Text style={styles.statLabel}>AI 生成</Text>
+                <Text style={styles.statLabel}>{t('schemaConfig.stats.aiGenerated')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{Math.round(statistics.coverageRate * 100)}%</Text>
-                <Text style={styles.statLabel}>覆盖率</Text>
+                <Text style={styles.statLabel}>{t('schemaConfig.stats.coverage')}</Text>
               </View>
             </View>
           </View>
@@ -400,7 +415,7 @@ export function SchemaConfigScreen() {
 
         {/* 实体类型列表 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>表单类型</Text>
+          <Text style={styles.sectionTitle}>{t('schemaConfig.formTypes')}</Text>
           {statistics?.supportedEntityTypes.map((entityType) =>
             renderEntityCard(entityType as EntityType)
           )}
@@ -418,7 +433,7 @@ export function SchemaConfigScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                AI 添加字段 - {selectedEntityType ? ENTITY_TYPE_LABELS[selectedEntityType] : ''}
+                {t('schemaConfig.aiAddFieldsFor', { type: selectedEntityType ? t(getEntityTypeKey(selectedEntityType)) : '' })}
               </Text>
               <TouchableOpacity onPress={() => setDialogVisible(false)}>
                 <Icon source="close" size={24} color="#666" />
@@ -427,10 +442,10 @@ export function SchemaConfigScreen() {
 
             {/* 输入区域 */}
             <View style={styles.inputSection}>
-              <Text style={styles.inputLabel}>描述您需要的字段:</Text>
+              <Text style={styles.inputLabel}>{t('schemaConfig.describeFields')}</Text>
               <TextInput
                 style={styles.textInput}
-                placeholder="例如: 加一个辣度评分字段，1-5分，3分以上合格"
+                placeholder={t('schemaConfig.fieldDescriptionPlaceholder')}
                 placeholderTextColor="#999"
                 value={userInput}
                 onChangeText={setUserInput}
@@ -448,7 +463,7 @@ export function SchemaConfigScreen() {
                 ) : (
                   <>
                     <Icon source="robot" size={20} color="#fff" />
-                    <Text style={styles.generateButtonText}>AI 生成</Text>
+                    <Text style={styles.generateButtonText}>{t('schemaConfig.aiGenerate')}</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -457,7 +472,7 @@ export function SchemaConfigScreen() {
             {/* 预览区域 */}
             {generatedFields.length > 0 && (
               <View style={styles.previewSection}>
-                <Text style={styles.previewTitle}>生成的字段 ({generatedFields.length})</Text>
+                <Text style={styles.previewTitle}>{t('schemaConfig.generatedFields', { count: generatedFields.length })}</Text>
                 <ScrollView style={styles.previewList}>
                   {generatedFields.map((field, index) => (
                     <FieldPreview
@@ -477,7 +492,7 @@ export function SchemaConfigScreen() {
                   ) : (
                     <>
                       <Icon source="content-save" size={20} color="#fff" />
-                      <Text style={styles.saveButtonText}>保存字段</Text>
+                      <Text style={styles.saveButtonText}>{t('schemaConfig.saveFields')}</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -493,7 +508,7 @@ export function SchemaConfigScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                版本历史 - {selectedTemplate ? ENTITY_TYPE_LABELS[selectedTemplate.entityType as EntityType] : ''}
+                {t('schemaConfig.versionHistoryFor', { type: selectedTemplate ? t(getEntityTypeKey(selectedTemplate.entityType as EntityType)) : '' })}
               </Text>
               <TouchableOpacity onPress={() => setVersionModalVisible(false)}>
                 <Icon source="close" size={24} color="#666" />
@@ -507,33 +522,33 @@ export function SchemaConfigScreen() {
             ) : versions.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Icon source="history" size={48} color="#ccc" />
-                <Text style={styles.emptyText}>暂无版本历史</Text>
+                <Text style={styles.emptyText}>{t('schemaConfig.noVersionHistory')}</Text>
               </View>
             ) : (
               <ScrollView style={styles.versionList}>
-                {versions.map((version) => (
-                  <View key={version.id} style={styles.versionItem}>
+                {versions.map((ver) => (
+                  <View key={ver.id} style={styles.versionItem}>
                     <View style={styles.versionInfo}>
-                      <Text style={styles.versionNumber}>版本 {version.version}</Text>
+                      <Text style={styles.versionNumber}>{t('schemaConfig.versionLabel', { version: ver.version })}</Text>
                       <Text style={styles.versionDate}>
-                        {new Date(version.createdAt).toLocaleString('zh-CN')}
+                        {new Date(ver.createdAt).toLocaleString('zh-CN')}
                       </Text>
-                      {version.changeSummary && (
-                        <Text style={styles.versionSummary}>{version.changeSummary}</Text>
+                      {ver.changeSummary && (
+                        <Text style={styles.versionSummary}>{ver.changeSummary}</Text>
                       )}
                     </View>
-                    {version.version !== selectedTemplate?.version && (
+                    {ver.version !== selectedTemplate?.version && (
                       <TouchableOpacity
                         style={styles.rollbackButton}
-                        onPress={() => handleRollback(version.version)}
+                        onPress={() => handleRollback(ver.version)}
                       >
                         <Icon source="restore" size={16} color="#667eea" />
-                        <Text style={styles.rollbackButtonText}>回滚</Text>
+                        <Text style={styles.rollbackButtonText}>{t('schemaConfig.rollback')}</Text>
                       </TouchableOpacity>
                     )}
-                    {version.version === selectedTemplate?.version && (
+                    {ver.version === selectedTemplate?.version && (
                       <View style={styles.currentBadge}>
-                        <Text style={styles.currentBadgeText}>当前</Text>
+                        <Text style={styles.currentBadgeText}>{t('schemaConfig.current')}</Text>
                       </View>
                     )}
                   </View>

@@ -12,6 +12,7 @@ import {
   Icon,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { ReportScreenProps, ReportStackParamList } from '../../types/navigation';
 
@@ -27,6 +28,7 @@ import { ReportScreenProps, ReportStackParamList } from '../../types/navigation'
 export default function ReportDashboardScreen() {
   const navigation = useNavigation<ReportScreenProps<'ReportDashboard'>['navigation']>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,80 +46,80 @@ export default function ReportDashboardScreen() {
   }> = [
     {
       id: 'production',
-      title: '生产报表',
-      description: '加工批次、产量统计、生产进度',
+      title: t('categories.production.title'),
+      description: t('categories.production.description'),
       icon: 'factory',
       color: '#2196F3',
       screen: 'ProductionReport',
     },
     {
       id: 'quality',
-      title: '质量报表',
-      description: '质检记录、合格率、问题分析',
+      title: t('categories.quality.title'),
+      description: t('categories.quality.description'),
       icon: 'check-circle',
       color: '#4CAF50',
       screen: 'QualityReport',
     },
     {
       id: 'cost',
-      title: '成本报表',
-      description: '成本分析、物料消耗、成本对比',
+      title: t('categories.cost.title'),
+      description: t('categories.cost.description'),
       icon: 'currency-usd',
       color: '#FF9800',
       screen: 'CostReport',
     },
     {
       id: 'efficiency',
-      title: '效率报表',
-      description: '设备OEE、人员效率、工时分析',
+      title: t('categories.efficiency.title'),
+      description: t('categories.efficiency.description'),
       icon: 'speedometer',
       color: '#9C27B0',
       screen: 'EfficiencyReport',
     },
     {
       id: 'trend',
-      title: '趋势分析',
-      description: '历史趋势、周期对比、增长分析',
+      title: t('categories.trend.title'),
+      description: t('categories.trend.description'),
       icon: 'trending-up',
       color: '#00BCD4',
       screen: 'TrendReport',
     },
     {
       id: 'personnel',
-      title: '人员报表',
-      description: '人员统计、出勤率、部门分布',
+      title: t('categories.personnel.title'),
+      description: t('categories.personnel.description'),
       icon: 'account-group',
       color: '#795548',
       screen: 'PersonnelReport',
     },
     {
       id: 'kpi',
-      title: 'KPI指标',
-      description: '关键绩效指标、目标达成率',
+      title: t('categories.kpi.title'),
+      description: t('categories.kpi.description'),
       icon: 'chart-bar',
       color: '#3F51B5',
       screen: 'KPIReport',
     },
     {
       id: 'forecast',
-      title: '预测报表',
-      description: 'AI预测、需求预测、库存预警',
+      title: t('categories.forecast.title'),
+      description: t('categories.forecast.description'),
       icon: 'crystal-ball',
       color: '#E91E63',
       screen: 'ForecastReport',
     },
     {
       id: 'anomaly',
-      title: '异常报表',
-      description: '异常检测、质量问题、设备故障',
+      title: t('categories.anomaly.title'),
+      description: t('categories.anomaly.description'),
       icon: 'alert-circle',
       color: '#F44336',
       screen: 'AnomalyReport',
     },
     {
       id: 'realtime',
-      title: '实时监控',
-      description: '实时数据、当前状态、即时统计',
+      title: t('categories.realtime.title'),
+      description: t('categories.realtime.description'),
       icon: 'monitor-dashboard',
       color: '#009688',
       screen: 'RealtimeReport',
@@ -160,7 +162,7 @@ export default function ReportDashboardScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="报表中心" />
+        <Appbar.Content title={t('dashboard.title')} />
         <Appbar.Action icon="export" onPress={() => navigation.navigate('DataExport', {})} />
       </Appbar.Header>
 
@@ -175,11 +177,11 @@ export default function ReportDashboardScreen() {
           <View style={styles.infoHeader}>
             <Icon source="information" size={24} color="#2196F3" />
             <Text variant="titleMedium" style={styles.infoTitle}>
-              报表功能
+              {t('dashboard.reportFeatures')}
             </Text>
           </View>
           <Text variant="bodyMedium" style={styles.infoText}>
-            综合查看生产、质量、成本等各维度数据报表，支持实时监控和趋势分析。
+            {t('dashboard.reportFeaturesDescription')}
           </Text>
         </Surface>
 
@@ -226,7 +228,7 @@ export default function ReportDashboardScreen() {
         <Card style={styles.actionsCard} mode="elevated">
           <Card.Content>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              快捷操作
+              {t('dashboard.quickActions')}
             </Text>
             <Divider style={styles.divider} />
 
@@ -236,7 +238,7 @@ export default function ReportDashboardScreen() {
               onPress={() => navigation.navigate('DataExport', {})}
               style={styles.actionButton}
             >
-              数据导出
+              {t('dashboard.dataExport')}
             </Button>
 
             <Button
@@ -247,7 +249,7 @@ export default function ReportDashboardScreen() {
               }}
               style={styles.actionButton}
             >
-              月度汇总
+              {t('dashboard.monthlySummary')}
             </Button>
 
             <Button
@@ -258,7 +260,7 @@ export default function ReportDashboardScreen() {
               }}
               style={styles.actionButton}
             >
-              年度报告
+              {t('dashboard.annualReport')}
             </Button>
           </Card.Content>
         </Card>

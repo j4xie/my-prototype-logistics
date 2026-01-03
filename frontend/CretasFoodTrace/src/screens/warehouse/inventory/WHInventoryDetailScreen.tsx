@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -78,6 +79,7 @@ const getStorageInfo = (storageType?: string): { temp: string; shelfLife: string
 };
 
 export function WHInventoryDetailScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteType>();
@@ -163,7 +165,7 @@ export function WHInventoryDetailScreen() {
         });
       }
     } catch (error) {
-      handleError(error, { title: '加载库存详情失败' });
+      handleError(error, { title: t('messages.loadBatchDetailFailed') });
     } finally {
       setLoading(false);
     }
@@ -182,13 +184,13 @@ export function WHInventoryDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>库存详情</Text>
+            <Text style={styles.headerTitle}>{t('inventoryDetail.title')}</Text>
           </View>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载库存详情...</Text>
+          <Text style={styles.loadingText}>{t('inventoryDetail.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -203,12 +205,12 @@ export function WHInventoryDetailScreen() {
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>库存详情</Text>
+            <Text style={styles.headerTitle}>{t('inventoryDetail.title')}</Text>
           </View>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>暂无库存数据</Text>
+          <Text style={styles.loadingText}>{t('batch.detail.noData')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -246,7 +248,7 @@ export function WHInventoryDetailScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>库存详情</Text>
+          <Text style={styles.headerTitle}>{t('inventoryDetail.title')}</Text>
           <Text style={styles.headerSubtitle}>{inventoryDetail.materialName}</Text>
         </View>
         <View style={styles.headerRight} />
@@ -260,7 +262,7 @@ export function WHInventoryDetailScreen() {
           style={styles.topActionBtn}
           labelStyle={styles.topActionLabel}
         >
-          调拨
+          {t('inventory.quickActions.transfer')}
         </Button>
         <Button
           mode="outlined"
@@ -268,7 +270,7 @@ export function WHInventoryDetailScreen() {
           style={[styles.topActionBtn, styles.warningBtn]}
           labelStyle={styles.warningBtnLabel}
         >
-          过期处理
+          {t('batch.detail.actions.expireHandle')}
         </Button>
       </View>
 
@@ -281,11 +283,11 @@ export function WHInventoryDetailScreen() {
           </View>
           <View style={styles.overviewMeta}>
             <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>安全库存</Text>
+              <Text style={styles.overviewLabel}>{t('home.alerts.safetyStock')}</Text>
               <Text style={styles.overviewValue}>{inventoryDetail.safetyStock} kg</Text>
             </View>
             <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>库存状态</Text>
+              <Text style={styles.overviewLabel}>{t('inventory.card.status')}</Text>
               <Text style={[styles.overviewValue, { color: statusColor.color }]}>
                 {inventoryDetail.statusLabel}
               </Text>
@@ -295,29 +297,29 @@ export function WHInventoryDetailScreen() {
 
         {/* 基本信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>基本信息</Text>
+          <Text style={styles.sectionTitle}>{t('inventoryDetail.basicInfo')}</Text>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>物料名称</Text>
+            <Text style={styles.infoLabel}>{t('inventoryDetail.materialName')}</Text>
             <Text style={styles.infoValue}>{inventoryDetail.materialName}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>物料类型</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.materialType')}</Text>
             <Text style={styles.infoValue}>{inventoryDetail.materialType}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>储存温度</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.temperature')}</Text>
             <Text style={styles.infoValue}>{inventoryDetail.storageTemp}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>标准保质期</Text>
+            <Text style={styles.infoLabel}>{t('batch.detail.shelfLife')}</Text>
             <Text style={styles.infoValue}>{inventoryDetail.shelfLife}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>单价</Text>
+            <Text style={styles.infoLabel}>{t('inventoryDetail.unitPrice')}</Text>
             <Text style={styles.infoValue}>¥{inventoryDetail.unitPrice}/kg</Text>
           </View>
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>库存价值</Text>
+            <Text style={styles.infoLabel}>{t('inventoryDetail.totalValue')}</Text>
             <Text style={[styles.infoValue, styles.highlightValue]}>
               ¥{inventoryDetail.totalValue.toLocaleString()}
             </Text>
@@ -327,7 +329,7 @@ export function WHInventoryDetailScreen() {
         {/* 批次列表 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            批次列表 ({inventoryDetail.batches.length}个)
+            {t('inventoryDetail.batchList')} ({inventoryDetail.batches.length})
           </Text>
           {inventoryDetail.batches.map((batch) => {
             const tagStyle = getExpiryTagStyle(batch.expiryDays, batch.isNew);
@@ -350,23 +352,23 @@ export function WHInventoryDetailScreen() {
                 </View>
                 <View style={styles.batchContent}>
                   <View style={styles.batchRow}>
-                    <Text style={styles.batchLabel}>库存数量</Text>
+                    <Text style={styles.batchLabel}>{t('inventoryDetail.currentStock')}</Text>
                     <Text style={styles.batchValue}>{batch.quantity} kg</Text>
                   </View>
                   <View style={styles.batchRow}>
-                    <Text style={styles.batchLabel}>入库日期</Text>
+                    <Text style={styles.batchLabel}>{t('batch.detail.inboundDate')}</Text>
                     <Text style={styles.batchValue}>{batch.inboundDate}</Text>
                   </View>
                   <View style={styles.batchRow}>
-                    <Text style={styles.batchLabel}>库位</Text>
+                    <Text style={styles.batchLabel}>{t('inventoryDetail.location')}</Text>
                     <Text style={styles.batchValue}>{batch.location}</Text>
                   </View>
                 </View>
                 <View style={styles.batchFooter}>
                   <Text style={styles.batchHint}>
-                    {batch.isFifo ? "优先消耗 (FIFO)" : batch.isNew ? `${batch.expiryDays}天保质期` : ""}
+                    {batch.isFifo ? "FIFO" : batch.isNew ? t('batch.detail.daysLater', { days: batch.expiryDays }) : ""}
                   </Text>
-                  <Text style={styles.batchAction}>查看详情 &gt;</Text>
+                  <Text style={styles.batchAction}>{t('inventory.card.viewDetail')} &gt;</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -375,7 +377,7 @@ export function WHInventoryDetailScreen() {
 
         {/* 库位分布 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>库位分布</Text>
+          <Text style={styles.sectionTitle}>{t('inventoryDetail.location')}</Text>
           {inventoryDetail.locationDistribution.map((loc, index) => (
             <View key={index} style={styles.locationItem}>
               <Text style={styles.locationName}>{loc.name}</Text>
@@ -386,7 +388,7 @@ export function WHInventoryDetailScreen() {
 
         {/* 操作记录 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>最近操作</Text>
+          <Text style={styles.sectionTitle}>{t('inventoryDetail.operationLog')}</Text>
           <View style={styles.timeline}>
             {inventoryDetail.operationLogs.map((log, index) => (
               <View key={log.id} style={styles.timelineItem}>

@@ -26,6 +26,7 @@ import {
 } from 'react-native';
 import { Icon } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import {
   templatePackageApiClient,
   IndustryTemplatePackage,
@@ -82,9 +83,10 @@ interface TemplatePackageCardProps {
   pkg: IndustryTemplatePackage;
   selected: boolean;
   onSelect: () => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }
 
-function TemplatePackageCard({ pkg, selected, onSelect }: TemplatePackageCardProps) {
+function TemplatePackageCard({ pkg, selected, onSelect, t }: TemplatePackageCardProps) {
   const icon = INDUSTRY_ICONS[pkg.industryCode] || INDUSTRY_ICONS.default;
   const color = INDUSTRY_COLORS[pkg.industryCode] || INDUSTRY_COLORS.default;
 
@@ -109,7 +111,7 @@ function TemplatePackageCard({ pkg, selected, onSelect }: TemplatePackageCardPro
         )}
         {pkg.isDefault && !selected && (
           <View style={styles.defaultBadge}>
-            <Text style={styles.defaultBadgeText}>推荐</Text>
+            <Text style={styles.defaultBadgeText}>{t('factorySetup.recommended')}</Text>
           </View>
         )}
       </View>
@@ -121,11 +123,11 @@ function TemplatePackageCard({ pkg, selected, onSelect }: TemplatePackageCardPro
       <View style={styles.packageMeta}>
         <View style={styles.metaItem}>
           <Icon source="file-document-outline" size={16} color="#666" />
-          <Text style={styles.metaText}>{pkg.schemaCount} 个模板</Text>
+          <Text style={styles.metaText}>{t('factorySetup.includes')} {pkg.schemaCount} {t('factorySetup.templates')}</Text>
         </View>
         <View style={styles.metaItem}>
           <Icon source="tag-outline" size={16} color="#666" />
-          <Text style={styles.metaText}>版本 {pkg.version}</Text>
+          <Text style={styles.metaText}>{t('industryTemplate.management.version', { version: pkg.version })}</Text>
         </View>
       </View>
 
@@ -166,9 +168,10 @@ interface AIResultPreviewProps {
   onConfirm: () => void;
   onCancel: () => void;
   confirming: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }
 
-function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPreviewProps) {
+function AIResultPreview({ result, onConfirm, onCancel, confirming, t }: AIResultPreviewProps) {
   const color = INDUSTRY_COLORS[result.industryCode] || INDUSTRY_COLORS.default;
   const icon = INDUSTRY_ICONS[result.industryCode] || INDUSTRY_ICONS.default;
 
@@ -190,7 +193,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
         <View style={styles.aiSummaryCard}>
           <View style={styles.aiSummaryHeader}>
             <Icon source="robot" size={20} color="#667eea" />
-            <Text style={styles.aiSummaryTitle}>AI 配置说明</Text>
+            <Text style={styles.aiSummaryTitle}>{t('factorySetup.aiIndustry')}</Text>
           </View>
           <Text style={styles.aiSummaryText}>{result.aiSummary}</Text>
         </View>
@@ -199,7 +202,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
       {/* 生成的 Schema 列表 */}
       <View style={styles.schemasSection}>
         <Text style={styles.sectionTitle}>
-          生成的表单模板 ({result.schemas?.length || 0} 个)
+          {t('factorySetup.generatedTemplates', { count: result.schemas?.length || 0 })}
         </Text>
         {result.schemas?.map((schema: EntitySchemaDTO, index: number) => (
           <View key={index} style={styles.schemaItem}>
@@ -212,7 +215,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
               <Text style={styles.schemaDescription}>{schema.description}</Text>
             )}
             <Text style={styles.schemaFieldCount}>
-              {schema.fields?.length || 0} 个字段
+              {t('factorySetup.fieldsCount', { count: schema.fields?.length || 0 })}
             </Text>
           </View>
         ))}
@@ -221,11 +224,11 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
       {/* 建议的业务数据 */}
       {result.suggestedData && (
         <View style={styles.suggestedDataSection}>
-          <Text style={styles.sectionTitle}>建议的业务数据</Text>
+          <Text style={styles.sectionTitle}>{t('factorySetup.suggestedData')}</Text>
 
           {result.suggestedData.productTypes?.length > 0 && (
             <View style={styles.dataGroup}>
-              <Text style={styles.dataGroupTitle}>产品类型</Text>
+              <Text style={styles.dataGroupTitle}>{t('factorySetup.productTypes')}</Text>
               <View style={styles.dataTagsContainer}>
                 {result.suggestedData.productTypes.map((pt: Record<string, unknown>, i: number) => (
                   <View key={i} style={styles.dataTag}>
@@ -240,7 +243,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
 
           {result.suggestedData.materialTypes?.length > 0 && (
             <View style={styles.dataGroup}>
-              <Text style={styles.dataGroupTitle}>原料类型</Text>
+              <Text style={styles.dataGroupTitle}>{t('factorySetup.materialTypes')}</Text>
               <View style={styles.dataTagsContainer}>
                 {result.suggestedData.materialTypes.map((mt: Record<string, unknown>, i: number) => (
                   <View key={i} style={styles.dataTag}>
@@ -262,7 +265,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
           onPress={onCancel}
           disabled={confirming}
         >
-          <Text style={styles.cancelButtonText}>重新生成</Text>
+          <Text style={styles.cancelButtonText}>{t('factorySetup.regenerate')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.confirmButton, confirming && styles.buttonDisabled]}
@@ -274,7 +277,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
           ) : (
             <>
               <Icon source="check" size={20} color="#fff" />
-              <Text style={styles.confirmButtonText}>应用配置</Text>
+              <Text style={styles.confirmButtonText}>{t('factorySetup.applyConfig')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -286,6 +289,7 @@ function AIResultPreview({ result, onConfirm, onCancel, confirming }: AIResultPr
 export function FactorySetupScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<{ params: FactorySetupRouteParams }, 'params'>>();
+  const { t } = useTranslation('platform');
   const { factoryId, factoryName } = route.params || {};
 
   // 模式状态
@@ -323,7 +327,7 @@ export function FactorySetupScreen() {
       }
     } catch (error) {
       console.error('加载模板包失败:', error);
-      Alert.alert('加载失败', '无法获取行业模板列表');
+      Alert.alert(t('errors.loadFailed'), t('industryTemplate.management.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -342,7 +346,7 @@ export function FactorySetupScreen() {
   // 模板初始化
   const handleTemplateInitialize = async () => {
     if (!selectedPackageId || !factoryId) {
-      Alert.alert('提示', '请选择一个行业模板');
+      Alert.alert(t('dialogs.validationFailed'), t('factorySetup.pleaseSelectTemplate'));
       return;
     }
 
@@ -351,12 +355,12 @@ export function FactorySetupScreen() {
 
     if (initialized) {
       Alert.alert(
-        '确认覆盖',
-        '该工厂已有表单配置，继续将覆盖现有配置。是否继续？',
+        t('factorySetup.confirmOverwrite'),
+        t('factorySetup.confirmOverwriteMessage'),
         [
-          { text: '取消', style: 'cancel' },
+          { text: t('aiQuota.cancel'), style: 'cancel' },
           {
-            text: '覆盖并初始化',
+            text: t('factorySetup.overwriteAndInitialize'),
             style: 'destructive',
             onPress: () => doTemplateInitialize(true),
           },
@@ -364,11 +368,11 @@ export function FactorySetupScreen() {
       );
     } else {
       Alert.alert(
-        '确认初始化',
-        `将使用"${selectedPkg.industryName}"模板初始化工厂，包含 ${selectedPkg.schemaCount} 个表单模板。`,
+        t('factorySetup.confirmInitialize'),
+        t('factorySetup.confirmInitializeMessage', { name: selectedPkg.industryName, count: selectedPkg.schemaCount }),
         [
-          { text: '取消', style: 'cancel' },
-          { text: '确认', onPress: () => doTemplateInitialize(false) },
+          { text: t('aiQuota.cancel'), style: 'cancel' },
+          { text: t('aiQuota.confirmAction'), onPress: () => doTemplateInitialize(false) },
         ]
       );
     }
@@ -385,18 +389,18 @@ export function FactorySetupScreen() {
       });
 
       Alert.alert(
-        '初始化成功',
-        `已创建 ${result.templatesCreated} 个表单模板`,
+        t('factorySetup.initializeSuccess'),
+        t('factorySetup.initializeSuccessMessage', { count: result.templatesCreated }),
         [
           {
-            text: '确定',
+            text: t('aiQuota.confirmAction'),
             onPress: () => navigation.goBack(),
           },
         ]
       );
     } catch (error) {
       console.error('初始化失败:', error);
-      Alert.alert('初始化失败', error instanceof Error ? error.message : '请稍后重试');
+      Alert.alert(t('factorySetup.initializeFailed'), error instanceof Error ? error.message : t('errors.loadFailed'));
     } finally {
       setInitializing(false);
     }
@@ -405,17 +409,17 @@ export function FactorySetupScreen() {
   // AI 生成
   const handleAIGenerate = async () => {
     if (!description.trim()) {
-      Alert.alert('提示', '请输入工厂描述');
+      Alert.alert(t('dialogs.validationFailed'), t('factorySetup.pleaseEnterDescription'));
       return;
     }
 
     if (description.length < 10) {
-      Alert.alert('提示', '请提供更详细的工厂描述（至少10个字符）');
+      Alert.alert(t('dialogs.validationFailed'), t('factorySetup.descriptionTooShort'));
       return;
     }
 
     if (!factoryId) {
-      Alert.alert('错误', '工厂ID不存在');
+      Alert.alert(t('errors.loadFailed'), t('factorySetup.factoryIdMissing'));
       return;
     }
 
@@ -434,13 +438,13 @@ export function FactorySetupScreen() {
       if (response.success && response.data) {
         setAiResult(response.data);
       } else {
-        Alert.alert('生成失败', response.message || 'AI 配置生成失败');
+        Alert.alert(t('factorySetup.generateFailed'), response.message || t('factorySetup.aiConfigFailed'));
       }
     } catch (error) {
       console.error('AI 生成失败:', error);
       Alert.alert(
-        'AI 生成失败',
-        error instanceof Error ? error.message : '请稍后重试'
+        t('factorySetup.generateFailed'),
+        error instanceof Error ? error.message : t('errors.loadFailed')
       );
     } finally {
       setAiGenerating(false);
@@ -458,18 +462,18 @@ export function FactorySetupScreen() {
       // 目前先模拟成功
 
       Alert.alert(
-        '配置成功',
-        `已应用 AI 生成的 ${aiResult.schemas?.length || 0} 个表单模板配置`,
+        t('factorySetup.applySuccess'),
+        t('factorySetup.applySuccessMessage', { count: aiResult.schemas?.length || 0 }),
         [
           {
-            text: '确定',
+            text: t('aiQuota.confirmAction'),
             onPress: () => navigation.goBack(),
           },
         ]
       );
     } catch (error) {
       console.error('应用配置失败:', error);
-      Alert.alert('应用失败', error instanceof Error ? error.message : '请稍后重试');
+      Alert.alert(t('factorySetup.applyFailed'), error instanceof Error ? error.message : t('errors.loadFailed'));
     } finally {
       setAiConfirming(false);
     }
@@ -490,7 +494,7 @@ export function FactorySetupScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('factorySetup.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -511,7 +515,7 @@ export function FactorySetupScreen() {
         >
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>初始化工厂配置</Text>
+            <Text style={styles.title}>{t('factorySetup.title')}</Text>
             <Text style={styles.subtitle}>
               {factoryName || factoryId}
             </Text>
@@ -529,7 +533,7 @@ export function FactorySetupScreen() {
                 color={mode === 'template' ? '#667eea' : '#666'}
               />
               <Text style={[styles.modeTabText, mode === 'template' && styles.modeTabTextActive]}>
-                选择模板
+                {t('factorySetup.templateMode')}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -542,7 +546,7 @@ export function FactorySetupScreen() {
                 color={mode === 'ai' ? '#667eea' : '#666'}
               />
               <Text style={[styles.modeTabText, mode === 'ai' && styles.modeTabTextActive]}>
-                AI 对话
+                {t('factorySetup.aiMode')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -552,7 +556,7 @@ export function FactorySetupScreen() {
             <View style={styles.warningCard}>
               <Icon source="alert-circle" size={20} color="#fa8c16" />
               <Text style={styles.warningText}>
-                该工厂已有表单配置，重新初始化将覆盖现有配置
+                {t('factorySetup.alreadyInitialized')}
               </Text>
             </View>
           )}
@@ -560,14 +564,14 @@ export function FactorySetupScreen() {
           {/* 模板模式 */}
           {mode === 'template' && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>选择行业模板</Text>
+              <Text style={styles.sectionTitle}>{t('factorySetup.selectTemplate')}</Text>
               <Text style={styles.sectionDescription}>
-                选择适合您工厂的行业模板，快速配置标准化表单
+                {t('factorySetup.selectTemplateHint')}
               </Text>
               {packages.length === 0 ? (
                 <View style={styles.emptyContainer}>
                   <Icon source="package-variant" size={48} color="#ccc" />
-                  <Text style={styles.emptyText}>暂无可用的行业模板</Text>
+                  <Text style={styles.emptyText}>{t('factorySetup.noTemplates')}</Text>
                 </View>
               ) : (
                 packages.map((pkg) => (
@@ -576,6 +580,7 @@ export function FactorySetupScreen() {
                     pkg={pkg}
                     selected={selectedPackageId === pkg.id}
                     onSelect={() => setSelectedPackageId(pkg.id)}
+                    t={t}
                   />
                 ))
               )}
@@ -587,17 +592,17 @@ export function FactorySetupScreen() {
             <View style={styles.section}>
               {!aiResult ? (
                 <>
-                  <Text style={styles.sectionTitle}>AI 智能配置</Text>
+                  <Text style={styles.sectionTitle}>{t('factorySetup.aiSmartConfig')}</Text>
                   <Text style={styles.sectionDescription}>
-                    用自然语言描述您的工厂，AI 将自动生成完整的表单配置
+                    {t('factorySetup.aiSmartConfigHint')}
                   </Text>
 
                   {/* 输入区域 */}
                   <View style={styles.aiInputCard}>
-                    <Text style={styles.inputLabel}>工厂描述</Text>
+                    <Text style={styles.inputLabel}>{t('factorySetup.factoryDescription')}</Text>
                     <TextInput
                       style={styles.descriptionInput}
-                      placeholder="描述您的工厂：生产什么产品？需要哪些流程？有什么特殊要求？"
+                      placeholder={t('factorySetup.factoryDescriptionPlaceholder')}
                       placeholderTextColor="#999"
                       multiline
                       numberOfLines={5}
@@ -606,12 +611,12 @@ export function FactorySetupScreen() {
                       onChangeText={setDescription}
                       editable={!aiGenerating}
                     />
-                    <Text style={styles.charCount}>{description.length} / 2000</Text>
+                    <Text style={styles.charCount}>{t('factorySetup.charCount', { count: description.length })}</Text>
                   </View>
 
                   {/* 示例提示 */}
                   <View style={styles.examplesCard}>
-                    <Text style={styles.examplesTitle}>示例描述：</Text>
+                    <Text style={styles.examplesTitle}>{t('factorySetup.exampleDescriptions')}</Text>
                     {EXAMPLE_DESCRIPTIONS.map((example, index) => (
                       <TouchableOpacity
                         key={index}
@@ -638,12 +643,12 @@ export function FactorySetupScreen() {
                     {aiGenerating ? (
                       <>
                         <ActivityIndicator size="small" color="#fff" />
-                        <Text style={styles.generateButtonText}>AI 生成中...</Text>
+                        <Text style={styles.generateButtonText}>{t('factorySetup.aiGenerating')}</Text>
                       </>
                     ) : (
                       <>
                         <Icon source="robot" size={20} color="#fff" />
-                        <Text style={styles.generateButtonText}>生成配置</Text>
+                        <Text style={styles.generateButtonText}>{t('factorySetup.generateConfig')}</Text>
                       </>
                     )}
                   </TouchableOpacity>
@@ -655,6 +660,7 @@ export function FactorySetupScreen() {
                   onConfirm={handleAIConfirm}
                   onCancel={handleAIReset}
                   confirming={aiConfirming}
+                  t={t}
                 />
               )}
             </View>
@@ -680,7 +686,7 @@ export function FactorySetupScreen() {
                 <>
                   <Icon source="check" size={20} color="#fff" />
                   <Text style={styles.initButtonText}>
-                    {initialized ? '重新初始化' : '初始化工厂'}
+                    {initialized ? t('factorySetup.reinitialize') : t('factorySetup.initialize')}
                   </Text>
                 </>
               )}

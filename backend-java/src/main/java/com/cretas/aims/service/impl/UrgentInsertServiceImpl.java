@@ -8,6 +8,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.PlanSourceType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.enums.ProductionPlanType;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.ProductionPlanMapper;
 import com.cretas.aims.repository.InsertSlotRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
@@ -19,6 +20,7 @@ import com.cretas.aims.service.ApprovalChainService;
 import com.cretas.aims.service.DecisionAuditService;
 import com.cretas.aims.service.ImpactAnalysisService;
 import com.cretas.aims.service.ImpactAnalysisService.*;
+import com.cretas.aims.service.PushNotificationService;
 import com.cretas.aims.service.UrgentInsertService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -54,6 +56,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
     private final DecisionAuditService decisionAuditService;
     private final ImpactAnalysisService impactAnalysisService;
     private final ApprovalChainService approvalChainService;
+    private final PushNotificationService pushNotificationService;
 
     @Override
     @Transactional
@@ -109,7 +112,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
                 factoryId, slotId, request.getProductTypeId(), request.getRequiredQuantity());
 
         InsertSlot slot = insertSlotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + slotId));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", slotId));
 
         // 使用 ImpactAnalysisService 进行详细链式影响分析
         ChainImpactResult chainImpact = impactAnalysisService.calculateChainImpact(
@@ -267,7 +270,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         // 验证时段
         InsertSlot slot = insertSlotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + request.getSlotId()));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", request.getSlotId()));
 
         if (!"available".equals(slot.getStatus())) {
             throw new RuntimeException("时段不可用，当前状态: " + slot.getStatus());
@@ -293,6 +296,20 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         log.info("紧急插单创建成功: planId={}, planNumber={}", savedPlan.getId(), savedPlan.getPlanNumber());
 
+        // 发送紧急插单推送通知
+        try {
+            pushNotificationService.sendUrgentInsertNotification(
+                    userId,
+                    Long.valueOf(savedPlan.getId()),
+                    String.format("紧急插单已创建: %s，计划数量: %s",
+                            savedPlan.getPlanNumber(), request.getPlannedQuantity())
+            );
+            log.info("紧急插单推送通知已发送: planId={}", savedPlan.getId());
+        } catch (Exception e) {
+            log.error("发送紧急插单推送通知失败: planId={}", savedPlan.getId(), e);
+            // 不阻塞主流程
+        }
+
         return productionPlanMapper.toDTO(savedPlan);
     }
 
@@ -303,7 +320,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         // 验证时段
         InsertSlot slot = insertSlotRepository.findById(request.getSlotId())
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + request.getSlotId()));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", request.getSlotId()));
 
         if (!"available".equals(slot.getStatus())) {
             throw new RuntimeException("时段不可用，当前状态: " + slot.getStatus());
@@ -311,7 +328,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         // 获取操作用户信息
         User operator = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在: " + userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", userId));
 
         // 构建审批上下文，包含影响分析结果
         Map<String, Object> approvalContext = buildForceInsertApprovalContext(slot, request);
@@ -394,6 +411,40 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
         log.info("强制插单创建成功: planId={}, planNumber={}, needsApproval={}",
                 savedPlan.getId(), savedPlan.getPlanNumber(), needsApproval);
 
+        // 发送强制插单推送通知
+        try {
+            String message = needsApproval
+                    ? String.format("强制插单已提交审批: %s，计划数量: %s", savedPlan.getPlanNumber(), request.getPlannedQuantity())
+                    : String.format("强制插单已创建: %s，计划数量: %s", savedPlan.getPlanNumber(), request.getPlannedQuantity());
+
+            pushNotificationService.sendUrgentInsertNotification(
+                    userId,
+                    Long.valueOf(savedPlan.getId()),
+                    message
+            );
+
+            // 如果需要审批，同时发送到工厂通知审批人
+            if (needsApproval) {
+                Map<String, Object> pushData = new HashMap<>();
+                pushData.put("type", "force_insert_approval");
+                pushData.put("planId", savedPlan.getId());
+                pushData.put("planNumber", savedPlan.getPlanNumber());
+                pushData.put("impactLevel", slot.getImpactLevel());
+                pushData.put("screen", "ForceInsertApprovalScreen");
+                pushNotificationService.sendToFactory(
+                        factoryId,
+                        "强制插单待审批",
+                        String.format("强制插单 %s 需要审批，影响等级: %s",
+                                savedPlan.getPlanNumber(), slot.getImpactLevel()),
+                        pushData
+                );
+            }
+            log.info("强制插单推送通知已发送: planId={}, needsApproval={}", savedPlan.getId(), needsApproval);
+        } catch (Exception e) {
+            log.error("发送强制插单推送通知失败: planId={}", savedPlan.getId(), e);
+            // 不阻塞主流程
+        }
+
         return productionPlanMapper.toDTO(savedPlan);
     }
 
@@ -415,7 +466,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
         log.info("审批强制插单: planId={}, approved={}", planId, approved);
 
         ProductionPlan plan = productionPlanRepository.findById(planId)
-                .orElseThrow(() -> new RuntimeException("计划不存在: " + planId));
+                .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", planId));
 
         // 验证工厂归属
         if (!factoryId.equals(plan.getFactoryId())) {
@@ -429,7 +480,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
 
         // 获取审批人信息
         User approver = userRepository.findById(approverId)
-                .orElseThrow(() -> new RuntimeException("审批人不存在: " + approverId));
+                .orElseThrow(() -> new EntityNotFoundException("User", approverId));
 
         if (approved) {
             // 批准
@@ -469,6 +520,27 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
                 approverId,
                 approver.getFullName()
         );
+
+        // 发送审批结果推送通知给申请人
+        try {
+            Long applicantId = plan.getCreatedBy();
+            if (applicantId != null) {
+                String resultText = approved ? "已批准" : "已拒绝";
+                pushNotificationService.sendApprovalNotification(
+                        applicantId,
+                        "FORCE_INSERT",
+                        Long.valueOf(planId),
+                        String.format("强制插单 %s %s: %s",
+                                plan.getPlanNumber(), resultText,
+                                comment != null ? comment : (approved ? "审批通过" : "审批拒绝"))
+                );
+                log.info("强制插单审批结果推送通知已发送: planId={}, applicantId={}, approved={}",
+                        planId, applicantId, approved);
+            }
+        } catch (Exception e) {
+            log.error("发送强制插单审批结果推送通知失败: planId={}", planId, e);
+            // 不阻塞主流程
+        }
 
         return productionPlanMapper.toDTO(updatedPlan);
     }
@@ -588,7 +660,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
     @Override
     public InsertSlotDTO getSlotDetail(String factoryId, String slotId) {
         InsertSlot slot = insertSlotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + slotId));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", slotId));
 
         if (!factoryId.equals(slot.getFactoryId())) {
             throw new RuntimeException("无权访问该时段");
@@ -601,7 +673,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
     @Transactional
     public void markSlotAsSelected(String factoryId, String slotId) {
         InsertSlot slot = insertSlotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + slotId));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", slotId));
 
         if (!factoryId.equals(slot.getFactoryId())) {
             throw new RuntimeException("无权操作该时段");
@@ -615,7 +687,7 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
     @Transactional
     public void releaseSlot(String factoryId, String slotId) {
         InsertSlot slot = insertSlotRepository.findById(slotId)
-                .orElseThrow(() -> new RuntimeException("时段不存在: " + slotId));
+                .orElseThrow(() -> new EntityNotFoundException("InsertSlot", slotId));
 
         if (!factoryId.equals(slot.getFactoryId())) {
             throw new RuntimeException("无权操作该时段");

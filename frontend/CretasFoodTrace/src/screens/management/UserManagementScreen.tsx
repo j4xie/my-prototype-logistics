@@ -18,6 +18,7 @@ import {
   IconButton,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { userApiClient, UserDTO, CreateUserRequest } from '../../services/api/userApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { NotImplementedError } from '../../errors';
@@ -34,6 +35,7 @@ const userManagementLogger = logger.createContextLogger('UserManagement');
  * 功能：用户CRUD、角色管理、激活/停用
  */
 export default function UserManagementScreen() {
+  const { t } = useTranslation('management');
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const factoryId = getFactoryId(user);
@@ -75,18 +77,18 @@ export default function UserManagementScreen() {
 
   // 角色选项
   const roleOptions = [
-    { label: '操作员', value: 'operator' },
-    { label: '部门管理员', value: 'department_admin' },
-    { label: '权限管理员', value: 'permission_admin' },
-    { label: '工厂超管', value: 'factory_super_admin' },
+    { label: t('userManagement.roles.operator'), value: 'operator' },
+    { label: t('userManagement.roles.departmentAdmin'), value: 'department_admin' },
+    { label: t('userManagement.roles.permissionAdmin'), value: 'permission_admin' },
+    { label: t('userManagement.roles.factorySuperAdmin'), value: 'factory_super_admin' },
   ];
 
   // 部门选项
   const departmentOptions = [
-    { label: '加工部', value: 'processing' },
-    { label: '物流部', value: 'logistics' },
-    { label: '质检部', value: 'quality' },
-    { label: '管理层', value: 'management' },
+    { label: t('userManagement.departments.processing'), value: 'processing' },
+    { label: t('userManagement.departments.logistics'), value: 'logistics' },
+    { label: t('userManagement.departments.quality'), value: 'quality' },
+    { label: t('userManagement.departments.management'), value: 'management' },
   ];
 
   useEffect(() => {
@@ -114,8 +116,8 @@ export default function UserManagementScreen() {
       userManagementLogger.error('加载用户列表失败', error as Error, {
         factoryId,
       });
-      const errorMessage = error instanceof Error ? error.message : '加载用户列表失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('userManagement.messages.loadFailed');
+      Alert.alert(t('common.error'), errorMessage);
       setUsers([]);
     } finally {
       setLoading(false);
@@ -144,7 +146,7 @@ export default function UserManagementScreen() {
         keyword: searchQuery,
         factoryId: factoryId,
       });
-      Alert.alert('错误', '搜索失败');
+      Alert.alert(t('common.error'), t('userManagement.messages.searchFailed'));
     } finally {
       setLoading(false);
     }
@@ -183,12 +185,12 @@ export default function UserManagementScreen() {
   const handleSave = async () => {
     // 验证必填项
     if (!formData.username || !formData.realName || !formData.role) {
-      Alert.alert('提示', '用户名、姓名和角色不能为空');
+      Alert.alert(t('common.error'), t('userManagement.messages.requiredFields'));
       return;
     }
 
     if (!editingUser && !formData.password) {
-      Alert.alert('提示', '创建用户时密码不能为空');
+      Alert.alert(t('common.error'), t('userManagement.messages.passwordRequired'));
       return;
     }
 
@@ -206,14 +208,14 @@ export default function UserManagementScreen() {
           },
           factoryId
         );
-        Alert.alert('成功', '用户信息已更新');
+        Alert.alert(t('common.success'), t('userManagement.messages.updateSuccess'));
       } else {
         // 创建用户
         await userApiClient.createUser(
           formData as CreateUserRequest,
           factoryId
         );
-        Alert.alert('成功', '用户创建成功');
+        Alert.alert(t('common.success'), t('userManagement.messages.createSuccess'));
       }
 
       userManagementLogger.info(editingUser ? '用户更新成功' : '用户创建成功', {
@@ -228,18 +230,18 @@ export default function UserManagementScreen() {
         isEdit: !!editingUser,
         username: formData.username,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('userManagement.messages.saveFailed'));
     }
   };
 
   const handleDelete = (userId: number, userName: string) => {
     Alert.alert(
-      '确认删除',
-      `确定要删除用户 "${userName}" 吗？此操作不可撤销。`,
+      t('userManagement.confirmDelete.title'),
+      t('userManagement.confirmDelete.message', { name: userName }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '删除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -248,14 +250,14 @@ export default function UserManagementScreen() {
                 userId,
                 userName,
               });
-              Alert.alert('成功', '用户已删除');
+              Alert.alert(t('common.success'), t('userManagement.messages.deleteSuccess'));
               loadUsers();
             } catch (error) {
               userManagementLogger.error('删除用户失败', error as Error, {
                 userId,
                 userName,
               });
-              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
+              Alert.alert(t('common.error'), (error as any).response?.data?.message || t('userManagement.messages.deleteFailed'));
             }
           },
         },
@@ -271,14 +273,14 @@ export default function UserManagementScreen() {
           userId,
           factoryId: factoryId,
         });
-        Alert.alert('成功', '用户已停用');
+        Alert.alert(t('common.success'), t('userManagement.messages.deactivateSuccess'));
       } else {
         await userApiClient.activateUser(userId, factoryId);
         userManagementLogger.info('用户激活成功', {
           userId,
           factoryId: factoryId,
         });
-        Alert.alert('成功', '用户已激活');
+        Alert.alert(t('common.success'), t('userManagement.messages.activateSuccess'));
       }
       loadUsers();
     } catch (error) {
@@ -287,8 +289,8 @@ export default function UserManagementScreen() {
         currentStatus,
         factoryId: factoryId,
       });
-      const errorMessage = error instanceof Error ? error.message : '操作失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('userManagement.messages.toggleStatusFailed');
+      Alert.alert(t('common.error'), errorMessage);
     }
   };
 
@@ -309,23 +311,23 @@ export default function UserManagementScreen() {
     const normalizedRole = (roleCode ?? role ?? '').toLowerCase();
 
     switch (normalizedRole) {
-      case 'factory_super_admin': return '工厂超管';
-      case 'permission_admin': return '权限管理员';
-      case 'department_admin': return '部门管理员';
-      case 'operator': return '操作员';
-      case 'viewer': return '查看者';
-      case 'unactivated': return '未激活';
-      default: return normalizedRole || '未知角色';
+      case 'factory_super_admin': return t('userManagement.roles.factorySuperAdmin');
+      case 'permission_admin': return t('userManagement.roles.permissionAdmin');
+      case 'department_admin': return t('userManagement.roles.departmentAdmin');
+      case 'operator': return t('userManagement.roles.operator');
+      case 'viewer': return t('userManagement.roles.viewer');
+      case 'unactivated': return t('userManagement.roles.unactivated');
+      default: return normalizedRole || t('userManagement.roles.unknown');
     }
   };
 
   const getDepartmentName = (dept?: string) => {
     switch (dept) {
-      case 'processing': return '加工部';
-      case 'logistics': return '物流部';
-      case 'quality': return '质检部';
-      case 'management': return '管理层';
-      default: return dept || '未分配';
+      case 'processing': return t('userManagement.departments.processing');
+      case 'logistics': return t('userManagement.departments.logistics');
+      case 'quality': return t('userManagement.departments.quality');
+      case 'management': return t('userManagement.departments.management');
+      default: return dept || t('userManagement.departments.unassigned');
     }
   };
 
@@ -346,12 +348,12 @@ export default function UserManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="用户管理" />
+          <Appbar.Content title={t('userManagement.title')} />
         </Appbar.Header>
         <View style={styles.noPermission}>
           <List.Icon icon="lock" color="#999" />
-          <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
-          <Text style={styles.noPermissionHint}>仅限工厂超管和平台管理员</Text>
+          <Text style={styles.noPermissionText}>{t('userManagement.noPermission.title')}</Text>
+          <Text style={styles.noPermissionHint}>{t('userManagement.noPermission.hint')}</Text>
         </View>
       </View>
     );
@@ -362,14 +364,14 @@ export default function UserManagementScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="用户管理" />
+        <Appbar.Content title={t('userManagement.title')} />
         <Appbar.Action icon="refresh" onPress={loadUsers} />
       </Appbar.Header>
 
       <ScrollView style={styles.content}>
         {/* Search */}
         <Searchbar
-          placeholder="搜索用户名、姓名、手机号"
+          placeholder={t('userManagement.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           onSubmitEditing={handleSearch}
@@ -383,10 +385,10 @@ export default function UserManagementScreen() {
               value={filterRole}
               onValueChange={setFilterRole}
               buttons={[
-                { value: 'all', label: '全部' },
-                { value: 'operator', label: '操作员' },
-                { value: 'department_admin', label: '部门管理' },
-                { value: 'factory_super_admin', label: '超管' },
+                { value: 'all', label: t('userManagement.filter.all') },
+                { value: 'operator', label: t('userManagement.filter.operator') },
+                { value: 'department_admin', label: t('userManagement.filter.departmentAdmin') },
+                { value: 'factory_super_admin', label: t('userManagement.filter.superAdmin') },
               ]}
             />
           </Card.Content>
@@ -398,19 +400,19 @@ export default function UserManagementScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{users.length}</Text>
-                <Text style={styles.statLabel}>总用户数</Text>
+                <Text style={styles.statLabel}>{t('userManagement.stats.totalUsers')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {users.filter(u => u.isActive).length}
                 </Text>
-                <Text style={styles.statLabel}>激活</Text>
+                <Text style={styles.statLabel}>{t('userManagement.stats.active')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {users.filter(u => !u.isActive).length}
                 </Text>
-                <Text style={styles.statLabel}>停用</Text>
+                <Text style={styles.statLabel}>{t('userManagement.stats.inactive')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -420,14 +422,14 @@ export default function UserManagementScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : filteredUsers.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content style={styles.emptyContent}>
               <List.Icon icon="account-outline" color="#999" />
-              <Text style={styles.emptyText}>暂无用户</Text>
-              <Text style={styles.emptyHint}>点击右下角"+"按钮创建用户</Text>
+              <Text style={styles.emptyText}>{t('userManagement.empty.noUsers')}</Text>
+              <Text style={styles.emptyHint}>{t('userManagement.empty.hint')}</Text>
             </Card.Content>
           </Card>
         ) : (
@@ -454,7 +456,7 @@ export default function UserManagementScreen() {
                           fontSize: 11
                         }}
                       >
-                        {userItem.isActive ? '激活' : '停用'}
+                        {userItem.isActive ? t('common.active') : t('common.inactive')}
                       </Chip>
                       <Chip
                         mode="flat"
@@ -499,7 +501,7 @@ export default function UserManagementScreen() {
                     style={styles.actionButton}
                     compact
                   >
-                    编辑
+                    {t('userManagement.actions.edit')}
                   </Button>
                   <Button
                     mode="outlined"
@@ -508,7 +510,7 @@ export default function UserManagementScreen() {
                     style={styles.actionButton}
                     compact
                   >
-                    {userItem.isActive ? '停用' : '激活'}
+                    {userItem.isActive ? t('userManagement.actions.deactivate') : t('userManagement.actions.activate')}
                   </Button>
                   <Button
                     mode="outlined"
@@ -518,7 +520,7 @@ export default function UserManagementScreen() {
                     compact
                     textColor="#C62828"
                   >
-                    删除
+                    {t('userManagement.actions.delete')}
                   </Button>
                 </View>
               </Card.Content>
@@ -537,69 +539,69 @@ export default function UserManagementScreen() {
           contentContainerStyle={styles.modalContent}
         >
           <Text style={styles.modalTitle}>
-            {editingUser ? '编辑用户' : '创建用户'}
+            {editingUser ? t('userManagement.editUser') : t('userManagement.createUser')}
           </Text>
 
           <ScrollView style={styles.modalScrollView}>
             {/* Username */}
             <TextInput
-              label="用户名 *"
+              label={t('userManagement.form.username')}
               value={formData.username}
               onChangeText={(text) => setFormData({ ...formData, username: text })}
               mode="outlined"
               style={styles.input}
               disabled={!!editingUser} // 编辑时不可改用户名
-              placeholder="登录用户名"
+              placeholder={t('userManagement.form.usernamePlaceholder')}
             />
 
             {/* Password - 只在创建时显示 */}
             {!editingUser && (
               <TextInput
-                label="密码 *"
+                label={t('userManagement.form.password')}
                 value={formData.password}
                 onChangeText={(text) => setFormData({ ...formData, password: text })}
                 mode="outlined"
                 style={styles.input}
                 secureTextEntry
-                placeholder="至少8位，包含字母和数字"
+                placeholder={t('userManagement.form.passwordPlaceholder')}
               />
             )}
 
             {/* Real Name */}
             <TextInput
-              label="真实姓名 *"
+              label={t('userManagement.form.realName')}
               value={formData.realName}
               onChangeText={(text) => setFormData({ ...formData, realName: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如：张三"
+              placeholder={t('userManagement.form.realNamePlaceholder')}
             />
 
             {/* Phone */}
             <TextInput
-              label="手机号"
+              label={t('userManagement.form.phone')}
               value={formData.phone}
               onChangeText={(text) => setFormData({ ...formData, phone: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
-              placeholder="例如：+8613800138000"
+              placeholder={t('userManagement.form.phonePlaceholder')}
             />
 
             {/* Email */}
             <TextInput
-              label="邮箱"
+              label={t('userManagement.form.email')}
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="email-address"
-              placeholder="例如：user@example.com"
+              placeholder={t('userManagement.form.emailPlaceholder')}
             />
 
             {/* Role */}
             <View style={styles.input}>
-              <Text style={styles.selectLabel}>角色 *</Text>
+              <Text style={styles.selectLabel}>{t('userManagement.form.role')}</Text>
               <Menu
                 visible={roleMenuVisible}
                 onDismiss={() => setRoleMenuVisible(false)}
@@ -611,7 +613,7 @@ export default function UserManagementScreen() {
                     contentStyle={{ justifyContent: 'space-between' }}
                     style={styles.selectButton}
                   >
-                    {roleOptions.find(o => o.value === formData.role)?.label || '请选择'}
+                    {roleOptions.find(o => o.value === formData.role)?.label || t('userManagement.form.selectPlaceholder')}
                   </Button>
                 }
               >
@@ -630,7 +632,7 @@ export default function UserManagementScreen() {
 
             {/* Department */}
             <View style={styles.input}>
-              <Text style={styles.selectLabel}>部门</Text>
+              <Text style={styles.selectLabel}>{t('userManagement.form.department')}</Text>
               <Menu
                 visible={departmentMenuVisible}
                 onDismiss={() => setDepartmentMenuVisible(false)}
@@ -642,7 +644,7 @@ export default function UserManagementScreen() {
                     contentStyle={{ justifyContent: 'space-between' }}
                     style={styles.selectButton}
                   >
-                    {departmentOptions.find(o => o.value === formData.department)?.label || '请选择'}
+                    {departmentOptions.find(o => o.value === formData.department)?.label || t('userManagement.form.selectPlaceholder')}
                   </Button>
                 }
               >
@@ -661,12 +663,12 @@ export default function UserManagementScreen() {
 
             {/* Position */}
             <TextInput
-              label="职位"
+              label={t('userManagement.form.position')}
               value={formData.position}
               onChangeText={(text) => setFormData({ ...formData, position: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如：生产主管"
+              placeholder={t('userManagement.form.positionPlaceholder')}
             />
           </ScrollView>
 
@@ -676,14 +678,14 @@ export default function UserManagementScreen() {
               onPress={() => setModalVisible(false)}
               style={styles.modalButton}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               mode="contained"
               onPress={handleSave}
               style={styles.modalButton}
             >
-              {editingUser ? '保存' : '创建'}
+              {editingUser ? t('common.save') : t('common.create')}
             </Button>
           </View>
         </Modal>
@@ -695,7 +697,7 @@ export default function UserManagementScreen() {
           icon="plus"
           style={styles.fab}
           onPress={handleAdd}
-          label="创建用户"
+          label={t('userManagement.createUser')}
         />
       )}
     </View>

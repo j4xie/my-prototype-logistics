@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.entity.QualityInspection;
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.service.ApprovalChainService;
 import com.cretas.aims.service.DecisionAuditService;
 import com.cretas.aims.service.QualityDispositionRuleService;
@@ -149,7 +150,7 @@ public class QualityDispositionRuleServiceImpl implements QualityDispositionRule
 
         // 获取执行人信息
         User executor = userRepository.findById(executorId)
-                .orElseThrow(() -> new RuntimeException("执行人不存在: " + executorId));
+                .orElseThrow(() -> new EntityNotFoundException("User", executorId));
 
         // 构建上下文
         Map<String, Object> context = buildEvaluationContext(inspection, new HashMap<>());

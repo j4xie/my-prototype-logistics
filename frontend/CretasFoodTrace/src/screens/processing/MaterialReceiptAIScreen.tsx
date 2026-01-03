@@ -23,6 +23,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   DynamicForm,
   DynamicFormRef,
@@ -47,6 +48,7 @@ export default function MaterialReceiptAIScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const formRef = useRef<DynamicFormRef>(null);
+  const { t } = useTranslation('processing');
 
   const [loading, setLoading] = useState(false);
   const [loadingSchema, setLoadingSchema] = useState(true);
@@ -213,26 +215,30 @@ export default function MaterialReceiptAIScreen() {
         aiConfidence: aiFillInfo?.confidence,
       });
 
+      const aiInfoText = aiFillInfo?.filled
+        ? t('materialReceiptAI.aiAssistedFill', { count: aiFillInfo.fieldCount })
+        : '';
+
       Alert.alert(
-        '入库成功',
-        `批次号: ${batchNumber}\n${aiFillInfo?.filled ? `(AI 辅助填写 ${aiFillInfo.fieldCount} 个字段)` : ''}`,
+        t('materialReceiptAI.inboundSuccess'),
+        t('materialReceiptAI.inboundSuccessMessage', { batchNumber, aiInfo: aiInfoText }),
         [
           {
-            text: '继续入库',
+            text: t('materialReceiptAI.continueInbound'),
             onPress: () => {
               formRef.current?.reset();
               setAiFillInfo(null);
             },
           },
           {
-            text: '返回列表',
+            text: t('materialReceiptAI.returnToList'),
             onPress: () => navigation.goBack(),
           },
         ]
       );
     } catch (error) {
       screenLogger.error('入库失败', error as Error);
-      Alert.alert('入库失败', getErrorMsg(error) || '请稍后重试');
+      Alert.alert(t('materialReceiptAI.inboundFailed'), getErrorMsg(error) || t('materialReceiptAI.retryLater'));
     } finally {
       setLoading(false);
     }
@@ -250,23 +256,26 @@ export default function MaterialReceiptAIScreen() {
     screenLogger.info('AI 填充成功', { fieldCount, confidence });
 
     Alert.alert(
-      'AI 填充成功',
-      `已自动填写 ${fieldCount} 个字段\n置信度: ${(confidence * 100).toFixed(0)}%\n\n请检查并确认填写内容`,
-      [{ text: '好的' }]
+      t('materialReceiptAI.aiSuccess'),
+      t('materialReceiptAI.aiSuccessMessage', {
+        count: fieldCount,
+        confidence: (confidence * 100).toFixed(0),
+      }),
+      [{ text: t('materialReceiptAI.ok') }]
     );
   };
 
   // AI 填充失败回调
   const handleAIFillError = (error: string) => {
     screenLogger.warn('AI 填充失败', { error });
-    Alert.alert('AI 填充失败', error);
+    Alert.alert(t('materialReceiptAI.aiFailed'), error);
   };
 
   // 取消处理
   const handleCancel = () => {
-    Alert.alert('确认取消', '确定要取消入库操作吗？已填写的数据将丢失。', [
-      { text: '继续填写', style: 'cancel' },
-      { text: '取消入库', style: 'destructive', onPress: () => navigation.goBack() },
+    Alert.alert(t('materialReceiptAI.confirmCancel'), t('materialReceiptAI.confirmCancelMessage'), [
+      { text: t('materialReceiptAI.continueEditing'), style: 'cancel' },
+      { text: t('materialReceiptAI.cancelInbound'), style: 'destructive', onPress: () => navigation.goBack() },
     ]);
   };
 
@@ -284,12 +293,12 @@ export default function MaterialReceiptAIScreen() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="AI 智能入库" />
+          <Appbar.Content title={t('materialReceiptAI.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
           <Text style={styles.loadingText}>
-            {loadingSchema ? '加载表单配置...' : '加载供应商列表...'}
+            {loadingSchema ? t('materialReceiptAI.loadingFormConfig') : t('materialReceiptAI.loadingSuppliers')}
           </Text>
         </View>
       </SafeAreaView>
@@ -301,7 +310,7 @@ export default function MaterialReceiptAIScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={handleCancel} />
-        <Appbar.Content title="AI 智能入库" subtitle="原材料批次录入" />
+        <Appbar.Content title={t('materialReceiptAI.title')} subtitle={t('materialReceiptAI.subtitle')} />
         <Appbar.Action
           icon={aiEnabled ? 'robot' : 'robot-off'}
           onPress={toggleAI}
@@ -314,11 +323,11 @@ export default function MaterialReceiptAIScreen() {
           visible={true}
           icon="robot"
           actions={[
-            { label: '关闭 AI', onPress: toggleAI },
+            { label: t('materialReceiptAI.closeAI'), onPress: toggleAI },
           ]}
           style={styles.aiBanner}
         >
-          AI 表单助手已启用！点击右下角按钮，说"帮我入库100公斤三文鱼，单价45元"即可自动填表。
+          {t('materialReceiptAI.aiEnabled')}
         </Banner>
       )}
 
@@ -327,10 +336,10 @@ export default function MaterialReceiptAIScreen() {
         <Card style={styles.aiStatusCard}>
           <Card.Content style={styles.aiStatusContent}>
             <Chip icon="check-circle" style={styles.aiSuccessChip}>
-              AI 已填充 {aiFillInfo.fieldCount} 个字段
+              {t('materialReceiptAI.aiFilled')} {aiFillInfo.fieldCount} {t('materialReceiptAI.fields')}
             </Chip>
             <Text style={styles.aiConfidence}>
-              置信度: {(aiFillInfo.confidence * 100).toFixed(0)}%
+              {t('materialReceiptAI.confidence')}: {(aiFillInfo.confidence * 100).toFixed(0)}%
             </Text>
           </Card.Content>
         </Card>
@@ -342,7 +351,7 @@ export default function MaterialReceiptAIScreen() {
           <Card.Content style={styles.customSchemaContent}>
             <View style={styles.customSchemaHeader}>
               <Chip icon="puzzle" style={styles.customSchemaChip}>
-                +{schemaInfo.customFieldCount} 自定义字段
+                +{schemaInfo.customFieldCount} {t('materialReceiptAI.customFields')}
               </Chip>
               {schemaInfo.version && (
                 <Badge style={styles.versionBadge}>{`v${schemaInfo.version}`}</Badge>
@@ -361,7 +370,7 @@ export default function MaterialReceiptAIScreen() {
         schema={dynamicSchema}
         initialValues={initialValues}
         onSubmit={handleSubmit}
-        submitText={loading ? '入库中...' : '确认入库'}
+        submitText={loading ? t('materialReceiptAI.inbounding') : t('materialReceiptAI.confirmInbound')}
         disabled={loading}
         scrollable={true}
         // AI 助手配置

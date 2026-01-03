@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS } from '../../types/qualityInspector';
 
@@ -30,6 +31,7 @@ interface SettingItem {
 
 export default function QISettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('quality');
 
   const [settings, setSettings] = useState({
     voiceAssistant: true,
@@ -50,12 +52,12 @@ export default function QISettingsScreen() {
   };
 
   const handleClearCache = () => {
-    Alert.alert('清除缓存', '确定要清除应用缓存吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('settings.clearCache'), t('settings.confirmClearCache'), [
+      { text: t('settings.cancel'), style: 'cancel' },
       {
-        text: '确定',
+        text: t('settings.confirm'),
         onPress: () => {
-          Alert.alert('成功', '缓存已清除');
+          Alert.alert(t('settings.success'), t('settings.cacheCleared'));
         },
       },
     ]);
@@ -63,12 +65,12 @@ export default function QISettingsScreen() {
 
   const settingsGroups: { title: string; items: SettingItem[] }[] = [
     {
-      title: '质检设置',
+      title: t('settings.qualitySettings'),
       items: [
         {
           id: 'voiceAssistant',
           icon: 'mic-outline',
-          label: '语音助手',
+          label: t('settings.voiceAssistant'),
           type: 'toggle',
           value: settings.voiceAssistant,
           onToggle: () => handleToggle('voiceAssistant'),
@@ -76,7 +78,7 @@ export default function QISettingsScreen() {
         {
           id: 'autoNextBatch',
           icon: 'arrow-forward-circle-outline',
-          label: '自动跳转下一批次',
+          label: t('settings.autoNextBatch'),
           type: 'toggle',
           value: settings.autoNextBatch,
           onToggle: () => handleToggle('autoNextBatch'),
@@ -84,20 +86,20 @@ export default function QISettingsScreen() {
         {
           id: 'defaultSampleSize',
           icon: 'layers-outline',
-          label: '默认抽样数量',
+          label: t('settings.defaultSampleSize'),
           type: 'value',
-          value: '5 件',
-          onPress: () => Alert.alert('设置抽样数量', '功能开发中'),
+          value: t('settings.sampleSizeValue'),
+          onPress: () => Alert.alert(t('settings.setSampleSize'), t('settings.inDevelopment')),
         },
       ],
     },
     {
-      title: '通知设置',
+      title: t('settings.notificationSettings'),
       items: [
         {
           id: 'pushNotification',
           icon: 'notifications-outline',
-          label: '推送通知',
+          label: t('settings.pushNotification'),
           type: 'toggle',
           value: settings.pushNotification,
           onToggle: () => handleToggle('pushNotification'),
@@ -105,7 +107,7 @@ export default function QISettingsScreen() {
         {
           id: 'soundEffect',
           icon: 'volume-medium-outline',
-          label: '提示音',
+          label: t('settings.soundEffect'),
           type: 'toggle',
           value: settings.soundEffect,
           onToggle: () => handleToggle('soundEffect'),
@@ -113,7 +115,7 @@ export default function QISettingsScreen() {
         {
           id: 'vibration',
           icon: 'phone-portrait-outline',
-          label: '振动反馈',
+          label: t('settings.vibration'),
           type: 'toggle',
           value: settings.vibration,
           onToggle: () => handleToggle('vibration'),
@@ -121,12 +123,12 @@ export default function QISettingsScreen() {
       ],
     },
     {
-      title: '数据同步',
+      title: t('settings.dataSync'),
       items: [
         {
           id: 'autoSync',
           icon: 'sync-outline',
-          label: '自动同步',
+          label: t('settings.autoSync'),
           type: 'toggle',
           value: settings.autoSync,
           onToggle: () => handleToggle('autoSync'),
@@ -134,26 +136,26 @@ export default function QISettingsScreen() {
         {
           id: 'syncNow',
           icon: 'cloud-upload-outline',
-          label: '立即同步',
+          label: t('settings.syncNow'),
           type: 'action',
-          onPress: () => Alert.alert('同步', '数据同步中...'),
+          onPress: () => Alert.alert(t('settings.sync'), t('settings.syncing')),
         },
         {
           id: 'lastSync',
           icon: 'time-outline',
-          label: '上次同步',
+          label: t('settings.lastSync'),
           type: 'value',
-          value: '今天 14:30',
+          value: t('settings.lastSyncTime'),
         },
       ],
     },
     {
-      title: '安全与隐私',
+      title: t('settings.securityPrivacy'),
       items: [
         {
           id: 'biometricLock',
           icon: 'finger-print-outline',
-          label: '生物识别解锁',
+          label: t('settings.biometricLock'),
           type: 'toggle',
           value: settings.biometricLock,
           onToggle: () => handleToggle('biometricLock'),
@@ -161,19 +163,19 @@ export default function QISettingsScreen() {
         {
           id: 'changePassword',
           icon: 'key-outline',
-          label: '修改密码',
+          label: t('settings.changePassword'),
           type: 'action',
-          onPress: () => Alert.alert('修改密码', '功能开发中'),
+          onPress: () => Alert.alert(t('settings.changePassword'), t('settings.inDevelopment')),
         },
       ],
     },
     {
-      title: '其他',
+      title: t('settings.other'),
       items: [
         {
           id: 'darkMode',
           icon: 'moon-outline',
-          label: '深色模式',
+          label: t('settings.darkMode'),
           type: 'toggle',
           value: settings.darkMode,
           onToggle: () => handleToggle('darkMode'),
@@ -181,16 +183,16 @@ export default function QISettingsScreen() {
         {
           id: 'clearCache',
           icon: 'trash-outline',
-          label: '清除缓存',
+          label: t('settings.clearCache'),
           type: 'action',
           onPress: handleClearCache,
         },
         {
           id: 'version',
           icon: 'information-circle-outline',
-          label: '版本号',
+          label: t('settings.version'),
           type: 'value',
-          value: 'v1.0.0',
+          value: t('settings.versionNumber'),
         },
       ],
     },
@@ -251,10 +253,10 @@ export default function QISettingsScreen() {
       <TouchableOpacity
         style={styles.resetBtn}
         onPress={() =>
-          Alert.alert('重置设置', '确定要恢复默认设置吗？', [
-            { text: '取消', style: 'cancel' },
+          Alert.alert(t('settings.resetSettings'), t('settings.confirmReset'), [
+            { text: t('settings.cancel'), style: 'cancel' },
             {
-              text: '确定',
+              text: t('settings.confirm'),
               style: 'destructive',
               onPress: () => {
                 setSettings({
@@ -267,13 +269,13 @@ export default function QISettingsScreen() {
                   darkMode: false,
                   biometricLock: false,
                 });
-                Alert.alert('成功', '设置已重置');
+                Alert.alert(t('settings.success'), t('settings.settingsReset'));
               },
             },
           ])
         }
       >
-        <Text style={styles.resetText}>恢复默认设置</Text>
+        <Text style={styles.resetText}>{t('settings.restoreDefaults')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../store/authStore';
 import { userApiClient } from '../../../services/api/userApiClient';
 
@@ -32,6 +33,7 @@ interface UserInfo {
 export function PersonalInfoScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('profile');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -92,11 +94,11 @@ export function PersonalInfoScreen() {
         phone: userInfo.phone,
         position: userInfo.position,
       });
-      Alert.alert('成功', '个人信息已更新');
+      Alert.alert(t('messages.saveSuccess'), t('personalInfo.updateSuccess'));
       setEditing(false);
     } catch (error) {
-      console.error('更新失败:', error);
-      Alert.alert('更新失败', '请稍后重试');
+      console.error('Update failed:', error);
+      Alert.alert(t('messages.saveFailed'), t('personalInfo.updateFailed'));
     } finally {
       setSaving(false);
     }
@@ -115,7 +117,7 @@ export function PersonalInfoScreen() {
           style={styles.infoInput}
           value={value}
           onChangeText={(text) => setUserInfo({ ...userInfo, [field]: text })}
-          placeholder={`请输入${label}`}
+          placeholder={t('personalInfo.enterPlaceholder', { field: label })}
         />
       ) : (
         <Text style={styles.infoValue}>{value || '-'}</Text>
@@ -128,7 +130,7 @@ export function PersonalInfoScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('personalInfo.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -141,13 +143,13 @@ export function PersonalInfoScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>个人信息</Text>
+        <Text style={styles.title}>{t('personalInfo.title')}</Text>
         <TouchableOpacity
           onPress={() => editing ? handleSave() : setEditing(true)}
           disabled={saving}
         >
           <Text style={[styles.editButton, saving && styles.editButtonDisabled]}>
-            {saving ? '保存中...' : editing ? '保存' : '编辑'}
+            {saving ? t('personalInfo.saving') : editing ? t('personalInfo.save') : t('personalInfo.edit')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -163,21 +165,21 @@ export function PersonalInfoScreen() {
 
         {/* 基本信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>基本信息</Text>
+          <Text style={styles.sectionTitle}>{t('personalInfo.basicInfo')}</Text>
           <View style={styles.infoCard}>
-            <InfoRow label="用户名" value={userInfo.username} />
-            <InfoRow label="真实姓名" value={userInfo.realName} editable field="realName" />
-            <InfoRow label="邮箱" value={userInfo.email} editable field="email" />
-            <InfoRow label="手机号" value={userInfo.phone} editable field="phone" />
+            <InfoRow label={t('personalInfo.username')} value={userInfo.username} />
+            <InfoRow label={t('personalInfo.realName')} value={userInfo.realName} editable field="realName" />
+            <InfoRow label={t('personalInfo.email')} value={userInfo.email} editable field="email" />
+            <InfoRow label={t('personalInfo.phone')} value={userInfo.phone} editable field="phone" />
           </View>
         </View>
 
         {/* 工作信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>工作信息</Text>
+          <Text style={styles.sectionTitle}>{t('personalInfo.workInfo')}</Text>
           <View style={styles.infoCard}>
-            <InfoRow label="所属部门" value={userInfo.department} />
-            <InfoRow label="职位" value={userInfo.position} editable field="position" />
+            <InfoRow label={t('personalInfo.department')} value={userInfo.department} />
+            <InfoRow label={t('personalInfo.position')} value={userInfo.position} editable field="position" />
           </View>
         </View>
 

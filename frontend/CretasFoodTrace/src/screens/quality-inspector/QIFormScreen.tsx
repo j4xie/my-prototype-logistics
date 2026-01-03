@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   QI_COLORS,
@@ -46,49 +47,50 @@ interface CheckItem {
   color: string;
 }
 
-const CHECK_ITEMS: CheckItem[] = [
-  {
-    id: 'appearance',
-    name: '外观',
-    maxScore: 20,
-    options: ['色泽正常', '形态完整', '有瑕疵'],
-    color: '#4CAF50',
-  },
-  {
-    id: 'smell',
-    name: '气味',
-    maxScore: 20,
-    options: ['正常', '轻微异味', '明显异味'],
-    color: '#2196F3',
-  },
-  {
-    id: 'specification',
-    name: '规格',
-    maxScore: 20,
-    options: ['符合标准尺寸', '尺寸偏小', '尺寸偏大'],
-    color: '#9C27B0',
-  },
-  {
-    id: 'weight',
-    name: '重量',
-    maxScore: 20,
-    options: ['符合标准', '偏轻', '偏重'],
-    color: '#FF9800',
-  },
-  {
-    id: 'packaging',
-    name: '包装',
-    maxScore: 20,
-    options: ['包装完整', '标签清晰', '有破损'],
-    color: '#F44336',
-  },
-];
-
 export default function QIFormScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('quality');
   const { batchId, batchNumber } = route.params;
+
+  const CHECK_ITEMS: CheckItem[] = [
+    {
+      id: 'appearance',
+      name: t('form.checkItems.appearance'),
+      maxScore: 20,
+      options: [t('form.checkOptions.normalColor'), t('form.checkOptions.completeShape'), t('form.checkOptions.hasDefects')],
+      color: '#4CAF50',
+    },
+    {
+      id: 'smell',
+      name: t('form.checkItems.smell'),
+      maxScore: 20,
+      options: [t('form.checkOptions.normal'), t('form.checkOptions.slightOdor'), t('form.checkOptions.obviousOdor')],
+      color: '#2196F3',
+    },
+    {
+      id: 'specification',
+      name: t('form.checkItems.specification'),
+      maxScore: 20,
+      options: [t('form.checkOptions.standardSize'), t('form.checkOptions.sizeSmall'), t('form.checkOptions.sizeLarge')],
+      color: '#9C27B0',
+    },
+    {
+      id: 'weight',
+      name: t('form.checkItems.weight'),
+      maxScore: 20,
+      options: [t('form.checkOptions.standardWeight'), t('form.checkOptions.weightLight'), t('form.checkOptions.weightHeavy')],
+      color: '#FF9800',
+    },
+    {
+      id: 'packaging',
+      name: t('form.checkItems.packaging'),
+      maxScore: 20,
+      options: [t('form.checkOptions.packagingComplete'), t('form.checkOptions.labelClear'), t('form.checkOptions.hasDamage')],
+      color: '#F44336',
+    },
+  ];
 
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -119,7 +121,7 @@ export default function QIFormScreen() {
       setBatch(data);
     } catch (error) {
       console.error('加载批次失败:', error);
-      Alert.alert('错误', '无法加载批次信息');
+      Alert.alert(t('form.loadBatchFailed'), t('form.cannotLoadBatch'));
     } finally {
       setLoading(false);
     }
@@ -199,7 +201,7 @@ export default function QIFormScreen() {
       });
     } catch (error) {
       console.error('提交失败:', error);
-      Alert.alert('提交失败', '请检查网络连接后重试');
+      Alert.alert(t('form.submitFailed'), t('form.checkNetworkAndRetry'));
     } finally {
       setSubmitting(false);
     }
@@ -209,7 +211,7 @@ export default function QIFormScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载中...</Text>
+        <Text style={styles.loadingText}>{t('form.loadingBatch')}</Text>
       </View>
     );
   }
@@ -222,7 +224,7 @@ export default function QIFormScreen() {
       {/* 语音助手悬浮按钮 */}
       <TouchableOpacity style={styles.voiceFab} onPress={handleVoicePress}>
         <Ionicons name="mic" size={20} color="#fff" />
-        <Text style={styles.voiceFabText}>AI语音</Text>
+        <Text style={styles.voiceFabText}>{t('form.aiVoice')}</Text>
       </TouchableOpacity>
 
       <ScrollView
@@ -234,7 +236,7 @@ export default function QIFormScreen() {
         <View style={styles.batchCard}>
           <Text style={styles.batchNumber}>{batchNumber}</Text>
           <Text style={styles.batchInfo}>
-            {batch?.productName} | 来源: {batch?.sourceProcess || '未知'} | 数量: {batch?.quantity}{batch?.unit}
+            {batch?.productName} | {t('home.source')}: {batch?.sourceProcess || '未知'} | {t('home.quantity')}: {batch?.quantity}{batch?.unit}
           </Text>
         </View>
 
@@ -242,10 +244,10 @@ export default function QIFormScreen() {
         <View style={styles.sampleSection}>
           <View style={styles.sampleHeader}>
             <Ionicons name="book" size={18} color={QI_COLORS.primary} />
-            <Text style={styles.sampleTitle}>抽样检验</Text>
+            <Text style={styles.sampleTitle}>{t('form.sampling')}</Text>
           </View>
           <View style={styles.sampleInputRow}>
-            <Text style={styles.sampleLabel}>抽样数量:</Text>
+            <Text style={styles.sampleLabel}>{t('form.sampleSize')}:</Text>
             <TextInput
               style={styles.sampleInput}
               value={sampleSize}
@@ -253,7 +255,7 @@ export default function QIFormScreen() {
               keyboardType="number-pad"
               maxLength={4}
             />
-            <Text style={styles.sampleUnit}>件</Text>
+            <Text style={styles.sampleUnit}>{t('form.pieces')}</Text>
           </View>
         </View>
 
@@ -261,7 +263,7 @@ export default function QIFormScreen() {
         <View style={styles.checkSection}>
           <View style={styles.checkHeader}>
             <Ionicons name="checkmark-circle" size={18} color={QI_COLORS.text} />
-            <Text style={styles.checkTitle}>HACCP检查清单</Text>
+            <Text style={styles.checkTitle}>{t('form.haccpChecklist')}</Text>
           </View>
 
           {CHECK_ITEMS.map((item, index) => (
@@ -273,7 +275,7 @@ export default function QIFormScreen() {
                   </View>
                   <Text style={styles.checkName}>{item.name} (0-{item.maxScore}分)</Text>
                 </View>
-                <Text style={styles.checkMax}>满分 {item.maxScore}</Text>
+                <Text style={styles.checkMax}>{t('form.fullScore', { score: item.maxScore })}</Text>
               </View>
 
               {/* 选项 */}
@@ -306,7 +308,7 @@ export default function QIFormScreen() {
 
               {/* 评分 */}
               <View style={styles.scoreRow}>
-                <Text style={styles.scoreLabel}>评分:</Text>
+                <Text style={styles.scoreLabel}>{t('form.score')}:</Text>
                 <TextInput
                   style={styles.scoreInput}
                   value={String(scores[item.id]?.score ?? 0)}
@@ -321,7 +323,7 @@ export default function QIFormScreen() {
                     onPress={() => handleCameraPress(item.id)}
                   >
                     <Ionicons name="camera" size={14} color={QI_COLORS.primary} />
-                    <Text style={styles.cameraBtnText}>拍照</Text>
+                    <Text style={styles.cameraBtnText}>{t('form.takePhoto')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -333,27 +335,27 @@ export default function QIFormScreen() {
         <View style={styles.summaryCard}>
           <View style={styles.summaryHeader}>
             <Ionicons name="bar-chart" size={18} color={QI_COLORS.primary} />
-            <Text style={styles.summaryTitle}>检验汇总</Text>
+            <Text style={styles.summaryTitle}>{t('form.inspectionSummary')}</Text>
           </View>
           <View style={styles.summaryGrid}>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>总分</Text>
+              <Text style={styles.summaryLabel}>{t('form.totalScore')}</Text>
               <Text style={styles.summaryValue}>{totalScore}/100</Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>合格数</Text>
+              <Text style={styles.summaryLabel}>{t('form.passedCount')}</Text>
               <Text style={[styles.summaryValue, { color: QI_COLORS.success }]}>
                 {parseInt(sampleSize, 10) - 1}/{sampleSize}件
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>合格率</Text>
+              <Text style={styles.summaryLabel}>{t('form.passRate')}</Text>
               <Text style={[styles.summaryValue, { color: QI_COLORS.success }]}>
                 {Math.round(((parseInt(sampleSize, 10) - 1) / parseInt(sampleSize, 10)) * 100)}%
               </Text>
             </View>
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>建议等级</Text>
+              <Text style={styles.summaryLabel}>{t('form.suggestedGrade')}</Text>
               <View style={[styles.gradeBadge, { backgroundColor: GRADE_COLORS[grade] }]}>
                 <Text style={styles.gradeBadgeText}>{grade}</Text>
               </View>
@@ -363,12 +365,12 @@ export default function QIFormScreen() {
 
         {/* 检验备注 */}
         <View style={styles.remarksSection}>
-          <Text style={styles.remarksLabel}>检验备注 (可选)</Text>
+          <Text style={styles.remarksLabel}>{t('form.inspectionRemarks')}</Text>
           <TextInput
             style={styles.remarksInput}
             value={remarks}
             onChangeText={setRemarks}
-            placeholder="输入备注信息..."
+            placeholder={t('form.enterRemarks')}
             placeholderTextColor={QI_COLORS.disabled}
             multiline
             numberOfLines={3}
@@ -387,7 +389,7 @@ export default function QIFormScreen() {
             <ActivityIndicator size="small" color="#fff" />
           ) : (
             <>
-              <Text style={styles.submitBtnText}>提交检验结果</Text>
+              <Text style={styles.submitBtnText}>{t('form.submitInspectionResult')}</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </>
           )}

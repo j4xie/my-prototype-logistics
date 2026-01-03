@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 // 启用 Android 动画
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -23,45 +24,22 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 interface FAQItem {
   id: string;
-  question: string;
-  answer: string;
+  questionKey: string;
+  answerKey: string;
 }
 
-const faqData: FAQItem[] = [
-  {
-    id: '1',
-    question: '如何创建新的生产批次？',
-    answer: '在首页点击"今日批次"或"生产管理"，然后点击右上角的"+"按钮，填写批次信息后提交即可创建新批次。',
-  },
-  {
-    id: '2',
-    question: '如何查看生产进度？',
-    answer: '在首页可以查看今日生产概览，点击"今日生产"可以查看详细的生产统计和进度信息。',
-  },
-  {
-    id: '3',
-    question: '如何进行质量检测？',
-    answer: '进入批次详情页面，点击"质检记录"可以查看历史质检记录，点击"添加质检"可以新增质检记录。',
-  },
-  {
-    id: '4',
-    question: '如何导出数据报表？',
-    answer: '在"我的"页面点击"数据导出"，选择需要导出的数据类型和时间范围，即可导出Excel格式的报表。',
-  },
-  {
-    id: '5',
-    question: '设备告警如何处理？',
-    answer: '收到设备告警通知后，点击查看详情，可以了解告警原因和建议处理方式。处理完成后，在告警详情页面点击"确认处理"。',
-  },
-  {
-    id: '6',
-    question: '忘记密码怎么办？',
-    answer: '请联系工厂管理员重置密码，或拨打客服热线 400-XXX-XXXX 获取帮助。',
-  },
+const faqKeys: FAQItem[] = [
+  { id: '1', questionKey: 'helpCenter.faq.createBatch.question', answerKey: 'helpCenter.faq.createBatch.answer' },
+  { id: '2', questionKey: 'helpCenter.faq.viewProgress.question', answerKey: 'helpCenter.faq.viewProgress.answer' },
+  { id: '3', questionKey: 'helpCenter.faq.qualityCheck.question', answerKey: 'helpCenter.faq.qualityCheck.answer' },
+  { id: '4', questionKey: 'helpCenter.faq.exportData.question', answerKey: 'helpCenter.faq.exportData.answer' },
+  { id: '5', questionKey: 'helpCenter.faq.equipmentAlert.question', answerKey: 'helpCenter.faq.equipmentAlert.answer' },
+  { id: '6', questionKey: 'helpCenter.faq.forgotPassword.question', answerKey: 'helpCenter.faq.forgotPassword.answer' },
 ];
 
 export function HelpCenterScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('profile');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
@@ -76,7 +54,7 @@ export function HelpCenterScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>帮助中心</Text>
+        <Text style={styles.title}>{t('helpCenter.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -87,27 +65,27 @@ export function HelpCenterScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#e8f5e9' }]}>
               <Icon source="book-open-variant" size={24} color="#4caf50" />
             </View>
-            <Text style={styles.actionText}>使用指南</Text>
+            <Text style={styles.actionText}>{t('helpCenter.userGuide')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionItem}>
             <View style={[styles.actionIcon, { backgroundColor: '#e3f2fd' }]}>
               <Icon source="video" size={24} color="#2196f3" />
             </View>
-            <Text style={styles.actionText}>视频教程</Text>
+            <Text style={styles.actionText}>{t('helpCenter.videoTutorial')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionItem}>
             <View style={[styles.actionIcon, { backgroundColor: '#fff3e0' }]}>
               <Icon source="phone" size={24} color="#ff9800" />
             </View>
-            <Text style={styles.actionText}>联系客服</Text>
+            <Text style={styles.actionText}>{t('helpCenter.contactSupport')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* 常见问题 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>常见问题</Text>
+          <Text style={styles.sectionTitle}>{t('helpCenter.faqTitle')}</Text>
           <View style={styles.faqList}>
-            {faqData.map((item) => (
+            {faqKeys.map((item) => (
               <TouchableOpacity
                 key={item.id}
                 style={styles.faqItem}
@@ -115,7 +93,7 @@ export function HelpCenterScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.faqHeader}>
-                  <Text style={styles.faqQuestion}>{item.question}</Text>
+                  <Text style={styles.faqQuestion}>{t(item.questionKey)}</Text>
                   <Icon
                     source={expandedId === item.id ? 'chevron-up' : 'chevron-down'}
                     size={20}
@@ -123,7 +101,7 @@ export function HelpCenterScreen() {
                   />
                 </View>
                 {expandedId === item.id && (
-                  <Text style={styles.faqAnswer}>{item.answer}</Text>
+                  <Text style={styles.faqAnswer}>{t(item.answerKey)}</Text>
                 )}
               </TouchableOpacity>
             ))}
@@ -132,19 +110,19 @@ export function HelpCenterScreen() {
 
         {/* 联系方式 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>联系我们</Text>
+          <Text style={styles.sectionTitle}>{t('helpCenter.contactUs')}</Text>
           <View style={styles.contactCard}>
             <View style={styles.contactItem}>
               <Icon source="phone" size={20} color="#667eea" />
-              <Text style={styles.contactText}>客服热线: 400-XXX-XXXX</Text>
+              <Text style={styles.contactText}>{t('helpCenter.hotline')}: 400-XXX-XXXX</Text>
             </View>
             <View style={styles.contactItem}>
               <Icon source="email" size={20} color="#667eea" />
-              <Text style={styles.contactText}>邮箱: support@cretas.com</Text>
+              <Text style={styles.contactText}>{t('helpCenter.email')}: support@cretas.com</Text>
             </View>
             <View style={styles.contactItem}>
               <Icon source="clock-outline" size={20} color="#667eea" />
-              <Text style={styles.contactText}>工作时间: 周一至周五 9:00-18:00</Text>
+              <Text style={styles.contactText}>{t('helpCenter.workingHours')}: {t('helpCenter.workingHoursValue')}</Text>
             </View>
           </View>
         </View>

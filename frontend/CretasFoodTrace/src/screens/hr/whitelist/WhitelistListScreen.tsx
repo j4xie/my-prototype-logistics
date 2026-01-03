@@ -13,12 +13,14 @@ import { Text, Card, Searchbar, Chip, FAB, ActivityIndicator, IconButton } from 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { whitelistApiClient } from '../../../services/api/whitelistApiClient';
 import { HR_THEME, WHITELIST_STATUS_CONFIG, type WhitelistEntry, type WhitelistStatus } from '../../../types/hrNavigation';
 
 export default function WhitelistListScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,13 +66,13 @@ export default function WhitelistListScreen() {
   const onRefresh = useCallback(() => { setRefreshing(true); loadData(); }, [loadData]);
 
   const handleDelete = (item: WhitelistEntry) => {
-    Alert.alert('确认删除', `确定要删除 ${item.maskedPhone || item.phoneNumber} 吗？`, [
-      { text: '取消', style: 'cancel' },
-      { text: '删除', style: 'destructive', onPress: async () => {
+    Alert.alert(t('whitelist.list.deleteConfirm'), t('whitelist.list.deleteMessage', { phone: item.maskedPhone || item.phoneNumber }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           await whitelistApiClient.deleteWhitelist(Number(item.id));
           loadData();
-        } catch (e) { Alert.alert('错误', '删除失败'); }
+        } catch (e) { Alert.alert(t('messages.error'), t('whitelist.list.deleteFailed')); }
       }},
     ]);
   };
@@ -90,8 +92,8 @@ export default function WhitelistListScreen() {
               <Chip mode="flat" textStyle={{ fontSize: 10, color: config.color }}
                 style={[styles.chip, { backgroundColor: config.bgColor }]}>{config.label}</Chip>
             </View>
-            <Text style={styles.role}>{item.presetRoleName || '未设定角色'}</Text>
-            <Text style={styles.date}>添加: {item.addedAt?.split('T')[0]}</Text>
+            <Text style={styles.role}>{item.presetRoleName || t('whitelist.list.noRole')}</Text>
+            <Text style={styles.date}>{t('whitelist.list.addedAt')}: {item.addedAt?.split('T')[0]}</Text>
           </View>
           <IconButton icon="delete" size={20} iconColor={HR_THEME.danger} onPress={() => handleDelete(item)} />
         </Card.Content>
@@ -103,13 +105,13 @@ export default function WhitelistListScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}><Text style={styles.headerTitle}>白名单管理</Text></View>
+      <View style={styles.header}><Text style={styles.headerTitle}>{t('whitelist.list.title')}</Text></View>
       <View style={styles.search}>
-        <Searchbar placeholder="搜索手机号..." value={searchQuery} onChangeText={setSearchQuery} style={styles.searchbar} />
+        <Searchbar placeholder={t('whitelist.list.searchPlaceholder')} value={searchQuery} onChangeText={setSearchQuery} style={styles.searchbar} />
       </View>
       <FlatList data={filteredData} keyExtractor={item => item.id} renderItem={renderItem}
         contentContainerStyle={styles.list} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListEmptyComponent={<View style={styles.empty}><MaterialCommunityIcons name="shield-check-outline" size={64} color={HR_THEME.textMuted} /><Text style={styles.emptyText}>暂无白名单</Text></View>} />
+        ListEmptyComponent={<View style={styles.empty}><MaterialCommunityIcons name="shield-check-outline" size={64} color={HR_THEME.textMuted} /><Text style={styles.emptyText}>{t('whitelist.list.empty')}</Text></View>} />
       <FAB icon="plus" style={styles.fab} onPress={() => navigation.navigate('WhitelistAdd' as any)} color="#fff" />
     </SafeAreaView>
   );

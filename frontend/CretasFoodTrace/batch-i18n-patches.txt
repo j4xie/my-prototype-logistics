@@ -1,0 +1,339 @@
+==============================================
+BATCH MODULE I18N MIGRATION - CODE PATCHES
+==============================================
+
+These patches show the exact changes needed for each file.
+Apply these after adding the JSON translations.
+
+==============================================
+1. WSBatchesScreen.tsx
+==============================================
+
+ADD IMPORT:
+-----------
+After line 15, add:
+import { useTranslation } from 'react-i18next';
+
+MODIFY COMPONENT START:
+----------------------
+Replace lines 46-50 with:
+export function WSBatchesScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('workshop');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Move FILTER_TABS inside component (after hooks)
+  const FILTER_TABS = [
+    { key: 'all', label: t('batches.filters.all'), count: 11 },
+    { key: 'in_progress', label: t('batches.filters.inProgress'), count: 3 },
+    { key: 'pending', label: t('batches.filters.pending'), count: 4 },
+    { key: 'completed', label: t('batches.filters.completed'), count: 4 },
+  ];
+
+DELETE LINES 39-44 (old FILTER_TABS constant)
+
+ADD HELPER FUNCTION (after FILTER_TABS):
+----------------------------------------
+  const getStatusText = (status: string, stage?: string) => {
+    if (status === 'pending') return t('batches.status.pending');
+    if (status === 'completed') return t('batches.status.completed');
+    return stage || t('batches.status.inProgress');
+  };
+
+MODIFY getStatusStyle FUNCTION (line 134-148):
+----------------------------------------------
+Replace return statements:
+  const getStatusStyle = (status: string, isUrgent?: boolean) => {
+    if (isUrgent) {
+      return { bg: '#fff1f0', color: '#ff4d4f', text: t('batches.status.urgent') };
+    }
+    // ... rest stays the same
+  };
+
+STRING REPLACEMENTS (line by line):
+----------------------------------
+Line 154: "批次管理" → {t('batches.title')}
+Line 169: "搜索批次号..." → {t('batches.searchPlaceholder')}
+Line 198: "进行中" → {t('batches.stats.inProgress')}
+Line 202: "待开始" → {t('batches.stats.pending')}
+Line 206: "已完成" → {t('batches.stats.completed')}
+
+Line 229:
+Replace:
+  {statusStyle.text}{batch.stage || (batch.status === 'pending' ? '待开始' : '已完成')}
+With:
+  {statusStyle.text}{getStatusText(batch.status, batch.stage)}
+
+Line 236: "产品" → {t('batches.fields.product')}
+Line 240:
+Replace:
+  {batch.status === 'completed' ? '产量' : '目标'}
+With:
+  {batch.status === 'completed' ? t('batches.fields.output') : t('batches.fields.target')}
+
+Line 244-246:
+Replace:
+  {batch.status === 'completed' ? '完成时间' : batch.status === 'pending' ? '计划开始' : '进度'}
+With:
+  {batch.status === 'completed'
+    ? t('batches.fields.completedTime')
+    : batch.status === 'pending'
+    ? t('batches.fields.plannedStart')
+    : t('batches.fields.progress')}
+
+Line 259:
+Replace:
+  {batch.currentQuantity}kg / {batch.targetQuantity}kg
+With:
+  {t('batches.progressInfo', { current: batch.currentQuantity, target: batch.targetQuantity })}
+
+Line 260:
+Replace:
+  预计 {batch.estimatedTime}
+With:
+  {t('batches.estimated', { time: batch.estimatedTime })}
+
+==============================================
+2. BatchDetailScreen.tsx
+==============================================
+
+ADD IMPORT (after line 15):
+---------------------------
+import { useTranslation } from 'react-i18next';
+
+ADD IN COMPONENT (line 22-23):
+------------------------------
+export function BatchDetailScreen() {
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
+
+STRING REPLACEMENTS:
+-------------------
+Line 69: "批次详情" → {t('batches.detail.title')}
+Line 81: "进行中" → {t('batches.detail.inProgress')}
+Line 103: "开始: {batch.startTime}" → {t('batches.detail.startTime', { time: batch.startTime })}
+Line 107: "预计: {batch.estimatedEndTime}" → {t('batches.detail.estimatedEndTime', { time: batch.estimatedEndTime })}
+Line 114: "当前工艺环节" → {t('batches.detail.currentStage')}
+Line 124: "进行中 - 预计15分钟完成" → {t('batches.detail.stageInProgress')}
+Line 132: "工艺流程" → {t('batches.detail.processFlow')}
+Line 161: "参与人员" → {t('batches.detail.participants')}
+Line 179: "使用设备" → {t('batches.detail.equipment')}
+Line 187: "运行中" → {t('batches.detail.running')}
+Line 202: "录入数据" → {t('batches.detail.enterData')}
+Line 209: "完成批次" → {t('batches.detail.completeBatch')}
+
+==============================================
+3. BatchStageScreen.tsx
+==============================================
+
+ADD IMPORT (after line 13):
+---------------------------
+import { useTranslation } from 'react-i18next';
+
+ADD IN COMPONENT (line 22-24):
+------------------------------
+export function BatchStageScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
+
+MODIFY handleSubmit (line 55-59):
+---------------------------------
+  const handleSubmit = () => {
+    Alert.alert(t('batches.stage.submitSuccess'), t('batches.stage.dataSaved'), [
+      { text: t('common.confirm'), onPress: () => navigation.goBack() }
+    ]);
+  };
+
+STRING REPLACEMENTS:
+-------------------
+Line 68: "{stageName || '切片'} - 数据录入" → `${stageName || t('batches.stage.title')} - ${t('batches.stage.title')}`
+Line 70: "提交" → {t('batches.stage.submit')}
+Line 79: "自动采集数据 (只读)" → {t('batches.stage.autoDataSection')}
+Line 88: "时长" → {t('batches.stage.duration')}
+Line 93: "环境温度" → {t('batches.stage.envTemperature')}
+Line 100: "投入重量" → {t('batches.stage.inputWeight')}
+Line 105: "产出重量" → {t('batches.stage.outputWeight')}
+Line 112: "数据来源: {autoData.dataSource} · 更新于 {autoData.lastUpdate}" →
+  {t('batches.stage.dataSource', { source: autoData.dataSource, time: autoData.lastUpdate })}
+Line 122: "AI辅助识别 (请确认/修正)" → {t('batches.stage.aiDataSection')}
+Line 127: "产品计数 (AI识别)" → {t('batches.stage.productCount')}
+Line 134: "件" → {t('batches.stage.unit.pieces')}
+Line 137: "置信度: {aiData.confidence}%" → {t('batches.stage.confidence', { value: aiData.confidence })}
+Line 142: "确认不合格数" → {t('batches.stage.confirmedDefects')}
+Line 149: "件" → {t('batches.stage.unit.pieces')}
+Line 154: "查看AI标记图片 ({aiData.defectCount})" → {t('batches.stage.viewDefectImages', { count: aiData.defectCount })}
+Line 164: "手动录入数据" → {t('batches.stage.manualDataSection')}
+Line 169: "返工数量 (件)" → {t('batches.stage.reworkCount')}
+Line 179: "切片厚度标准差 (mm)" → {t('batches.stage.thicknessStd')}
+Line 189: "实际参与人数" → {t('batches.stage.actualWorkers')}
+Line 205: "备注与问题汇报" → {t('batches.stage.notesSection')}
+Line 211: "输入备注或问题..." → {t('batches.stage.notesPlaceholder')}
+Line 223: "AI对比分析" → {t('batches.stage.comparisonSection')}
+Line 227: "当前损耗率" → {t('batches.stage.currentLossRate')}
+Line 229: "行业均值: 6.0% ✓" → {t('batches.stage.industryAverage', { value: '6.0' })}
+Line 232: "当前合格率" → {t('batches.stage.currentQualityRate')}
+Line 234: "行业均值: 95% ✓" → {t('batches.stage.industryAverage', { value: '95' })}
+Line 246: "保存数据" → {t('batches.stage.saveData')}
+
+==============================================
+4. BatchCompleteScreen.tsx
+==============================================
+
+ADD IMPORT (after line 15):
+---------------------------
+import { useTranslation } from 'react-i18next';
+
+ADD IN COMPONENT (line 21-23):
+------------------------------
+export function BatchCompleteScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
+
+MODIFY handleComplete (line 44-60):
+-----------------------------------
+  const handleComplete = () => {
+    Alert.alert(
+      t('batches.complete.confirmTitle'),
+      t('batches.complete.confirmMessage', { batchNumber: batch.batchNumber }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('batches.complete.confirmComplete'),
+          onPress: () => {
+            Alert.alert(t('batches.complete.successTitle'), t('batches.complete.successMessage'), [
+              { text: t('common.confirm'), onPress: () => navigation.goBack() }
+            ]);
+          },
+        },
+      ]
+    );
+  };
+
+STRING REPLACEMENTS:
+-------------------
+Line 73: "完成批次" → {t('batches.complete.title')}
+Line 82: "批次生产完成" → {t('batches.complete.productionComplete')}
+Line 90: "生产数据汇总" → {t('batches.complete.dataSection')}
+Line 94: "目标产量" → {t('batches.complete.targetQuantity')}
+Line 98: "实际产量" → {t('batches.complete.actualQuantity')}
+Line 106: "合格数量" → {t('batches.complete.qualifiedQuantity')}
+Line 112: "合格率" → {t('batches.complete.qualityRate')}
+Line 120: "总耗时" → {t('batches.complete.totalTime')}
+Line 124: "参与人数" → {t('batches.complete.workers')}
+Line 125: "{batch.workers} 人" → {batch.workers} {t('batches.complete.peopleUnit')}
+Line 133: "完成确认" → {t('batches.complete.confirmSection')}
+Line 144: "质检已完成" → {t('batches.complete.checkQuality')}
+Line 155: "数据已录入完整" → {t('batches.complete.checkData')}
+Line 166: "设备已复位清洁" → {t('batches.complete.checkEquipment')}
+Line 180: "确认完成批次" → {t('batches.complete.confirmComplete')}
+
+==============================================
+5. BatchStartScreen.tsx
+==============================================
+
+ADD IMPORT (after line 16):
+---------------------------
+import { useTranslation } from 'react-i18next';
+
+ADD IN COMPONENT (line 19-22):
+------------------------------
+export function BatchStartScreen() {
+  const navigation = useNavigation();
+  const { t } = useTranslation('workshop');
+  const [selectedProduct, setSelectedProduct] = useState('');
+
+MODIFY handleSubmit (line 32-57):
+---------------------------------
+  const handleSubmit = () => {
+    if (!selectedProduct) {
+      Alert.alert(t('batches.start.selectProductHint'), '');
+      return;
+    }
+    if (!targetQuantity) {
+      Alert.alert(t('batches.start.enterQuantityHint'), '');
+      return;
+    }
+
+    const product = products.find(p => p.id === selectedProduct);
+    Alert.alert(
+      t('batches.start.confirmTitle'),
+      t('batches.start.confirmMessage', { product: product?.name, quantity: targetQuantity }),
+      [
+        { text: t('batches.start.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm'),
+          onPress: () => {
+            Alert.alert(t('batches.start.successTitle'), t('batches.start.successMessage'), [
+              { text: t('common.confirm'), onPress: () => navigation.goBack() }
+            ]);
+          },
+        },
+      ]
+    );
+  };
+
+STRING REPLACEMENTS:
+-------------------
+Line 66: "创建批次" → {t('batches.start.title')}
+Line 73: "选择产品 *" → {t('batches.start.selectProduct')}
+Line 102: "目标产量 (kg) *" → {t('batches.start.targetQuantity')}
+Line 109: "请输入目标产量" → {t('batches.start.targetPlaceholder')}
+Line 118: "备注 (可选)" → {t('batches.start.notes')}
+Line 123: "输入备注信息..." → {t('batches.start.notesPlaceholder')}
+Line 135: "创建批次后，系统将自动分配工位、设备和人员。请在任务开始前完成任务引导流程。" → {t('batches.start.infoText')}
+Line 143: "取消" → {t('batches.start.cancel')}
+Line 146: "创建批次" → {t('batches.start.create')}
+
+==============================================
+6. MaterialConsumptionScreen.tsx
+==============================================
+
+ADD IMPORT (after line 17):
+---------------------------
+import { useTranslation } from 'react-i18next';
+
+ADD IN COMPONENT (line 35-37):
+------------------------------
+export function MaterialConsumptionScreen() {
+  const navigation = useNavigation();
+  const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
+
+MODIFY handleAddConsumption (line 89-91):
+-----------------------------------------
+  const handleAddConsumption = () => {
+    Alert.alert(t('batches.materialConsumption.addRecord'), t('batches.materialConsumption.selectMaterialHint'));
+  };
+
+STRING REPLACEMENTS:
+-------------------
+Line 176: "原料消耗" → {t('batches.materialConsumption.title')}
+Line 198: "{{completedCount}}/{{records.length}}" → Keep as is
+Line 199: "消耗批次" → {t('batches.materialConsumption.batchesConsumed')}
+Line 203: "计划总量" → {t('batches.materialConsumption.totalPlanned')}
+Line 210: "实际用量" → {t('batches.materialConsumption.totalActual')}
+Line 218: "消耗记录" → {t('batches.materialConsumption.recordsTitle')}
+Line 115: "已消耗" : "待消耗" → {isCompleted ? t('batches.materialConsumption.consumed') : t('batches.materialConsumption.pending')}
+Line 122: "计划用量" → {t('batches.materialConsumption.plannedQuantity')}
+Line 129: "实际用量" → {t('batches.materialConsumption.actualQuantity')}
+Line 139: "偏差" → {t('batches.materialConsumption.variance')}
+Line 233: "添加消耗记录" → {t('batches.materialConsumption.addRecord')}
+
+==============================================
+END OF PATCHES
+==============================================
+
+After applying these patches:
+1. The code will use translation keys instead of hard-coded strings
+2. All strings will support both Chinese and English
+3. The interface will respond to language changes dynamically
+
+Notes:
+- Keep variable interpolations (e.g., {batch.workers}) as is
+- Use t() with parameters for dynamic content
+- Common strings like "Cancel" use common.cancel from the common section

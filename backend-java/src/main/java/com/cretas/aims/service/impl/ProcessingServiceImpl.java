@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.entity.enums.*;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProcessingService;
@@ -59,7 +60,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final ProcessingStageRecordService processingStageRecordService;
     // ========== 批次管理 ==========
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ProductionBatch createBatch(String factoryId, ProductionBatch batch) {
         log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, batch.getBatchNumber());
         // 验证批次号唯一性
@@ -301,16 +302,26 @@ public class ProcessingServiceImpl implements ProcessingService {
 
     /**
      * 记录原材料消耗 (带用户ID参数)
+     * N+1 修复：合并两个循环，使用缓存 Map 避免重复查询
      */
     public void recordMaterialConsumption(String factoryId, String productionBatchId,
                                          List<Map<String, Object>> consumptions, Long userId) {
         log.info("记录原材料消耗: factoryId={}, productionBatchId={}, userId={}", factoryId, productionBatchId, userId);
         ProductionBatch productionBatch = getBatchById(factoryId, productionBatchId);
+
+        // N+1 修复：使用缓存 Map 避免重复查询
+        Map<String, MaterialBatch> batchCache = new HashMap<>();
+        BigDecimal totalMaterialCost = BigDecimal.ZERO;
+
         for (Map<String, Object> consumption : consumptions) {
             String materialBatchId = (String) consumption.get("materialBatchId");
             BigDecimal quantity = new BigDecimal(consumption.get("quantity").toString());
-            MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId)
-                    .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在"));
+
+            // 使用 computeIfAbsent 确保每个 materialBatchId 只查询一次
+            MaterialBatch materialBatch = batchCache.computeIfAbsent(materialBatchId,
+                    id -> materialBatchRepository.findById(id)
+                            .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在: " + id)));
+
             // 检查库存
             if (materialBatch.getRemainingQuantity().compareTo(quantity) < 0) {
                 throw new BusinessException("原材料库存不足: " + materialBatch.getBatchNumber());
@@ -345,17 +356,13 @@ public class ProcessingServiceImpl implements ProcessingService {
             consumptionRecord.setRecordedBy(recordedBy);
             materialBatchRepository.save(materialBatch);
             materialConsumptionRepository.save(consumptionRecord);
-        }
-        // 更新生产批次的原材料成本
-        BigDecimal totalMaterialCost = BigDecimal.ZERO;
-        for (Map<String, Object> consumption : consumptions) {
-            String materialBatchId = (String) consumption.get("materialBatchId");
-            BigDecimal quantity = new BigDecimal(consumption.get("quantity").toString());
-            MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId).get();
-            BigDecimal batchUnitPrice = materialBatch.getUnitPrice() != null ? materialBatch.getUnitPrice() : BigDecimal.ZERO;
-            BigDecimal cost = quantity.multiply(batchUnitPrice);
+
+            // 同时计算成本（合并原第二个循环的逻辑）
+            BigDecimal cost = quantity.multiply(unitPrice);
             totalMaterialCost = totalMaterialCost.add(cost);
         }
+
+        // 更新生产批次的原材料成本
         productionBatch.setMaterialCost(totalMaterialCost);
         productionBatchRepository.save(productionBatch);
     }
@@ -412,7 +419,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     public Map<String, Object> getInspectionById(String factoryId, String inspectionId) {
         QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
                 .filter(i -> factoryId.equals(i.getFactoryId()))
-                .orElseThrow(() -> new RuntimeException("质检记录不存在: " + inspectionId));
+                .orElseThrow(() -> new EntityNotFoundException("QualityInspection", inspectionId));
         return convertInspectionToMap(inspection);
     }
 
@@ -579,16 +586,22 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("otherCost", batch.getOtherCost());
         analysis.put("totalCost", batch.getTotalCost());
         analysis.put("unitCost", batch.getUnitCost());
-        // 成本构成比例
+        // 成本构成比例 (null 安全处理)
         if (batch.getTotalCost() != null && batch.getTotalCost().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal totalCost = batch.getTotalCost();
+            BigDecimal materialCost = batch.getMaterialCost() != null ? batch.getMaterialCost() : BigDecimal.ZERO;
+            BigDecimal laborCost = batch.getLaborCost() != null ? batch.getLaborCost() : BigDecimal.ZERO;
+            BigDecimal equipmentCost = batch.getEquipmentCost() != null ? batch.getEquipmentCost() : BigDecimal.ZERO;
+            BigDecimal otherCost = batch.getOtherCost() != null ? batch.getOtherCost() : BigDecimal.ZERO;
+
             analysis.put("materialCostRatio",
-                    batch.getMaterialCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    materialCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("laborCostRatio",
-                    batch.getLaborCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    laborCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("equipmentCostRatio",
-                    batch.getEquipmentCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    equipmentCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("otherCostRatio",
-                    batch.getOtherCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    otherCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
         }
         return analysis;
     }
@@ -1095,8 +1108,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         Map<String, Object> aiAnalysis = new HashMap<>();
         aiAnalysis.put("batch", batch);
         List<String> suggestions = new ArrayList<>();
-        // 基于成本分析提供建议
-        if (batch.getMaterialCost() != null && batch.getTotalCost() != null) {
+        // 基于成本分析提供建议 (null 和零值安全处理)
+        if (batch.getMaterialCost() != null && batch.getTotalCost() != null
+                && batch.getTotalCost().compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal materialRatio = batch.getMaterialCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP);
             if (materialRatio.compareTo(new BigDecimal("0.6")) > 0) {
                 suggestions.add("原材料成本占比过高（" + materialRatio.multiply(new BigDecimal(100)) + "%），建议优化采购策略或寻找替代供应商");
@@ -1700,7 +1714,7 @@ public class ProcessingServiceImpl implements ProcessingService {
                         // 获取批次基本信息
                         Long id = Long.parseLong(batchId);
                         ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(id, factoryId)
-                                .orElseThrow(() -> new RuntimeException("批次不存在: " + batchId));
+                                .orElseThrow(() -> new EntityNotFoundException("ProductionBatch", batchId));
 
                         // 获取增强的成本数据
                         Map<String, Object> costData = getEnhancedBatchCostAnalysis(factoryId, batchId);
@@ -1799,7 +1813,7 @@ public class ProcessingServiceImpl implements ProcessingService {
      * 分配员工到批次
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public List<Map<String, Object>> assignWorkersToBatch(String factoryId, Long batchId,
                                                            List<Long> workerIds, Long assignedBy, String notes) {
         log.info("分配员工到批次: factoryId={}, batchId={}, workerIds={}, assignedBy={}",
@@ -1889,7 +1903,7 @@ public class ProcessingServiceImpl implements ProcessingService {
      * 员工完成批次工作（签出）
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> workerCheckout(String factoryId, Long batchId, Long workerId,
                                                Integer workMinutes, String notes) {
         log.info("员工签出: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
@@ -2011,7 +2025,7 @@ public class ProcessingServiceImpl implements ProcessingService {
      * 取消员工批次分配
      */
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> cancelWorkerAssignment(String factoryId, Long batchId, Long workerId) {
         log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
 

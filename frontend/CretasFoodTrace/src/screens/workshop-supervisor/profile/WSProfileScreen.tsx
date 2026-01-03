@@ -7,6 +7,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } fr
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Icon } from "react-native-paper";
+import { useTranslation } from "react-i18next";
 import { WSProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
 
@@ -37,6 +38,7 @@ function MenuItem({ icon, title, onPress, showArrow = true, rightText, danger = 
 export function WSProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
+  const { t } = useTranslation('workshop');
 
   const handleLogout = () => {
     logout();
@@ -47,7 +49,7 @@ export function WSProfileScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>我的</Text>
+          <Text style={styles.title}>{t('profile.title')}</Text>
         </View>
 
         {/* 用户信息卡片 */}
@@ -59,8 +61,8 @@ export function WSProfileScreen() {
             <Icon source="account" size={40} color="#fff" />
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.username || "用户"}</Text>
-            <Text style={styles.userRole}>车间主任</Text>
+            <Text style={styles.userName}>{user?.username || t('profile.role')}</Text>
+            <Text style={styles.userRole}>{t('profile.role')}</Text>
           </View>
           <Icon source="chevron-right" size={24} color="#ccc" />
         </TouchableOpacity>
@@ -69,37 +71,37 @@ export function WSProfileScreen() {
         <View style={styles.statsCard}>
           <View style={styles.statsItem}>
             <Text style={styles.statsValue}>6</Text>
-            <Text style={styles.statsLabel}>管理批次</Text>
+            <Text style={styles.statsLabel}>{t('profile.stats.managedBatches')}</Text>
           </View>
           <View style={styles.statsDivider} />
           <View style={styles.statsItem}>
             <Text style={styles.statsValue}>8</Text>
-            <Text style={styles.statsLabel}>在岗人员</Text>
+            <Text style={styles.statsLabel}>{t('profile.stats.onDutyPersonnel')}</Text>
           </View>
           <View style={styles.statsDivider} />
           <View style={styles.statsItem}>
             <Text style={styles.statsValue}>4</Text>
-            <Text style={styles.statsLabel}>设备运行</Text>
+            <Text style={styles.statsLabel}>{t('profile.stats.runningEquipment')}</Text>
           </View>
         </View>
 
         {/* 账户设置 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>账户设置</Text>
+          <Text style={styles.sectionTitle}>{t('profile.sections.accountSettings')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="account-edit"
-              title="个人信息"
+              title={t('profile.menu.personalInfo')}
               onPress={() => navigation.navigate("PersonalInfo")}
             />
             <MenuItem
               icon="lock-outline"
-              title="修改密码"
+              title={t('profile.menu.changePassword')}
               onPress={() => navigation.navigate("ChangePassword")}
             />
             <MenuItem
               icon="bell-outline"
-              title="通知设置"
+              title={t('profile.menu.notificationSettings')}
               onPress={() => navigation.navigate("NotificationSettings")}
             />
           </View>
@@ -107,11 +109,11 @@ export function WSProfileScreen() {
 
         {/* 系统设置 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>系统设置</Text>
+          <Text style={styles.sectionTitle}>{t('profile.sections.systemSettings')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="cog-outline"
-              title="系统设置"
+              title={t('profile.menu.settings')}
               onPress={() => navigation.navigate("Settings")}
             />
           </View>
@@ -119,11 +121,11 @@ export function WSProfileScreen() {
 
         {/* 帮助与支持 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>帮助与支持</Text>
+          <Text style={styles.sectionTitle}>{t('profile.sections.helpSupport')}</Text>
           <View style={styles.menuGroup}>
             <MenuItem
               icon="information-outline"
-              title="关于"
+              title={t('profile.menu.about')}
               onPress={() => navigation.navigate("About")}
               rightText="v1.0.0"
             />
@@ -135,7 +137,7 @@ export function WSProfileScreen() {
           <View style={styles.menuGroup}>
             <MenuItem
               icon="logout"
-              title="退出登录"
+              title={t('profile.menu.logout')}
               onPress={handleLogout}
               showArrow={false}
               danger

@@ -1,0 +1,1105 @@
+{
+  "home": {
+    "title": "调度工作台",
+    "role": "调度员",
+    "date": "{{date}}",
+    "userName": "{{name}}",
+    "aiCenter": {
+      "title": "AI 智能调度中心",
+      "subtitle": "Monte Carlo + OR-Tools + LLM",
+      "todayProbability": "今日完成概率",
+      "pendingBatches": "待排产批次",
+      "optimizationSpace": "优化空间",
+      "oneClickSchedule": "一键 AI 智能排产"
+    },
+    "aiRisk": {
+      "title": "AI 风险预警",
+      "description": "检测到 {{count}} 个批次完成概率低于70%，建议调整人员配置或交期",
+      "view": "查看"
+    },
+    "pendingTasks": {
+      "title": "今日待处理",
+      "subtitle": "工作优先级排序",
+      "unassigned": "待分配任务",
+      "inProgress": "进行中任务",
+      "pendingApproval": "待审批事项"
+    },
+    "workshop": {
+      "title": "车间实时状态",
+      "viewAll": "查看全部 >",
+      "workers": "人",
+      "batches": "个批次",
+      "statusDetail": "车间状态详情"
+    },
+    "personnel": {
+      "title": "人员配置",
+      "transfer": "调动人员 >",
+      "floatingStaff": "机动人员",
+      "aiOptimize": "AI优化 →",
+      "onDuty": "人员在岗",
+      "capacity": "编制",
+      "temporaryWorkers": "含临时工{{count}}人",
+      "understaffed": "人员不足",
+      "temporaryMark": "* 临时工"
+    },
+    "approval": {
+      "title": "待审批事项",
+      "pendingCount": "{{count}}项待处理 >",
+      "pending": "待审批",
+      "plan": "计划",
+      "transfer": "调动",
+      "newPlanRequest": "新增生产计划申请",
+      "transferRequest": "人员调动申请",
+      "submittedBy": "{{name}}提交"
+    },
+    "workshops": {
+      "slicing": "切片车间",
+      "packaging": "包装车间",
+      "freezing": "冷冻车间",
+      "storage": "仓储车间"
+    },
+    "status": {
+      "running": "运行中",
+      "idle": "空闲",
+      "maintenance": "维护中"
+    },
+    "taskStatus": {
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "pending": "待开始"
+    },
+    "sections": {
+      "supervisor": "负责人",
+      "todayTasks": "今日任务",
+      "taskProgress": "任务进度",
+      "currentTaskGroups": "当前任务组",
+      "equipmentStatus": "设备状态",
+      "noTasks": "暂无任务"
+    },
+    "equipment": {
+      "slicingMachineA": "切片机A",
+      "slicingMachineB": "切片机B",
+      "washingLine": "清洗线",
+      "sealingMachineA": "封口机A",
+      "sealingMachineB": "封口机B",
+      "quickFreezingA": "速冻机A",
+      "quickFreezingB": "速冻机B"
+    },
+    "emptySlot": "空缺"
+  },
+  "planList": {
+    "title": "生产计划",
+    "create": "+ 新建",
+    "filters": {
+      "allStatus": "全部状态",
+      "pending": "待开始",
+      "inProgress": "进行中",
+      "completed": "已完成",
+      "allWorkshop": "全部车间",
+      "dateRange": "日期范围",
+      "today": "今天",
+      "thisWeek": "本周",
+      "thisMonth": "本月",
+      "allSource": "全部来源",
+      "customerOrder": "客户订单",
+      "aiPredict": "AI预测",
+      "safetyStock": "安全库存",
+      "mixedBatch": "混批",
+      "all": "全部",
+      "urgentOnly": "仅紧急",
+      "pendingApproval": "待审批"
+    },
+    "search": {
+      "placeholder": "搜索计划编号/产品名称..."
+    },
+    "quickEntry": {
+      "gantt": "甘特图",
+      "urgentInsert": "紧急插单",
+      "mixedBatch": "混批排产",
+      "resource": "资源总览"
+    },
+    "urgentCount": "{{count}}个紧急",
+    "section": {
+      "urgentPlans": "紧急计划",
+      "pendingApproval": "待审批计划",
+      "todayPlans": "今日计划",
+      "count": "({{count}}个)"
+    },
+    "card": {
+      "source": "来源:",
+      "customerOrder": "客户订单",
+      "mixedBatch": "混批",
+      "aiPredict": "AI预测",
+      "safetyStock": "安全库存",
+      "crValue": "CR值:",
+      "deadline": "交期",
+      "earliestDeadline": "最早交期",
+      "confidence": "预测置信度:",
+      "seasonality": "季节性:",
+      "currentStock": "当前库存:",
+      "stockTrigger": "库存低于30%触发",
+      "mergedOrders": "(合并{{count}}个订单)",
+      "mixedDetails": "混批详情"
+    },
+    "status": {
+      "pending": "待开始",
+      "inProgress": "进行中",
+      "completed": "已完成",
+      "cancelled": "已取消"
+    },
+    "crLevel": {
+      "urgent": "紧急",
+      "tight": "较紧",
+      "sufficient": "充裕"
+    },
+    "tags": {
+      "matched": "已匹配",
+      "partialMatched": "部分匹配",
+      "pendingMatch": "待匹配",
+      "urgent": "紧急",
+      "highPriority": "高优先级",
+      "mediumPriority": "中优先级"
+    },
+    "approval": {
+      "required": "需审批",
+      "forceInsert": "强制插单",
+      "reason": "原因:",
+      "approve": "批准",
+      "reject": "拒绝",
+      "approveTitle": "批准插单",
+      "rejectTitle": "拒绝插单",
+      "commentOptional": "审批备注 (可选)",
+      "rejectReasonRequired": "拒绝原因 (必填)",
+      "enterComment": "请输入审批备注...",
+      "enterRejectReason": "请输入拒绝原因...",
+      "confirmApprove": "确认批准",
+      "confirmReject": "确认拒绝",
+      "success": "成功",
+      "approved": "已批准该强制插单",
+      "rejected": "已拒绝该强制插单",
+      "fillRejectReason": "请填写拒绝原因",
+      "failed": "失败",
+      "operationFailed": "审批操作失败，请稍后重试"
+    },
+    "empty": {
+      "title": "暂无计划"
+    },
+    "loadMore": "加载更多...",
+    "loading": "加载中..."
+  },
+  "planCreate": {
+    "title": "新建生产计划",
+    "source": {
+      "title": "计划来源 *",
+      "select": "选择计划来源",
+      "customerOrder": "客户订单",
+      "aiPredict": "AI预测",
+      "safetyStock": "安全库存",
+      "manual": "手动创建",
+      "urgentInsert": "紧急插单",
+      "descriptions": {
+        "customerOrder": "来自客户的生产订单",
+        "aiPredict": "基于AI需求预测生成",
+        "safetyStock": "库存低于阈值触发",
+        "manual": "调度员手动录入",
+        "urgentInsert": "紧急订单快速插入"
+      }
+    },
+    "planType": {
+      "title": "原料计划类型",
+      "fromInventory": "库存生产",
+      "fromInventoryDesc": "使用现有原料",
+      "future": "预排计划",
+      "futureDesc": "待采购原料"
+    },
+    "product": {
+      "title": "产品类型 *",
+      "select": "选择产品类型",
+      "empty": "暂无产品类型"
+    },
+    "quantity": {
+      "title": "计划数量 *",
+      "placeholder": "请输入数量"
+    },
+    "priority": {
+      "title": "优先级",
+      "highest": "最高",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "date": {
+      "plannedDate": "计划开始日期 *",
+      "deadline": "交货期限 *",
+      "today": "今天",
+      "tomorrow": "明天",
+      "daysLater": "{{days}}天后",
+      "crLabel": "CR值:",
+      "crLevels": {
+        "urgent": "紧急",
+        "tight": "较紧",
+        "sufficient": "充裕"
+      }
+    },
+    "mixedBatch": {
+      "title": "允许混批生产",
+      "description": "启用后可与相似订单合并生产"
+    },
+    "customerOrder": {
+      "title": "客户订单号 (可选)",
+      "placeholder": "请输入客户订单号"
+    },
+    "notes": {
+      "title": "备注 (可选)",
+      "placeholder": "请输入备注信息"
+    },
+    "submit": {
+      "creating": "创建中...",
+      "create": "创建计划",
+      "success": "成功",
+      "successMessage": "生产计划创建成功",
+      "failed": "失败",
+      "failedMessage": "创建失败，请重试",
+      "error": "错误",
+      "errorMessage": "创建失败，请检查网络连接"
+    },
+    "validation": {
+      "selectProduct": "请选择产品类型",
+      "enterQuantity": "请输入有效的计划数量",
+      "selectPlannedDate": "请选择计划日期",
+      "selectDeadline": "请选择交货期限"
+    }
+  },
+  "ai": {
+    "schedule": {
+      "title": "AI 智能排产",
+      "subtitle": "基于 Monte Carlo + OR-Tools + LLM",
+      "mode": {
+        "batch": "按批次排产",
+        "plan": "按计划排产"
+      },
+      "dateRange": {
+        "title": "排产日期",
+        "startDate": "开始日期",
+        "endDate": "结束日期"
+      },
+      "config": {
+        "title": "排程配置",
+        "shiftType": "班次类型",
+        "dayShift": "白班",
+        "nightShift": "夜班",
+        "fullDay": "全天",
+        "shiftHours": {
+          "day": "08:00 - 17:00",
+          "night": "18:00 - 02:00",
+          "fullDay": "08:00 - 22:00"
+        },
+        "autoAssignWorkers": "自动分配工人",
+        "linUCBOptimize": "LinUCB 优化"
+      },
+      "batches": {
+        "title": "待排产批次",
+        "count": "{{count}} 个",
+        "selectAll": "全选",
+        "cancelAll": "取消全选",
+        "empty": "暂无待排产批次",
+        "emptyHint": "请检查日期范围或刷新页面",
+        "planNumber": "计划号:",
+        "deadline": "交期:",
+        "completionProb": "完成概率:",
+        "urgent": "紧急",
+        "normal": "普通"
+      },
+      "plans": {
+        "title": "选择生产计划",
+        "count": "{{count}} 个",
+        "selectAll": "全选",
+        "cancelAll": "取消全选",
+        "empty": "暂无待执行的生产计划",
+        "emptyHint": "请先创建生产计划",
+        "planNumber": "计划号:",
+        "customer": "客户:",
+        "loading": "加载中..."
+      },
+      "start": {
+        "selectBatches": "AI 排产 ({{count}} 批次)",
+        "selectPlans": "AI 排产 ({{count}} 计划)",
+        "validationBatch": "请至少选择一个批次",
+        "validationPlan": "请至少选择一个生产计划"
+      },
+      "analyzing": {
+        "title": "AI 正在分析...",
+        "subtitle": "Monte Carlo 模拟中 (10,000次)"
+      },
+      "result": {
+        "completionProb": {
+          "title": "完成概率预测",
+          "badge": "Monte Carlo",
+          "onTimeCompletion": "按时完成",
+          "description": "基于 {{simulations}} 次模拟，预计按时完成概率 {{probability}}%",
+          "detail": "详情 >"
+        },
+        "lineAssignment": {
+          "title": "产线分配建议",
+          "badge": "OR-Tools",
+          "load": "负荷 {{load}}%"
+        },
+        "workerOptimization": {
+          "title": "人员优化建议",
+          "badge": "LinUCB",
+          "detail": "详情 >",
+          "currentPosition": "{{position}}",
+          "skill": "{{skill}}",
+          "targetLine": "{{line}}",
+          "aiTip": "AI 建议：调整后预计效率提升 {{efficiency}}%，完成概率提升至 {{probability}}%"
+        },
+        "actions": {
+          "reanalyze": "重新分析",
+          "apply": "应用排产方案",
+          "applying": "应用中..."
+        }
+      },
+      "success": {
+        "title": "排产方案已应用",
+        "message": "已确认 {{count}} 个生产计划，人员调动申请已提交审批。",
+        "confirm": "确定"
+      },
+      "error": {
+        "title": "错误",
+        "failed": "AI排产失败，请稍后重试",
+        "applyFailed": "应用排产方案失败",
+        "noPlansToConfirm": "没有可确认的排产计划",
+        "confirmFailed": "{{count}} 个计划确认失败"
+      }
+    },
+    "completionProb": {
+      "title": "完成概率分析",
+      "description": "Monte Carlo 模拟分析"
+    },
+    "workerOptimize": {
+      "title": "人员优化",
+      "description": "LinUCB 智能推荐"
+    }
+  },
+  "personnel": {
+    "list": {
+      "title": "人员管理",
+      "tabs": {
+        "all": "全部",
+        "idle": "空闲",
+        "working": "工作中",
+        "leave": "请假",
+        "floating": "机动"
+      },
+      "stats": {
+        "total": "总人数",
+        "onDuty": "在岗",
+        "idle": "空闲",
+        "leave": "请假"
+      },
+      "search": "搜索工号或姓名...",
+      "card": {
+        "temporary": "临时",
+        "floating": "机动",
+        "currentTask": "当前任务:",
+        "idle": "空闲",
+        "attendance": "考勤:",
+        "days": "天",
+        "viewDetail": "查看详情"
+      },
+      "empty": "暂无人员数据"
+    },
+    "detail": {
+      "title": "人员详情",
+      "tabs": {
+        "info": "基本信息",
+        "tasks": "任务记录",
+        "attendance": "考勤记录"
+      },
+      "info": {
+        "employeeId": "工号",
+        "name": "姓名",
+        "workshop": "车间",
+        "position": "岗位",
+        "type": "类型",
+        "status": "状态",
+        "skills": "技能",
+        "joinDate": "入职日期",
+        "contact": "联系方式"
+      },
+      "types": {
+        "regular": "正式",
+        "temporary": "临时",
+        "floating": "机动"
+      },
+      "status": {
+        "idle": "空闲",
+        "working": "工作中",
+        "leave": "请假"
+      },
+      "tasks": {
+        "recent": "最近任务",
+        "product": "产品:",
+        "duration": "时长:",
+        "hours": "小时",
+        "completed": "已完成",
+        "inProgress": "进行中",
+        "empty": "暂无任务记录"
+      },
+      "attendance": {
+        "thisMonth": "本月考勤",
+        "checkIn": "签到:",
+        "checkOut": "签退:",
+        "workHours": "工时:",
+        "hours": "小时",
+        "normal": "正常",
+        "late": "迟到",
+        "leave": "请假",
+        "empty": "暂无考勤记录"
+      }
+    },
+    "transfer": {
+      "title": "人员调动",
+      "from": "调出车间",
+      "to": "调入车间",
+      "selectWorkshop": "选择车间",
+      "selectStaff": "选择人员",
+      "reason": "调动原因",
+      "reasonPlaceholder": "请输入调动原因（选填）",
+      "confirmTransfer": "确认调动",
+      "success": "调动成功",
+      "failed": "调动失败",
+      "validation": {
+        "selectFrom": "请选择调出车间",
+        "selectTo": "请选择调入车间",
+        "selectStaff": "请至少选择一名人员"
+      }
+    },
+    "schedule": {
+      "title": "排班管理",
+      "weekView": "本周排班",
+      "editSchedule": "编辑排班",
+      "shifts": {
+        "morning": "早班",
+        "afternoon": "中班",
+        "night": "晚班",
+        "off": "休息"
+      },
+      "stats": {
+        "morning": "早班",
+        "afternoon": "中班",
+        "night": "晚班",
+        "people": "人"
+      },
+      "save": "保存排班",
+      "saveSuccess": "排班保存成功",
+      "saveFailed": "排班保存失败"
+    },
+    "attendance": {
+      "title": "考勤统计",
+      "dateRange": "日期范围",
+      "export": "导出",
+      "stats": {
+        "totalDays": "总出勤",
+        "normalDays": "正常",
+        "lateDays": "迟到",
+        "leaveDays": "请假"
+      },
+      "list": {
+        "date": "日期",
+        "checkIn": "签到",
+        "checkOut": "签退",
+        "hours": "工时",
+        "status": "状态"
+      },
+      "status": {
+        "normal": "正常",
+        "late": "迟到",
+        "leave": "请假",
+        "absent": "缺勤"
+      },
+      "empty": "暂无考勤数据"
+    }
+  },
+  "profile": {
+    "title": "调度员中心",
+    "statistics": {
+      "title": "统计数据"
+    }
+  },
+  "messages": {
+    "loadFailed": "加载调度首页数据失败",
+    "loadPlansFailed": "无法加载生产计划列表，请检查网络",
+    "usingDefaultThreshold": "使用默认紧急阈值 0.6",
+    "refreshing": "刷新中..."
+  },
+  "workshop": {
+    "status": {
+      "title": "车间状态详情",
+      "filters": {
+        "all": "全部",
+        "slicing": "切片",
+        "packaging": "包装",
+        "freezing": "冷冻",
+        "storage": "仓储"
+      },
+      "statusLabels": {
+        "running": "运行中",
+        "idle": "空闲",
+        "maintenance": "维护中"
+      },
+      "sections": {
+        "supervisor": "负责人",
+        "todayTasks": "今日任务",
+        "taskProgress": "任务进度",
+        "currentTaskGroups": "当前任务组",
+        "equipmentStatus": "设备状态",
+        "personnelOnDuty": "人员在岗"
+      },
+      "taskStatus": {
+        "completed": "已完成",
+        "inProgress": "进行中",
+        "pending": "待开始"
+      },
+      "personnel": {
+        "capacity": "编制",
+        "temporaryWorkers": "含临时工{{count}}人",
+        "understaffed": "人员不足",
+        "temporaryMark": "* 临时工"
+      },
+      "equipment": {
+        "slicingMachineA": "切片机A",
+        "slicingMachineB": "切片机B",
+        "washingLine": "清洗线",
+        "sealingMachineA": "封口机A",
+        "sealingMachineB": "封口机B",
+        "quickFreezingA": "速冻机A",
+        "quickFreezingB": "速冻机B"
+      },
+      "emptySlot": "空缺",
+      "noTasks": "暂无任务",
+      "warning": "警告信息"
+    }
+  },
+  "planDetail": {
+    "title": "计划详情",
+    "edit": "编辑",
+    "sections": {
+      "basicInfo": "计划信息",
+      "progress": "生产进度",
+      "materialMatch": "原料匹配",
+      "assignedWorkers": "已分配员工",
+      "relatedBatches": "关联生产批次"
+    },
+    "fields": {
+      "planNumber": "计划编号",
+      "product": "产品",
+      "quantity": "数量",
+      "workshop": "车间",
+      "supervisor": "负责人",
+      "planDate": "计划日期",
+      "priority": "优先级",
+      "completionProgress": "完成进度",
+      "completed": "已完成",
+      "remaining": "剩余",
+      "estimatedCompletion": "预计完成"
+    },
+    "priority": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "material": {
+      "matched": "已匹配",
+      "unmatched": "未匹配",
+      "batch": "批次",
+      "required": "需求",
+      "available": "可用",
+      "rematch": "重新匹配"
+    },
+    "workers": {
+      "assign": "+ 分配",
+      "totalWorkHours": "总工时",
+      "laborCost": "人工成本"
+    },
+    "batch": {
+      "producing": "生产中",
+      "pending": "待开始",
+      "progress": "进度"
+    },
+    "actions": {
+      "pause": "暂停计划",
+      "complete": "完成计划",
+      "pauseConfirm": "确定要暂停该生产计划吗？",
+      "completeConfirm": "确定要将该计划标记为已完成吗？",
+      "paused": "计划已暂停",
+      "completed": "计划已完成"
+    }
+  },
+  "resource": {
+    "title": "资源总览",
+    "subtitle": "实时监控车间资源状态",
+    "tabs": {
+      "workshop": "车间",
+      "equipment": "设备",
+      "alert": "预警"
+    },
+    "stats": {
+      "runningLines": "运行产线",
+      "onDutyPersonnel": "在岗人员",
+      "normalAbnormalEquipment": "正常/异常设备",
+      "avgUtilization": "平均利用率"
+    },
+    "workshop": {
+      "productionLines": "条产线",
+      "utilization": "利用率",
+      "lineStatus": {
+        "running": "运行中",
+        "idle": "空闲",
+        "maintenance": "维护中",
+        "error": "故障"
+      },
+      "capacity": "产能",
+      "personnel": "人员",
+      "available": "可用"
+    },
+    "equipment": {
+      "status": {
+        "normal": "正常",
+        "warning": "注意",
+        "error": "故障",
+        "offline": "离线"
+      },
+      "runtime": "运行时长",
+      "hours": "小时",
+      "lastMaintenance": "上次保养",
+      "nextMaintenance": "下次保养"
+    },
+    "alert": {
+      "criticalWarning": "{{count}} 个紧急预警需要处理",
+      "noAlerts": "暂无预警",
+      "allNormal": "所有资源运行正常",
+      "level": {
+        "critical": "紧急",
+        "warning": "警告",
+        "info": "提示"
+      },
+      "type": {
+        "capacity": "产能",
+        "worker": "人员",
+        "equipment": "设备",
+        "material": "物料"
+      }
+    },
+    "realtime": "实时数据",
+    "loadError": "加载资源数据失败，请重试"
+  },
+  "urgentInsert": {
+    "title": "紧急插单",
+    "orderInfo": "订单信息",
+    "fields": {
+      "productType": "产品类型",
+      "quantity": "数量",
+      "deadline": "交期",
+      "urgencyLevel": "紧急程度",
+      "customerName": "客户名称",
+      "urgentReason": "紧急原因",
+      "notes": "备注",
+      "selectProductType": "请选择产品类型",
+      "enterQuantity": "请输入数量",
+      "deadlinePlaceholder": "例：2025-12-29 18:00",
+      "reasonPlaceholder": "请说明紧急插单的原因（如：客户紧急订单、生产设备故障补产等）",
+      "notesPlaceholder": "请输入备注信息"
+    },
+    "urgency": {
+      "normal": "普通",
+      "urgent": "紧急",
+      "critical": "加急"
+    },
+    "analyze": {
+      "button": "AI 分析可用时段",
+      "analyzing": "AI 分析中...",
+      "reanalyze": "重新分析"
+    },
+    "slots": {
+      "title": "可用时段",
+      "noSlots": "暂无可用时段",
+      "impact": {
+        "none": "无影响",
+        "low": "低影响",
+        "medium": "中影响",
+        "high": "高影响"
+      },
+      "capacity": "产能",
+      "workers": "人员",
+      "switchCost": "换产",
+      "minutes": "分钟",
+      "aiRecommend": "AI推荐",
+      "scoreBreakdown": {
+        "capacity": "产能",
+        "worker": "人员",
+        "deadline": "交期",
+        "impact": "影响",
+        "switchCost": "换产"
+      },
+      "impactedPlans": "受影响的计划：",
+      "delay": "延迟",
+      "viewDetailedImpact": "查看详细影响分析"
+    },
+    "confirm": {
+      "button": "确认插单",
+      "title": "确认插单？",
+      "description": "将在 {{line}} 创建紧急生产计划，可能影响 {{count}} 个现有计划。",
+      "highImpactWarning": "此时段影响等级为「{{level}}」，是否确认插单？可能需要管理员审批。",
+      "success": "插单成功",
+      "approvalSuccess": "提交审批成功",
+      "approvalMessage": "紧急计划 {{planNumber}} 已创建，等待工厂经理审批。\n\n影响等级: {{level}}\n受影响计划: {{count}} 个",
+      "successMessage": "紧急计划 {{planNumber}} 已创建，可立即执行。",
+      "failed": "插单失败"
+    },
+    "impactAnalysis": {
+      "title": "影响分析详情",
+      "impactLevel": "影响等级",
+      "requiresApproval": "需要 {{role}} 审批",
+      "chainImpact": "链式影响统计",
+      "directConflicts": "直接冲突",
+      "cascadeDelays": "级联延误",
+      "maxDelay": "最大延误(分钟)",
+      "criticalCrPlans": "紧急CR计划",
+      "affectsVipCustomer": "影响VIP客户订单",
+      "resourceImpact": "资源影响",
+      "workerOvertime": "需要加班 {{minutes}} 分钟",
+      "equipmentConflicts": "设备冲突: {{equipment}}",
+      "materialShortage": "原料库存不足",
+      "affectedPlans": "受影响计划",
+      "originalEndTime": "原定结束:",
+      "estimatedDelay": "预计延迟:",
+      "crValue": "CR值:",
+      "aiRecommendation": "AI 建议",
+      "close": "关闭"
+    },
+    "validation": {
+      "selectProductAndQuantity": "请填写产品类型和数量",
+      "selectSlot": "请选择一个时段",
+      "enterReason": "请填写紧急原因"
+    },
+    "roles": {
+      "factoryManager": "工厂经理",
+      "productionSupervisor": "生产主管"
+    }
+  },
+  "approval": {
+    "title": "审批管理",
+    "loadFailed": "加载失败",
+    "approved": "计划 {{planNumber}} 已批准",
+    "rejected": "计划 {{planNumber}} 已拒绝",
+    "noPending": "暂无待审批项目",
+    "allProcessed": "所有强制插单申请都已处理",
+    "stats": {
+      "pending": "待审批",
+      "urgent": "加急",
+      "critical": "紧急"
+    },
+    "card": {
+      "unknownProduct": "未知产品",
+      "forceInsertReason": "强制插单原因:",
+      "submitTime": "提交时间:",
+      "deadline": "交期:",
+      "pendingApproval": "待审批"
+    },
+    "priority": {
+      "normal": "普通",
+      "urgent": "紧急",
+      "critical": "加急"
+    }
+  },
+  "batchWorkers": {
+    "title": "人员分配",
+    "cannotSelect": "无法选择",
+    "workerBusy": "该员工正在执行其他任务",
+    "insufficientStaff": "人数不足",
+    "aiSuggest": "AI建议至少 {{count}} 人",
+    "assignSuccess": "分配成功",
+    "status": {
+      "pending": "待分配",
+      "inProgress": "进行中"
+    },
+    "fields": {
+      "product": "产品",
+      "quantity": "数量",
+      "workshop": "车间",
+      "suggestedStaff": "建议人数",
+      "estimatedHours": "工时预估"
+    },
+    "assigned": {
+      "title": "已分配员工",
+      "empty": "暂无已分配员工"
+    },
+    "available": {
+      "title": "可用员工",
+      "selectAll": "全选",
+      "clear": "清空",
+      "search": "搜索工号或姓名...",
+      "tabs": {
+        "idle": "本车间空闲",
+        "working": "本车间工作中",
+        "floating": "机动人员",
+        "transferable": "可调动员工"
+      },
+      "badges": {
+        "temporary": "临时",
+        "working": "工作中",
+        "idle": "空闲",
+        "transferable": "可调动"
+      }
+    },
+    "actions": {
+      "cancel": "取消",
+      "confirmAssign": "确认分配"
+    }
+  },
+  "taskAssignment": {
+    "title": "任务分配",
+    "tabs": {
+      "pending": "待分配",
+      "inProgress": "进行中",
+      "assigned": "已分配",
+      "completed": "已完成"
+    },
+    "filters": {
+      "all": "全部",
+      "highPriority": "高优先级",
+      "mediumPriority": "中优先级",
+      "lowPriority": "低优先级"
+    },
+    "card": {
+      "deadline": "截止:",
+      "needsStaff": "需要 {{count}} 人",
+      "supervisor": "负责人:",
+      "staff": "人员:",
+      "insufficientStaff": "人员不足",
+      "progress": "完成进度"
+    },
+    "actions": {
+      "assignNow": "立即分配",
+      "addStaff": "追加人员"
+    },
+    "empty": "暂无任务",
+    "priority": {
+      "normal": "普通",
+      "high": "高优先级",
+      "medium": "中优先级",
+      "low": "低优先级"
+    }
+  },
+  "mixedBatch": {
+    "title": "混批排产",
+    "subtitle": "智能合并订单，优化生产效率",
+    "tabs": {
+      "pending": "待确认",
+      "confirmed": "已确认"
+    },
+    "filters": {
+      "all": "全部",
+      "sameMaterial": "同原料",
+      "sameProcess": "同工艺"
+    },
+    "stats": {
+      "mixedGroups": "混批组",
+      "timeSaved": "节省(分)"
+    },
+    "card": {
+      "materialBatch": "原料批次:",
+      "process": "工艺:",
+      "orderCount": "包含 {{count}} 个订单",
+      "timeSave": "预计节省换产时间:",
+      "minutes": "分钟",
+      "confirmBatch": "确认混批",
+      "reject": "拒绝",
+      "planGenerated": "已生成计划:"
+    },
+    "detail": {
+      "title": "基本信息",
+      "orderCount": "订单数量:",
+      "totalQuantity": "总产量:",
+      "timeSaved": "节省时间:",
+      "ordersTitle": "包含订单",
+      "product": "产品:",
+      "quantity": "数量:",
+      "deadline": "交期:"
+    },
+    "actions": {
+      "rejectSuggestion": "拒绝建议",
+      "confirmBatch": "确认混批",
+      "confirmed": "已确认混批",
+      "detectionComplete": "检测完成"
+    },
+    "empty": {
+      "title": "暂无混批建议",
+      "subtitle": "基于订单相似度聚类算法"
+    }
+  },
+  "common": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "back": "返回",
+    "loading": "加载中...",
+    "submitting": "提交中...",
+    "success": "成功",
+    "failed": "失败",
+    "error": "错误",
+    "warning": "警告",
+    "info": "提示",
+    "retry": "重试",
+    "refresh": "刷新",
+    "search": "搜索",
+    "filter": "筛选",
+    "all": "全部",
+    "more": "更多",
+    "viewAll": "查看全部",
+    "viewDetail": "查看详情",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "noData": "暂无数据",
+    "networkError": "网络错误，请检查网络连接",
+    "required": "*"
+  },
+  "personnelDetailScreen": {
+    "title": "员工详情",
+    "editInDevelopment": "编辑功能开发中",
+    "confirmDisable": "确认停用",
+    "disableWarning": "确定要停用员工 {{name}} 吗？停用后将无法分配任务。",
+    "confirmDisableButton": "确定停用",
+    "status": {
+      "working": "工作中",
+      "idle": "空闲",
+      "offDuty": "离岗",
+      "onLeave": "请假"
+    },
+    "contractType": {
+      "fullTime": "正式工",
+      "partTime": "兼职",
+      "temporary": "临时工",
+      "dispatch": "派遣工"
+    },
+    "taskStatus": {
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "cancelled": "已取消"
+    },
+    "workInfo": "工作信息",
+    "workshop": "所属车间",
+    "position": "职位",
+    "hireDate": "入职日期",
+    "tenure": "工龄",
+    "weeklyHours": "本周工时",
+    "overtime": "加班",
+    "skillLevel": "技能等级",
+    "performanceMetrics": "绩效指标",
+    "recentTasks": "近期任务",
+    "transfer": "调动",
+    "disable": "停用"
+  },
+  "personnelTransferScreen": {
+    "title": "人员调动",
+    "transferConfig": "调动配置",
+    "sourceWorkshop": "源车间",
+    "targetWorkshop": "目标车间",
+    "selectSourceWorkshop": "请选择源车间",
+    "selectTargetWorkshop": "请选择目标车间",
+    "startTime": "开始时间",
+    "endTime": "结束时间",
+    "selectWorkers": "选择员工",
+    "selectedCount": "已选 {{count}} 人",
+    "temporary": "临时",
+    "efficiency": "效率",
+    "currentTask": "当前任务",
+    "status": {
+      "idle": "空闲",
+      "working": "工作中"
+    },
+    "transferReason": "调动原因",
+    "selectReason": "请选择调动原因",
+    "reasons": {
+      "urgentStaffing": "人员不足紧急调配",
+      "skillMatching": "技能匹配调整",
+      "crossWorkshopSupport": "跨车间支援",
+      "regularRotation": "定期轮岗",
+      "trainingLearning": "培训学习",
+      "other": "其他原因"
+    },
+    "customReasonPlaceholder": "请填写具体原因...",
+    "impactPreview": "调动影响预览",
+    "impact": {
+      "source": "源车间",
+      "target": "目标车间",
+      "personnel": "人员",
+      "utilization": "利用率"
+    },
+    "warnings": {
+      "lowUtilization": "{{workshop}}调动后人员利用率将低于50%",
+      "nearCapacity": "{{workshop}}调动后将接近满负荷"
+    },
+    "submitTransfer": "提交调动申请",
+    "confirmTransfer": "确认调动",
+    "confirmTransferMessage": "确定将 {{count}} 名员工从 {{source}} 调动到 {{target}}？",
+    "submitSuccess": "调动申请已提交，等待审批",
+    "validation": {
+      "selectSourceWorkshop": "请选择源车间",
+      "selectTargetWorkshop": "请选择目标车间",
+      "sameWorkshop": "源车间和目标车间不能相同",
+      "selectWorkers": "请选择要调动的员工",
+      "selectReason": "请选择调动原因",
+      "enterCustomReason": "请填写具体原因"
+    }
+  },
+  "personnelListScreen": {
+    "dispatch": "派遣",
+    "intern": "实习",
+    "leaveReason": "请假原因",
+    "expectedReturn": "预计返回",
+    "contractExpiry": "合同到期",
+    "daysRemaining": "剩余{{count}}天",
+    "type": "类型",
+    "fullTime": "正式",
+    "dispatchCompany": "派遣公司",
+    "efficiency": "效率",
+    "weeklyHours": "本周工时",
+    "overtimeAvailable": "可加班",
+    "transfer": "调动",
+    "temp": "临时",
+    "people": "人",
+    "contractExpiringAlert": "合同即将到期",
+    "searchPlaceholder": "输入工号(如001)或姓名搜索...",
+    "filters": {
+      "allWorkshops": "全部车间",
+      "slicing": "切片车间",
+      "packaging": "包装车间",
+      "freezing": "冷冻车间",
+      "allTypes": "全部类型",
+      "fullTime": "正式工",
+      "temporary": "临时工",
+      "dispatch": "派遣工",
+      "intern": "实习生",
+      "allStatus": "全部状态",
+      "working": "工作中",
+      "idle": "空闲",
+      "leave": "请假"
+    },
+    "workshops": {
+      "slicing": "切片车间",
+      "packaging": "包装车间",
+      "freezing": "冷冻车间"
+    },
+    "taskGroups": "任务组",
+    "taskGroup": "任务组",
+    "running": "运行中",
+    "moreMembers": "更多成员",
+    "more": "更多",
+    "idlePersonnel": "空闲人员",
+    "transferable": "可调动"
+  }
+}

@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -72,6 +73,7 @@ interface EquipmentStatus {
 export function WSHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('workshop');
 
   // 状态
   const [refreshing, setRefreshing] = useState(false);
@@ -136,13 +138,13 @@ export function WSHomeScreen() {
   // 获取问候语
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 6) return '凌晨好';
-    if (hour < 9) return '早上好';
-    if (hour < 12) return '上午好';
-    if (hour < 14) return '中午好';
-    if (hour < 18) return '下午好';
-    if (hour < 22) return '晚上好';
-    return '夜深了';
+    if (hour < 6) return t('home.greeting.earlyMorning');
+    if (hour < 9) return t('home.greeting.morning');
+    if (hour < 12) return t('home.greeting.forenoon');
+    if (hour < 14) return t('home.greeting.noon');
+    if (hour < 18) return t('home.greeting.afternoon');
+    if (hour < 22) return t('home.greeting.evening');
+    return t('home.greeting.lateNight');
   };
 
   // 加载数据
@@ -151,12 +153,12 @@ export function WSHomeScreen() {
       // TODO: 调用真实API
       await new Promise(resolve => setTimeout(resolve, 500));
     } catch (err) {
-      console.error('加载数据失败:', err);
+      console.error(t('common.loading'), err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadData();
@@ -179,7 +181,7 @@ export function WSHomeScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -203,9 +205,9 @@ export function WSHomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft}>
             <Text style={styles.greeting}>
-              {getGreeting()}，{user?.username ?? '主任'}
+              {getGreeting()}，{user?.username ?? t('profile.role')}
             </Text>
-            <Text style={styles.subTitle}>今日任务安排已更新</Text>
+            <Text style={styles.subTitle}>{t('home.subtitle')}</Text>
           </View>
           <TouchableOpacity
             style={styles.notificationBtn}
@@ -225,13 +227,13 @@ export function WSHomeScreen() {
               <View>
                 <View style={styles.nextTaskTitleRow}>
                   <Icon source="clipboard-list" size={20} color="#fff" />
-                  <Text style={styles.nextTaskTitle}>下一批任务</Text>
+                  <Text style={styles.nextTaskTitle}>{t('home.nextTask.title')}</Text>
                 </View>
                 <Text style={styles.nextTaskBatchNo}>{nextTask.batchNumber}</Text>
               </View>
               {nextTask.isUrgent && (
                 <View style={styles.urgentBadge}>
-                  <Text style={styles.urgentBadgeText}>紧急</Text>
+                  <Text style={styles.urgentBadgeText}>{t('home.nextTask.urgent')}</Text>
                 </View>
               )}
             </View>
@@ -247,16 +249,16 @@ export function WSHomeScreen() {
               </View>
               <View style={styles.nextTaskInfoRow}>
                 <Icon source="account-group" size={16} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.nextTaskInfoText}>已分配 {nextTask.assignedWorkers} 人</Text>
+                <Text style={styles.nextTaskInfoText}>{t('home.nextTask.assignedWorkers', { count: nextTask.assignedWorkers })}</Text>
               </View>
               <View style={styles.nextTaskInfoRow}>
                 <Icon source="clock-outline" size={16} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.nextTaskInfoText}>计划 {nextTask.plannedStartTime} 开始</Text>
+                <Text style={styles.nextTaskInfoText}>{t('home.nextTask.plannedStart', { time: nextTask.plannedStartTime })}</Text>
               </View>
             </View>
 
             <TouchableOpacity style={styles.startTaskBtn} onPress={handleStartTask}>
-              <Text style={styles.startTaskBtnText}>开始任务</Text>
+              <Text style={styles.startTaskBtnText}>{t('home.nextTask.startTask')}</Text>
               <Icon source="arrow-right" size={20} color="#667eea" />
             </TouchableOpacity>
           </View>
@@ -264,19 +266,19 @@ export function WSHomeScreen() {
 
         {/* 今日任务概览 */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>今日任务概览</Text>
+          <Text style={styles.sectionTitle}>{t('home.todayOverview')}</Text>
           <View style={styles.statsRow}>
             <View style={[styles.statCard, { backgroundColor: '#e6f7ff' }]}>
               <Text style={[styles.statValue, { color: '#1890ff' }]}>{taskStats.assigned}</Text>
-              <Text style={styles.statLabel}>已分配</Text>
+              <Text style={styles.statLabel}>{t('home.stats.assigned')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: '#fff7e6' }]}>
               <Text style={[styles.statValue, { color: '#fa8c16' }]}>{taskStats.inProgress}</Text>
-              <Text style={styles.statLabel}>进行中</Text>
+              <Text style={styles.statLabel}>{t('home.stats.inProgress')}</Text>
             </View>
             <View style={[styles.statCard, { backgroundColor: '#f6ffed' }]}>
               <Text style={[styles.statValue, { color: '#52c41a' }]}>{taskStats.completed}</Text>
-              <Text style={styles.statLabel}>已完成</Text>
+              <Text style={styles.statLabel}>{t('home.stats.completed')}</Text>
             </View>
           </View>
         </View>
@@ -284,9 +286,9 @@ export function WSHomeScreen() {
         {/* 进行中批次 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>进行中批次</Text>
+            <Text style={styles.sectionTitle}>{t('home.inProgressBatches')}</Text>
             <TouchableOpacity onPress={() => navigation.getParent()?.navigate('WSBatchesTab')}>
-              <Text style={styles.viewMoreText}>查看全部</Text>
+              <Text style={styles.viewMoreText}>{t('common.viewAll')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -310,8 +312,8 @@ export function WSHomeScreen() {
                 <Text style={styles.progressText}>{batch.progress}%</Text>
               </View>
               <View style={styles.batchFooter}>
-                <Text style={styles.batchOutput}>{batch.currentOutput}kg / {batch.targetOutput}kg</Text>
-                <Text style={styles.batchTime}>预计 {batch.estimatedTime}</Text>
+                <Text style={styles.batchOutput}>{t('home.batch.output', { current: batch.currentOutput, target: batch.targetOutput })}</Text>
+                <Text style={styles.batchTime}>{t('home.batch.estimated', { time: batch.estimatedTime })}</Text>
               </View>
             </TouchableOpacity>
           ))}
@@ -320,24 +322,24 @@ export function WSHomeScreen() {
         {/* 人员状态 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>人员状态</Text>
+            <Text style={styles.sectionTitle}>{t('home.personnelStatus')}</Text>
             <TouchableOpacity onPress={() => navigation.getParent()?.navigate('WSWorkersTab')}>
-              <Text style={styles.viewMoreText}>查看全部</Text>
+              <Text style={styles.viewMoreText}>{t('common.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <View style={[styles.statusItem, { backgroundColor: '#f6ffed' }]}>
                 <Text style={[styles.statusValue, { color: '#52c41a' }]}>{personnelStatus.onDuty}</Text>
-                <Text style={styles.statusLabel}>在岗</Text>
+                <Text style={styles.statusLabel}>{t('home.personnel.onDuty')}</Text>
               </View>
               <View style={[styles.statusItem, { backgroundColor: '#fff7e6' }]}>
                 <Text style={[styles.statusValue, { color: '#fa8c16' }]}>{personnelStatus.onLeave}</Text>
-                <Text style={styles.statusLabel}>请假</Text>
+                <Text style={styles.statusLabel}>{t('home.personnel.onLeave')}</Text>
               </View>
               <View style={[styles.statusItem, { backgroundColor: '#fff1f0' }]}>
                 <Text style={[styles.statusValue, { color: '#ff4d4f' }]}>{personnelStatus.absent}</Text>
-                <Text style={styles.statusLabel}>缺勤</Text>
+                <Text style={styles.statusLabel}>{t('home.personnel.absent')}</Text>
               </View>
             </View>
           </View>
@@ -346,24 +348,24 @@ export function WSHomeScreen() {
         {/* 设备状态 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>设备状态</Text>
+            <Text style={styles.sectionTitle}>{t('home.equipmentStatus')}</Text>
             <TouchableOpacity onPress={() => navigation.getParent()?.navigate('WSEquipmentTab')}>
-              <Text style={styles.viewMoreText}>查看全部</Text>
+              <Text style={styles.viewMoreText}>{t('common.viewAll')}</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.statusCard}>
             <View style={styles.statusRow}>
               <View style={[styles.statusItem, { backgroundColor: '#f6ffed' }]}>
                 <Text style={[styles.statusValue, { color: '#52c41a' }]}>{equipmentStatus.running}</Text>
-                <Text style={styles.statusLabel}>运行中</Text>
+                <Text style={styles.statusLabel}>{t('home.equipment.running')}</Text>
               </View>
               <View style={[styles.statusItem, { backgroundColor: '#f0f5ff' }]}>
                 <Text style={[styles.statusValue, { color: '#1890ff' }]}>{equipmentStatus.idle}</Text>
-                <Text style={styles.statusLabel}>空闲</Text>
+                <Text style={styles.statusLabel}>{t('home.equipment.idle')}</Text>
               </View>
               <View style={[styles.statusItem, { backgroundColor: '#fff1f0' }]}>
                 <Text style={[styles.statusValue, { color: '#ff4d4f' }]}>{equipmentStatus.needMaintenance}</Text>
-                <Text style={styles.statusLabel}>需维护</Text>
+                <Text style={styles.statusLabel}>{t('home.equipment.needMaintenance')}</Text>
               </View>
             </View>
           </View>

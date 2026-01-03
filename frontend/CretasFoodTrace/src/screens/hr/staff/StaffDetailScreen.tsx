@@ -26,6 +26,7 @@ import { Text, Card, Avatar, Button, ActivityIndicator, Chip, Divider } from 're
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { userApiClient } from '../../../services/api/userApiClient';
 import {
@@ -41,6 +42,7 @@ export default function StaffDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteParams>();
   const { staffId } = route.params;
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,7 +57,7 @@ export default function StaffDetailScreen() {
       }
     } catch (error) {
       console.error('加载员工详情失败:', error);
-      Alert.alert('错误', '加载员工信息失败');
+      Alert.alert(t('messages.error'), t('staff.detail.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -89,7 +91,7 @@ export default function StaffDetailScreen() {
   if (!staff) {
     return (
       <View style={styles.errorContainer}>
-        <Text>员工信息不存在</Text>
+        <Text>{t('staff.detail.notFound')}</Text>
       </View>
     );
   }
@@ -102,7 +104,7 @@ export default function StaffDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>员工详情</Text>
+        <Text style={styles.headerTitle}>{t('staff.detail.title')}</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('StaffAIAnalysis' as any, { staffId })}
           style={styles.aiBtn}
@@ -128,7 +130,7 @@ export default function StaffDetailScreen() {
             />
             <Text style={styles.staffName}>{staff.fullName || staff.username}</Text>
             <Text style={styles.staffMeta}>
-              {staff.department || '未分配部门'} · {staff.position || staff.roleName || '员工'}
+              {staff.department || t('staff.detail.noDepartment')} · {staff.position || staff.roleName || t('staff.detail.employee')}
             </Text>
             <Chip
               mode="flat"
@@ -143,28 +145,28 @@ export default function StaffDetailScreen() {
         {/* 基本信息 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>基本信息</Text>
+            <Text style={styles.sectionTitle}>{t('staff.detail.sections.basicInfo')}</Text>
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="phone" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>手机号</Text>
+              <Text style={styles.infoLabel}>{t('staff.detail.fields.phone')}</Text>
               <Text style={styles.infoValue}>{staff.phone || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="email" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>邮箱</Text>
+              <Text style={styles.infoLabel}>{t('staff.detail.fields.email')}</Text>
               <Text style={styles.infoValue}>{staff.email || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="calendar" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>入职日期</Text>
+              <Text style={styles.infoLabel}>{t('staff.detail.fields.hireDate')}</Text>
               <Text style={styles.infoValue}>{staff.hireDate?.split('T')[0] || '-'}</Text>
             </View>
             <Divider style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="badge-account" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>工号</Text>
+              <Text style={styles.infoLabel}>{t('staff.detail.fields.employeeCode')}</Text>
               <Text style={styles.infoValue}>{staff.employeeCode || '-'}</Text>
             </View>
           </Card.Content>
@@ -173,31 +175,31 @@ export default function StaffDetailScreen() {
         {/* 考勤统计 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>本月考勤</Text>
+            <Text style={styles.sectionTitle}>{t('staff.detail.sections.monthlyAttendance')}</Text>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: HR_THEME.success }]}>
                   {staff.attendanceStats?.workDays ?? 0}
                 </Text>
-                <Text style={styles.statLabel}>出勤天数</Text>
+                <Text style={styles.statLabel}>{t('staff.detail.attendance.workDays')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: HR_THEME.warning }]}>
                   {staff.attendanceStats?.lateDays ?? 0}
                 </Text>
-                <Text style={styles.statLabel}>迟到</Text>
+                <Text style={styles.statLabel}>{t('staff.detail.attendance.late')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: HR_THEME.info }]}>
                   {staff.attendanceStats?.earlyLeaveDays ?? 0}
                 </Text>
-                <Text style={styles.statLabel}>早退</Text>
+                <Text style={styles.statLabel}>{t('staff.detail.attendance.earlyLeave')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={[styles.statValue, { color: HR_THEME.danger }]}>
                   {staff.attendanceStats?.absentDays ?? 0}
                 </Text>
-                <Text style={styles.statLabel}>缺勤</Text>
+                <Text style={styles.statLabel}>{t('staff.detail.attendance.absent')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -207,21 +209,21 @@ export default function StaffDetailScreen() {
         {staff.workTimeSummary && (
           <Card style={styles.sectionCard}>
             <Card.Content>
-              <Text style={styles.sectionTitle}>工时汇总</Text>
+              <Text style={styles.sectionTitle}>{t('staff.detail.sections.workSummary')}</Text>
               <View style={styles.workSummary}>
                 <View style={styles.workItem}>
                   <Text style={styles.workValue}>{staff.workTimeSummary.totalBatches}</Text>
-                  <Text style={styles.workLabel}>参与批次</Text>
+                  <Text style={styles.workLabel}>{t('staff.detail.work.batches')}</Text>
                 </View>
                 <View style={styles.workDivider} />
                 <View style={styles.workItem}>
                   <Text style={styles.workValue}>{staff.workTimeSummary.totalHours.toFixed(1)}h</Text>
-                  <Text style={styles.workLabel}>总工时</Text>
+                  <Text style={styles.workLabel}>{t('staff.detail.work.totalHours')}</Text>
                 </View>
                 <View style={styles.workDivider} />
                 <View style={styles.workItem}>
                   <Text style={styles.workValue}>¥{staff.workTimeSummary.totalEarnings.toFixed(0)}</Text>
-                  <Text style={styles.workLabel}>总收入</Text>
+                  <Text style={styles.workLabel}>{t('staff.detail.work.earnings')}</Text>
                 </View>
               </View>
             </Card.Content>
@@ -232,7 +234,7 @@ export default function StaffDetailScreen() {
         {staff.recentBatches && staff.recentBatches.length > 0 && (
           <Card style={styles.sectionCard}>
             <Card.Content>
-              <Text style={styles.sectionTitle}>最近参与批次</Text>
+              <Text style={styles.sectionTitle}>{t('staff.detail.sections.recentBatches')}</Text>
               {staff.recentBatches.slice(0, 5).map((batch, index) => (
                 <View key={index} style={styles.batchRow}>
                   <View style={styles.batchInfo}>
@@ -260,7 +262,7 @@ export default function StaffDetailScreen() {
             style={styles.aiButton}
             buttonColor={HR_THEME.primary}
           >
-            AI 分析
+            {t('staff.detail.aiAnalysis')}
           </Button>
         </View>
 

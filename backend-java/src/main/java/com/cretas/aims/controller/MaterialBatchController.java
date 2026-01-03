@@ -150,9 +150,9 @@ public class MaterialBatchController {
     @PostMapping
     @Operation(summary = "创建原材料批次", description = "创建新的原材料批次，记录入库信息")
     public ApiResponse<MaterialBatchDTO> createMaterialBatch(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CreateMaterialBatchRequest request) {
 
@@ -186,9 +186,9 @@ public class MaterialBatchController {
     @PutMapping("/{batchId}")
     @Operation(summary = "更新原材料批次", description = "更新指定批次的信息")
     public ApiResponse<MaterialBatchDTO> updateMaterialBatch(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Valid @RequestBody CreateMaterialBatchRequest request) {
 
@@ -203,9 +203,9 @@ public class MaterialBatchController {
     @DeleteMapping("/{batchId}")
     @Operation(summary = "删除原材料批次")
     public ApiResponse<Void> deleteMaterialBatch(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId) {
 
         log.info("删除原材料批次: factoryId={}, batchId={}", factoryId, batchId);
@@ -219,9 +219,9 @@ public class MaterialBatchController {
     @GetMapping("/{batchId}")
     @Operation(summary = "获取原材料批次详情")
     public ApiResponse<MaterialBatchDTO> getMaterialBatchById(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId) {
 
         MaterialBatchDTO batch = materialBatchService.getMaterialBatchById(factoryId, batchId);
@@ -276,10 +276,10 @@ public class MaterialBatchController {
      * @return 分页的批次列表
      */
     @GetMapping
-    @Operation(summary = "获取原材料批次列表（分页）", 
+    @Operation(summary = "获取原材料批次列表（分页）",
                description = "支持分页、排序和关键词搜索（批次号或材料类型名称）")
     public ApiResponse<PageResponse<MaterialBatchDTO>> getMaterialBatchList(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Valid PageRequest pageRequest) {
 
@@ -295,9 +295,9 @@ public class MaterialBatchController {
     @GetMapping("/material-type/{materialTypeId}")
     @Operation(summary = "按材料类型获取批次")
     public ApiResponse<List<MaterialBatchDTO>> getMaterialBatchesByType(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "材料类型ID", required = true)
+            @Parameter(description = "材料类型ID", required = true, example = "RMT-F001-001")
             @PathVariable @NotBlank String materialTypeId) {
 
         List<MaterialBatchDTO> batches = materialBatchService.getMaterialBatchesByType(factoryId, materialTypeId);
@@ -310,9 +310,9 @@ public class MaterialBatchController {
     @GetMapping("/status/{status}")
     @Operation(summary = "按状态获取批次")
     public ApiResponse<List<MaterialBatchDTO>> getMaterialBatchesByStatus(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "状态", required = true)
+            @Parameter(description = "状态", required = true, example = "AVAILABLE")
             @PathVariable MaterialBatchStatus status) {
 
         List<MaterialBatchDTO> batches = materialBatchService.getMaterialBatchesByStatus(factoryId, status);
@@ -357,9 +357,9 @@ public class MaterialBatchController {
     @Operation(summary = "获取FIFO批次（先进先出）",
                description = "根据先进先出原则获取指定材料类型的批次，用于生产消耗推荐")
     public ApiResponse<List<MaterialBatchDTO>> getFIFOBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "材料类型ID", required = true)
+            @Parameter(description = "材料类型ID", required = true, example = "RMT-F001-001")
             @PathVariable @NotBlank String materialTypeId,
             @Parameter(description = "需求数量 (兼容: quantity 或 requiredQuantity)")
             @RequestParam(required = false) BigDecimal requiredQuantity,
@@ -382,7 +382,7 @@ public class MaterialBatchController {
     @GetMapping("/expiring")
     @Operation(summary = "获取即将过期的批次")
     public ApiResponse<List<MaterialBatchDTO>> getExpiringBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "天数", required = true, example = "3")
             @RequestParam(defaultValue = "3") Integer days) {
@@ -397,7 +397,7 @@ public class MaterialBatchController {
     @GetMapping("/expired")
     @Operation(summary = "获取已过期的批次")
     public ApiResponse<List<MaterialBatchDTO>> getExpiredBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         List<MaterialBatchDTO> batches = materialBatchService.getExpiredBatches(factoryId);
@@ -413,9 +413,9 @@ public class MaterialBatchController {
     @PostMapping("/{batchId}/use")
     @Operation(summary = "使用批次材料")
     public ApiResponse<MaterialBatchDTO> useBatchMaterial(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "使用数量 (URL参数)", hidden = true)
             @RequestParam(required = false) BigDecimal quantity,
@@ -454,11 +454,11 @@ public class MaterialBatchController {
     @PostMapping("/{batchId}/adjust")
     @Operation(summary = "调整批次数量")
     public ApiResponse<MaterialBatchDTO> adjustBatchQuantity(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
-            @Parameter(description = "访问令牌")
+            @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
             @Parameter(description = "新数量（URL参数，与RequestBody二选一）")
             @RequestParam(required = false) BigDecimal newQuantity,
@@ -497,9 +497,9 @@ public class MaterialBatchController {
     @PutMapping("/{batchId}/status")
     @Operation(summary = "更新批次状态")
     public ApiResponse<MaterialBatchDTO> updateBatchStatus(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Valid @RequestBody UpdateBatchStatusRequest request) {
 
@@ -518,9 +518,9 @@ public class MaterialBatchController {
     @PostMapping("/{batchId}/reserve")
     @Operation(summary = "预留批次材料")
     public ApiResponse<Void> reserveBatchMaterial(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "预留数量 (URL参数)", hidden = true)
             @RequestParam(required = false) BigDecimal quantity,
@@ -562,9 +562,9 @@ public class MaterialBatchController {
     @PostMapping("/{batchId}/release")
     @Operation(summary = "释放预留材料")
     public ApiResponse<Void> releaseBatchReservation(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "释放数量 (URL参数)", hidden = true)
             @RequestParam(required = false) BigDecimal quantity,
@@ -604,9 +604,9 @@ public class MaterialBatchController {
     @PostMapping("/{batchId}/consume")
     @Operation(summary = "消耗批次材料")
     public ApiResponse<Void> consumeBatchMaterial(
-            @Parameter(description = "工厂ID")
+            @Parameter(description = "工厂ID", example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID")
+            @Parameter(description = "批次ID", example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "消耗数量 (URL参数)", hidden = true)
             @RequestParam(required = false) BigDecimal quantity,
@@ -643,7 +643,7 @@ public class MaterialBatchController {
     @GetMapping("/inventory/statistics")
     @Operation(summary = "获取库存统计")
     public ApiResponse<Map<String, Object>> getInventoryStatistics(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         Map<String, Object> statistics = materialBatchService.getInventoryStatistics(factoryId);
@@ -656,7 +656,7 @@ public class MaterialBatchController {
     @GetMapping("/inventory/valuation")
     @Operation(summary = "获取库存价值")
     public ApiResponse<BigDecimal> getInventoryValuation(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         BigDecimal valuation = materialBatchService.getInventoryValuation(factoryId);
@@ -697,7 +697,7 @@ public class MaterialBatchController {
     @GetMapping("/low-stock")
     @Operation(summary = "获取低库存警告", description = "获取库存低于最低阈值的原材料列表")
     public ApiResponse<List<Map<String, Object>>> getLowStockWarnings(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         log.info("获取低库存警告: factoryId={}", factoryId);
@@ -757,10 +757,10 @@ public class MaterialBatchController {
      * @return 库存预警列表
      */
     @GetMapping("/inventory/alerts")
-    @Operation(summary = "获取库存预警（综合）", 
+    @Operation(summary = "获取库存预警（综合）",
                description = "获取所有类型的库存预警，包括低库存、即将过期、已过期")
     public ApiResponse<List<Map<String, Object>>> getInventoryAlerts(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "即将过期天数阈值", example = "7")
             @RequestParam(defaultValue = "7") Integer days) {
@@ -839,9 +839,9 @@ public class MaterialBatchController {
     @PostMapping("/batch")
     @Operation(summary = "批量创建材料批次")
     public ApiResponse<List<MaterialBatchDTO>> batchCreateMaterialBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody List<CreateMaterialBatchRequest> requests) {
 
@@ -860,9 +860,9 @@ public class MaterialBatchController {
     @GetMapping("/{batchId}/usage-history")
     @Operation(summary = "获取批次使用历史")
     public ApiResponse<List<Map<String, Object>>> getBatchUsageHistory(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId) {
 
         List<Map<String, Object>> history = materialBatchService.getBatchUsageHistory(factoryId, batchId);
@@ -875,11 +875,11 @@ public class MaterialBatchController {
     @GetMapping("/export")
     @Operation(summary = "导出库存报表")
     public byte[] exportInventoryReport(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "开始日期")
+            @Parameter(description = "开始日期", example = "2025-01-01")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期")
+            @Parameter(description = "结束日期", example = "2025-01-31")
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         log.info("导出库存报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
@@ -892,7 +892,7 @@ public class MaterialBatchController {
     @PostMapping("/handle-expired")
     @Operation(summary = "处理过期批次")
     public ApiResponse<Integer> handleExpiredBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         log.info("处理过期批次: factoryId={}", factoryId);
@@ -953,9 +953,9 @@ public class MaterialBatchController {
     @Operation(summary = "将原材料批次转为冻品",
                description = "将鲜品批次转换为冻品，更新批次状态和存储条件。转换后10分钟内可撤销。")
     public ApiResponse<MaterialBatchDTO> convertToFrozen(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "转换请求参数", required = true)
             @RequestBody @Valid ConvertToFrozenRequest request) {
@@ -1031,9 +1031,9 @@ public class MaterialBatchController {
     @Operation(summary = "撤销转冻品操作",
                description = "撤销误操作的转冻品，仅允许转换后10分钟内撤销。超时需联系管理员。")
     public ApiResponse<MaterialBatchDTO> undoFrozen(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @PathVariable @NotBlank String batchId,
             @Parameter(description = "撤销请求参数", required = true)
             @RequestBody @Valid UndoFrozenRequest request) {

@@ -1,0 +1,1238 @@
+{
+  "title": "Management Center",
+  "subtitle": "Factory Configuration & System Management",
+  "sections": {
+    "productionConfig": {
+      "title": "Production Config",
+      "productTypes": {
+        "title": "Product Types",
+        "desc": "Configure fish fillet, fish head, etc."
+      },
+      "materialTypes": {
+        "title": "Material Types",
+        "desc": "Configure bass, hairtail, etc."
+      },
+      "conversionRates": {
+        "title": "Conversion Rates",
+        "desc": "Configure material to product rates"
+      },
+      "workTypes": {
+        "title": "Work Types",
+        "desc": "Configure job types and hourly rates"
+      },
+      "disposalRecords": {
+        "title": "Disposal Records",
+        "desc": "Manage waste and disposal records"
+      }
+    },
+    "systemManagement": {
+      "title": "System Management",
+      "departments": {
+        "title": "Departments",
+        "desc": "Organizational structure and dept info"
+      },
+      "users": {
+        "title": "User Management",
+        "desc": "Users, roles and permissions"
+      },
+      "whitelist": {
+        "title": "Whitelist",
+        "desc": "Manage registration phone numbers"
+      },
+      "workSessions": {
+        "title": "Work Sessions",
+        "desc": "Employee hours and labor costs"
+      }
+    },
+    "businessPartners": {
+      "title": "Business Partners",
+      "suppliers": {
+        "title": "Suppliers",
+        "desc": "Manage supplier information"
+      },
+      "customers": {
+        "title": "Customers",
+        "desc": "Manage customer information"
+      },
+      "shipments": {
+        "title": "Shipments",
+        "desc": "Logistics shipment and delivery records"
+      }
+    },
+    "factoryConfig": {
+      "title": "Factory Config",
+      "factorySettings": {
+        "title": "Factory Settings",
+        "desc": "Factory basic information config"
+      }
+    }
+  },
+  "export": {
+    "title": "Export Data",
+    "preparing": "Preparing export",
+    "notAvailable": "This feature will be available after backend API implementation.",
+    "allConfig": "Export All Config",
+    "productTypes": "Export Product Types",
+    "materialTypes": "Export Material Types",
+    "users": "Export User List",
+    "departments": "Export Department Info",
+    "failed": "Export Failed",
+    "failedMessage": "Unable to export data, please try again later"
+  },
+  "tips": {
+    "title": "Tips",
+    "configFirst": "Product types and material types need to be configured before setting conversion rates",
+    "adminOnly": "Some features require administrator privileges"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noPermission": "You do not have permission to access this page",
+    "permissionHint": "Factory super admin, permission admin and department admin only",
+    "permissionHintSuperAdmin": "Factory super admin and platform admin only",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "update": "Update",
+    "edit": "Edit",
+    "delete": "Delete",
+    "success": "Success",
+    "error": "Error",
+    "searchPlaceholder": "Search",
+    "total": "Total",
+    "active": "Active",
+    "inactive": "Inactive",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
+  },
+  "userManagement": {
+    "title": "User Management",
+    "searchPlaceholder": "Search username, name, phone",
+    "filter": {
+      "all": "All",
+      "operator": "Operator",
+      "departmentAdmin": "Dept Admin",
+      "superAdmin": "Super Admin"
+    },
+    "stats": {
+      "totalUsers": "Total Users",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "noUsers": "No users yet",
+      "hint": "Click the \"+\" button at bottom right to create a user"
+    },
+    "createUser": "Create User",
+    "editUser": "Edit User",
+    "form": {
+      "username": "Username",
+      "usernamePlaceholder": "Login username",
+      "password": "Password",
+      "passwordPlaceholder": "At least 8 characters with letters and numbers",
+      "realName": "Real Name",
+      "realNamePlaceholder": "e.g.: John Doe",
+      "phone": "Phone",
+      "phonePlaceholder": "e.g.: +8613800138000",
+      "email": "Email",
+      "emailPlaceholder": "e.g.: user@example.com",
+      "role": "Role",
+      "department": "Department",
+      "position": "Position",
+      "positionPlaceholder": "e.g.: Production Supervisor",
+      "selectPlaceholder": "Please select"
+    },
+    "roles": {
+      "operator": "Operator",
+      "departmentAdmin": "Department Admin",
+      "permissionAdmin": "Permission Admin",
+      "factorySuperAdmin": "Factory Super Admin",
+      "viewer": "Viewer",
+      "unactivated": "Unactivated",
+      "unknown": "Unknown Role"
+    },
+    "departments": {
+      "processing": "Processing",
+      "logistics": "Logistics",
+      "quality": "Quality",
+      "management": "Management",
+      "unassigned": "Unassigned"
+    },
+    "actions": {
+      "edit": "Edit",
+      "activate": "Activate",
+      "deactivate": "Deactivate",
+      "delete": "Delete"
+    },
+    "confirmDelete": {
+      "title": "Confirm Delete",
+      "message": "Are you sure you want to delete user \"{{name}}\"? This action cannot be undone."
+    },
+    "messages": {
+      "loadFailed": "Failed to load user list",
+      "searchFailed": "Search failed",
+      "requiredFields": "Username, name and role are required",
+      "passwordRequired": "Password is required when creating a user",
+      "updateSuccess": "User information updated",
+      "createSuccess": "User created successfully",
+      "saveFailed": "Operation failed",
+      "deleteSuccess": "User deleted",
+      "deleteFailed": "Delete failed",
+      "activateSuccess": "User activated",
+      "deactivateSuccess": "User deactivated",
+      "toggleStatusFailed": "Operation failed"
+    },
+    "noPermission": {
+      "title": "You do not have permission to access this page",
+      "hint": "Factory super admin and platform admin only"
+    }
+  },
+  "departmentManagement": {
+    "title": "Department Management",
+    "searchPlaceholder": "Search department code, name",
+    "initializeDefaults": "Initialize Default Departments",
+    "initializeConfirm": "Will create 4 default departments (Processing, Logistics, Quality, Management). Factories with existing departments will skip this operation.",
+    "initializeSuccess": "Default departments initialized successfully",
+    "initializeFailed": "Initialization failed",
+    "stats": {
+      "total": "Total Departments",
+      "enabled": "Active",
+      "totalEmployees": "Total Employees"
+    },
+    "empty": {
+      "noDepartments": "No departments yet",
+      "hint": "Click the \"+\" button at bottom right to add a department"
+    },
+    "add": "Add Department",
+    "edit": "Edit Department",
+    "form": {
+      "name": "Department Name",
+      "namePlaceholder": "e.g.: Production/Quality/Logistics",
+      "code": "Department Code",
+      "codePlaceholder": "e.g.: DEPT001",
+      "description": "Description",
+      "descriptionPlaceholder": "Department detailed description",
+      "displayOrder": "Display Order",
+      "displayOrderPlaceholder": "Smaller numbers come first",
+      "departmentColor": "Department Color",
+      "isActive": "Active",
+      "manager": "Manager",
+      "employees": "Employees",
+      "employeeCount": "{{count}} people",
+      "parentDepartment": "Parent Department"
+    },
+    "colors": {
+      "blue": "Blue",
+      "green": "Green",
+      "orange": "Orange",
+      "red": "Red",
+      "purple": "Purple",
+      "cyan": "Cyan",
+      "pink": "Pink",
+      "brown": "Brown"
+    },
+    "messages": {
+      "nameRequired": "Department name is required",
+      "updateSuccess": "Department updated successfully",
+      "createSuccess": "Department created successfully",
+      "deleteSuccess": "Department deleted successfully",
+      "deleteConfirm": "Are you sure you want to delete department \"{{name}}\"? This action cannot be undone.\n\nNote: Departments with child departments or employees cannot be deleted.",
+      "statusUpdated": "Deactivated",
+      "statusActivated": "Activated"
+    }
+  },
+  "productTypeManagement": {
+    "title": "Product Type Management",
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "configured": "SKU Configured"
+    },
+    "empty": {
+      "noProducts": "No product types yet",
+      "hint": "Click the \"+\" button at bottom right to add a product type"
+    },
+    "add": "Add Product Type",
+    "edit": "Edit Product Type",
+    "configureSku": "Configure SKU",
+    "form": {
+      "name": "Product Name",
+      "namePlaceholder": "e.g.: Hairtail",
+      "code": "Product Code (Auto-generated)",
+      "unit": "Unit",
+      "category": "Category",
+      "codeAutoGenerate": "Product code will be auto-generated"
+    },
+    "categories": {
+      "seafood": "Seafood",
+      "frozenSeafood": "Frozen Seafood",
+      "processed": "Processed Products",
+      "semiFinished": "Semi-finished"
+    },
+    "sku": {
+      "steps": "{{count}} steps",
+      "complexity": "Complexity {{score}}",
+      "workHours": "{{hours}}h",
+      "configTitle": "Configure SKU: {{name}}",
+      "workHoursConfig": "Work Hours Config",
+      "standardWorkHours": "Standard Work Hours (hours)",
+      "workHoursPlaceholder": "e.g.: 2.5",
+      "complexityScore": "Complexity Score (LinUCB Feature)",
+      "complexityOptions": {
+        "simple": "1 - Simple",
+        "fairlySimple": "2 - Fairly Simple",
+        "medium": "3 - Medium",
+        "fairlyComplex": "4 - Fairly Complex",
+        "complex": "5 - Complex"
+      },
+      "processingSteps": "Processing Steps",
+      "skillRequirements": "Skill Requirements",
+      "minLevel": "Min Level",
+      "preferredLevel": "Preferred Level",
+      "levelRange": "Level range 1-5",
+      "relatedEquipment": "Related Equipment",
+      "relatedQualityCheck": "Related Quality Checks",
+      "noEquipment": "No equipment available",
+      "noQualityCheck": "No quality checks available",
+      "saveConfig": "Save Config",
+      "saveSuccess": "SKU config saved",
+      "saveFailed": "Save failed"
+    },
+    "messages": {
+      "nameRequired": "Product name is required",
+      "updateSuccess": "Product type updated successfully",
+      "createSuccess": "Product type created successfully",
+      "deleteConfirm": "Are you sure you want to delete product type \"{{name}}\"?",
+      "deleteSuccess": "Product type deleted successfully",
+      "statusUpdated": "Deactivated",
+      "statusActivated": "Activated"
+    }
+  },
+  "materialTypeManagement": {
+    "title": "Material Type Management",
+    "searchPlaceholder": "Search material code, name, category",
+    "stats": {
+      "total": "Total",
+      "active": "Active",
+      "categories": "Categories"
+    },
+    "empty": {
+      "noMaterials": "No material types yet",
+      "hint": "Click the \"+\" button at bottom right to add a material type"
+    },
+    "add": "Add Material Type",
+    "edit": "Edit Material Type",
+    "form": {
+      "code": "Material Code",
+      "name": "Material Name",
+      "namePlaceholder": "e.g.: Salmon",
+      "category": "Category",
+      "unit": "Unit",
+      "shelfLife": "Shelf Life (days)",
+      "shelfLifePlaceholder": "e.g.: 7",
+      "storageType": "Storage Type",
+      "notes": "Notes",
+      "notesPlaceholder": "Material detailed description (optional)"
+    },
+    "categories": {
+      "seafood": "Seafood",
+      "meat": "Meat",
+      "vegetables": "Vegetables",
+      "fruits": "Fruits",
+      "flour": "Flour",
+      "rice": "Rice & Noodles",
+      "oil": "Oil",
+      "seasoning": "Seasoning",
+      "other": "Other"
+    },
+    "storageTypes": {
+      "fresh": "Fresh",
+      "frozen": "Frozen",
+      "dried": "Dried",
+      "ambient": "Ambient"
+    },
+    "messages": {
+      "requiredFields": "Material name, category, unit and storage type are required",
+      "updateSuccess": "Material type updated successfully",
+      "createSuccess": "Material type created successfully",
+      "deleteConfirm": "Are you sure you want to delete material type \"{{name}}\"? This action cannot be undone.",
+      "deleteSuccess": "Material type deleted successfully",
+      "statusUpdated": "Deactivated",
+      "statusActivated": "Activated"
+    },
+    "chips": {
+      "unit": "Unit: {{unit}}",
+      "shelfLife": "{{days}} days"
+    }
+  },
+  "supplierManagement": {
+    "title": "Supplier Management",
+    "searchPlaceholder": "Search supplier name, code, contact",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "stats": {
+      "total": "Total",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "empty": {
+      "noSuppliers": "No suppliers yet",
+      "hint": "Click the \"+\" button at bottom right to create a supplier"
+    },
+    "create": "Create Supplier",
+    "edit": "Edit Supplier",
+    "form": {
+      "code": "Supplier Code",
+      "codePlaceholder": "e.g.: SUP001",
+      "name": "Supplier Name",
+      "namePlaceholder": "e.g.: XX Food Supplier",
+      "contactPerson": "Contact Person",
+      "contactPersonPlaceholder": "e.g.: Zhang San",
+      "phone": "Contact Phone",
+      "phonePlaceholder": "e.g.: 13800138000",
+      "email": "Email",
+      "emailPlaceholder": "e.g.: supplier@example.com",
+      "address": "Address",
+      "addressPlaceholder": "Detailed address",
+      "businessType": "Business Type",
+      "businessTypePlaceholder": "e.g.: Seafood supply"
+    },
+    "messages": {
+      "requiredFields": "Supplier name and contact phone are required",
+      "updateSuccess": "Supplier information updated",
+      "createSuccess": "Supplier created successfully",
+      "deleteConfirm": "Are you sure you want to delete supplier \"{{name}}\"? This action cannot be undone.",
+      "deleteSuccess": "Supplier deleted",
+      "statusDeactivated": "Supplier deactivated",
+      "statusActivated": "Supplier activated"
+    },
+    "labels": {
+      "code": "Code: {{code}}"
+    }
+  },
+  "customerManagement": {
+    "title": "Customer Management",
+    "searchPlaceholder": "Search customer name, code, contact",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "stats": {
+      "total": "Total",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "empty": {
+      "noCustomers": "No customers yet",
+      "hint": "Click the \"+\" button at bottom right to create a customer"
+    },
+    "create": "Create Customer",
+    "edit": "Edit Customer",
+    "form": {
+      "code": "Customer Code",
+      "codePlaceholder": "e.g.: CUS001",
+      "name": "Customer Name",
+      "namePlaceholder": "e.g.: XX Supermarket",
+      "contactPerson": "Contact Person",
+      "contactPersonPlaceholder": "e.g.: Li Si",
+      "phone": "Contact Phone",
+      "phonePlaceholder": "e.g.: 13800138000",
+      "email": "Email",
+      "emailPlaceholder": "e.g.: customer@example.com",
+      "address": "Address",
+      "addressPlaceholder": "Detailed address",
+      "businessType": "Business Type",
+      "businessTypePlaceholder": "e.g.: Seafood retail",
+      "customerType": "Customer Type",
+      "industry": "Industry"
+    },
+    "customerTypes": {
+      "distributor": "Distributor",
+      "retailer": "Retailer",
+      "direct": "Direct",
+      "other": "Other",
+      "uncategorized": "Uncategorized"
+    },
+    "industries": {
+      "restaurant": "Restaurant",
+      "supermarket": "Supermarket",
+      "ecommerce": "E-commerce",
+      "foodProcessing": "Food Processing",
+      "other": "Other",
+      "uncategorized": "Uncategorized"
+    },
+    "messages": {
+      "requiredFields": "Customer name and contact phone are required",
+      "updateSuccess": "Customer information updated",
+      "createSuccess": "Customer created successfully",
+      "deleteConfirm": "Are you sure you want to delete customer \"{{name}}\"? This action cannot be undone.",
+      "deleteSuccess": "Customer deleted",
+      "statusDeactivated": "Customer deactivated",
+      "statusActivated": "Customer activated"
+    },
+    "labels": {
+      "code": "Code: {{code}}"
+    }
+  },
+  "conversionRate": {
+    "title": "Conversion Rate Management",
+    "searchPlaceholder": "Search material or product name",
+    "stats": {
+      "total": "Total Configs",
+      "materials": "Material Types",
+      "products": "Product Types"
+    },
+    "empty": {
+      "noRates": "No conversion rates yet",
+      "hint": "Click the \"+\" button at bottom right to add conversion rate"
+    },
+    "add": "Add Conversion Rate",
+    "edit": "Edit Conversion Rate",
+    "viewDetail": "View Details",
+    "form": {
+      "material": "Material",
+      "materialPlaceholder": "Select material type",
+      "product": "Product",
+      "productPlaceholder": "Select product type",
+      "rate": "Conversion Rate (%)",
+      "ratePlaceholder": "e.g.: 60",
+      "wastage": "Wastage Rate (%)",
+      "wastagePlaceholder": "e.g.: 5",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes"
+    },
+    "labels": {
+      "configured": "{{count}} products configured",
+      "rate": "Rate: {{rate}}%",
+      "wastage": "Wastage: {{wastage}}%"
+    },
+    "messages": {
+      "requiredFields": "Material, product and conversion rate are required",
+      "invalidRate": "Conversion rate must be between 0-100",
+      "updateSuccess": "Conversion rate updated",
+      "createSuccess": "Conversion rate created",
+      "deleteConfirm": "Are you sure you want to delete this conversion rate?",
+      "deleteSuccess": "Conversion rate deleted"
+    }
+  },
+  "conversionDetail": {
+    "title": "{{material}} Conversion Rates",
+    "searchPlaceholder": "Search product name or SKU...",
+    "statsBar": "{{count}} product conversion rates configured",
+    "empty": {
+      "noConversions": "No matching conversion rates found",
+      "noConfigured": "No conversion rates configured yet, click the button at bottom right to add"
+    },
+    "add": "Add Conversion Rate",
+    "edit": "Edit Conversion Rate",
+    "form": {
+      "material": "Material:",
+      "selectProduct": "Select Product *",
+      "product": "Product *",
+      "conversionRate": "Conversion Rate (%) *",
+      "conversionRatePlaceholder": "e.g.: 60",
+      "wastageRate": "Wastage Rate (%)",
+      "wastageRatePlaceholder": "e.g.: 5",
+      "notes": "Notes",
+      "searchProduct": "Search product...",
+      "changeProduct": "Change"
+    },
+    "messages": {
+      "noFactory": "Unable to get factory information, please log in again",
+      "loadError": "Failed to load data",
+      "selectProductFirst": "Please select a product",
+      "enterRate": "Please enter conversion rate",
+      "invalidRate": "Conversion rate must be between 0-100",
+      "updateSuccess": "Conversion rate updated",
+      "createSuccess": "Conversion rate created",
+      "deleteConfirm": "Are you sure you want to delete the conversion rate for \"{{name}}\"?",
+      "deleteSuccess": "Deleted",
+      "saveFailed": "Save failed",
+      "deleteFailed": "Delete failed"
+    },
+    "suggestion": {
+      "calculating": "Calculating suggested values...",
+      "basedOnData": "Based on {{count}} batch historical data",
+      "suggestedRate": "Suggested Rate:",
+      "suggestedWastage": "Suggested Wastage:",
+      "confidence": "Confidence:",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low",
+      "useValue": "Use Suggested Value",
+      "noData": "No historical data available, cannot provide suggestion",
+      "autoCalculated": "Auto-calculated based on {{count}} batch historical data"
+    },
+    "product": {
+      "noAvailable": "No products available",
+      "allConfigured": "All products have conversion rates configured",
+      "noMatch": "No matching products found",
+      "moreProducts": "{{count}} more products, please search to narrow down",
+      "sku": "SKU: {{code}}"
+    },
+    "card": {
+      "rate": "Conversion Rate",
+      "wastage": "Wastage Rate",
+      "sku": "SKU: {{code}}"
+    }
+  },
+  "factorySettings": {
+    "title": "Factory Settings",
+    "basicInfo": {
+      "title": "Basic Information",
+      "factoryName": "Factory Name",
+      "factoryCode": "Factory Code",
+      "contactPerson": "Contact Person",
+      "contactPhone": "Contact Phone",
+      "address": "Address",
+      "description": "Description"
+    },
+    "operationConfig": {
+      "title": "Operation Config",
+      "workingHours": "Working Hours",
+      "from": "From",
+      "to": "To",
+      "timezone": "Timezone",
+      "currency": "Currency"
+    },
+    "advancedSettings": {
+      "title": "Advanced Settings",
+      "batchPrefix": "Batch Number Prefix",
+      "batchPrefixPlaceholder": "e.g.: BATCH",
+      "autoApproval": "Auto Approval",
+      "autoApprovalDesc": "When enabled, certain operations will be automatically approved",
+      "enableNotifications": "Enable Notifications",
+      "notificationsDesc": "System events and alert notifications"
+    },
+    "messages": {
+      "loadFailed": "Failed to load settings",
+      "saveSuccess": "Settings saved",
+      "saveFailed": "Failed to save"
+    }
+  },
+  "shipment": {
+    "title": "Shipment Management",
+    "searchPlaceholder": "Search shipment number, customer name",
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "returned": "Returned"
+    },
+    "stats": {
+      "total": "Total Orders",
+      "pending": "Pending",
+      "shipped": "Shipped"
+    },
+    "empty": {
+      "noShipments": "No shipment records yet",
+      "hint": "Click the \"+\" button at bottom right to create shipment"
+    },
+    "create": "Create Shipment",
+    "edit": "Edit Shipment",
+    "detail": "Shipment Details",
+    "form": {
+      "shipmentNumber": "Shipment Number",
+      "customer": "Customer",
+      "customerPlaceholder": "Select customer",
+      "productBatch": "Product Batch",
+      "batchPlaceholder": "Select batch",
+      "quantity": "Quantity",
+      "quantityPlaceholder": "e.g.: 100",
+      "unit": "Unit",
+      "shipmentDate": "Shipment Date",
+      "expectedDelivery": "Expected Delivery",
+      "actualDelivery": "Actual Delivery",
+      "driver": "Driver",
+      "driverPlaceholder": "e.g.: Zhang San",
+      "vehicle": "Vehicle",
+      "vehiclePlaceholder": "e.g.: 京A12345",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes"
+    },
+    "status": {
+      "pending": "Pending",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "returned": "Returned",
+      "cancelled": "Cancelled"
+    },
+    "actions": {
+      "markShipped": "Mark as Shipped",
+      "markDelivered": "Mark as Delivered",
+      "markReturned": "Mark as Returned"
+    },
+    "labels": {
+      "customer": "Customer:",
+      "batch": "Batch:",
+      "quantity": "Quantity:",
+      "shipmentDate": "Shipped:",
+      "expectedDelivery": "Expected:",
+      "actualDelivery": "Actual:",
+      "driver": "Driver:",
+      "vehicle": "Vehicle:"
+    },
+    "messages": {
+      "requiredFields": "Customer, product batch and quantity are required",
+      "updateSuccess": "Shipment updated",
+      "createSuccess": "Shipment created",
+      "deleteConfirm": "Are you sure you want to delete shipment \"{{number}}\"?",
+      "deleteSuccess": "Shipment deleted",
+      "statusUpdated": "Status updated"
+    }
+  },
+  "workSession": {
+    "title": "Work Session Management",
+    "searchPlaceholder": "Search employee name, work type",
+    "filter": {
+      "all": "All",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "stats": {
+      "total": "Total Sessions",
+      "inProgress": "In Progress",
+      "totalHours": "Total Hours"
+    },
+    "empty": {
+      "noSessions": "No work sessions yet",
+      "hint": "Work sessions are created automatically when employees clock in"
+    },
+    "detail": "Session Details",
+    "form": {
+      "employee": "Employee",
+      "workType": "Work Type",
+      "startTime": "Start Time",
+      "endTime": "End Time",
+      "duration": "Duration",
+      "hourlyRate": "Hourly Rate",
+      "totalCost": "Total Cost",
+      "notes": "Notes"
+    },
+    "status": {
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "labels": {
+      "employee": "Employee:",
+      "workType": "Work Type:",
+      "duration": "Duration: {{hours}}h {{minutes}}min",
+      "hours": "hours",
+      "minutes": "minutes",
+      "hourlyRate": "Rate: ¥{{rate}}/hr",
+      "totalCost": "Cost: ¥{{cost}}",
+      "startTime": "Start:",
+      "endTime": "End:",
+      "ongoing": "Ongoing..."
+    },
+    "messages": {
+      "updateSuccess": "Session updated",
+      "deleteConfirm": "Are you sure you want to delete this work session?",
+      "deleteSuccess": "Session deleted",
+      "endConfirm": "Are you sure you want to end this work session?",
+      "endSuccess": "Session ended"
+    }
+  },
+  "rule": {
+    "title": "Rule Configuration",
+    "searchPlaceholder": "Search rule group, entity type",
+    "tabs": {
+      "groups": "Rule Groups",
+      "ai": "AI Assistant"
+    },
+    "groups": {
+      "dataValidation": "Data Validation",
+      "businessLogic": "Business Logic",
+      "notifications": "Notification Rules",
+      "workflow": "Workflow",
+      "custom": "Custom Rules"
+    },
+    "entities": {
+      "materialBatch": "Material Batch",
+      "productBatch": "Product Batch",
+      "qualityCheck": "Quality Check",
+      "shipment": "Shipment",
+      "workSession": "Work Session",
+      "equipment": "Equipment",
+      "user": "User",
+      "all": "All Entities"
+    },
+    "empty": {
+      "noRules": "No rules in this group yet",
+      "hint": "Click the \"+\" button at bottom right to add a rule"
+    },
+    "add": "Add Rule",
+    "edit": "Edit Rule",
+    "form": {
+      "name": "Rule Name",
+      "namePlaceholder": "e.g.: Batch weight validation",
+      "entityType": "Entity Type",
+      "ruleGroup": "Rule Group",
+      "condition": "Trigger Condition",
+      "conditionPlaceholder": "e.g.: weight < 0",
+      "action": "Action",
+      "actionPlaceholder": "e.g.: Show error",
+      "priority": "Priority",
+      "enabled": "Enable Rule"
+    },
+    "priority": {
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "ai": {
+      "title": "AI Rule Assistant",
+      "description": "Describe business rules in natural language, AI will auto-generate rule configuration",
+      "inputPlaceholder": "e.g.: When material batch weight is less than 50kg, send warning to warehouse supervisor",
+      "generate": "Generate Rule",
+      "generating": "AI is generating rules...",
+      "preview": "Preview Generated Rule",
+      "apply": "Apply This Rule",
+      "regenerate": "Regenerate",
+      "example1": "Example 1: When quality check fails, auto-create disposal application",
+      "example2": "Example 2: When shipment quantity exceeds 1000kg, require supervisor approval",
+      "example3": "Example 3: When equipment runs over 8 hours, send maintenance reminder",
+      "noResult": "AI failed to generate valid rule, please try a more detailed description"
+    },
+    "messages": {
+      "nameRequired": "Rule name is required",
+      "updateSuccess": "Rule updated",
+      "createSuccess": "Rule created",
+      "deleteConfirm": "Are you sure you want to delete rule \"{{name}}\"?",
+      "deleteSuccess": "Rule deleted",
+      "statusEnabled": "Rule enabled",
+      "statusDisabled": "Rule disabled",
+      "aiGenerateSuccess": "AI has generated rule configuration",
+      "aiGenerateFailed": "AI generation failed, please try again"
+    }
+  },
+  "workType": {
+    "title": "Work Type Management",
+    "searchPlaceholder": "Search work type name, code",
+    "filter": {
+      "all": "All Departments",
+      "processing": "Processing",
+      "logistics": "Logistics",
+      "quality": "Quality",
+      "management": "Management"
+    },
+    "stats": {
+      "total": "Total Work Types",
+      "active": "Active",
+      "departments": "Departments"
+    },
+    "empty": {
+      "noWorkTypes": "No work types yet",
+      "hint": "Click the \"+\" button at bottom right to add work type"
+    },
+    "add": "Add Work Type",
+    "edit": "Edit Work Type",
+    "form": {
+      "name": "Work Type Name",
+      "namePlaceholder": "e.g.: Cutting Worker",
+      "code": "Work Type Code",
+      "codePlaceholder": "e.g.: WT001",
+      "department": "Department",
+      "hourlyRate": "Hourly Rate (¥/hour)",
+      "hourlyRatePlaceholder": "e.g.: 25",
+      "overtimeRate": "Overtime Rate (¥/hour)",
+      "overtimeRatePlaceholder": "e.g.: 37.5",
+      "description": "Description",
+      "descriptionPlaceholder": "Detailed description",
+      "skillLevel": "Skill Level Required",
+      "isActive": "Active"
+    },
+    "departments": {
+      "processing": "Processing",
+      "logistics": "Logistics",
+      "quality": "Quality",
+      "management": "Management",
+      "other": "Other"
+    },
+    "skillLevels": {
+      "entry": "Entry",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced",
+      "expert": "Expert"
+    },
+    "labels": {
+      "department": "Dept: {{dept}}",
+      "hourlyRate": "Rate: ¥{{rate}}",
+      "overtimeRate": "Overtime: ¥{{rate}}",
+      "skillLevel": "Level: {{level}}"
+    },
+    "messages": {
+      "requiredFields": "Work type name, department and hourly rate are required",
+      "updateSuccess": "Work type updated",
+      "createSuccess": "Work type created",
+      "deleteConfirm": "Are you sure you want to delete work type \"{{name}}\"?",
+      "deleteSuccess": "Work type deleted",
+      "statusEnabled": "Work type enabled",
+      "statusDisabled": "Work type disabled"
+    }
+  },
+  "materialSpec": {
+    "title": "Material Spec Management",
+    "searchPlaceholder": "Search spec name, code",
+    "stats": {
+      "total": "Total Specs",
+      "active": "Active",
+      "categories": "Categories"
+    },
+    "empty": {
+      "noSpecs": "No material specs yet",
+      "hint": "Click the \"+\" button at bottom right to add spec"
+    },
+    "add": "Add Spec",
+    "edit": "Edit Spec",
+    "form": {
+      "materialType": "Material Type",
+      "materialTypePlaceholder": "Select material type",
+      "specName": "Spec Name",
+      "specNamePlaceholder": "e.g.: Extra Large",
+      "specCode": "Spec Code",
+      "minWeight": "Min Weight (kg)",
+      "minWeightPlaceholder": "e.g.: 1.5",
+      "maxWeight": "Max Weight (kg)",
+      "maxWeightPlaceholder": "e.g.: 2.5",
+      "unitPrice": "Unit Price (¥/kg)",
+      "unitPricePlaceholder": "e.g.: 45",
+      "notes": "Notes"
+    },
+    "labels": {
+      "weight": "{{min}}-{{max}}kg",
+      "price": "¥{{price}}/kg",
+      "material": "Material: {{name}}"
+    },
+    "messages": {
+      "requiredFields": "Material type and spec name are required",
+      "updateSuccess": "Spec updated",
+      "createSuccess": "Spec created",
+      "deleteConfirm": "Are you sure you want to delete spec \"{{name}}\"?",
+      "deleteSuccess": "Spec deleted"
+    }
+  },
+  "disposal": {
+    "title": "Disposal Records Management",
+    "searchPlaceholder": "Search batch number, handler",
+    "filter": {
+      "all": "All",
+      "quality": "Quality Issue",
+      "expired": "Expired",
+      "damaged": "Damaged",
+      "other": "Other"
+    },
+    "stats": {
+      "total": "Total Records",
+      "thisMonth": "This Month",
+      "totalQuantity": "Total Disposed"
+    },
+    "empty": {
+      "noRecords": "No disposal records yet",
+      "hint": "Disposal records are created through quality check failure process"
+    },
+    "detail": "Disposal Details",
+    "form": {
+      "batchNumber": "Batch Number",
+      "disposalType": "Disposal Type",
+      "reason": "Disposal Reason",
+      "quantity": "Disposal Quantity",
+      "unit": "Unit",
+      "handler": "Handler",
+      "disposalDate": "Disposal Date",
+      "notes": "Notes",
+      "photos": "Photos"
+    },
+    "types": {
+      "quality": "Quality Issue",
+      "expired": "Expired",
+      "damaged": "Damaged",
+      "contaminated": "Contaminated",
+      "other": "Other"
+    },
+    "labels": {
+      "batch": "Batch: {{number}}",
+      "type": "Type: {{type}}",
+      "quantity": "Quantity: {{qty}} {{unit}}",
+      "handler": "Handler: {{name}}",
+      "date": "Date: {{date}}"
+    },
+    "messages": {
+      "loadFailed": "Failed to load",
+      "deleteConfirm": "Are you sure you want to delete this disposal record?",
+      "deleteSuccess": "Record deleted"
+    }
+  },
+  "sop": {
+    "title": "SOP Configuration",
+    "searchPlaceholder": "Search SOP name, code",
+    "filter": {
+      "all": "All",
+      "production": "Production",
+      "quality": "Quality",
+      "safety": "Safety",
+      "maintenance": "Maintenance"
+    },
+    "stats": {
+      "total": "Total SOPs",
+      "active": "Active",
+      "categories": "Categories"
+    },
+    "empty": {
+      "noSops": "No SOPs yet",
+      "hint": "Click the \"+\" button at bottom right to create SOP"
+    },
+    "create": "Create SOP",
+    "edit": "Edit SOP",
+    "view": "View SOP",
+    "form": {
+      "name": "SOP Name",
+      "namePlaceholder": "e.g.: Product Packaging Process",
+      "code": "SOP Code",
+      "codePlaceholder": "e.g.: SOP-001",
+      "category": "Category",
+      "version": "Version",
+      "effectiveDate": "Effective Date",
+      "steps": "Steps",
+      "addStep": "Add Step",
+      "stepTitle": "Step {{number}}",
+      "stepDescription": "Step Description",
+      "stepPhoto": "Step Photo",
+      "notes": "Notes"
+    },
+    "categories": {
+      "production": "Production",
+      "quality": "Quality",
+      "safety": "Safety",
+      "maintenance": "Maintenance",
+      "cleaning": "Cleaning",
+      "emergency": "Emergency",
+      "other": "Other"
+    },
+    "labels": {
+      "code": "Code: {{code}}",
+      "version": "Version: {{version}}",
+      "steps": "{{count}} steps",
+      "effectiveDate": "Effective: {{date}}"
+    },
+    "messages": {
+      "requiredFields": "SOP name and category are required",
+      "updateSuccess": "SOP updated",
+      "createSuccess": "SOP created",
+      "deleteConfirm": "Are you sure you want to delete SOP \"{{name}}\"?",
+      "deleteSuccess": "SOP deleted",
+      "statusEnabled": "SOP enabled",
+      "statusDisabled": "SOP disabled"
+    }
+  },
+  "whitelist": {
+    "title": "Whitelist Management",
+    "searchPlaceholder": "Search phone number, name",
+    "stats": {
+      "total": "Total",
+      "unused": "Unused",
+      "used": "Used"
+    },
+    "empty": {
+      "noWhitelist": "No whitelist entries yet",
+      "hint": "Click the \"+\" button at bottom right to add to whitelist"
+    },
+    "add": "Add to Whitelist",
+    "edit": "Edit Whitelist",
+    "batchAdd": "Batch Add",
+    "form": {
+      "phone": "Phone Number",
+      "phonePlaceholder": "e.g.: 13800138000",
+      "name": "Name",
+      "namePlaceholder": "e.g.: Zhang San",
+      "role": "Pre-assigned Role",
+      "department": "Pre-assigned Department",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional notes"
+    },
+    "batchForm": {
+      "title": "Batch Add to Whitelist",
+      "description": "One phone number per line, format: phone,name,role",
+      "example": "Example:\n13800138000,Zhang San,Operator\n13800138001,Li Si,Department Admin",
+      "textareaPlaceholder": "Enter here...",
+      "parse": "Parse",
+      "preview": "Preview ({{count}} entries)",
+      "import": "Import"
+    },
+    "labels": {
+      "unused": "Unused",
+      "used": "Used ({{username}})",
+      "role": "Role: {{role}}",
+      "department": "Dept: {{dept}}"
+    },
+    "messages": {
+      "phoneRequired": "Phone number is required",
+      "invalidPhone": "Invalid phone number format",
+      "updateSuccess": "Whitelist updated",
+      "createSuccess": "Added to whitelist",
+      "batchSuccess": "Batch add successful, {{count}} entries",
+      "deleteConfirm": "Are you sure you want to delete phone number \"{{phone}}\"?",
+      "deleteSuccess": "Removed from whitelist",
+      "parseSuccess": "Parse successful, {{count}} valid entries",
+      "parseFailed": "Parse failed, please check format"
+    }
+  },
+  "entityExport": {
+    "title": "Data Export/Import",
+    "selectDataType": "Select Data Type",
+    "selectOperation": "Select Operation",
+    "operationPreview": "Operation Preview",
+    "dataType": "Data Type:",
+    "operationType": "Operation Type:",
+    "entities": {
+      "customer": "Customer",
+      "supplier": "Supplier",
+      "equipment": "Equipment",
+      "user": "User",
+      "materialType": "Material Type"
+    },
+    "entityDescriptions": {
+      "customer": "Customer info: code, name, contact, payment terms, etc.",
+      "supplier": "Supplier info: code, name, materials supplied, delivery days, etc.",
+      "equipment": "Equipment info: code, model, manufacturer, maintenance status, etc.",
+      "user": "User info: username, role, department, salary, etc.",
+      "materialType": "Material type: code, name, category, unit, etc."
+    },
+    "operations": {
+      "export": "Export Data",
+      "template": "Download Template",
+      "import": "Batch Import"
+    },
+    "operationHints": {
+      "export": "• Export all current data to Excel file",
+      "template": "• Download blank import template, fill in data and batch import",
+      "import": "• Upload filled Excel file, batch import data"
+    },
+    "buttons": {
+      "execute": "Execute",
+      "processing": "Processing...",
+      "viewLater": "View Later",
+      "share": "Share File",
+      "shareTemplate": "Share Template",
+      "close": "Close"
+    },
+    "messages": {
+      "noFactory": "Unable to get factory information, please log in again",
+      "exportSuccess": "Export Successful",
+      "exportSuccessDetail": "{{entity}} data exported\n\nFile size: {{size}} KB",
+      "exportSaved": "{{entity}} data exported\n\nFile saved to: {{path}}",
+      "downloadSuccess": "Download Successful",
+      "downloadSuccessDetail": "{{entity}} import template downloaded",
+      "templateSaved": "Template saved to: {{path}}",
+      "importSuccess": "Import Successful",
+      "importSuccessDetail": "Successfully imported {{count}} {{entity}} records",
+      "exportFailed": "Export Failed",
+      "exportError": "An error occurred while exporting data, please try again",
+      "downloadFailed": "Download Failed",
+      "downloadError": "An error occurred while downloading template, please try again",
+      "importFailed": "Import Failed",
+      "importError": "An error occurred while importing data, please try again",
+      "shareFailed": "Share Failed",
+      "shareError": "Unable to share file, please try again later",
+      "noFile": "No file selected",
+      "fileTooLarge": "File Too Large",
+      "fileSizeLimit": "File size cannot exceed 10MB, please import in batches",
+      "downloadFailed2": "Download failed, HTTP status: {{status}}",
+      "processingWait": "Processing, please wait..."
+    },
+    "importResult": {
+      "title": "Import Result",
+      "total": "Total: {{count}} entries",
+      "success": "Success: {{count}} entries",
+      "failed": "Failed: {{count}} entries",
+      "failureDetails": "Failure Details:",
+      "row": "Row {{number}}"
+    }
+  },
+  "aiSettings": {
+    "title": "AI Analysis Settings",
+    "loading": "Loading settings...",
+    "quota": {
+      "title": "📊 Usage Quota",
+      "weeklyLimit": "Weekly limit: {{count}} times",
+      "quotaHint": "* Quota is managed by platform admin, factory admin cannot modify",
+      "weeklyUsed": "Used this week:",
+      "remaining": "Remaining:",
+      "times": "{{count}} times",
+      "resetHint": "* Auto resets every Monday at 0:00"
+    },
+    "basic": {
+      "title": "🔧 Basic Settings",
+      "enableAI": "Enable AI Analysis",
+      "enableHint": "When disabled, all employees will be unable to use AI analysis",
+      "tone": "Tone Style",
+      "goal": "Analysis Goal",
+      "detailLevel": "Detail Level"
+    },
+    "tones": {
+      "professional": "Professional",
+      "professionalDesc": "Use industry terminology, rigorous and objective",
+      "friendly": "Friendly",
+      "friendlyDesc": "Easy to understand, friendly and warm",
+      "concise": "Concise",
+      "conciseDesc": "Straight to the point, brief and clear"
+    },
+    "goals": {
+      "costOptimization": "Cost Optimization",
+      "costOptimizationDesc": "Focus on cost control and efficiency improvement",
+      "qualityImprovement": "Quality Improvement",
+      "qualityImprovementDesc": "Focus on quality control and improvement suggestions",
+      "efficiencyBoost": "Efficiency Boost",
+      "efficiencyBoostDesc": "Focus on process optimization and efficiency improvement",
+      "comprehensive": "Comprehensive",
+      "comprehensiveDesc": "Comprehensive analysis of all metrics"
+    },
+    "detailLevels": {
+      "simple": "Simple",
+      "simpleDesc": "Core conclusions only, suitable for quick review",
+      "standard": "Standard",
+      "standardDesc": "Conclusions + key data, recommended",
+      "detailed": "Detailed",
+      "detailedDesc": "In-depth analysis + complete data support"
+    },
+    "industry": {
+      "title": "📊 Industry Standard Parameters",
+      "description": "AI will evaluate cost structure reasonableness based on these standards",
+      "laborCost": "Labor Cost Percentage Standard",
+      "equipmentUtilization": "Equipment Utilization Target",
+      "profitMargin": "Profit Margin Target",
+      "percentage": "%"
+    },
+    "custom": {
+      "title": "✏️ Custom Prompt (Optional)",
+      "description": "Add additional analysis requirements, will be appended to each AI analysis",
+      "label": "Custom Analysis Requirements",
+      "placeholder": "e.g.: Please pay special attention to energy saving and environmental factors"
+    },
+    "usage": {
+      "title": "📈 Weekly Usage Statistics",
+      "totalCalls": "Total Calls",
+      "analysisRequests": "Analysis Requests",
+      "questions": "Follow-up Questions",
+      "byUser": "By User:",
+      "userTimes": "{{count}} times"
+    },
+    "buttons": {
+      "save": "Save Settings"
+    },
+    "messages": {
+      "loadFailed": "Failed to load settings",
+      "saveSuccess": "Settings saved",
+      "saveFailed": "Failed to save"
+    }
+  }
+}

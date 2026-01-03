@@ -50,9 +50,9 @@ public class EquipmentController {
      * 创建设备
      */
     @PostMapping
-    @Operation(summary = "创建设备")
+    @Operation(summary = "创建设备", description = "创建新的设备记录")
     public ApiResponse<EquipmentDTO> createEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "访问令牌", required = true)
             @RequestHeader("Authorization") String authorization,
@@ -70,11 +70,11 @@ public class EquipmentController {
      * 更新设备
      */
     @PutMapping("/{equipmentId}")
-    @Operation(summary = "更新设备")
+    @Operation(summary = "更新设备", description = "更新设备信息")
     public ApiResponse<EquipmentDTO> updateEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
             @Valid @RequestBody CreateEquipmentRequest request) {
 
@@ -87,11 +87,11 @@ public class EquipmentController {
      * 删除设备
      */
     @DeleteMapping("/{equipmentId}")
-    @Operation(summary = "删除设备")
+    @Operation(summary = "删除设备", description = "删除指定设备")
     public ApiResponse<Void> deleteEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         log.info("删除设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
@@ -103,11 +103,11 @@ public class EquipmentController {
      * 获取设备详情
      */
     @GetMapping("/{equipmentId}")
-    @Operation(summary = "获取设备详情")
+    @Operation(summary = "获取设备详情", description = "获取单个设备的详细信息")
     public ApiResponse<EquipmentDTO> getEquipmentById(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         EquipmentDTO equipment = equipmentService.getEquipmentById(factoryId, equipmentId);
@@ -118,9 +118,9 @@ public class EquipmentController {
      * 获取设备列表（分页）
      */
     @GetMapping
-    @Operation(summary = "获取设备列表（分页）")
+    @Operation(summary = "获取设备列表（分页）", description = "分页获取工厂设备列表")
     public ApiResponse<PageResponse<EquipmentDTO>> getEquipmentList(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Valid PageRequest pageRequest) {
 
@@ -132,11 +132,11 @@ public class EquipmentController {
      * 按状态获取设备
      */
     @GetMapping("/status/{status}")
-    @Operation(summary = "按状态获取设备")
+    @Operation(summary = "按状态获取设备", description = "获取指定状态的所有设备")
     public ApiResponse<List<EquipmentDTO>> getEquipmentByStatus(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备状态(idle/running/maintenance/scrapped)", required = true)
+            @Parameter(description = "设备状态(idle/running/maintenance/scrapped)", required = true, example = "running")
             @PathVariable @NotBlank String status) {
 
         List<EquipmentDTO> equipment = equipmentService.getEquipmentByStatus(factoryId, status);
@@ -147,11 +147,11 @@ public class EquipmentController {
      * 按类型获取设备
      */
     @GetMapping("/type/{type}")
-    @Operation(summary = "按类型获取设备")
+    @Operation(summary = "按类型获取设备", description = "获取指定类型的所有设备")
     public ApiResponse<List<EquipmentDTO>> getEquipmentByType(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备类型", required = true)
+            @Parameter(description = "设备类型", required = true, example = "CNC")
             @PathVariable @NotBlank String type) {
 
         List<EquipmentDTO> equipment = equipmentService.getEquipmentByType(factoryId, type);
@@ -162,11 +162,11 @@ public class EquipmentController {
      * 搜索设备
      */
     @GetMapping("/search")
-    @Operation(summary = "搜索设备")
+    @Operation(summary = "搜索设备", description = "根据关键词搜索设备（支持设备名称、型号等）")
     public ApiResponse<List<EquipmentDTO>> searchEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "搜索关键词", required = true)
+            @Parameter(description = "搜索关键词", required = true, example = "切割机")
             @RequestParam @NotBlank String keyword) {
 
         List<EquipmentDTO> equipment = equipmentService.searchEquipment(factoryId, keyword);
@@ -177,13 +177,13 @@ public class EquipmentController {
      * 更新设备状态
      */
     @PutMapping("/{equipmentId}/status")
-    @Operation(summary = "更新设备状态")
+    @Operation(summary = "更新设备状态", description = "更新设备的运行状态")
     public ApiResponse<EquipmentDTO> updateEquipmentStatus(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "设备状态", required = true)
+            @Parameter(description = "设备状态(idle/running/maintenance/scrapped)", required = true, example = "running")
             @RequestParam @NotBlank String status) {
 
         log.info("更新设备状态: factoryId={}, equipmentId={}, status={}", factoryId, equipmentId, status);
@@ -195,11 +195,11 @@ public class EquipmentController {
      * 启动设备
      */
     @PostMapping("/{equipmentId}/start")
-    @Operation(summary = "启动设备")
+    @Operation(summary = "启动设备", description = "启动指定设备，状态变为running")
     public ApiResponse<EquipmentDTO> startEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         log.info("启动设备: factoryId={}, equipmentId={}", factoryId, equipmentId);
@@ -211,13 +211,13 @@ public class EquipmentController {
      * 停止设备
      */
     @PostMapping("/{equipmentId}/stop")
-    @Operation(summary = "停止设备")
+    @Operation(summary = "停止设备", description = "停止指定设备，可记录本次运行时长")
     public ApiResponse<EquipmentDTO> stopEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "运行小时数")
+            @Parameter(description = "运行小时数", example = "8")
             @RequestParam(required = false) Integer runningHours) {
 
         log.info("停止设备: factoryId={}, equipmentId={}, runningHours={}", factoryId, equipmentId, runningHours);
@@ -232,11 +232,11 @@ public class EquipmentController {
      * 2. URL Params: ?maintenanceDate=2025-01-01&cost=100&description=...
      */
     @PostMapping("/{equipmentId}/maintenance")
-    @Operation(summary = "记录设备维护")
+    @Operation(summary = "记录设备维护", description = "记录设备维护信息，支持URL参数和RequestBody两种格式")
     public ApiResponse<EquipmentDTO> recordMaintenance(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
             @Parameter(description = "维护日期 (URL参数)", hidden = true)
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate maintenanceDate,
@@ -283,9 +283,9 @@ public class EquipmentController {
      * 获取需要维护的设备
      */
     @GetMapping("/needing-maintenance")
-    @Operation(summary = "获取需要维护的设备")
+    @Operation(summary = "获取需要维护的设备", description = "获取所有需要维护的设备列表")
     public ApiResponse<List<EquipmentDTO>> getEquipmentNeedingMaintenance(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         List<EquipmentDTO> equipment = equipmentService.getEquipmentNeedingMaintenance(factoryId);
@@ -296,11 +296,11 @@ public class EquipmentController {
      * 获取保修即将到期的设备
      */
     @GetMapping("/expiring-warranty")
-    @Operation(summary = "获取保修即将到期的设备")
+    @Operation(summary = "获取保修即将到期的设备", description = "获取保修即将到期的设备列表")
     public ApiResponse<List<EquipmentDTO>> getEquipmentWithExpiringWarranty(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "提前天数", required = true)
+            @Parameter(description = "提前天数", required = true, example = "30")
             @RequestParam(defaultValue = "30") Integer daysAhead) {
 
         List<EquipmentDTO> equipment = equipmentService.getEquipmentWithExpiringWarranty(factoryId, daysAhead);
@@ -311,11 +311,11 @@ public class EquipmentController {
      * 计算设备折旧后价值
      */
     @GetMapping("/{equipmentId}/depreciated-value")
-    @Operation(summary = "计算设备折旧后价值")
+    @Operation(summary = "计算设备折旧后价值", description = "根据折旧规则计算设备当前价值")
     public ApiResponse<BigDecimal> calculateDepreciatedValue(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         BigDecimal value = equipmentService.calculateDepreciatedValue(factoryId, equipmentId);
@@ -326,11 +326,11 @@ public class EquipmentController {
      * 获取设备统计信息
      */
     @GetMapping("/{equipmentId}/statistics")
-    @Operation(summary = "获取设备统计信息")
+    @Operation(summary = "获取设备统计信息", description = "获取单个设备的统计信息")
     public ApiResponse<Map<String, Object>> getEquipmentStatistics(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         Map<String, Object> statistics = equipmentService.getEquipmentStatistics(factoryId, equipmentId);
@@ -341,11 +341,11 @@ public class EquipmentController {
      * 获取设备使用历史
      */
     @GetMapping("/{equipmentId}/usage-history")
-    @Operation(summary = "获取设备使用历史")
+    @Operation(summary = "获取设备使用历史", description = "获取设备的使用记录历史")
     public ApiResponse<List<Map<String, Object>>> getEquipmentUsageHistory(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         List<Map<String, Object>> history = equipmentService.getEquipmentUsageHistory(factoryId, equipmentId);
@@ -356,11 +356,11 @@ public class EquipmentController {
      * 获取设备维护历史
      */
     @GetMapping("/{equipmentId}/maintenance-history")
-    @Operation(summary = "获取设备维护历史")
+    @Operation(summary = "获取设备维护历史", description = "获取设备的维护记录历史")
     public ApiResponse<List<Map<String, Object>>> getEquipmentMaintenanceHistory(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId) {
 
         List<Map<String, Object>> history = equipmentService.getEquipmentMaintenanceHistory(factoryId, equipmentId);
@@ -371,9 +371,9 @@ public class EquipmentController {
      * 获取工厂设备总体统计
      */
     @GetMapping("/overall-statistics")
-    @Operation(summary = "获取工厂设备总体统计")
+    @Operation(summary = "获取工厂设备总体统计", description = "获取工厂所有设备的总体统计信息")
     public ApiResponse<Map<String, Object>> getOverallEquipmentStatistics(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         Map<String, Object> statistics = equipmentService.getOverallEquipmentStatistics(factoryId);
@@ -384,9 +384,9 @@ public class EquipmentController {
      * 获取工厂设备总体统计（别名，兼容前端调用）
      */
     @GetMapping("/statistics")
-    @Operation(summary = "获取工厂设备总体统计（别名）")
+    @Operation(summary = "获取工厂设备总体统计（别名）", description = "获取工厂设备总体统计的别名接口，兼容前端调用")
     public ApiResponse<Map<String, Object>> getEquipmentStatisticsAlias(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         // 委托给 getOverallEquipmentStatistics
@@ -398,15 +398,15 @@ public class EquipmentController {
      * 获取设备效率报告
      */
     @GetMapping("/{equipmentId}/efficiency-report")
-    @Operation(summary = "获取设备效率报告")
+    @Operation(summary = "获取设备效率报告", description = "获取设备在指定时间段内的效率报告")
     public ApiResponse<Map<String, Object>> getEquipmentEfficiencyReport(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "开始日期", required = true)
+            @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期", required = true)
+            @Parameter(description = "结束日期", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         Map<String, Object> report = equipmentService.getEquipmentEfficiencyReport(factoryId, equipmentId, startDate, endDate);
@@ -417,11 +417,11 @@ public class EquipmentController {
      * 从Excel文件批量导入设备
      */
     @PostMapping("/import")
-    @Operation(summary = "从Excel文件批量导入设备")
+    @Operation(summary = "从Excel文件批量导入设备", description = "上传Excel文件批量导入设备，仅支持.xlsx格式，最大10MB")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<EquipmentDTO>> importEquipmentFromExcel(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "Excel文件", required = true)
+            @Parameter(description = "Excel文件(.xlsx格式)", required = true)
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
 
         log.info("从Excel批量导入设备: factoryId={}, filename={}", factoryId, file.getOriginalFilename());
@@ -461,9 +461,9 @@ public class EquipmentController {
      * 导出设备列表
      */
     @GetMapping("/export")
-    @Operation(summary = "导出设备列表")
+    @Operation(summary = "导出设备列表", description = "导出工厂所有设备为Excel文件")
     public ResponseEntity<byte[]> exportEquipmentList(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         log.info("导出设备列表: factoryId={}", factoryId);
@@ -488,9 +488,9 @@ public class EquipmentController {
      * 下载设备导入模板
      */
     @GetMapping("/export/template")
-    @Operation(summary = "下载设备导入模板")
+    @Operation(summary = "下载设备导入模板", description = "下载用于批量导入设备的Excel模板文件")
     public ResponseEntity<byte[]> downloadEquipmentTemplate(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         log.info("下载设备导入模板: factoryId={}", factoryId);
@@ -514,13 +514,13 @@ public class EquipmentController {
      * 报废设备
      */
     @PostMapping("/{equipmentId}/scrap")
-    @Operation(summary = "报废设备")
+    @Operation(summary = "报废设备", description = "将设备标记为报废状态")
     public ApiResponse<EquipmentDTO> scrapEquipment(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "报废原因", required = true)
+            @Parameter(description = "报废原因", required = true, example = "设备老化无法维修")
             @RequestParam @NotBlank String reason) {
 
         log.info("报废设备: factoryId={}, equipmentId={}, reason={}", factoryId, equipmentId, reason);
@@ -532,15 +532,15 @@ public class EquipmentController {
      * 计算设备OEE（整体设备效率）
      */
     @GetMapping("/{equipmentId}/oee")
-    @Operation(summary = "计算设备OEE")
+    @Operation(summary = "计算设备OEE", description = "计算设备整体效率(Overall Equipment Effectiveness)")
     public ApiResponse<Double> calculateOEE(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "设备ID", required = true)
+            @Parameter(description = "设备ID", required = true, example = "EQ-001")
             @PathVariable @NotBlank String equipmentId,
-            @Parameter(description = "开始日期", required = true)
+            @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期", required = true)
+            @Parameter(description = "结束日期", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         Double oee = equipmentService.calculateOEE(factoryId, equipmentId, startDate, endDate);

@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, SchedulingDashboard, WorkshopStatus } from '../../../types/dispatcher';
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { useAuthStore } from '../../../store/authStore';
@@ -34,6 +35,7 @@ import { useAuthStore } from '../../../store/authStore';
 export default function DSHomeScreen() {
   const navigation = useNavigation<any>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState<SchedulingDashboard | null>(null);
@@ -215,7 +217,7 @@ export default function DSHomeScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.pendingTaskItem}
-              onPress={() => navigation.navigate('ApprovalList')}
+              onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}
             >
               <Text style={[styles.pendingTaskCount, styles.warning]}>
                 {dashboard?.alerts?.unresolved ?? 3}
@@ -304,7 +306,7 @@ export default function DSHomeScreen() {
         {/* 待审批事项 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>待审批事项</Text>
-          <TouchableOpacity onPress={() => navigation.navigate('ApprovalList')}>
+          <TouchableOpacity onPress={() => navigation.navigate('PlanTab', { screen: 'ApprovalList' })}>
             <Text style={styles.sectionAction}>{dashboard?.alerts?.unresolved ?? 3}项待处理 {'>'}</Text>
           </TouchableOpacity>
         </View>

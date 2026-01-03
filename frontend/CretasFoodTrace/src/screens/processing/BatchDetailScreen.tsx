@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, FlatList } from 'react-native';
 import { Text, Appbar, Divider, ActivityIndicator, IconButton, Menu, SegmentedButtons, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { BatchStatusBadge, BatchStatus } from '../../components/processing';
 import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
@@ -18,6 +19,7 @@ interface ErrorState {
 }
 
 export default function BatchDetailScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<BatchDetailScreenProps['navigation']>();
   const route = useRoute<BatchDetailScreenProps['route']>();
   const { batchId, readonly } = route.params;
@@ -65,7 +67,7 @@ export default function BatchDetailScreen() {
     } catch (error) {
       handleError(error, { showAlert: false, logError: true });
       setError({
-        message: error instanceof Error ? error.message : '加载批次详情失败',
+        message: error instanceof Error ? error.message : t('batchDetail.loadFailed'),
         canRetry: true,
       });
       setBatch(null);
@@ -118,7 +120,7 @@ export default function BatchDetailScreen() {
       <ScreenWrapper>
         <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="批次详情" />
+          <Appbar.Content title={t('batchDetail.title')} />
         </Appbar.Header>
         <View style={styles.centerContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
       </ScreenWrapper>

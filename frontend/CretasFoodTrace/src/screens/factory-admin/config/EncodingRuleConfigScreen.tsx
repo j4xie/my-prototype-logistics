@@ -28,6 +28,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import {
   encodingRuleApiClient,
   EncodingRule,
@@ -58,6 +59,7 @@ type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList>;
  */
 export default function EncodingRuleConfigScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
   const user = useAuthStore((state) => state.user);
   const factoryId = getFactoryId(user);
 
@@ -98,7 +100,7 @@ export default function EncodingRuleConfigScreen() {
     try {
       if (!factoryId) {
         configLogger.warn('工厂ID不存在');
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('encodingRuleConfig.cannotGetFactoryInfo'));
         return;
       }
 
@@ -117,8 +119,8 @@ export default function EncodingRuleConfigScreen() {
       configLogger.info('数据加载完成', { count: rulesRes.content?.length });
     } catch (error: unknown) {
       configLogger.error('加载数据失败', error);
-      const errorMessage = error instanceof Error ? error.message : '加载失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.loadFailed');
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -153,10 +155,10 @@ export default function EncodingRuleConfigScreen() {
    */
   const getResetCycleName = (cycle: ResetCycle): string => {
     const names: Record<ResetCycle, string> = {
-      DAILY: '每日',
-      MONTHLY: '每月',
-      YEARLY: '每年',
-      NEVER: '不重置',
+      DAILY: t('encodingRuleConfig.resetCycles.daily'),
+      MONTHLY: t('encodingRuleConfig.resetCycles.monthly'),
+      YEARLY: t('encodingRuleConfig.resetCycles.yearly'),
+      NEVER: t('encodingRuleConfig.resetCycles.never'),
     };
     return names[cycle] ?? cycle;
   };
@@ -205,11 +207,11 @@ export default function EncodingRuleConfigScreen() {
    */
   const handleSave = async () => {
     if (!formRuleName.trim()) {
-      Alert.alert('提示', '请输入规则名称');
+      Alert.alert(t('common.tip'), t('encodingRuleConfig.enterRuleName'));
       return;
     }
     if (!formPattern.trim()) {
-      Alert.alert('提示', '请输入编码模板');
+      Alert.alert(t('common.tip'), t('encodingRuleConfig.enterEncodingPattern'));
       return;
     }
 
@@ -228,7 +230,7 @@ export default function EncodingRuleConfigScreen() {
         };
 
         await encodingRuleApiClient.createRule(request, factoryId ?? undefined);
-        Alert.alert('成功', '编码规则创建成功');
+        Alert.alert(t('common.success'), t('encodingRuleConfig.createSuccess'));
       } else if (editingRule) {
         await encodingRuleApiClient.updateRule(
           editingRule.id,
@@ -242,14 +244,14 @@ export default function EncodingRuleConfigScreen() {
           },
           factoryId ?? undefined
         );
-        Alert.alert('成功', '编码规则更新成功');
+        Alert.alert(t('common.success'), t('encodingRuleConfig.updateSuccess'));
       }
 
       setFormVisible(false);
       loadData();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '保存失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.saveFailed');
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setSaving(false);
     }
@@ -259,19 +261,19 @@ export default function EncodingRuleConfigScreen() {
    * 删除规则
    */
   const handleDelete = (rule: EncodingRule) => {
-    Alert.alert('确认删除', `确定要删除规则"${rule.ruleName}"吗？`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('encodingRuleConfig.confirmDelete'), t('encodingRuleConfig.confirmDeleteMessage', { name: rule.ruleName }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('common.delete'),
         style: 'destructive',
         onPress: async () => {
           try {
             await encodingRuleApiClient.deleteRule(rule.id, factoryId ?? undefined);
-            Alert.alert('成功', '规则已删除');
+            Alert.alert(t('common.success'), t('encodingRuleConfig.ruleDeleted'));
             loadData();
           } catch (error: unknown) {
-            const errorMessage = error instanceof Error ? error.message : '删除失败';
-            Alert.alert('错误', errorMessage);
+            const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.deleteFailed');
+            Alert.alert(t('common.error'), errorMessage);
           }
         },
       },
@@ -286,8 +288,8 @@ export default function EncodingRuleConfigScreen() {
       await encodingRuleApiClient.toggleEnabled(rule.id, !rule.enabled, factoryId ?? undefined);
       loadData();
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '操作失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.operationFailed');
+      Alert.alert(t('common.error'), errorMessage);
     }
   };
 
@@ -296,21 +298,21 @@ export default function EncodingRuleConfigScreen() {
    */
   const handleResetSequence = (rule: EncodingRule) => {
     Alert.alert(
-      '确认重置',
-      `确定要将"${rule.ruleName}"的序列号重置为0吗？\n\n注意：重置后可能导致编码重复！`,
+      t('encodingRuleConfig.confirmReset'),
+      t('encodingRuleConfig.confirmResetMessage', { name: rule.ruleName }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '重置',
+          text: t('encodingRuleConfig.reset'),
           style: 'destructive',
           onPress: async () => {
             try {
               await encodingRuleApiClient.resetSequence(rule.id, factoryId ?? undefined);
-              Alert.alert('成功', '序列号已重置');
+              Alert.alert(t('common.success'), t('encodingRuleConfig.sequenceReset'));
               loadData();
             } catch (error: unknown) {
-              const errorMessage = error instanceof Error ? error.message : '重置失败';
-              Alert.alert('错误', errorMessage);
+              const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.resetFailed');
+              Alert.alert(t('common.error'), errorMessage);
             }
           },
         },
@@ -331,8 +333,8 @@ export default function EncodingRuleConfigScreen() {
       );
       setPreviewCode(code);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : '预览失败';
-      setPreviewCode(`预览失败: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : t('encodingRuleConfig.previewFailed');
+      setPreviewCode(`${t('encodingRuleConfig.previewFailed')}: ${errorMessage}`);
     } finally {
       setPreviewLoading(false);
     }
@@ -364,26 +366,26 @@ export default function EncodingRuleConfigScreen() {
           <Divider style={styles.divider} />
 
           <View style={styles.patternRow}>
-            <Text style={styles.patternLabel}>模板:</Text>
+            <Text style={styles.patternLabel}>{t('encodingRuleConfig.template')}:</Text>
             <Text style={styles.patternValue}>{item.encodingPattern}</Text>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{item.currentSequence}</Text>
-              <Text style={styles.statLabel}>当前序号</Text>
+              <Text style={styles.statLabel}>{t('encodingRuleConfig.currentSequence')}</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{item.sequenceLength}位</Text>
-              <Text style={styles.statLabel}>序号长度</Text>
+              <Text style={styles.statValue}>{t('encodingRuleConfig.digits', { count: item.sequenceLength })}</Text>
+              <Text style={styles.statLabel}>{t('encodingRuleConfig.sequenceLength')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{getResetCycleName(item.resetCycle)}</Text>
-              <Text style={styles.statLabel}>重置周期</Text>
+              <Text style={styles.statLabel}>{t('encodingRuleConfig.resetCycle')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>v{item.version}</Text>
-              <Text style={styles.statLabel}>版本</Text>
+              <Text style={styles.statLabel}>{t('encodingRuleConfig.version')}</Text>
             </View>
           </View>
 
@@ -394,7 +396,7 @@ export default function EncodingRuleConfigScreen() {
               icon="eye"
               onPress={() => handlePreview(item)}
             >
-              预览
+              {t('encodingRuleConfig.preview')}
             </Button>
             <Button
               mode="text"
@@ -402,7 +404,7 @@ export default function EncodingRuleConfigScreen() {
               icon="pencil"
               onPress={() => handleEdit(item)}
             >
-              编辑
+              {t('common.edit')}
             </Button>
             <Button
               mode="text"
@@ -410,7 +412,7 @@ export default function EncodingRuleConfigScreen() {
               icon="restore"
               onPress={() => handleResetSequence(item)}
             >
-              重置
+              {t('encodingRuleConfig.reset')}
             </Button>
             <Button
               mode="text"
@@ -419,7 +421,7 @@ export default function EncodingRuleConfigScreen() {
               textColor="#F44336"
               onPress={() => handleDelete(item)}
             >
-              删除
+              {t('common.delete')}
             </Button>
           </View>
         </Card.Content>
@@ -431,14 +433,14 @@ export default function EncodingRuleConfigScreen() {
     <View style={styles.container}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="编码规则配置" subtitle="管理批次号生成规则" />
+        <Appbar.Content title={t('encodingRuleConfig.title')} subtitle={t('encodingRuleConfig.subtitle')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : (
         <FlatList
@@ -454,8 +456,7 @@ export default function EncodingRuleConfigScreen() {
               <View style={styles.infoRow}>
                 <IconButton icon="information" size={20} iconColor="#2196F3" />
                 <Text style={styles.infoText}>
-                  编码规则用于自动生成各类业务单据的编号。
-                  支持日期、序列号、工厂代码等占位符。
+                  {t('encodingRuleConfig.infoText')}
                 </Text>
               </View>
             </Surface>
@@ -463,8 +464,8 @@ export default function EncodingRuleConfigScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <IconButton icon="file-document-outline" size={64} iconColor="#ccc" />
-              <Text style={styles.emptyText}>暂无编码规则</Text>
-              <Text style={styles.emptySubText}>点击右下角按钮创建第一个规则</Text>
+              <Text style={styles.emptyText}>{t('encodingRuleConfig.noRules')}</Text>
+              <Text style={styles.emptySubText}>{t('encodingRuleConfig.createFirst')}</Text>
             </View>
           }
           ListFooterComponent={<View style={styles.bottomPadding} />}
@@ -481,7 +482,7 @@ export default function EncodingRuleConfigScreen() {
               <ScrollView>
                 <View style={styles.modalHeader}>
                   <Text variant="titleLarge">
-                    {formMode === 'create' ? '创建编码规则' : '编辑编码规则'}
+                    {formMode === 'create' ? t('encodingRuleConfig.createRule') : t('encodingRuleConfig.editRule')}
                   </Text>
                   <IconButton icon="close" onPress={() => setFormVisible(false)} />
                 </View>
@@ -490,7 +491,7 @@ export default function EncodingRuleConfigScreen() {
 
                 {formMode === 'create' && (
                   <View style={styles.formSection}>
-                    <Text style={styles.formLabel}>实体类型 *</Text>
+                    <Text style={styles.formLabel}>{t('encodingRuleConfig.entityType')} *</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                       <SegmentedButtons
                         value={formEntityType}
@@ -510,28 +511,28 @@ export default function EncodingRuleConfigScreen() {
                 )}
 
                 <TextInput
-                  label="规则名称 *"
+                  label={t('encodingRuleConfig.ruleName') + ' *'}
                   value={formRuleName}
                   onChangeText={setFormRuleName}
                   mode="outlined"
                   style={styles.input}
-                  placeholder="如：原材料批次编码规则"
+                  placeholder={t('encodingRuleConfig.ruleNamePlaceholder')}
                 />
 
                 <TextInput
-                  label="规则描述"
+                  label={t('encodingRuleConfig.ruleDescription')}
                   value={formDescription}
                   onChangeText={setFormDescription}
                   mode="outlined"
                   style={styles.input}
                   multiline
                   numberOfLines={2}
-                  placeholder="可选，描述规则用途"
+                  placeholder={t('encodingRuleConfig.ruleDescriptionPlaceholder')}
                 />
 
                 <View style={styles.patternInputRow}>
                   <TextInput
-                    label="编码模板 *"
+                    label={t('encodingRuleConfig.encodingPattern') + ' *'}
                     value={formPattern}
                     onChangeText={setFormPattern}
                     mode="outlined"
@@ -547,7 +548,7 @@ export default function EncodingRuleConfigScreen() {
 
                 <View style={styles.formRow}>
                   <TextInput
-                    label="前缀"
+                    label={t('encodingRuleConfig.prefix')}
                     value={formPrefix}
                     onChangeText={setFormPrefix}
                     mode="outlined"
@@ -555,7 +556,7 @@ export default function EncodingRuleConfigScreen() {
                     placeholder="MB"
                   />
                   <TextInput
-                    label="序号长度"
+                    label={t('encodingRuleConfig.sequenceLength')}
                     value={formSeqLength}
                     onChangeText={setFormSeqLength}
                     mode="outlined"
@@ -566,15 +567,15 @@ export default function EncodingRuleConfigScreen() {
                 </View>
 
                 <View style={styles.formSection}>
-                  <Text style={styles.formLabel}>重置周期</Text>
+                  <Text style={styles.formLabel}>{t('encodingRuleConfig.resetCycle')}</Text>
                   <SegmentedButtons
                     value={formResetCycle}
                     onValueChange={(v) => setFormResetCycle(v as ResetCycle)}
                     buttons={[
-                      { value: 'DAILY', label: '每日' },
-                      { value: 'MONTHLY', label: '每月' },
-                      { value: 'YEARLY', label: '每年' },
-                      { value: 'NEVER', label: '不重置' },
+                      { value: 'DAILY', label: t('encodingRuleConfig.resetCycles.daily') },
+                      { value: 'MONTHLY', label: t('encodingRuleConfig.resetCycles.monthly') },
+                      { value: 'YEARLY', label: t('encodingRuleConfig.resetCycles.yearly') },
+                      { value: 'NEVER', label: t('encodingRuleConfig.resetCycles.never') },
                     ]}
                     style={styles.segmentedButtons}
                   />
@@ -586,7 +587,7 @@ export default function EncodingRuleConfigScreen() {
                     onPress={() => setFormVisible(false)}
                     style={styles.modalButton}
                   >
-                    取消
+                    {t('common.cancel')}
                   </Button>
                   <Button
                     mode="contained"
@@ -595,7 +596,7 @@ export default function EncodingRuleConfigScreen() {
                     disabled={saving}
                     style={styles.modalButton}
                   >
-                    保存
+                    {t('common.save')}
                   </Button>
                 </View>
               </ScrollView>
@@ -608,7 +609,7 @@ export default function EncodingRuleConfigScreen() {
           visible={placeholderHelpVisible}
           onDismiss={() => setPlaceholderHelpVisible(false)}
         >
-          <Dialog.Title>支持的占位符</Dialog.Title>
+          <Dialog.Title>{t('encodingRuleConfig.supportedPlaceholders')}</Dialog.Title>
           <Dialog.ScrollArea style={styles.placeholderDialog}>
             <ScrollView>
               {placeholders.map((ph, index) => (
@@ -622,31 +623,31 @@ export default function EncodingRuleConfigScreen() {
                     <Text style={styles.placeholderCode}>{ph.placeholder}</Text>
                   </TouchableOpacity>
                   <Text style={styles.placeholderDesc}>{ph.description}</Text>
-                  <Text style={styles.placeholderExample}>示例: {ph.example}</Text>
+                  <Text style={styles.placeholderExample}>{t('encodingRuleConfig.example')}: {ph.example}</Text>
                 </View>
               ))}
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setPlaceholderHelpVisible(false)}>关闭</Button>
+            <Button onPress={() => setPlaceholderHelpVisible(false)}>{t('common.close')}</Button>
           </Dialog.Actions>
         </Dialog>
 
         {/* 预览对话框 */}
         <Dialog visible={previewVisible} onDismiss={() => setPreviewVisible(false)}>
-          <Dialog.Title>编码预览</Dialog.Title>
+          <Dialog.Title>{t('encodingRuleConfig.codePreview')}</Dialog.Title>
           <Dialog.Content>
             {previewLoading ? (
               <ActivityIndicator />
             ) : (
               <View style={styles.previewContent}>
-                <Text style={styles.previewLabel}>下一个编码将是：</Text>
+                <Text style={styles.previewLabel}>{t('encodingRuleConfig.nextCodeWillBe')}:</Text>
                 <Text style={styles.previewCode}>{previewCode}</Text>
               </View>
             )}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setPreviewVisible(false)}>关闭</Button>
+            <Button onPress={() => setPreviewVisible(false)}>{t('common.close')}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

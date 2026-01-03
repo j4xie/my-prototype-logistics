@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>操作日志 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">操作日志</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 日志统计 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">今日操作日志</div>
+        <div style="font-size: 32px; font-weight: 700; margin-bottom: 12px;">2,456 <span style="font-size: 14px; font-weight: 400; opacity: 0.8;">条</span></div>
+        <div style="display: flex; gap: 16px;">
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">186</div>
+            <div style="font-size: 11px; opacity: 0.8;">管理操作</div>
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">2,156</div>
+            <div style="font-size: 11px; opacity: 0.8;">业务操作</div>
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">114</div>
+            <div style="font-size: 11px; opacity: 0.8;">系统操作</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 筛选条件 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+        <div style="padding: 8px 16px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; border-radius: 20px; font-size: 13px; white-space: nowrap;">全部</div>
+        <div style="padding: 8px 16px; background: #f0f0f0; color: #595959; border-radius: 20px; font-size: 13px; white-space: nowrap;">登录</div>
+        <div style="padding: 8px 16px; background: #f0f0f0; color: #595959; border-radius: 20px; font-size: 13px; white-space: nowrap;">配置</div>
+        <div style="padding: 8px 16px; background: #f0f0f0; color: #595959; border-radius: 20px; font-size: 13px; white-space: nowrap;">数据</div>
+        <div style="padding: 8px 16px; background: #f0f0f0; color: #595959; border-radius: 20px; font-size: 13px; white-space: nowrap;">异常</div>
+      </div>
+
+      <!-- 日志列表 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">今日日志</span>
+        <span style="font-size: 13px; color: #1890ff;">导出</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden;">
+        <!-- 日志项1 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 11px;">登录</span>
+              <span style="font-size: 14px; color: #262626;">用户登录成功</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">14:32</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 张管理员 | IP: 192.168.1.100
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            平台管理员通过手机APP登录系统
+          </div>
+        </div>
+
+        <!-- 日志项2 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f6ffed; color: #52c41a; border-radius: 4px; font-size: 11px;">配置</span>
+              <span style="font-size: 14px; color: #262626;">修改工厂配额</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">14:25</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 张管理员 | 工厂: 海鲜加工一厂
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            AI配额从 50,000 调整为 80,000 次/月
+          </div>
+        </div>
+
+        <!-- 日志项3 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fff1f0; color: #f5222d; border-radius: 4px; font-size: 11px;">异常</span>
+              <span style="font-size: 14px; color: #262626;">登录失败</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">14:18</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 未知 | IP: 203.45.67.89
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            密码错误，连续失败3次，账号已锁定15分钟
+          </div>
+        </div>
+
+        <!-- 日志项4 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f9f0ff; color: #722ed1; border-radius: 4px; font-size: 11px;">数据</span>
+              <span style="font-size: 14px; color: #262626;">创建生产批次</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">14:10</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 王车间主任 | 工厂: 速冻食品厂
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            创建批次号: PB-20241201-001，计划产量: 5000kg
+          </div>
+        </div>
+
+        <!-- 日志项5 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #fff7e6; color: #fa8c16; border-radius: 4px; font-size: 11px;">系统</span>
+              <span style="font-size: 14px; color: #262626;">规则更新</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">13:45</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 系统自动 | 规则: QUOTA-WARN-001
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            配额预警规则触发，已发送通知至3位管理员
+          </div>
+        </div>
+
+        <!-- 日志项6 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f6ffed; color: #52c41a; border-radius: 4px; font-size: 11px;">配置</span>
+              <span style="font-size: 14px; color: #262626;">发布蓝图版本</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">13:30</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 张管理员 | 蓝图: 水产加工标准版
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            发布版本 v2.1.0，已推送至3家绑定工厂
+          </div>
+        </div>
+
+        <!-- 日志项7 -->
+        <div style="padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #e6f7ff; color: #1890ff; border-radius: 4px; font-size: 11px;">登录</span>
+              <span style="font-size: 14px; color: #262626;">用户登出</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">13:15</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 李质检员 | IP: 192.168.1.56
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            手动退出系统，会话时长: 2小时15分钟
+          </div>
+        </div>
+
+        <!-- 日志项8 -->
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="padding: 2px 8px; background: #f9f0ff; color: #722ed1; border-radius: 4px; font-size: 11px;">数据</span>
+              <span style="font-size: 14px; color: #262626;">质检记录提交</span>
+            </div>
+            <span style="font-size: 11px; color: #8c8c8c;">13:00</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 4px;">
+            操作人: 李质检员 | 工厂: 海鲜加工一厂
+          </div>
+          <div style="font-size: 12px; color: #595959;">
+            批次 MB-F001-056 质检合格，已更新状态
+          </div>
+        </div>
+      </div>
+
+      <!-- 加载更多 -->
+      <div style="text-align: center; padding: 16px;">
+        <span style="font-size: 14px; color: #1890ff;">加载更多日志</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

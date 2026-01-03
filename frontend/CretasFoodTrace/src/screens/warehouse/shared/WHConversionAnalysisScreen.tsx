@@ -15,6 +15,7 @@ import { Text, Button, ProgressBar, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18n";
 
 const screenWidth = Dimensions.get("window").width;
 

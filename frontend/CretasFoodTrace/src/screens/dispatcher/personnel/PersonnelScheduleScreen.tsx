@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 // 主题色
 const DISPATCHER_THEME = {
@@ -62,7 +63,7 @@ interface ShiftDetail {
 }
 
 // Mock 数据
-const weekDays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+const weekDayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const weekDates = [23, 24, 25, 26, 27, 28, 29];
 const todayIndex = 5; // 周六
 
@@ -73,10 +74,9 @@ const mockScheduleStats = {
   conflicts: 0,
 };
 
-const mockShifts: { type: ShiftType; name: string; time: string; data: ShiftData }[] = [
+const mockShifts: { type: ShiftType; time: string; data: ShiftData }[] = [
   {
     type: 'morning',
-    name: '早班',
     time: '08-12',
     data: {
       0: { count: 8 },
@@ -90,7 +90,6 @@ const mockShifts: { type: ShiftType; name: string; time: string; data: ShiftData
   },
   {
     type: 'afternoon',
-    name: '午班',
     time: '12-18',
     data: {
       0: { count: 7 },
@@ -104,7 +103,6 @@ const mockShifts: { type: ShiftType; name: string; time: string; data: ShiftData
   },
   {
     type: 'evening',
-    name: '晚班',
     time: '18-22',
     data: {
       0: { count: 0 },
@@ -121,7 +119,7 @@ const mockShifts: { type: ShiftType; name: string; time: string; data: ShiftData
 const mockTodayShifts: ShiftDetail[] = [
   {
     type: 'morning',
-    name: '早班',
+    name: 'morning',
     timeRange: '08:00-12:00',
     workers: [
       { id: '1', name: '张三丰', avatar: '张' },
@@ -134,7 +132,7 @@ const mockTodayShifts: ShiftDetail[] = [
   },
   {
     type: 'afternoon',
-    name: '午班',
+    name: 'afternoon',
     timeRange: '12:00-18:00',
     workers: [
       { id: '7', name: '钱九龙', avatar: '钱' },
@@ -146,13 +144,14 @@ const mockTodayShifts: ShiftDetail[] = [
   },
 ];
 
-const workshopFilters = ['全部', '切片', '包装', '冷冻', '仓储'];
+const workshopFilterKeys = ['all', 'slicing', 'packaging', 'freezing', 'storage'];
 
 export default function PersonnelScheduleScreen() {
+  const { t } = useTranslation('dispatcher');
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'list'>('week');
-  const [selectedWorkshop, setSelectedWorkshop] = useState('切片');
+  const [selectedWorkshopKey, setSelectedWorkshopKey] = useState('slicing');
   const [weekOffset, setWeekOffset] = useState(0);
 
   // 下拉刷新
@@ -184,13 +183,13 @@ export default function PersonnelScheduleScreen() {
   // 复制上周排班
   const handleCopyLastWeek = () => {
     Alert.alert(
-      '复制上周排班',
-      '确定将上周的排班复制到本周吗？已有的排班将被覆盖。',
+      t('personnelScheduleScreen.copyLastWeekTitle'),
+      t('personnelScheduleScreen.copyLastWeekMessage'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确定',
-          onPress: () => Alert.alert('成功', '已复制上周排班'),
+          text: t('common.confirm'),
+          onPress: () => Alert.alert(t('common.success'), t('personnelScheduleScreen.copyLastWeekSuccess')),
         },
       ]
     );
@@ -216,7 +215,7 @@ export default function PersonnelScheduleScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>人员排班</Text>
+        <Text style={styles.headerTitle}>{t('personnelScheduleScreen.title')}</Text>
         <TouchableOpacity style={styles.addButton}>
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
@@ -252,12 +251,12 @@ export default function PersonnelScheduleScreen() {
                   style={styles.viewTabGradient}
                 >
                   <Text style={styles.viewTabTextActive}>
-                    {mode === 'week' ? '周视图' : mode === 'month' ? '月视图' : '列表'}
+                    {t(`personnelScheduleScreen.viewModes.${mode}`)}
                   </Text>
                 </LinearGradient>
               ) : (
                 <Text style={styles.viewTabText}>
-                  {mode === 'week' ? '周视图' : mode === 'month' ? '月视图' : '列表'}
+                  {t(`personnelScheduleScreen.viewModes.${mode}`)}
                 </Text>
               )}
             </TouchableOpacity>
@@ -273,8 +272,8 @@ export default function PersonnelScheduleScreen() {
             <Ionicons name="chevron-back" size={18} color={DISPATCHER_THEME.primary} />
           </TouchableOpacity>
           <View style={styles.weekInfo}>
-            <Text style={styles.weekTitle}>2025年12月 第4周</Text>
-            <Text style={styles.weekRange}>12月23日 - 12月29日</Text>
+            <Text style={styles.weekTitle}>{t('personnelScheduleScreen.weekTitle', { year: 2025, month: 12, week: 4 })}</Text>
+            <Text style={styles.weekRange}>{t('personnelScheduleScreen.weekRange', { startMonth: 12, startDay: 23, endMonth: 12, endDay: 29 })}</Text>
           </View>
           <TouchableOpacity
             style={styles.weekNavBtn}
@@ -290,25 +289,25 @@ export default function PersonnelScheduleScreen() {
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.primary }]}>
               {mockScheduleStats.total}
             </Text>
-            <Text style={styles.statLabel}>本周排班</Text>
+            <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.thisWeek')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.success }]}>
               {mockScheduleStats.confirmed}
             </Text>
-            <Text style={styles.statLabel}>已确认</Text>
+            <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.confirmed')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.warning }]}>
               {mockScheduleStats.pending}
             </Text>
-            <Text style={styles.statLabel}>待确认</Text>
+            <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.pending')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.danger }]}>
               {mockScheduleStats.conflicts}
             </Text>
-            <Text style={styles.statLabel}>冲突</Text>
+            <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.conflicts')}</Text>
           </View>
         </View>
 
@@ -319,22 +318,22 @@ export default function PersonnelScheduleScreen() {
           style={styles.filterScroll}
           contentContainerStyle={styles.filterContainer}
         >
-          {workshopFilters.map((workshop) => (
+          {workshopFilterKeys.map((workshopKey) => (
             <TouchableOpacity
-              key={workshop}
+              key={workshopKey}
               style={[
                 styles.filterChip,
-                selectedWorkshop === workshop && styles.filterChipActive,
+                selectedWorkshopKey === workshopKey && styles.filterChipActive,
               ]}
-              onPress={() => setSelectedWorkshop(workshop)}
+              onPress={() => setSelectedWorkshopKey(workshopKey)}
             >
               <Text
                 style={[
                   styles.filterChipText,
-                  selectedWorkshop === workshop && styles.filterChipTextActive,
+                  selectedWorkshopKey === workshopKey && styles.filterChipTextActive,
                 ]}
               >
-                {workshop}
+                {t(`personnelScheduleScreen.workshops.${workshopKey}`)}
               </Text>
             </TouchableOpacity>
           ))}

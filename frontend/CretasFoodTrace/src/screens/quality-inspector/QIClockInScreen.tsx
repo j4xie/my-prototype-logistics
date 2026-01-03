@@ -16,6 +16,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS } from '../../types/qualityInspector';
 import { useAuthStore } from '../../store/authStore';
@@ -30,6 +31,7 @@ export default function QIClockInScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId;
+  const { t } = useTranslation('quality');
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
@@ -57,7 +59,7 @@ export default function QIClockInScreen() {
       setLocationLoading(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocation('无法获取位置');
+        setLocation(t('clock.locationDenied'));
         return;
       }
 
@@ -71,13 +73,13 @@ export default function QIClockInScreen() {
         const locationStr = [address.district, address.street, address.name]
           .filter(Boolean)
           .join('');
-        setLocation(locationStr || '位置获取成功');
+        setLocation(locationStr || t('clock.locationSuccess'));
       } else {
-        setLocation('位置获取成功');
+        setLocation(t('clock.locationSuccess'));
       }
     } catch (error) {
       console.error('获取位置失败:', error);
-      setLocation('位置获取失败');
+      setLocation(t('clock.locationFailed'));
     } finally {
       setLocationLoading(false);
     }
@@ -103,7 +105,7 @@ export default function QIClockInScreen() {
 
   const handleClockIn = async () => {
     if (clockedIn) {
-      Alert.alert('提示', '您今天已经打过上班卡了');
+      Alert.alert(t('clock.hint'), t('clock.alreadyClockedIn'));
       return;
     }
 
@@ -116,15 +118,15 @@ export default function QIClockInScreen() {
       const record: ClockRecord = {
         type: 'in',
         time: formatTime(now),
-        location: location || '未知位置',
+        location: location || t('clock.unknownLocation'),
       };
 
       setTodayRecords((prev) => [...prev, record]);
       setClockedIn(true);
-      Alert.alert('打卡成功', `上班打卡时间: ${formatTime(now)}`);
+      Alert.alert(t('clock.clockInSuccess'), t('clock.clockInTime', { time: formatTime(now) }));
     } catch (error) {
       console.error('打卡失败:', error);
-      Alert.alert('打卡失败', '请稍后重试');
+      Alert.alert(t('clock.clockInFailed'), t('clock.retryLater'));
     } finally {
       setLoading(false);
     }
@@ -132,12 +134,12 @@ export default function QIClockInScreen() {
 
   const handleClockOut = async () => {
     if (!clockedIn) {
-      Alert.alert('提示', '请先打上班卡');
+      Alert.alert(t('clock.hint'), t('clock.clockInFirst'));
       return;
     }
 
     if (clockedOut) {
-      Alert.alert('提示', '您今天已经打过下班卡了');
+      Alert.alert(t('clock.hint'), t('clock.alreadyClockedOut'));
       return;
     }
 
@@ -150,15 +152,15 @@ export default function QIClockInScreen() {
       const record: ClockRecord = {
         type: 'out',
         time: formatTime(now),
-        location: location || '未知位置',
+        location: location || t('clock.unknownLocation'),
       };
 
       setTodayRecords((prev) => [...prev, record]);
       setClockedOut(true);
-      Alert.alert('打卡成功', `下班打卡时间: ${formatTime(now)}`);
+      Alert.alert(t('clock.clockOutSuccess'), t('clock.clockOutTime', { time: formatTime(now) }));
     } catch (error) {
       console.error('打卡失败:', error);
-      Alert.alert('打卡失败', '请稍后重试');
+      Alert.alert(t('clock.clockOutFailed'), t('clock.retryLater'));
     } finally {
       setLoading(false);
     }
@@ -212,7 +214,7 @@ export default function QIClockInScreen() {
                 color="#fff"
               />
               <Text style={styles.clockBtnText}>
-                {clockedIn ? '已打卡' : '上班打卡'}
+                {clockedIn ? t('clock.clocked') : t('clock.clockIn')}
               </Text>
               {clockedIn && todayRecords.find((r) => r.type === 'in') && (
                 <Text style={styles.clockBtnTime}>
@@ -243,7 +245,7 @@ export default function QIClockInScreen() {
                 color="#fff"
               />
               <Text style={styles.clockBtnText}>
-                {clockedOut ? '已打卡' : '下班打卡'}
+                {clockedOut ? t('clock.clocked') : t('clock.clockOut')}
               </Text>
               {clockedOut && todayRecords.find((r) => r.type === 'out') && (
                 <Text style={styles.clockBtnTime}>
@@ -257,11 +259,11 @@ export default function QIClockInScreen() {
 
       {/* 今日打卡记录 */}
       <View style={styles.recordsSection}>
-        <Text style={styles.sectionTitle}>今日打卡记录</Text>
+        <Text style={styles.sectionTitle}>{t('clock.todayRecords')}</Text>
         {todayRecords.length === 0 ? (
           <View style={styles.emptyRecords}>
             <Ionicons name="time-outline" size={48} color={QI_COLORS.disabled} />
-            <Text style={styles.emptyText}>暂无打卡记录</Text>
+            <Text style={styles.emptyText}>{t('clock.noRecords')}</Text>
           </View>
         ) : (
           <View style={styles.recordsList}>
@@ -276,7 +278,7 @@ export default function QIClockInScreen() {
                 </View>
                 <View style={styles.recordInfo}>
                   <Text style={styles.recordType}>
-                    {record.type === 'in' ? '上班打卡' : '下班打卡'}
+                    {record.type === 'in' ? t('clock.clockIn') : t('clock.clockOut')}
                   </Text>
                   <Text style={styles.recordLocation}>{record.location}</Text>
                 </View>
@@ -292,8 +294,8 @@ export default function QIClockInScreen() {
         <View style={styles.workDurationCard}>
           <Ionicons name="timer-outline" size={24} color={QI_COLORS.primary} />
           <View style={styles.workDurationInfo}>
-            <Text style={styles.workDurationLabel}>今日工作时长</Text>
-            <Text style={styles.workDurationValue}>8小时30分钟</Text>
+            <Text style={styles.workDurationLabel}>{t('clock.todayWorkDuration')}</Text>
+            <Text style={styles.workDurationValue}>{t('clock.workDurationValue')}</Text>
           </View>
         </View>
       )}
@@ -302,7 +304,7 @@ export default function QIClockInScreen() {
       <View style={styles.tipCard}>
         <Ionicons name="information-circle-outline" size={20} color={QI_COLORS.secondary} />
         <Text style={styles.tipText}>
-          请在工作地点范围内打卡，系统会自动记录您的位置信息
+          {t('clock.tipMessage')}
         </Text>
       </View>
     </ScrollView>

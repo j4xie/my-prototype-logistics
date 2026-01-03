@@ -8,6 +8,7 @@ import {
   List,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -19,6 +20,7 @@ import { handleError } from '../../utils/errorHandler';
 export default function TimeClockScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -72,33 +74,33 @@ export default function TimeClockScreen() {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('位置权限被拒绝', '打卡需要获取您的位置信息');
+        Alert.alert(t('attendance.timeClock.alerts.locationDenied'), t('attendance.timeClock.alerts.locationDeniedMsg'));
         setGpsLocation(null);
         return;
       }
       const location = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
       setGpsLocation(location.coords);
     } catch (error) {
-      Alert.alert('定位失败', '无法获取位置信息');
+      Alert.alert(t('attendance.timeClock.alerts.locationFailed'), t('attendance.timeClock.alerts.locationFailedMsg'));
       setGpsLocation(null);
     }
   };
 
   const handleClockIn = async () => {
-    if (lastClockIn && lastClockIn.clockInTime && !lastClockIn.clockOutTime) return Alert.alert('提示', '请先下班打卡');
-    if (!gpsLocation) return Alert.alert('提示', '正在获取定位...');
+    if (lastClockIn && lastClockIn.clockInTime && !lastClockIn.clockOutTime) return Alert.alert(t('common.tip'), t('attendance.timeClock.alerts.clockOutFirst'));
+    if (!gpsLocation) return Alert.alert(t('common.tip'), t('attendance.timeClock.alerts.locatingWait'));
 
-    Alert.alert('确认上班打卡', `当前时间：${formatTime(currentTime)}`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('attendance.timeClock.alerts.confirmClockIn'), `${t('attendance.timeClock.alerts.currentTime')}${formatTime(currentTime)}`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '确认',
+        text: t('common.confirm'),
         onPress: async () => {
           try {
             setLoading(true);
             const userId = getUserId();
             const factoryId = getFactoryId(user);
             if (!userId) return;
-            
+
             await timeclockApiClient.clockIn({
               userId,
               location: `Lat:${gpsLocation.latitude.toFixed(4)}, Lon:${gpsLocation.longitude.toFixed(4)}`,
@@ -106,12 +108,12 @@ export default function TimeClockScreen() {
               latitude: gpsLocation.latitude,
               longitude: gpsLocation.longitude,
             }, factoryId);
-            Alert.alert('成功', '上班打卡成功');
+            Alert.alert(t('messages.success'), t('attendance.timeClock.alerts.clockInSuccess'));
             loadTodayRecords();
           } catch (error) {
             handleError(error, {
-              title: '打卡失败',
-              customMessage: '上班打卡失败，请重试',
+              title: t('attendance.timeClock.alerts.clockFailed'),
+              customMessage: t('attendance.timeClock.alerts.clockFailedRetry'),
             });
           } finally {
             setLoading(false);
@@ -123,27 +125,27 @@ export default function TimeClockScreen() {
 
   const handleClockOut = async () => {
     const hasClockIn = lastClockIn && lastClockIn.clockInTime && !lastClockIn.clockOutTime;
-    if (!hasClockIn) return Alert.alert('提示', '尚未上班打卡');
-    if (!gpsLocation) return Alert.alert('提示', '正在获取定位...');
+    if (!hasClockIn) return Alert.alert(t('common.tip'), t('attendance.timeClock.alerts.notClockedIn'));
+    if (!gpsLocation) return Alert.alert(t('common.tip'), t('attendance.timeClock.alerts.locatingWait'));
 
-    Alert.alert('确认下班打卡', `当前时间：${formatTime(currentTime)}`, [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('attendance.timeClock.alerts.confirmClockOut'), `${t('attendance.timeClock.alerts.currentTime')}${formatTime(currentTime)}`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '确认',
+        text: t('common.confirm'),
         onPress: async () => {
           try {
             setLoading(true);
             const userId = getUserId();
             const factoryId = getFactoryId(user);
             if (!userId) return;
-            
+
             await timeclockApiClient.clockOut({ userId }, factoryId);
-            Alert.alert('成功', '下班打卡成功');
+            Alert.alert(t('messages.success'), t('attendance.timeClock.alerts.clockOutSuccess'));
             loadTodayRecords();
           } catch (error) {
             handleError(error, {
-              title: '打卡失败',
-              customMessage: '下班打卡失败，请重试',
+              title: t('attendance.timeClock.alerts.clockFailed'),
+              customMessage: t('attendance.timeClock.alerts.clockFailedRetry'),
             });
           } finally {
             setLoading(false);
@@ -157,13 +159,13 @@ export default function TimeClockScreen() {
   const formatDate = (date: Date) => date.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' });
 
   const getCurrentStatus = () => {
-    if (!lastClockIn || todayRecords.length === 0) return { text: '未打卡', variant: 'default' as const, desc: '今天尚未打卡' };
+    if (!lastClockIn || todayRecords.length === 0) return { text: t('attendance.timeClock.status.notClocked'), variant: 'default' as const, desc: t('attendance.timeClock.statusDesc.notClocked') };
     const record = lastClockIn;
-    if (record.status === 'WORKING') return { text: '工作中', variant: 'success' as const, desc: '已上班' };
-    if (record.status === 'OFF_WORK') return { text: '已下班', variant: 'info' as const, desc: '今日已结束' };
-    if (record.clockInTime && !record.clockOutTime) return { text: '工作中', variant: 'success' as const, desc: '已上班' };
-    if (record.clockInTime && record.clockOutTime) return { text: '已下班', variant: 'info' as const, desc: '今日已结束' };
-    return { text: '未知', variant: 'default' as const, desc: '' };
+    if (record.status === 'WORKING') return { text: t('attendance.timeClock.status.working'), variant: 'success' as const, desc: t('attendance.timeClock.statusDesc.working') };
+    if (record.status === 'OFF_WORK') return { text: t('attendance.timeClock.status.offWork'), variant: 'info' as const, desc: t('attendance.timeClock.statusDesc.offWork') };
+    if (record.clockInTime && !record.clockOutTime) return { text: t('attendance.timeClock.status.working'), variant: 'success' as const, desc: t('attendance.timeClock.statusDesc.working') };
+    if (record.clockInTime && record.clockOutTime) return { text: t('attendance.timeClock.status.offWork'), variant: 'info' as const, desc: t('attendance.timeClock.statusDesc.offWork') };
+    return { text: t('attendance.timeClock.status.unknown'), variant: 'default' as const, desc: '' };
   };
 
   const status = getCurrentStatus();
@@ -174,7 +176,7 @@ export default function TimeClockScreen() {
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="考勤打卡" />
+        <Appbar.Content title={t('attendance.timeClock.title')} />
         <Appbar.Action icon="history" onPress={() => (navigation as any).navigate('AttendanceHistory')} />
         <Appbar.Action icon="refresh" onPress={loadTodayRecords} />
       </Appbar.Header>
@@ -195,17 +197,17 @@ export default function TimeClockScreen() {
           <View style={styles.row}>
             <List.Icon icon="map-marker" color={theme.colors.primary} />
             <View style={styles.locationContent}>
-              <Text style={styles.cardTitle}>当前位置</Text>
+              <Text style={styles.cardTitle}>{t('attendance.timeClock.currentLocation')}</Text>
               {gpsLocation ? (
                 <View>
                   <Text style={styles.locationText}>Lat: {gpsLocation.latitude.toFixed(6)}</Text>
                   <Text style={styles.locationText}>Lon: {gpsLocation.longitude.toFixed(6)}</Text>
-                  <Text style={styles.successText}>定位成功</Text>
+                  <Text style={styles.successText}>{t('attendance.timeClock.locationSuccess')}</Text>
                 </View>
               ) : (
                 <View style={styles.row}>
                   <ActivityIndicator size="small" />
-                  <Text style={{ marginLeft: 8 }}>定位中...</Text>
+                  <Text style={{ marginLeft: 8 }}>{t('attendance.timeClock.locating')}</Text>
                 </View>
               )}
             </View>
@@ -223,7 +225,7 @@ export default function TimeClockScreen() {
             style={styles.flexButton}
             icon="login"
           >
-            上班打卡
+            {t('attendance.timeClock.clockInBtn')}
           </NeoButton>
           <View style={{ width: 16 }} />
           <NeoButton
@@ -235,31 +237,31 @@ export default function TimeClockScreen() {
             style={styles.flexButton}
             icon="logout"
           >
-            下班打卡
+            {t('attendance.timeClock.clockOutBtn')}
           </NeoButton>
         </View>
 
         {/* Today's Records */}
         <NeoCard style={styles.card} padding="m">
-          <Text style={styles.sectionTitle}>今日记录</Text>
+          <Text style={styles.sectionTitle}>{t('attendance.timeClock.todayRecords')}</Text>
           <Divider style={styles.divider} />
-          
+
           {loadingRecords ? (
             <View style={styles.centerContent}><ActivityIndicator /></View>
           ) : todayRecords.length === 0 ? (
-            <Text style={styles.emptyText}>暂无记录</Text>
+            <Text style={styles.emptyText}>{t('attendance.timeClock.noRecords')}</Text>
           ) : (
             todayRecords.map((record: any) => (
               <View key={record.id}>
                 {record.clockInTime && (
                   <View style={styles.recordRow}>
-                    <StatusBadge status="上班" variant="success" />
+                    <StatusBadge status={t('attendance.timeClock.status.clockIn')} variant="success" />
                     <Text style={styles.recordTime}>{new Date(record.clockInTime).toLocaleTimeString('zh-CN')}</Text>
                   </View>
                 )}
                 {record.clockOutTime && (
                   <View style={[styles.recordRow, { marginTop: 8 }]}>
-                    <StatusBadge status="下班" variant="info" />
+                    <StatusBadge status={t('attendance.timeClock.status.clockOut')} variant="info" />
                     <Text style={styles.recordTime}>{new Date(record.clockOutTime).toLocaleTimeString('zh-CN')}</Text>
                   </View>
                 )}
@@ -270,12 +272,12 @@ export default function TimeClockScreen() {
 
         {/* Quick Links */}
         <NeoCard style={styles.card} padding="m">
-          <Text style={styles.sectionTitle}>常用功能</Text>
+          <Text style={styles.sectionTitle}>{t('attendance.timeClock.quickLinks')}</Text>
           <View style={styles.grid}>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('AttendanceHistory')} style={styles.gridBtn}>历史记录</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('TimeStatistics')} style={styles.gridBtn}>工时统计</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('WorkRecords')} style={styles.gridBtn}>工作记录</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('DepartmentAttendance')} style={styles.gridBtn}>部门考勤</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('AttendanceHistory')} style={styles.gridBtn}>{t('attendance.timeClock.historyRecords')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('TimeStatistics')} style={styles.gridBtn}>{t('attendance.timeClock.timeStatistics')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('WorkRecords')} style={styles.gridBtn}>{t('attendance.timeClock.workRecords')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('DepartmentAttendance')} style={styles.gridBtn}>{t('attendance.timeClock.departmentAttendance')}</NeoButton>
           </View>
         </NeoCard>
 

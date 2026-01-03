@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -46,4 +47,10 @@ public interface WorkerAssignmentRepository extends JpaRepository<WorkerAssignme
     @Query("SELECT COUNT(wa) FROM WorkerAssignment wa WHERE wa.scheduleId = :scheduleId " +
            "AND wa.status = 'checked_in'")
     long countCheckedInByScheduleId(@Param("scheduleId") String scheduleId);
+
+    /**
+     * 批量查询多个排程的工人分配 - 解决 N+1 查询问题
+     */
+    @Query("SELECT wa FROM WorkerAssignment wa WHERE wa.scheduleId IN :scheduleIds")
+    List<WorkerAssignment> findByScheduleIdIn(@Param("scheduleIds") Collection<String> scheduleIds);
 }

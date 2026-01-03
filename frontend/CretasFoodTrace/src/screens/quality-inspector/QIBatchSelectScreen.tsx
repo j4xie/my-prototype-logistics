@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 
@@ -23,8 +24,8 @@ type RouteProps = RouteProp<QualityInspectorStackParamList, 'QIBatchSelect'>;
 
 interface BatchType {
   id: string;
-  name: string;
-  description: string;
+  nameKey: string;
+  descKey: string;
   icon: keyof typeof Ionicons.glyphMap;
   color: string;
 }
@@ -32,35 +33,36 @@ interface BatchType {
 const BATCH_TYPES: BatchType[] = [
   {
     id: 'processing',
-    name: '加工批次',
-    description: '生产线加工完成的产品批次',
+    nameKey: 'batchSelect.processingBatch',
+    descKey: 'batchSelect.processingDesc',
     icon: 'construct',
     color: '#2196F3',
   },
   {
     id: 'material',
-    name: '原材料批次',
-    description: '入库原材料的质量检验',
+    nameKey: 'batchSelect.materialBatch',
+    descKey: 'batchSelect.materialDesc',
     icon: 'cube',
     color: '#4CAF50',
   },
   {
     id: 'finished',
-    name: '成品批次',
-    description: '待出货的成品检验',
+    nameKey: 'batchSelect.productBatch',
+    descKey: 'batchSelect.productDesc',
     icon: 'gift',
     color: '#9C27B0',
   },
   {
     id: 'return',
-    name: '退货批次',
-    description: '退回产品的质量复检',
+    nameKey: 'batchSelect.returnBatch',
+    descKey: 'batchSelect.returnDesc',
     icon: 'return-down-back',
     color: '#FF9800',
   },
 ];
 
 export default function QIBatchSelectScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
@@ -85,8 +87,8 @@ export default function QIBatchSelectScreen() {
           <Ionicons name="scan" size={32} color="#fff" />
         </View>
         <View style={styles.scanTextContainer}>
-          <Text style={styles.scanTitle}>扫码开始检验</Text>
-          <Text style={styles.scanSubtitle}>扫描批次二维码快速定位</Text>
+          <Text style={styles.scanTitle}>{t('batchSelect.scanToStart')}</Text>
+          <Text style={styles.scanSubtitle}>{t('batchSelect.scanQrCode')}</Text>
         </View>
         <Ionicons name="chevron-forward" size={24} color="rgba(255,255,255,0.8)" />
       </TouchableOpacity>
@@ -94,7 +96,7 @@ export default function QIBatchSelectScreen() {
       {/* 分隔 */}
       <View style={styles.divider}>
         <View style={styles.dividerLine} />
-        <Text style={styles.dividerText}>或选择批次类型</Text>
+        <Text style={styles.dividerText}>{t('batchSelect.orSelectType')}</Text>
         <View style={styles.dividerLine} />
       </View>
 
@@ -111,8 +113,8 @@ export default function QIBatchSelectScreen() {
               <Ionicons name={type.icon} size={28} color={type.color} />
             </View>
             <View style={styles.typeInfo}>
-              <Text style={styles.typeName}>{type.name}</Text>
-              <Text style={styles.typeDescription}>{type.description}</Text>
+              <Text style={styles.typeName}>{t(type.nameKey)}</Text>
+              <Text style={styles.typeDescription}>{t(type.descKey)}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={QI_COLORS.textSecondary} />
           </TouchableOpacity>
@@ -123,7 +125,7 @@ export default function QIBatchSelectScreen() {
       <View style={styles.tipCard}>
         <Ionicons name="information-circle" size={20} color={QI_COLORS.secondary} />
         <Text style={styles.tipText}>
-          选择批次类型后，系统将显示对应类型的待检批次列表
+          {t('batchSelect.tip')}
         </Text>
       </View>
     </ScrollView>

@@ -14,22 +14,24 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function SystemSettingsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('profile');
   const [autoSync, setAutoSync] = useState(true);
   const [wifiOnly, setWifiOnly] = useState(true);
   const [cacheSize, setCacheSize] = useState('12.5 MB');
 
   const handleClearCache = () => {
     Alert.alert(
-      '清除缓存',
-      '确定要清除所有缓存数据吗？',
+      t('systemSettings.clearCacheTitle'),
+      t('systemSettings.clearCacheConfirm'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('systemSettings.cancel'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('systemSettings.confirm'),
           onPress: async () => {
             try {
               // 清除部分缓存
@@ -37,9 +39,9 @@ export function SystemSettingsScreen() {
               const cacheKeys = keys.filter(key => key.startsWith('cache_'));
               await AsyncStorage.multiRemove(cacheKeys);
               setCacheSize('0 MB');
-              Alert.alert('成功', '缓存已清除');
+              Alert.alert(t('messages.saveSuccess'), t('messages.cacheCleared'));
             } catch (error) {
-              Alert.alert('错误', '清除缓存失败');
+              Alert.alert(t('systemSettings.error'), t('systemSettings.clearCacheFailed'));
             }
           },
         },
@@ -88,25 +90,25 @@ export function SystemSettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>系统设置</Text>
+        <Text style={styles.title}>{t('systemSettings.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* 数据同步 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>数据同步</Text>
+          <Text style={styles.sectionTitle}>{t('systemSettings.dataSync')}</Text>
           <View style={styles.settingsCard}>
             <SettingSwitch
-              title="自动同步"
-              description="启用后将自动同步数据"
+              title={t('systemSettings.autoSync')}
+              description={t('systemSettings.autoSyncDescription')}
               value={autoSync}
               onValueChange={setAutoSync}
             />
             <View style={styles.divider} />
             <SettingSwitch
-              title="仅Wi-Fi同步"
-              description="仅在连接Wi-Fi时同步数据"
+              title={t('systemSettings.wifiOnly')}
+              description={t('systemSettings.wifiOnlyDescription')}
               value={wifiOnly}
               onValueChange={setWifiOnly}
             />
@@ -115,10 +117,10 @@ export function SystemSettingsScreen() {
 
         {/* 存储空间 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>存储空间</Text>
+          <Text style={styles.sectionTitle}>{t('systemSettings.storage')}</Text>
           <View style={styles.settingsCard}>
             <SettingButton
-              title="清除缓存"
+              title={t('systemSettings.clearCache')}
               rightText={cacheSize}
               onPress={handleClearCache}
             />
@@ -127,17 +129,17 @@ export function SystemSettingsScreen() {
 
         {/* 开发者选项 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>高级设置</Text>
+          <Text style={styles.sectionTitle}>{t('systemSettings.advancedSettings')}</Text>
           <View style={styles.settingsCard}>
             <SettingButton
-              title="服务器设置"
-              rightText="生产环境"
-              onPress={() => Alert.alert('提示', '当前连接生产环境服务器')}
+              title={t('systemSettings.serverSettings')}
+              rightText={t('systemSettings.productionEnv')}
+              onPress={() => Alert.alert(t('systemSettings.tip'), t('systemSettings.connectedToProduction'))}
             />
             <View style={styles.divider} />
             <SettingButton
-              title="网络诊断"
-              onPress={() => Alert.alert('网络状态', '网络连接正常\n延迟: 45ms')}
+              title={t('systemSettings.networkDiagnostic')}
+              onPress={() => Alert.alert(t('systemSettings.networkStatus'), t('systemSettings.networkNormal'))}
             />
           </View>
         </View>

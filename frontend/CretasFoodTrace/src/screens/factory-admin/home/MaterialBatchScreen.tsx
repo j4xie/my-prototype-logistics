@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { materialBatchApiClient } from '../../../services/api/materialBatchApiClient';
 
@@ -35,6 +36,7 @@ interface MaterialBatch {
 
 export function MaterialBatchScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ export function MaterialBatchScreen() {
       }
     } catch (err) {
       console.error('加载原料批次失败:', err);
-      setError('数据加载失败');
+      setError(t('materialBatch.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -81,10 +83,10 @@ export function MaterialBatchScreen() {
 
   const getStatusLabel = (status: string): string => {
     const labels: Record<string, string> = {
-      available: '可用',
-      reserved: '已预留',
-      depleted: '已消耗',
-      expired: '已过期',
+      available: t('materialBatch.status.available'),
+      reserved: t('materialBatch.status.reserved'),
+      depleted: t('materialBatch.status.depleted'),
+      expired: t('materialBatch.status.expired'),
     };
     return labels[status] || status;
   };
@@ -125,7 +127,7 @@ export function MaterialBatchScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -138,9 +140,9 @@ export function MaterialBatchScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>原料批次</Text>
+        <Text style={styles.headerTitle}>{t('materialBatch.title')}</Text>
         <View style={styles.headerRight}>
-          <Text style={styles.batchCount}>{batches.length} 批</Text>
+          <Text style={styles.batchCount}>{batches.length} {t('materialBatch.batchUnit')}</Text>
         </View>
       </View>
 
@@ -163,7 +165,7 @@ export function MaterialBatchScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon source="truck-delivery" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>暂无原料批次</Text>
+            <Text style={styles.emptyText}>{t('materialBatch.empty')}</Text>
           </View>
         }
       />

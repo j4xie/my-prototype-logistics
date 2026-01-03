@@ -19,6 +19,7 @@ import {
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Picker } from '@react-native-picker/picker';
+import { useTranslation } from 'react-i18next';
 import { productionPlanApiClient, ProductionPlan as ApiProductionPlan, StockWithConversion } from '../../services/api/productionPlanApiClient';
 import { productTypeApiClient } from '../../services/api/productTypeApiClient';
 import { customerApiClient } from '../../services/api/customerApiClient';
@@ -59,6 +60,7 @@ type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList>;
  * 生产计划管理页面
  */
 export default function ProductionPlanManagementScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const [plans, setPlans] = useState<ProductionPlan[]>([]);
@@ -181,7 +183,7 @@ export default function ProductionPlanManagementScreen() {
       }
     } catch (error) {
       productionPlanLogger.error('加载生产计划失败', error, { filterStatus });
-      Alert.alert('错误', getErrorMsg(error) || '加载生产计划失败');
+      Alert.alert(t('common.error', { defaultValue: '错误' }), getErrorMsg(error) || t('productionPlan.messages.loadFailed'));
       setPlans([]);
     } finally {
       setLoading(false);
@@ -358,7 +360,7 @@ export default function ProductionPlanManagementScreen() {
 
   const handleSave = async () => {
     if (!formData.productTypeId || !formData.customerId || !formData.plannedQuantity) {
-      Alert.alert('提示', '产品类型、客户和计划产量不能为空');
+      Alert.alert(t('common.hint', { defaultValue: '提示' }), t('productionPlan.validation.requiredFields'));
       return;
     }
 
@@ -491,20 +493,20 @@ export default function ProductionPlanManagementScreen() {
   const getStatusText = (status: string) => {
     const s = status?.toLowerCase();
     switch (s) {
-      case 'pending': return '待生产';
-      case 'in_progress': return '生产中';
-      case 'completed': return '已完成';
-      case 'shipped': return '已出货';
-      case 'cancelled': return '已取消';
-      default: return '未知';
+      case 'pending': return t('productionPlan.status.pending');
+      case 'in_progress': return t('productionPlan.status.inProgress');
+      case 'completed': return t('productionPlan.status.completed');
+      case 'shipped': return t('productionPlan.status.shipped');
+      case 'cancelled': return t('productionPlan.status.cancelled');
+      default: return t('productionPlan.status.unknown');
     }
   };
 
   const getPlanTypeText = (planType?: string) => {
     switch (planType) {
-      case 'FUTURE': return '未来计划';
-      case 'FROM_INVENTORY': return '基于库存';
-      default: return '基于库存';
+      case 'FUTURE': return t('productionPlan.planType.future');
+      case 'FROM_INVENTORY': return t('productionPlan.planType.fromInventory');
+      default: return t('productionPlan.planType.fromInventory');
     }
   };
 
@@ -524,7 +526,7 @@ export default function ProductionPlanManagementScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="生产计划管理" />
+        <Appbar.Content title={t('productionPlan.title')} />
         <Appbar.Action icon="refresh" onPress={loadPlans} />
       </Appbar.Header>
 
@@ -536,10 +538,10 @@ export default function ProductionPlanManagementScreen() {
               value={filterStatus}
               onValueChange={setFilterStatus}
               buttons={[
-                { value: 'all', label: '全部' },
-                { value: 'pending', label: '待生产' },
-                { value: 'in_progress', label: '生产中' },
-                { value: 'completed', label: '已完成' },
+                { value: 'all', label: t('productionPlan.filter.all') },
+                { value: 'pending', label: t('productionPlan.filter.pending') },
+                { value: 'in_progress', label: t('productionPlan.filter.inProgress') },
+                { value: 'completed', label: t('productionPlan.filter.completed') },
               ]}
             />
           </Card.Content>
@@ -551,19 +553,19 @@ export default function ProductionPlanManagementScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{plans.length}</Text>
-                <Text style={styles.statLabel}>总计划数</Text>
+                <Text style={styles.statLabel}>{t('productionPlan.stats.totalPlans')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {plans.filter(p => p.status?.toLowerCase() === 'in_progress').length}
                 </Text>
-                <Text style={styles.statLabel}>生产中</Text>
+                <Text style={styles.statLabel}>{t('productionPlan.stats.inProgress')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {plans.filter(p => p.status?.toLowerCase() === 'completed').length}
                 </Text>
-                <Text style={styles.statLabel}>已完成</Text>
+                <Text style={styles.statLabel}>{t('productionPlan.stats.completed')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -573,14 +575,14 @@ export default function ProductionPlanManagementScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : filteredPlans.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content style={styles.emptyContent}>
               <List.Icon icon="clipboard-text-outline" color="#999" />
-              <Text style={styles.emptyText}>暂无生产计划</Text>
-              <Text style={styles.emptyHint}>点击右下角"+"按钮创建生产计划</Text>
+              <Text style={styles.emptyText}>{t('productionPlan.empty.noPlans')}</Text>
+              <Text style={styles.emptyHint}>{t('productionPlan.empty.hint')}</Text>
             </Card.Content>
           </Card>
         ) : (

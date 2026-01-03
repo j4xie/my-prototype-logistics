@@ -49,6 +49,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import {
@@ -78,24 +79,13 @@ const CHANGE_TYPE_COLORS: Record<string, string> = {
   DEPRECATE: '#F44336',
 };
 
-// 变更类型标签映射
-const CHANGE_TYPE_LABELS: Record<string, string> = {
-  CREATE: '创建',
-  UPDATE: '更新',
-  PUBLISH: '发布',
-  DEPRECATE: '废弃',
-};
-
-// 更新策略标签映射
-const UPDATE_POLICY_LABELS: Record<string, string> = {
-  MANUAL: '手动更新',
-  AUTO_MINOR: '自动小版本',
-  AUTO_ALL: '自动全部',
-};
+// Note: CHANGE_TYPE_LABELS and UPDATE_POLICY_LABELS are now handled via i18n
+// Use t('blueprint.changeTypeCreate'), t('blueprint.changeTypeUpdate'), etc.
 
 export function BlueprintManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('platform');
   const { blueprintId, blueprintName } = route.params || {};
 
   // 状态管理
@@ -169,8 +159,8 @@ export function BlueprintManagementScreen() {
     } catch (error) {
       blueprintLogger.error('加载数据失败', error as Error);
       handleError(error, {
-        title: '加载失败',
-        customMessage: '无法加载蓝图版本数据',
+        title: t('errors.loadFailed'),
+        customMessage: t('blueprint.loading'),
       });
     } finally {
       setLoading(false);
@@ -205,7 +195,7 @@ export function BlueprintManagementScreen() {
   // 发布新版本
   const handlePublish = async () => {
     if (!blueprintId || !publishNotes.trim()) {
-      Alert.alert('提示', '请填写版本说明');
+      Alert.alert(t('dialogs.validationFailed'), t('blueprint.versionNotesPlaceholder'));
       return;
     }
 
@@ -217,16 +207,16 @@ export function BlueprintManagementScreen() {
       });
 
       if (result) {
-        Alert.alert('成功', `版本 v${result.version} 已发布`);
+        Alert.alert(t('success.title'), t('blueprint.publishSuccess', { version: result.version }));
         setPublishModalVisible(false);
         setPublishNotes('');
         loadData();
       } else {
-        Alert.alert('失败', '发布版本失败');
+        Alert.alert(t('errors.updateFailed'), t('blueprint.publishFailed'));
       }
     } catch (error) {
       blueprintLogger.error('发布版本失败', error as Error);
-      Alert.alert('错误', '发布版本失败，请稍后重试');
+      Alert.alert(t('aiQuota.error'), t('blueprint.publishFailed'));
     } finally {
       setPublishing(false);
     }
@@ -248,7 +238,7 @@ export function BlueprintManagementScreen() {
       setCompareResult(result);
     } catch (error) {
       blueprintLogger.error('比较版本失败', error as Error);
-      Alert.alert('错误', '比较版本失败');
+      Alert.alert(t('aiQuota.error'), t('errors.loadFailed'));
     } finally {
       setComparing(false);
     }
@@ -257,7 +247,7 @@ export function BlueprintManagementScreen() {
   // 升级工厂
   const handleUpgradeFactories = async () => {
     if (selectedFactories.length === 0) {
-      Alert.alert('提示', '请选择要升级的工厂');
+      Alert.alert(t('dialogs.validationFailed'), t('blueprint.upgradeFactories'));
       return;
     }
 
@@ -272,8 +262,8 @@ export function BlueprintManagementScreen() {
       const successCount = results.filter((r) => r.success).length;
 
       Alert.alert(
-        '升级完成',
-        `成功: ${successCount}/${results.length} 个工厂`
+        t('blueprint.upgradeComplete'),
+        t('blueprint.upgradeSuccessCount', { success: successCount, total: results.length })
       );
 
       if (successCount > 0) {
@@ -281,7 +271,7 @@ export function BlueprintManagementScreen() {
       }
     } catch (error) {
       blueprintLogger.error('升级工厂失败', error as Error);
-      Alert.alert('错误', '升级工厂失败');
+      Alert.alert(t('aiQuota.error'), t('errors.updateFailed'));
     } finally {
       setUpgrading(false);
     }
@@ -298,42 +288,42 @@ export function BlueprintManagementScreen() {
         bindingPolicy
       );
 
-      Alert.alert('成功', '设置已更新');
+      Alert.alert(t('success.title'), t('aiQuota.ruleSaved'));
       setBindingSettingsModal(false);
       loadData();
     } catch (error) {
       blueprintLogger.error('更新设置失败', error as Error);
-      Alert.alert('错误', '更新设置失败');
+      Alert.alert(t('aiQuota.error'), t('errors.updateFailed'));
     }
   };
 
   // 回滚工厂
   const handleRollback = (binding: FactoryBinding) => {
     Alert.alert(
-      '确认回滚',
-      `确定要将 ${binding.factoryName || binding.factoryId} 回滚到上一个版本吗？`,
+      t('blueprint.confirmRollback'),
+      t('blueprint.confirmRollbackMessage', { name: binding.factoryName || binding.factoryId }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('aiQuota.cancel'), style: 'cancel' },
         {
-          text: '确定回滚',
+          text: t('blueprint.rollback'),
           style: 'destructive',
           onPress: async () => {
             try {
               const result = await blueprintVersionApiClient.rollbackFactory(
                 binding.factoryId,
                 binding.appliedVersion - 1,
-                '管理员手动回滚'
+                'Admin manual rollback'
               );
 
               if (result?.success) {
-                Alert.alert('成功', '回滚完成');
+                Alert.alert(t('success.title'), t('blueprint.rollbackSuccess'));
                 loadData();
               } else {
-                Alert.alert('失败', result?.summary || '回滚失败');
+                Alert.alert(t('errors.updateFailed'), result?.summary || t('blueprint.rollbackFailed'));
               }
             } catch (error) {
               blueprintLogger.error('回滚失败', error as Error);
-              Alert.alert('错误', '回滚失败');
+              Alert.alert(t('aiQuota.error'), t('blueprint.rollbackFailed'));
             }
           },
         },
@@ -344,7 +334,8 @@ export function BlueprintManagementScreen() {
   // 渲染版本卡片
   const renderVersionCard = (version: BlueprintVersion) => {
     const color = CHANGE_TYPE_COLORS[version.changeType] || '#757575';
-    const label = CHANGE_TYPE_LABELS[version.changeType] || version.changeType;
+    const changeTypeKey = `blueprint.changeType${version.changeType.charAt(0) + version.changeType.slice(1).toLowerCase()}`;
+    const label = t(changeTypeKey as 'blueprint.changeTypeCreate');
 
     return (
       <Card key={version.id} style={styles.versionCard} mode="elevated">
@@ -377,7 +368,7 @@ export function BlueprintManagementScreen() {
                       style={styles.publishedChip}
                       icon="check-circle"
                     >
-                      已发布
+                      {t('blueprint.published')}
                     </Chip>
                   )}
                 </View>
@@ -452,11 +443,11 @@ export function BlueprintManagementScreen() {
               </Text>
               <View style={styles.versionRow}>
                 <Text variant="bodySmall" style={styles.versionLabel}>
-                  当前版本: v{binding.appliedVersion}
+                  {t('blueprint.currentVersion', { version: binding.appliedVersion })}
                 </Text>
                 {isOutdated && (
                   <Badge style={styles.outdatedBadge}>
-                    {`落后 ${binding.latestVersion - binding.appliedVersion} 版本`}
+                    {t('blueprint.behindVersions', { count: binding.latestVersion - binding.appliedVersion })}
                   </Badge>
                 )}
               </View>
@@ -490,16 +481,16 @@ export function BlueprintManagementScreen() {
           <View style={styles.bindingMeta}>
             <View style={styles.metaItem}>
               <Text variant="bodySmall" style={styles.metaLabel}>
-                更新策略
+                {t('blueprint.updatePolicy')}
               </Text>
               <Chip mode="flat" compact style={styles.policyChip}>
-                {UPDATE_POLICY_LABELS[binding.updatePolicy]}
+                {t(`blueprint.updatePolicy${binding.updatePolicy.charAt(0) + binding.updatePolicy.slice(1).toLowerCase().replace(/_([a-z])/g, (_, c) => c.toUpperCase())}` as 'blueprint.updatePolicyManual')}
               </Chip>
             </View>
             {binding.lastAppliedAt && (
               <View style={styles.metaItem}>
                 <Text variant="bodySmall" style={styles.metaLabel}>
-                  上次更新
+                  {t('blueprint.lastUpdated')}
                 </Text>
                 <Text variant="bodySmall">
                   {new Date(binding.lastAppliedAt).toLocaleDateString('zh-CN')}
@@ -516,7 +507,7 @@ export function BlueprintManagementScreen() {
               textColor="#F44336"
               style={styles.rollbackButton}
             >
-              回滚到上一版本
+              {t('blueprint.rollbackToPrevious')}
             </Button>
           )}
         </Card.Content>
@@ -536,7 +527,7 @@ export function BlueprintManagementScreen() {
             style={{ backgroundColor: '#E8F5E9' }}
           />
           <Text variant="bodyLarge" style={styles.emptyText}>
-            所有工厂都是最新版本
+            {t('blueprint.allFactoriesUpToDate')}
           </Text>
         </View>
       );
@@ -549,7 +540,7 @@ export function BlueprintManagementScreen() {
       >
         <View style={styles.upgradeHeader}>
           <Text variant="titleMedium" style={styles.upgradeTitle}>
-            {outdatedFactories.length} 个工厂需要升级
+            {t('blueprint.factoriesNeedUpgrade', { count: outdatedFactories.length })}
           </Text>
           <Button
             mode="contained"
@@ -559,7 +550,7 @@ export function BlueprintManagementScreen() {
             }}
             icon="arrow-up-circle"
           >
-            全部升级
+            {t('blueprint.upgradeAll')}
           </Button>
         </View>
 
@@ -583,7 +574,7 @@ export function BlueprintManagementScreen() {
                     setUpgradeModalVisible(true);
                   }}
                 >
-                  升级
+                  {t('blueprint.upgrade')}
                 </Button>
               </View>
             </Card.Content>
@@ -604,22 +595,22 @@ export function BlueprintManagementScreen() {
         contentContainerStyle={styles.modalContainer}
       >
         <Text variant="titleLarge" style={styles.modalTitle}>
-          发布新版本
+          {t('blueprint.publishNewVersion')}
         </Text>
 
         <Text variant="bodyMedium" style={styles.modalDescription}>
-          将当前蓝图状态发布为正式版本。发布后将通知所有绑定的工厂。
+          {t('blueprint.publishHint')}
         </Text>
 
         <TextInput
           mode="outlined"
-          label="版本说明"
+          label={t('blueprint.versionNotes')}
           value={publishNotes}
           onChangeText={setPublishNotes}
           multiline
           numberOfLines={4}
           style={styles.publishInput}
-          placeholder="描述此版本的主要变更..."
+          placeholder={t('blueprint.versionNotesPlaceholder')}
         />
 
         <View style={styles.modalActions}>
@@ -628,7 +619,7 @@ export function BlueprintManagementScreen() {
             onPress={() => setPublishModalVisible(false)}
             disabled={publishing}
           >
-            取消
+            {t('aiQuota.cancel')}
           </Button>
           <Button
             mode="contained"
@@ -636,7 +627,7 @@ export function BlueprintManagementScreen() {
             loading={publishing}
             disabled={publishing || !publishNotes.trim()}
           >
-            发布
+            {t('blueprint.publish')}
           </Button>
         </View>
       </Modal>
@@ -646,6 +637,7 @@ export function BlueprintManagementScreen() {
   // 渲染版本详情模态框
   const renderVersionDetailModal = () => {
     if (!selectedVersion) return null;
+    const changeTypeKey = `blueprint.changeType${selectedVersion.changeType.charAt(0) + selectedVersion.changeType.slice(1).toLowerCase()}`;
 
     return (
       <Portal>
@@ -660,11 +652,11 @@ export function BlueprintManagementScreen() {
           <ScrollView>
             <View style={styles.modalHeader}>
               <Text variant="headlineSmall" style={styles.modalTitle}>
-                版本 v{selectedVersion.version}
+                {t('blueprint.versionDetail', { version: selectedVersion.version })}
               </Text>
               {selectedVersion.isPublished && (
                 <Chip mode="flat" icon="check-circle" style={styles.publishedChip}>
-                  已发布
+                  {t('blueprint.published')}
                 </Chip>
               )}
             </View>
@@ -673,7 +665,7 @@ export function BlueprintManagementScreen() {
 
             <View style={styles.detailSection}>
               <Text variant="labelLarge" style={styles.sectionLabel}>
-                变更类型
+                {t('blueprint.changeType')}
               </Text>
               <Chip
                 mode="flat"
@@ -684,14 +676,14 @@ export function BlueprintManagementScreen() {
                 }}
                 textStyle={{ color: '#fff' }}
               >
-                {CHANGE_TYPE_LABELS[selectedVersion.changeType]}
+                {t(changeTypeKey as 'blueprint.changeTypeCreate')}
               </Chip>
             </View>
 
             {selectedVersion.changeDescription && (
               <View style={styles.detailSection}>
                 <Text variant="labelLarge" style={styles.sectionLabel}>
-                  变更说明
+                  {t('blueprint.changeDescription')}
                 </Text>
                 <Text variant="bodyMedium">
                   {selectedVersion.changeDescription}
@@ -701,14 +693,14 @@ export function BlueprintManagementScreen() {
 
             <View style={styles.detailSection}>
               <Text variant="labelLarge" style={styles.sectionLabel}>
-                时间信息
+                {t('blueprint.timeInfo')}
               </Text>
               <Text variant="bodySmall">
-                创建时间: {new Date(selectedVersion.createdAt).toLocaleString('zh-CN')}
+                {t('blueprint.createdAt')}: {new Date(selectedVersion.createdAt).toLocaleString('zh-CN')}
               </Text>
               {selectedVersion.publishedAt && (
                 <Text variant="bodySmall">
-                  发布时间:{' '}
+                  {t('blueprint.publishedAt')}:{' '}
                   {new Date(selectedVersion.publishedAt).toLocaleString('zh-CN')}
                 </Text>
               )}
@@ -717,13 +709,13 @@ export function BlueprintManagementScreen() {
             {selectedVersion.changeSummary && (
               <View style={styles.detailSection}>
                 <Text variant="labelLarge" style={styles.sectionLabel}>
-                  变更内容
+                  {t('blueprint.changeContent')}
                 </Text>
 
                 {selectedVersion.changeSummary.formChanges &&
                   selectedVersion.changeSummary.formChanges.length > 0 && (
                     <View style={styles.changeList}>
-                      <Text variant="labelMedium">表单变更:</Text>
+                      <Text variant="labelMedium">{t('blueprint.formChanges')}</Text>
                       {selectedVersion.changeSummary.formChanges.map(
                         (change, index) => (
                           <Text key={index} variant="bodySmall" style={styles.changeItem}>
@@ -737,7 +729,7 @@ export function BlueprintManagementScreen() {
                 {selectedVersion.changeSummary.ruleChanges &&
                   selectedVersion.changeSummary.ruleChanges.length > 0 && (
                     <View style={styles.changeList}>
-                      <Text variant="labelMedium">规则变更:</Text>
+                      <Text variant="labelMedium">{t('blueprint.ruleChanges')}</Text>
                       {selectedVersion.changeSummary.ruleChanges.map(
                         (change, index) => (
                           <Text key={index} variant="bodySmall" style={styles.changeItem}>
@@ -758,7 +750,7 @@ export function BlueprintManagementScreen() {
                   setSelectedVersion(null);
                 }}
               >
-                关闭
+                {t('industryTemplate.management.close')}
               </Button>
             </View>
           </ScrollView>
@@ -782,7 +774,7 @@ export function BlueprintManagementScreen() {
           contentContainerStyle={styles.modalContainer}
         >
           <Text variant="titleLarge" style={styles.modalTitle}>
-            绑定设置
+            {t('blueprint.bindingSettings')}
           </Text>
 
           <Text variant="bodyMedium" style={styles.modalDescription}>
@@ -793,9 +785,9 @@ export function BlueprintManagementScreen() {
 
           <View style={styles.settingRow}>
             <View>
-              <Text variant="labelLarge">自动更新</Text>
+              <Text variant="labelLarge">{t('blueprint.autoUpdate')}</Text>
               <Text variant="bodySmall" style={styles.settingHint}>
-                启用后将根据更新策略自动升级
+                {t('blueprint.autoUpdateHint')}
               </Text>
             </View>
             <Switch
@@ -805,15 +797,15 @@ export function BlueprintManagementScreen() {
           </View>
 
           <View style={styles.settingRow}>
-            <Text variant="labelLarge">更新策略</Text>
+            <Text variant="labelLarge">{t('blueprint.updatePolicy')}</Text>
           </View>
           <SegmentedButtons
             value={bindingPolicy}
             onValueChange={setBindingPolicy}
             buttons={[
-              { value: 'MANUAL', label: '手动' },
-              { value: 'AUTO_MINOR', label: '自动小版本' },
-              { value: 'AUTO_ALL', label: '自动全部' },
+              { value: 'MANUAL', label: t('blueprint.manual') },
+              { value: 'AUTO_MINOR', label: t('blueprint.autoMinor') },
+              { value: 'AUTO_ALL', label: t('blueprint.autoAll') },
             ]}
             style={styles.policyButtons}
           />
@@ -826,10 +818,10 @@ export function BlueprintManagementScreen() {
                 setSelectedBinding(null);
               }}
             >
-              取消
+              {t('aiQuota.cancel')}
             </Button>
             <Button mode="contained" onPress={handleUpdateBindingSettings}>
-              保存
+              {t('aiQuota.save')}
             </Button>
           </View>
         </Modal>
@@ -850,14 +842,13 @@ export function BlueprintManagementScreen() {
         contentContainerStyle={styles.modalContainer}
       >
         <Text variant="titleLarge" style={styles.modalTitle}>
-          升级工厂
+          {t('blueprint.upgradeFactories')}
         </Text>
 
         {upgradeResults.length === 0 ? (
           <>
             <Text variant="bodyMedium" style={styles.modalDescription}>
-              将 {selectedFactories.length} 个工厂升级到最新版本 (v
-              {latestVersion?.version})
+              {t('blueprint.upgradeFactoriesMessage', { count: selectedFactories.length, version: latestVersion?.version })}
             </Text>
 
             <View style={styles.modalActions}>
@@ -869,7 +860,7 @@ export function BlueprintManagementScreen() {
                 }}
                 disabled={upgrading}
               >
-                取消
+                {t('aiQuota.cancel')}
               </Button>
               <Button
                 mode="contained"
@@ -877,14 +868,14 @@ export function BlueprintManagementScreen() {
                 loading={upgrading}
                 disabled={upgrading}
               >
-                确认升级
+                {t('blueprint.confirmUpgrade')}
               </Button>
             </View>
           </>
         ) : (
           <>
             <Text variant="bodyMedium" style={styles.modalDescription}>
-              升级完成
+              {t('blueprint.upgradeComplete')}
             </Text>
 
             <View style={styles.upgradeResultList}>
@@ -915,7 +906,7 @@ export function BlueprintManagementScreen() {
                   setUpgradeResults([]);
                 }}
               >
-                完成
+                {t('blueprint.done')}
               </Button>
             </View>
           </>
@@ -929,7 +920,7 @@ export function BlueprintManagementScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
         <Text variant="bodyMedium" style={{ marginTop: 16 }}>
-          加载蓝图版本数据...
+          {t('blueprint.loading')}
         </Text>
       </View>
     );
@@ -940,7 +931,7 @@ export function BlueprintManagementScreen() {
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content
-          title="蓝图版本管理"
+          title={t('blueprint.title')}
           subtitle={blueprintName || blueprintId}
         />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
@@ -953,7 +944,7 @@ export function BlueprintManagementScreen() {
             {versions.length}
           </Text>
           <Text variant="bodySmall" style={styles.statLabel}>
-            版本总数
+            {t('blueprint.versionCount')}
           </Text>
         </View>
         <View style={styles.statItem}>
@@ -961,7 +952,7 @@ export function BlueprintManagementScreen() {
             v{latestVersion?.version || 0}
           </Text>
           <Text variant="bodySmall" style={styles.statLabel}>
-            最新版本
+            {t('blueprint.latestVersion')}
           </Text>
         </View>
         <View style={styles.statItem}>
@@ -969,7 +960,7 @@ export function BlueprintManagementScreen() {
             {bindings.length}
           </Text>
           <Text variant="bodySmall" style={styles.statLabel}>
-            绑定工厂
+            {t('blueprint.boundFactories')}
           </Text>
         </View>
         <View style={styles.statItem}>
@@ -983,7 +974,7 @@ export function BlueprintManagementScreen() {
             {outdatedFactories.length}
           </Text>
           <Text variant="bodySmall" style={styles.statLabel}>
-            待升级
+            {t('blueprint.pendingUpgrade')}
           </Text>
         </View>
       </View>
@@ -993,11 +984,11 @@ export function BlueprintManagementScreen() {
         value={activeTab}
         onValueChange={(value) => setActiveTab(value as TabValue)}
         buttons={[
-          { value: 'versions', label: '版本历史' },
-          { value: 'factories', label: '工厂绑定' },
+          { value: 'versions', label: t('blueprint.versionHistory') },
+          { value: 'factories', label: t('blueprint.factoryBindings') },
           {
             value: 'upgrade',
-            label: `待升级${outdatedFactories.length > 0 ? ` (${outdatedFactories.length})` : ''}`,
+            label: `${t('blueprint.pendingUpgradeTab')}${outdatedFactories.length > 0 ? ` (${outdatedFactories.length})` : ''}`,
           },
         ]}
         style={styles.tabButtons}
@@ -1009,7 +1000,7 @@ export function BlueprintManagementScreen() {
             {/* 搜索和筛选 */}
             <View style={styles.filterRow}>
               <Searchbar
-                placeholder="搜索版本..."
+                placeholder={t('blueprint.searchPlaceholder')}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 style={styles.searchBar}
@@ -1023,7 +1014,7 @@ export function BlueprintManagementScreen() {
                 style={styles.filterChip}
                 showSelectedCheck={false}
               >
-                全部
+                {t('blueprint.all')}
               </Chip>
               <Chip
                 selected={filterStatus === 'published'}
@@ -1031,7 +1022,7 @@ export function BlueprintManagementScreen() {
                 style={styles.filterChip}
                 showSelectedCheck={false}
               >
-                已发布
+                {t('blueprint.published')}
               </Chip>
               <Chip
                 selected={filterStatus === 'draft'}
@@ -1039,7 +1030,7 @@ export function BlueprintManagementScreen() {
                 style={styles.filterChip}
                 showSelectedCheck={false}
               >
-                草稿
+                {t('blueprint.draft')}
               </Chip>
             </View>
 
@@ -1062,7 +1053,7 @@ export function BlueprintManagementScreen() {
                     style={{ backgroundColor: 'transparent' }}
                   />
                   <Text variant="bodyLarge" style={styles.emptyText}>
-                    暂无版本历史
+                    {t('blueprint.noVersionHistory')}
                   </Text>
                 </View>
               )}
@@ -1091,7 +1082,7 @@ export function BlueprintManagementScreen() {
                   style={{ backgroundColor: 'transparent' }}
                 />
                 <Text variant="bodyLarge" style={styles.emptyText}>
-                  暂无绑定工厂
+                  {t('blueprint.noFactoryBindings')}
                 </Text>
               </View>
             )}
@@ -1109,7 +1100,7 @@ export function BlueprintManagementScreen() {
           icon="publish"
           style={styles.fab}
           onPress={() => setPublishModalVisible(true)}
-          label="发布版本"
+          label={t('blueprint.publishVersion')}
         />
       )}
 

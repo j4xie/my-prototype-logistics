@@ -6,7 +6,7 @@ import com.cretas.aims.dto.customer.CreateCustomerRequest;
 import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.entity.Customer;
 import com.cretas.aims.exception.BusinessException;
-import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.CustomerMapper;
 import com.cretas.aims.repository.CustomerRepository;
 import com.cretas.aims.service.CustomerService;
@@ -34,11 +34,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
+    private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
-    public CustomerServiceImpl(CustomerRepository customerRepository, CustomerMapper customerMapper) {
+    public CustomerServiceImpl(CustomerRepository customerRepository, CustomerMapper customerMapper,
+                              com.cretas.aims.utils.ExcelUtil excelUtil) {
         this.customerRepository = customerRepository;
         this.customerMapper = customerMapper;
+        this.excelUtil = excelUtil;
     }
 
     @Override
@@ -71,7 +74,7 @@ public class CustomerServiceImpl implements CustomerService {
     public CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request) {
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         // 检查名称是否与其他客户重复
         if (request.getName() != null && !request.getName().equals(customer.getName())) {
             if (customerRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), customerId)) {
@@ -90,7 +93,7 @@ public class CustomerServiceImpl implements CustomerService {
     public void deleteCustomer(String factoryId, String customerId) {
         log.info("删除客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         // 检查是否有关联的出货记录
         if (customerRepository.hasRelatedShipments(customerId)) {
             throw new BusinessException("客户有关联的出货记录，无法删除");
@@ -102,7 +105,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerDTO getCustomerById(String factoryId, String customerId) {
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         return customerMapper.toDTO(customer);
     }
 
@@ -170,7 +173,7 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("切换客户状态: factoryId={}, customerId={}, isActive={}",
                 factoryId, customerId, isActive);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         customer.setIsActive(isActive);
         customer.setUpdatedAt(LocalDateTime.now());
         customer = customerRepository.save(customer);
@@ -188,7 +191,7 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BusinessException("评级必须在1-5之间");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         customer.setRating(rating);
         customer.setRatingNotes(notes);
         customer = customerRepository.save(customer);
@@ -205,7 +208,7 @@ public class CustomerServiceImpl implements CustomerService {
             throw new BusinessException("信用额度不能为负数");
         }
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         customer.setCreditLimit(creditLimit);
         customer = customerRepository.save(customer);
         log.info("客户信用额度更新成功: id={}, creditLimit={}", customer.getId(), creditLimit);
@@ -218,7 +221,7 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("更新客户当前余额: factoryId={}, customerId={}, balance={}",
                 factoryId, customerId, balance);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         customer.setCurrentBalance(balance);
         customer = customerRepository.save(customer);
         log.info("客户余额更新成功: id={}, balance={}", customer.getId(), balance);
@@ -228,7 +231,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Map<String, Object> getCustomerStatistics(String factoryId, String customerId) {
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("客户不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Customer", customerId));
         Map<String, Object> statistics = new HashMap<>();
         statistics.put("customerId", customer.getId());
         statistics.put("customerName", customer.getName());
@@ -282,7 +285,6 @@ public class CustomerServiceImpl implements CustomerService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.customer.CustomerExportDTO.class,
@@ -298,7 +300,6 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("生成客户导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.customer.CustomerExportDTO.class,
                 "客户导入模板"
@@ -314,7 +315,6 @@ public class CustomerServiceImpl implements CustomerService {
         log.info("开始从Excel批量导入客户: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.customer.CustomerExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream, com.cretas.aims.dto.customer.CustomerExportDTO.class);

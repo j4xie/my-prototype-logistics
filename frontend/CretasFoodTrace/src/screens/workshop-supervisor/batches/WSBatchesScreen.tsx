@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSBatchesStackParamList, 'WSBatches'>;
@@ -45,6 +46,7 @@ const FILTER_TABS = [
 
 export function WSBatchesScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('workshop');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -151,7 +153,7 @@ export function WSBatchesScreen() {
     <SafeAreaView style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>批次管理</Text>
+        <Text style={styles.headerTitle}>{t('batches.title')}</Text>
         <TouchableOpacity
           style={styles.addBtn}
           onPress={() => navigation.navigate('BatchStart', {})}
@@ -166,7 +168,7 @@ export function WSBatchesScreen() {
           <Icon source="magnify" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索批次号..."
+            placeholder={t('batches.searchPlaceholder')}
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}

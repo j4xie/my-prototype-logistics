@@ -18,6 +18,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 
@@ -25,6 +26,7 @@ type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 type RouteProps = RouteProp<QualityInspectorStackParamList, 'QICamera'>;
 
 export default function QICameraScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
@@ -51,7 +53,7 @@ export default function QICameraScreen() {
         }
       } catch (error) {
         console.error('拍照失败:', error);
-        Alert.alert('拍照失败', '请重试');
+        Alert.alert(t('camera.captureFailed'), t('camera.cancel'));
       }
     }
   };
@@ -82,7 +84,7 @@ export default function QICameraScreen() {
   if (!permission) {
     return (
       <View style={styles.container}>
-        <Text>加载中...</Text>
+        <Text>{t('camera.loading')}</Text>
       </View>
     );
   }
@@ -91,10 +93,10 @@ export default function QICameraScreen() {
     return (
       <View style={styles.permissionContainer}>
         <Ionicons name="camera-outline" size={64} color={QI_COLORS.disabled} />
-        <Text style={styles.permissionTitle}>需要相机权限</Text>
-        <Text style={styles.permissionText}>请授权相机权限以拍照记录</Text>
+        <Text style={styles.permissionTitle}>{t('camera.cameraPermission')}</Text>
+        <Text style={styles.permissionText}>{t('camera.grantPermission')}</Text>
         <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>授权相机</Text>
+          <Text style={styles.permissionBtnText}>{t('camera.authorize')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -114,7 +116,7 @@ export default function QICameraScreen() {
           <TouchableOpacity style={styles.topBtn} onPress={() => navigation.goBack()}>
             <Ionicons name="close" size={28} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.topTitle}>拍照质检</Text>
+          <Text style={styles.topTitle}>{t('camera.title')}</Text>
           <TouchableOpacity style={styles.topBtn} onPress={toggleFlash}>
             <Ionicons
               name={flashMode ? 'flash' : 'flash-off'}
@@ -177,12 +179,12 @@ export default function QICameraScreen() {
             >
               <Ionicons name="checkmark-circle" size={28} color={photos.length > 0 ? '#fff' : 'rgba(255,255,255,0.5)'} />
               <Text style={[styles.controlText, photos.length === 0 && styles.controlTextDisabled]}>
-                完成
+                {t('camera.done')}
               </Text>
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.photoCount}>已拍摄 {photos.length} 张</Text>
+          <Text style={styles.photoCount}>{t('camera.photoTaken', { count: photos.length })}</Text>
         </View>
       </CameraView>
 

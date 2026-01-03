@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { CameraView, Camera, useCameraPermissions } from 'expo-camera';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
@@ -28,6 +29,7 @@ export default function QIScanScreen() {
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [flashOn, setFlashOn] = useState(false);
+  const { t } = useTranslation('quality');
 
   const handleBarCodeScanned = async ({ type, data }: { type: string; data: string }) => {
     if (scanned || loading) return;
@@ -66,11 +68,11 @@ export default function QIScanScreen() {
     } catch (error) {
       console.error('扫码失败:', error);
       Alert.alert(
-        '扫码失败',
-        '无法识别该二维码，请确认是否为有效的批次二维码',
+        t('scan.scanFailed'),
+        t('scan.invalidQrCode'),
         [
-          { text: '重新扫描', onPress: () => setScanned(false) },
-          { text: '手动选择', onPress: () => navigation.navigate('QIInspectList') },
+          { text: t('scan.rescan'), onPress: () => setScanned(false) },
+          { text: t('scan.manualSelect'), onPress: () => navigation.navigate('QIInspectList') },
         ]
       );
     } finally {
@@ -86,8 +88,8 @@ export default function QIScanScreen() {
     // Alert.prompt is iOS only, navigate to list on Android
     if (typeof Alert.prompt === 'function') {
       Alert.prompt(
-        '输入批次号',
-        '请输入批次编号',
+        t('scan.enterBatchNumber'),
+        t('scan.pleaseEnterBatchNumber'),
         async (text) => {
           if (text) {
             setLoading(true);
@@ -98,7 +100,7 @@ export default function QIScanScreen() {
                 batchNumber: batch.batchNumber,
               });
             } catch (error) {
-              Alert.alert('错误', '未找到该批次');
+              Alert.alert(t('scan.scanFailed'), t('scan.batchNotFound'));
             } finally {
               setLoading(false);
             }
@@ -124,18 +126,18 @@ export default function QIScanScreen() {
     return (
       <View style={styles.permissionContainer}>
         <Ionicons name="camera-outline" size={64} color={QI_COLORS.disabled} />
-        <Text style={styles.permissionTitle}>需要相机权限</Text>
+        <Text style={styles.permissionTitle}>{t('scan.cameraPermission')}</Text>
         <Text style={styles.permissionText}>
-          请授权相机权限以扫描批次二维码
+          {t('scan.grantPermission')}
         </Text>
         <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-          <Text style={styles.permissionBtnText}>授权相机</Text>
+          <Text style={styles.permissionBtnText}>{t('scan.authorize')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.manualBtn}
           onPress={() => navigation.navigate('QIInspectList')}
         >
-          <Text style={styles.manualBtnText}>手动选择批次</Text>
+          <Text style={styles.manualBtnText}>{t('scan.manualSelect')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -165,14 +167,14 @@ export default function QIScanScreen() {
               {loading && (
                 <View style={styles.loadingOverlay}>
                   <ActivityIndicator size="large" color="#fff" />
-                  <Text style={styles.loadingText}>识别中...</Text>
+                  <Text style={styles.loadingText}>{t('scan.recognizing')}</Text>
                 </View>
               )}
             </View>
             <View style={styles.overlaySide} />
           </View>
           <View style={styles.overlayBottom}>
-            <Text style={styles.scanHint}>将二维码放入框内自动扫描</Text>
+            <Text style={styles.scanHint}>{t('scan.scanHint')}</Text>
           </View>
         </View>
 
@@ -184,12 +186,12 @@ export default function QIScanScreen() {
               size={24}
               color="#fff"
             />
-            <Text style={styles.controlText}>闪光灯</Text>
+            <Text style={styles.controlText}>{t('scan.flashlight')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.controlBtn} onPress={handleManualInput}>
             <Ionicons name="keypad-outline" size={24} color="#fff" />
-            <Text style={styles.controlText}>手动输入</Text>
+            <Text style={styles.controlText}>{t('scan.manualInput')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -197,7 +199,7 @@ export default function QIScanScreen() {
             onPress={() => navigation.navigate('QIInspectList')}
           >
             <Ionicons name="list-outline" size={24} color="#fff" />
-            <Text style={styles.controlText}>批次列表</Text>
+            <Text style={styles.controlText}>{t('scan.batchList')}</Text>
           </TouchableOpacity>
         </View>
       </CameraView>
@@ -209,7 +211,7 @@ export default function QIScanScreen() {
           onPress={() => setScanned(false)}
         >
           <Ionicons name="refresh" size={20} color="#fff" />
-          <Text style={styles.rescanText}>重新扫描</Text>
+          <Text style={styles.rescanText}>{t('scan.rescan')}</Text>
         </TouchableOpacity>
       )}
     </View>

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSWorkersStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSWorkersStackParamList, 'WorkerDetail'>;
@@ -19,6 +20,7 @@ type RouteProps = RouteProp<WSWorkersStackParamList, 'WorkerDetail'>;
 export function WorkerDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
 
   // 模拟员工数据
   const worker = {
@@ -61,7 +63,7 @@ export function WorkerDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>员工详情</Text>
+        <Text style={styles.headerTitle}>{t('workers.detail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -78,7 +80,7 @@ export function WorkerDetailScreen() {
                 <Text style={styles.name}>{worker.name}</Text>
                 {worker.isTemporary && (
                   <View style={styles.tempBadge}>
-                    <Text style={styles.tempBadgeText}>临时</Text>
+                    <Text style={styles.tempBadgeText}>{t('workers.tempBadge')}</Text>
                   </View>
                 )}
               </View>
@@ -90,7 +92,7 @@ export function WorkerDetailScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{worker.todayHours}h</Text>
-              <Text style={styles.statLabel}>今日工时</Text>
+              <Text style={styles.statLabel}>{t('workers.detail.statsCard.todayHours')}</Text>
             </View>
             <View style={styles.statItem}>
               <View style={[styles.gradeBadge, { backgroundColor: `${overallGrade.color}20` }]}>
@@ -98,11 +100,11 @@ export function WorkerDetailScreen() {
                   {overallGrade.grade}
                 </Text>
               </View>
-              <Text style={styles.statLabel}>效率评级</Text>
+              <Text style={styles.statLabel}>{t('workers.detail.statsCard.efficiencyGrade')}</Text>
             </View>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{worker.efficiency.overall}%</Text>
-              <Text style={styles.statLabel}>综合效率</Text>
+              <Text style={styles.statLabel}>{t('workers.detail.statsCard.overallEfficiency')}</Text>
             </View>
           </View>
         </View>
@@ -111,11 +113,11 @@ export function WorkerDetailScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Icon source="robot" size={18} color="#667eea" />
-            <Text style={styles.sectionTitle}>AI效率评分</Text>
+            <Text style={styles.sectionTitle}>{t('workers.detail.aiScore.title')}</Text>
           </View>
           <View style={styles.efficiencyCard}>
             <View style={styles.efficiencyRow}>
-              <Text style={styles.efficiencyLabel}>出勤率</Text>
+              <Text style={styles.efficiencyLabel}>{t('workers.detail.aiScore.attendance')}</Text>
               <View style={styles.progressContainer}>
                 <View style={styles.progressBg}>
                   <View
@@ -129,7 +131,7 @@ export function WorkerDetailScreen() {
               </View>
             </View>
             <View style={styles.efficiencyRow}>
-              <Text style={styles.efficiencyLabel}>质量</Text>
+              <Text style={styles.efficiencyLabel}>{t('workers.detail.aiScore.quality')}</Text>
               <View style={styles.progressContainer}>
                 <View style={styles.progressBg}>
                   <View
@@ -143,7 +145,7 @@ export function WorkerDetailScreen() {
               </View>
             </View>
             <View style={styles.efficiencyRow}>
-              <Text style={styles.efficiencyLabel}>效率</Text>
+              <Text style={styles.efficiencyLabel}>{t('workers.detail.aiScore.speed')}</Text>
               <View style={styles.progressContainer}>
                 <View style={styles.progressBg}>
                   <View
@@ -158,56 +160,60 @@ export function WorkerDetailScreen() {
             </View>
             <View style={styles.trendInfo}>
               <Icon source="trending-up" size={16} color="#52c41a" />
-              <Text style={styles.trendText}>近7天效率提升 3%</Text>
+              <Text style={styles.trendText}>{t('workers.detail.aiScore.trend', { percent: 3 })}</Text>
             </View>
           </View>
         </View>
 
         {/* 近期任务 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>近期任务</Text>
+          <Text style={styles.sectionTitle}>{t('workers.detail.recentTasks.title')}</Text>
           <View style={styles.tasksCard}>
-            {worker.recentTasks.map((task, index) => (
-              <View key={index} style={styles.taskItem}>
-                <Text style={styles.taskDate}>{task.date}</Text>
-                <View style={styles.taskInfo}>
-                  <Text style={styles.taskBatch}>{task.batch}</Text>
-                  <Text style={styles.taskName}>{task.task}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.taskStatus,
-                    { backgroundColor: task.status === '进行中' ? '#e6f7ff' : '#f6ffed' },
-                  ]}
-                >
-                  <Text
+            {worker.recentTasks.map((task, index) => {
+              const dateKey = task.date === '今天' ? 'today' : task.date === '昨天' ? 'yesterday' : 'dayBefore';
+              const statusKey = task.status === '进行中' ? 'statusInProgress' : 'statusCompleted';
+              return (
+                <View key={index} style={styles.taskItem}>
+                  <Text style={styles.taskDate}>{t(`workers.detail.recentTasks.${dateKey}`)}</Text>
+                  <View style={styles.taskInfo}>
+                    <Text style={styles.taskBatch}>{task.batch}</Text>
+                    <Text style={styles.taskName}>{task.task}</Text>
+                  </View>
+                  <View
                     style={[
-                      styles.taskStatusText,
-                      { color: task.status === '进行中' ? '#1890ff' : '#52c41a' },
+                      styles.taskStatus,
+                      { backgroundColor: task.status === '进行中' ? '#e6f7ff' : '#f6ffed' },
                     ]}
                   >
-                    {task.status}
-                  </Text>
+                    <Text
+                      style={[
+                        styles.taskStatusText,
+                        { color: task.status === '进行中' ? '#1890ff' : '#52c41a' },
+                      ]}
+                    >
+                      {t(`workers.detail.recentTasks.${statusKey}`)}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         </View>
 
         {/* 基本信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>基本信息</Text>
+          <Text style={styles.sectionTitle}>{t('workers.detail.basicInfo.title')}</Text>
           <View style={styles.infoCard}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>联系电话</Text>
+              <Text style={styles.infoLabel}>{t('workers.detail.basicInfo.phone')}</Text>
               <Text style={styles.infoValue}>{worker.phone}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>入职日期</Text>
+              <Text style={styles.infoLabel}>{t('workers.detail.basicInfo.joinDate')}</Text>
               <Text style={styles.infoValue}>{worker.joinDate}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>所属部门</Text>
+              <Text style={styles.infoLabel}>{t('workers.detail.basicInfo.department')}</Text>
               <Text style={styles.infoValue}>{worker.department}</Text>
             </View>
           </View>

@@ -18,6 +18,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import { aiApiClient, AICostAnalysisResponse, SSECallbacks } from '../../../services/api/aiApiClient';
 import { MarkdownRenderer } from '../../../components/common/MarkdownRenderer';
@@ -33,6 +34,7 @@ interface DateRange {
 
 export function AICostAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('management');
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(false);
@@ -55,9 +57,9 @@ export function AICostAnalysisScreen() {
 
   // 快速日期范围选项
   const quickRanges = [
-    { label: '最近7天', days: 7 },
-    { label: '最近30天', days: 30 },
-    { label: '最近90天', days: 90 },
+    { label: t('aiCostAnalysis.last7Days'), days: 7 },
+    { label: t('aiCostAnalysis.last30Days'), days: 30 },
+    { label: t('aiCostAnalysis.last90Days'), days: 90 },
   ];
 
   const setQuickRange = (days: number) => {
@@ -82,9 +84,9 @@ export function AICostAnalysisScreen() {
 
   const getDimensionLabel = (dim: Dimension): string => {
     const labels: Record<Dimension, string> = {
-      overall: '综合分析',
-      daily: '按日分析',
-      weekly: '按周分析',
+      overall: t('aiCostAnalysis.overallAnalysis'),
+      daily: t('aiCostAnalysis.dailyAnalysis'),
+      weekly: t('aiCostAnalysis.weeklyAnalysis'),
     };
     return labels[dim];
   };
@@ -102,7 +104,7 @@ export function AICostAnalysisScreen() {
         // 流式响应模式
         const callbacks: SSECallbacks = {
           onStart: () => {
-            setProgressMessage('开始分析...');
+            setProgressMessage(t('aiCostAnalysis.startingAnalysis'));
           },
           onProgress: (message: string) => {
             setProgressMessage(message);
@@ -152,13 +154,13 @@ export function AICostAnalysisScreen() {
         if (response.success) {
           setResult(response);
         } else {
-          setError(response.errorMessage || '分析失败，请稍后重试');
+          setError(response.errorMessage || t('aiCostAnalysis.analysisFailed'));
         }
         setLoading(false);
       }
     } catch (err) {
       console.error('成本分析失败:', err);
-      setError('分析请求失败，请检查网络连接');
+      setError(t('aiCostAnalysis.networkError'));
       setLoading(false);
     }
   }, [dateRange, dimension, useStreaming]);
@@ -170,7 +172,7 @@ export function AICostAnalysisScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>成本分析</Text>
+        <Text style={styles.headerTitle}>{t('aiCostAnalysis.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -181,16 +183,16 @@ export function AICostAnalysisScreen() {
       >
         {/* 时间范围选择 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>时间范围</Text>
+          <Text style={styles.sectionTitle}>{t('aiCostAnalysis.timeRange')}</Text>
           <View style={styles.dateRangeCard}>
             <View style={styles.dateDisplay}>
               <View style={styles.dateItem}>
-                <Text style={styles.dateLabel}>开始日期</Text>
+                <Text style={styles.dateLabel}>{t('aiCostAnalysis.startDate')}</Text>
                 <Text style={styles.dateValue}>{formatDisplayDate(dateRange.startDate)}</Text>
               </View>
               <Icon source="arrow-right" size={20} color="#999" />
               <View style={styles.dateItem}>
-                <Text style={styles.dateLabel}>结束日期</Text>
+                <Text style={styles.dateLabel}>{t('aiCostAnalysis.endDate')}</Text>
                 <Text style={styles.dateValue}>{formatDisplayDate(dateRange.endDate)}</Text>
               </View>
             </View>
@@ -210,7 +212,7 @@ export function AICostAnalysisScreen() {
 
         {/* 分析维度 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>分析维度</Text>
+          <Text style={styles.sectionTitle}>{t('aiCostAnalysis.analysisDimension')}</Text>
           <View style={styles.dimensionGrid}>
             {(['overall', 'daily', 'weekly'] as Dimension[]).map((dim) => (
               <TouchableOpacity
@@ -247,7 +249,7 @@ export function AICostAnalysisScreen() {
           <View style={styles.streamingToggle}>
             <View style={styles.streamingToggleLeft}>
               <Icon source="lightning-bolt" size={20} color="#667eea" />
-              <Text style={styles.streamingToggleLabel}>实时流式显示</Text>
+              <Text style={styles.streamingToggleLabel}>{t('aiCostAnalysis.realtimeStreaming')}</Text>
             </View>
             <Switch
               value={useStreaming}
@@ -257,7 +259,7 @@ export function AICostAnalysisScreen() {
             />
           </View>
           <Text style={styles.streamingHint}>
-            {useStreaming ? '开启后可实时查看AI思考过程' : '关闭后等待完整结果'}
+            {useStreaming ? t('aiCostAnalysis.streamingOnHint') : t('aiCostAnalysis.streamingOffHint')}
           </Text>
         </View>
 
@@ -270,12 +272,12 @@ export function AICostAnalysisScreen() {
           {loading ? (
             <View style={styles.buttonContent}>
               <ActivityIndicator size="small" color="#fff" />
-              <Text style={styles.analyzeBtnText}>分析中...</Text>
+              <Text style={styles.analyzeBtnText}>{t('aiCostAnalysis.analyzing')}</Text>
             </View>
           ) : (
             <View style={styles.buttonContent}>
               <Icon source="robot" size={20} color="#fff" />
-              <Text style={styles.analyzeBtnText}>开始 AI 分析</Text>
+              <Text style={styles.analyzeBtnText}>{t('aiCostAnalysis.startAnalysis')}</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -307,7 +309,7 @@ export function AICostAnalysisScreen() {
             >
               <View style={styles.thinkingHeaderLeft}>
                 <Icon source="brain" size={18} color="#805ad5" />
-                <Text style={styles.thinkingTitle}>AI 思考过程</Text>
+                <Text style={styles.thinkingTitle}>{t('aiCostAnalysis.aiThinkingProcess')}</Text>
               </View>
               <Icon
                 source={showThinking ? 'chevron-up' : 'chevron-down'}
@@ -326,7 +328,7 @@ export function AICostAnalysisScreen() {
         {/* 流式答案显示 */}
         {useStreaming && loading && partialAnswer && (
           <View style={styles.streamingSection}>
-            <Text style={styles.streamingTitle}>AI 正在回答...</Text>
+            <Text style={styles.streamingTitle}>{t('aiCostAnalysis.aiAnswering')}</Text>
             <View style={styles.streamingCard}>
               <MarkdownRenderer content={partialAnswer} />
               <View style={styles.cursorBlink} />
@@ -338,19 +340,19 @@ export function AICostAnalysisScreen() {
         {result && (
           <View style={styles.resultSection}>
             <View style={styles.resultHeader}>
-              <Text style={styles.resultTitle}>分析结果</Text>
+              <Text style={styles.resultTitle}>{t('aiCostAnalysis.analysisResult')}</Text>
               {result.quota && typeof result.quota.remainingQuota === 'number' && (
                 <Text style={styles.quotaInfo}>
-                  {`配额: ${result.quota.remainingQuota ?? 0}/${result.quota.weeklyQuota ?? 0}`}
+                  {t('aiCostAnalysis.quota', { remaining: result.quota.remainingQuota ?? 0, total: result.quota.weeklyQuota ?? 0 })}
                 </Text>
               )}
             </View>
             <View style={styles.resultCard}>
-              <MarkdownRenderer content={typeof result.analysis === 'string' ? result.analysis : '暂无分析结果'} />
+              <MarkdownRenderer content={typeof result.analysis === 'string' ? result.analysis : t('aiCostAnalysis.noResult')} />
             </View>
             {typeof result.responseTimeMs === 'number' && result.responseTimeMs > 0 && (
               <Text style={styles.responseTime}>
-                {`响应时间: ${result.responseTimeMs}ms${result.cacheHit === true ? ' (缓存)' : ''}`}
+                {t('aiCostAnalysis.responseTime', { time: result.responseTimeMs, cached: result.cacheHit === true ? ` (${t('aiCostAnalysis.cached')})` : '' })}
               </Text>
             )}
           </View>

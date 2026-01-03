@@ -13,6 +13,7 @@ import { Text, Card, Avatar, Divider, ActivityIndicator } from 'react-native-pap
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../../store/authStore';
 import { HR_THEME } from '../../../types/hrNavigation';
@@ -30,11 +31,12 @@ export default function HRProfileScreen() {
   const navigation = useNavigation();
   const { user, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation('hr');
 
   const handleLogout = () => {
-    Alert.alert('确认退出', '确定要退出登录吗？', [
-      { text: '取消', style: 'cancel' },
-      { text: '退出', style: 'destructive', onPress: async () => {
+    Alert.alert(t('profile.logoutConfirm'), t('profile.logoutMessage'), [
+      { text: t('profile.cancel'), style: 'cancel' },
+      { text: t('profile.confirm'), style: 'destructive', onPress: async () => {
         setLoading(true);
         try {
           await logout();
@@ -49,27 +51,27 @@ export default function HRProfileScreen() {
 
   const menuSections: { title: string; items: MenuItem[] }[] = [
     {
-      title: '管理功能',
+      title: t('profile.sections.management'),
       items: [
-        { id: 'department', icon: 'office-building', label: '部门管理', route: 'DepartmentList' },
-        { id: 'whitelist', icon: 'shield-check', label: '白名单管理', route: 'WhitelistList' },
-        { id: 'scheduling', icon: 'calendar-clock', label: '排班管理', route: 'WorkSchedule' },
+        { id: 'department', icon: 'office-building', label: t('profile.menu.departmentManage'), route: 'DepartmentList' },
+        { id: 'whitelist', icon: 'shield-check', label: t('profile.menu.whitelistManage'), route: 'WhitelistList' },
+        { id: 'scheduling', icon: 'calendar-clock', label: t('profile.menu.schedulingManage'), route: 'WorkSchedule' },
       ],
     },
     {
-      title: '个人设置',
+      title: t('profile.sections.personal'),
       items: [
-        { id: 'myinfo', icon: 'account-edit', label: '个人信息', route: 'MyInfo' },
-        { id: 'myattendance', icon: 'calendar-check', label: '我的考勤', route: 'MyAttendance' },
-        { id: 'notifications', icon: 'bell', label: '消息通知', badge: 3 },
+        { id: 'myinfo', icon: 'account-edit', label: t('profile.menu.myInfo'), route: 'MyInfo' },
+        { id: 'myattendance', icon: 'calendar-check', label: t('profile.menu.myAttendance'), route: 'MyAttendance' },
+        { id: 'notifications', icon: 'bell', label: t('profile.menu.notifications'), badge: 3 },
       ],
     },
     {
-      title: '系统',
+      title: t('profile.sections.system'),
       items: [
-        { id: 'settings', icon: 'cog', label: '系统设置' },
-        { id: 'help', icon: 'help-circle', label: '帮助中心' },
-        { id: 'about', icon: 'information', label: '关于' },
+        { id: 'settings', icon: 'cog', label: t('profile.menu.settings') },
+        { id: 'help', icon: 'help-circle', label: t('profile.menu.help') },
+        { id: 'about', icon: 'information', label: t('profile.menu.about') },
       ],
     },
   ];
@@ -80,7 +82,7 @@ export default function HRProfileScreen() {
     } else if (item.onPress) {
       item.onPress();
     } else {
-      Alert.alert('提示', '功能开发中');
+      Alert.alert(t('messages.tip'), t('profile.comingSoon'));
     }
   };
 
@@ -108,7 +110,7 @@ export default function HRProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>个人中心</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -121,11 +123,11 @@ export default function HRProfileScreen() {
               style={{ backgroundColor: HR_THEME.primary }}
             />
             <View style={styles.profileInfo}>
-              <Text style={styles.userName}>{user?.fullName || user?.username || '用户'}</Text>
-              <Text style={styles.userRole}>人力资源管理员</Text>
+              <Text style={styles.userName}>{user?.fullName || user?.username || t('common.user')}</Text>
+              <Text style={styles.userRole}>{t('profile.role')}</Text>
               <View style={styles.userMeta}>
                 <MaterialCommunityIcons name="factory" size={14} color={HR_THEME.textMuted} />
-                <Text style={styles.metaText}>{(user as any)?.factoryName || user?.factoryId || '未分配工厂'}</Text>
+                <Text style={styles.metaText}>{(user as any)?.factoryName || user?.factoryId || t('profile.noFactory')}</Text>
               </View>
             </View>
             <TouchableOpacity
@@ -142,17 +144,17 @@ export default function HRProfileScreen() {
           <Card.Content style={styles.statsContent}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>45</Text>
-              <Text style={styles.statLabel}>在职员工</Text>
+              <Text style={styles.statLabel}>{t('profile.stats.activeStaff')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>5</Text>
-              <Text style={styles.statLabel}>部门数量</Text>
+              <Text style={styles.statLabel}>{t('profile.stats.departmentCount')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>96%</Text>
-              <Text style={styles.statLabel}>本月出勤</Text>
+              <Text style={styles.statLabel}>{t('profile.stats.monthlyAttendance')}</Text>
             </View>
           </Card.Content>
         </Card>
@@ -179,13 +181,13 @@ export default function HRProfileScreen() {
           ) : (
             <>
               <MaterialCommunityIcons name="logout" size={20} color={HR_THEME.danger} />
-              <Text style={styles.logoutText}>退出登录</Text>
+              <Text style={styles.logoutText}>{t('profile.logout')}</Text>
             </>
           )}
         </TouchableOpacity>
 
         <View style={styles.version}>
-          <Text style={styles.versionText}>版本 1.0.0</Text>
+          <Text style={styles.versionText}>{t('profile.version')} 1.0.0</Text>
         </View>
 
         <View style={styles.bottomSpacer} />

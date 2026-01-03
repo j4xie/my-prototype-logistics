@@ -8,7 +8,7 @@ import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.FactoryUserRole;
 import com.cretas.aims.entity.enums.HireType;
 import com.cretas.aims.exception.BusinessException;
-import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.UserMapper;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.UserService;
@@ -45,12 +45,15 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
-    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
+                          com.cretas.aims.utils.ExcelUtil excelUtil) {
         this.userRepository = userRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
+        this.excelUtil = excelUtil;
     }
 
     @Override
@@ -76,7 +79,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserDTO updateUser(String factoryId, Long userId, CreateUserRequest request) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -101,7 +104,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -122,7 +125,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO getUserById(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -173,7 +176,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void activateUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -190,7 +193,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deactivateUser(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -214,7 +217,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateUserRole(String factoryId, Long userId, FactoryUserRole newRole) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -302,7 +305,6 @@ public class UserServiceImpl implements UserService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.user.UserExportDTO.class,
@@ -318,7 +320,6 @@ public class UserServiceImpl implements UserService {
         log.info("生成用户导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.user.UserExportDTO.class,
                 "用户导入模板"
@@ -336,7 +337,6 @@ public class UserServiceImpl implements UserService {
         log.info("开始从Excel批量导入用户: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.user.UserExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream,
@@ -513,7 +513,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO getUserByEmployeeCode(String factoryId, String employeeCode) {
         User user = userRepository.findByFactoryIdAndEmployeeCode(factoryId, employeeCode)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "工号", employeeCode));
+                .orElseThrow(() -> new EntityNotFoundException("User", employeeCode));
         return userMapper.toDTO(user);
     }
 
@@ -531,7 +531,7 @@ public class UserServiceImpl implements UserService {
         }
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -553,7 +553,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public Map<String, Integer> getUserSkills(String factoryId, Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {
@@ -567,7 +567,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateUserSkills(String factoryId, Long userId, Map<String, Integer> skillLevels) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("用户", "id", userId));
+                .orElseThrow(() -> new EntityNotFoundException("User", String.valueOf(userId)));
 
         // 验证工厂ID
         if (!user.getFactoryId().equals(factoryId)) {

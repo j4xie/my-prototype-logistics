@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>配置变更追溯 - 平台管理员</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../components.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header header--platform">
+        <button class="header__back" onclick="window.location.href='profile.html'">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <h1 class="header__title">配置变更追溯</h1>
+        <button class="header__action">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" fill="currentColor"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Filter Section -->
+    <section class="filter-section">
+        <div class="filter-group">
+            <label class="filter-label">变更类型</label>
+            <select class="input">
+                <option>全部类型</option>
+                <option>蓝图配置</option>
+                <option>校验规则</option>
+                <option>配额管理</option>
+                <option>审批流程</option>
+                <option>系统参数</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">操作人</label>
+            <select class="input">
+                <option>全部操作人</option>
+                <option>张三 (平台管理员)</option>
+                <option>李四 (平台管理员)</option>
+                <option>王五 (系统管理员)</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label class="filter-label">时间范围</label>
+            <div class="date-range">
+                <input type="date" class="input" value="2024-01-01">
+                <span class="date-range__separator">至</span>
+                <input type="date" class="input" value="2024-01-07">
+            </div>
+        </div>
+
+        <button class="btn btn--primary btn--block">应用筛选</button>
+    </section>
+
+    <!-- Timeline -->
+    <section class="content-section">
+        <div class="section-header">
+            <h2 class="section-title">变更历史</h2>
+            <span class="section-subtitle">共 156 条记录</span>
+        </div>
+
+        <div class="timeline">
+            <!-- Timeline Item 1 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=1'">
+                <div class="timeline-item__dot timeline-item__dot--blueprint"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--blueprint">蓝图配置</span>
+                        <span class="timeline-item__time">2小时前</span>
+                    </div>
+                    <div class="timeline-item__title">更新"调度优化"蓝图配置</div>
+                    <div class="timeline-item__summary">
+                        调整AI调度策略参数，优化算法权重分配，新增成本优先级配置项
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            张三
+                        </span>
+                        <span class="timeline-item__changes">3项变更</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 2 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=2'">
+                <div class="timeline-item__dot timeline-item__dot--rule"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--rule">校验规则</span>
+                        <span class="timeline-item__time">5小时前</span>
+                    </div>
+                    <div class="timeline-item__title">新增"质检报告必填字段"规则</div>
+                    <div class="timeline-item__summary">
+                        添加质检报告中"检测设备编号"和"检测人员签名"为必填项
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            李四
+                        </span>
+                        <span class="timeline-item__changes">2项变更</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 3 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=3'">
+                <div class="timeline-item__dot timeline-item__dot--quota"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--quota">配额管理</span>
+                        <span class="timeline-item__time">1天前</span>
+                    </div>
+                    <div class="timeline-item__title">调整"F001-北京工厂"API配额</div>
+                    <div class="timeline-item__summary">
+                        将日调用限额从5000次提升至8000次，月配额从100K提升至150K
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            张三
+                        </span>
+                        <span class="timeline-item__changes">2项变更</span>
+                        <span class="timeline-item__approval">已审批</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 4 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=4'">
+                <div class="timeline-item__dot timeline-item__dot--workflow"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--workflow">审批流程</span>
+                        <span class="timeline-item__time">1天前</span>
+                    </div>
+                    <div class="timeline-item__title">修改"紧急插单"审批流程</div>
+                    <div class="timeline-item__summary">
+                        简化审批层级，将三级审批调整为二级审批，加快紧急订单响应速度
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            王五
+                        </span>
+                        <span class="timeline-item__changes">5项变更</span>
+                        <span class="timeline-item__approval">已审批</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 5 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=5'">
+                <div class="timeline-item__dot timeline-item__dot--blueprint"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--blueprint">蓝图配置</span>
+                        <span class="timeline-item__time">2天前</span>
+                    </div>
+                    <div class="timeline-item__title">创建"产品质量追溯"蓝图</div>
+                    <div class="timeline-item__summary">
+                        新增全流程质量追溯蓝图，包含原料入库、生产加工、质检包装全环节
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            李四
+                        </span>
+                        <span class="timeline-item__changes">新建</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 6 -->
+            <div class="timeline-item" onclick="window.location.href='config-changeset-detail.html?id=6'">
+                <div class="timeline-item__dot timeline-item__dot--system"></div>
+                <div class="timeline-item__line"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--system">系统参数</span>
+                        <span class="timeline-item__time">3天前</span>
+                    </div>
+                    <div class="timeline-item__title">更新AI服务配置参数</div>
+                    <div class="timeline-item__summary">
+                        调整DeepSeek API超时时间从30秒延长至60秒，优化大批量数据处理
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            王五
+                        </span>
+                        <span class="timeline-item__changes">1项变更</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Item 7 -->
+            <div class="timeline-item">
+                <div class="timeline-item__dot timeline-item__dot--rule"></div>
+                <div class="timeline-item__content">
+                    <div class="timeline-item__header">
+                        <span class="timeline-item__type timeline-item__type--rule">校验规则</span>
+                        <span class="timeline-item__time">5天前</span>
+                    </div>
+                    <div class="timeline-item__title">禁用"生产批次号长度"规则</div>
+                    <div class="timeline-item__summary">
+                        临时禁用批次号长度校验规则，兼容旧系统数据迁移
+                    </div>
+                    <div class="timeline-item__meta">
+                        <span class="timeline-item__user">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2M12 11a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            张三
+                        </span>
+                        <span class="timeline-item__changes">状态变更</span>
+                        <span class="timeline-item__rollback">已回滚</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination">
+            <button class="pagination__btn" disabled>上一页</button>
+            <div class="pagination__info">第 1/16 页</div>
+            <button class="pagination__btn">下一页</button>
+        </div>
+    </section>
+
+    <style>
+        .filter-section {
+            padding: 16px;
+            background: white;
+            margin-bottom: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 16px;
+        }
+
+        .filter-group:last-of-type {
+            margin-bottom: 20px;
+        }
+
+        .filter-label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .date-range__separator {
+            color: #999;
+            font-size: 14px;
+        }
+
+        .timeline {
+            position: relative;
+            padding-left: 0;
+        }
+
+        .timeline-item {
+            position: relative;
+            padding-left: 40px;
+            padding-bottom: 24px;
+            cursor: pointer;
+        }
+
+        .timeline-item:active .timeline-item__content {
+            background: #f9f9f9;
+        }
+
+        .timeline-item__dot {
+            position: absolute;
+            left: 0;
+            top: 4px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 2;
+        }
+
+        .timeline-item__dot--blueprint {
+            background: #667eea;
+        }
+
+        .timeline-item__dot--rule {
+            background: #f093fb;
+        }
+
+        .timeline-item__dot--quota {
+            background: #4facfe;
+        }
+
+        .timeline-item__dot--workflow {
+            background: #43e97b;
+        }
+
+        .timeline-item__dot--system {
+            background: #fa709a;
+        }
+
+        .timeline-item__line {
+            position: absolute;
+            left: 11px;
+            top: 28px;
+            bottom: 0;
+            width: 2px;
+            background: #e0e0e0;
+            z-index: 1;
+        }
+
+        .timeline-item:last-child .timeline-item__line {
+            display: none;
+        }
+
+        .timeline-item__content {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 16px;
+            transition: all 0.2s;
+        }
+
+        .timeline-item__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item__type {
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .timeline-item__type--blueprint {
+            background: #e8eaf6;
+            color: #5e35b1;
+        }
+
+        .timeline-item__type--rule {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .timeline-item__type--quota {
+            background: #e1f5fe;
+            color: #0277bd;
+        }
+
+        .timeline-item__type--workflow {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .timeline-item__type--system {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .timeline-item__time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .timeline-item__title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .timeline-item__summary {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .timeline-item__meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .timeline-item__user {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .timeline-item__changes {
+            padding: 2px 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+            color: #666;
+        }
+
+        .timeline-item__approval {
+            padding: 2px 8px;
+            background: #e8f5e9;
+            border-radius: 4px;
+            color: #2e7d32;
+        }
+
+        .timeline-item__rollback {
+            padding: 2px 8px;
+            background: #ffebee;
+            border-radius: 4px;
+            color: #c62828;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 16px 0;
+        }
+
+        .pagination__btn {
+            padding: 8px 16px;
+            border: 1px solid #e0e0e0;
+            background: white;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+        }
+
+        .pagination__btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination__info {
+            font-size: 14px;
+            color: #666;
+        }
+    </style>
+</body>
+</html>

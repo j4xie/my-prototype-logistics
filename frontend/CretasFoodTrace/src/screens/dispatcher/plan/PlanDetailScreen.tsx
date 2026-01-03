@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 // 主题颜色
 const DISPATCHER_THEME = {
@@ -135,6 +136,7 @@ const mockBatches: ProductionBatch[] = [
 export default function PlanDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
+  const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
   const [plan] = useState<PlanDetail>(mockPlanDetail);
   const [materials] = useState<MaterialMatch[]>(mockMaterials);
