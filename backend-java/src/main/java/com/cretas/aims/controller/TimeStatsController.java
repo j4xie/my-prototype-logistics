@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/time-stats")
-@Tag(name = "时间统计管理", description = "工时统计和考勤分析相关接口")
+@Tag(name = "时间统计管理", description = "工时统计和考勤分析相关接口，包括日/周/月/年度统计、日期范围统计、按工作类型/部门分析、生产力分析、员工工时排名、实时统计、期间对比分析、异常统计、趋势分析、报告导出及数据清理/重算等功能")
 @RequiredArgsConstructor
 public class TimeStatsController {
 

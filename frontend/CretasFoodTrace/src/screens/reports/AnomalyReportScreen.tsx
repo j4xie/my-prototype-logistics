@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, Appbar, Card, Chip, DataTable, ActivityIndicator } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { getFactoryId } from '../../types/auth';
@@ -14,6 +15,7 @@ const anomalyReportLogger = logger.createContextLogger('AnomalyReport');
 export default function AnomalyReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [alerts, setAlerts] = useState<any[]>([]);
@@ -23,7 +25,7 @@ export default function AnomalyReportScreen() {
     try {
       const factoryId = getFactoryId(user);
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息');
+        Alert.alert(t('common.error'), t('anomaly.cannotGetFactoryInfo'));
         return;
       }
 
@@ -69,15 +71,15 @@ export default function AnomalyReportScreen() {
 
   const getSeverityChip = (severity: string) => {
     const map: Record<string, { label: string; color: string; bgColor: string }> = {
-      HIGH: { label: '高', color: '#F44336', bgColor: '#FFEBEE' },
-      MEDIUM: { label: '中', color: '#FF9800', bgColor: '#FFF3E0' },
-      LOW: { label: '低', color: '#4CAF50', bgColor: '#E8F5E9' },
+      HIGH: { label: t('anomaly.high'), color: '#F44336', bgColor: '#FFEBEE' },
+      MEDIUM: { label: t('anomaly.medium'), color: '#FF9800', bgColor: '#FFF3E0' },
+      LOW: { label: t('anomaly.low'), color: '#4CAF50', bgColor: '#E8F5E9' },
     };
     const config = map[severity] ?? map.MEDIUM;
     return (
       <Chip mode="flat" compact style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
         textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}>
-        {config?.label ?? '中'}
+        {config?.label ?? t('anomaly.medium')}
       </Chip>
     );
   };
@@ -86,18 +88,18 @@ export default function AnomalyReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="异常报表" />
+        <Appbar.Content title={t('anomaly.title')} />
         <Appbar.Action icon="refresh" onPress={loadAnomalies} />
       </Appbar.Header>
       <ScrollView style={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}>
         <Card style={styles.card}>
-          <Card.Title title="设备告警" titleVariant="titleMedium" />
+          <Card.Title title={t('anomaly.equipmentAlerts')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>设备</DataTable.Title>
-              <DataTable.Title>类型</DataTable.Title>
-              <DataTable.Title>严重度</DataTable.Title>
+              <DataTable.Title>{t('anomaly.equipment')}</DataTable.Title>
+              <DataTable.Title>{t('anomaly.type')}</DataTable.Title>
+              <DataTable.Title>{t('anomaly.severity')}</DataTable.Title>
             </DataTable.Header>
             {loading ? (
               <View style={styles.loadingContainer}>
@@ -105,7 +107,7 @@ export default function AnomalyReportScreen() {
               </View>
             ) : alerts.length === 0 ? (
               <View style={styles.emptyContainer}>
-                <Text variant="bodyMedium" style={styles.emptyText}>暂无告警记录</Text>
+                <Text variant="bodyMedium" style={styles.emptyText}>{t('anomaly.noAlertData')}</Text>
               </View>
             ) : (
               alerts.map((alert, index) => (

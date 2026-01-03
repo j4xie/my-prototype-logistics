@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 
@@ -22,6 +23,7 @@ type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 type RouteProps = RouteProp<QualityInspectorStackParamList, 'QIResult'>;
 
 export default function QIResultScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
@@ -55,31 +57,31 @@ export default function QIResultScreen() {
 
         {/* 结果标题 */}
         <Text style={[styles.resultTitle, passed ? styles.titlePass : styles.titleFail]}>
-          {passed ? '检验通过' : '检验未通过'}
+          {passed ? t('result.inspectionPassed') : t('result.inspectionFailed')}
         </Text>
 
         <Text style={styles.resultSubtitle}>
           {passed
-            ? '该批次产品符合质量标准，可以进入下一环节'
-            : '该批次产品存在质量问题，请按规定处理'}
+            ? t('result.passedDescription')
+            : t('result.failedDescription')}
         </Text>
 
         {/* 结果详情卡片 */}
         <View style={styles.detailCard}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>记录编号</Text>
+            <Text style={styles.detailLabel}>{t('result.recordNumber')}</Text>
             <Text style={styles.detailValue}>{recordId}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>检验时间</Text>
+            <Text style={styles.detailLabel}>{t('result.inspectionTime')}</Text>
             <Text style={styles.detailValue}>{new Date().toLocaleString('zh-CN')}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>检验结果</Text>
+            <Text style={styles.detailLabel}>{t('result.inspectionResult')}</Text>
             <View style={[styles.statusBadge, passed ? styles.badgePass : styles.badgeFail]}>
-              <Text style={styles.statusText}>{passed ? '合格' : '不合格'}</Text>
+              <Text style={styles.statusText}>{passed ? t('result.qualified') : t('result.unqualified')}</Text>
             </View>
           </View>
         </View>
@@ -89,16 +91,16 @@ export default function QIResultScreen() {
           <View style={styles.nextStepCard}>
             <Ionicons name="arrow-forward-circle" size={24} color={QI_COLORS.secondary} />
             <View style={styles.nextStepText}>
-              <Text style={styles.nextStepTitle}>下一步</Text>
-              <Text style={styles.nextStepDesc}>产品将进入包装/出货流程</Text>
+              <Text style={styles.nextStepTitle}>{t('result.nextStep')}</Text>
+              <Text style={styles.nextStepDesc}>{t('result.productWillEnterPackaging')}</Text>
             </View>
           </View>
         ) : (
           <View style={[styles.nextStepCard, styles.nextStepCardWarning]}>
             <Ionicons name="warning" size={24} color={QI_COLORS.warning} />
             <View style={styles.nextStepText}>
-              <Text style={styles.nextStepTitle}>需要处理</Text>
-              <Text style={styles.nextStepDesc}>请将不合格批次进行隔离标记</Text>
+              <Text style={styles.nextStepTitle}>{t('result.needsHandling')}</Text>
+              <Text style={styles.nextStepDesc}>{t('result.pleaseIsolateBatch')}</Text>
             </View>
           </View>
         )}
@@ -106,7 +108,7 @@ export default function QIResultScreen() {
         {/* 查看详情按钮 */}
         <TouchableOpacity style={styles.viewDetailBtn} onPress={handleViewDetail}>
           <Ionicons name="document-text-outline" size={20} color={QI_COLORS.primary} />
-          <Text style={styles.viewDetailText}>查看检验详情</Text>
+          <Text style={styles.viewDetailText}>{t('result.viewInspectionDetail')}</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -114,10 +116,10 @@ export default function QIResultScreen() {
       <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 16 }]}>
         <TouchableOpacity style={styles.homeBtn} onPress={handleGoHome}>
           <Ionicons name="home-outline" size={20} color={QI_COLORS.text} />
-          <Text style={styles.homeBtnText}>返回首页</Text>
+          <Text style={styles.homeBtnText}>{t('result.returnHome')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.continueBtn} onPress={handleContinue}>
-          <Text style={styles.continueBtnText}>继续质检</Text>
+          <Text style={styles.continueBtnText}>{t('result.continueInspection')}</Text>
           <Ionicons name="arrow-forward" size={18} color="#fff" />
         </TouchableOpacity>
       </View>

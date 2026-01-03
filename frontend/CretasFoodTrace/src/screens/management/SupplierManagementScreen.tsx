@@ -16,6 +16,7 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { supplierApiClient, Supplier, CreateSupplierRequest } from '../../services/api/supplierApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
@@ -31,6 +32,7 @@ const supplierLogger = logger.createContextLogger('SupplierManagement');
  */
 export default function SupplierManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -42,7 +44,7 @@ export default function SupplierManagementScreen() {
 
   // 权限控制
   const userType = user?.userType || 'factory';
-  const roleCode = user?.factoryUser?.role || user?.factoryUser?.roleCode || user?.roleCode || 'viewer';
+  const roleCode = user?.factoryUser?.role || 'viewer';
   const isPlatformAdmin = userType === 'platform';
   const isSuperAdmin = roleCode === 'factory_super_admin';
   const isPermissionAdmin = roleCode === 'permission_admin';
@@ -74,7 +76,7 @@ export default function SupplierManagementScreen() {
       const factoryId = user?.factoryId || user?.factoryUser?.factoryId || 'F001';
       
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂ID');
+        Alert.alert(t('common.error'), '无法获取工厂ID');
         setSuppliers([]);
         return;
       }
@@ -97,8 +99,8 @@ export default function SupplierManagementScreen() {
         supplierLogger.warn('供应商API返回空数据', { factoryId });
       }
     } catch (error) {
-      supplierLogger.error('加载供应商列表失败', error, { factoryId });
-      const errorMessage = error.response?.data?.message || error.message || '加载供应商列表失败';
+      supplierLogger.error('加载供应商列表失败', error, { factoryId: user?.factoryId });
+      const errorMessage = (error as any).response?.data?.message || (error instanceof Error ? error.message : '加载供应商列表失败');
       Alert.alert('错误', errorMessage);
       setSuppliers([]);
     } finally {
@@ -168,7 +170,7 @@ export default function SupplierManagementScreen() {
   const handleSave = async () => {
     // 验证必填项
     if (!formData.name || !formData.phone) {
-      Alert.alert('提示', '供应商名称和联系电话不能为空');
+      Alert.alert(t('common.confirm'), t('supplierManagement.messages.requiredFields'));
       return;
     }
 
@@ -184,13 +186,9 @@ export default function SupplierManagementScreen() {
           supplierId: editingSupplier.id,
           supplierName: formData.name,
         });
-        Alert.alert('成功', '供应商信息已更新');
+        Alert.alert(t('common.success'), t('supplierManagement.messages.updateSuccess'));
       } else {
         // 创建供应商
-        /* if (!formData.supplierCode) {
-          Alert.alert('提示', '供应商编码不能为空');
-          return;
-        } */
         await supplierApiClient.createSupplier(
           formData as CreateSupplierRequest,
           user?.factoryId
@@ -199,7 +197,7 @@ export default function SupplierManagementScreen() {
           supplierCode: formData.supplierCode,
           supplierName: formData.name,
         });
-        Alert.alert('成功', '供应商创建成功');
+        Alert.alert(t('common.success'), t('supplierManagement.messages.createSuccess'));
       }
 
       setModalVisible(false);
@@ -209,7 +207,7 @@ export default function SupplierManagementScreen() {
         isEdit: !!editingSupplier,
         supplierCode: formData.supplierCode,
       });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || '操作失败');
     }
   };
 
@@ -230,7 +228,7 @@ export default function SupplierManagementScreen() {
               loadSuppliers();
             } catch (error) {
               supplierLogger.error('删除供应商失败', error, { supplierId, supplierName });
-              Alert.alert('错误', error.response?.data?.message || '删除失败');
+              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
             }
           },
         },
@@ -254,7 +252,7 @@ export default function SupplierManagementScreen() {
       loadSuppliers();
     } catch (error) {
       supplierLogger.error('切换状态失败', error, { supplierId, currentStatus });
-      Alert.alert('错误', error.response?.data?.message || '操作失败');
+      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
     }
   };
 

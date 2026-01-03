@@ -1,0 +1,89 @@
+{
+  "exception": {
+    "title": "异常预警",
+    "activeAlerts": "活跃预警",
+    "critical": "严重",
+    "warning": "警告",
+    "info": "提示",
+    "total": "总计",
+    "all": "全部",
+    "active": "活跃",
+    "resolved": "已解决",
+    "searchPlaceholder": "搜索预警...",
+    "noAlerts": "暂无预警",
+    "refresh": "刷新",
+    "resolveSuccess": "告警已成功解决",
+    "resolveFailed": "解决告警失败",
+    "cannotGetUserInfo": "无法获取用户信息，请重新登录",
+    "cannotGetFactoryInfo": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载告警列表失败"
+  },
+  "types": {
+    "materialExpiry": "原料到期",
+    "costOverrun": "成本超支",
+    "conversionAbnormal": "转换率异常",
+    "equipmentFault": "设备故障",
+    "employeeLate": "员工迟到"
+  },
+  "levels": {
+    "critical": "严重",
+    "warning": "警告",
+    "info": "提示"
+  },
+  "status": {
+    "active": "活跃",
+    "resolved": "已解决",
+    "pending": "待处理"
+  },
+  "create": {
+    "title": "异常上报",
+    "step": "步骤 {{current}}/{{total}}",
+    "step1Title": "第一步: 发生了什么?",
+    "step2Title": "第二步: 详细情况",
+    "step3Title": "第三步: 确认上报",
+    "exceptionTypes": {
+      "equipment": "设备故障",
+      "material": "原料问题",
+      "safety": "安全隐患",
+      "other": "其他问题"
+    },
+    "describeIssue": "请描述具体问题...",
+    "clickToTakePhoto": "点击拍照 (选填)",
+    "type": "类型",
+    "description": "描述",
+    "photo": "照片",
+    "photoAdded": "已添加 {{count}} 张",
+    "previousStep": "上一步",
+    "nextStep": "下一步",
+    "confirmReport": "确认上报",
+    "selectType": "请选择类型",
+    "enterDescription": "请填写描述",
+    "selectExceptionType": "请选择异常类型",
+    "cameraPermissionRequired": "需要相机权限",
+    "submitSuccess": "提交成功",
+    "exceptionReported": "异常情况已上报，请等待处理",
+    "submitFailed": "提交失败",
+    "pleaseRetryLater": "请稍后重试"
+  },
+  "time": {
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前"
+  },
+  "equipment": {
+    "title": "设备告警",
+    "equipmentName": "设备名称",
+    "alertType": "告警类型",
+    "alertLevel": "告警级别",
+    "alertTime": "告警时间",
+    "resolveTime": "解决时间",
+    "resolvedBy": "处理人",
+    "resolutionNotes": "处理说明"
+  },
+  "actions": {
+    "resolve": "解决",
+    "ignore": "忽略",
+    "escalate": "上报",
+    "viewDetails": "查看详情"
+  }
+}

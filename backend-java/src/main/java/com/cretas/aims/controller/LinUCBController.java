@@ -3,6 +3,9 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.ml.LinUCBModel;
 import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.LinUCBService.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +28,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/scheduling/linucb")
 @RequiredArgsConstructor
+@Tag(name = "LinUCB智能推荐", description = "LinUCB 上下文多臂老虎机算法 API，提供工人推荐、UCB分数计算、反馈记录、模型管理、训练与统计")
 public class LinUCBController {
 
     private final LinUCBService linUCBService;
@@ -49,9 +53,10 @@ public class LinUCBController {
      *   "candidateWorkerIds": [1, 2, 3, 4, 5]
      * }
      */
+    @Operation(summary = "获取AI推荐的工人分配列表", description = "基于LinUCB算法，根据任务特征和候选工人列表计算UCB分数并返回推荐排序。请求体包含taskFeatures(任务特征)和candidateWorkerIds(候选工人ID列表)")
     @PostMapping("/recommend-workers")
     public ResponseEntity<Map<String, Object>> recommendWorkers(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody Map<String, Object> request) {
 
         Map<String, Object> response = new HashMap<>();
@@ -100,9 +105,10 @@ public class LinUCBController {
      *
      * POST /api/mobile/{factoryId}/scheduling/linucb/compute-ucb
      */
+    @Operation(summary = "计算单个工人的UCB分数", description = "计算指定工人在给定上下文下的UCB(Upper Confidence Bound)分数，用于评估工人分配的置信度")
     @PostMapping("/compute-ucb")
     public ResponseEntity<Map<String, Object>> computeUCB(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody Map<String, Object> request) {
 
         Map<String, Object> response = new HashMap<>();
@@ -149,9 +155,10 @@ public class LinUCBController {
      *
      * POST /api/mobile/{factoryId}/scheduling/linucb/record-allocation
      */
+    @Operation(summary = "记录工人分配", description = "在分配工人时调用，记录分配信息和预测分数，用于后续模型更新。返回feedbackId供完成反馈时使用")
     @PostMapping("/record-allocation")
     public ResponseEntity<Map<String, Object>> recordAllocation(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody Map<String, Object> request,
             HttpServletRequest httpRequest) {
 
@@ -206,9 +213,10 @@ public class LinUCBController {
      *
      * POST /api/mobile/{factoryId}/scheduling/linucb/complete-feedback
      */
+    @Operation(summary = "完成分配反馈", description = "任务完成时调用，提交实际产量、工时和质量分数，系统计算奖励值并用于更新LinUCB模型")
     @PostMapping("/complete-feedback")
     public ResponseEntity<Map<String, Object>> completeFeedback(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody Map<String, Object> request) {
 
         Map<String, Object> response = new HashMap<>();
@@ -247,10 +255,11 @@ public class LinUCBController {
      *
      * GET /api/mobile/{factoryId}/scheduling/linucb/models/{workerId}
      */
+    @Operation(summary = "获取工人的LinUCB模型", description = "获取指定工人的LinUCB模型详情，包括特征维度、更新次数、平均奖励等信息")
     @GetMapping("/models/{workerId}")
     public ResponseEntity<Map<String, Object>> getModel(
-            @PathVariable String factoryId,
-            @PathVariable Long workerId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "工人ID", example = "1") @PathVariable Long workerId) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -284,8 +293,10 @@ public class LinUCBController {
      *
      * GET /api/mobile/{factoryId}/scheduling/linucb/models
      */
+    @Operation(summary = "获取工厂所有模型列表", description = "获取工厂内所有工人的LinUCB模型列表，包含每个模型的基本信息和性能指标")
     @GetMapping("/models")
-    public ResponseEntity<Map<String, Object>> getAllModels(@PathVariable String factoryId) {
+    public ResponseEntity<Map<String, Object>> getAllModels(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -322,10 +333,11 @@ public class LinUCBController {
      *
      * DELETE /api/mobile/{factoryId}/scheduling/linucb/models/{workerId}
      */
+    @Operation(summary = "重置工人模型", description = "重置指定工人的LinUCB模型，清除所有历史学习数据，模型将从头开始学习")
     @DeleteMapping("/models/{workerId}")
     public ResponseEntity<Map<String, Object>> resetModel(
-            @PathVariable String factoryId,
-            @PathVariable Long workerId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "工人ID", example = "1") @PathVariable Long workerId) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -350,8 +362,10 @@ public class LinUCBController {
      *
      * DELETE /api/mobile/{factoryId}/scheduling/linucb/models
      */
+    @Operation(summary = "重置工厂所有模型", description = "重置工厂内所有工人的LinUCB模型，谨慎使用此操作，将导致所有模型从头开始学习")
     @DeleteMapping("/models")
-    public ResponseEntity<Map<String, Object>> resetAllModels(@PathVariable String factoryId) {
+    public ResponseEntity<Map<String, Object>> resetAllModels(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -378,8 +392,10 @@ public class LinUCBController {
      *
      * POST /api/mobile/{factoryId}/scheduling/linucb/train
      */
+    @Operation(summary = "触发模型批量更新", description = "手动触发模型训练，处理所有未处理的反馈数据，更新对应工人的LinUCB模型参数")
     @PostMapping("/train")
-    public ResponseEntity<Map<String, Object>> trainModels(@PathVariable String factoryId) {
+    public ResponseEntity<Map<String, Object>> trainModels(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -407,10 +423,11 @@ public class LinUCBController {
      *
      * GET /api/mobile/{factoryId}/scheduling/linucb/worker-ranking
      */
+    @Operation(summary = "获取工人AI评分排行榜", description = "根据LinUCB模型计算的平均奖励值，返回工人绩效排行榜")
     @GetMapping("/worker-ranking")
     public ResponseEntity<Map<String, Object>> getWorkerRanking(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "10") int limit) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "返回数量限制", example = "10") @RequestParam(defaultValue = "10") int limit) {
 
         Map<String, Object> response = new HashMap<>();
 
@@ -436,8 +453,10 @@ public class LinUCBController {
      *
      * GET /api/mobile/{factoryId}/scheduling/linucb/training-stats
      */
+    @Operation(summary = "获取模型训练统计", description = "获取工厂LinUCB模型的训练统计信息，包括模型数量、总更新次数、平均奖励等")
     @GetMapping("/training-stats")
-    public ResponseEntity<Map<String, Object>> getTrainingStats(@PathVariable String factoryId) {
+    public ResponseEntity<Map<String, Object>> getTrainingStats(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
 
         Map<String, Object> response = new HashMap<>();
 

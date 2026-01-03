@@ -1,0 +1,501 @@
+{
+  "cancel": "Cancel",
+  "confirm": "Confirm",
+  "buttons": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "refresh": "Refresh",
+    "submit": "Submit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "retry": "Retry",
+    "close": "Close",
+    "ok": "OK",
+    "done": "Done",
+    "create": "Create",
+    "update": "Update",
+    "view": "View",
+    "more": "More",
+    "less": "Less",
+    "selectAll": "Select All",
+    "unselectAll": "Unselect All",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "filter": "Filter",
+    "reset": "Reset",
+    "apply": "Apply",
+    "start": "Start",
+    "stop": "Stop",
+    "pause": "Pause",
+    "resume": "Resume"
+  },
+  "status": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "deleting": "Deleting...",
+    "submitting": "Submitting...",
+    "success": "Operation successful",
+    "failed": "Operation failed",
+    "noData": "No data",
+    "noMore": "No more data",
+    "pullToRefresh": "Pull to refresh",
+    "releaseToRefresh": "Release to refresh",
+    "refreshing": "Refreshing..."
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email format",
+    "invalidPhone": "Invalid phone number format",
+    "passwordTooShort": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match",
+    "invalidFormat": "Invalid format",
+    "minLength": "Minimum {{min}} characters",
+    "maxLength": "Maximum {{max}} characters",
+    "minValue": "Minimum value is {{min}}",
+    "maxValue": "Maximum value is {{max}}",
+    "positiveNumber": "Please enter a positive number",
+    "integer": "Please enter an integer"
+  },
+  "network": {
+    "connectionFailed": "Network connection failed. Please check your connection.",
+    "timeout": "Request timed out. Please try again.",
+    "serverError": "Server is busy. Please try again later.",
+    "unauthorized": "Session expired. Please log in again.",
+    "forbidden": "You do not have permission to perform this action.",
+    "notFound": "The requested resource was not found.",
+    "offline": "You are currently offline."
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "tomorrow": "Tomorrow",
+    "thisWeek": "This Week",
+    "lastWeek": "Last Week",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "thisYear": "This Year",
+    "lastYear": "Last Year",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} minutes ago",
+    "hoursAgo": "{{count}} hours ago",
+    "daysAgo": "{{count}} days ago",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "dateRange": "Date Range"
+  },
+  "confirm": {
+    "delete": "Are you sure you want to delete?",
+    "deleteTitle": "Confirm Delete",
+    "cancel": "Are you sure you want to cancel?",
+    "cancelTitle": "Confirm Cancel",
+    "save": "Are you sure you want to save?",
+    "submit": "Are you sure you want to submit?",
+    "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?",
+    "logout": "Are you sure you want to log out?"
+  },
+  "empty": {
+    "list": "No data available",
+    "search": "No matching results found",
+    "filter": "No data matches the filter criteria"
+  },
+  "error": {
+    "general": "Operation failed. Please try again.",
+    "unknown": "An unknown error occurred",
+    "loadFailed": "Failed to load",
+    "saveFailed": "Failed to save",
+    "deleteFailed": "Failed to delete",
+    "submitFailed": "Failed to submit"
+  },
+  "units": {
+    "kg": "kg",
+    "g": "g",
+    "ton": "ton",
+    "piece": "pcs",
+    "box": "box",
+    "bag": "bag",
+    "bottle": "bottle",
+    "yuan": "CNY",
+    "percent": "%",
+    "hour": "hour",
+    "minute": "min"
+  },
+  "pagination": {
+    "total": "Total {{total}} items",
+    "page": "Page {{current}} of {{total}}",
+    "itemsPerPage": "{{count}} items per page"
+  },
+  "materialBatchSelector": {
+    "title": "Material Batch Selection",
+    "fifoRecommended": "FIFO Recommended",
+    "requiredQuantity": "Required",
+    "selectedQuantity": "Selected",
+    "stillNeed": "Still Need",
+    "satisfied": "Satisfied",
+    "noBatchesAvailable": "No batches available",
+    "pleaseInboundFirst": "Please inbound this material first",
+    "available": "Available",
+    "unitPrice": "Unit Price",
+    "supplier": "Supplier",
+    "inboundDate": "Inbound Date",
+    "expiryDate": "Expiry",
+    "days": "days",
+    "allocated": "Allocated",
+    "cost": "Cost",
+    "grade": "Grade",
+    "summary": "Selected Batches Summary",
+    "total": "Total",
+    "insufficientWarning": "⚠️ Insufficient batches selected, still need {{shortage}}kg",
+    "fifoHint": "System has automatically recommended batches based on FIFO (First-In-First-Out) principle. You can manually adjust.",
+    "manualHint": "Please manually select batches to meet production requirements",
+    "demandSatisfied": "Demand Satisfied",
+    "noNeedMore": "Demand already satisfied, no need to select more batches",
+    "exceedsAvailable": "Exceeds available quantity {{max}}kg"
+  },
+  "moduleStatus": {
+    "comingSoon": "Coming Soon",
+    "locked": "Locked"
+  },
+  "ui": {
+    "statusBadge": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed",
+      "inProgress": "In Progress"
+    }
+  },
+  "form": {
+    "validation": {
+      "title": "Form Validation Failed",
+      "foundErrors": "Found {{count}} validation errors",
+      "currentValue": "Current Value",
+      "aiSuggestion": "AI Suggestion",
+      "correctedValue": "Corrected Value",
+      "aiAnalysis": "AI Analysis",
+      "confidence": "Confidence",
+      "additionalInstructions": "Additional Instructions (Optional)",
+      "aiAnalyzing": "AI Analyzing...",
+      "manualEdit": "Manual Edit",
+      "applySuggestions": "Apply Suggestions",
+      "validationError": "Validation Error",
+      "aiFailed": "AI analysis failed, please edit manually",
+      "aiUnavailable": "AI service is temporarily unavailable"
+    },
+    "missingFields": {
+      "title": "Additional Information Required",
+      "pleaseComplete": "Please complete the following {{count}} required fields",
+      "required": "Required",
+      "placeholder": "Type or use voice input",
+      "recording": "Recording...",
+      "skip": "Skip",
+      "continue": "Continue",
+      "tip": "You can type directly or tap the microphone icon to use voice input",
+      "aiProcessing": "AI Processing..."
+    }
+  },
+  "quality": {
+    "disposition": {
+      "history": "Disposition History",
+      "suggestion": "Disposition Suggestion",
+      "action": "Disposition Action"
+    }
+  },
+  "selectors": {
+    "customer": {
+      "title": "Select Customer",
+      "label": "Customer",
+      "placeholder": "Select Customer",
+      "search": "Search customer name, code, contact...",
+      "notFound": "No matching customer found",
+      "empty": "No customers available",
+      "addNew": "Can't find? Add new customer",
+      "addNewTitle": "Add New Customer",
+      "name": "Customer Name",
+      "namePlaceholder": "e.g., RT-Mart Supermarket",
+      "contactPerson": "Contact Person",
+      "contactPersonPlaceholder": "e.g., Mr. Wang",
+      "phone": "Phone Number",
+      "phonePlaceholder": "e.g., +8613700000002",
+      "address": "Address",
+      "addressPlaceholder": "e.g., Futian Shopping Center, Shenzhen",
+      "businessType": "Business Type",
+      "businessTypes": {
+        "supermarket": "Supermarket",
+        "restaurant": "Restaurant",
+        "wholesale": "Wholesale",
+        "other": "Other"
+      },
+      "createFailed": "Failed to Create",
+      "pleaseEnterName": "Please enter customer name"
+    },
+    "supplier": {
+      "title": "Select Supplier",
+      "label": "Supplier",
+      "placeholder": "Select Supplier",
+      "search": "Search supplier name, code, contact...",
+      "notFound": "No matching supplier found",
+      "empty": "No suppliers available",
+      "addNew": "Can't find? Add new supplier",
+      "addNewTitle": "Add New Supplier",
+      "name": "Supplier Name",
+      "namePlaceholder": "e.g., Chen's Seafood Wholesale",
+      "contactPerson": "Contact Person",
+      "contactPersonPlaceholder": "e.g., Mr. Chen",
+      "phone": "Phone Number",
+      "phonePlaceholder": "e.g., +8613800000001",
+      "address": "Address",
+      "addressPlaceholder": "e.g., Seafood Wholesale Market, Shenzhen",
+      "businessType": "Business Type",
+      "businessTypes": {
+        "wholesale": "Wholesale",
+        "import": "Import",
+        "other": "Other"
+      },
+      "createFailed": "Failed to Create",
+      "pleaseEnterName": "Please enter supplier name"
+    },
+    "productType": {
+      "title": "Select Product Type"
+    },
+    "materialType": {
+      "title": "Select Material Type"
+    },
+    "supervisor": {
+      "title": "Select Supervisor"
+    }
+  },
+  "config": {
+    "diffPreview": {
+      "title": "Difference Preview",
+      "before": "Before",
+      "after": "After"
+    },
+    "dryRunPreview": {
+      "title": "Dry Run Preview"
+    }
+  },
+  "quickStats": {
+    "todayWorkHours": "Today's Hours",
+    "hours": "hours",
+    "clockStatus": "Clock Status",
+    "notClockedIn": "Not Clocked In",
+    "inProgressBatches": "In Progress",
+    "batches": "batches",
+    "todayAttendance": "Today's Attendance",
+    "pending": "Pending",
+    "items": "items",
+    "todayOutput": "Today's Output",
+    "completedBatches": "Completed",
+    "onDutyWorkers": "On Duty",
+    "equipmentRunning": "Equipment",
+    "activeFactories": "Active Factories",
+    "totalUsers": "Total Users",
+    "people": "people",
+    "todayBatches": "Today's Batches",
+    "platformOutput": "Platform Output",
+    "activatedUsers": "Activated",
+    "pendingReview": "Pending Review",
+    "viewerWelcome": "You have viewer permissions and can browse factory data",
+    "factoryInfoIncomplete": "Factory information incomplete, cannot load statistics",
+    "apiReturnedFailure": "API returned failure, please try again later"
+  },
+  "demo": {
+    "formily": {
+      "title": "Formily Dynamic Form Demo",
+      "subtitle": "Verify React Native Paper Adapter Features",
+      "features": {
+        "title": "Features",
+        "schemaDriven": "Schema Driven Rendering",
+        "fieldLinkage": "Field Linkage",
+        "realtimeValidation": "Realtime Validation",
+        "conditionalDisplay": "Conditional Display",
+        "aiAssistant": "AI Assistant"
+      },
+      "form": {
+        "title": "Quality Check Form (qualityCheckSchema)",
+        "aiEnabled": "AI Assistant enabled - Click button below"
+      },
+      "operations": {
+        "title": "Form Operations",
+        "validate": "Validate",
+        "getValues": "Get Values",
+        "fillExample": "Fill Example",
+        "reset": "Reset"
+      },
+      "realtimeValues": "Realtime Form Values",
+      "submitResult": "Submit Result",
+      "aiFillResult": "AI Fill Result",
+      "confidence": "Confidence",
+      "aiGuide": {
+        "title": "AI Form Assistant Guide",
+        "step1": "1. Click the AI floating button in bottom-right corner",
+        "step2": "2. Choose input method:",
+        "textInput": "• Text Input: Describe content like \"Fish batch, temp -20°C, passed\"",
+        "voiceInput": "• Voice Input: Hold to speak, release to send",
+        "photoInput": "• Photo/Album: Take photo of quality check document, AI auto-fills",
+        "step3": "3. AI will automatically parse and fill form fields",
+        "step4": "4. Review filled results, manually correct if needed, then submit"
+      },
+      "linkageRules": {
+        "title": "Linkage Rules",
+        "rule1": "1. When \"Test Result\" is \"Failed\", \"Failure Reason\" field shows and becomes required",
+        "rule2": "2. When \"Test Result\" changes to other values, \"Failure Reason\" auto-clears and hides",
+        "rule3": "3. Temperature input supports range validation: -50°C ~ 100°C",
+        "rule4": "4. Must check \"Inspector Confirm\" before submission"
+      },
+      "aiBanner": "AI Form Assistant enabled! Click floating button to use voice, text or photo to auto-fill form.",
+      "aiAssistantOn": "AI Assistant ON",
+      "aiAssistantOff": "AI Assistant OFF",
+      "aiFillSuccess": "AI Fill Success",
+      "aiFillFailed": "AI Fill Failed",
+      "filledFields": "Filled {{count}} fields"
+    }
+  },
+  "test": {
+    "serverConnectivity": {
+      "title": "Server Connectivity Test",
+      "cardTitle": "Server Connection Test",
+      "server": "Server",
+      "networkStatus": {
+        "online": "Online",
+        "offline": "Offline",
+        "unknown": "Unknown"
+      },
+      "progress": {
+        "title": "Overall Progress",
+        "completed": "{{completed}}/{{total}} ({{percentage}}%)"
+      },
+      "phase": "Phase {{number}}",
+      "summary": {
+        "title": "Test Summary",
+        "passed": "Passed",
+        "failed": "Failed",
+        "skipped": "Skipped",
+        "duration": "Duration"
+      },
+      "actions": {
+        "runAllTests": "Run All Tests",
+        "clearResults": "Clear Results"
+      },
+      "logs": {
+        "title": "Test Logs",
+        "empty": "No logs yet, click \"Run All Tests\" to start",
+        "startTest": "Starting server connection test...",
+        "serverUrl": "Server: {{url}}",
+        "startIntegrity": "Starting data integrity test...",
+        "testName": "Test: {{name}}",
+        "passed": "{{name}} passed",
+        "failed": "{{name}} failed: {{error}}",
+        "skipped": "Skip data integrity test (authentication failed)",
+        "completed": "Test completed!",
+        "exception": "Test exception: {{error}}"
+      },
+      "phases": {
+        "1": "Network & Health Check",
+        "2": "Authentication",
+        "3": "Basic APIs",
+        "4": "Data Integrity"
+      },
+      "status": {
+        "pending": "PENDING",
+        "running": "RUNNING",
+        "success": "SUCCESS",
+        "failed": "FAILED"
+      }
+    }
+  },
+  "traceability": {
+    "public": {
+      "title": "Public Traceability Query",
+      "scanPrompt": "Scan Product QR Code",
+      "inputBatchNumber": "Or Enter Batch Number",
+      "batchNumberPlaceholder": "Enter batch number",
+      "query": "Query",
+      "batchInfo": "Batch Information",
+      "productionDate": "Production Date",
+      "expiryDate": "Expiry Date",
+      "status": "Status",
+      "traceInfo": "Traceability Information",
+      "noData": "No traceability data found",
+      "invalidBatchNumber": "Please enter valid batch number"
+    },
+    "detail": {
+      "title": "Traceability Details",
+      "batchNumber": "Batch Number",
+      "productInfo": "Product Information",
+      "productName": "Product Name",
+      "productionDate": "Production Date",
+      "expiryDate": "Expiry Date",
+      "quantity": "Quantity",
+      "materialTrace": "Material Traceability",
+      "materialName": "Material Name",
+      "supplier": "Supplier",
+      "inboundDate": "Inbound Date",
+      "qualityCheck": "Quality Check Records",
+      "checkDate": "Check Date",
+      "result": "Result",
+      "inspector": "Inspector",
+      "processing": "Processing Records",
+      "stage": "Stage",
+      "operator": "Operator",
+      "completed": "Completed",
+      "share": "Share",
+      "export": "Export"
+    },
+    "screen": {
+      "title": "Traceability",
+      "scanToQuery": "Scan to Query",
+      "recentQueries": "Recent Queries",
+      "noHistory": "No query history"
+    }
+  },
+  "notification": {
+    "center": {
+      "title": "Notification Center",
+      "tabs": {
+        "all": "All",
+        "unread": "Unread",
+        "system": "System",
+        "production": "Production",
+        "quality": "Quality"
+      },
+      "markAllRead": "Mark All Read",
+      "noNotifications": "No notifications",
+      "types": {
+        "system": "System",
+        "production": "Production",
+        "quality": "Quality",
+        "alert": "Alert",
+        "approval": "Approval"
+      },
+      "actions": {
+        "markRead": "Mark as Read",
+        "delete": "Delete"
+      },
+      "timeAgo": {
+        "justNow": "Just now",
+        "minutesAgo": "{{count}} minutes ago",
+        "hoursAgo": "{{count}} hours ago",
+        "daysAgo": "{{count}} days ago"
+      }
+    }
+  },
+  "table": {
+    "rank": "Rank",
+    "employee": "Employee",
+    "workHours": "Work Hours",
+    "efficiency": "Efficiency"
+  },
+  "employee": "Employee"
+}
+

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI模型配置 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="profile.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">AI模型配置</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v6m0 6v6"/>
+          <path d="m4.93 4.93 4.24 4.24m5.66 5.66 4.24 4.24"/>
+          <path d="M1 12h6m6 0h6"/>
+          <path d="m4.93 19.07 4.24-4.24m5.66-5.66 4.24-4.24"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 当前模型信息 -->
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 13px; opacity: 0.8; margin-bottom: 4px;">当前使用模型</div>
+            <div style="font-size: 22px; font-weight: 600;">DeepSeek-V3</div>
+            <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">deepseek-chat</div>
+          </div>
+          <span style="padding: 6px 12px; background: rgba(255,255,255,0.2); border-radius: 12px; font-size: 12px; font-weight: 500;">已连接</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2);">
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">99.2%</div>
+            <div style="font-size: 12px; opacity: 0.8;">可用性</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">1.2s</div>
+            <div style="font-size: 12px; opacity: 0.8;">平均响应</div>
+          </div>
+          <div>
+            <div style="font-size: 20px; font-weight: 600;">8,542</div>
+            <div style="font-size: 12px; opacity: 0.8;">调用次数</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 模型参数配置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">模型参数配置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <!-- Temperature -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 14px; color: #262626; font-weight: 500;">Temperature</label>
+            <span style="font-size: 14px; color: #1890ff; font-weight: 600;">0.7</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 8px;">控制输出的随机性，值越高越随机 (0.0 - 2.0)</div>
+          <input
+            type="range"
+            min="0"
+            max="200"
+            value="70"
+            style="width: 100%; height: 6px; background: linear-gradient(to right, #667eea 0%, #667eea 35%, #e0e0e0 35%, #e0e0e0 100%); border-radius: 3px; outline: none; -webkit-appearance: none;"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #bfbfbf; margin-top: 4px;">
+            <span>0.0 精确</span>
+            <span>2.0 创造</span>
+          </div>
+        </div>
+
+        <!-- Max Tokens -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 14px; color: #262626; font-weight: 500;">Max Tokens</label>
+            <span style="font-size: 14px; color: #52c41a; font-weight: 600;">2048</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 8px;">最大生成token数量 (128 - 4096)</div>
+          <input
+            type="range"
+            min="128"
+            max="4096"
+            value="2048"
+            style="width: 100%; height: 6px; background: linear-gradient(to right, #52c41a 0%, #52c41a 48%, #e0e0e0 48%, #e0e0e0 100%); border-radius: 3px; outline: none; -webkit-appearance: none;"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #bfbfbf; margin-top: 4px;">
+            <span>128</span>
+            <span>4096</span>
+          </div>
+        </div>
+
+        <!-- Top P -->
+        <div style="margin-bottom: 20px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 14px; color: #262626; font-weight: 500;">Top P</label>
+            <span style="font-size: 14px; color: #faad14; font-weight: 600;">0.9</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 8px;">核采样参数，控制输出多样性 (0.1 - 1.0)</div>
+          <input
+            type="range"
+            min="10"
+            max="100"
+            value="90"
+            style="width: 100%; height: 6px; background: linear-gradient(to right, #faad14 0%, #faad14 88%, #e0e0e0 88%, #e0e0e0 100%); border-radius: 3px; outline: none; -webkit-appearance: none;"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #bfbfbf; margin-top: 4px;">
+            <span>0.1 保守</span>
+            <span>1.0 多样</span>
+          </div>
+        </div>
+
+        <!-- Presence Penalty -->
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="font-size: 14px; color: #262626; font-weight: 500;">Presence Penalty</label>
+            <span style="font-size: 14px; color: #722ed1; font-weight: 600;">0.0</span>
+          </div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-bottom: 8px;">惩罚重复内容，值越高越少重复 (-2.0 - 2.0)</div>
+          <input
+            type="range"
+            min="-200"
+            max="200"
+            value="0"
+            style="width: 100%; height: 6px; background: linear-gradient(to right, #e0e0e0 0%, #e0e0e0 50%, #722ed1 50%, #e0e0e0 50%, #e0e0e0 100%); border-radius: 3px; outline: none; -webkit-appearance: none;"
+          />
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: #bfbfbf; margin-top: 4px;">
+            <span>-2.0</span>
+            <span>0.0</span>
+            <span>2.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- API配置 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">API 配置</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">API Endpoint</label>
+          <input
+            type="text"
+            value="https://api.deepseek.com/v1"
+            placeholder="API端点地址"
+            style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 13px; color: #262626; font-family: 'Monaco', 'Menlo', monospace;"
+          />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">API Key</label>
+          <div style="position: relative;">
+            <input
+              type="password"
+              value="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+              placeholder="API密钥"
+              style="width: 100%; padding: 10px 40px 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 13px; color: #262626; font-family: 'Monaco', 'Menlo', monospace;"
+            />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8c8c8c" stroke-width="2" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer;">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">Request Timeout (秒)</label>
+          <input
+            type="number"
+            value="30"
+            placeholder="超时时间"
+            style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #262626;"
+          />
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">Rate Limit (次/分钟)</label>
+          <input
+            type="number"
+            value="60"
+            placeholder="频率限制"
+            style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #262626;"
+          />
+        </div>
+      </div>
+
+      <!-- 降级策略 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">降级策略</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">备用模型</label>
+          <select style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #262626; background: white;">
+            <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            <option value="gpt-4">GPT-4</option>
+            <option value="claude-3-sonnet">Claude 3 Sonnet</option>
+            <option value="none" selected>无备用模型</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">失败重试次数</label>
+          <input
+            type="number"
+            value="3"
+            placeholder="重试次数"
+            style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #262626;"
+          />
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; color: #595959; margin-bottom: 8px; font-weight: 500;">重试间隔 (秒)</label>
+          <input
+            type="number"
+            value="5"
+            placeholder="重试间隔"
+            style="width: 100%; padding: 10px 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; color: #262626;"
+          />
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px; background: #f5f5f5; border-radius: 8px;">
+          <div>
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">启用自动降级</div>
+            <div style="font-size: 12px; color: #8c8c8c;">主模型故障时自动切换备用</div>
+          </div>
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+            <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #52c41a; transition: .4s; border-radius: 24px;">
+              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 23px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 监控告警 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">监控告警</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">响应时间告警</div>
+            <div style="font-size: 12px; color: #8c8c8c;">超过 5s 时发送告警</div>
+          </div>
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+            <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #52c41a; transition: .4s; border-radius: 24px;">
+              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 23px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">错误率告警</div>
+            <div style="font-size: 12px; color: #8c8c8c;">错误率超过 5% 时告警</div>
+          </div>
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+            <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #52c41a; transition: .4s; border-radius: 24px;">
+              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 23px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+            </span>
+          </label>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">额度告警</div>
+            <div style="font-size: 12px; color: #8c8c8c;">Token消耗超过80%时告警</div>
+          </div>
+          <label style="position: relative; display: inline-block; width: 44px; height: 24px;">
+            <input type="checkbox" checked style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #52c41a; transition: .4s; border-radius: 24px;">
+              <span style="position: absolute; content: ''; height: 18px; width: 18px; left: 23px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%;"></span>
+            </span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <button class="btn btn--secondary" style="flex: 1; background: white; color: #595959; border: 1px solid #d9d9d9;">测试连接</button>
+      <button class="btn btn--primary" style="flex: 1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">保存配置</button>
+    </div>
+  </div>
+</body>
+</html>

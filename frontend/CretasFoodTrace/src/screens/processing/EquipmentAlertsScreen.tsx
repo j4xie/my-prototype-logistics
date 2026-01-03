@@ -22,13 +22,14 @@ import type { RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
 import { alertApiClient } from '../../services/api/alertApiClient';
-import { equipmentApiClient } from '../../services/api/equipmentApiClient';
+// equipmentApiClient alert methods are deprecated, use alertApiClient instead
 import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
 
-// 创建EquipmentAlerts专用logger
+// Create EquipmentAlerts context logger
 const equipmentAlertsLogger = logger.createContextLogger('EquipmentAlerts');
 
 // Types
@@ -61,17 +62,18 @@ interface EquipmentAlert {
 }
 
 /**
- * 设备告警系统页面
- * P1-004: 设备告警系统
+ * Equipment Alerts System Screen
+ * P1-004: Equipment Alerts System
  *
- * 功能:
- * - 告警列表展示（critical/warning/info）
- * - 告警状态管理（active/acknowledged/resolved）
- * - 告警确认和处理
- * - 搜索和筛选
- * - 导航到设备详情
+ * Features:
+ * - Alert list display (critical/warning/info)
+ * - Alert status management (active/acknowledged/resolved)
+ * - Alert acknowledgment and resolution
+ * - Search and filtering
+ * - Navigation to equipment details
  */
 export default function EquipmentAlertsScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<EquipmentAlertsScreenNavigationProp>();
   const route = useRoute<EquipmentAlertsScreenRouteProp>();
   const { equipmentId } = route.params || {};
@@ -100,7 +102,7 @@ export default function EquipmentAlertsScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/alerts (with pagination and filtering)
-      equipmentAlertsLogger.debug('获取设备告警列表', {
+      equipmentAlertsLogger.debug('Fetching equipment alerts list', {
         factoryId,
         statusFilter,
         equipmentId,
@@ -113,10 +115,10 @@ export default function EquipmentAlertsScreen() {
         size: 100,
       });
 
-      // 安全访问 content，处理 API 可能返回 null/undefined 的情况
+      // Safely access content, handle possible null/undefined from API
       const alertsContent = response?.data?.content ?? [];
 
-      equipmentAlertsLogger.info('设备告警加载成功', {
+      equipmentAlertsLogger.info('Equipment alerts loaded successfully', {
         alertCount: alertsContent.length,
       });
 
@@ -124,7 +126,7 @@ export default function EquipmentAlertsScreen() {
       const transformedAlerts: EquipmentAlert[] = alertsContent.map((alert) => ({
         id: String(alert.id),
         equipmentId: String(alert.equipmentId),
-        equipmentName: alert.equipmentName ?? '未知设备',
+        equipmentName: alert.equipmentName ?? 'Unknown Equipment',
         alertType: alert.alertType,
         level: alert.level.toLowerCase() as AlertLevel,
         status: alert.status.toLowerCase() as AlertStatus,
@@ -150,11 +152,11 @@ export default function EquipmentAlertsScreen() {
       setAlerts(filteredAlerts);
 
     } catch (error) {
-      equipmentAlertsLogger.error('加载设备告警失败', error, {
+      equipmentAlertsLogger.error('Failed to load equipment alerts', error, {
         factoryId,
         statusFilter,
       });
-      Alert.alert('加载失败', getErrorMsg(error) || '无法加载设备告警，请稍后重试');
+      Alert.alert(t('equipmentAlerts.messages.loadFailed'), getErrorMsg(error) || t('equipmentAlerts.messages.loadError'));
       setAlerts([]);
     } finally {
       setLoading(false);
@@ -173,54 +175,68 @@ export default function EquipmentAlertsScreen() {
 
   const handleAcknowledge = async (alertId: string) => {
     try {
-      equipmentAlertsLogger.debug('确认告警', { alertId });
+      equipmentAlertsLogger.debug('Acknowledging alert', { alertId });
 
-      const response = await equipmentApiClient.acknowledgeAlert(alertId, undefined, factoryId);
+      if (!factoryId) {
+        Alert.alert(t('equipmentAlerts.messages.factoryIdError'), t('equipmentAlerts.messages.factoryIdMessage'));
+        return;
+      }
+
+      const response = await alertApiClient.acknowledgeAlert({
+        factoryId,
+        alertId,
+        acknowledgedBy: user?.id,
+      });
 
       if (response.success) {
-        equipmentAlertsLogger.info('告警确认成功', { alertId });
-        Alert.alert('成功', '告警已确认');
+        equipmentAlertsLogger.info('Alert acknowledged successfully', { alertId });
+        Alert.alert(t('equipmentAlerts.messages.acknowledgeSuccess'), t('equipmentAlerts.messages.acknowledgeMessage'));
         // Refresh alerts list
         await fetchAlerts();
       }
     } catch (error) {
-      equipmentAlertsLogger.error('确认告警失败', error, { alertId });
-      const errorMessage = getErrorMsg(error) || '确认告警失败，请稍后重试';
-      Alert.alert('操作失败', errorMessage);
+      equipmentAlertsLogger.error('Failed to acknowledge alert', error, { alertId });
+      const errorMessage = getErrorMsg(error) || t('equipmentAlerts.messages.acknowledgeError');
+      Alert.alert(t('equipmentAlerts.messages.acknowledgeFailed'), errorMessage);
     }
   };
 
   const handleResolve = async (alertId: string) => {
     Alert.alert(
-      '解决告警',
-      '请输入解决方案备注（可选）',
+      t('equipmentAlerts.messages.resolveTitle'),
+      t('equipmentAlerts.messages.resolvePrompt'),
       [
         {
-          text: '取消',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: '确定',
+          text: t('common.confirm'),
           onPress: async () => {
             try {
-              equipmentAlertsLogger.debug('解决告警', { alertId });
+              equipmentAlertsLogger.debug('Resolving alert', { alertId });
 
-              const response = await equipmentApiClient.resolveAlert(
+              if (!factoryId) {
+                Alert.alert(t('equipmentAlerts.messages.factoryIdError'), t('equipmentAlerts.messages.factoryIdMessage'));
+                return;
+              }
+
+              const response = await alertApiClient.resolveAlert({
+                factoryId,
                 alertId,
-                undefined,
-                factoryId
-              );
+                resolvedBy: user?.id || 0,
+              });
 
               if (response.success) {
-                equipmentAlertsLogger.info('告警解决成功', { alertId });
-                Alert.alert('成功', '告警已解决');
+                equipmentAlertsLogger.info('Alert resolved successfully', { alertId });
+                Alert.alert(t('equipmentAlerts.messages.resolveSuccess'), t('equipmentAlerts.messages.resolveMessage'));
                 // Refresh alerts list
                 await fetchAlerts();
               }
             } catch (error) {
-              equipmentAlertsLogger.error('解决告警失败', error, { alertId });
-              const errorMessage = getErrorMsg(error) || '解决告警失败，请稍后重试';
-              Alert.alert('操作失败', errorMessage);
+              equipmentAlertsLogger.error('Failed to resolve alert', error, { alertId });
+              const errorMessage = getErrorMsg(error) || t('equipmentAlerts.messages.resolveError');
+              Alert.alert(t('equipmentAlerts.messages.resolveFailed'), errorMessage);
             }
           },
         },
@@ -230,14 +246,7 @@ export default function EquipmentAlertsScreen() {
 
   // Helper functions
   const getLevelLabel = (level: AlertLevel): string => {
-    switch (level) {
-      case 'critical':
-        return '严重';
-      case 'warning':
-        return '警告';
-      case 'info':
-        return '提示';
-    }
+    return t(`equipmentAlerts.level.${level}`);
   };
 
   const getLevelColor = (level: AlertLevel): string => {
@@ -263,14 +272,7 @@ export default function EquipmentAlertsScreen() {
   };
 
   const getStatusLabel = (status: AlertStatus): string => {
-    switch (status) {
-      case 'active':
-        return '活动';
-      case 'acknowledged':
-        return '已确认';
-      case 'resolved':
-        return '已解决';
-    }
+    return t(`equipmentAlerts.status.${status}`);
   };
 
   const getStatusColor = (status: AlertStatus): string => {
@@ -371,7 +373,7 @@ export default function EquipmentAlertsScreen() {
 
           {item.acknowledgedBy && (
             <Text style={styles.acknowledgedInfo}>
-              已确认 · {item.acknowledgedBy} ·{' '}
+              {t('equipmentAlerts.acknowledgedInfo')} · {item.acknowledgedBy} ·{' '}
               {item.acknowledgedAt?.toLocaleString('zh-CN', {
                 month: 'short',
                 day: 'numeric',
@@ -424,10 +426,10 @@ export default function EquipmentAlertsScreen() {
     <View style={styles.emptyContainer}>
       <IconButton icon="bell-off-outline" size={64} iconColor="#BDBDBD" />
       <Text variant="bodyLarge" style={styles.emptyText}>
-        暂无告警
+        {t('equipmentAlerts.empty.title')}
       </Text>
       <Text variant="bodySmall" style={styles.emptyHint}>
-        设备运行正常
+        {t('equipmentAlerts.empty.description')}
       </Text>
     </View>
   );
@@ -436,7 +438,7 @@ export default function EquipmentAlertsScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="设备告警" />
+        <Appbar.Content title={t('equipmentAlerts.title')} />
         {activeCount > 0 && (
           <Badge size={24} style={styles.badge}>
             {activeCount}
@@ -448,22 +450,22 @@ export default function EquipmentAlertsScreen() {
       <Surface style={styles.statsBar} elevation={1}>
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{criticalCount}</Text>
-          <Text style={[styles.statLabel, { color: '#F44336' }]}>严重</Text>
+          <Text style={[styles.statLabel, { color: '#F44336' }]}>{t('equipmentAlerts.statsBar.critical')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{warningCount}</Text>
-          <Text style={[styles.statLabel, { color: '#FF9800' }]}>警告</Text>
+          <Text style={[styles.statLabel, { color: '#FF9800' }]}>{t('equipmentAlerts.statsBar.warning')}</Text>
         </View>
         <View style={styles.statDivider} />
         <View style={styles.statItem}>
           <Text style={styles.statValue}>{activeCount}</Text>
-          <Text style={styles.statLabel}>活动中</Text>
+          <Text style={styles.statLabel}>{t('equipmentAlerts.statsBar.active')}</Text>
         </View>
       </Surface>
 
       <Searchbar
-        placeholder="搜索设备、告警类型..."
+        placeholder={t('equipmentAlerts.searchPlaceholder')}
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchbar}
@@ -473,10 +475,10 @@ export default function EquipmentAlertsScreen() {
         value={statusFilter}
         onValueChange={(value) => setStatusFilter(value as AlertStatus | 'all')}
         buttons={[
-          { value: 'active', label: '活动' },
-          { value: 'acknowledged', label: '已确认' },
-          { value: 'resolved', label: '已解决' },
-          { value: 'all', label: '全部' },
+          { value: 'active', label: t('equipmentAlerts.filters.active') },
+          { value: 'acknowledged', label: t('equipmentAlerts.filters.acknowledged') },
+          { value: 'resolved', label: t('equipmentAlerts.filters.resolved') },
+          { value: 'all', label: t('equipmentAlerts.filters.all') },
         ]}
         style={styles.segmentedButtons}
       />
@@ -484,7 +486,7 @@ export default function EquipmentAlertsScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('equipmentAlerts.loading')}</Text>
         </View>
       ) : (
         <FlatList

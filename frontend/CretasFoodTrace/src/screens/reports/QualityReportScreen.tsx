@@ -13,6 +13,7 @@ import {
   ProgressBar,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { qualityInspectionApiClient } from '../../services/api/qualityInspectionApiClient';
 import { getFactoryId } from '../../types/auth';
@@ -35,6 +36,7 @@ const qualityReportLogger = logger.createContextLogger('QualityReport');
 export default function QualityReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ export default function QualityReportScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('quality.cannotGetFactoryInfo'));
         return;
       }
 
@@ -95,8 +97,8 @@ export default function QualityReportScreen() {
         timeRange,
       });
       handleError(error, {
-        title: '加载失败',
-        customMessage: '加载质检数据失败，请稍后重试',
+        title: t('quality.loadFailed'),
+        customMessage: t('quality.loadQualityDataFailed'),
       });
       setRecentInspections([]);
       setQualityStats(null);
@@ -169,12 +171,12 @@ export default function QualityReportScreen() {
    */
   const getResultChip = (result: string) => {
     const resultMap: Record<string, { label: string; color: string; bgColor: string }> = {
-      PASSED: { label: '合格', color: '#4CAF50', bgColor: '#E8F5E9' },
-      passed: { label: '合格', color: '#4CAF50', bgColor: '#E8F5E9' },
-      FAILED: { label: '不合格', color: '#F44336', bgColor: '#FFEBEE' },
-      failed: { label: '不合格', color: '#F44336', bgColor: '#FFEBEE' },
-      CONDITIONAL: { label: '待定', color: '#FF9800', bgColor: '#FFF3E0' },
-      conditional: { label: '待定', color: '#FF9800', bgColor: '#FFF3E0' },
+      PASSED: { label: t('quality.passed'), color: '#4CAF50', bgColor: '#E8F5E9' },
+      passed: { label: t('quality.passed'), color: '#4CAF50', bgColor: '#E8F5E9' },
+      FAILED: { label: t('quality.failed'), color: '#F44336', bgColor: '#FFEBEE' },
+      failed: { label: t('quality.failed'), color: '#F44336', bgColor: '#FFEBEE' },
+      CONDITIONAL: { label: t('quality.conditional'), color: '#FF9800', bgColor: '#FFF3E0' },
+      conditional: { label: t('quality.conditional'), color: '#FF9800', bgColor: '#FFF3E0' },
     };
 
     const config = resultMap[result] ?? resultMap['CONDITIONAL'];
@@ -186,7 +188,7 @@ export default function QualityReportScreen() {
         style={{ backgroundColor: config?.bgColor ?? '#FFF3E0' }}
         textStyle={{ color: config?.color ?? '#FF9800', fontSize: 12 }}
       >
-        {config?.label ?? '待定'}
+        {config?.label ?? t('quality.conditional')}
       </Chip>
     );
   };
@@ -195,7 +197,7 @@ export default function QualityReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="质量报表" />
+        <Appbar.Content title={t('quality.title')} />
         <Appbar.Action icon="refresh" onPress={loadQualityData} />
       </Appbar.Header>
 
@@ -206,15 +208,15 @@ export default function QualityReportScreen() {
         {/* 时间范围选择 */}
         <Surface style={styles.timeRangeCard} elevation={1}>
           <Text variant="bodyMedium" style={styles.sectionLabel}>
-            时间范围
+            {t('quality.timeRange')}
           </Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'day', label: '今日' },
-              { value: 'week', label: '本周' },
-              { value: 'month', label: '本月' },
+              { value: 'day', label: t('quality.today') },
+              { value: 'week', label: t('quality.thisWeek') },
+              { value: 'month', label: t('quality.thisMonth') },
             ]}
             style={styles.segmentedButtons}
           />
@@ -223,46 +225,46 @@ export default function QualityReportScreen() {
         {/* 统计概览 */}
         <Surface style={styles.statsCard} elevation={1}>
           <Text variant="titleMedium" style={styles.statsTitle}>
-            质检统计
+            {t('quality.qualityStats')}
           </Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : qualityStats ? (
             <>
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{qualityStats.totalInspections}</Text>
-                  <Text style={styles.statLabel}>总质检数</Text>
+                  <Text style={styles.statLabel}>{t('quality.totalInspections')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                     {qualityStats.passedInspections}
                   </Text>
-                  <Text style={styles.statLabel}>合格</Text>
+                  <Text style={styles.statLabel}>{t('quality.passed')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#F44336' }]}>
                     {qualityStats.failedInspections}
                   </Text>
-                  <Text style={styles.statLabel}>不合格</Text>
+                  <Text style={styles.statLabel}>{t('quality.failed')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#FF9800' }]}>
                     {qualityStats.conditionalInspections}
                   </Text>
-                  <Text style={styles.statLabel}>待定</Text>
+                  <Text style={styles.statLabel}>{t('quality.conditional')}</Text>
                 </View>
               </View>
 
               {/* 合格率 */}
               <View style={styles.passRateContainer}>
                 <View style={styles.passRateHeader}>
-                  <Text style={styles.passRateLabel}>合格率</Text>
+                  <Text style={styles.passRateLabel}>{t('quality.passRate')}</Text>
                   <Text style={styles.passRateValue}>{qualityStats.passRate.toFixed(1)}%</Text>
                 </View>
                 <ProgressBar
@@ -274,19 +276,19 @@ export default function QualityReportScreen() {
             </>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无统计数据</Text>
+              <Text style={styles.emptyText}>{t('quality.noStatsData')}</Text>
             </View>
           )}
         </Surface>
 
         {/* 最近质检记录 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="最近质检记录" titleVariant="titleMedium" />
+          <Card.Title title={t('quality.recentInspectionRecords')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>批次号</DataTable.Title>
-              <DataTable.Title>质检员</DataTable.Title>
-              <DataTable.Title>结果</DataTable.Title>
+              <DataTable.Title>{t('quality.batchNumber')}</DataTable.Title>
+              <DataTable.Title>{t('quality.inspector')}</DataTable.Title>
+              <DataTable.Title>{t('quality.result')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -296,7 +298,7 @@ export default function QualityReportScreen() {
             ) : recentInspections.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无质检记录
+                  {t('quality.noInspectionRecords')}
                 </Text>
               </View>
             ) : (

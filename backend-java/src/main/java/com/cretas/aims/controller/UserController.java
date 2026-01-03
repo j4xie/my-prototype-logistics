@@ -53,7 +53,7 @@ public class UserController {
     @PostMapping
     @Operation(summary = "创建用户")
     public ApiResponse<UserDTO> createUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Valid @RequestBody CreateUserRequest request) {
         log.info("创建用户: factoryId={}, username={}", factoryId, request.getUsername());
@@ -67,9 +67,9 @@ public class UserController {
     @PutMapping("/{userId}")
     @Operation(summary = "更新用户信息")
     public ApiResponse<UserDTO> updateUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId,
             @Valid @RequestBody CreateUserRequest request) {
         log.info("更新用户: factoryId={}, userId={}", factoryId, userId);
@@ -83,9 +83,9 @@ public class UserController {
     @DeleteMapping("/{userId}")
     @Operation(summary = "删除用户")
     public ApiResponse<Void> deleteUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId) {
         log.info("删除用户: factoryId={}, userId={}", factoryId, userId);
         userService.deleteUser(factoryId, userId);
@@ -98,9 +98,9 @@ public class UserController {
     @GetMapping("/current")
     @Operation(summary = "获取当前登录用户信息")
     public ApiResponse<UserDTO> getCurrentUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization) {
         String token = com.cretas.aims.utils.TokenUtils.extractToken(authorization);
         UserDTO user = mobileService.getUserFromToken(token);
@@ -114,9 +114,9 @@ public class UserController {
     @GetMapping("/{userId}")
     @Operation(summary = "获取用户详情")
     public ApiResponse<UserDTO> getUserById(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId) {
         UserDTO user = userService.getUserById(factoryId, userId);
         return ApiResponse.success(user);
@@ -128,7 +128,7 @@ public class UserController {
     @GetMapping
     @Operation(summary = "获取用户列表（分页）")
     public ApiResponse<PageResponse<UserDTO>> getUserList(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Valid PageRequest pageRequest) {
         PageResponse<UserDTO> response = userService.getUserList(factoryId, pageRequest);
@@ -141,9 +141,9 @@ public class UserController {
     @GetMapping("/role/{roleCode}")
     @Operation(summary = "按角色获取用户列表")
     public ApiResponse<List<UserDTO>> getUsersByRole(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "角色代码", required = true)
+            @Parameter(description = "角色代码", required = true, example = "OPERATOR")
             @PathVariable FactoryUserRole roleCode) {
         List<UserDTO> users = userService.getUsersByRole(factoryId, roleCode);
         return ApiResponse.success(users);
@@ -155,9 +155,9 @@ public class UserController {
     @PostMapping("/{userId}/activate")
     @Operation(summary = "激活用户")
     public ApiResponse<Void> activateUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId) {
         log.info("激活用户: factoryId={}, userId={}", factoryId, userId);
         userService.activateUser(factoryId, userId);
@@ -170,9 +170,9 @@ public class UserController {
     @PostMapping("/{userId}/deactivate")
     @Operation(summary = "停用用户")
     public ApiResponse<Void> deactivateUser(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId) {
         log.info("停用用户: factoryId={}, userId={}", factoryId, userId);
         userService.deactivateUser(factoryId, userId);
@@ -185,11 +185,11 @@ public class UserController {
     @PutMapping("/{userId}/role")
     @Operation(summary = "更新用户角色")
     public ApiResponse<Void> updateUserRole(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId,
-            @Parameter(description = "新角色", required = true)
+            @Parameter(description = "新角色", required = true, example = "OPERATOR")
             @RequestParam FactoryUserRole newRole) {
         log.info("更新用户角色: factoryId={}, userId={}, newRole={}", factoryId, userId, newRole);
         userService.updateUserRole(factoryId, userId, newRole);
@@ -202,9 +202,9 @@ public class UserController {
     @GetMapping("/check/username")
     @Operation(summary = "检查用户名是否存在")
     public ApiResponse<Boolean> checkUsernameExists(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户名", required = true)
+            @Parameter(description = "用户名", required = true, example = "zhangsan")
             @RequestParam @NotBlank String username) {
         boolean exists = userService.checkUsernameExists(factoryId, username);
         return ApiResponse.success(exists);
@@ -216,9 +216,9 @@ public class UserController {
     @GetMapping("/check/email")
     @Operation(summary = "检查邮箱是否存在")
     public ApiResponse<Boolean> checkEmailExists(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "邮箱", required = true)
+            @Parameter(description = "邮箱", required = true, example = "zhangsan@example.com")
             @RequestParam @NotBlank String email) {
         boolean exists = userService.checkEmailExists(factoryId, email);
         return ApiResponse.success(exists);
@@ -230,9 +230,9 @@ public class UserController {
     @GetMapping("/search")
     @Operation(summary = "搜索用户")
     public ApiResponse<PageResponse<UserDTO>> searchUsers(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "搜索关键词", required = true)
+            @Parameter(description = "搜索关键词", required = true, example = "张三")
             @RequestParam @NotBlank String keyword,
             @Valid PageRequest pageRequest) {
         PageResponse<UserDTO> response = userService.searchUsers(factoryId, keyword, pageRequest);
@@ -246,7 +246,7 @@ public class UserController {
     @GetMapping("/export")
     @Operation(summary = "导出用户列表")
     public ResponseEntity<byte[]> exportUsers(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
         log.info("导出用户列表: factoryId={}", factoryId);
         byte[] excelBytes = userService.exportUsers(factoryId);
@@ -272,9 +272,9 @@ public class UserController {
     @PostMapping("/import")
     @Operation(summary = "从Excel文件批量导入用户")
     public ApiResponse<com.cretas.aims.dto.common.ImportResult<UserDTO>> importUsersFromExcel(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "Excel文件", required = true)
+            @Parameter(description = "Excel文件 (.xlsx)", required = true)
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
 
         log.info("从Excel批量导入用户: factoryId={}, filename={}", factoryId, file.getOriginalFilename());
@@ -316,7 +316,7 @@ public class UserController {
     @GetMapping("/export/template")
     @Operation(summary = "下载用户导入模板")
     public ResponseEntity<byte[]> downloadUserTemplate(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         log.info("下载用户导入模板: factoryId={}", factoryId);
@@ -343,11 +343,11 @@ public class UserController {
     @GetMapping("/join-date-range")
     @Operation(summary = "根据入职日期范围获取用户列表")
     public ApiResponse<PageResponse<UserDTO>> getUsersByJoinDateRange(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "开始日期 (yyyy-MM-dd)", required = true)
+            @Parameter(description = "开始日期 (yyyy-MM-dd)", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期 (yyyy-MM-dd)", required = true)
+            @Parameter(description = "结束日期 (yyyy-MM-dd)", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @Parameter(description = "页码", example = "1")
             @RequestParam(defaultValue = "1") Integer page,
@@ -371,9 +371,9 @@ public class UserController {
     @GetMapping("/by-employee-code/{employeeCode}")
     @Operation(summary = "按工号查询用户")
     public ApiResponse<UserDTO> getUserByEmployeeCode(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "工号", required = true)
+            @Parameter(description = "工号", required = true, example = "001")
             @PathVariable @NotBlank String employeeCode) {
         UserDTO user = userService.getUserByEmployeeCode(factoryId, employeeCode);
         return ApiResponse.success(user);
@@ -385,11 +385,11 @@ public class UserController {
     @PutMapping("/{userId}/employee-code")
     @Operation(summary = "绑定或更新用户工号")
     public ApiResponse<Void> updateEmployeeCode(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId,
-            @Parameter(description = "新工号 (001-999)", required = true)
+            @Parameter(description = "新工号 (001-999)", required = true, example = "001")
             @RequestParam @NotBlank String employeeCode) {
         log.info("更新用户工号: factoryId={}, userId={}, employeeCode={}", factoryId, userId, employeeCode);
         userService.updateEmployeeCode(factoryId, userId, employeeCode);
@@ -402,9 +402,9 @@ public class UserController {
     @GetMapping("/{userId}/skills")
     @Operation(summary = "获取用户技能等级")
     public ApiResponse<Map<String, Integer>> getUserSkills(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId) {
         Map<String, Integer> skills = userService.getUserSkills(factoryId, userId);
         return ApiResponse.success(skills);
@@ -416,9 +416,9 @@ public class UserController {
     @PutMapping("/{userId}/skills")
     @Operation(summary = "更新用户技能等级")
     public ApiResponse<Void> updateUserSkills(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "用户ID", required = true)
+            @Parameter(description = "用户ID", required = true, example = "1")
             @PathVariable @NotNull Long userId,
             @Valid @RequestBody UpdateSkillsRequest request) {
         log.info("更新用户技能: factoryId={}, userId={}", factoryId, userId);
@@ -432,7 +432,7 @@ public class UserController {
     @GetMapping("/expiring-contracts")
     @Operation(summary = "获取合同即将到期的员工列表")
     public ApiResponse<List<UserDTO>> getExpiringContracts(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "提前预警天数", example = "30")
             @RequestParam(defaultValue = "30") Integer daysAhead) {
@@ -447,9 +447,9 @@ public class UserController {
     @GetMapping("/hire-type/{hireType}")
     @Operation(summary = "按雇用类型获取用户列表")
     public ApiResponse<List<UserDTO>> getUsersByHireType(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "雇用类型", required = true)
+            @Parameter(description = "雇用类型", required = true, example = "FULL_TIME")
             @PathVariable HireType hireType) {
         List<UserDTO> users = userService.getUsersByHireType(factoryId, hireType);
         return ApiResponse.success(users);
@@ -461,7 +461,7 @@ public class UserController {
     @GetMapping("/temporary-workers")
     @Operation(summary = "获取所有临时性质员工")
     public ApiResponse<List<UserDTO>> getTemporaryWorkers(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
         List<UserDTO> users = userService.getTemporaryWorkers(factoryId);
         return ApiResponse.success(users);
@@ -473,7 +473,7 @@ public class UserController {
     @GetMapping("/next-employee-code")
     @Operation(summary = "获取下一个可用工号")
     public ApiResponse<String> getNextEmployeeCode(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
         String nextCode = userService.generateNextEmployeeCode(factoryId);
         return ApiResponse.success(nextCode);

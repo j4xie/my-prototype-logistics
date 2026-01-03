@@ -13,6 +13,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
 import { conversionApiClient } from '../../services/api/conversionApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -57,6 +58,7 @@ interface MaterialWithStats extends MaterialType {
  */
 export default function ConversionRateScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('management');
   const user = useAuthStore((state) => state.user);
   const factoryId = getFactoryId(user);
 
@@ -73,7 +75,7 @@ export default function ConversionRateScreen() {
     try {
       if (!factoryId) {
         conversionLogger.warn('工厂ID不存在，无法加载转换率数据');
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('conversionRate.errors.noFactory'));
         return;
       }
 
@@ -149,8 +151,8 @@ export default function ConversionRateScreen() {
       });
     } catch (error: unknown) {
       conversionLogger.error('加载转换率数据失败', error);
-      const errorMessage = error instanceof Error ? error.message : '加载数据失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('common.loadFailed');
+      Alert.alert(t('common.error'), errorMessage);
       setMaterials([]);
     } finally {
       setLoading(false);
@@ -221,7 +223,7 @@ export default function ConversionRateScreen() {
               >
                 {item.configuredCount}
               </Text>
-              <Text style={styles.configCountLabel}>个产品</Text>
+              <Text style={styles.configCountLabel}>{t('conversionRate.products')}</Text>
             </View>
           </View>
 
@@ -234,19 +236,19 @@ export default function ConversionRateScreen() {
                   <Text style={styles.statValue}>
                     {item.avgConversionRate?.toFixed(1)}%
                   </Text>
-                  <Text style={styles.statLabel}>平均转换率</Text>
+                  <Text style={styles.statLabel}>{t('conversionRate.avgConversionRate')}</Text>
                 </View>
                 {item.avgWastageRate != null && (
                   <View style={styles.statItem}>
                     <Text style={styles.statValue}>
                       {item.avgWastageRate.toFixed(1)}%
                     </Text>
-                    <Text style={styles.statLabel}>平均损耗</Text>
+                    <Text style={styles.statLabel}>{t('conversionRate.avgWastageRate')}</Text>
                   </View>
                 )}
               </>
             ) : (
-              <Text style={styles.noConfigText}>尚未配置转换率</Text>
+              <Text style={styles.noConfigText}>{t('conversionRate.notConfigured')}</Text>
             )}
           </View>
 
@@ -266,14 +268,14 @@ export default function ConversionRateScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="转换率配置" />
+        <Appbar.Content title={t('conversionRate.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : (
         <FlatList
@@ -292,7 +294,7 @@ export default function ConversionRateScreen() {
                   <View style={styles.infoRow}>
                     <List.Icon icon="information" color="#2196F3" />
                     <Text style={styles.infoText}>
-                      选择原料查看和配置转换率
+                      {t('conversionRate.infoText')}
                     </Text>
                   </View>
                 </Card.Content>
@@ -303,31 +305,31 @@ export default function ConversionRateScreen() {
                 <View style={styles.statsRow}>
                   <View style={styles.statsItem}>
                     <Text style={styles.statsValue}>{materials.length}</Text>
-                    <Text style={styles.statsLabel}>原料类型</Text>
+                    <Text style={styles.statsLabel}>{t('conversionRate.stats.materialTypes')}</Text>
                   </View>
                   <View style={styles.statsDivider} />
                   <View style={styles.statsItem}>
                     <Text style={styles.statsValue}>{totalProducts}</Text>
-                    <Text style={styles.statsLabel}>产品类型</Text>
+                    <Text style={styles.statsLabel}>{t('conversionRate.stats.productTypes')}</Text>
                   </View>
                   <View style={styles.statsDivider} />
                   <View style={styles.statsItem}>
                     <Text style={[styles.statsValue, styles.statsValueHighlight]}>
                       {totalConfigured}
                     </Text>
-                    <Text style={styles.statsLabel}>已配置</Text>
+                    <Text style={styles.statsLabel}>{t('conversionRate.stats.configured')}</Text>
                   </View>
                 </View>
               </Surface>
 
               {/* 原料列表标题 */}
-              <Text style={styles.sectionTitle}>原料列表</Text>
+              <Text style={styles.sectionTitle}>{t('conversionRate.materialList')}</Text>
             </>
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                暂无原料类型，请先在"原材料类型管理"中添加
+                {t('conversionRate.empty')}
               </Text>
             </View>
           }

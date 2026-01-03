@@ -13,6 +13,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { logger } from '../../utils/logger';
 import { platformAPI, PlatformReportDTO, ReportSummary, TrendData, FactoryRanking } from '../../services/api/platformApiClient';
@@ -46,6 +47,7 @@ const DEFAULT_REPORT_DATA: PlatformReportDTO = {
  */
 export default function PlatformReportsScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('platform');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,12 +71,12 @@ export default function PlatformReportsScreen() {
           trendCount: response.data.trends?.length || 0,
         });
       } else {
-        const errorMsg = response.message || '加载报表数据失败';
+        const errorMsg = response.message || t('reports.loadFailed');
         setError(errorMsg);
         platformReportsLogger.error('加载报表数据失败', { message: errorMsg });
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : '网络请求失败';
+      const errorMsg = err instanceof Error ? err.message : t('reports.loadFailed');
       setError(errorMsg);
       platformReportsLogger.error('加载报表数据异常', { error: errorMsg });
     } finally {
@@ -93,25 +95,25 @@ export default function PlatformReportsScreen() {
 
   const handleExport = () => {
     platformReportsLogger.info('导出报表', { reportType, timePeriod });
-    Alert.alert('导出报表', '报表数据已导出到文件');
+    Alert.alert(t('reports.export'), t('reports.exportSuccess'));
   };
 
   const getReportTitle = () => {
     const titles: Record<ReportType, string> = {
-      production: '生产报表',
-      financial: '财务报表',
-      quality: '质量报表',
-      user: '用户报表',
+      production: t('reports.productionReport'),
+      financial: t('reports.financialReport'),
+      quality: t('reports.qualityReport'),
+      user: t('reports.userReport'),
     };
     return titles[reportType];
   };
 
   const getPeriodLabel = () => {
     const labels: Record<TimePeriod, string> = {
-      week: '本周',
-      month: '本月',
-      quarter: '本季度',
-      year: '本年',
+      week: t('reports.week'),
+      month: t('reports.month'),
+      quarter: t('reports.quarter'),
+      year: t('reports.year'),
     };
     return labels[timePeriod];
   };
@@ -124,7 +126,7 @@ export default function PlatformReportsScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="平台报表" />
+        <Appbar.Content title={t('reports.title')} />
         <Appbar.Action icon="download" onPress={handleExport} />
       </Appbar.Header>
 
@@ -136,31 +138,31 @@ export default function PlatformReportsScreen() {
         <Card style={styles.card} mode="elevated">
           <Card.Content>
             <Text variant="titleSmall" style={styles.sectionLabel}>
-              报表类型
+              {t('reports.reportType')}
             </Text>
             <SegmentedButtons
               value={reportType}
               onValueChange={(value) => setReportType(value as ReportType)}
               buttons={[
-                { value: 'production', label: '生产', icon: 'factory' },
-                { value: 'financial', label: '财务', icon: 'currency-cny' },
-                { value: 'quality', label: '质量', icon: 'shield-check' },
-                { value: 'user', label: '用户', icon: 'account-group' },
+                { value: 'production', label: t('reports.production'), icon: 'factory' },
+                { value: 'financial', label: t('reports.financial'), icon: 'currency-cny' },
+                { value: 'quality', label: t('reports.quality'), icon: 'shield-check' },
+                { value: 'user', label: t('reports.user'), icon: 'account-group' },
               ]}
               style={styles.segmentedButtons}
             />
 
             <Text variant="titleSmall" style={[styles.sectionLabel, { marginTop: 16 }]}>
-              时间周期
+              {t('reports.timePeriod')}
             </Text>
             <SegmentedButtons
               value={timePeriod}
               onValueChange={(value) => setTimePeriod(value as TimePeriod)}
               buttons={[
-                { value: 'week', label: '本周' },
-                { value: 'month', label: '本月' },
-                { value: 'quarter', label: '本季' },
-                { value: 'year', label: '本年' },
+                { value: 'week', label: t('reports.week') },
+                { value: 'month', label: t('reports.month') },
+                { value: 'quarter', label: t('reports.quarter') },
+                { value: 'year', label: t('reports.year') },
               ]}
               style={styles.segmentedButtons}
             />
@@ -179,7 +181,7 @@ export default function PlatformReportsScreen() {
           <Card style={styles.card} mode="elevated">
             <Card.Content style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#1976D2" />
-              <Text style={styles.loadingText}>加载报表数据中...</Text>
+              <Text style={styles.loadingText}>{t('reports.loading')}</Text>
             </Card.Content>
           </Card>
         )}
@@ -196,7 +198,7 @@ export default function PlatformReportsScreen() {
                 style={styles.retryButton}
                 textColor="#1976D2"
               >
-                重试
+                {t('reports.retry')}
               </Button>
             </Card.Content>
           </Card>
@@ -206,13 +208,13 @@ export default function PlatformReportsScreen() {
         {!loading && !error && (
         <>
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="📊 数据概览" />
+          <Card.Title title={t('reports.dataOverview')} />
           <Card.Content>
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Avatar.Icon icon="cash" size={40} color="#4CAF50" style={styles.summaryIcon} />
                 <Text variant="bodySmall" style={styles.summaryLabel}>
-                  总营收
+                  {t('reports.totalRevenue')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.summaryValue, { color: '#4CAF50' }]}>
                   {formatCurrency(reportData.summary.totalRevenue)}
@@ -221,7 +223,7 @@ export default function PlatformReportsScreen() {
               <View style={styles.summaryItem}>
                 <Avatar.Icon icon="package-variant" size={40} color="#2196F3" style={styles.summaryIcon} />
                 <Text variant="bodySmall" style={styles.summaryLabel}>
-                  总产量
+                  {t('reports.totalProduction')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.summaryValue, { color: '#2196F3' }]}>
                   {reportData.summary.totalProduction}t
@@ -233,7 +235,7 @@ export default function PlatformReportsScreen() {
               <View style={styles.summaryItem}>
                 <Avatar.Icon icon="clipboard-list" size={40} color="#FF9800" style={styles.summaryIcon} />
                 <Text variant="bodySmall" style={styles.summaryLabel}>
-                  订单数
+                  {t('reports.totalOrders')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.summaryValue, { color: '#FF9800' }]}>
                   {reportData.summary.totalOrders}
@@ -242,7 +244,7 @@ export default function PlatformReportsScreen() {
               <View style={styles.summaryItem}>
                 <Avatar.Icon icon="star" size={40} color="#9C27B0" style={styles.summaryIcon} />
                 <Text variant="bodySmall" style={styles.summaryLabel}>
-                  质量分数
+                  {t('reports.qualityScore')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.summaryValue, { color: '#9C27B0' }]}>
                   {reportData.summary.averageQualityScore}
@@ -254,7 +256,7 @@ export default function PlatformReportsScreen() {
 
         {/* 趋势分析 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="📈 趋势分析" />
+          <Card.Title title={t('reports.trendAnalysis')} />
           <Card.Content>
             {reportData.trends.map((trend, index) => (
               <View key={index} style={styles.trendItem}>
@@ -287,13 +289,13 @@ export default function PlatformReportsScreen() {
 
         {/* 工厂排行 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="🏆 工厂排行榜" />
+          <Card.Title title={t('reports.factoryRanking')} />
           <Card.Content>
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title>工厂</DataTable.Title>
-                <DataTable.Title numeric>产量(t)</DataTable.Title>
-                <DataTable.Title numeric>效率(%)</DataTable.Title>
+                <DataTable.Title>{t('reports.factory')}</DataTable.Title>
+                <DataTable.Title numeric>{t('reports.productionTons')}</DataTable.Title>
+                <DataTable.Title numeric>{t('reports.efficiency')}</DataTable.Title>
               </DataTable.Header>
 
               {reportData.topFactories.map((factory, index) => (
@@ -353,10 +355,10 @@ export default function PlatformReportsScreen() {
               <Avatar.Icon icon="information" size={40} color="#2196F3" style={styles.exportIcon} />
               <View style={styles.exportText}>
                 <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
-                  导出报表
+                  {t('reports.exportHint')}
                 </Text>
                 <Text variant="bodySmall" style={{ color: '#757575', marginTop: 4 }}>
-                  点击右上角下载图标，可导出Excel或PDF格式报表
+                  {t('reports.exportHintText')}
                 </Text>
               </View>
             </View>

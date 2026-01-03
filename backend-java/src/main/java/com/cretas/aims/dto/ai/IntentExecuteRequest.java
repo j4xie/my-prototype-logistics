@@ -1,0 +1,64 @@
+package com.cretas.aims.dto.ai;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
+
+/**
+ * AI意图执行请求DTO
+ *
+ * 用于发送用户的自然语言输入，系统会：
+ * 1. 识别意图 (使用 AIIntentService)
+ * 2. 检查权限和审批要求
+ * 3. 路由到对应的业务模块执行
+ * 4. 返回执行结果
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2026-01-02
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class IntentExecuteRequest {
+
+    /**
+     * 用户输入的自然语言文本
+     * 例如: "给原材料表单添加一个运输温度字段，数值类型，-30到30度"
+     */
+    private String userInput;
+
+    /**
+     * 目标实体类型 (可选，用于限定操作范围)
+     * 例如: MATERIAL_BATCH, PRODUCT_TYPE, FACTORY, ENCODING_RULE
+     */
+    private String entityType;
+
+    /**
+     * 目标实体ID (可选，用于指定具体实体)
+     * 例如: 表单模板ID、编码规则ID
+     */
+    private String entityId;
+
+    /**
+     * 执行上下文参数 (可选)
+     * 可包含现有字段列表、业务场景等
+     */
+    private Map<String, Object> context;
+
+    /**
+     * 是否为预览模式 (不实际执行，只返回将要执行的操作)
+     */
+    @Builder.Default
+    private Boolean previewOnly = false;
+
+    /**
+     * 强制执行 (跳过确认，仅限有权限的用户)
+     */
+    @Builder.Default
+    private Boolean forceExecute = false;
+}

@@ -5,6 +5,7 @@ import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.entity.enums.*;
 import com.cretas.aims.exception.BusinessException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProcessingService;
@@ -59,7 +60,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     private final ProcessingStageRecordService processingStageRecordService;
     // ========== 批次管理 ==========
     @Override
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public ProductionBatch createBatch(String factoryId, ProductionBatch batch) {
         log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, batch.getBatchNumber());
         // 验证批次号唯一性
@@ -301,16 +302,26 @@ public class ProcessingServiceImpl implements ProcessingService {
 
     /**
      * 记录原材料消耗 (带用户ID参数)
+     * N+1 修复：合并两个循环，使用缓存 Map 避免重复查询
      */
     public void recordMaterialConsumption(String factoryId, String productionBatchId,
                                          List<Map<String, Object>> consumptions, Long userId) {
         log.info("记录原材料消耗: factoryId={}, productionBatchId={}, userId={}", factoryId, productionBatchId, userId);
         ProductionBatch productionBatch = getBatchById(factoryId, productionBatchId);
+
+        // N+1 修复：使用缓存 Map 避免重复查询
+        Map<String, MaterialBatch> batchCache = new HashMap<>();
+        BigDecimal totalMaterialCost = BigDecimal.ZERO;
+
         for (Map<String, Object> consumption : consumptions) {
             String materialBatchId = (String) consumption.get("materialBatchId");
             BigDecimal quantity = new BigDecimal(consumption.get("quantity").toString());
-            MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId)
-                    .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在"));
+
+            // 使用 computeIfAbsent 确保每个 materialBatchId 只查询一次
+            MaterialBatch materialBatch = batchCache.computeIfAbsent(materialBatchId,
+                    id -> materialBatchRepository.findById(id)
+                            .orElseThrow(() -> new ResourceNotFoundException("原材料批次不存在: " + id)));
+
             // 检查库存
             if (materialBatch.getRemainingQuantity().compareTo(quantity) < 0) {
                 throw new BusinessException("原材料库存不足: " + materialBatch.getBatchNumber());
@@ -345,17 +356,13 @@ public class ProcessingServiceImpl implements ProcessingService {
             consumptionRecord.setRecordedBy(recordedBy);
             materialBatchRepository.save(materialBatch);
             materialConsumptionRepository.save(consumptionRecord);
-        }
-        // 更新生产批次的原材料成本
-        BigDecimal totalMaterialCost = BigDecimal.ZERO;
-        for (Map<String, Object> consumption : consumptions) {
-            String materialBatchId = (String) consumption.get("materialBatchId");
-            BigDecimal quantity = new BigDecimal(consumption.get("quantity").toString());
-            MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId).get();
-            BigDecimal batchUnitPrice = materialBatch.getUnitPrice() != null ? materialBatch.getUnitPrice() : BigDecimal.ZERO;
-            BigDecimal cost = quantity.multiply(batchUnitPrice);
+
+            // 同时计算成本（合并原第二个循环的逻辑）
+            BigDecimal cost = quantity.multiply(unitPrice);
             totalMaterialCost = totalMaterialCost.add(cost);
         }
+
+        // 更新生产批次的原材料成本
         productionBatch.setMaterialCost(totalMaterialCost);
         productionBatchRepository.save(productionBatch);
     }
@@ -412,7 +419,7 @@ public class ProcessingServiceImpl implements ProcessingService {
     public Map<String, Object> getInspectionById(String factoryId, String inspectionId) {
         QualityInspection inspection = qualityInspectionRepository.findById(inspectionId)
                 .filter(i -> factoryId.equals(i.getFactoryId()))
-                .orElseThrow(() -> new RuntimeException("质检记录不存在: " + inspectionId));
+                .orElseThrow(() -> new EntityNotFoundException("QualityInspection", inspectionId));
         return convertInspectionToMap(inspection);
     }
 
@@ -422,13 +429,21 @@ public class ProcessingServiceImpl implements ProcessingService {
         Map<String, Object> statistics = new HashMap<>();
         statistics.put("totalInspections", inspections.size());
         if (!inspections.isEmpty()) {
-            BigDecimal averagePassRate = inspections.stream()
+            // 过滤掉 passRate 为 null 的记录（如 pending 状态）
+            List<BigDecimal> validPassRates = inspections.stream()
                     .map(QualityInspection::getPassRate)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add)
-                    .divide(new BigDecimal(inspections.size()), 2, RoundingMode.HALF_UP);
+                    .filter(rate -> rate != null)
+                    .collect(Collectors.toList());
+
+            BigDecimal averagePassRate = BigDecimal.ZERO;
+            if (!validPassRates.isEmpty()) {
+                averagePassRate = validPassRates.stream()
+                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                        .divide(new BigDecimal(validPassRates.size()), 2, RoundingMode.HALF_UP);
+            }
             statistics.put("averagePassRate", averagePassRate);
             long passedCount = inspections.stream()
-                    .filter(i -> "PASS".equals(i.getResult()))
+                    .filter(i -> "PASS".equalsIgnoreCase(i.getResult()))
                     .count();
             statistics.put("passedBatches", passedCount);
             statistics.put("failedBatches", inspections.size() - passedCount);
@@ -448,14 +463,22 @@ public class ProcessingServiceImpl implements ProcessingService {
             dayTrend.put("date", date);
             List<QualityInspection> dayInspections = groupedByDate.getOrDefault(date, new ArrayList<>());
             if (!dayInspections.isEmpty()) {
-                BigDecimal avgPassRate = dayInspections.stream()
+                // 过滤掉 passRate 为 null 的记录
+                List<BigDecimal> validRates = dayInspections.stream()
                         .map(QualityInspection::getPassRate)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                        .divide(new BigDecimal(dayInspections.size()), 2, RoundingMode.HALF_UP);
+                        .filter(rate -> rate != null)
+                        .collect(Collectors.toList());
+
+                BigDecimal avgPassRate = BigDecimal.ZERO;
+                if (!validRates.isEmpty()) {
+                    avgPassRate = validRates.stream()
+                            .reduce(BigDecimal.ZERO, BigDecimal::add)
+                            .divide(new BigDecimal(validRates.size()), 2, RoundingMode.HALF_UP);
+                }
                 dayTrend.put("passRate", avgPassRate);
                 dayTrend.put("inspectionCount", dayInspections.size());
             } else {
-                dayTrend.put("passRate", null);
+                dayTrend.put("passRate", BigDecimal.ZERO);
                 dayTrend.put("inspectionCount", 0);
             }
             trends.add(dayTrend);
@@ -563,16 +586,22 @@ public class ProcessingServiceImpl implements ProcessingService {
         analysis.put("otherCost", batch.getOtherCost());
         analysis.put("totalCost", batch.getTotalCost());
         analysis.put("unitCost", batch.getUnitCost());
-        // 成本构成比例
+        // 成本构成比例 (null 安全处理)
         if (batch.getTotalCost() != null && batch.getTotalCost().compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal totalCost = batch.getTotalCost();
+            BigDecimal materialCost = batch.getMaterialCost() != null ? batch.getMaterialCost() : BigDecimal.ZERO;
+            BigDecimal laborCost = batch.getLaborCost() != null ? batch.getLaborCost() : BigDecimal.ZERO;
+            BigDecimal equipmentCost = batch.getEquipmentCost() != null ? batch.getEquipmentCost() : BigDecimal.ZERO;
+            BigDecimal otherCost = batch.getOtherCost() != null ? batch.getOtherCost() : BigDecimal.ZERO;
+
             analysis.put("materialCostRatio",
-                    batch.getMaterialCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    materialCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("laborCostRatio",
-                    batch.getLaborCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    laborCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("equipmentCostRatio",
-                    batch.getEquipmentCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    equipmentCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
             analysis.put("otherCostRatio",
-                    batch.getOtherCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    otherCost.divide(totalCost, 2, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
         }
         return analysis;
     }
@@ -1079,8 +1108,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         Map<String, Object> aiAnalysis = new HashMap<>();
         aiAnalysis.put("batch", batch);
         List<String> suggestions = new ArrayList<>();
-        // 基于成本分析提供建议
-        if (batch.getMaterialCost() != null && batch.getTotalCost() != null) {
+        // 基于成本分析提供建议 (null 和零值安全处理)
+        if (batch.getMaterialCost() != null && batch.getTotalCost() != null
+                && batch.getTotalCost().compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal materialRatio = batch.getMaterialCost().divide(batch.getTotalCost(), 2, RoundingMode.HALF_UP);
             if (materialRatio.compareTo(new BigDecimal("0.6")) > 0) {
                 suggestions.add("原材料成本占比过高（" + materialRatio.multiply(new BigDecimal(100)) + "%），建议优化采购策略或寻找替代供应商");
@@ -1155,6 +1185,24 @@ public class ProcessingServiceImpl implements ProcessingService {
         todayStats.put("totalEquipment", totalEquipment);
         todayStats.put("activeEquipment", activeEquipment);
         overview.put("todayStats", todayStats);
+
+        // ===== yesterdayStats (昨日统计，用于计算涨幅) =====
+        LocalDateTime yesterdayStart = LocalDate.now().minusDays(1).atStartOfDay();
+        LocalDateTime yesterdayEnd = LocalDate.now().atStartOfDay();
+        Map<String, Object> yesterdayStats = new HashMap<>();
+        // 昨日批次总数
+        long yesterdayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtBetween(
+                factoryId, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("totalBatches", yesterdayBatches);
+        // 昨日产量
+        BigDecimal yesterdayOutput = productionBatchRepository.calculateTotalOutputBetween(
+                factoryId, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("outputKg", yesterdayOutput != null ? yesterdayOutput : BigDecimal.ZERO);
+        // 昨日完成批次
+        long yesterdayCompleted = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtBetween(
+                factoryId, ProductionBatchStatus.COMPLETED, yesterdayStart, yesterdayEnd);
+        yesterdayStats.put("completedBatches", yesterdayCompleted);
+        overview.put("yesterdayStats", yesterdayStats);
 
         // ===== kpi (关键绩效指标) =====
         Map<String, Object> kpi = new HashMap<>();
@@ -1318,6 +1366,25 @@ public class ProcessingServiceImpl implements ProcessingService {
         dashboard.put("passedInspections", monthlyStats.getOrDefault("passedBatches", 0));
         dashboard.put("failedInspections", monthlyStats.getOrDefault("failedBatches", 0));
         dashboard.put("avgPassRate", monthlyStats.getOrDefault("averagePassRate", BigDecimal.ZERO));
+
+        // 计算缺陷率 (defectRate = 100 - passRate)
+        BigDecimal passRate = (BigDecimal) monthlyStats.getOrDefault("averagePassRate", BigDecimal.ZERO);
+        BigDecimal defectRate = BigDecimal.valueOf(100).subtract(passRate);
+        dashboard.put("defectRate", defectRate);
+        dashboard.put("passRate", passRate);
+
+        // 添加质量等级 (基于 passRate)
+        String qualityGrade;
+        if (passRate.compareTo(BigDecimal.valueOf(95)) >= 0) {
+            qualityGrade = "A";
+        } else if (passRate.compareTo(BigDecimal.valueOf(90)) >= 0) {
+            qualityGrade = "B";
+        } else if (passRate.compareTo(BigDecimal.valueOf(80)) >= 0) {
+            qualityGrade = "C";
+        } else {
+            qualityGrade = "D";
+        }
+        dashboard.put("qualityGrade", qualityGrade);
 
         // 质量趋势
         List<Map<String, Object>> trends = getQualityTrends(factoryId, 30);
@@ -1483,6 +1550,9 @@ public class ProcessingServiceImpl implements ProcessingService {
         map.put("passRate", inspection.getPassRate());
         map.put("result", inspection.getResult());
         map.put("notes", inspection.getNotes());
+        // 添加计算字段
+        map.put("qualityGrade", inspection.getQualityGrade());
+        map.put("defectRate", inspection.getDefectRate());
         return map;
     }
     private BigDecimal calculatePotentialSavings(ProductionBatch batch) {
@@ -1644,7 +1714,7 @@ public class ProcessingServiceImpl implements ProcessingService {
                         // 获取批次基本信息
                         Long id = Long.parseLong(batchId);
                         ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(id, factoryId)
-                                .orElseThrow(() -> new RuntimeException("批次不存在: " + batchId));
+                                .orElseThrow(() -> new EntityNotFoundException("ProductionBatch", batchId));
 
                         // 获取增强的成本数据
                         Map<String, Object> costData = getEnhancedBatchCostAnalysis(factoryId, batchId);
@@ -1735,5 +1805,248 @@ public class ProcessingServiceImpl implements ProcessingService {
     public Map<String, Object> checkAIServiceHealth() {
         log.info("检查AI服务健康状态");
         return aiAnalysisService.healthCheck();
+    }
+
+    // ========== 批次员工分配 ==========
+
+    /**
+     * 分配员工到批次
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public List<Map<String, Object>> assignWorkersToBatch(String factoryId, Long batchId,
+                                                           List<Long> workerIds, Long assignedBy, String notes) {
+        log.info("分配员工到批次: factoryId={}, batchId={}, workerIds={}, assignedBy={}",
+                factoryId, batchId, workerIds, assignedBy);
+
+        // 1. 验证批次存在且状态正确
+        ProductionBatch batch = productionBatchRepository.findByIdAndFactoryId(batchId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
+
+        // 兼容 PRODUCING 和 IN_PROGRESS，以及 PLANNING 和 PLANNED
+        ProductionBatchStatus status = batch.getStatus();
+        if (status != ProductionBatchStatus.IN_PROGRESS &&
+            status != ProductionBatchStatus.PRODUCING &&
+            status != ProductionBatchStatus.PLANNED &&
+            status != ProductionBatchStatus.PLANNING) {
+            throw new BusinessException("只有计划中或进行中的批次可以分配员工");
+        }
+
+        // 2. 验证分配人存在
+        User assigner = userRepository.findById(assignedBy)
+                .orElseThrow(() -> new ResourceNotFoundException("分配人不存在: " + assignedBy));
+
+        List<Map<String, Object>> results = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (Long workerId : workerIds) {
+            try {
+                // 3. 验证员工存在且属于该工厂
+                User worker = userRepository.findById(workerId)
+                        .orElseThrow(() -> new ResourceNotFoundException("员工不存在: " + workerId));
+
+                if (!factoryId.equals(worker.getFactoryId())) {
+                    throw new BusinessException("员工不属于该工厂: " + workerId);
+                }
+
+                // 4. 检查员工是否已分配到该批次
+                Optional<BatchWorkSession> existing = batchWorkSessionRepository
+                        .findActiveByBatchIdAndEmployeeId(batchId, workerId);
+
+                if (existing.isPresent()) {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("workerId", workerId);
+                    result.put("workerName", worker.getFullName() != null ? worker.getFullName() : worker.getUsername());
+                    result.put("success", false);
+                    result.put("message", "员工已分配到该批次");
+                    results.add(result);
+                    continue;
+                }
+
+                // 5. 创建 BatchWorkSession 记录
+                BatchWorkSession session = new BatchWorkSession();
+                session.setBatchId(batchId);
+                session.setEmployeeId(workerId);
+                session.setCheckInTime(now);
+                session.setAssignedBy(assignedBy);
+                session.setStatus(BatchWorkSession.Status.ASSIGNED);
+                session.setNotes(notes);
+                session.setCreatedAt(now);
+
+                batchWorkSessionRepository.save(session);
+
+                Map<String, Object> result = new HashMap<>();
+                result.put("workerId", workerId);
+                result.put("workerName", worker.getFullName() != null ? worker.getFullName() : worker.getUsername());
+                result.put("sessionId", session.getId());
+                result.put("checkInTime", now);
+                result.put("success", true);
+                result.put("message", "分配成功");
+                results.add(result);
+
+                log.info("成功分配员工 {} 到批次 {}", workerId, batchId);
+
+            } catch (Exception e) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("workerId", workerId);
+                result.put("success", false);
+                result.put("message", e.getMessage());
+                results.add(result);
+                log.error("分配员工失败: workerId={}, error={}", workerId, e.getMessage());
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 员工完成批次工作（签出）
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> workerCheckout(String factoryId, Long batchId, Long workerId,
+                                               Integer workMinutes, String notes) {
+        log.info("员工签出: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+
+        // 1. 查找活跃的工作会话
+        BatchWorkSession session = batchWorkSessionRepository
+                .findActiveByBatchIdAndEmployeeId(batchId, workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("未找到该员工在该批次的活跃工作记录"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 2. 计算工作时长
+        int actualWorkMinutes;
+        if (workMinutes != null && workMinutes > 0) {
+            actualWorkMinutes = workMinutes;
+        } else if (session.getCheckInTime() != null) {
+            actualWorkMinutes = (int) ChronoUnit.MINUTES.between(session.getCheckInTime(), now);
+        } else {
+            actualWorkMinutes = 0;
+        }
+
+        // 3. 计算人工成本（假设每小时50元）
+        BigDecimal hourlyRate = new BigDecimal("50.00");
+        BigDecimal laborCost = hourlyRate
+                .multiply(BigDecimal.valueOf(actualWorkMinutes))
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
+        // 4. 更新工作会话
+        session.setCheckOutTime(now);
+        session.setWorkMinutes(actualWorkMinutes);
+        session.setLaborCost(laborCost);
+        session.setStatus(BatchWorkSession.Status.COMPLETED);
+        if (notes != null && !notes.isEmpty()) {
+            session.setNotes(session.getNotes() != null ?
+                    session.getNotes() + "\n" + notes : notes);
+        }
+        session.setUpdatedAt(now);
+
+        batchWorkSessionRepository.save(session);
+
+        // 5. 获取员工信息
+        User worker = userRepository.findById(workerId).orElse(null);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", session.getId());
+        result.put("workerId", workerId);
+        result.put("workerName", worker != null ? (worker.getFullName() != null ? worker.getFullName() : worker.getUsername()) : "未知");
+        result.put("checkInTime", session.getCheckInTime());
+        result.put("checkOutTime", now);
+        result.put("workMinutes", actualWorkMinutes);
+        result.put("laborCost", laborCost);
+        result.put("status", session.getStatus());
+        result.put("success", true);
+        result.put("message", "签出成功");
+
+        log.info("员工签出成功: workerId={}, workMinutes={}, laborCost={}",
+                workerId, actualWorkMinutes, laborCost);
+
+        return result;
+    }
+
+    /**
+     * 获取批次的员工列表
+     */
+    @Override
+    public List<Map<String, Object>> getBatchWorkers(String factoryId, Long batchId) {
+        log.info("获取批次员工列表: factoryId={}, batchId={}", factoryId, batchId);
+
+        // 验证批次存在
+        productionBatchRepository.findByIdAndFactoryId(batchId, factoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("批次不存在: " + batchId));
+
+        // 获取批次的所有工作会话
+        List<BatchWorkSession> sessions = batchWorkSessionRepository.findByBatchIdWithEmployees(batchId);
+
+        return sessions.stream().map(session -> {
+            Map<String, Object> workerInfo = new HashMap<>();
+            workerInfo.put("sessionId", session.getId());
+            workerInfo.put("workerId", session.getEmployeeId());
+
+            User employee = session.getEmployee();
+            if (employee != null) {
+                workerInfo.put("workerName", employee.getFullName() != null ? employee.getFullName() : employee.getUsername());
+                workerInfo.put("employeeNumber", employee.getUsername());
+                workerInfo.put("departmentName", employee.getDepartment());
+            } else {
+                workerInfo.put("workerName", "未知");
+            }
+
+            workerInfo.put("checkInTime", session.getCheckInTime());
+            workerInfo.put("checkOutTime", session.getCheckOutTime());
+            workerInfo.put("workMinutes", session.getWorkMinutes());
+            workerInfo.put("laborCost", session.getLaborCost());
+            workerInfo.put("status", session.getStatus());
+
+            // 状态显示文字
+            String statusText = "未知";
+            if (session.getStatus() != null) {
+                switch (session.getStatus()) {
+                    case BatchWorkSession.Status.ASSIGNED: statusText = "已分配"; break;
+                    case BatchWorkSession.Status.WORKING: statusText = "工作中"; break;
+                    case BatchWorkSession.Status.COMPLETED: statusText = "已完成"; break;
+                    case BatchWorkSession.Status.CANCELLED: statusText = "已取消"; break;
+                }
+            }
+            workerInfo.put("statusText", statusText);
+
+            User assigner = session.getAssigner();
+            workerInfo.put("assignedBy", session.getAssignedBy());
+            workerInfo.put("assignerName", assigner != null ? (assigner.getFullName() != null ? assigner.getFullName() : assigner.getUsername()) : null);
+            workerInfo.put("assignedAt", session.getCreatedAt());
+            workerInfo.put("notes", session.getNotes());
+
+            return workerInfo;
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 取消员工批次分配
+     */
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Map<String, Object> cancelWorkerAssignment(String factoryId, Long batchId, Long workerId) {
+        log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+
+        // 查找活跃的工作会话
+        BatchWorkSession session = batchWorkSessionRepository
+                .findActiveByBatchIdAndEmployeeId(batchId, workerId)
+                .orElseThrow(() -> new ResourceNotFoundException("未找到该员工在该批次的活跃工作记录"));
+
+        // 更新状态为取消
+        session.setStatus(BatchWorkSession.Status.CANCELLED);
+        session.setUpdatedAt(LocalDateTime.now());
+        batchWorkSessionRepository.save(session);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", session.getId());
+        result.put("workerId", workerId);
+        result.put("success", true);
+        result.put("message", "取消分配成功");
+
+        log.info("取消员工分配成功: workerId={}", workerId);
+
+        return result;
     }
 }

@@ -19,6 +19,7 @@ import {
   FAB,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, ReportSummary } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -48,6 +49,7 @@ export default function AIReportListScreen() {
   const navigation = useNavigation<AIReportListScreenProps['navigation']>();
   const { user } = useAuthStore();
   const factoryId = getFactoryId(user);
+  const { t } = useTranslation('processing');
 
   // 状态管理
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -69,7 +71,7 @@ export default function AIReportListScreen() {
 
       const factoryId = user?.factoryUser?.factoryId;
       if (!factoryId) {
-        Alert.alert('错误', '用户信息不完整');
+        Alert.alert(t('aiReports.messages.loadFailed'), t('aiReports.messages.userInfoError'));
         return;
       }
 
@@ -98,7 +100,7 @@ export default function AIReportListScreen() {
         factoryId: factoryId,
         selectedType,
       });
-      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
+      Alert.alert(t('aiReports.messages.loadFailed'), getErrorMsg(error) || t('aiReports.messages.retry'));
       setReports([]);
     } finally {
       setLoading(false);
@@ -132,13 +134,7 @@ export default function AIReportListScreen() {
   const extractCleanTitle = (title: string, reportType: string): string => {
     if (!title) {
       // 根据报告类型返回默认标题
-      const defaultTitles: Record<string, string> = {
-        batch: '批次成本分析报告',
-        weekly: '周度成本分析报告',
-        monthly: '月度成本分析报告',
-        custom: '自定义分析报告',
-      };
-      return defaultTitles[reportType] || 'AI分析报告';
+      return t(`aiReports.reportType.${reportType}`, { defaultValue: t('aiReports.title') });
     }
 
     // 移除 Markdown 标记
@@ -163,13 +159,7 @@ export default function AIReportListScreen() {
 
     // 如果标题为空或无意义，返回默认
     if (!cleanTitle || cleanTitle.length < 2) {
-      const defaultTitles: Record<string, string> = {
-        batch: '批次成本分析报告',
-        weekly: '周度成本分析报告',
-        monthly: '月度成本分析报告',
-        custom: '自定义分析报告',
-      };
-      return defaultTitles[reportType] || 'AI分析报告';
+      return t(`aiReports.reportType.${reportType}`, { defaultValue: t('aiReports.title') });
     }
 
     return cleanTitle;
@@ -201,10 +191,10 @@ export default function AIReportListScreen() {
    */
   const getReportTypeChip = (type: string) => {
     const typeMap = {
-      batch: { label: '批次分析', icon: 'package-variant', color: '#2196F3' },
-      weekly: { label: '周报', icon: 'calendar-week', color: '#4CAF50' },
-      monthly: { label: '月报', icon: 'calendar-month', color: '#FF9800' },
-      custom: { label: '自定义', icon: 'tune', color: '#9C27B0' },
+      batch: { labelKey: 'batch', icon: 'package-variant', color: '#2196F3' },
+      weekly: { labelKey: 'weekly', icon: 'calendar-week', color: '#4CAF50' },
+      monthly: { labelKey: 'monthly', icon: 'calendar-month', color: '#FF9800' },
+      custom: { labelKey: 'custom', icon: 'tune', color: '#9C27B0' },
     };
 
     const config = typeMap[type as keyof typeof typeMap] || typeMap.custom;
@@ -217,7 +207,7 @@ export default function AIReportListScreen() {
         style={[styles.typeChip, { borderColor: config.color }]}
         textStyle={{ color: config.color, fontSize: 11 }}
       >
-        {config.label}
+        {t(`aiReports.reportType.${config.labelKey}`)}
       </Chip>
     );
   };
@@ -233,10 +223,10 @@ export default function AIReportListScreen() {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
+    if (diffMins < 1) return t('aiReports.time.justNow');
+    if (diffMins < 60) return t('aiReports.time.minutesAgo', { minutes: diffMins });
+    if (diffHours < 24) return t('aiReports.time.hoursAgo', { hours: diffHours });
+    if (diffDays < 7) return t('aiReports.time.daysAgo', { days: diffDays });
 
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -287,7 +277,7 @@ export default function AIReportListScreen() {
             {/* 批次号 */}
             {item.batchNumber && (
               <View style={styles.metadataRow}>
-                <Text variant="bodySmall" style={styles.metadataLabel}>批次:</Text>
+                <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiReports.metadata.batch')}</Text>
                 <Text variant="bodySmall" style={styles.metadataValue}>
                   {item.batchNumber}
                 </Text>
@@ -297,7 +287,7 @@ export default function AIReportListScreen() {
             {/* 时间范围 */}
             {item.startDate && item.endDate && (
               <View style={styles.metadataRow}>
-                <Text variant="bodySmall" style={styles.metadataLabel}>时间:</Text>
+                <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiReports.metadata.time')}</Text>
                 <Text variant="bodySmall" style={styles.metadataValue}>
                   {new Date(item.startDate).toLocaleDateString('zh-CN')} - {new Date(item.endDate).toLocaleDateString('zh-CN')}
                 </Text>
@@ -307,7 +297,7 @@ export default function AIReportListScreen() {
             {/* 成本 */}
             {item.totalCost !== undefined && item.totalCost !== null && (
               <View style={styles.metadataRow}>
-                <Text variant="bodySmall" style={styles.metadataLabel}>成本:</Text>
+                <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiReports.metadata.cost')}</Text>
                 <Text variant="bodySmall" style={[styles.metadataValue, styles.costValue]}>
                   ¥{item.totalCost.toFixed(2)}
                 </Text>
@@ -323,7 +313,7 @@ export default function AIReportListScreen() {
               <View style={styles.statItem}>
                 <Text variant="bodySmall" style={styles.statIcon}>🔍</Text>
                 <Text variant="bodySmall" style={styles.statText}>
-                  {item.keyFindingsCount}个发现
+                  {t('aiReports.stats.findings', { count: item.keyFindingsCount })}
                 </Text>
               </View>
             )}
@@ -332,7 +322,7 @@ export default function AIReportListScreen() {
               <View style={styles.statItem}>
                 <Text variant="bodySmall" style={styles.statIcon}>💡</Text>
                 <Text variant="bodySmall" style={styles.statText}>
-                  {item.suggestionsCount}条建议
+                  {t('aiReports.stats.suggestions', { count: item.suggestionsCount })}
                 </Text>
               </View>
             )}
@@ -355,7 +345,7 @@ export default function AIReportListScreen() {
       {/* 顶部导航栏 */}
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="AI分析报告" />
+        <Appbar.Content title={t('aiReports.title')} />
       </Appbar.Header>
 
       {/* 报告类型筛选 */}
@@ -363,10 +353,10 @@ export default function AIReportListScreen() {
         value={selectedType}
         onValueChange={setSelectedType}
         buttons={[
-          { value: 'all', label: '全部' },
-          { value: 'batch', label: '批次' },
-          { value: 'weekly', label: '周报' },
-          { value: 'monthly', label: '月报' },
+          { value: 'all', label: t('aiReports.types.all') },
+          { value: 'batch', label: t('aiReports.types.batch') },
+          { value: 'weekly', label: t('aiReports.types.weekly') },
+          { value: 'monthly', label: t('aiReports.types.monthly') },
         ]}
         style={styles.segmentedButtons}
       />
@@ -375,7 +365,7 @@ export default function AIReportListScreen() {
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text variant="bodyMedium" style={styles.loadingText}>加载中...</Text>
+          <Text variant="bodyMedium" style={styles.loadingText}>{t('aiReports.loading')}</Text>
         </View>
       ) : (
         <FlatList
@@ -390,10 +380,10 @@ export default function AIReportListScreen() {
             <View style={styles.emptyContainer}>
               <Text variant="displaySmall" style={styles.emptyIcon}>📊</Text>
               <Text variant="titleMedium" style={styles.emptyText}>
-                暂无AI分析报告
+                {t('aiReports.empty.title')}
               </Text>
               <Text variant="bodyMedium" style={styles.emptyHint}>
-                点击右下角按钮，开始生成新的AI分析报告
+                {t('aiReports.empty.hint')}
               </Text>
             </View>
           }
@@ -403,7 +393,7 @@ export default function AIReportListScreen() {
       {/* 浮动按钮 - 生成新报告 */}
       <FAB
         icon="plus"
-        label="生成新报告"
+        label={t('aiReports.fab')}
         style={styles.fab}
         onPress={() => navigation.navigate('TimeRangeCostAnalysis' as never)}
         color="#FFFFFF"

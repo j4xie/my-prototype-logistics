@@ -48,9 +48,9 @@ public class ProductionPlanController {
     @PostMapping
     @Operation(summary = "创建生产计划")
     public ApiResponse<ProductionPlanDTO> createProductionPlan(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody CreateProductionPlanRequest request) {
 
@@ -69,9 +69,9 @@ public class ProductionPlanController {
     @PutMapping("/{planId}")
     @Operation(summary = "更新生产计划")
     public ApiResponse<ProductionPlanDTO> updateProductionPlan(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
             @Valid @RequestBody CreateProductionPlanRequest request) {
 
@@ -86,9 +86,9 @@ public class ProductionPlanController {
     @DeleteMapping("/{planId}")
     @Operation(summary = "删除生产计划")
     public ApiResponse<Void> deleteProductionPlan(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId) {
 
         log.info("删除生产计划: factoryId={}, planId={}", factoryId, planId);
@@ -102,9 +102,9 @@ public class ProductionPlanController {
     @GetMapping("/{planId}")
     @Operation(summary = "获取生产计划详情")
     public ApiResponse<ProductionPlanDTO> getProductionPlanById(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId) {
 
         ProductionPlanDTO plan = productionPlanService.getProductionPlanById(factoryId, planId);
@@ -117,7 +117,7 @@ public class ProductionPlanController {
     @GetMapping
     @Operation(summary = "获取生产计划列表（分页）")
     public ApiResponse<PageResponse<ProductionPlanDTO>> getProductionPlanList(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Valid PageRequest pageRequest) {
 
@@ -131,9 +131,9 @@ public class ProductionPlanController {
     @GetMapping("/status/{status}")
     @Operation(summary = "按状态获取生产计划")
     public ApiResponse<List<ProductionPlanDTO>> getProductionPlansByStatus(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "状态", required = true)
+            @Parameter(description = "状态", required = true, example = "IN_PROGRESS")
             @PathVariable ProductionPlanStatus status) {
 
         List<ProductionPlanDTO> plans = productionPlanService.getProductionPlansByStatus(factoryId, status);
@@ -146,7 +146,7 @@ public class ProductionPlanController {
     @GetMapping("/date-range")
     @Operation(summary = "按日期范围获取生产计划")
     public ApiResponse<List<ProductionPlanDTO>> getProductionPlansByDateRange(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
             @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
@@ -163,7 +163,7 @@ public class ProductionPlanController {
     @GetMapping("/today")
     @Operation(summary = "获取今日生产计划")
     public ApiResponse<List<ProductionPlanDTO>> getTodayProductionPlans(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         List<ProductionPlanDTO> plans = productionPlanService.getTodayProductionPlans(factoryId);
@@ -176,9 +176,9 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/start")
     @Operation(summary = "开始生产")
     public ApiResponse<ProductionPlanDTO> startProduction(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId) {
 
         log.info("开始生产: factoryId={}, planId={}", factoryId, planId);
@@ -192,11 +192,11 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/complete")
     @Operation(summary = "完成生产")
     public ApiResponse<ProductionPlanDTO> completeProduction(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
-            @Parameter(description = "实际产量", required = true)
+            @Parameter(description = "实际产量", required = true, example = "500")
             @RequestParam @NotNull BigDecimal actualQuantity) {
 
         log.info("完成生产: factoryId={}, planId={}, actualQuantity={}", factoryId, planId, actualQuantity);
@@ -210,11 +210,11 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/cancel")
     @Operation(summary = "取消生产计划")
     public ApiResponse<Void> cancelProductionPlan(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
-            @Parameter(description = "取消原因", required = true)
+            @Parameter(description = "取消原因", required = true, example = "订单取消")
             @RequestParam @NotBlank String reason) {
 
         log.info("取消生产计划: factoryId={}, planId={}, reason={}", factoryId, planId, reason);
@@ -228,9 +228,9 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/pause")
     @Operation(summary = "暂停生产")
     public ApiResponse<ProductionPlanDTO> pauseProduction(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId) {
 
         log.info("暂停生产: factoryId={}, planId={}", factoryId, planId);
@@ -244,9 +244,9 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/resume")
     @Operation(summary = "恢复生产")
     public ApiResponse<ProductionPlanDTO> resumeProduction(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId) {
 
         log.info("恢复生产: factoryId={}, planId={}", factoryId, planId);
@@ -260,17 +260,17 @@ public class ProductionPlanController {
     @PutMapping("/{planId}/costs")
     @Operation(summary = "更新实际成本")
     public ApiResponse<ProductionPlanDTO> updateActualCosts(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
-            @Parameter(description = "材料成本")
+            @Parameter(description = "材料成本", example = "1000.00")
             @RequestParam(required = false) BigDecimal materialCost,
-            @Parameter(description = "人工成本")
+            @Parameter(description = "人工成本", example = "500.00")
             @RequestParam(required = false) BigDecimal laborCost,
-            @Parameter(description = "设备成本")
+            @Parameter(description = "设备成本", example = "200.00")
             @RequestParam(required = false) BigDecimal equipmentCost,
-            @Parameter(description = "其他成本")
+            @Parameter(description = "其他成本", example = "100.00")
             @RequestParam(required = false) BigDecimal otherCost) {
 
         log.info("更新实际成本: factoryId={}, planId={}", factoryId, planId);
@@ -285,9 +285,9 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/batches")
     @Operation(summary = "分配原材料批次")
     public ApiResponse<Void> assignMaterialBatches(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
             @Parameter(description = "批次ID列表", required = true)
             @RequestBody @NotNull List<String> batchIds) {
@@ -303,13 +303,13 @@ public class ProductionPlanController {
     @PostMapping("/{planId}/consumption")
     @Operation(summary = "记录材料消耗")
     public ApiResponse<Void> recordMaterialConsumption(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "计划ID", required = true)
+            @Parameter(description = "计划ID", required = true, example = "PP-2025-001")
             @PathVariable @NotNull String planId,
-            @Parameter(description = "批次ID", required = true)
+            @Parameter(description = "批次ID", required = true, example = "MB-2025-001")
             @RequestParam @NotBlank String batchId,
-            @Parameter(description = "消耗数量", required = true)
+            @Parameter(description = "消耗数量", required = true, example = "100.5")
             @RequestParam @NotNull BigDecimal quantity) {
 
         log.info("记录材料消耗: factoryId={}, planId={}, batchId={}, quantity={}",
@@ -324,11 +324,11 @@ public class ProductionPlanController {
     @GetMapping("/statistics")
     @Operation(summary = "获取生产统计")
     public ApiResponse<Map<String, Object>> getProductionStatistics(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "开始日期", required = true)
+            @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期", required = true)
+            @Parameter(description = "结束日期", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         Map<String, Object> statistics = productionPlanService.getProductionStatistics(factoryId, startDate, endDate);
@@ -341,7 +341,7 @@ public class ProductionPlanController {
     @GetMapping("/pending-execution")
     @Operation(summary = "获取待执行的计划")
     public ApiResponse<List<ProductionPlanDTO>> getPendingPlansToExecute(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId) {
 
         List<ProductionPlanDTO> plans = productionPlanService.getPendingPlansToExecute(factoryId);
@@ -354,9 +354,9 @@ public class ProductionPlanController {
     @PostMapping("/batch")
     @Operation(summary = "批量创建生产计划")
     public ApiResponse<List<ProductionPlanDTO>> batchCreateProductionPlans(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "访问令牌", required = true)
+            @Parameter(description = "访问令牌", required = true, example = "Bearer eyJhbGciOiJIUzI1NiJ9...")
             @RequestHeader("Authorization") String authorization,
             @Valid @RequestBody List<CreateProductionPlanRequest> requests) {
 
@@ -375,11 +375,11 @@ public class ProductionPlanController {
     @GetMapping("/export")
     @Operation(summary = "导出生产计划")
     public byte[] exportProductionPlans(
-            @Parameter(description = "工厂ID", required = true)
+            @Parameter(description = "工厂ID", required = true, example = "F001")
             @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "开始日期", required = true)
+            @Parameter(description = "开始日期", required = true, example = "2025-01-01")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @Parameter(description = "结束日期", required = true)
+            @Parameter(description = "结束日期", required = true, example = "2025-01-31")
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
         log.info("导出生产计划: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);

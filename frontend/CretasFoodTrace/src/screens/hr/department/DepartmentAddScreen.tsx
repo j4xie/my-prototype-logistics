@@ -13,6 +13,7 @@ import { Text, TextInput, Button, Menu, Switch } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { departmentApiClient } from '../../../services/api/departmentApiClient';
 import { userApiClient } from '../../../services/api/userApiClient';
@@ -26,6 +27,7 @@ interface Manager {
 
 export default function DepartmentAddScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -58,7 +60,7 @@ export default function DepartmentAddScreen() {
 
   const handleSubmit = async () => {
     if (!name.trim()) {
-      Alert.alert('提示', '请输入部门名称');
+      Alert.alert(t('messages.hint'), t('department.add.validation.nameRequired'));
       return;
     }
 
@@ -72,15 +74,15 @@ export default function DepartmentAddScreen() {
       });
 
       if (res.success) {
-        Alert.alert('成功', '部门创建成功', [
-          { text: '确定', onPress: () => navigation.goBack() }
+        Alert.alert(t('messages.success'), t('department.add.successMessage'), [
+          { text: t('common.confirm'), onPress: () => navigation.goBack() }
         ]);
       } else {
-        Alert.alert('失败', res.message || '创建失败');
+        Alert.alert(t('messages.failed'), res.message || t('department.add.createFailed'));
       }
     } catch (error) {
       console.error('创建部门失败:', error);
-      Alert.alert('错误', '创建失败，请重试');
+      Alert.alert(t('messages.error'), t('department.add.createFailed'));
     } finally {
       setLoading(false);
     }
@@ -98,7 +100,7 @@ export default function DepartmentAddScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>添加部门</Text>
+        <Text style={styles.headerTitle}>{t('department.add.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -109,12 +111,12 @@ export default function DepartmentAddScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>部门名称 *</Text>
+              <Text style={styles.label}>{t('department.add.fields.name')}</Text>
               <TextInput
                 mode="outlined"
                 value={name}
                 onChangeText={setName}
-                placeholder="请输入部门名称"
+                placeholder={t('department.add.placeholders.name')}
                 style={styles.input}
                 outlineColor={HR_THEME.border}
                 activeOutlineColor={HR_THEME.primary}
@@ -122,12 +124,12 @@ export default function DepartmentAddScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>部门描述</Text>
+              <Text style={styles.label}>{t('department.add.fields.description')}</Text>
               <TextInput
                 mode="outlined"
                 value={description}
                 onChangeText={setDescription}
-                placeholder="请输入部门描述"
+                placeholder={t('department.add.placeholders.description')}
                 multiline
                 numberOfLines={3}
                 style={[styles.input, styles.textArea]}
@@ -137,7 +139,7 @@ export default function DepartmentAddScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>部门负责人</Text>
+              <Text style={styles.label}>{t('department.add.fields.manager')}</Text>
               <Menu
                 visible={menuVisible}
                 onDismiss={() => setMenuVisible(false)}
@@ -147,7 +149,7 @@ export default function DepartmentAddScreen() {
                     onPress={() => setMenuVisible(true)}
                   >
                     <Text style={managerName ? styles.selectText : styles.selectPlaceholder}>
-                      {managerName || '请选择负责人'}
+                      {managerName || t('department.add.placeholders.manager')}
                     </Text>
                     <MaterialCommunityIcons name="chevron-down" size={24} color={HR_THEME.textSecondary} />
                   </TouchableOpacity>
@@ -159,7 +161,7 @@ export default function DepartmentAddScreen() {
                     setManagerName('');
                     setMenuVisible(false);
                   }}
-                  title="暂不指定"
+                  title={t('department.add.noManager')}
                 />
                 {managers.map((m) => (
                   <Menu.Item
@@ -174,8 +176,8 @@ export default function DepartmentAddScreen() {
 
             <View style={styles.switchRow}>
               <View>
-                <Text style={styles.label}>启用状态</Text>
-                <Text style={styles.switchHint}>关闭后该部门将不可用</Text>
+                <Text style={styles.label}>{t('department.add.fields.status')}</Text>
+                <Text style={styles.switchHint}>{t('department.add.statusHint')}</Text>
               </View>
               <Switch
                 value={isActive}
@@ -193,7 +195,7 @@ export default function DepartmentAddScreen() {
             style={styles.cancelButton}
             textColor={HR_THEME.textSecondary}
           >
-            取消
+            {t('common.cancel')}
           </Button>
           <Button
             mode="contained"
@@ -203,7 +205,7 @@ export default function DepartmentAddScreen() {
             style={styles.submitButton}
             buttonColor={HR_THEME.primary}
           >
-            创建
+            {t('department.add.submit')}
           </Button>
         </View>
       </KeyboardAvoidingView>

@@ -14,12 +14,14 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../store/authStore';
 import { userApiClient } from '../../../services/api/userApiClient';
 
 export function ChangePasswordScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('profile');
   const [loading, setLoading] = useState(false);
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -46,23 +48,23 @@ export function ChangePasswordScreen() {
     let isValid = true;
 
     if (!formData.oldPassword) {
-      newErrors.oldPassword = '请输入当前密码';
+      newErrors.oldPassword = t('changePassword.errors.oldPasswordRequired');
       isValid = false;
     }
 
     if (!formData.newPassword) {
-      newErrors.newPassword = '请输入新密码';
+      newErrors.newPassword = t('changePassword.errors.newPasswordRequired');
       isValid = false;
     } else if (formData.newPassword.length < 6) {
-      newErrors.newPassword = '新密码至少6位';
+      newErrors.newPassword = t('changePassword.errors.passwordTooShort');
       isValid = false;
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = '请确认新密码';
+      newErrors.confirmPassword = t('changePassword.errors.confirmPasswordRequired');
       isValid = false;
     } else if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = '两次输入的密码不一致';
+      newErrors.confirmPassword = t('messages.passwordMismatch');
       isValid = false;
     }
 
@@ -79,13 +81,13 @@ export function ChangePasswordScreen() {
         oldPassword: formData.oldPassword,
         newPassword: formData.newPassword,
       });
-      Alert.alert('成功', '密码修改成功', [
-        { text: '确定', onPress: () => navigation.goBack() }
+      Alert.alert(t('messages.saveSuccess'), t('messages.passwordChanged'), [
+        { text: t('changePassword.confirm'), onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
-      console.error('修改密码失败:', error);
-      const message = error?.response?.data?.message || '修改密码失败，请检查当前密码是否正确';
-      Alert.alert('修改失败', message);
+      console.error('Change password failed:', error);
+      const message = error?.response?.data?.message || t('changePassword.errors.changeFailed');
+      Alert.alert(t('changePassword.errors.changeFailedTitle'), message);
     } finally {
       setLoading(false);
     }
@@ -134,7 +136,7 @@ export function ChangePasswordScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>修改密码</Text>
+        <Text style={styles.title}>{t('changePassword.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -143,38 +145,38 @@ export function ChangePasswordScreen() {
           <View style={styles.tipCard}>
             <Icon source="information" size={20} color="#667eea" />
             <Text style={styles.tipText}>
-              密码长度至少6位，建议包含字母和数字
+              {t('changePassword.passwordHint')}
             </Text>
           </View>
 
           <PasswordInput
-            label="当前密码"
+            label={t('changePassword.currentPassword')}
             value={formData.oldPassword}
             onChange={(text) => setFormData({ ...formData, oldPassword: text })}
             show={showOldPassword}
             toggleShow={() => setShowOldPassword(!showOldPassword)}
             error={errors.oldPassword}
-            placeholder="请输入当前密码"
+            placeholder={t('changePassword.currentPasswordPlaceholder')}
           />
 
           <PasswordInput
-            label="新密码"
+            label={t('changePassword.newPassword')}
             value={formData.newPassword}
             onChange={(text) => setFormData({ ...formData, newPassword: text })}
             show={showNewPassword}
             toggleShow={() => setShowNewPassword(!showNewPassword)}
             error={errors.newPassword}
-            placeholder="请输入新密码"
+            placeholder={t('changePassword.newPasswordPlaceholder')}
           />
 
           <PasswordInput
-            label="确认新密码"
+            label={t('changePassword.confirmPassword')}
             value={formData.confirmPassword}
             onChange={(text) => setFormData({ ...formData, confirmPassword: text })}
             show={showConfirmPassword}
             toggleShow={() => setShowConfirmPassword(!showConfirmPassword)}
             error={errors.confirmPassword}
-            placeholder="请再次输入新密码"
+            placeholder={t('changePassword.confirmPasswordPlaceholder')}
           />
 
           <TouchableOpacity
@@ -183,7 +185,7 @@ export function ChangePasswordScreen() {
             disabled={loading}
           >
             <Text style={styles.submitButtonText}>
-              {loading ? '提交中...' : '确认修改'}
+              {loading ? t('changePassword.submitting') : t('changePassword.submit')}
             </Text>
           </TouchableOpacity>
         </View>

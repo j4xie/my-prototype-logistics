@@ -12,6 +12,7 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { getFactoryId } from '../../types/auth';
@@ -34,6 +35,7 @@ const costReportLogger = logger.createContextLogger('CostReport');
 export default function CostReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,7 +54,7 @@ export default function CostReportScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('cost.cannotGetFactoryInfo'));
         return;
       }
 
@@ -93,8 +95,8 @@ export default function CostReportScreen() {
         timeRange,
       });
       const errorMessage =
-        getErrorMsg(error) || '加载成本数据失败，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+        getErrorMsg(error) || t('cost.error');
+      Alert.alert(t('cost.error'), errorMessage);
       setBatchCosts([]);
       setCostStats(null);
     } finally {
@@ -175,7 +177,7 @@ export default function CostReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="成本报表" />
+        <Appbar.Content title={t('cost.title')} />
         <Appbar.Action icon="refresh" onPress={loadCostData} />
       </Appbar.Header>
 
@@ -186,15 +188,15 @@ export default function CostReportScreen() {
         {/* 时间范围选择 */}
         <Surface style={styles.timeRangeCard} elevation={1}>
           <Text variant="bodyMedium" style={styles.sectionLabel}>
-            时间范围
+            {t('cost.timeRange')}
           </Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'day', label: '今日' },
-              { value: 'week', label: '本周' },
-              { value: 'month', label: '本月' },
+              { value: 'day', label: t('cost.today') },
+              { value: 'week', label: t('cost.thisWeek') },
+              { value: 'month', label: t('cost.thisMonth') },
             ]}
             style={styles.segmentedButtons}
           />
@@ -203,19 +205,19 @@ export default function CostReportScreen() {
         {/* 成本总览 */}
         <Surface style={styles.statsCard} elevation={1}>
           <Text variant="titleMedium" style={styles.statsTitle}>
-            成本总览
+            {t('cost.costOverview')}
           </Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : costStats ? (
             <>
               <View style={styles.totalCostContainer}>
-                <Text style={styles.totalCostLabel}>总成本</Text>
+                <Text style={styles.totalCostLabel}>{t('cost.totalCost')}</Text>
                 <Text style={styles.totalCostValue}>{formatCurrency(costStats.totalCost)}</Text>
               </View>
 
@@ -227,7 +229,7 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalMaterialCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    物料成本 ({costStats.materialCostRatio.toFixed(1)}%)
+                    {t('cost.materialCost')} ({costStats.materialCostRatio.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>
@@ -235,7 +237,7 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalLaborCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    人工成本 ({costStats.laborCostRatio.toFixed(1)}%)
+                    {t('cost.laborCost')} ({costStats.laborCostRatio.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>
@@ -243,32 +245,32 @@ export default function CostReportScreen() {
                     {formatCurrency(costStats.totalOverheadCost)}
                   </Text>
                   <Text style={styles.statLabel}>
-                    间接成本 ({costStats.overheadCostRatio.toFixed(1)}%)
+                    {t('cost.overheadCost')} ({costStats.overheadCostRatio.toFixed(1)}%)
                   </Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { fontSize: 20, color: '#4CAF50' }]}>
                     {formatCurrency(costStats.avgCostPerBatch)}
                   </Text>
-                  <Text style={styles.statLabel}>批次平均成本</Text>
+                  <Text style={styles.statLabel}>{t('cost.avgCostPerBatch')}</Text>
                 </View>
               </View>
             </>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无成本数据</Text>
+              <Text style={styles.emptyText}>{t('cost.noCostData')}</Text>
             </View>
           )}
         </Surface>
 
         {/* 批次成本列表 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="批次成本明细" titleVariant="titleMedium" />
+          <Card.Title title={t('cost.batchCostDetails')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>批次号</DataTable.Title>
-              <DataTable.Title>产品</DataTable.Title>
-              <DataTable.Title numeric>总成本</DataTable.Title>
+              <DataTable.Title>{t('cost.batchNumber')}</DataTable.Title>
+              <DataTable.Title>{t('cost.product')}</DataTable.Title>
+              <DataTable.Title numeric>{t('cost.totalCost')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -278,7 +280,7 @@ export default function CostReportScreen() {
             ) : batchCosts.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无批次数据
+                  {t('cost.noBatchData')}
                 </Text>
               </View>
             ) : (

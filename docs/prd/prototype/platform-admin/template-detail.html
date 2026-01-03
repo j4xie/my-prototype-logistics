@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>模板详情 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header -->
+  <header class="header header--platform">
+    <a href="template-list.html" class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M12.5 15L7.5 10L12.5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </a>
+    <h1 class="header__title">模板详情</h1>
+    <button class="icon-btn" onclick="showActionSheet()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="4" r="1.5" fill="currentColor"/>
+        <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+        <circle cx="10" cy="16" r="1.5" fill="currentColor"/>
+      </svg>
+    </button>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Template Info Card -->
+    <div class="card">
+      <div class="card__header">
+        <h2 class="card__title">标准水产加工模板</h2>
+        <span class="badge badge--primary">水产加工</span>
+      </div>
+      <div class="card__body">
+        <div class="info-row">
+          <span class="info-label">模板编号</span>
+          <span class="info-value">T001</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">适用场景</span>
+          <span class="info-value">海鲜加工、水产品分拣、冷冻储存</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">创建时间</span>
+          <span class="info-value">2025-11-15 10:30</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">最后更新</span>
+          <span class="info-value">2025-12-20 14:22</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">已应用工厂</span>
+          <span class="info-value" style="color: #7c3aed; font-weight: 500;">12 家</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Blueprint Configuration Section -->
+    <div class="section">
+      <div class="section__header">
+        <h3 class="section__title">生产蓝图配置 (3)</h3>
+      </div>
+      <div class="card-list">
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">海鲜分拣与预处理</h4>
+            <span class="badge badge--sm badge--info">蓝图</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">工序数量</span>
+              <span class="info-value">5 道工序</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">质检点</span>
+              <span class="info-value">原料检验、分拣检验、称重核对</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">冷冻加工流程</h4>
+            <span class="badge badge--sm badge--info">蓝图</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">工序数量</span>
+              <span class="info-value">4 道工序</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">质检点</span>
+              <span class="info-value">温度监控、冻结时长、品质检查</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">包装与入库</h4>
+            <span class="badge badge--sm badge--info">蓝图</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">工序数量</span>
+              <span class="info-value">3 道工序</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">质检点</span>
+              <span class="info-value">包装密封检查、重量核对、标签审核</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Acceptance Rules Section -->
+    <div class="section">
+      <div class="section__header">
+        <h3 class="section__title">验收规则配置 (5)</h3>
+      </div>
+      <div class="card-list">
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">鲜活海鲜验收</h4>
+            <span class="badge badge--sm badge--success">规则</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">必检项目</span>
+              <span class="info-value">新鲜度、活力、外观、气味</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">合格标准</span>
+              <span class="info-value">鳃色鲜红、活力强、无异味</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">冷冻水产品验收</h4>
+            <span class="badge badge--sm badge--success">规则</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">必检项目</span>
+              <span class="info-value">温度、包装、冻结状态、保质期</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">合格标准</span>
+              <span class="info-value">-18°C以下、包装完好、无解冻</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">包装材料验收</h4>
+            <span class="badge badge--sm badge--success">规则</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">必检项目</span>
+              <span class="info-value">材质、尺寸、密封性、印刷质量</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">合格标准</span>
+              <span class="info-value">符合食品级标准、无破损</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">调味料验收</h4>
+            <span class="badge badge--sm badge--success">规则</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">必检项目</span>
+              <span class="info-value">保质期、包装、生产许可证</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">合格标准</span>
+              <span class="info-value">在保质期内、包装完好、证照齐全</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">清洁用品验收</h4>
+            <span class="badge badge--sm badge--success">规则</span>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">必检项目</span>
+              <span class="info-value">成分标签、安全认证、使用说明</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">合格标准</span>
+              <span class="info-value">食品级认证、标识清晰</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Applied Factories Section -->
+    <div class="section">
+      <div class="section__header">
+        <h3 class="section__title">已应用工厂 (12)</h3>
+      </div>
+      <div class="card-list">
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">F001 - 白垩纪水产加工厂</h4>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">应用时间</span>
+              <span class="info-value">2025-11-16 09:15</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">状态</span>
+              <span class="badge badge--sm badge--success">运行中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">F008 - 海洋之星水产</h4>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">应用时间</span>
+              <span class="info-value">2025-11-20 14:30</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">状态</span>
+              <span class="badge badge--sm badge--success">运行中</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card--compact">
+          <div class="card__header">
+            <h4 class="card__title">F012 - 鲜悦海鲜加工</h4>
+          </div>
+          <div class="card__body">
+            <div class="info-row">
+              <span class="info-label">应用时间</span>
+              <span class="info-value">2025-12-01 11:00</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">状态</span>
+              <span class="badge badge--sm badge--success">运行中</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn--secondary btn--full" onclick="alert('查看全部工厂')">查看全部 12 家工厂</button>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn btn--secondary" onclick="alert('复制模板')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="6" y="6" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 4V2.5C10 2.22386 9.77614 2 9.5 2H2.5C2.22386 2 2 2.22386 2 2.5V9.5C2 9.77614 2.22386 10 2.5 10H4" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+        复制模板
+      </button>
+      <button class="btn btn--primary" onclick="alert('应用到工厂')">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8L6 11L13 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        应用到工厂
+      </button>
+    </div>
+  </main>
+
+  <!-- Action Sheet Modal -->
+  <div id="actionSheet" class="modal" style="display: none;">
+    <div class="modal__backdrop" onclick="hideActionSheet()"></div>
+    <div class="action-sheet">
+      <div class="action-sheet__header">
+        <h3>模板操作</h3>
+        <button class="icon-btn" onclick="hideActionSheet()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M5 5L15 15M5 15L15 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <div class="action-sheet__actions">
+        <button class="action-sheet__item" onclick="alert('编辑模板'); hideActionSheet();">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M14.166 2.5a2.357 2.357 0 1 1 3.333 3.334L6.25 17.083l-4.583.834.833-4.584L14.166 2.5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          编辑模板
+        </button>
+        <button class="action-sheet__item" onclick="alert('导出模板'); hideActionSheet();">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M17.5 12.5v3.333c0 .917-.75 1.667-1.667 1.667H4.167c-.917 0-1.667-.75-1.667-1.667V12.5M13.333 6.667L10 3.333m0 0L6.667 6.667M10 3.333v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          导出模板
+        </button>
+        <button class="action-sheet__item action-sheet__item--danger" onclick="if(confirm('确定删除此模板?')) alert('已删除'); hideActionSheet();">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M2.5 5h15M6.667 5V3.333a1.667 1.667 0 0 1 1.666-1.666h3.334a1.667 1.667 0 0 1 1.666 1.666V5m2.5 0v11.667a1.667 1.667 0 0 1-1.666 1.666H5.833a1.667 1.667 0 0 1-1.666-1.666V5h11.666z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          删除模板
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showActionSheet() {
+      document.getElementById('actionSheet').style.display = 'block';
+      setTimeout(() => {
+        document.querySelector('.action-sheet').classList.add('action-sheet--active');
+      }, 10);
+    }
+
+    function hideActionSheet() {
+      document.querySelector('.action-sheet').classList.remove('action-sheet--active');
+      setTimeout(() => {
+        document.getElementById('actionSheet').style.display = 'none';
+      }, 300);
+    }
+  </script>
+</body>
+</html>

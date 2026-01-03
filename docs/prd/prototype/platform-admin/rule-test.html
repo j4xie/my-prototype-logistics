@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>规则测试 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="rule-list.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">规则测试</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 100px;">
+      <!-- 测试规则选择 -->
+      <div style="background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 8px;">测试规则</div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 18px; font-weight: 600;">原材料批次验证</div>
+            <div style="font-size: 13px; opacity: 0.9;">RULE-VAL-001 · 验证规则</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 测试数据输入 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">测试数据</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">导入JSON</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">批次号 (batchNumber)</label>
+          <input type="text" value="MB-TEST-001" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">数量 (quantity)</label>
+          <input type="number" value="100" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">过期日期 (expirationDate)</label>
+          <input type="date" value="2024-12-31" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">温度 (temperature)</label>
+          <input type="number" value="-20" style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">单位: 摄氏度 (°C)</div>
+        </div>
+
+        <div>
+          <label style="display: block; font-size: 14px; color: #262626; margin-bottom: 8px;">原材料类型 (materialType)</label>
+          <select style="width: 100%; padding: 12px; border: 1px solid #d9d9d9; border-radius: 8px; font-size: 14px; background: white;">
+            <option value="fresh_fish">鲜鱼 (Fresh Fish)</option>
+            <option value="frozen_shrimp" selected>冻虾 (Frozen Shrimp)</option>
+            <option value="crab">螃蟹 (Crab)</option>
+            <option value="squid">鱿鱼 (Squid)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- JSON 预览 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">JSON 预览</span>
+        <span style="font-size: 13px; color: #667eea; cursor: pointer;">复制</span>
+      </div>
+
+      <div style="background: #1e1e1e; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <pre style="margin: 0; font-family: 'Menlo', 'Monaco', monospace; font-size: 12px; line-height: 1.6; color: #d4d4d4; overflow-x: auto;">{
+  <span style="color: #9cdcfe;">"batchNumber"</span>: <span style="color: #ce9178;">"MB-TEST-001"</span>,
+  <span style="color: #9cdcfe;">"quantity"</span>: <span style="color: #b5cea8;">100</span>,
+  <span style="color: #9cdcfe;">"expirationDate"</span>: <span style="color: #ce9178;">"2024-12-31"</span>,
+  <span style="color: #9cdcfe;">"temperature"</span>: <span style="color: #b5cea8;">-20</span>,
+  <span style="color: #9cdcfe;">"materialType"</span>: <span style="color: #ce9178;">"frozen_shrimp"</span>
+}</pre>
+      </div>
+
+      <!-- 执行按钮 -->
+      <button style="width: 100%; padding: 16px; background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 500; margin-bottom: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        执行测试
+      </button>
+
+      <!-- 测试结果 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">测试结果</span>
+      </div>
+
+      <!-- 成功结果示例 -->
+      <div style="background: rgba(82, 196, 26, 0.1); border: 1px solid #52c41a; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 40px; height: 40px; background: #52c41a; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600; color: #52c41a;">规则验证通过</div>
+            <div style="font-size: 13px; color: #595959;">执行时间: 12ms</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #595959; padding: 12px; background: white; border-radius: 8px;">
+          所有条件均满足，批次数据有效
+        </div>
+      </div>
+
+      <!-- 执行详情 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="font-size: 14px; font-weight: 500; color: #262626; margin-bottom: 12px;">条件检查</div>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(82, 196, 26, 0.05); border-radius: 8px; margin-bottom: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; color: #262626;">批次号格式检查</div>
+            <div style="font-size: 12px; color: #8c8c8c;">batchNumber.length() >= 5 → true</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(82, 196, 26, 0.05); border-radius: 8px; margin-bottom: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; color: #262626;">数量有效性</div>
+            <div style="font-size: 12px; color: #8c8c8c;">quantity > 0 → true (100)</div>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: rgba(82, 196, 26, 0.05); border-radius: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          <div style="flex: 1;">
+            <div style="font-size: 13px; color: #262626;">过期日期检查</div>
+            <div style="font-size: 12px; color: #8c8c8c;">expirationDate > now() → true</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 失败结果示例 (隐藏状态，展示设计) -->
+      <div style="background: rgba(245, 34, 45, 0.1); border: 1px solid #f5222d; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <div style="width: 40px; height: 40px; background: #f5222d; border-radius: 20px; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600; color: #f5222d;">规则验证失败</div>
+            <div style="font-size: 13px; color: #595959;">执行时间: 8ms</div>
+          </div>
+        </div>
+        <div style="font-size: 13px; color: #595959; padding: 12px; background: white; border-radius: 8px;">
+          <div style="color: #f5222d; margin-bottom: 4px;">错误: 批次号长度不足</div>
+          <div>batchNumber "MB" 长度为 2，最小要求 5 个字符</div>
+        </div>
+      </div>
+
+      <!-- 历史测试记录 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">测试历史</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">测试 #1</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:35</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #8c8c8c;">12ms</span>
+            <span class="tag success">通过</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">测试 #2</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:32</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #8c8c8c;">8ms</span>
+            <span class="tag error">失败</span>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <div style="font-size: 14px; color: #262626;">测试 #3</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2024-03-15 14:28</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 12px; color: #8c8c8c;">15ms</span>
+            <span class="tag success">通过</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-actions">
+      <a href="rule-detail.html" class="bottom-actions__btn bottom-actions__btn--secondary" style="text-decoration: none;">返回详情</a>
+      <div class="bottom-actions__btn bottom-actions__btn--primary">保存测试用例</div>
+    </div>
+  </div>
+</body>
+</html>

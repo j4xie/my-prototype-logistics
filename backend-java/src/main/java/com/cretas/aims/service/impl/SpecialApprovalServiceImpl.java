@@ -129,9 +129,8 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
         List<DecisionAuditLog> pendingApprovals =
                 decisionAuditLogRepository.findQualityPendingApprovals(factoryId);
 
-        return pendingApprovals.stream()
-                .map(this::enrichAndConvertToDTO)
-                .collect(Collectors.toList());
+        // 使用批量加载方法解决 N+1 查询问题
+        return batchEnrichAndConvertToDTOs(pendingApprovals);
     }
 
     @Override
@@ -220,9 +219,8 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
         List<DecisionAuditLog> myRequests =
                 decisionAuditLogRepository.findMyQualityApprovalRequests(factoryId, requesterId);
 
-        return myRequests.stream()
-                .map(this::enrichAndConvertToDTO)
-                .collect(Collectors.toList());
+        // 使用批量加载方法解决 N+1 查询问题
+        return batchEnrichAndConvertToDTOs(myRequests);
     }
 
     @Override
@@ -233,12 +231,76 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
         List<DecisionAuditLog> myApprovals =
                 decisionAuditLogRepository.findMyQualityApprovalDecisions(factoryId, approverId);
 
-        return myApprovals.stream()
-                .map(this::enrichAndConvertToDTO)
-                .collect(Collectors.toList());
+        // 使用批量加载方法解决 N+1 查询问题
+        return batchEnrichAndConvertToDTOs(myApprovals);
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 批量转换审计日志为DTO - 解决 N+1 查询问题
+     * 预先批量加载所有关联实体，避免在循环中逐条查询
+     */
+    private List<SpecialApprovalDTO> batchEnrichAndConvertToDTOs(List<DecisionAuditLog> auditLogs) {
+        if (auditLogs.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 收集所有需要查询的ID
+        Set<String> inspectionIds = auditLogs.stream()
+                .map(DecisionAuditLog::getEntityId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Set<Long> userIds = auditLogs.stream()
+                .flatMap(log -> {
+                    List<Long> ids = new ArrayList<>();
+                    if (log.getExecutorId() != null) ids.add(log.getExecutorId());
+                    if (log.getApproverId() != null) ids.add(log.getApproverId());
+                    return ids.stream();
+                })
+                .collect(Collectors.toSet());
+
+        // 2. 批量查询质检记录
+        Map<String, QualityInspection> inspectionMap = inspectionIds.isEmpty()
+                ? Collections.emptyMap()
+                : qualityInspectionRepository.findByIdIn(inspectionIds).stream()
+                    .collect(Collectors.toMap(QualityInspection::getId, i -> i));
+
+        // 3. 收集生产批次ID并批量查询
+        Set<Long> batchIds = inspectionMap.values().stream()
+                .map(QualityInspection::getProductionBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        Map<Long, ProductionBatch> batchMap = batchIds.isEmpty()
+                ? Collections.emptyMap()
+                : productionBatchRepository.findByIdIn(batchIds).stream()
+                    .collect(Collectors.toMap(ProductionBatch::getId, b -> b));
+
+        // 4. 批量查询用户
+        Map<Long, User> userMap = userIds.isEmpty()
+                ? Collections.emptyMap()
+                : userRepository.findByIdIn(userIds).stream()
+                    .collect(Collectors.toMap(User::getId, u -> u));
+
+        // 5. 转换为DTO
+        return auditLogs.stream()
+                .map(auditLog -> {
+                    QualityInspection inspection = inspectionMap.get(auditLog.getEntityId());
+                    ProductionBatch batch = inspection != null
+                            ? batchMap.get(inspection.getProductionBatchId())
+                            : null;
+                    User requester = auditLog.getExecutorId() != null
+                            ? userMap.get(auditLog.getExecutorId())
+                            : null;
+                    User approver = auditLog.getApproverId() != null
+                            ? userMap.get(auditLog.getApproverId())
+                            : null;
+                    return convertToDTO(auditLog, inspection, batch, requester, approver);
+                })
+                .collect(Collectors.toList());
+    }
 
     /**
      * 执行已批准的处置动作
@@ -281,33 +343,14 @@ public class SpecialApprovalServiceImpl implements SpecialApprovalService {
     }
 
     /**
-     * 丰富并转换为DTO
+     * 丰富并转换为DTO - 复用批量查询逻辑，避免 N+1 查询问题
+     * 注意：虽然当前方法只处理单个记录，但复用批量方法可保持代码一致性，
+     * 并在未来可能的循环调用场景下保持良好性能
      */
     private SpecialApprovalDTO enrichAndConvertToDTO(DecisionAuditLog auditLog) {
-        // 获取质检记录
-        QualityInspection inspection = qualityInspectionRepository.findById(auditLog.getEntityId())
-                .orElse(null);
-
-        // 获取生产批次
-        ProductionBatch batch = null;
-        if (inspection != null) {
-            batch = productionBatchRepository.findById(inspection.getProductionBatchId())
-                    .orElse(null);
-        }
-
-        // 获取申请人
-        User requester = null;
-        if (auditLog.getExecutorId() != null) {
-            requester = userRepository.findById(auditLog.getExecutorId()).orElse(null);
-        }
-
-        // 获取审批人
-        User approver = null;
-        if (auditLog.getApproverId() != null) {
-            approver = userRepository.findById(auditLog.getApproverId()).orElse(null);
-        }
-
-        return convertToDTO(auditLog, inspection, batch, requester, approver);
+        // 复用批量方法，避免重复的查询逻辑
+        List<SpecialApprovalDTO> result = batchEnrichAndConvertToDTOs(Collections.singletonList(auditLog));
+        return result.isEmpty() ? null : result.get(0);
     }
 
     /**

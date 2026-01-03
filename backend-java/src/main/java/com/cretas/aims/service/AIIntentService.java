@@ -1,5 +1,6 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 
 import java.util.List;
@@ -29,6 +30,35 @@ public interface AIIntentService {
      * @return 匹配的意图配置 (按优先级排序，返回最高优先级)
      */
     Optional<AIIntentConfig> recognizeIntent(String userInput);
+
+    /**
+     * 识别用户输入的意图（增强版，返回置信度和候选列表）
+     *
+     * @param userInput 用户输入文本
+     * @param topN 返回的候选意图数量（默认3）
+     * @return 完整的匹配结果，包含置信度、候选意图、匹配方法等
+     */
+    IntentMatchResult recognizeIntentWithConfidence(String userInput, int topN);
+
+    /**
+     * 识别用户输入的意图（增强版，默认返回Top-3）
+     *
+     * @param userInput 用户输入文本
+     * @return 完整的匹配结果
+     */
+    default IntentMatchResult recognizeIntentWithConfidence(String userInput) {
+        return recognizeIntentWithConfidence(userInput, 3);
+    }
+
+    /**
+     * 识别用户输入的意图（增强版，带工厂ID用于LLM Fallback上下文）
+     *
+     * @param userInput 用户输入文本
+     * @param factoryId 工厂ID（用于LLM上下文）
+     * @param topN 返回的候选意图数量
+     * @return 完整的匹配结果
+     */
+    IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN);
 
     /**
      * 识别所有可能的意图
@@ -167,4 +197,28 @@ public interface AIIntentService {
      * 刷新意图配置缓存
      */
     void refreshCache();
+
+    // ==================== 反馈记录 ====================
+
+    /**
+     * 记录意图匹配的正向反馈
+     * 用于追踪关键词效果，当用户确认匹配正确时调用
+     *
+     * @param factoryId 工厂ID
+     * @param intentCode 意图代码
+     * @param matchedKeywords 匹配到的关键词列表
+     */
+    void recordPositiveFeedback(String factoryId, String intentCode, List<String> matchedKeywords);
+
+    /**
+     * 记录意图匹配的负向反馈
+     * 当用户拒绝匹配结果并选择其他意图时调用
+     *
+     * @param factoryId 工厂ID
+     * @param rejectedIntentCode 被拒绝的意图代码
+     * @param selectedIntentCode 用户选择的正确意图代码
+     * @param matchedKeywords 原匹配到的关键词列表
+     */
+    void recordNegativeFeedback(String factoryId, String rejectedIntentCode,
+                                String selectedIntentCode, List<String> matchedKeywords);
 }

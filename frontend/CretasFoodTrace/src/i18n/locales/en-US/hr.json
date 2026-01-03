@@ -1,0 +1,684 @@
+{
+  "home": {
+    "title": "HR Management",
+    "loading": "Loading...",
+    "stats": {
+      "onSite": "On Site",
+      "totalStaff": "Total Staff",
+      "lateToday": "Late Today",
+      "pendingWhitelist": "Pending Whitelist",
+      "thisMonthNewHires": "New Hires This Month",
+      "lastMonth": "Last Month"
+    },
+    "attendance": {
+      "title": "Today's Attendance Rate"
+    },
+    "quickActions": {
+      "title": "Quick Actions"
+    },
+    "anomaly": {
+      "title": "Attendance Anomalies",
+      "viewAll": "View All",
+      "noAnomalies": "No attendance anomalies today"
+    },
+    "notifications": {
+      "comingSoon": "Notifications coming soon"
+    },
+    "newHires": {
+      "title": "New Hires",
+      "empty": "No new hires",
+      "status": {
+        "pending": "Pending",
+        "active": "Active",
+        "cancelled": "Cancelled"
+      }
+    }
+  },
+  "staff": {
+    "title": "Staff Management",
+    "list": {
+      "title": "Staff List"
+    },
+    "detail": {
+      "title": "Staff Details",
+      "basicInfo": "Basic Information",
+      "workInfo": "Work Information",
+      "contactInfo": "Contact Information",
+      "actions": "Actions",
+      "edit": "Edit Info",
+      "changeStatus": "Change Status",
+      "viewAttendance": "Attendance Records",
+      "viewPerformance": "Performance Records"
+    },
+    "add": {
+      "title": "Add Staff",
+      "success": "Staff added successfully",
+      "failed": "Failed to add staff"
+    },
+    "aiAnalysis": {
+      "title": "AI Analysis",
+      "analyzing": "Analyzing",
+      "result": "Analysis Result",
+      "noData": "No analysis data available"
+    },
+    "search": {
+      "placeholder": "Search staff..."
+    },
+    "filter": {
+      "label": "Filter",
+      "all": "All",
+      "active": "Active",
+      "onLeave": "On Leave",
+      "resigned": "Resigned",
+      "suspended": "Suspended"
+    },
+    "card": {
+      "noDepartment": "No Department",
+      "defaultPosition": "Staff"
+    },
+    "empty": {
+      "title": "No staff data available"
+    },
+    "status": {
+      "active": "Active",
+      "onLeave": "On Leave",
+      "resigned": "Resigned",
+      "suspended": "Suspended"
+    },
+    "form": {
+      "name": "Name",
+      "namePlaceholder": "Enter name",
+      "nameRequired": "Name is required",
+      "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
+      "phoneRequired": "Phone is required",
+      "phoneInvalid": "Please enter a valid 11-digit phone number",
+      "email": "Email",
+      "emailPlaceholder": "Enter email",
+      "department": "Department",
+      "departmentPlaceholder": "Select department",
+      "position": "Position",
+      "positionPlaceholder": "Enter position",
+      "hireDate": "Hire Date",
+      "cancel": "Cancel",
+      "submit": "Submit",
+      "create": "Create"
+    }
+  },
+  "attendance": {
+    "title": "Attendance Management",
+    "manage": {
+      "title": "Attendance Management"
+    },
+    "anomaly": {
+      "title": "Anomaly Records",
+      "empty": "No anomaly records",
+      "resolve": "Resolve"
+    },
+    "stats": {
+      "title": "Statistics & Analysis",
+      "period": {
+        "week": "This Week",
+        "month": "This Month",
+        "quarter": "This Quarter"
+      },
+      "avgAttendanceRate": "Avg Attendance Rate",
+      "avgHoursPerDay": "Avg Hours/Day",
+      "onSiteCount": "On-Site Count",
+      "totalHours": "Total Hours",
+      "anomalyStats": "Anomaly Statistics",
+      "late": "Late",
+      "earlyLeave": "Early Leave",
+      "absent": "Absent",
+      "departmentRanking": "Department Attendance Ranking",
+      "noData": "No data available"
+    },
+    "myAttendance": {
+      "title": "My Attendance",
+      "today": "Today's Attendance",
+      "clockIn": "Clock In",
+      "clockOut": "Clock Out",
+      "workDuration": "Work Duration",
+      "monthSummary": "Monthly Summary",
+      "workDays": "Work Days",
+      "totalHours": "Total Hours",
+      "lateDays": "Late",
+      "avgHoursPerDay": "Avg/Day",
+      "quickActions": "Quick Actions",
+      "statsAnalysis": "Statistics",
+      "anomalyRecords": "Anomaly Records",
+      "manage": "Attendance Manage",
+      "status": {
+        "completed": "Completed",
+        "working": "Working",
+        "notStarted": "Not Clocked In"
+      },
+      "clockInBtn": "Clock In",
+      "clockOutBtn": "Clock Out",
+      "completedToday": "Today's attendance completed",
+      "alerts": {
+        "loginRequired": "Please login first",
+        "clockInSuccess": "Clocked in successfully",
+        "clockOutSuccess": "Clocked out successfully",
+        "clockFailed": "Clock failed",
+        "clockFailedRetry": "Clock failed, please try again"
+      }
+    },
+    "department": {
+      "title": "Department Attendance",
+      "queryDate": "Query Date",
+      "selectDepartment": "Select Department",
+      "attendanceStats": "Attendance Statistics",
+      "loading": "Loading...",
+      "shouldAttend": "Should Attend",
+      "actualAttend": "Actual Attend",
+      "attendanceRate": "Attendance Rate",
+      "employeeRecords": "Employee Clock Records",
+      "name": "Name",
+      "clockInTime": "Clock In",
+      "clockOutTime": "Clock Out",
+      "workHours": "Hours",
+      "status": "Status",
+      "noRecords": "No attendance records",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "departments": {
+        "processing": "Processing Dept",
+        "quality": "Quality Dept",
+        "logistics": "Logistics Dept",
+        "management": "Management"
+      },
+      "statusLabels": {
+        "present": "Present",
+        "late": "Late",
+        "earlyLeave": "Early Leave",
+        "absent": "Absent",
+        "onLeave": "On Leave"
+      },
+      "errors": {
+        "noFactory": "Cannot get factory info, please login again",
+        "loadFailed": "Failed to load department attendance"
+      }
+    },
+    "timeClock": {
+      "title": "Time Clock",
+      "currentTime": "Current Time",
+      "currentLocation": "Current Location",
+      "locating": "Locating...",
+      "locationSuccess": "Location acquired",
+      "clockInBtn": "Clock In",
+      "clockOutBtn": "Clock Out",
+      "todayRecords": "Today's Records",
+      "noRecords": "No records",
+      "quickLinks": "Quick Links",
+      "historyRecords": "History Records",
+      "timeStatistics": "Time Statistics",
+      "workRecords": "Work Records",
+      "departmentAttendance": "Department Attendance",
+      "status": {
+        "notClocked": "Not Clocked",
+        "working": "Working",
+        "offWork": "Off Work",
+        "unknown": "Unknown",
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out"
+      },
+      "statusDesc": {
+        "notClocked": "Not clocked in yet",
+        "working": "Clocked in",
+        "offWork": "Day ended"
+      },
+      "alerts": {
+        "locationDenied": "Location Permission Denied",
+        "locationDeniedMsg": "Clock-in requires location access",
+        "locationFailed": "Location Failed",
+        "locationFailedMsg": "Cannot get location",
+        "clockOutFirst": "Please clock out first",
+        "locatingWait": "Getting location...",
+        "notClockedIn": "Not clocked in yet",
+        "confirmClockIn": "Confirm Clock In",
+        "confirmClockOut": "Confirm Clock Out",
+        "currentTime": "Current time: ",
+        "clockInSuccess": "Clocked in successfully",
+        "clockOutSuccess": "Clocked out successfully",
+        "clockFailed": "Clock failed",
+        "clockFailedRetry": "Clock failed, please retry"
+      }
+    },
+    "history": {
+      "title": "Attendance History",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "quickDates": {
+        "last7Days": "Last 7 Days",
+        "last30Days": "Last 30 Days",
+        "thisMonth": "This Month"
+      },
+      "statsOverview": "Statistics Overview",
+      "totalWorkHours": "Total Work Hours",
+      "overtimeHours": "Overtime Hours",
+      "normalDays": "Normal Days",
+      "lateDays": "Late Count",
+      "searchPlaceholder": "Search work type or date",
+      "tableHeaders": {
+        "date": "Date",
+        "clockIn": "Clock In",
+        "clockOut": "Clock Out",
+        "workHours": "Hours",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "noRecords": "No attendance records",
+      "editDialog": {
+        "title": "Edit Attendance Record",
+        "modifyDate": "Modify Date: ",
+        "clockInTime": "Clock In Time (e.g: 08:30)",
+        "clockOutTime": "Clock Out Time (e.g: 17:30)",
+        "reason": "Reason (Required)",
+        "reasonPlaceholder": "Enter reason, e.g: Forgot to clock, device issue, etc.",
+        "saving": "Saving changes...",
+        "cancel": "Cancel",
+        "save": "Save",
+        "reasonRequired": "Please enter reason",
+        "invalidTimeFormat": "Invalid time format, use 24-hour format (e.g: 08:30)",
+        "editSuccess": "Edit Successful",
+        "editSuccessMsg": "Attendance record updated",
+        "editFailed": "Edit Failed",
+        "noFactory": "Cannot get factory info"
+      },
+      "statusLabels": {
+        "normal": "Normal",
+        "late": "Late",
+        "earlyLeave": "Early Leave",
+        "absent": "Absent"
+      },
+      "errors": {
+        "noUser": "Cannot get user info, please login again",
+        "loadFailed": "Failed to load attendance records"
+      }
+    },
+    "statistics": {
+      "title": "Work Time Statistics",
+      "timeRange": "Time Range",
+      "dimension": "Dimension",
+      "periods": {
+        "today": "Today",
+        "week": "This Week",
+        "month": "This Month",
+        "custom": "Custom"
+      },
+      "dimensions": {
+        "personal": "Personal",
+        "department": "Department",
+        "factory": "Factory"
+      },
+      "dimensionLabels": {
+        "personal": "Personal Hours",
+        "department": "Department Hours",
+        "factory": "Factory Hours"
+      },
+      "loading": "Loading...",
+      "totalHours": "Total Hours",
+      "regularHours": "Regular Hours",
+      "overtimeHours": "Overtime Hours",
+      "avgDailyHours": "Avg Daily Hours",
+      "regularPercent": "Regular %",
+      "overtimePercent": "Overtime %",
+      "employeeDetails": "Employee Details",
+      "normal": "Regular",
+      "overtime": "Overtime",
+      "hours": "hours",
+      "noData": "No work time records in this period",
+      "noDataHint": "Please clock in first",
+      "errors": {
+        "noUserId": "User ID not found",
+        "loadFailed": "Failed to load statistics"
+      }
+    },
+    "timeStats": {
+      "title": "Time Stats Analysis",
+      "periods": {
+        "daily": "Today",
+        "weekly": "This Week",
+        "monthly": "This Month"
+      },
+      "overview": "Statistics Overview",
+      "loading": "Loading...",
+      "totalHours": "Total Hours",
+      "regularHours": "Regular Hours",
+      "overtimeHours": "Overtime Hours",
+      "employeeCount": "Employees",
+      "avgHoursPerEmployee": "Avg Hours/Employee",
+      "efficiencyAnalysis": "Efficiency Analysis",
+      "attendanceRate": "Attendance Rate",
+      "productivityRate": "Productivity Rate",
+      "overtimeRate": "Overtime Rate",
+      "performanceRanking": "Performance Ranking",
+      "topPerformers": "Top 10",
+      "rank": "Rank",
+      "employee": "Employee",
+      "workHours": "Hours",
+      "efficiency": "Efficiency",
+      "errors": {
+        "noFactory": "Factory ID not found",
+        "loadFailed": "Failed to load time statistics"
+      }
+    }
+  },
+  "department": {
+    "title": "Department Management",
+    "list": {
+      "title": "Department List",
+      "empty": "No department data"
+    },
+    "add": {
+      "title": "Add Department",
+      "name": "Department Name",
+      "namePlaceholder": "Enter department name",
+      "nameRequired": "Department name is required",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "manager": "Manager",
+      "managerPlaceholder": "Select manager",
+      "notSpecified": "Not specified",
+      "isActive": "Active Status",
+      "isActiveHint": "Department will be disabled when turned off",
+      "cancel": "Cancel",
+      "create": "Create",
+      "success": "Department created successfully",
+      "failed": "Failed to create department"
+    },
+    "detail": {
+      "title": "Department Details",
+      "basicInfo": "Basic Information",
+      "members": "Department Members",
+      "manager": "Manager",
+      "memberCount": "Member Count",
+      "createdAt": "Created At",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "noMembers": "No members",
+      "employee": "Employee"
+    }
+  },
+  "whitelist": {
+    "title": "Whitelist Management",
+    "list": {
+      "title": "Whitelist",
+      "empty": "No whitelist data",
+      "search": "Search phone number...",
+      "delete": "Delete",
+      "deleteConfirm": "Delete {phone}?",
+      "deleteSuccess": "Deleted successfully",
+      "deleteFailed": "Delete failed",
+      "unsetRole": "No role set",
+      "addedAt": "Added"
+    },
+    "add": {
+      "title": "Add to Whitelist",
+      "phone": "Phone Number",
+      "phonePlaceholder": "Enter phone number",
+      "phoneRequired": "Phone number is required",
+      "phoneInvalid": "Please enter a valid 11-digit phone number",
+      "role": "Preset Role",
+      "rolePlaceholder": "Select role",
+      "roleRequired": "Role is required",
+      "remark": "Remark",
+      "remarkPlaceholder": "Enter remark",
+      "tip": "After adding to whitelist, users with this phone number can register and obtain preset role permissions",
+      "cancel": "Cancel",
+      "create": "Create",
+      "add": "Add",
+      "success": "Added to whitelist successfully",
+      "failed": "Failed to add",
+      "tipTitle": "Tip",
+      "errorTitle": "Error"
+    }
+  },
+  "scheduling": {
+    "title": "Scheduling Management",
+    "workSchedule": {
+      "title": "Work Schedule",
+      "loading": "Loading...",
+      "days": {
+        "sunday": "Sun",
+        "monday": "Mon",
+        "tuesday": "Tue",
+        "wednesday": "Wed",
+        "thursday": "Thu",
+        "friday": "Fri",
+        "saturday": "Sat"
+      },
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "empty": "No schedule for this day",
+      "emptyHint": "Click below to add schedule",
+      "addShift": "Add Shift",
+      "shifts": {
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "night": "Night"
+      },
+      "assignedCount": "Assigned/Total",
+      "confirmedCount": "Confirmed",
+      "pendingCount": "Pending"
+    }
+  },
+  "production": {
+    "batchAssignment": {
+      "title": "Batch Assignment",
+      "search": "Search batch or product...",
+      "assigned": "Assigned",
+      "required": "people",
+      "workHours": "hours",
+      "laborCost": "cost",
+      "empty": "No batch tasks",
+      "status": {
+        "inProgress": "In Progress",
+        "pending": "Pending",
+        "completed": "Completed"
+      }
+    },
+    "batchWorkers": {
+      "title": "Batch Workers",
+      "totalCount": "Total",
+      "totalHours": "Total Hours",
+      "working": "Working",
+      "empty": "No workers assigned",
+      "emptyHint": "Click below to add workers",
+      "addWorker": "Add Worker",
+      "removeWorker": "Remove Worker",
+      "removeConfirm": "Remove {name} from this batch?",
+      "removeSuccess": "Removed successfully",
+      "removeFailed": "Failed to remove, please try again",
+      "noDepartment": "No Department",
+      "workDuration": "Work Hours",
+      "status": {
+        "working": "Working",
+        "completed": "Completed",
+        "paused": "Paused"
+      },
+      "alerts": {
+        "addComingSoon": "Add worker feature coming soon"
+      }
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "role": "HR Administrator",
+    "noFactory": "No Factory Assigned",
+    "sections": {
+      "management": "Management",
+      "personal": "Personal",
+      "system": "System"
+    },
+    "menu": {
+      "departmentManage": "Department Management",
+      "whitelistManage": "Whitelist Management",
+      "schedulingManage": "Scheduling Management",
+      "myInfo": "My Info",
+      "myAttendance": "My Attendance",
+      "notifications": "Notifications",
+      "settings": "Settings",
+      "help": "Help Center",
+      "about": "About"
+    },
+    "stats": {
+      "activeStaff": "Active Staff",
+      "departmentCount": "Departments",
+      "monthlyAttendance": "Monthly Attendance"
+    },
+    "logout": "Logout",
+    "logoutConfirm": "Confirm Logout",
+    "logoutMessage": "Are you sure you want to logout?",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "version": "Version",
+    "comingSoon": "Feature coming soon",
+    "myInfo": {
+      "title": "My Information",
+      "changeAvatar": "Change Avatar",
+      "basicInfo": "Basic Information",
+      "username": "Username",
+      "realName": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "workInfo": "Work Information",
+      "role": "Role",
+      "factory": "Factory",
+      "hireDate": "Hire Date",
+      "employeeCode": "Employee Code",
+      "security": "Account Security",
+      "changePassword": "Change Password",
+      "bindDevice": "Bind Device",
+      "cancel": "Cancel",
+      "save": "Save",
+      "form": {
+        "namePlaceholder": "Enter name",
+        "nameRequired": "Name is required",
+        "phonePlaceholder": "Enter phone number",
+        "emailPlaceholder": "Enter email"
+      },
+      "alerts": {
+        "updateSuccess": "Information updated successfully",
+        "updateFailed": "Update failed",
+        "updateError": "Update failed, please try again"
+      }
+    }
+  },
+  "analytics": {
+    "laborCost": {
+      "title": "Labor Cost",
+      "period": {
+        "week": "This Week",
+        "month": "This Month",
+        "quarter": "This Quarter"
+      },
+      "stats": {
+        "totalCost": "Total Cost",
+        "totalHours": "Total Hours",
+        "participants": "Participants",
+        "avgHourlyRate": "Avg Hourly Rate"
+      },
+      "departmentDistribution": "Department Cost Distribution",
+      "employeeRanking": "Employee Work Hours Ranking",
+      "empty": "No data",
+      "noAssigned": "Unassigned"
+    },
+    "performance": {
+      "title": "Performance Analysis",
+      "period": {
+        "month": "This Month",
+        "quarter": "This Quarter",
+        "year": "This Year"
+      },
+      "stats": {
+        "avgScore": "Avg Score",
+        "excellent": "Excellent",
+        "needsAttention": "Needs Attention"
+      },
+      "gradeDistribution": "Performance Grade Distribution",
+      "employeeList": "Employee Performance List",
+      "empty": "No performance data"
+    }
+  },
+  "anomalyTypes": {
+    "late": "Late",
+    "earlyLeave": "Early Leave",
+    "absent": "Absent",
+    "overtime": "Overtime Issue",
+    "missingCheckIn": "Missing Check-in",
+    "missingCheckOut": "Missing Check-out"
+  },
+  "quickActions": {
+    "staffList": "Staff List",
+    "attendance": "Attendance Records",
+    "whitelist": "Whitelist",
+    "newHires": "New Hires",
+    "leave": "Leave Management",
+    "reports": "Reports"
+  },
+  "messages": {
+    "loadFailed": "Failed to load HR dashboard data",
+    "loadStaffFailed": "Failed to load staff list",
+    "error": "Error",
+    "success": "Success",
+    "retryLater": "Failed to load data. Please try again later.",
+    "tip": "Tip"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "loading": "Loading...",
+    "noData": "No data",
+    "retry": "Retry",
+    "back": "Back"
+  },
+  "dashboard": {
+    "title": "HR Admin",
+    "loadFailed": "Failed to load data, please try again later",
+    "dateFormat": "{{month}}/{{date}}/{{year}} {{day}}",
+    "weekdays": {
+      "sun": "Sunday",
+      "mon": "Monday",
+      "tue": "Tuesday",
+      "wed": "Wednesday",
+      "thu": "Thursday",
+      "fri": "Friday",
+      "sat": "Saturday"
+    },
+    "greetings": {
+      "earlyMorning": "Good night",
+      "morning": "Good morning",
+      "lateMorning": "Good morning",
+      "noon": "Good afternoon",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening",
+      "lateNight": "It's late"
+    },
+    "greetingSuffix": ", ",
+    "defaultHRAdmin": "HR Admin",
+    "todayOverview": "Today's Staff Overview",
+    "onDutyCount": "On-Duty Staff",
+    "lateCount": "Late Count",
+    "needsAttention": "Needs Attention",
+    "whitelistPending": "Pending Whitelist Activation",
+    "thisMonthNewHires": "New Hires This Month",
+    "pendingItems": "Pending Items",
+    "pendingCount": "{{count}} Pending",
+    "pendingActivation": "{{count}} pending activation",
+    "attendanceAnomaly": "Attendance Anomaly",
+    "needsProcessing": "{{count}} need processing",
+    "noPendingItems": "No pending items",
+    "todayAttendanceAnomalies": "Today's Attendance Anomalies",
+    "viewAllRecords": "View all {{count}} records",
+    "quickActions": "Quick Actions"
+  }
+}

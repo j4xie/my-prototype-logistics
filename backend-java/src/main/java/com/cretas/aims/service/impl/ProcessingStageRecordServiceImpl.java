@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.processing.ProcessingStageRecordDTO;
 import com.cretas.aims.entity.ProcessingStageRecord;
 import com.cretas.aims.entity.enums.ProcessingStageType;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.ProcessingStageRecordRepository;
 import com.cretas.aims.service.ProcessingStageRecordService;
 import lombok.RequiredArgsConstructor;
@@ -49,7 +50,7 @@ public class ProcessingStageRecordServiceImpl implements ProcessingStageRecordSe
     @Transactional
     public ProcessingStageRecordDTO update(String factoryId, Long id, ProcessingStageRecordDTO dto) {
         ProcessingStageRecord entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("加工环节记录不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("ProcessingStageRecord", id));
 
         if (!entity.getFactoryId().equals(factoryId)) {
             throw new RuntimeException("无权操作此记录");
@@ -63,7 +64,7 @@ public class ProcessingStageRecordServiceImpl implements ProcessingStageRecordSe
     @Override
     public ProcessingStageRecordDTO getById(String factoryId, Long id) {
         ProcessingStageRecord entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("加工环节记录不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("ProcessingStageRecord", id));
 
         if (!entity.getFactoryId().equals(factoryId)) {
             throw new RuntimeException("无权访问此记录");
@@ -121,7 +122,7 @@ public class ProcessingStageRecordServiceImpl implements ProcessingStageRecordSe
     @Transactional
     public void delete(String factoryId, Long id) {
         ProcessingStageRecord entity = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("加工环节记录不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("ProcessingStageRecord", id));
 
         if (!entity.getFactoryId().equals(factoryId)) {
             throw new RuntimeException("无权删除此记录");

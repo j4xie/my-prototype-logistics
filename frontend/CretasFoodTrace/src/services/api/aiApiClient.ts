@@ -1,5 +1,6 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
+import type { IntentRecognizeResponse, IntentExecuteResponse } from '../../types/intent';
 
 /**
  * AI API客户端
@@ -703,6 +704,73 @@ class AIApiClient {
     // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
     const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
     return transformAnalysisResponse(data);
+  }
+
+  // ========== 意图识别接口 ==========
+
+  /**
+   * 识别用户意图
+   *
+   * 解析用户输入，返回匹配的意图列表和置信度
+   * 对应后端 IntentAnalysisController.recognizeIntent
+   *
+   * @param userInput 用户输入文本
+   * @param context 上下文信息（可选）
+   * @param factoryId 工厂ID（可选）
+   * @returns 意图匹配结果
+   */
+  async recognizeIntent(
+    userInput: string,
+    context?: Record<string, unknown>,
+    factoryId?: string
+  ): Promise<IntentRecognizeResponse> {
+    const response = await apiClient.post<IntentRecognizeResponse>(
+      `${this.getBasePath(factoryId)}/ai-intents/recognize`,
+      { userInput, context }
+    );
+    return response;
+  }
+
+  /**
+   * 确认用户选择的意图
+   *
+   * 用于学习机制：记录用户的实际选择，用于优化未来匹配
+   *
+   * @param matchRecordId 匹配记录ID
+   * @param selectedIntentCode 用户选择的意图代码
+   * @param factoryId 工厂ID（可选）
+   */
+  async confirmIntentSelection(
+    matchRecordId: string,
+    selectedIntentCode: string,
+    factoryId?: string
+  ): Promise<void> {
+    await apiClient.post(
+      `${this.getBasePath(factoryId)}/ai-intents/confirm`,
+      { matchRecordId, selectedIntentCode }
+    );
+  }
+
+  /**
+   * 执行意图
+   *
+   * 根据意图代码执行对应操作
+   *
+   * @param intentCode 意图代码
+   * @param parameters 执行参数
+   * @param factoryId 工厂ID（可选）
+   * @returns 执行结果
+   */
+  async executeIntent(
+    intentCode: string,
+    parameters?: Record<string, unknown>,
+    factoryId?: string
+  ): Promise<IntentExecuteResponse> {
+    const response = await apiClient.post<IntentExecuteResponse>(
+      `${this.getBasePath(factoryId)}/ai-intents/execute`,
+      { intentCode, parameters }
+    );
+    return response;
   }
 
   // ========== 健康检查接口 ==========

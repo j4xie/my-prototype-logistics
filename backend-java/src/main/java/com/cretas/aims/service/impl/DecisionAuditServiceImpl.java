@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.entity.DecisionAuditLog;
 import com.cretas.aims.entity.DecisionAuditLog.*;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.DecisionAuditLogRepository;
 import com.cretas.aims.service.DecisionAuditService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -245,7 +246,7 @@ public class DecisionAuditServiceImpl implements DecisionAuditService {
             String approverName
     ) {
         DecisionAuditLog auditLog = auditLogRepository.findById(auditLogId)
-                .orElseThrow(() -> new RuntimeException("审计日志不存在: " + auditLogId));
+                .orElseThrow(() -> new EntityNotFoundException("DecisionAuditLog", auditLogId));
 
         auditLog.setApprovalStatus(status);
         auditLog.setApprovalComment(comment);

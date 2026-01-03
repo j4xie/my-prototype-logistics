@@ -1,0 +1,440 @@
+{
+  "home": {
+    "title": "Dispatcher Workbench",
+    "role": "Dispatcher",
+    "date": "{{date}}",
+    "userName": "{{name}}",
+    "aiCenter": {
+      "title": "AI Intelligent Scheduling Center",
+      "subtitle": "Monte Carlo + OR-Tools + LLM",
+      "todayProbability": "Today's Completion Probability",
+      "pendingBatches": "Pending Batches",
+      "optimizationSpace": "Optimization Space",
+      "oneClickSchedule": "One-Click AI Scheduling"
+    },
+    "aiRisk": {
+      "title": "AI Risk Alert",
+      "description": "Detected {{count}} batches with completion probability below 70%. Consider adjusting staffing or deadlines.",
+      "view": "View"
+    },
+    "pendingTasks": {
+      "title": "Today's Pending Tasks",
+      "subtitle": "Priority Order",
+      "unassigned": "Unassigned Tasks",
+      "inProgress": "In Progress",
+      "pendingApproval": "Pending Approval"
+    },
+    "workshop": {
+      "title": "Workshop Real-time Status",
+      "viewAll": "View All >",
+      "workers": "workers",
+      "batches": "batches",
+      "statusDetail": "Workshop Status Detail"
+    },
+    "personnel": {
+      "title": "Personnel Allocation",
+      "transfer": "Transfer Staff >",
+      "floatingStaff": "Floating Staff",
+      "aiOptimize": "AI Optimize →",
+      "onDuty": "Personnel On Duty",
+      "capacity": "capacity",
+      "temporaryWorkers": "incl. {{count}} temporary workers",
+      "understaffed": "Understaffed",
+      "temporaryMark": "* Temporary Worker"
+    },
+    "approval": {
+      "title": "Pending Approvals",
+      "pendingCount": "{{count}} pending >",
+      "pending": "Pending",
+      "plan": "Plan",
+      "transfer": "Transfer",
+      "newPlanRequest": "New Production Plan Request",
+      "transferRequest": "Staff Transfer Request",
+      "submittedBy": "Submitted by {{name}}"
+    },
+    "workshops": {
+      "slicing": "Slicing Workshop",
+      "packaging": "Packaging Workshop",
+      "freezing": "Freezing Workshop",
+      "storage": "Storage Workshop"
+    },
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "maintenance": "Maintenance"
+    },
+    "taskStatus": {
+      "completed": "Completed",
+      "inProgress": "In Progress",
+      "pending": "Pending"
+    },
+    "sections": {
+      "supervisor": "Supervisor",
+      "todayTasks": "Today's Tasks",
+      "taskProgress": "Task Progress",
+      "currentTaskGroups": "Current Task Groups",
+      "equipmentStatus": "Equipment Status",
+      "noTasks": "No tasks"
+    },
+    "equipment": {
+      "slicingMachineA": "Slicing Machine A",
+      "slicingMachineB": "Slicing Machine B",
+      "washingLine": "Washing Line",
+      "sealingMachineA": "Sealing Machine A",
+      "sealingMachineB": "Sealing Machine B",
+      "quickFreezingA": "Quick Freezing A",
+      "quickFreezingB": "Quick Freezing B"
+    },
+    "emptySlot": "Vacant"
+  },
+  "planList": {
+    "title": "Production Plans",
+    "create": "+ New",
+    "filters": {
+      "allStatus": "All Status",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "allWorkshop": "All Workshops",
+      "dateRange": "Date Range",
+      "today": "Today",
+      "thisWeek": "This Week",
+      "thisMonth": "This Month",
+      "allSource": "All Sources",
+      "customerOrder": "Customer Order",
+      "aiPredict": "AI Prediction",
+      "safetyStock": "Safety Stock",
+      "mixedBatch": "Mixed Batch",
+      "all": "All",
+      "urgentOnly": "Urgent Only",
+      "pendingApproval": "Pending Approval"
+    },
+    "search": {
+      "placeholder": "Search plan number/product name..."
+    },
+    "quickEntry": {
+      "gantt": "Gantt Chart",
+      "urgentInsert": "Urgent Insert",
+      "mixedBatch": "Mixed Batch",
+      "resource": "Resource Overview"
+    },
+    "urgentCount": "{{count}} urgent",
+    "section": {
+      "urgentPlans": "Urgent Plans",
+      "pendingApproval": "Pending Approval Plans",
+      "todayPlans": "Today's Plans",
+      "count": "({{count}})"
+    },
+    "card": {
+      "source": "Source:",
+      "customerOrder": "Customer Order",
+      "mixedBatch": "Mixed Batch",
+      "aiPredict": "AI Prediction",
+      "safetyStock": "Safety Stock",
+      "crValue": "CR Value:",
+      "deadline": "Deadline",
+      "earliestDeadline": "Earliest Deadline",
+      "confidence": "Prediction Confidence:",
+      "seasonality": "Seasonality:",
+      "currentStock": "Current Stock:",
+      "stockTrigger": "Triggered by stock below 30%",
+      "mergedOrders": "(Merged {{count}} orders)",
+      "mixedDetails": "Mixed Batch Details"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "crLevel": {
+      "urgent": "Urgent",
+      "tight": "Tight",
+      "sufficient": "Sufficient"
+    },
+    "tags": {
+      "matched": "Matched",
+      "partialMatched": "Partial Match",
+      "pendingMatch": "Pending Match",
+      "urgent": "Urgent",
+      "highPriority": "High Priority",
+      "mediumPriority": "Medium Priority"
+    },
+    "approval": {
+      "required": "Requires Approval",
+      "forceInsert": "Force Insert",
+      "reason": "Reason:",
+      "approve": "Approve",
+      "reject": "Reject",
+      "approveTitle": "Approve Insertion",
+      "rejectTitle": "Reject Insertion",
+      "commentOptional": "Approval Comment (Optional)",
+      "rejectReasonRequired": "Rejection Reason (Required)",
+      "enterComment": "Enter approval comment...",
+      "enterRejectReason": "Enter rejection reason...",
+      "confirmApprove": "Confirm Approve",
+      "confirmReject": "Confirm Reject",
+      "success": "Success",
+      "approved": "Force insertion approved",
+      "rejected": "Force insertion rejected",
+      "fillRejectReason": "Please provide a rejection reason",
+      "failed": "Failed",
+      "operationFailed": "Approval operation failed. Please try again later."
+    },
+    "empty": {
+      "title": "No plans available"
+    },
+    "loadMore": "Load more...",
+    "loading": "Loading..."
+  },
+  "planCreate": {
+    "title": "New Production Plan",
+    "source": {
+      "title": "Plan Source *",
+      "select": "Select plan source",
+      "customerOrder": "Customer Order",
+      "aiPredict": "AI Prediction",
+      "safetyStock": "Safety Stock",
+      "manual": "Manual Creation",
+      "urgentInsert": "Urgent Insert",
+      "descriptions": {
+        "customerOrder": "Production order from customer",
+        "aiPredict": "Generated from AI demand forecast",
+        "safetyStock": "Triggered by low inventory threshold",
+        "manual": "Manually entered by dispatcher",
+        "urgentInsert": "Quick insertion for urgent orders"
+      }
+    },
+    "planType": {
+      "title": "Material Plan Type",
+      "fromInventory": "From Inventory",
+      "fromInventoryDesc": "Use existing materials",
+      "future": "Future Plan",
+      "futureDesc": "Materials to be procured"
+    },
+    "product": {
+      "title": "Product Type *",
+      "select": "Select product type",
+      "empty": "No product types available"
+    },
+    "quantity": {
+      "title": "Planned Quantity *",
+      "placeholder": "Enter quantity"
+    },
+    "priority": {
+      "title": "Priority",
+      "highest": "Highest",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "date": {
+      "plannedDate": "Planned Start Date *",
+      "deadline": "Delivery Deadline *",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "daysLater": "{{days}} days later",
+      "crLabel": "CR Value:",
+      "crLevels": {
+        "urgent": "Urgent",
+        "tight": "Tight",
+        "sufficient": "Sufficient"
+      }
+    },
+    "mixedBatch": {
+      "title": "Allow Mixed Batch Production",
+      "description": "Enable to merge with similar orders for production"
+    },
+    "customerOrder": {
+      "title": "Customer Order Number (Optional)",
+      "placeholder": "Enter customer order number"
+    },
+    "notes": {
+      "title": "Notes (Optional)",
+      "placeholder": "Enter notes"
+    },
+    "submit": {
+      "creating": "Creating...",
+      "create": "Create Plan",
+      "success": "Success",
+      "successMessage": "Production plan created successfully",
+      "failed": "Failed",
+      "failedMessage": "Failed to create, please retry",
+      "error": "Error",
+      "errorMessage": "Failed to create, please check network connection"
+    },
+    "validation": {
+      "selectProduct": "Please select product type",
+      "enterQuantity": "Please enter valid planned quantity",
+      "selectPlannedDate": "Please select planned date",
+      "selectDeadline": "Please select delivery deadline"
+    }
+  },
+  "ai": {
+    "schedule": {
+      "title": "AI Smart Scheduling",
+      "subtitle": "Based on Monte Carlo + OR-Tools + LLM",
+      "mode": {
+        "batch": "Schedule by Batch",
+        "plan": "Schedule by Plan"
+      },
+      "dateRange": {
+        "title": "Scheduling Date",
+        "startDate": "Start Date",
+        "endDate": "End Date"
+      },
+      "config": {
+        "title": "Schedule Configuration",
+        "shiftType": "Shift Type",
+        "dayShift": "Day Shift",
+        "nightShift": "Night Shift",
+        "fullDay": "Full Day",
+        "shiftHours": {
+          "day": "08:00 - 17:00",
+          "night": "18:00 - 02:00",
+          "fullDay": "08:00 - 22:00"
+        },
+        "autoAssignWorkers": "Auto-assign Workers",
+        "linUCBOptimize": "LinUCB Optimization"
+      },
+      "batches": {
+        "title": "Pending Batches",
+        "count": "{{count}}",
+        "selectAll": "Select All",
+        "cancelAll": "Deselect All",
+        "empty": "No pending batches",
+        "emptyHint": "Please check date range or refresh page",
+        "planNumber": "Plan No.:",
+        "deadline": "Deadline:",
+        "completionProb": "Completion Prob.:",
+        "urgent": "Urgent",
+        "normal": "Normal"
+      },
+      "plans": {
+        "title": "Select Production Plans",
+        "count": "{{count}}",
+        "selectAll": "Select All",
+        "cancelAll": "Deselect All",
+        "empty": "No pending production plans",
+        "emptyHint": "Please create production plans first",
+        "planNumber": "Plan No.:",
+        "customer": "Customer:",
+        "loading": "Loading..."
+      },
+      "start": {
+        "selectBatches": "AI Schedule ({{count}} batches)",
+        "selectPlans": "AI Schedule ({{count}} plans)",
+        "validationBatch": "Please select at least one batch",
+        "validationPlan": "Please select at least one production plan"
+      },
+      "analyzing": {
+        "title": "AI Analyzing...",
+        "subtitle": "Monte Carlo simulating (10,000 runs)"
+      },
+      "result": {
+        "completionProb": {
+          "title": "Completion Probability Prediction",
+          "badge": "Monte Carlo",
+          "onTimeCompletion": "On-time Completion",
+          "description": "Based on {{simulations}} simulations, estimated on-time completion probability {{probability}}%",
+          "detail": "Details >"
+        },
+        "lineAssignment": {
+          "title": "Line Assignment Suggestions",
+          "badge": "OR-Tools",
+          "load": "Load {{load}}%"
+        },
+        "workerOptimization": {
+          "title": "Worker Optimization Suggestions",
+          "badge": "LinUCB",
+          "detail": "Details >",
+          "currentPosition": "{{position}}",
+          "skill": "{{skill}}",
+          "targetLine": "{{line}}",
+          "aiTip": "AI Recommendation: Adjustment expected to improve efficiency by {{efficiency}}%, increase completion probability to {{probability}}%"
+        },
+        "actions": {
+          "reanalyze": "Reanalyze",
+          "apply": "Apply Schedule",
+          "applying": "Applying..."
+        }
+      },
+      "success": {
+        "title": "Schedule Applied",
+        "message": "Confirmed {{count}} production plans. Staff transfer request submitted for approval.",
+        "confirm": "OK"
+      },
+      "error": {
+        "title": "Error",
+        "failed": "AI scheduling failed, please retry later",
+        "applyFailed": "Failed to apply schedule",
+        "noPlansToConfirm": "No plans to confirm",
+        "confirmFailed": "{{count}} plans failed to confirm"
+      }
+    },
+    "completionProb": {
+      "title": "Completion Probability Analysis",
+      "description": "Monte Carlo Simulation Analysis"
+    },
+    "workerOptimize": {
+      "title": "Worker Optimization",
+      "description": "LinUCB Smart Recommendation"
+    }
+  },
+  "personnel": {
+    "list": {
+      "title": "Personnel Management"
+    },
+    "detail": {
+      "title": "Personnel Details"
+    },
+    "attendance": {
+      "title": "Attendance Records"
+    },
+    "schedule": {
+      "title": "Shift Management"
+    },
+    "transfer": {
+      "title": "Staff Transfer"
+    }
+  },
+  "profile": {
+    "title": "Dispatcher Center",
+    "statistics": {
+      "title": "Statistics"
+    }
+  },
+  "messages": {
+    "loadFailed": "Failed to load dispatcher dashboard data",
+    "loadPlansFailed": "Unable to load production plans. Please check network.",
+    "usingDefaultThreshold": "Using default urgent threshold 0.6",
+    "refreshing": "Refreshing..."
+  },
+  "common": {
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "loading": "Loading...",
+    "submitting": "Submitting...",
+    "success": "Success",
+    "failed": "Failed",
+    "error": "Error",
+    "warning": "Warning",
+    "info": "Info",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "more": "More",
+    "viewAll": "View All",
+    "viewDetail": "View Details",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All",
+    "noData": "No Data",
+    "networkError": "Network error. Please check network connection"
+  }
+}

@@ -13,12 +13,14 @@ import { Text, TextInput, Button, ActivityIndicator, HelperText, Menu } from 're
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { whitelistApiClient } from '../../../services/api/whitelistApiClient';
 import { HR_THEME, type WhitelistStatus, ROLE_OPTIONS } from '../../../types/hrNavigation';
 
 export default function WhitelistAddScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [presetRole, setPresetRole] = useState('');
@@ -30,11 +32,11 @@ export default function WhitelistAddScreen() {
   const validatePhone = (phone: string): boolean => {
     const phoneRegex = /^1[3-9]\d{9}$/;
     if (!phone) {
-      setPhoneError('请输入手机号');
+      setPhoneError(t('whitelist.add.phoneRequired'));
       return false;
     }
     if (!phoneRegex.test(phone)) {
-      setPhoneError('请输入有效的11位手机号');
+      setPhoneError(t('whitelist.add.phoneInvalid'));
       return false;
     }
     setPhoneError('');
@@ -45,7 +47,7 @@ export default function WhitelistAddScreen() {
     if (!validatePhone(phoneNumber)) return;
 
     if (!presetRole) {
-      Alert.alert('提示', '请选择预设角色');
+      Alert.alert(t('whitelist.add.tipTitle'), t('whitelist.add.roleRequired'));
       return;
     }
 
@@ -60,15 +62,15 @@ export default function WhitelistAddScreen() {
       });
 
       if (res.success) {
-        Alert.alert('成功', '白名单添加成功', [
-          { text: '确定', onPress: () => navigation.goBack() }
+        Alert.alert(t('messages.success'), t('whitelist.add.success'), [
+          { text: t('common.confirm'), onPress: () => navigation.goBack() }
         ]);
       } else {
-        Alert.alert('失败', res.message || '添加失败');
+        Alert.alert(t('messages.error'), res.message || t('whitelist.add.failed'));
       }
     } catch (error) {
       console.error('添加白名单失败:', error);
-      Alert.alert('错误', '添加失败，请重试');
+      Alert.alert(t('whitelist.add.errorTitle'), t('whitelist.add.failed'));
     } finally {
       setLoading(false);
     }
@@ -86,7 +88,7 @@ export default function WhitelistAddScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>添加白名单</Text>
+        <Text style={styles.headerTitle}>{t('whitelist.add.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -97,7 +99,7 @@ export default function WhitelistAddScreen() {
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>手机号 *</Text>
+              <Text style={styles.label}>{t('whitelist.add.phone')} *</Text>
               <TextInput
                 mode="outlined"
                 value={phoneNumber}
@@ -105,7 +107,7 @@ export default function WhitelistAddScreen() {
                   setPhoneNumber(text);
                   if (phoneError) validatePhone(text);
                 }}
-                placeholder="请输入11位手机号"
+                placeholder={t('whitelist.add.phonePlaceholder')}
                 keyboardType="phone-pad"
                 maxLength={11}
                 style={styles.input}
@@ -121,7 +123,7 @@ export default function WhitelistAddScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>预设角色 *</Text>
+              <Text style={styles.label}>{t('whitelist.add.role')} *</Text>
               <Menu
                 visible={menuVisible}
                 onDismiss={() => setMenuVisible(false)}
@@ -131,7 +133,7 @@ export default function WhitelistAddScreen() {
                     onPress={() => setMenuVisible(true)}
                   >
                     <Text style={presetRoleName ? styles.selectText : styles.selectPlaceholder}>
-                      {presetRoleName || '请选择角色'}
+                      {presetRoleName || t('whitelist.add.rolePlaceholder')}
                     </Text>
                     <MaterialCommunityIcons name="chevron-down" size={24} color={HR_THEME.textSecondary} />
                   </TouchableOpacity>
@@ -149,12 +151,12 @@ export default function WhitelistAddScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>备注</Text>
+              <Text style={styles.label}>{t('whitelist.add.remark')}</Text>
               <TextInput
                 mode="outlined"
                 value={notes}
                 onChangeText={setNotes}
-                placeholder="可选填写备注信息"
+                placeholder={t('whitelist.add.remarkPlaceholder')}
                 multiline
                 numberOfLines={3}
                 style={[styles.input, styles.textArea]}
@@ -166,7 +168,7 @@ export default function WhitelistAddScreen() {
             <View style={styles.tips}>
               <MaterialCommunityIcons name="information-outline" size={18} color={HR_THEME.info} />
               <Text style={styles.tipsText}>
-                添加到白名单后，该手机号用户可以注册并获得预设角色权限
+                {t('whitelist.add.tip')}
               </Text>
             </View>
           </View>
@@ -179,7 +181,7 @@ export default function WhitelistAddScreen() {
             style={styles.cancelButton}
             textColor={HR_THEME.textSecondary}
           >
-            取消
+            {t('whitelist.add.cancel')}
           </Button>
           <Button
             mode="contained"
@@ -189,7 +191,7 @@ export default function WhitelistAddScreen() {
             style={styles.submitButton}
             buttonColor={HR_THEME.primary}
           >
-            添加
+            {t('whitelist.add.add')}
           </Button>
         </View>
       </KeyboardAvoidingView>

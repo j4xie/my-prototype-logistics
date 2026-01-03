@@ -11,6 +11,7 @@ import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.StateMachineService;
 import com.cretas.aims.service.StateMachineService.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,8 +64,8 @@ public class AIRuleController {
     @Operation(summary = "AI解析规则", description = "将自然语言描述转换为 Drools DRL 规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<AIRuleParseResponse> parseRule(
-            @PathVariable String factoryId,
-            @Valid @RequestBody AIRuleParseRequest request
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @RequestBody @Valid AIRuleParseRequest request
     ) {
         log.info("AI解析规则 - factoryId={}, input={}", factoryId, request.getUserInput());
 
@@ -126,9 +127,9 @@ public class AIRuleController {
     @Operation(summary = "AI解析并保存规则", description = "将自然语言转换为 DRL 规则并保存到数据库")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<DroolsRule> parseAndSaveRule(
-            @PathVariable String factoryId,
-            @Valid @RequestBody AIRuleParseRequest request,
-            @RequestAttribute("userId") Long userId
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @RequestBody @Valid AIRuleParseRequest request,
+            @Parameter(hidden = true) @RequestAttribute("userId") Long userId
     ) {
         log.info("AI解析并保存规则 - factoryId={}, input={}", factoryId, request.getUserInput());
 
@@ -193,8 +194,8 @@ public class AIRuleController {
     @Operation(summary = "AI解析状态机", description = "将自然语言描述转换为状态机配置")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<AIStateMachineParseResponse> parseStateMachine(
-            @PathVariable String factoryId,
-            @Valid @RequestBody AIStateMachineParseRequest request
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @RequestBody @Valid AIStateMachineParseRequest request
     ) {
         log.info("AI解析状态机 - factoryId={}, entityType={}, input={}",
                 factoryId, request.getEntityType(), request.getUserInput());
@@ -286,9 +287,9 @@ public class AIRuleController {
     @Operation(summary = "AI解析并保存状态机", description = "将自然语言转换为状态机配置并保存")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<StateMachineConfig> parseAndSaveStateMachine(
-            @PathVariable String factoryId,
-            @Valid @RequestBody AIStateMachineParseRequest request,
-            @RequestAttribute("userId") Long userId
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @RequestBody @Valid AIStateMachineParseRequest request,
+            @Parameter(hidden = true) @RequestAttribute("userId") Long userId
     ) {
         log.info("AI解析并保存状态机 - factoryId={}, entityType={}",
                 factoryId, request.getEntityType());
@@ -351,7 +352,8 @@ public class AIRuleController {
      */
     @GetMapping("/health")
     @Operation(summary = "AI规则服务健康检查")
-    public ApiResponse<Map<String, Object>> healthCheck(@PathVariable String factoryId) {
+    public ApiResponse<Map<String, Object>> healthCheck(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
         Map<String, Object> health = new HashMap<>();
         health.put("service", "ai-rules");
         health.put("factoryId", factoryId);

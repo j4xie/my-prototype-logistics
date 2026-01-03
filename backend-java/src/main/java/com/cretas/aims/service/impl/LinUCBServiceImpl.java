@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.ml.LinUCBModel;
 import com.cretas.aims.entity.ml.WorkerAllocationFeedback;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.LinUCBModelRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.WorkerAllocationFeedbackRepository;
@@ -282,7 +283,7 @@ public class LinUCBServiceImpl implements LinUCBService {
             BigDecimal qualityScore) {
 
         WorkerAllocationFeedback feedback = feedbackRepository.findById(feedbackId)
-                .orElseThrow(() -> new RuntimeException("反馈记录不存在: " + feedbackId));
+                .orElseThrow(() -> new EntityNotFoundException("WorkerAllocationFeedback", feedbackId));
 
         // 计算效率
         BigDecimal efficiency = BigDecimal.ONE;

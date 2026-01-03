@@ -121,10 +121,10 @@ public class ConversionServiceImpl implements ConversionService {
         conversion.setMaterialTypeId(dto.getMaterialTypeId());
         conversion.setProductTypeId(dto.getProductTypeId());
         conversion.setConversionRate(dto.getConversionRate());
-        conversion.setWastageRate(dto.getWastageRate());
+        conversion.setWastageRate(dto.getWastageRate() != null ? dto.getWastageRate() : BigDecimal.ZERO);
         conversion.setMinBatchSize(dto.getMinBatchSize());
         conversion.setMaxBatchSize(dto.getMaxBatchSize());
-        conversion.setIsActive(dto.getIsActive());
+        conversion.setIsActive(dto.getIsActive() != null ? dto.getIsActive() : true);
         conversion.setNotes(dto.getNotes());
         // standardUsage 由 @PrePersist/@PreUpdate 自动计算
         conversion = conversionRepository.save(conversion);

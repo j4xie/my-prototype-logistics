@@ -27,6 +27,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -50,15 +51,15 @@ interface InboundItem {
   inspectResult?: string;
 }
 
-const statusConfig: Record<
+const getStatusConfig = (t: (key: string) => string): Record<
   InboundStatus,
   { label: string; color: string; bgColor: string }
-> = {
-  pending: { label: "待确认", color: "#f57c00", bgColor: "#fff3e0" },
-  inspecting: { label: "质检中", color: "#1976d2", bgColor: "#e3f2fd" },
-  putaway: { label: "待上架", color: "#7b1fa2", bgColor: "#f3e5f5" },
-  completed: { label: "已完成", color: "#388e3c", bgColor: "#e8f5e9" },
-};
+> => ({
+  pending: { label: t('inbound.list.status.pending'), color: "#f57c00", bgColor: "#fff3e0" },
+  inspecting: { label: t('inbound.list.status.inspecting'), color: "#1976d2", bgColor: "#e3f2fd" },
+  putaway: { label: t('inbound.list.status.putaway'), color: "#7b1fa2", bgColor: "#f3e5f5" },
+  completed: { label: t('inbound.list.status.completed'), color: "#388e3c", bgColor: "#e8f5e9" },
+});
 
 // 将后端状态映射到前端状态
 const mapBatchStatusToInbound = (backendStatus: string | undefined): InboundStatus => {
@@ -74,6 +75,7 @@ const mapBatchStatusToInbound = (backendStatus: string | undefined): InboundStat
 };
 
 export function WHInboundListScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [loading, setLoading] = useState(true);
@@ -114,7 +116,7 @@ export function WHInboundListScreen() {
 
     } catch (error) {
       logger.error('[WHInboundListScreen] 加载入库列表失败:', error);
-      handleError(error, { title: '加载入库列表失败' });
+      handleError(error, { title: t('messages.loadListFailed') });
       setInboundList([]);
     } finally {
       setLoading(false);
@@ -157,17 +159,19 @@ export function WHInboundListScreen() {
   const getActionText = (status: InboundStatus): string => {
     switch (status) {
       case "pending":
-        return "确认入库";
+        return t('inbound.list.actions.confirmInbound');
       case "inspecting":
-        return "继续质检";
+        return t('inbound.list.actions.continueInspect');
       case "putaway":
-        return "确认上架";
+        return t('inbound.list.actions.confirmPutaway');
       case "completed":
-        return "查看详情";
+        return t('inbound.list.actions.viewDetail');
       default:
-        return "查看";
+        return t('inbound.list.actions.viewDetail');
     }
   };
+
+  const statusConfig = getStatusConfig(t);
 
   const handleItemPress = (item: InboundItem) => {
     switch (item.status) {
@@ -190,11 +194,11 @@ export function WHInboundListScreen() {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>入库管理</Text>
+          <Text style={styles.headerTitle}>{t('inbound.list.title')}</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('inbound.list.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -204,9 +208,9 @@ export function WHInboundListScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>入库管理</Text>
+        <Text style={styles.headerTitle}>{t('inbound.list.title')}</Text>
         <Text style={styles.headerSubtitle}>
-          待确认 {stats.pending} 单 | 今日入库 {stats.todayWeight} kg
+          {t('inbound.list.headerSubtitle', { pending: stats.pending, weight: stats.todayWeight })}
         </Text>
       </View>
 
@@ -226,7 +230,7 @@ export function WHInboundListScreen() {
             style={[styles.actionButton, { backgroundColor: "#4CAF50" }]}
             labelStyle={styles.actionButtonLabel}
           >
-            新建入库
+            {t('inbound.list.newInbound')}
           </Button>
           <Button
             mode="outlined"
@@ -235,13 +239,13 @@ export function WHInboundListScreen() {
             style={styles.actionButton}
             labelStyle={styles.actionButtonLabelOutlined}
           >
-            扫码入库
+            {t('inbound.list.scanInbound')}
           </Button>
         </View>
 
         {/* 搜索栏 */}
         <Searchbar
-          placeholder="搜索批次号/物料/供应商"
+          placeholder={t('inbound.list.search')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchBar}
@@ -263,7 +267,7 @@ export function WHInboundListScreen() {
             ]}
             textStyle={selectedStatus === "all" ? styles.filterChipTextActive : undefined}
           >
-            全部({stats.total})
+            {t('inbound.list.filter.all')}({stats.total})
           </Chip>
           <Chip
             selected={selectedStatus === "pending"}
@@ -274,7 +278,7 @@ export function WHInboundListScreen() {
             ]}
             textStyle={selectedStatus === "pending" ? styles.filterChipTextActive : undefined}
           >
-            待确认({stats.pending})
+            {t('inbound.list.filter.pending')}({stats.pending})
           </Chip>
           <Chip
             selected={selectedStatus === "inspecting"}
@@ -285,7 +289,7 @@ export function WHInboundListScreen() {
             ]}
             textStyle={selectedStatus === "inspecting" ? styles.filterChipTextActive : undefined}
           >
-            质检中({stats.inspecting})
+            {t('inbound.list.filter.inspecting')}({stats.inspecting})
           </Chip>
           <Chip
             selected={selectedStatus === "completed"}
@@ -296,7 +300,7 @@ export function WHInboundListScreen() {
             ]}
             textStyle={selectedStatus === "completed" ? styles.filterChipTextActive : undefined}
           >
-            已完成({stats.completed})
+            {t('inbound.list.filter.completed')}({stats.completed})
           </Chip>
         </ScrollView>
 
@@ -327,17 +331,17 @@ export function WHInboundListScreen() {
 
                   <View style={styles.cardContent}>
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>物料</Text>
+                      <Text style={styles.infoLabel}>{t('inbound.list.material')}</Text>
                       <Text style={styles.infoValue}>
                         {item.material} ({item.materialType})
                       </Text>
                     </View>
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>供应商</Text>
+                      <Text style={styles.infoLabel}>{t('inbound.list.supplier')}</Text>
                       <Text style={styles.infoValue}>{item.supplier}</Text>
                     </View>
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>数量</Text>
+                      <Text style={styles.infoLabel}>{t('inbound.list.quantity')}</Text>
                       <Text style={[styles.infoValue, styles.quantityValue]}>
                         {item.quantity} kg
                       </Text>
@@ -369,23 +373,23 @@ export function WHInboundListScreen() {
 
         {/* 今日统计 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>今日入库统计</Text>
+          <Text style={styles.sectionTitle}>{t('inbound.list.stats.title')}</Text>
           <View style={styles.statsGrid}>
             <View style={styles.statsItem}>
               <Text style={styles.statsValue}>{stats.total}</Text>
-              <Text style={styles.statsLabel}>入库单数</Text>
+              <Text style={styles.statsLabel}>{t('inbound.list.stats.inboundOrders')}</Text>
             </View>
             <View style={styles.statsItem}>
               <Text style={styles.statsValue}>{stats.todayWeight}</Text>
-              <Text style={styles.statsLabel}>入库重量(kg)</Text>
+              <Text style={styles.statsLabel}>{t('inbound.list.stats.inboundWeight')}</Text>
             </View>
             <View style={styles.statsItem}>
               <Text style={styles.statsValue}>5</Text>
-              <Text style={styles.statsLabel}>供应商数</Text>
+              <Text style={styles.statsLabel}>{t('inbound.list.stats.supplierCount')}</Text>
             </View>
             <View style={styles.statsItem}>
               <Text style={styles.statsValue}>100%</Text>
-              <Text style={styles.statsLabel}>质检合格率</Text>
+              <Text style={styles.statsLabel}>{t('inbound.list.stats.passRate')}</Text>
             </View>
           </View>
         </View>

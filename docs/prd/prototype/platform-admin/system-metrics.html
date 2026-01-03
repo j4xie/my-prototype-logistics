@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系统指标 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">系统指标</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 系统状态概览 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">系统状态</div>
+            <div style="font-size: 20px; font-weight: 600;">运行正常</div>
+          </div>
+          <div style="width: 48px; height: 48px; background: rgba(82, 196, 26, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span style="padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px; font-size: 12px;">运行时间: 15天8小时</span>
+          <span style="padding: 4px 10px; background: rgba(255,255,255,0.15); border-radius: 4px; font-size: 12px;">最后更新: 刚刚</span>
+        </div>
+      </div>
+
+      <!-- 核心指标 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">核心指标</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+        <!-- CPU使用率 -->
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 13px; color: #8c8c8c;">CPU使用率</span>
+            <span style="font-size: 11px; color: #52c41a;">正常</span>
+          </div>
+          <div style="font-size: 28px; font-weight: 600; color: #262626; margin-bottom: 8px;">32%</div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 32%; height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 内存使用 -->
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 13px; color: #8c8c8c;">内存使用</span>
+            <span style="font-size: 11px; color: #faad14;">较高</span>
+          </div>
+          <div style="font-size: 28px; font-weight: 600; color: #262626; margin-bottom: 8px;">68%</div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 68%; height: 100%; background: linear-gradient(90deg, #faad14, #ffc53d); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 磁盘使用 -->
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 13px; color: #8c8c8c;">磁盘使用</span>
+            <span style="font-size: 11px; color: #52c41a;">正常</span>
+          </div>
+          <div style="font-size: 28px; font-weight: 600; color: #262626; margin-bottom: 8px;">45%</div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 45%; height: 100%; background: linear-gradient(90deg, #1890ff, #40a9ff); border-radius: 3px;"></div>
+          </div>
+        </div>
+
+        <!-- 网络流量 -->
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <span style="font-size: 13px; color: #8c8c8c;">网络带宽</span>
+            <span style="font-size: 11px; color: #52c41a;">正常</span>
+          </div>
+          <div style="font-size: 28px; font-weight: 600; color: #262626; margin-bottom: 8px;">23%</div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 23%; height: 100%; background: linear-gradient(90deg, #722ed1, #9254de); border-radius: 3px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- API性能 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">API性能</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #1890ff;">1,256</div>
+            <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">请求/分钟</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #52c41a;">128ms</div>
+            <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">平均响应</div>
+          </div>
+          <div style="text-align: center;">
+            <div style="font-size: 20px; font-weight: 600; color: #722ed1;">99.8%</div>
+            <div style="font-size: 11px; color: #8c8c8c; margin-top: 2px;">成功率</div>
+          </div>
+        </div>
+
+        <!-- 简单的响应时间趋势 -->
+        <div style="height: 80px; position: relative; padding-top: 10px;">
+          <svg width="100%" height="60" viewBox="0 0 300 60">
+            <defs>
+              <linearGradient id="responseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#1890ff;stop-opacity:0.3"/>
+                <stop offset="100%" style="stop-color:#1890ff;stop-opacity:0"/>
+              </linearGradient>
+            </defs>
+            <path d="M 0 40 L 50 35 L 100 42 L 150 30 L 200 28 L 250 32 L 300 25 L 300 60 L 0 60 Z" fill="url(#responseGradient)"/>
+            <path d="M 0 40 L 50 35 L 100 42 L 150 30 L 200 28 L 250 32 L 300 25" fill="none" stroke="#1890ff" stroke-width="2"/>
+          </svg>
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #8c8c8c;">
+            <span>12:00</span>
+            <span>13:00</span>
+            <span>14:00</span>
+            <span>15:00</span>
+            <span>现在</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据库性能 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">数据库性能</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; overflow: hidden; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">主</div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">MySQL主库</div>
+              <div style="font-size: 11px; color: #52c41a;">连接正常</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">45/100</div>
+            <div style="font-size: 11px; color: #8c8c8c;">连接数</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #f0f0f0;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">从</div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">MySQL从库</div>
+              <div style="font-size: 11px; color: #52c41a;">同步正常</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">0ms</div>
+            <div style="font-size: 11px; color: #8c8c8c;">延迟</div>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 14px 16px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #f5222d 0%, #cf1322 100%); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">R</div>
+            <div>
+              <div style="font-size: 14px; color: #262626;">Redis缓存</div>
+              <div style="font-size: 11px; color: #52c41a;">运行正常</div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">85%</div>
+            <div style="font-size: 11px; color: #8c8c8c;">命中率</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- JVM性能 -->
+      <div class="section__header" style="margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">JVM性能</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <!-- 堆内存 -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">堆内存</span>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">1.2G / 2G</span>
+          </div>
+          <div style="height: 8px; background: #f0f0f0; border-radius: 4px;">
+            <div style="width: 60%; height: 100%; background: linear-gradient(90deg, #1890ff, #40a9ff); border-radius: 4px;"></div>
+          </div>
+        </div>
+
+        <!-- 非堆内存 -->
+        <div style="margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-size: 14px; color: #262626;">非堆内存</span>
+            <span style="font-size: 14px; font-weight: 500; color: #262626;">180M / 512M</span>
+          </div>
+          <div style="height: 8px; background: #f0f0f0; border-radius: 4px;">
+            <div style="width: 35%; height: 100%; background: linear-gradient(90deg, #52c41a, #73d13d); border-radius: 4px;"></div>
+          </div>
+        </div>
+
+        <!-- GC统计 -->
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1; padding: 12px; background: #fafafa; border-radius: 8px; text-align: center;">
+            <div style="font-size: 16px; font-weight: 600; color: #262626;">23</div>
+            <div style="font-size: 11px; color: #8c8c8c;">Young GC</div>
+          </div>
+          <div style="flex: 1; padding: 12px; background: #fafafa; border-radius: 8px; text-align: center;">
+            <div style="font-size: 16px; font-weight: 600; color: #262626;">2</div>
+            <div style="font-size: 11px; color: #8c8c8c;">Full GC</div>
+          </div>
+          <div style="flex: 1; padding: 12px; background: #fafafa; border-radius: 8px; text-align: center;">
+            <div style="font-size: 16px; font-weight: 600; color: #262626;">156</div>
+            <div style="font-size: 11px; color: #8c8c8c;">线程数</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

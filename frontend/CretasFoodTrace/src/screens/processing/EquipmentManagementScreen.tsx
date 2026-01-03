@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Alert, TextInput as RNTextInput } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import {
   Text,
   Appbar,
@@ -23,18 +24,20 @@ import {
   type EquipmentType,
   type CreateEquipmentRequest,
 } from '../../services/api/equipmentApiClient';
+import { userApiClient, type UserDTO } from '../../services/api/userApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
 import { logger } from '../../utils/logger';
 
-// 创建EquipmentManagement专用logger
+// Create EquipmentManagement context logger
 const equipmentMgmtLogger = logger.createContextLogger('EquipmentManagement');
 
 type NavigationProp = NativeStackNavigationProp<ProcessingStackParamList, 'EquipmentManagement'>;
 
 export default function EquipmentManagementScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
 
@@ -53,6 +56,11 @@ export default function EquipmentManagementScreen() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
 
+  // Operator selection State
+  const [operatorUsers, setOperatorUsers] = useState<UserDTO[]>([]);
+  const [showOperatorMenu, setShowOperatorMenu] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   // Form State
   const [formData, setFormData] = useState<CreateEquipmentRequest>({
     name: '',
@@ -66,17 +74,36 @@ export default function EquipmentManagementScreen() {
     purchasePrice: undefined,
     depreciationYears: undefined,
     maintenanceInterval: undefined,
+    operatorId: undefined,
     notes: '',
   });
 
   const getCurrentFactoryId = (): string => getFactoryId(user) || '';
+
+  // Load selectable operator users list
+  const loadOperatorUsers = async () => {
+    setLoadingUsers(true);
+    try {
+      const factoryId = getCurrentFactoryId();
+      // Load all users, can be filtered by role later
+      const response = await userApiClient.getUsers({ factoryId, size: 100 });
+      // Handle paginated response
+      const users = Array.isArray(response) ? response : ((response as any)?.content || []);
+      setOperatorUsers(users);
+    } catch (error) {
+      equipmentMgmtLogger.error('Failed to load operator users list', error as Error);
+      setOperatorUsers([]);
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
 
   const loadEquipments = async () => {
     setLoading(true);
     try {
       const factoryId = getCurrentFactoryId();
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息');
+        Alert.alert(t('equipmentManagement.messages.loadFailed'), t('equipmentManagement.messages.factoryIdError'));
         return;
       }
 
@@ -129,7 +156,7 @@ export default function EquipmentManagementScreen() {
       try {
         setLoading(true);
         await equipmentApiClient.createEquipment(formData, getCurrentFactoryId());
-        equipmentMgmtLogger.info('设备创建成功', {
+        equipmentMgmtLogger.info('Equipment created successfully', {
           equipmentName: formData.name,
           equipmentCode: formData.code,
           factoryId: getCurrentFactoryId(),
@@ -137,7 +164,7 @@ export default function EquipmentManagementScreen() {
         setShowCreateDialog(false);
         loadEquipments();
       } catch (e) {
-        equipmentMgmtLogger.error('创建设备失败', e as Error, {
+        equipmentMgmtLogger.error('Failed to create equipment', e as Error, {
           equipmentName: formData.name,
           factoryId: getCurrentFactoryId(),
         });
@@ -149,7 +176,7 @@ export default function EquipmentManagementScreen() {
       try {
           setLoading(true);
           await equipmentApiClient.updateEquipment(selectedEquipment.id, formData, getCurrentFactoryId());
-          equipmentMgmtLogger.info('设备更新成功', {
+          equipmentMgmtLogger.info('Equipment updated successfully', {
             equipmentId: selectedEquipment.id,
             equipmentName: formData.name,
             factoryId: getCurrentFactoryId(),
@@ -157,7 +184,7 @@ export default function EquipmentManagementScreen() {
           setShowEditDialog(false);
           loadEquipments();
       } catch(e) {
-        equipmentMgmtLogger.error('更新设备失败', e as Error, {
+        equipmentMgmtLogger.error('Failed to update equipment', e as Error, {
           equipmentId: selectedEquipment.id,
           factoryId: getCurrentFactoryId(),
         });
@@ -169,7 +196,7 @@ export default function EquipmentManagementScreen() {
       try {
           setLoading(true);
           await equipmentApiClient.deleteEquipment(selectedEquipment.id, getCurrentFactoryId());
-          equipmentMgmtLogger.info('设备删除成功', {
+          equipmentMgmtLogger.info('Equipment deleted successfully', {
             equipmentId: selectedEquipment.id,
             equipmentName: selectedEquipment.name,
             factoryId: getCurrentFactoryId(),
@@ -177,7 +204,7 @@ export default function EquipmentManagementScreen() {
           setShowDeleteDialog(false);
           loadEquipments();
       } catch(e) {
-        equipmentMgmtLogger.error('删除设备失败', e as Error, {
+        equipmentMgmtLogger.error('Failed to delete equipment', e as Error, {
           equipmentId: selectedEquipment.id,
           factoryId: getCurrentFactoryId(),
         });
@@ -189,7 +216,7 @@ export default function EquipmentManagementScreen() {
       try {
           setLoading(true);
           await equipmentApiClient.updateEquipmentStatus(selectedEquipment.id, newStatus, getCurrentFactoryId());
-          equipmentMgmtLogger.info('设备状态更新成功', {
+          equipmentMgmtLogger.info('Equipment status updated successfully', {
             equipmentId: selectedEquipment.id,
             newStatus,
             factoryId: getCurrentFactoryId(),
@@ -197,7 +224,7 @@ export default function EquipmentManagementScreen() {
           setShowStatusMenu(false);
           loadEquipments();
       } catch(e) {
-        equipmentMgmtLogger.error('更新设备状态失败', e as Error, {
+        equipmentMgmtLogger.error('Failed to update equipment status', e as Error, {
           equipmentId: selectedEquipment.id,
           newStatus,
           factoryId: getCurrentFactoryId(),
@@ -207,14 +234,23 @@ export default function EquipmentManagementScreen() {
 
   // Dialog Openers
   const openCreateDialog = () => {
-    setFormData({ name: '', code: '', type: 'processing', model: '', manufacturer: '', purchaseDate: '', location: '', specifications: '', notes: '' });
+    setFormData({ name: '', code: '', type: 'processing', model: '', manufacturer: '', purchaseDate: '', location: '', specifications: '', operatorId: undefined, notes: '' });
+    loadOperatorUsers(); // Load operator users list
     setShowCreateDialog(true);
   };
 
   const openEditDialog = (equipment: Equipment) => {
     setSelectedEquipment(equipment);
-    setFormData({ ...equipment, purchasePrice: equipment.purchasePrice, depreciationYears: equipment.depreciationYears, maintenanceInterval: equipment.maintenanceInterval });
+    setFormData({ ...equipment, purchasePrice: equipment.purchasePrice, depreciationYears: equipment.depreciationYears, maintenanceInterval: equipment.maintenanceInterval, operatorId: equipment.operatorId });
+    loadOperatorUsers(); // Load operator users list
     setShowEditDialog(true);
+  };
+
+  // Get selected operator name
+  const getSelectedOperatorName = (): string => {
+    if (!formData.operatorId) return t('equipmentManagement.dialogs.fields.selectOperator');
+    const operator = operatorUsers.find(u => u.id === formData.operatorId);
+    return operator ? operator.realName : t('equipmentManagement.dialogs.fields.selectOperator');
   };
 
   const openDeleteDialog = (equipment: Equipment) => {
@@ -238,26 +274,24 @@ export default function EquipmentManagementScreen() {
   };
 
   const getStatusLabel = (status: EquipmentStatus) => {
-      const labels: Record<string, string> = { active: '运行中', inactive: '停用', maintenance: '维护中', scrapped: '已报废' };
-      return labels[status] || status;
+      return t(`equipmentManagement.status.${status}`);
   };
 
   const getTypeLabel = (type: EquipmentType) => {
-      const labels: Record<string, string> = { processing: '加工', refrigeration: '冷藏', packaging: '包装', transport: '运输', other: '其他' };
-      return labels[type] || type;
+      return t(`equipmentManagement.type.${type}`);
   };
 
   return (
     <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="设备管理" titleStyle={{ fontWeight: '600' }} />
+        <Appbar.Content title={t('equipmentManagement.title')} titleStyle={{ fontWeight: '600' }} />
         <Appbar.Action icon="monitor-dashboard" onPress={() => navigation.navigate('EquipmentMonitoring')} />
       </Appbar.Header>
 
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="搜索设备..."
+          placeholder={t('equipmentManagement.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchbar}
@@ -277,7 +311,7 @@ export default function EquipmentManagementScreen() {
                 textStyle={{ fontSize: 12 }}
                 showSelectedOverlay
             >
-                {status === 'all' ? '全部' : getStatusLabel(status as EquipmentStatus)}
+                {status === 'all' ? t('equipmentManagement.filters.all') : getStatusLabel(status as EquipmentStatus)}
             </Chip>
         ))}
       </ScrollView>
@@ -291,8 +325,8 @@ export default function EquipmentManagementScreen() {
           <View style={styles.centerContainer}><ActivityIndicator size="large" color={theme.colors.primary} /></View>
         ) : equipments.length === 0 ? (
           <View style={styles.centerContainer}>
-            <Text style={styles.emptyText}>暂无设备</Text>
-            <NeoButton variant="primary" onPress={openCreateDialog} style={{ marginTop: 16 }}>创建设备</NeoButton>
+            <Text style={styles.emptyText}>{t('equipmentManagement.empty.title')}</Text>
+            <NeoButton variant="primary" onPress={openCreateDialog} style={{ marginTop: 16 }}>{t('equipmentManagement.actions.create')}</NeoButton>
           </View>
         ) : (
           equipments.map((equipment) => (
@@ -308,16 +342,20 @@ export default function EquipmentManagementScreen() {
               <View style={styles.cardBody}>
                   <View style={styles.infoGrid}>
                       <View style={styles.infoItem}>
-                          <Text style={styles.label}>类型</Text>
+                          <Text style={styles.label}>{t('equipmentManagement.info.type')}</Text>
                           <Text style={styles.value}>{getTypeLabel(equipment.type)}</Text>
                       </View>
                       <View style={styles.infoItem}>
-                          <Text style={styles.label}>位置</Text>
+                          <Text style={styles.label}>{t('equipmentManagement.info.location')}</Text>
                           <Text style={styles.value}>{equipment.location || '-'}</Text>
                       </View>
                       <View style={styles.infoItem}>
-                          <Text style={styles.label}>型号</Text>
+                          <Text style={styles.label}>{t('equipmentManagement.info.model')}</Text>
                           <Text style={styles.value}>{equipment.model || '-'}</Text>
+                      </View>
+                      <View style={styles.infoItem}>
+                          <Text style={styles.label}>{t('equipmentManagement.info.operator')}</Text>
+                          <Text style={styles.value}>{equipment.operatorName || '-'}</Text>
                       </View>
                   </View>
               </View>
@@ -331,13 +369,13 @@ export default function EquipmentManagementScreen() {
                     <Menu
                         visible={showStatusMenu && selectedEquipment?.id === equipment.id}
                         onDismiss={() => { setShowStatusMenu(false); setSelectedEquipment(null); }}
-                        anchor={<NeoButton variant="ghost" size="small" onPress={() => openStatusMenu(equipment)}>状态</NeoButton>}
+                        anchor={<NeoButton variant="ghost" size="small" onPress={() => openStatusMenu(equipment)}>{t('equipmentManagement.actions.status')}</NeoButton>}
                     >
-                        <Menu.Item onPress={() => handleUpdateStatus('active')} title="运行中" />
-                        <Menu.Item onPress={() => handleUpdateStatus('maintenance')} title="维护中" />
-                        <Menu.Item onPress={() => handleUpdateStatus('inactive')} title="停用" />
+                        <Menu.Item onPress={() => handleUpdateStatus('active')} title={t('equipmentManagement.statusMenu.running')} />
+                        <Menu.Item onPress={() => handleUpdateStatus('maintenance')} title={t('equipmentManagement.statusMenu.maintenance')} />
+                        <Menu.Item onPress={() => handleUpdateStatus('inactive')} title={t('equipmentManagement.statusMenu.inactive')} />
                     </Menu>
-                    <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('EquipmentDetail', { equipmentId: equipment.id })}>详情</NeoButton>
+                    <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('EquipmentDetail', { equipmentId: equipment.id })}>{t('equipmentManagement.actions.detail')}</NeoButton>
                  </View>
               </View>
             </NeoCard>
@@ -350,25 +388,123 @@ export default function EquipmentManagementScreen() {
       {/* Dialogs (Create/Edit/Delete) would go here, using Portal */}
       <Portal>
         <Dialog visible={showCreateDialog} onDismiss={() => setShowCreateDialog(false)} style={{ backgroundColor: 'white' }}>
-            <Dialog.Title>创建设备</Dialog.Title>
-            <Dialog.Content>
-                <TextInput label="名称" value={formData.name} onChangeText={t => setFormData({...formData, name: t})} mode="outlined" style={styles.input} />
-                <TextInput label="编号" value={formData.code} onChangeText={t => setFormData({...formData, code: t})} mode="outlined" style={styles.input} />
-                {/* More fields... */}
-            </Dialog.Content>
+            <Dialog.Title>{t('equipmentManagement.dialogs.createTitle')}</Dialog.Title>
+            <Dialog.ScrollArea style={{ maxHeight: 400, paddingHorizontal: 0 }}>
+              <ScrollView>
+                <View style={{ paddingHorizontal: 24 }}>
+                  <TextInput label={t('equipmentManagement.dialogs.fields.name')} value={formData.name} onChangeText={text => setFormData({...formData, name: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.code')} value={formData.code} onChangeText={text => setFormData({...formData, code: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.model')} value={formData.model || ''} onChangeText={text => setFormData({...formData, model: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.location')} value={formData.location || ''} onChangeText={text => setFormData({...formData, location: text})} mode="outlined" style={styles.input} />
+
+                  {/* Operator selection */}
+                  <Text style={styles.fieldLabel}>{t('equipmentManagement.dialogs.fields.operator')}</Text>
+                  <Menu
+                    visible={showOperatorMenu}
+                    onDismiss={() => setShowOperatorMenu(false)}
+                    anchor={
+                      <NeoButton
+                        variant="outline"
+                        onPress={() => setShowOperatorMenu(true)}
+                        style={styles.operatorButton}
+                      >
+                        {loadingUsers ? t('equipmentManagement.dialogs.fields.loadingOperators') : getSelectedOperatorName()}
+                      </NeoButton>
+                    }
+                    contentStyle={{ backgroundColor: 'white', maxHeight: 300 }}
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        setFormData({...formData, operatorId: undefined});
+                        setShowOperatorMenu(false);
+                      }}
+                      title={t('equipmentManagement.dialogs.fields.noOperator')}
+                    />
+                    {operatorUsers.map(user => (
+                      <Menu.Item
+                        key={user.id}
+                        onPress={() => {
+                          setFormData({...formData, operatorId: user.id});
+                          setShowOperatorMenu(false);
+                        }}
+                        title={`${user.realName} (${user.position || user.role})`}
+                      />
+                    ))}
+                  </Menu>
+
+                  <TextInput label={t('equipmentManagement.dialogs.fields.notes')} value={formData.notes || ''} onChangeText={text => setFormData({...formData, notes: text})} mode="outlined" style={styles.input} multiline numberOfLines={2} />
+                </View>
+              </ScrollView>
+            </Dialog.ScrollArea>
             <Dialog.Actions>
-                <NeoButton variant="ghost" onPress={() => setShowCreateDialog(false)}>取消</NeoButton>
-                <NeoButton variant="primary" onPress={handleCreateEquipment}>创建</NeoButton>
+                <NeoButton variant="ghost" onPress={() => setShowCreateDialog(false)}>{t('equipmentManagement.dialogs.buttons.cancel')}</NeoButton>
+                <NeoButton variant="primary" onPress={handleCreateEquipment}>{t('equipmentManagement.dialogs.buttons.create')}</NeoButton>
             </Dialog.Actions>
         </Dialog>
-        
+
+        {/* Edit equipment dialog */}
+        <Dialog visible={showEditDialog} onDismiss={() => setShowEditDialog(false)} style={{ backgroundColor: 'white' }}>
+            <Dialog.Title>{t('equipmentManagement.dialogs.editTitle')}</Dialog.Title>
+            <Dialog.ScrollArea style={{ maxHeight: 400, paddingHorizontal: 0 }}>
+              <ScrollView>
+                <View style={{ paddingHorizontal: 24 }}>
+                  <TextInput label={t('equipmentManagement.dialogs.fields.name')} value={formData.name} onChangeText={text => setFormData({...formData, name: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.code')} value={formData.code} onChangeText={text => setFormData({...formData, code: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.model')} value={formData.model || ''} onChangeText={text => setFormData({...formData, model: text})} mode="outlined" style={styles.input} />
+                  <TextInput label={t('equipmentManagement.dialogs.fields.location')} value={formData.location || ''} onChangeText={text => setFormData({...formData, location: text})} mode="outlined" style={styles.input} />
+
+                  {/* Operator selection */}
+                  <Text style={styles.fieldLabel}>{t('equipmentManagement.dialogs.fields.operator')}</Text>
+                  <Menu
+                    visible={showOperatorMenu}
+                    onDismiss={() => setShowOperatorMenu(false)}
+                    anchor={
+                      <NeoButton
+                        variant="outline"
+                        onPress={() => setShowOperatorMenu(true)}
+                        style={styles.operatorButton}
+                      >
+                        {loadingUsers ? t('equipmentManagement.dialogs.fields.loadingOperators') : getSelectedOperatorName()}
+                      </NeoButton>
+                    }
+                    contentStyle={{ backgroundColor: 'white', maxHeight: 300 }}
+                  >
+                    <Menu.Item
+                      onPress={() => {
+                        setFormData({...formData, operatorId: undefined});
+                        setShowOperatorMenu(false);
+                      }}
+                      title={t('equipmentManagement.dialogs.fields.noOperator')}
+                    />
+                    {operatorUsers.map(user => (
+                      <Menu.Item
+                        key={user.id}
+                        onPress={() => {
+                          setFormData({...formData, operatorId: user.id});
+                          setShowOperatorMenu(false);
+                        }}
+                        title={`${user.realName} (${user.position || user.role})`}
+                      />
+                    ))}
+                  </Menu>
+
+                  <TextInput label={t('equipmentManagement.dialogs.fields.notes')} value={formData.notes || ''} onChangeText={text => setFormData({...formData, notes: text})} mode="outlined" style={styles.input} multiline numberOfLines={2} />
+                </View>
+              </ScrollView>
+            </Dialog.ScrollArea>
+            <Dialog.Actions>
+                <NeoButton variant="ghost" onPress={() => setShowEditDialog(false)}>{t('equipmentManagement.dialogs.buttons.cancel')}</NeoButton>
+                <NeoButton variant="primary" onPress={handleUpdateEquipment}>{t('equipmentManagement.dialogs.buttons.save')}</NeoButton>
+            </Dialog.Actions>
+        </Dialog>
+
         {/* Simplified Delete Dialog */}
         <Dialog visible={showDeleteDialog} onDismiss={() => setShowDeleteDialog(false)} style={{ backgroundColor: 'white' }}>
-            <Dialog.Title>确认删除</Dialog.Title>
-            <Dialog.Content><Text>确定要删除此设备吗？</Text></Dialog.Content>
+            <Dialog.Title>{t('equipmentManagement.dialogs.deleteTitle')}</Dialog.Title>
+            <Dialog.Content><Text>{t('equipmentManagement.dialogs.deleteMessage')}</Text></Dialog.Content>
             <Dialog.Actions>
-                <NeoButton variant="ghost" onPress={() => setShowDeleteDialog(false)}>取消</NeoButton>
-                <NeoButton variant="danger" onPress={handleDeleteEquipment}>删除</NeoButton>
+                <NeoButton variant="ghost" onPress={() => setShowDeleteDialog(false)}>{t('equipmentManagement.dialogs.buttons.cancel')}</NeoButton>
+                <NeoButton variant="danger" onPress={handleDeleteEquipment}>{t('equipmentManagement.dialogs.buttons.delete')}</NeoButton>
             </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -474,5 +610,15 @@ const styles = StyleSheet.create({
   input: {
       marginBottom: 12,
       backgroundColor: 'white',
-  }
+  },
+  fieldLabel: {
+      fontSize: 12,
+      color: theme.colors.textSecondary,
+      marginBottom: 4,
+      marginTop: 4,
+  },
+  operatorButton: {
+      marginBottom: 12,
+      width: '100%',
+  },
 });

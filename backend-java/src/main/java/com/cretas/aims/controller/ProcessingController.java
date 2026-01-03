@@ -1,6 +1,8 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.MobileDTO;
+import com.cretas.aims.dto.batch.AssignWorkersDTO;
+import com.cretas.aims.dto.batch.WorkerCheckoutDTO;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
@@ -63,8 +65,8 @@ public class ProcessingController {
     @PostMapping("/batches")
     @Operation(summary = "创建生产批次", description = "创建新的生产批次")
     public ApiResponse<ProductionBatch> createBatch(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Valid @Parameter(description = "批次信息") ProductionBatch batch) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Valid ProductionBatch batch) {
         log.info("创建生产批次: factoryId={}, batchNumber={}", factoryId, batch.getBatchNumber());
         ProductionBatch result = processingService.createBatch(factoryId, batch);
         return ApiResponse.success(result);
@@ -76,9 +78,9 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/start")
     @Operation(summary = "开始生产", description = "开始批次生产")
     public ApiResponse<ProductionBatch> startProduction(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId,
-            @RequestParam @Parameter(description = "负责人ID") Integer supervisorId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId,
+            @RequestParam @Parameter(description = "负责人ID", example = "1") Integer supervisorId) {
         log.info("开始生产: factoryId={}, batchId={}", factoryId, batchId);
         ProductionBatch result = processingService.startProduction(factoryId, batchId, supervisorId);
         return ApiResponse.success(result);
@@ -90,9 +92,9 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/pause")
     @Operation(summary = "暂停生产", description = "暂停批次生产")
     public ApiResponse<ProductionBatch> pauseProduction(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId,
-            @RequestParam @Parameter(description = "暂停原因") String reason) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId,
+            @RequestParam @Parameter(description = "暂停原因", example = "设备故障") String reason) {
         log.info("暂停生产: factoryId={}, batchId={}, reason={}", factoryId, batchId, reason);
         ProductionBatch result = processingService.pauseProduction(factoryId, batchId, reason);
         return ApiResponse.success(result);
@@ -104,8 +106,8 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/resume")
     @Operation(summary = "恢复生产", description = "恢复已暂停的批次生产")
     public ApiResponse<ProductionBatch> resumeProduction(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("恢复生产: factoryId={}, batchId={}", factoryId, batchId);
         ProductionBatch result = processingService.resumeProduction(factoryId, batchId);
         return ApiResponse.success(result);
@@ -117,11 +119,11 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/complete")
     @Operation(summary = "完成生产", description = "完成批次生产")
     public ApiResponse<ProductionBatch> completeProduction(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId,
-            @RequestParam @Parameter(description = "实际产量") BigDecimal actualQuantity,
-            @RequestParam @Parameter(description = "良品数量") BigDecimal goodQuantity,
-            @RequestParam @Parameter(description = "不良品数量") BigDecimal defectQuantity) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId,
+            @RequestParam @Parameter(description = "实际产量", example = "100.5") BigDecimal actualQuantity,
+            @RequestParam @Parameter(description = "良品数量", example = "98.0") BigDecimal goodQuantity,
+            @RequestParam @Parameter(description = "不良品数量", example = "2.5") BigDecimal defectQuantity) {
         log.info("完成生产: factoryId={}, batchId={}, actualQuantity={}", factoryId, batchId, actualQuantity);
         ProductionBatch result = processingService.completeProduction(
                 factoryId, batchId, actualQuantity, goodQuantity, defectQuantity);
@@ -134,9 +136,9 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/cancel")
     @Operation(summary = "取消生产", description = "取消批次生产")
     public ApiResponse<ProductionBatch> cancelProduction(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId,
-            @RequestParam @Parameter(description = "取消原因") String reason) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId,
+            @RequestParam @Parameter(description = "取消原因", example = "订单取消") String reason) {
         log.info("取消生产: factoryId={}, batchId={}, reason={}", factoryId, batchId, reason);
         ProductionBatch result = processingService.cancelProduction(factoryId, batchId, reason);
         return ApiResponse.success(result);
@@ -148,8 +150,8 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}")
     @Operation(summary = "获取批次详情", description = "获取生产批次详细信息")
     public ApiResponse<ProductionBatch> getBatchById(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("获取批次详情: factoryId={}, batchId={}", factoryId, batchId);
         ProductionBatch batch = processingService.getBatchById(factoryId, batchId);
         return ApiResponse.success(batch);
@@ -161,10 +163,10 @@ public class ProcessingController {
     @GetMapping("/batches")
     @Operation(summary = "获取批次列表", description = "分页获取生产批次列表")
     public ApiResponse<PageResponse<ProductionBatch>> getBatches(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @Parameter(description = "状态") String status,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "状态", example = "PROCESSING") String status,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size) {
         log.info("获取批次列表: factoryId={}, status={}", factoryId, status);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
@@ -179,11 +181,74 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}/timeline")
     @Operation(summary = "获取批次时间线", description = "获取批次生产时间线")
     public ApiResponse<List<Map<String, Object>>> getBatchTimeline(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("获取批次时间线: factoryId={}, batchId={}", factoryId, batchId);
         List<Map<String, Object>> timeline = processingService.getBatchTimeline(factoryId, batchId);
         return ApiResponse.success(timeline);
+    }
+
+    // ========== 批次员工分配接口 ==========
+
+    /**
+     * 分配员工到批次
+     */
+    @PostMapping("/batches/{batchId}/assign-workers")
+    @Operation(summary = "分配员工到批次", description = "将多个员工分配到生产批次")
+    public ApiResponse<List<Map<String, Object>>> assignWorkersToBatch(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
+            @RequestBody @Valid @Parameter(description = "分配请求") AssignWorkersDTO request) {
+        log.info("分配员工到批次: factoryId={}, batchId={}, workerCount={}",
+                factoryId, batchId, request.getWorkerIds().size());
+        List<Map<String, Object>> results = processingService.assignWorkersToBatch(
+                factoryId, batchId, request.getWorkerIds(), request.getAssignedBy(), request.getNotes());
+        return ApiResponse.success(results);
+    }
+
+    /**
+     * 员工签出（完成批次工作）
+     */
+    @PostMapping("/batches/{batchId}/workers/{workerId}/checkout")
+    @Operation(summary = "员工签出", description = "员工完成批次工作并签出")
+    public ApiResponse<Map<String, Object>> workerCheckout(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
+            @PathVariable @Parameter(description = "员工ID", example = "1") Long workerId,
+            @RequestBody(required = false) @Parameter(description = "签出信息") WorkerCheckoutDTO request) {
+        log.info("员工签出: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+        Integer workMinutes = request != null ? request.getWorkMinutes() : null;
+        String notes = request != null ? request.getNotes() : null;
+        Map<String, Object> result = processingService.workerCheckout(
+                factoryId, batchId, workerId, workMinutes, notes);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取批次员工列表
+     */
+    @GetMapping("/batches/{batchId}/workers")
+    @Operation(summary = "获取批次员工", description = "获取分配到批次的所有员工及其工时状态")
+    public ApiResponse<List<Map<String, Object>>> getBatchWorkers(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId) {
+        log.info("获取批次员工: factoryId={}, batchId={}", factoryId, batchId);
+        List<Map<String, Object>> workers = processingService.getBatchWorkers(factoryId, batchId);
+        return ApiResponse.success(workers);
+    }
+
+    /**
+     * 取消员工批次分配
+     */
+    @DeleteMapping("/batches/{batchId}/workers/{workerId}")
+    @Operation(summary = "取消员工分配", description = "取消员工在批次的分配")
+    public ApiResponse<Map<String, Object>> cancelWorkerAssignment(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
+            @PathVariable @Parameter(description = "员工ID", example = "1") Long workerId) {
+        log.info("取消员工分配: factoryId={}, batchId={}, workerId={}", factoryId, batchId, workerId);
+        Map<String, Object> result = processingService.cancelWorkerAssignment(factoryId, batchId, workerId);
+        return ApiResponse.success(result);
     }
 
     // ========== 原材料管理接口 ==========
@@ -194,8 +259,8 @@ public class ProcessingController {
     @PostMapping("/material-receipt")
     @Operation(summary = "原材料接收", description = "创建原材料接收记录")
     public ApiResponse<MaterialBatch> createMaterialReceipt(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestHeader(value = "Authorization", required = false) @Parameter(description = "访问令牌") String authorization,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestHeader(value = "Authorization", required = false) @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...") String authorization,
             @RequestBody @Parameter(description = "原材料批次信息") MaterialBatch materialBatch) {
         log.info("原材料接收: factoryId={}, batchNumber={}", factoryId, materialBatch.getBatchNumber());
 
@@ -226,9 +291,9 @@ public class ProcessingController {
     @GetMapping("/materials")
     @Operation(summary = "获取原材料列表", description = "分页获取原材料列表")
     public ApiResponse<PageResponse<MaterialBatch>> getMaterialReceipts(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size) {
         log.info("获取原材料列表: factoryId={}", factoryId);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
@@ -243,10 +308,10 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/material-consumption")
     @Operation(summary = "记录原材料消耗", description = "记录生产批次的原材料消耗")
     public ApiResponse<Void> recordMaterialConsumption(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId,
             @RequestBody @Parameter(description = "消耗记录") List<Map<String, Object>> consumptions,
-            @RequestHeader("Authorization") String authorization) {
+            @RequestHeader("Authorization") @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...") String authorization) {
         // 从Token获取用户ID，用于设置recordedBy
         Long userId = null;
         try {
@@ -269,8 +334,8 @@ public class ProcessingController {
     @PostMapping("/quality/inspections")
     @Operation(summary = "提交质检记录", description = "提交产品质量检验记录")
     public ApiResponse<Map<String, Object>> submitInspection(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "批次ID") String batchId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "批次ID", example = "123") String batchId,
             @RequestBody @Parameter(description = "质检信息") Map<String, Object> inspection) {
         log.info("提交质检记录: factoryId={}, batchId={}", factoryId, batchId);
         Map<String, Object> result = processingService.submitInspection(factoryId, batchId, inspection);
@@ -283,10 +348,10 @@ public class ProcessingController {
     @GetMapping("/quality/inspections")
     @Operation(summary = "获取质检记录", description = "分页获取质检记录")
     public ApiResponse<PageResponse<Map<String, Object>>> getInspections(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @Parameter(description = "批次ID") String batchId,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "批次ID", example = "123") String batchId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码", example = "1") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size) {
         log.info("获取质检记录: factoryId={}, batchId={}", factoryId, batchId);
         PageRequest pageRequest = new PageRequest();
         pageRequest.setPage(page);
@@ -301,8 +366,8 @@ public class ProcessingController {
     @GetMapping("/quality/inspections/{inspectionId}")
     @Operation(summary = "获取质检详情", description = "根据ID获取质检记录详情")
     public ApiResponse<Map<String, Object>> getInspectionById(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "质检记录ID") String inspectionId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID", example = "QI-2025-001") String inspectionId) {
         log.info("获取质检详情: factoryId={}, inspectionId={}", factoryId, inspectionId);
         Map<String, Object> result = processingService.getInspectionById(factoryId, inspectionId);
         return ApiResponse.success(result);
@@ -314,11 +379,11 @@ public class ProcessingController {
     @GetMapping("/quality/statistics")
     @Operation(summary = "质量统计", description = "获取质量统计数据")
     public ApiResponse<Map<String, Object>> getQualityStatistics(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "开始日期") LocalDate startDate,
+            @Parameter(description = "开始日期", example = "2025-01-01") LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @Parameter(description = "结束日期") LocalDate endDate) {
+            @Parameter(description = "结束日期", example = "2025-01-31") LocalDate endDate) {
         log.info("获取质量统计: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
         Map<String, Object> statistics = processingService.getQualityStatistics(factoryId, startDate, endDate);
         return ApiResponse.success(statistics);
@@ -330,8 +395,8 @@ public class ProcessingController {
     @GetMapping("/quality/trends")
     @Operation(summary = "质量趋势", description = "获取质量趋势分析")
     public ApiResponse<List<Map<String, Object>>> getQualityTrends(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "30") @Parameter(description = "天数") Integer days) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "30") @Parameter(description = "天数", example = "30") Integer days) {
         log.info("获取质量趋势: factoryId={}, days={}", factoryId, days);
         List<Map<String, Object>> trends = processingService.getQualityTrends(factoryId, days);
         return ApiResponse.success(trends);
@@ -346,8 +411,8 @@ public class ProcessingController {
     @PostMapping("/quality/inspections/{inspectionId}/evaluate-disposition")
     @Operation(summary = "评估处置建议", description = "根据质检结果评估推荐的处置动作")
     public ApiResponse<DispositionEvaluationDTO> evaluateDisposition(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "质检记录ID") String inspectionId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID", example = "QI-2025-001") String inspectionId) {
         log.info("评估处置建议: factoryId={}, inspectionId={}", factoryId, inspectionId);
 
         // 获取质检记录
@@ -428,8 +493,8 @@ public class ProcessingController {
     @PostMapping("/quality/inspections/{inspectionId}/execute-disposition")
     @Operation(summary = "执行处置动作", description = "执行质检结果的处置动作")
     public ApiResponse<Map<String, Object>> executeDisposition(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "质检记录ID") String inspectionId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID", example = "QI-2025-001") String inspectionId,
             @RequestBody @Valid @Parameter(description = "处置请求") DispositionRequest request,
             HttpServletRequest httpRequest) {
         log.info("执行处置动作: factoryId={}, inspectionId={}, action={}",
@@ -484,8 +549,8 @@ public class ProcessingController {
     @PostMapping("/quality/inspections/{inspectionId}/request-special-approval")
     @Operation(summary = "提交特批申请", description = "提交质检特批放行申请")
     public ApiResponse<SpecialApprovalDTO> submitSpecialApproval(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "质检记录ID") String inspectionId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "质检记录ID", example = "QI-2025-001") String inspectionId,
             @RequestBody @Valid @Parameter(description = "特批申请") SpecialApprovalRequest request,
             HttpServletRequest httpRequest) {
         log.info("提交特批申请: factoryId={}, inspectionId={}", factoryId, inspectionId);
@@ -520,7 +585,7 @@ public class ProcessingController {
     @GetMapping("/quality/approvals/pending")
     @Operation(summary = "待审批列表", description = "获取质检特批待审批列表")
     public ApiResponse<List<SpecialApprovalDTO>> getPendingApprovals(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("获取待审批列表: factoryId={}", factoryId);
         List<SpecialApprovalDTO> approvals = specialApprovalService.getPendingApprovals(factoryId);
         return ApiResponse.success(approvals);
@@ -532,8 +597,8 @@ public class ProcessingController {
     @GetMapping("/quality/approvals/{approvalId}")
     @Operation(summary = "审批详情", description = "获取特批申请详情")
     public ApiResponse<SpecialApprovalDTO> getApprovalById(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "审批ID") String approvalId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "审批ID", example = "SA-2025-001") String approvalId) {
         log.info("获取审批详情: factoryId={}, approvalId={}", factoryId, approvalId);
         SpecialApprovalDTO approval = specialApprovalService.getApprovalById(factoryId, approvalId);
         return ApiResponse.success(approval);
@@ -545,8 +610,8 @@ public class ProcessingController {
     @PostMapping("/quality/approvals/{approvalId}/decision")
     @Operation(summary = "处理审批", description = "审批或拒绝特批申请")
     public ApiResponse<SpecialApprovalDTO> processApprovalDecision(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "审批ID") String approvalId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "审批ID", example = "SA-2025-001") String approvalId,
             @RequestBody @Valid @Parameter(description = "审批决策") ApprovalDecisionRequest decision,
             HttpServletRequest httpRequest) {
         log.info("处理审批决策: factoryId={}, approvalId={}, decision={}",
@@ -584,7 +649,7 @@ public class ProcessingController {
     @GetMapping("/quality/approvals/my-requests")
     @Operation(summary = "我的申请", description = "获取当前用户的特批申请记录")
     public ApiResponse<List<SpecialApprovalDTO>> getMyRequests(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             HttpServletRequest httpRequest) {
         log.info("获取我的申请记录: factoryId={}", factoryId);
 
@@ -615,7 +680,7 @@ public class ProcessingController {
     @GetMapping("/quality/approvals/my-decisions")
     @Operation(summary = "我的审批", description = "获取当前用户处理过的审批记录")
     public ApiResponse<List<SpecialApprovalDTO>> getMyApprovals(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             HttpServletRequest httpRequest) {
         log.info("获取我的审批记录: factoryId={}", factoryId);
 
@@ -648,8 +713,8 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}/cost-analysis")
     @Operation(summary = "批次成本分析", description = "获取批次成本详细分析")
     public ApiResponse<Map<String, Object>> getBatchCostAnalysis(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("获取批次成本分析: factoryId={}, batchId={}", factoryId, batchId);
         Map<String, Object> analysis = processingService.getBatchCostAnalysis(factoryId, batchId);
         return ApiResponse.success(analysis);
@@ -662,8 +727,8 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}/cost-analysis/enhanced")
     @Operation(summary = "增强版批次成本分析", description = "获取包含costBreakdown的完整成本分析")
     public ApiResponse<Map<String, Object>> getEnhancedBatchCostAnalysis(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("获取增强版批次成本分析: factoryId={}, batchId={}", factoryId, batchId);
         Map<String, Object> analysis = processingService.getEnhancedBatchCostAnalysis(factoryId, batchId);
         return ApiResponse.success(analysis);
@@ -675,8 +740,8 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/recalculate-cost")
     @Operation(summary = "重算成本", description = "重新计算批次成本")
     public ApiResponse<ProductionBatch> recalculateBatchCost(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") String batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") String batchId) {
         log.info("重新计算批次成本: factoryId={}, batchId={}", factoryId, batchId);
         ProductionBatch batch = processingService.recalculateBatchCost(factoryId, batchId);
         return ApiResponse.success(batch);
@@ -703,8 +768,8 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/stages")
     @Operation(summary = "创建加工环节记录", description = "为生产批次创建加工环节记录")
     public ApiResponse<ProcessingStageRecordDTO> createStageRecord(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
             @RequestBody @Valid @Parameter(description = "环节记录") ProcessingStageRecordDTO dto) {
         log.info("创建加工环节记录: factoryId={}, batchId={}, stageType={}", factoryId, batchId, dto.getStageType());
         dto.setProductionBatchId(batchId);
@@ -718,8 +783,8 @@ public class ProcessingController {
     @PostMapping("/batches/{batchId}/stages/batch")
     @Operation(summary = "批量创建环节记录", description = "为生产批次批量创建加工环节记录")
     public ApiResponse<List<ProcessingStageRecordDTO>> batchCreateStageRecords(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") Long batchId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
             @RequestBody @Valid @Parameter(description = "环节记录列表") List<ProcessingStageRecordDTO> dtos) {
         log.info("批量创建加工环节记录: factoryId={}, batchId={}, count={}", factoryId, batchId, dtos.size());
         List<ProcessingStageRecordDTO> results = stageRecordService.batchCreate(factoryId, batchId, dtos);
@@ -732,9 +797,9 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}/stages")
     @Operation(summary = "获取批次环节记录", description = "获取生产批次的所有加工环节记录")
     public ApiResponse<List<ProcessingStageRecordDTO>> getStageRecords(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") Long batchId,
-            @RequestParam(defaultValue = "false") @Parameter(description = "是否包含对比数据") Boolean withComparison) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId,
+            @RequestParam(defaultValue = "false") @Parameter(description = "是否包含对比数据", example = "false") Boolean withComparison) {
         log.info("获取批次环节记录: factoryId={}, batchId={}, withComparison={}", factoryId, batchId, withComparison);
         List<ProcessingStageRecordDTO> results;
         if (withComparison) {
@@ -751,8 +816,8 @@ public class ProcessingController {
     @GetMapping("/stages/{stageId}")
     @Operation(summary = "获取环节记录详情", description = "获取单个加工环节记录详情")
     public ApiResponse<ProcessingStageRecordDTO> getStageRecord(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "环节记录ID") Long stageId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID", example = "1") Long stageId) {
         log.info("获取环节记录详情: factoryId={}, stageId={}", factoryId, stageId);
         ProcessingStageRecordDTO result = stageRecordService.getById(factoryId, stageId);
         return ApiResponse.success(result);
@@ -764,8 +829,8 @@ public class ProcessingController {
     @PutMapping("/stages/{stageId}")
     @Operation(summary = "更新环节记录", description = "更新加工环节记录")
     public ApiResponse<ProcessingStageRecordDTO> updateStageRecord(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "环节记录ID") Long stageId,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID", example = "1") Long stageId,
             @RequestBody @Valid @Parameter(description = "环节记录") ProcessingStageRecordDTO dto) {
         log.info("更新环节记录: factoryId={}, stageId={}", factoryId, stageId);
         ProcessingStageRecordDTO result = stageRecordService.update(factoryId, stageId, dto);
@@ -778,8 +843,8 @@ public class ProcessingController {
     @DeleteMapping("/stages/{stageId}")
     @Operation(summary = "删除环节记录", description = "删除加工环节记录")
     public ApiResponse<Void> deleteStageRecord(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "环节记录ID") Long stageId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "环节记录ID", example = "1") Long stageId) {
         log.info("删除环节记录: factoryId={}, stageId={}", factoryId, stageId);
         stageRecordService.delete(factoryId, stageId);
         return ApiResponse.success();
@@ -791,8 +856,8 @@ public class ProcessingController {
     @GetMapping("/stages/by-type/{stageType}")
     @Operation(summary = "按类型查询环节记录", description = "按环节类型查询加工记录")
     public ApiResponse<List<ProcessingStageRecordDTO>> getStageRecordsByType(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "环节类型") ProcessingStageType stageType) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "环节类型", example = "CUTTING") ProcessingStageType stageType) {
         log.info("按类型查询环节记录: factoryId={}, stageType={}", factoryId, stageType);
         List<ProcessingStageRecordDTO> results = stageRecordService.getByStageType(factoryId, stageType);
         return ApiResponse.success(results);
@@ -804,7 +869,7 @@ public class ProcessingController {
     @GetMapping("/stages/statistics")
     @Operation(summary = "获取环节统计", description = "获取各环节的统计数据，用于AI分析对比")
     public ApiResponse<Map<ProcessingStageType, Map<String, Object>>> getStageStatistics(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("获取环节统计: factoryId={}", factoryId);
         Map<ProcessingStageType, Map<String, Object>> stats = stageRecordService.getStageStatistics(factoryId);
         return ApiResponse.success(stats);
@@ -816,8 +881,8 @@ public class ProcessingController {
     @GetMapping("/batches/{batchId}/stages/ai-format")
     @Operation(summary = "获取AI分析格式数据", description = "获取批次环节数据，格式化为AI分析所需的格式")
     public ApiResponse<Map<String, String>> getStageRecordsForAI(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "批次ID") Long batchId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "批次ID", example = "123") Long batchId) {
         log.info("获取AI分析格式数据: factoryId={}, batchId={}", factoryId, batchId);
         Map<String, String> result = stageRecordService.formatForAIAnalysis(factoryId, batchId);
         return ApiResponse.success(result);

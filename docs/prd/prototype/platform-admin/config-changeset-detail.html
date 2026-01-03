@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>变更详情 - 平台管理员</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../components.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header header--platform">
+        <button class="header__back" onclick="window.location.href='config-changeset-list.html'">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+        </button>
+        <h1 class="header__title">变更详情</h1>
+        <button class="header__action">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                <circle cx="12" cy="5" r="1" fill="currentColor"/>
+                <circle cx="12" cy="19" r="1" fill="currentColor"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Change Type Banner -->
+    <section class="type-banner type-banner--blueprint">
+        <div class="type-banner__icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </div>
+        <div class="type-banner__content">
+            <div class="type-banner__type">蓝图配置</div>
+            <div class="type-banner__title">更新"调度优化"蓝图配置</div>
+            <div class="type-banner__time">2024-01-07 14:32:15</div>
+        </div>
+    </section>
+
+    <!-- Basic Info -->
+    <section class="content-section">
+        <h2 class="section-title">变更信息</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-item__label">变更ID</span>
+                <span class="info-item__value">CHG-20240107-001</span>
+            </div>
+            <div class="info-item">
+                <span class="info-item__label">变更类型</span>
+                <span class="info-item__value">
+                    <span class="tag tag--blueprint">蓝图配置</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-item__label">操作人</span>
+                <span class="info-item__value">张三 (平台管理员)</span>
+            </div>
+            <div class="info-item">
+                <span class="info-item__label">操作时间</span>
+                <span class="info-item__value">2024-01-07 14:32:15</span>
+            </div>
+            <div class="info-item">
+                <span class="info-item__label">影响范围</span>
+                <span class="info-item__value">全平台</span>
+            </div>
+            <div class="info-item">
+                <span class="info-item__label">变更状态</span>
+                <span class="info-item__value">
+                    <span class="status-badge status-badge--active">已生效</span>
+                </span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Change Summary -->
+    <section class="content-section">
+        <h2 class="section-title">变更摘要</h2>
+        <div class="summary-box">
+            <p>调整AI调度策略参数，优化算法权重分配，新增成本优先级配置项。本次变更旨在提升智能调度的准确性和效率，特别是在处理大批量订单时的性能表现。</p>
+        </div>
+        <div class="change-stats">
+            <div class="change-stat change-stat--added">
+                <div class="change-stat__value">+5</div>
+                <div class="change-stat__label">新增</div>
+            </div>
+            <div class="change-stat change-stat--modified">
+                <div class="change-stat__value">3</div>
+                <div class="change-stat__label">修改</div>
+            </div>
+            <div class="change-stat change-stat--deleted">
+                <div class="change-stat__value">-1</div>
+                <div class="change-stat__label">删除</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Diff View -->
+    <section class="content-section">
+        <h2 class="section-title">变更对比</h2>
+
+        <!-- Change 1 -->
+        <div class="diff-section">
+            <div class="diff-header">
+                <span class="diff-header__file">scheduling_config.json</span>
+                <span class="diff-header__type diff-header__type--modified">已修改</span>
+            </div>
+            <div class="diff-content">
+                <div class="diff-line diff-line--removed">
+                    <span class="diff-line__marker">-</span>
+                    <span class="diff-line__content">"optimizationWeight": 0.6,</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">"optimizationWeight": 0.75,</span>
+                </div>
+                <div class="diff-line diff-line--context">
+                    <span class="diff-line__marker"> </span>
+                    <span class="diff-line__content">"maxIterations": 100,</span>
+                </div>
+                <div class="diff-line diff-line--removed">
+                    <span class="diff-line__marker">-</span>
+                    <span class="diff-line__content">"timeoutSeconds": 30</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">"timeoutSeconds": 60</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change 2 -->
+        <div class="diff-section">
+            <div class="diff-header">
+                <span class="diff-header__file">cost_priority.json</span>
+                <span class="diff-header__type diff-header__type--added">新增</span>
+            </div>
+            <div class="diff-content">
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">{</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "enabled": true,</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "priority": "high",</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "costThreshold": 10000,</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "savingTarget": 0.15</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Change 3 -->
+        <div class="diff-section">
+            <div class="diff-header">
+                <span class="diff-header__file">algorithm_weights.json</span>
+                <span class="diff-header__type diff-header__type--modified">已修改</span>
+            </div>
+            <div class="diff-content">
+                <div class="diff-line diff-line--context">
+                    <span class="diff-line__marker"> </span>
+                    <span class="diff-line__content">"weights": {</span>
+                </div>
+                <div class="diff-line diff-line--removed">
+                    <span class="diff-line__marker">-</span>
+                    <span class="diff-line__content">  "efficiency": 0.4,</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "efficiency": 0.35,</span>
+                </div>
+                <div class="diff-line diff-line--removed">
+                    <span class="diff-line__marker">-</span>
+                    <span class="diff-line__content">  "quality": 0.35,</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "quality": 0.3,</span>
+                </div>
+                <div class="diff-line diff-line--removed">
+                    <span class="diff-line__marker">-</span>
+                    <span class="diff-line__content">  "cost": 0.25</span>
+                </div>
+                <div class="diff-line diff-line--added">
+                    <span class="diff-line__marker">+</span>
+                    <span class="diff-line__content">  "cost": 0.35</span>
+                </div>
+                <div class="diff-line diff-line--context">
+                    <span class="diff-line__marker"> </span>
+                    <span class="diff-line__content">}</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Approval Process -->
+    <section class="content-section">
+        <h2 class="section-title">审批流程</h2>
+        <div class="approval-timeline">
+            <div class="approval-step approval-step--completed">
+                <div class="approval-step__dot"></div>
+                <div class="approval-step__content">
+                    <div class="approval-step__title">提交变更申请</div>
+                    <div class="approval-step__user">张三 (平台管理员)</div>
+                    <div class="approval-step__time">2024-01-07 14:30:00</div>
+                </div>
+            </div>
+
+            <div class="approval-step approval-step--completed">
+                <div class="approval-step__dot"></div>
+                <div class="approval-step__content">
+                    <div class="approval-step__title">技术审核通过</div>
+                    <div class="approval-step__user">李四 (技术主管)</div>
+                    <div class="approval-step__time">2024-01-07 14:31:15</div>
+                    <div class="approval-step__comment">配置参数调整合理，建议通过</div>
+                </div>
+            </div>
+
+            <div class="approval-step approval-step--completed">
+                <div class="approval-step__dot"></div>
+                <div class="approval-step__content">
+                    <div class="approval-step__title">最终批准</div>
+                    <div class="approval-step__user">王五 (系统管理员)</div>
+                    <div class="approval-step__time">2024-01-07 14:32:00</div>
+                    <div class="approval-step__comment">同意变更，已生效</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Impact Analysis -->
+    <section class="content-section">
+        <h2 class="section-title">影响分析</h2>
+        <div class="impact-list">
+            <div class="impact-item impact-item--info">
+                <div class="impact-item__icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="impact-item__content">
+                    <div class="impact-item__title">影响工厂数量</div>
+                    <div class="impact-item__desc">全平台12个工厂的智能调度功能</div>
+                </div>
+            </div>
+
+            <div class="impact-item impact-item--warning">
+                <div class="impact-item__icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="impact-item__content">
+                    <div class="impact-item__title">性能影响</div>
+                    <div class="impact-item__desc">调度计算耗时可能增加0.3-0.5秒</div>
+                </div>
+            </div>
+
+            <div class="impact-item impact-item--success">
+                <div class="impact-item__icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="impact-item__content">
+                    <div class="impact-item__title">预期收益</div>
+                    <div class="impact-item__desc">成本节省预计提升5-8%，调度准确率提升3%</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Actions -->
+    <section class="content-section">
+        <div class="action-buttons">
+            <button class="btn btn--outline btn--block">导出变更记录</button>
+            <button class="btn btn--danger btn--block">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                回滚此变更
+            </button>
+        </div>
+    </section>
+
+    <!-- Rollback Confirmation Modal (Hidden by default) -->
+    <div class="modal" id="rollbackModal" style="display: none;">
+        <div class="modal__overlay" onclick="document.getElementById('rollbackModal').style.display='none'"></div>
+        <div class="modal__content">
+            <div class="modal__header">
+                <h3 class="modal__title">确认回滚</h3>
+                <button class="modal__close" onclick="document.getElementById('rollbackModal').style.display='none'">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <p>确定要回滚此配置变更吗？回滚后将恢复到变更前的配置状态。</p>
+                <div class="warning-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2"/>
+                        <path d="M12 9v4M12 17h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>此操作将影响全平台12个工厂的智能调度功能</span>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button class="btn btn--outline" onclick="document.getElementById('rollbackModal').style.display='none'">取消</button>
+                <button class="btn btn--danger">确认回滚</button>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .type-banner {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 16px;
+            margin-bottom: 8px;
+        }
+
+        .type-banner--blueprint {
+            background: linear-gradient(135deg, #e8eaf6 0%, #c5cae9 100%);
+        }
+
+        .type-banner__icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #5e35b1;
+        }
+
+        .type-banner__type {
+            font-size: 12px;
+            font-weight: 600;
+            color: #5e35b1;
+            margin-bottom: 4px;
+        }
+
+        .type-banner__title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .type-banner__time {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .summary-box {
+            padding: 16px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            margin-bottom: 16px;
+        }
+
+        .summary-box p {
+            margin: 0;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #666;
+        }
+
+        .change-stats {
+            display: flex;
+            gap: 12px;
+        }
+
+        .change-stat {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .change-stat--added {
+            background: #e8f5e9;
+        }
+
+        .change-stat--modified {
+            background: #e3f2fd;
+        }
+
+        .change-stat--deleted {
+            background: #ffebee;
+        }
+
+        .change-stat__value {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .change-stat--added .change-stat__value {
+            color: #2e7d32;
+        }
+
+        .change-stat--modified .change-stat__value {
+            color: #1976d2;
+        }
+
+        .change-stat--deleted .change-stat__value {
+            color: #c62828;
+        }
+
+        .change-stat__label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .diff-section {
+            margin-bottom: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .diff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: #f5f5f5;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .diff-header__file {
+            font-size: 13px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            color: #333;
+        }
+
+        .diff-header__type {
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .diff-header__type--added {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .diff-header__type--modified {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .diff-content {
+            background: #fafafa;
+        }
+
+        .diff-line {
+            display: flex;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .diff-line__marker {
+            width: 30px;
+            text-align: center;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .diff-line__content {
+            padding: 2px 16px 2px 0;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .diff-line--added {
+            background: #e6ffed;
+        }
+
+        .diff-line--added .diff-line__marker {
+            background: #c3e6cb;
+            color: #2e7d32;
+        }
+
+        .diff-line--removed {
+            background: #ffebe9;
+        }
+
+        .diff-line--removed .diff-line__marker {
+            background: #ffc9c9;
+            color: #c62828;
+        }
+
+        .diff-line--context {
+            background: #fafafa;
+        }
+
+        .diff-line--context .diff-line__marker {
+            background: #f0f0f0;
+            color: #999;
+        }
+
+        .approval-timeline {
+            position: relative;
+            padding-left: 32px;
+        }
+
+        .approval-step {
+            position: relative;
+            padding-bottom: 24px;
+        }
+
+        .approval-step:last-child {
+            padding-bottom: 0;
+        }
+
+        .approval-step::before {
+            content: '';
+            position: absolute;
+            left: -23px;
+            top: 16px;
+            bottom: -8px;
+            width: 2px;
+            background: #e0e0e0;
+        }
+
+        .approval-step:last-child::before {
+            display: none;
+        }
+
+        .approval-step__dot {
+            position: absolute;
+            left: -28px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 3px solid #4caf50;
+            background: white;
+        }
+
+        .approval-step__title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .approval-step__user {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 2px;
+        }
+
+        .approval-step__time {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .approval-step__comment {
+            padding: 8px 12px;
+            background: #f9f9f9;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+            border-left: 3px solid #4caf50;
+        }
+
+        .impact-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .impact-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .impact-item--info {
+            background: #e3f2fd;
+            border-color: #1976d2;
+        }
+
+        .impact-item--warning {
+            background: #fff3e0;
+            border-color: #f57c00;
+        }
+
+        .impact-item--success {
+            background: #e8f5e9;
+            border-color: #2e7d32;
+        }
+
+        .impact-item__icon {
+            flex-shrink: 0;
+        }
+
+        .impact-item--info .impact-item__icon {
+            color: #1976d2;
+        }
+
+        .impact-item--warning .impact-item__icon {
+            color: #f57c00;
+        }
+
+        .impact-item--success .impact-item__icon {
+            color: #2e7d32;
+        }
+
+        .impact-item__title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .impact-item__desc {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn--danger {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background: #f44336;
+            color: white;
+        }
+
+        .btn--danger:active {
+            background: #d32f2f;
+        }
+
+        .tag--blueprint {
+            background: #e8eaf6;
+            color: #5e35b1;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1000;
+        }
+
+        .modal__overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal__content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 16px 16px 0 0;
+            max-width: 375px;
+            margin: 0 auto;
+        }
+
+        .modal__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .modal__title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .modal__close {
+            padding: 4px;
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .modal__body {
+            padding: 16px;
+        }
+
+        .modal__body p {
+            margin: 0 0 16px 0;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .warning-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #fff3e0;
+            border-radius: 8px;
+            border-left: 4px solid #f57c00;
+            color: #e65100;
+            font-size: 13px;
+        }
+
+        .modal__footer {
+            display: flex;
+            gap: 12px;
+            padding: 16px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .modal__footer .btn {
+            flex: 1;
+        }
+    </style>
+
+    <script>
+        // Show rollback modal
+        document.querySelector('.btn--danger').addEventListener('click', function() {
+            document.getElementById('rollbackModal').style.display = 'block';
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View } from 'react-native';
 import { Text, Card, Button, ActivityIndicator, IconButton, TextInput, Divider } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { AIQuota } from '../../../../types/processing';
 import { QUICK_QUESTIONS } from '../constants';
 import { styles } from '../styles';
@@ -38,6 +39,7 @@ interface AIAnalysisSectionProps {
  * - 结果状态：显示AI分析结果 + Follow-up问题
  */
 export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
+  const { t } = useTranslation('processing');
   const {
     batchId,
     analysis,
@@ -75,10 +77,10 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
     const now = new Date();
     const days = Math.ceil((reset.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
 
-    if (days === 0) return '明日重置';
-    if (days === 1) return '1天后重置';
-    return `${days}天后重置`;
-  }, [quota?.resetDate]);
+    if (days === 0) return t('costAnalysisDashboard.aiAnalysis.resetTomorrow');
+    if (days === 1) return t('costAnalysisDashboard.aiAnalysis.resetIn1Day');
+    return t('costAnalysisDashboard.aiAnalysis.resetInDays', { days });
+  }, [quota?.resetDate, t]);
 
   // 检查是否超过配额
   // ✅ 修复: 显式转换为boolean类型 (2025-11-20)
@@ -92,17 +94,17 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
           <View style={styles.aiTitleRow}>
             <View style={{ flex: 1 }}>
               <Text variant="titleLarge" style={styles.aiTitle}>
-                AI智能分析
+                {t('costAnalysisDashboard.aiAnalysis.title')}
               </Text>
               <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 4 }}>
-                基于DeepSeek技术，为您提供成本优化建议
+                {t('costAnalysisDashboard.aiAnalysis.subtitle')}
               </Text>
             </View>
 
             {quota && (
               <View style={styles.quotaBadge}>
                 <Text variant="bodySmall" style={styles.quotaText}>
-                  {quota.remaining}/{quota.limit}次
+                  {t('costAnalysisDashboard.aiAnalysis.quotaRemaining', { remaining: quota.remaining, limit: quota.limit })}
                 </Text>
                 <Text variant="bodySmall" style={styles.resetText}>
                   {getResetText}
@@ -116,7 +118,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
         {!showSection && (
           <View style={styles.aiInitial}>
             <Text variant="bodyMedium" style={styles.aiDescription}>
-              点击下方按钮，AI将分析此批次的成本数据，为您提供专业的优化建议
+              {t('costAnalysisDashboard.aiAnalysis.description')}
             </Text>
             <Button
               mode="contained"
@@ -127,11 +129,11 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
               contentStyle={styles.aiButtonContent}
               icon="sparkles"
             >
-              {isQuotaExceeded ? '本周次数已用完' : '获取AI优化建议'}
+              {isQuotaExceeded ? t('costAnalysisDashboard.aiAnalysis.quotaExhausted') : t('costAnalysisDashboard.aiAnalysis.getAISuggestions')}
             </Button>
             {isQuotaExceeded && (
               <Text variant="bodySmall" style={styles.limitHint}>
-                本周AI分析次数已用完，请等待下周重置
+                {t('costAnalysisDashboard.aiAnalysis.quotaExhaustedHint')}
               </Text>
             )}
           </View>
@@ -142,7 +144,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
           <View style={styles.aiLoadingContainer}>
             <ActivityIndicator size="large" color="#3B82F6" />
             <Text variant="bodyMedium" style={styles.aiLoadingText}>
-              AI正在分析您的成本数据...
+              {t('costAnalysisDashboard.aiAnalysis.analyzing')}
             </Text>
           </View>
         )}
@@ -154,7 +156,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             <View style={styles.aiResultCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text variant="titleMedium" style={styles.aiResultTitle}>
-                  分析结果
+                  {t('costAnalysisDashboard.aiAnalysis.analysisResult')}
                 </Text>
                 <IconButton
                   icon="close"
@@ -170,7 +172,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
 
               {sessionId && (
                 <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 12 }}>
-                  会话ID: {sessionId.substring(0, 8)}...
+                  {t('costAnalysisDashboard.aiAnalysis.sessionId')}: {sessionId.substring(0, 8)}...
                 </Text>
               )}
             </View>
@@ -179,7 +181,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             {!isQuotaExceeded && (
               <View style={styles.quickQuestions}>
                 <Text variant="bodyMedium" style={styles.quickQuestionsTitle}>
-                  继续提问
+                  {t('costAnalysisDashboard.aiAnalysis.continueAsking')}
                 </Text>
 
                 {QUICK_QUESTIONS.map((question, index) => (
@@ -207,18 +209,18 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
                     onPress={toggleQuestionInput}
                     icon="plus"
                   >
-                    自定义问题
+                    {t('costAnalysisDashboard.aiAnalysis.customQuestion')}
                   </Button>
                 ) : (
                   <View style={styles.questionInputContainer}>
                     <TextInput
                       mode="outlined"
-                      label="输入您的问题"
+                      label={t('costAnalysisDashboard.aiAnalysis.enterQuestion')}
                       value={customQuestion}
                       onChangeText={setCustomQuestion}
                       multiline
                       numberOfLines={3}
-                      placeholder="例如：如何降低原材料损耗？"
+                      placeholder={t('costAnalysisDashboard.aiAnalysis.questionPlaceholder')}
                       style={styles.questionInput}
                     />
                     <View style={styles.questionActions}>
@@ -228,7 +230,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
                         disabled={loading}
                         style={{ flex: 1 }}
                       >
-                        取消
+                        {t('common.cancel')}
                       </Button>
                       <Button
                         mode="contained"
@@ -237,7 +239,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
                         loading={loading}
                         style={{ flex: 1 }}
                       >
-                        提问
+                        {t('costAnalysisDashboard.aiAnalysis.ask')}
                       </Button>
                     </View>
                   </View>
@@ -248,7 +250,7 @@ export const AIAnalysisSection = React.memo<AIAnalysisSectionProps>((props) => {
             {/* 配额提示 */}
             {quota && quota.remaining <= 3 && quota.remaining > 0 && (
               <Text variant="bodySmall" style={{ color: '#F59E0B', marginTop: 12, textAlign: 'center' }}>
-                提示: 本周还剩 {quota.remaining} 次分析机会
+                {t('costAnalysisDashboard.aiAnalysis.quotaHint', { remaining: quota.remaining })}
               </Text>
             )}
           </View>

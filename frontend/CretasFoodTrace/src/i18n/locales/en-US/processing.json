@@ -1,0 +1,1310 @@
+{
+  "common": {
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "loading": "Loading...",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "submit": "Submit",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close"
+  },
+  "batchStatus": {
+    "planning": "Planning",
+    "inProgress": "In Progress",
+    "paused": "Paused",
+    "qualityCheck": "Quality Check",
+    "completed": "Completed",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "unknown": "Unknown"
+  },
+  "dashboard": {
+    "title": "Production Dashboard",
+    "todayOverview": "Today's Production Overview",
+    "stats": {
+      "inProgressBatches": "In Progress Batches",
+      "completedBatches": "Completed Batches",
+      "pendingInspection": "Pending Inspection",
+      "onDutyWorkers": "On Duty Workers"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "materialInbound": "Material Inbound",
+      "createProductionPlan": "Create Production Plan",
+      "batchList": "Batch List",
+      "qualityRecords": "Quality Records",
+      "materialManagement": "Material Management",
+      "equipmentMonitoring": "Equipment Monitoring",
+      "costAnalysis": "Cost Analysis",
+      "qualityStats": "Quality Statistics",
+      "inventoryCheck": "Inventory Check",
+      "consumptionHistory": "Consumption History",
+      "exceptionAlert": "Exception Alert",
+      "traceability": "Product Traceability"
+    },
+    "aiAnalysis": {
+      "title": "AI Analysis",
+      "subtitle": "Intelligent cost analysis powered by DeepSeek",
+      "aiReport": "AI Report",
+      "costComparison": "Cost Comparison",
+      "timeRangeAnalysis": "Time Range Analysis"
+    },
+    "recentBatches": {
+      "title": "Recent Batches",
+      "viewAll": "View All",
+      "noData": "No batch data",
+      "unit": "pcs"
+    },
+    "platformAdminNotice": {
+      "title": "You are a platform admin, view only",
+      "hint": "Material inbound and production plan management are for factory users only"
+    },
+    "costDialog": {
+      "title": "Select Analysis Method",
+      "byBatch": "Analyze by Batch",
+      "byTimeRange": "Analyze by Time Range"
+    },
+    "messages": {
+      "needTwoBatches": "At least 2 batches are required for comparison. Please create production batches first.",
+      "loadFailed": "Failed to load dashboard data. Please try again.",
+      "dataFormatError": "API returned invalid data format. Please try again."
+    }
+  },
+  "batchList": {
+    "title": "Batch List",
+    "searchPlaceholder": "Search batches...",
+    "filter": {
+      "all": "All",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "labels": {
+      "product": "Product",
+      "supervisor": "Supervisor",
+      "targetQuantity": "Target Quantity",
+      "actualQuantity": "Actual Quantity",
+      "pending": "Pending",
+      "notAssigned": "Not Assigned"
+    },
+    "status": {
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "empty": {
+      "noMatch": "No matching batches found",
+      "loading": "Loading...",
+      "noData": "No batch data",
+      "goToProductionPlan": "Go to Production Plan"
+    },
+    "messages": {
+      "loadFailed": "Failed to load batch list"
+    }
+  },
+  "batchDetail": {
+    "title": "Batch Detail",
+    "tabs": {
+      "detail": "Detail",
+      "consumption": "Consumption Records"
+    },
+    "basicInfo": "Basic Information",
+    "materialInfo": "Material Information",
+    "quickActions": "Quick Actions",
+    "labels": {
+      "batchNumber": "Batch Number",
+      "productType": "Product Type",
+      "supervisor": "Supervisor",
+      "targetQuantity": "Target Quantity",
+      "actualQuantity": "Actual Quantity",
+      "createdAt": "Created At",
+      "completedAt": "Completed At",
+      "notSpecified": "Not Specified"
+    },
+    "actions": {
+      "qualityRecord": "Quality Record",
+      "costAnalysis": "Cost Analysis",
+      "rawMaterialInspection": "Raw Material Inspection",
+      "processInspection": "Process Inspection",
+      "finalProductInspection": "Final Product Inspection"
+    },
+    "consumption": {
+      "stats": {
+        "count": "Consumption Count",
+        "totalQuantity": "Total Quantity",
+        "totalCost": "Total Cost"
+      },
+      "labels": {
+        "quantity": "Quantity Consumed",
+        "unitPrice": "Unit Price",
+        "time": "Consumption Time",
+        "notes": "Notes"
+      },
+      "empty": "No consumption records",
+      "emptyHint": "Material consumption during production will be displayed here"
+    },
+    "messages": {
+      "loadFailed": "Failed to load batch detail",
+      "notFound": "Batch information not found"
+    }
+  },
+  "createBatch": {
+    "title": "Material Inbound",
+    "editTitle": "Edit Batch",
+    "loadingTitle": "Loading",
+    "hint": "Record material inbound information, decide what to produce later",
+    "sections": {
+      "materialInfo": "Material Information",
+      "supervisorInfo": "Supervisor Information"
+    },
+    "fields": {
+      "materialType": "Material Type",
+      "selectMaterialType": "Select Material Type",
+      "quantity": "Material Quantity (kg)",
+      "quantityPlaceholder": "e.g., 1200",
+      "cost": "Material Cost (¥)",
+      "costPlaceholder": "e.g., 30000",
+      "supplier": "Supplier",
+      "selectSupplier": "Select Supplier",
+      "supervisor": "Production Supervisor",
+      "selectSupervisor": "Select Supervisor",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional"
+    },
+    "buttons": {
+      "create": "Create Batch",
+      "update": "Update Batch"
+    },
+    "validation": {
+      "selectMaterialType": "Please select material type",
+      "invalidQuantity": "Please enter valid material quantity",
+      "invalidCost": "Please enter material cost",
+      "selectSupplier": "Please select supplier",
+      "selectSupervisor": "Please select production supervisor"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "createSuccess": "Inbound Successful",
+      "updateSuccess": "Batch information updated",
+      "createFailed": "Inbound Failed",
+      "updateFailed": "Update Failed",
+      "noPermission": "No Permission",
+      "factoryUserOnly": "For factory users only"
+    }
+  },
+  "qualityInspection": {
+    "title": "Quality Records"
+  },
+  "materialBatch": {
+    "title": "Material Management",
+    "searchPlaceholder": "Search batch number, material type, storage location",
+    "tabs": {
+      "all": "All",
+      "expiring": "Expiring Soon",
+      "expired": "Expired",
+      "lowStock": "Low Stock"
+    },
+    "stats": {
+      "totalBatches": "Total Batches",
+      "available": "Available",
+      "warning": "Warning"
+    },
+    "fifo": {
+      "title": "FIFO Recommendation",
+      "badge": "Prioritize",
+      "description": "Based on First-In-First-Out (FIFO) principle, recommend using this batch first:",
+      "recommendedBadge": "Recommended",
+      "inboundDate": "Inbound Date",
+      "remaining": "Remaining"
+    },
+    "batch": {
+      "quantity": "Remaining/Total",
+      "used": "Used",
+      "reserved": "Reserved",
+      "inbound": "Inbound",
+      "expiry": "Expiry",
+      "unitPrice": "Unit Price",
+      "totalCost": "Total Cost"
+    },
+    "actions": {
+      "export": "Export",
+      "convertToFrozen": "Convert to Frozen",
+      "undoFrozen": "Undo Frozen",
+      "handleExpired": "Batch Handle Expired",
+      "aiInbound": "AI Smart Inbound"
+    },
+    "dialogs": {
+      "deleteTitle": "Confirm Delete",
+      "deleteMessage": "Are you sure you want to delete batch",
+      "deleteWarning": "This action cannot be undone.",
+      "undoFrozenTitle": "Undo Frozen Conversion",
+      "undoFrozenWarning": "⚠️ Note: Can only undo conversions within 10 minutes",
+      "undoReason": "Undo Reason *",
+      "undoReasonPlaceholder": "e.g., Misoperation, wrong batch, need further processing, etc.",
+      "confirmUndo": "Confirm Undo"
+    },
+    "messages": {
+      "exportSuccess": "Inventory data exported",
+      "exportFailed": "Failed to export inventory data. Please try again.",
+      "deleteSuccess": "Deleted",
+      "deleteFailed": "Failed to delete batch. Please try again.",
+      "convertSuccess": "Successfully converted to frozen",
+      "convertFailed": "Failed to convert to frozen. Please try again.",
+      "undoSuccess": "Restored to fresh status",
+      "undoFailed": "Undo failed",
+      "handleExpiredSuccess": "Successfully handled expired batches",
+      "handleExpiredFailed": "Unable to handle expired batches. Please try again."
+    },
+    "empty": {
+      "noData": "No batch data",
+      "noBatches": "No material batches",
+      "noExpiring": "✅ No expiring batches",
+      "noExpired": "✅ No expired batches",
+      "noLowStock": "✅ No low stock batches"
+    }
+  },
+  "equipment": {
+    "title": "Equipment Monitoring",
+    "sections": {
+      "overview": "Equipment Overview",
+      "statusDistribution": "Status Distribution",
+      "assetValue": "Asset Value",
+      "alerts": "Alerts & Reminders"
+    },
+    "stats": {
+      "total": "Total Equipment",
+      "active": "Active",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "status": {
+      "running": "Running",
+      "maintenance": "Maintenance",
+      "inactiveOrScrapped": "Inactive/Scrapped"
+    },
+    "value": {
+      "original": "Original Value",
+      "depreciated": "Depreciated Value",
+      "retentionRate": "Retention Rate"
+    },
+    "alerts": {
+      "maintenanceDue": "Equipment needs maintenance",
+      "warrantyExpiring": "Warranty expiring soon",
+      "view": "View"
+    },
+    "actions": {
+      "management": "Equipment Management",
+      "alerts": "Equipment Alerts"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "retryMessage": "Unable to load equipment statistics. Please try again.",
+      "noData": "No statistics data found"
+    }
+  },
+  "inventory": {
+    "title": "Inventory Check"
+  },
+  "consumption": {
+    "title": "Consumption History"
+  },
+  "exception": {
+    "title": "Exception Alert"
+  },
+  "equipmentAlerts": {
+    "title": "Equipment Alerts",
+    "statsBar": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "active": "Active"
+    },
+    "searchPlaceholder": "Search equipment, alert type...",
+    "filters": {
+      "active": "Active",
+      "acknowledged": "Acknowledged",
+      "resolved": "Resolved",
+      "all": "All"
+    },
+    "level": {
+      "critical": "Critical",
+      "warning": "Warning",
+      "info": "Info"
+    },
+    "status": {
+      "active": "Active",
+      "acknowledged": "Acknowledged",
+      "resolved": "Resolved"
+    },
+    "acknowledgedInfo": "Acknowledged",
+    "empty": {
+      "title": "No Alerts",
+      "description": "Equipment operating normally"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "loadError": "Unable to load equipment alerts. Please try again.",
+      "acknowledgeSuccess": "Success",
+      "acknowledgeMessage": "Alert acknowledged",
+      "acknowledgeFailed": "Operation Failed",
+      "acknowledgeError": "Failed to acknowledge alert. Please try again.",
+      "resolveTitle": "Resolve Alert",
+      "resolvePrompt": "Enter resolution notes (optional)",
+      "resolveSuccess": "Success",
+      "resolveMessage": "Alert resolved",
+      "resolveFailed": "Operation Failed",
+      "resolveError": "Failed to resolve alert. Please try again.",
+      "factoryIdError": "Error",
+      "factoryIdMessage": "Unable to get factory ID"
+    },
+    "loading": "Loading..."
+  },
+  "equipmentDetail": {
+    "title": "Equipment Detail",
+    "hours": "{{value}} hours",
+    "sections": {
+      "basicInfo": "Basic Information",
+      "realtimeParams": "Realtime Parameters",
+      "performanceAnalysis": "Performance Analysis",
+      "maintenanceRecords": "Maintenance Records"
+    },
+    "stats": {
+      "uptime": "Uptime",
+      "activeAlerts": "Active Alerts",
+      "maintenanceCount": "Maintenance Records"
+    },
+    "basicInfo": {
+      "equipmentId": "Equipment ID",
+      "manufacturer": "Manufacturer",
+      "location": "Location",
+      "installDate": "Install Date",
+      "operator": "Operator",
+      "lastMaintenance": "Last Maintenance",
+      "nextMaintenance": "Next Maintenance"
+    },
+    "realtimeParams": {
+      "temperature": "Temperature",
+      "pressure": "Pressure",
+      "speed": "Speed",
+      "power": "Power"
+    },
+    "performance": {
+      "oee": "OEE (Overall Equipment Effectiveness)",
+      "availability": "Availability",
+      "performance": "Performance",
+      "quality": "Quality",
+      "depreciatedValue": "Current Depreciated Value",
+      "totalRuntime": "Total Runtime",
+      "downtime": "Downtime",
+      "utilizationRate": "Utilization Rate",
+      "mtbf": "MTBF (Mean Time Between Failures)",
+      "mttr": "MTTR (Mean Time To Repair)"
+    },
+    "maintenanceRecords": {
+      "date": "Date",
+      "type": "Type",
+      "technician": "Technician",
+      "cost": "Cost",
+      "empty": "No maintenance records"
+    },
+    "actions": {
+      "viewAlerts": "View Alerts",
+      "maintenanceRecord": "Maintenance Record"
+    },
+    "status": {
+      "running": "Running",
+      "idle": "Idle",
+      "maintenance": "Maintenance",
+      "offline": "Offline"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "loadError": "Unable to load equipment detail. Please try again.",
+      "notFound": "Equipment information not found",
+      "unknownDevice": "Unknown Device"
+    },
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "equipmentManagement": {
+    "title": "Equipment Management",
+    "searchPlaceholder": "Search equipment...",
+    "filters": {
+      "all": "All",
+      "active": "Active",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "maintenance": "Maintenance",
+      "scrapped": "Scrapped"
+    },
+    "type": {
+      "processing": "Processing",
+      "refrigeration": "Refrigeration",
+      "packaging": "Packaging",
+      "transport": "Transport",
+      "other": "Other"
+    },
+    "info": {
+      "type": "Type",
+      "location": "Location",
+      "model": "Model",
+      "operator": "Operator"
+    },
+    "actions": {
+      "create": "Create Equipment",
+      "status": "Status",
+      "detail": "Detail"
+    },
+    "dialogs": {
+      "createTitle": "Create Equipment",
+      "editTitle": "Edit Equipment",
+      "deleteTitle": "Confirm Delete",
+      "deleteMessage": "Are you sure you want to delete this equipment?",
+      "fields": {
+        "name": "Name",
+        "code": "Code",
+        "model": "Model",
+        "location": "Location",
+        "operator": "Operator",
+        "selectOperator": "Select Operator",
+        "noOperator": "No Assignment",
+        "loadingOperators": "Loading...",
+        "notes": "Notes"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "save": "Save",
+        "delete": "Delete"
+      }
+    },
+    "statusMenu": {
+      "running": "Running",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "empty": {
+      "title": "No Equipment",
+      "action": "Create Equipment"
+    },
+    "messages": {
+      "loadFailed": "Error",
+      "factoryIdError": "Unable to get factory information",
+      "createSuccess": "Equipment created successfully",
+      "createFailed": "Failed to create equipment",
+      "updateSuccess": "Equipment updated successfully",
+      "updateFailed": "Failed to update equipment",
+      "deleteSuccess": "Equipment deleted successfully",
+      "deleteFailed": "Failed to delete equipment",
+      "statusUpdateSuccess": "Equipment status updated successfully",
+      "statusUpdateFailed": "Failed to update equipment status"
+    }
+  },
+  "equipmentMonitoring": {
+    "title": "Equipment Monitoring",
+    "currency": "¥{{value}}M",
+    "sections": {
+      "overview": "Equipment Overview",
+      "statusDistribution": "Status Distribution",
+      "assetValue": "Asset Value",
+      "alerts": "Alerts & Reminders"
+    },
+    "stats": {
+      "total": "Total Equipment",
+      "active": "Active",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "statusDistribution": {
+      "running": "Running",
+      "maintenance": "Maintenance",
+      "inactiveOrScrapped": "Inactive/Scrapped"
+    },
+    "assetValue": {
+      "original": "Original Value",
+      "depreciated": "Depreciated Value",
+      "retentionRate": "Retention Rate"
+    },
+    "alerts": {
+      "maintenanceDue": "Equipment needs maintenance",
+      "warrantyExpiring": "Warranty expiring soon",
+      "view": "View"
+    },
+    "actions": {
+      "management": "Equipment Management",
+      "alerts": "Equipment Alerts"
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "loadError": "Unable to load equipment statistics. Please try again.",
+      "notFound": "No statistics data found"
+    },
+    "loading": "Loading...",
+    "retry": "Retry"
+  },
+  "productionPlan": {
+    "title": "Production Plan Management",
+    "management": "Plan Management",
+    "create": "Create Production Plan",
+    "edit": "Edit Plan",
+    "createPlan": "Create Plan",
+    "refresh": "Refresh",
+    "filter": {
+      "all": "All",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "stats": {
+      "totalPlans": "Total Plans",
+      "inProgress": "In Progress",
+      "completed": "Completed"
+    },
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "shipped": "Shipped",
+      "cancelled": "Cancelled",
+      "unknown": "Unknown"
+    },
+    "planType": {
+      "title": "Plan Type",
+      "future": "Future Plan",
+      "fromInventory": "From Inventory",
+      "fromInventoryIcon": "From Inventory",
+      "futureIcon": "Future Plan",
+      "selectHint": "Select plan type to create production plan",
+      "fromInventoryHint": "Create plan based on current available inventory, material batches need to be selected",
+      "futureHint": "Pre-planned production plan, specific batches can be assigned later"
+    },
+    "fields": {
+      "planNumber": "Plan Number",
+      "planName": "Plan Name",
+      "productType": "Product Type (SKU)",
+      "selectProductType": "Select Product SKU",
+      "plannedQuantity": "Planned Quantity (kg)",
+      "plannedQuantityPlaceholder": "e.g., 100",
+      "plannedDate": "Planned Date",
+      "expectedCompletion": "Expected Completion",
+      "expectedCompletionDate": "Expected Completion Date",
+      "targetCustomer": "Target Customer",
+      "selectCustomer": "Select Customer",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional production plan notes",
+      "product": "Product",
+      "customer": "Customer",
+      "notSpecified": "Not Specified",
+      "createdDate": "Created Date",
+      "estimatedMaterial": "Estimated Material",
+      "actualQuantity": "Actual Quantity"
+    },
+    "actions": {
+      "startProduction": "Start Production",
+      "completeProduction": "Complete Production",
+      "recordShipment": "Record Shipment",
+      "viewDetails": "View Details"
+    },
+    "empty": {
+      "noPlans": "No production plans",
+      "hint": "Click the \"+\" button at the bottom right to create a production plan"
+    },
+    "dialog": {
+      "confirmStart": "Confirm Start Production",
+      "confirmStartMessage": "Are you sure you want to start production? Plan information cannot be modified after starting.",
+      "start": "Start",
+      "completeTitle": "Complete Production",
+      "productType": "Product Type:",
+      "plannedQuantity": "Planned Quantity:",
+      "actualQuantityLabel": "Actual Quantity (kg) *",
+      "actualQuantityPlaceholder": "Enter actual completed quantity",
+      "completionRate": "Completion Rate",
+      "confirmComplete": "Confirm Complete"
+    },
+    "estimation": {
+      "title": "Estimated Material Usage",
+      "about": "About",
+      "conversionRate": "Conversion Rate",
+      "wastageRate": "Wastage Rate",
+      "estimatedUsage": "Estimated Usage"
+    },
+    "stock": {
+      "title": "Current Available Stock",
+      "available": "Available",
+      "batches": "batches"
+    },
+    "batch": {
+      "sectionTitle": "Material Batches",
+      "loading": "Loading inventory...",
+      "selectProductFirst": "Please select product type first",
+      "noConversion": "Conversion rate not configured",
+      "noConversionHint": "Please configure conversion rate for this product in conversion rate management",
+      "goToConfig": "Go to Config",
+      "noStock": "No available stock",
+      "noStockHint": "Please inbound materials first",
+      "enterQuantityFirst": "Please enter planned quantity to calculate required materials",
+      "shortage": "Batch Shortage",
+      "shortageMessage": "Selected batches total {{selected}}kg, need {{shortage}}kg more.\n\nContinue creating?",
+      "continueCreate": "Continue Creating"
+    },
+    "futurePlan": {
+      "autoMatch": "Auto-Match Materials",
+      "autoMatchInfo": "After creating future plan, system will automatically match new inbound materials to this plan. You can view matching progress in the plan list.",
+      "fullyMatched": "Materials Fully Matched",
+      "waitingMaterial": "Waiting for Material Inbound",
+      "allocated": "Allocated",
+      "progress": "Progress"
+    },
+    "conversion": {
+      "configured": "Configured",
+      "notConfigured": "Not Configured"
+    },
+    "readOnly": {
+      "notice": "👁️ Platform Admin Read-Only Mode - Cannot Modify Data",
+      "mode": "👁️ Read-Only Mode"
+    },
+    "validation": {
+      "requiredFields": "Product type, customer and planned quantity cannot be empty",
+      "invalidActualQuantity": "Please enter valid actual quantity"
+    },
+    "messages": {
+      "loadFailed": "Failed to load production plans",
+      "createSuccess": "Production plan created successfully",
+      "createSuccessWithBatches": "Production plan created successfully\nReserved stock from {{count}} batches",
+      "createFailed": "Create failed",
+      "startSuccess": "Production started",
+      "startFailed": "Operation failed",
+      "completeSuccess": "Production completed, actual quantity: {{quantity}} kg",
+      "completeFailed": "Operation failed",
+      "shipmentPlaceholder": "Record shipment feature",
+      "dateHint": "💡 Expected completion date defaults to planned date +1 day, can be manually modified"
+    }
+  },
+  "packaging": {
+    "title": "Product Packaging",
+    "create": "Create Packaging",
+    "step": "Step",
+    "stepOf": "Step {{current}}/{{total}}",
+    "steps": {
+      "selectProduct": "Step 1: Select Product",
+      "specAndQuantity": "Step 2: Specification & Quantity",
+      "confirmAndPrint": "Step 3: Confirm & Print"
+    },
+    "products": {
+      "frozenBass": "Frozen Bass Fillet",
+      "shrimp": "Fresh Shrimp",
+      "ribbonFish": "Ribbon Fish Section",
+      "squidRings": "Squid Rings"
+    },
+    "fields": {
+      "product": "Product",
+      "weightPerBox": "Weight per Box (kg)",
+      "boxCount": "Box Count",
+      "specification": "Specification",
+      "quantity": "Quantity",
+      "totalWeight": "Total Weight"
+    },
+    "actions": {
+      "previous": "Previous",
+      "next": "Next",
+      "printAndComplete": "Print Label & Complete"
+    },
+    "print": {
+      "preview": "Will automatically print {{count}} labels"
+    },
+    "dialog": {
+      "completeTitle": "Packaging Complete",
+      "completeMessage": "Labels printed, please attach",
+      "ok": "OK"
+    },
+    "validation": {
+      "selectProduct": "Please select product",
+      "enterWeight": "Please enter weight"
+    },
+    "messages": {
+      "failed": "Failed",
+      "retry": "Please retry"
+    }
+  },
+  "batchComparison": {
+    "title": "Batch Comparison",
+    "subtitle": "Material cost comparison analysis",
+    "selectBatches": "Select Batches",
+    "selectPrompt": "Select 2-5 batches to compare cost difference",
+    "searchPlaceholder": "Search batch number",
+    "selected": "Selected",
+    "batches": "batches",
+    "startComparison": "Start Comparison",
+    "comparisonResult": "Comparison Results",
+    "overview": "Comparison Overview",
+    "costChart": "Cost Comparison Chart",
+    "costPerKg": "Cost per Kg",
+    "unitPrice": "Unit Price",
+    "stats": {
+      "highest": "Highest Cost",
+      "lowest": "Lowest Cost",
+      "average": "Average Cost",
+      "difference": "Cost Difference"
+    },
+    "detailAnalysis": "Detail Analysis",
+    "costRanking": "Cost Ranking",
+    "ranking": "Ranking",
+    "batchNumber": "Batch Number",
+    "supplier": "Supplier",
+    "costPerKgLabel": "Cost/kg",
+    "vsAverage": "vs Average",
+    "above": "above",
+    "below": "below",
+    "keyFindings": "Key Findings",
+    "highestCost": "Highest cost batch",
+    "lowestCost": "Lowest cost batch",
+    "averageCost": "Average cost",
+    "costDiff": "Cost difference",
+    "vsSuffix": "vs",
+    "suggestion": "💡 Suggestion",
+    "suggestionText": "{{lowest}} cost is the lowest, it is recommended to give priority to this supplier; {{highest}} cost is higher than the average {{diff}}, it is recommended to negotiate or consider changing suppliers.",
+    "messages": {
+      "selectTwoOrMore": "Please select at least 2 batches for comparison",
+      "selectAtMostFive": "Can select at most 5 batches",
+      "loadFailed": "Failed to load batch list",
+      "compareFailed": "Failed to compare batches"
+    }
+  },
+  "materialReceiptAI": {
+    "title": "AI Smart Inbound",
+    "subtitle": "Material batch entry",
+    "aiAssistant": "AI Form Assistant",
+    "aiEnabled": "AI form assistant enabled! Click the button in the lower right corner and say \"help me inbound 100kg salmon, unit price 45 yuan\" to automatically fill in the form.",
+    "closeAI": "Close AI",
+    "confirmCancel": "Confirm Cancel",
+    "confirmCancelMessage": "Are you sure you want to cancel the inbound operation? Filled data will be lost.",
+    "continueEditing": "Continue Editing",
+    "cancelInbound": "Cancel Inbound",
+    "loadingFormConfig": "Loading form configuration...",
+    "loadingSuppliers": "Loading supplier list...",
+    "customFields": "custom fields",
+    "aiFilled": "AI filled",
+    "fields": "fields",
+    "confidence": "Confidence",
+    "aiSuccess": "AI Fill Success",
+    "aiSuccessMessage": "{{count}} fields filled automatically\\nConfidence: {{confidence}}%\\n\\nPlease check and confirm the filled content",
+    "ok": "OK",
+    "aiFailed": "AI Fill Failed",
+    "inboundSuccess": "Inbound Success",
+    "inboundSuccessMessage": "Batch number: {{batchNumber}}\\n{{aiInfo}}",
+    "aiAssistedFill": "(AI assisted filling {{count}} fields)",
+    "continueInbound": "Continue Inbound",
+    "returnToList": "Return to List",
+    "inboundFailed": "Inbound Failed",
+    "retryLater": "Please try again later",
+    "confirmInbound": "Confirm Inbound",
+    "inbounding": "Inbounding...",
+    "messages": {
+      "loadFailed": "Failed to load",
+      "userInfoIncomplete": "User information incomplete"
+    }
+  },
+  "materialReceipt": {
+    "title": "Material Inbound",
+    "subtitle": "Material batch entry",
+    "basicInfo": "Basic Information",
+    "storageInfo": "Storage Information",
+    "qualityInfo": "Quality Inspection Information",
+    "fields": {
+      "supplier": "Supplier",
+      "selectSupplier": "Select Supplier",
+      "materialType": "Material Type",
+      "selectMaterialType": "Select Material Type",
+      "quantity": "Quantity (kg)",
+      "quantityPlaceholder": "Enter inbound quantity",
+      "unitPrice": "Unit Price (¥/kg)",
+      "unitPricePlaceholder": "Enter unit price",
+      "totalCost": "Total Cost (¥)",
+      "autoCalculated": "Auto-calculated",
+      "storageType": "Storage Type",
+      "fresh": "Fresh",
+      "frozen": "Frozen",
+      "storageLocation": "Storage Location",
+      "selectLocation": "Select Storage Location",
+      "freezeTemperature": "Freeze Temperature (°C)",
+      "temperaturePlaceholder": "Enter freeze temperature",
+      "shelfLife": "Shelf Life (days)",
+      "shelfLifePlaceholder": "Enter shelf life",
+      "inspector": "Inspector",
+      "inspectorPlaceholder": "Enter inspector name",
+      "qualityStatus": "Quality Status",
+      "qualified": "Qualified",
+      "unqualified": "Unqualified",
+      "qualityScore": "Quality Score",
+      "scorePlaceholder": "Enter quality score (0-100)",
+      "unqualifiedReason": "Unqualified Reason",
+      "reasonPlaceholder": "Enter unqualified reason",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional"
+    },
+    "confirmCancel": "Confirm Cancel",
+    "confirmCancelMessage": "Are you sure you want to cancel the inbound operation? Filled data will be lost.",
+    "continueEditing": "Continue Editing",
+    "cancelInbound": "Cancel Inbound",
+    "confirmInbound": "Confirm Inbound",
+    "inbounding": "Inbounding...",
+    "loadingSuppliers": "Loading supplier list...",
+    "inboundSuccess": "Inbound Success",
+    "inboundSuccessMessage": "Batch number: {{batchNumber}}",
+    "continueInbound": "Continue Inbound",
+    "returnToList": "Return to List",
+    "inboundFailed": "Inbound Failed",
+    "retryLater": "Please try again later",
+    "messages": {
+      "loadFailed": "Failed to load supplier list, please try again later",
+      "validation": {
+        "invalidQuantity": "Please enter valid quantity",
+        "invalidUnitPrice": "Please enter valid unit price",
+        "invalidQualityScore": "Quality score must be between 0-100",
+        "unqualifiedNeedReason": "Please enter unqualified reason"
+      }
+    }
+  },
+  "consumptionHistory": {
+    "title": "Consumption Records",
+    "searchPlaceholder": "Search batch number, material",
+    "filter": {
+      "all": "All",
+      "today": "Today",
+      "week": "Last 7 days",
+      "month": "Last 30 days"
+    },
+    "stats": {
+      "count": "Consumption Count",
+      "totalQuantity": "Total Consumption",
+      "totalCost": "Total Cost"
+    },
+    "card": {
+      "quantity": "Consumption Quantity",
+      "unitPrice": "Unit Price",
+      "productionBatch": "Production Batch",
+      "time": "Consumption Time",
+      "operator": "Operator",
+      "notes": "Notes"
+    },
+    "empty": {
+      "title": "No consumption records",
+      "hint": "Material consumption during production will be displayed here",
+      "error": "Failed to load consumption records, please try again later",
+      "retry": "Retry"
+    },
+    "messages": {
+      "loadFailed": "Failed to load consumption records"
+    }
+  },
+  "aiReports": {
+    "title": "AI Analysis Reports",
+    "types": {
+      "all": "All",
+      "batch": "Batch",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "reportType": {
+      "batch": "Batch Analysis",
+      "weekly": "Weekly Report",
+      "monthly": "Monthly Report",
+      "custom": "Custom"
+    },
+    "metadata": {
+      "batch": "Batch:",
+      "time": "Time:",
+      "cost": "Cost:"
+    },
+    "stats": {
+      "findings": "{{count}} findings",
+      "suggestions": "{{count}} suggestions"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{minutes}} minutes ago",
+      "hoursAgo": "{{hours}} hours ago",
+      "daysAgo": "{{days}} days ago"
+    },
+    "empty": {
+      "title": "No AI analysis reports yet",
+      "hint": "Click the button in the lower right corner to start generating a new AI analysis report"
+    },
+    "fab": "Generate New Report",
+    "loading": "Loading...",
+    "messages": {
+      "loadFailed": "Load failed",
+      "retry": "Please try again later",
+      "userInfoError": "User information incomplete"
+    }
+  },
+  "aiConversation": {
+    "title": "Conversation History",
+    "searchPlaceholder": "Search conversation content",
+    "filter": {
+      "all": "All Sessions",
+      "today": "Today",
+      "week": "Last 7 days",
+      "month": "Last 30 days"
+    },
+    "session": {
+      "messages": "{{count}} messages",
+      "lastMessage": "Last message",
+      "duration": "Duration"
+    },
+    "roles": {
+      "user": "User",
+      "assistant": "AI Assistant"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{minutes}} minutes ago",
+      "hoursAgo": "{{hours}} hours ago",
+      "daysAgo": "{{days}} days ago"
+    },
+    "empty": {
+      "title": "No conversation history",
+      "hint": "Start a conversation with AI assistant, and the conversation records will be displayed here"
+    },
+    "loading": "Loading...",
+    "messages": {
+      "loadFailed": "Failed to load conversation history",
+      "retry": "Please try again later"
+    }
+  },
+  "aiAnalysisDetail": {
+    "title": "Analysis Report",
+    "metadata": {
+      "batchNumber": "Batch Number",
+      "timeRange": "Time Range",
+      "totalCost": "Total Cost",
+      "generatedAt": "Generated At"
+    },
+    "sections": {
+      "summary": "Summary",
+      "keyFindings": "Key Findings",
+      "suggestions": "Suggestions",
+      "details": "Details"
+    },
+    "actions": {
+      "share": "Share",
+      "export": "Export PDF"
+    },
+    "shareTemplate": "AI Analysis Report - {{title}}\\n\\nBatch Number: {{batchNumber}}\\nTotal Cost: {{totalCost}}\\nGenerated At: {{generatedAt}}\\n\\n{{content}}",
+    "loading": "Loading report...",
+    "empty": {
+      "title": "Report not found",
+      "hint": "The report may have been deleted or does not exist"
+    },
+    "messages": {
+      "loadFailed": "Failed to load report",
+      "retry": "Please try again later",
+      "shareSuccess": "Share successful",
+      "shareFailed": "Share failed",
+      "exportSuccess": "Export successful",
+      "exportFailed": "Export failed"
+    }
+  },
+  "deepSeekAnalysis": {
+    "title": "DeepSeek AI Analysis",
+    "subtitle": "Intelligent production cost analysis",
+    "analysisMode": "Analysis Mode",
+    "modes": {
+      "batch": "Batch Analysis",
+      "batchHint": "Analyze cost composition of a single production batch",
+      "timeRange": "Time Range Analysis",
+      "timeRangeHint": "Analyze cost trends within a specified time range"
+    },
+    "batchAnalysis": {
+      "title": "Batch Analysis",
+      "selectBatch": "Select Batch",
+      "selectBatchPrompt": "Select production batch to analyze",
+      "searchPlaceholder": "Search batch number",
+      "selected": "Selected",
+      "batch": "batch",
+      "batchInfo": "Batch Information",
+      "product": "Product",
+      "targetQuantity": "Target Quantity",
+      "actualQuantity": "Actual Quantity",
+      "status": "Status",
+      "supervisor": "Supervisor"
+    },
+    "timeRangeAnalysis": {
+      "title": "Time Range Analysis",
+      "selectRange": "Select Time Range",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "quickSelect": "Quick Select",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days",
+      "customRange": "Custom Range"
+    },
+    "analysisOptions": {
+      "title": "Analysis Options",
+      "includeRawMaterial": "Material Cost Analysis",
+      "includeLabor": "Labor Cost Analysis",
+      "includeEquipment": "Equipment Cost Analysis",
+      "includeUtility": "Utility Cost Analysis",
+      "compareWithHistory": "Compare with Historical Data",
+      "generateSuggestions": "Generate Optimization Suggestions"
+    },
+    "startAnalysis": "Start AI Analysis",
+    "analyzing": "AI analyzing...",
+    "analysisProgress": "Analysis progress",
+    "results": {
+      "title": "Analysis Results",
+      "summary": "Summary",
+      "costBreakdown": "Cost Breakdown",
+      "keyFindings": "Key Findings",
+      "suggestions": "Optimization Suggestions",
+      "comparison": "Historical Comparison"
+    },
+    "actions": {
+      "viewFullReport": "View Full Report",
+      "exportReport": "Export Report",
+      "reAnalyze": "Re-analyze"
+    },
+    "messages": {
+      "selectBatch": "Please select a production batch",
+      "selectTimeRange": "Please select time range",
+      "invalidTimeRange": "Start date cannot be later than end date",
+      "analysisSuccess": "Analysis completed",
+      "analysisFailed": "Analysis failed",
+      "retry": "Please try again later",
+      "loadBatchesFailed": "Failed to load batch list",
+      "noBatches": "No production batches available"
+    }
+  },
+  "costAnalysisDashboard": {
+    "title": "Cost Analysis",
+    "loading": "Loading cost data...",
+    "noData": "No cost data found",
+    "batchNumber": "Batch Number",
+    "costOverview": {
+      "title": "Cost Overview",
+      "rawMaterialCost": "Raw Material Cost",
+      "laborCost": "Labor Cost",
+      "equipmentCost": "Equipment Cost",
+      "totalCost": "Total Cost"
+    },
+    "laborStats": {
+      "title": "Labor Details",
+      "subtitle": "{{personnel}} workers • Total {{hours}}h",
+      "totalPersonnel": "Total Personnel",
+      "personnelUnit": "{{count}} workers",
+      "totalHours": "Total Hours",
+      "hoursMinutes": "{{hours}} hours {{minutes}} minutes",
+      "laborCost": "Labor Cost",
+      "workerDetails": "Worker Details",
+      "hours": "hours",
+      "minutes": "minutes",
+      "persons": "persons",
+      "uses": "uses",
+      "running": "running"
+    },
+    "equipmentStats": {
+      "title": "Equipment Details",
+      "subtitle": "{{usages}} uses • Running {{hours}}h",
+      "usageCount": "Equipment Usage Count",
+      "usageUnit": "{{count}} times",
+      "runTime": "Running Duration",
+      "hoursMinutes": "{{hours}} hours {{minutes}} minutes",
+      "equipmentCost": "Equipment Cost",
+      "equipmentDetails": "Equipment Details"
+    },
+    "profitAnalysis": {
+      "title": "Profit Analysis",
+      "expectedRevenue": "Expected Revenue",
+      "totalCost": "Total Cost",
+      "profit": "Profit",
+      "profitRate": "Profit Rate",
+      "breakEvenPrice": "Break-Even Price"
+    },
+    "aiAnalysis": {
+      "title": "AI Analysis",
+      "subtitle": "Cost optimization suggestions powered by DeepSeek",
+      "description": "Click the button below, AI will analyze this batch's cost data and provide professional optimization suggestions",
+      "getAISuggestions": "Get AI Optimization Advice",
+      "quotaExhausted": "Weekly quota exhausted",
+      "quotaExhaustedHint": "Weekly AI analysis quota exhausted, please wait for next week reset",
+      "quotaRemaining": "{{remaining}}/{{limit}} times",
+      "quotaHint": "Tip: {{remaining}} analysis chances remaining this week",
+      "analyzing": "AI is analyzing your cost data...",
+      "analysisResult": "Analysis Result",
+      "sessionId": "Session ID",
+      "continueAsking": "Continue Asking",
+      "customQuestion": "Custom Question",
+      "enterQuestion": "Enter your question",
+      "questionPlaceholder": "e.g., How to reduce raw material waste?",
+      "ask": "Ask",
+      "resetTomorrow": "Resets tomorrow",
+      "resetIn1Day": "Resets in 1 day",
+      "resetInDays": "Resets in {{days}} days",
+      "times": "times"
+    }
+  },
+  "costComparison": {
+    "title": "Cost Comparison",
+    "loading": "Loading...",
+    "noData": "No batch cost data found",
+    "loadFailed": "Failed to load cost comparison data",
+    "summary": {
+      "comparedBatches": "Compared Batches",
+      "avgTotalCost": "Avg Total Cost",
+      "avgUnitCost": "Avg Unit Cost"
+    },
+    "performance": {
+      "title": "Cost Performance",
+      "best": "Best",
+      "needsOptimization": "Needs Optimization",
+      "costDifference": "Cost Difference"
+    },
+    "detailComparison": "Cost Detail Comparison",
+    "totalCostComparison": "Total Cost Comparison",
+    "unitCostTrend": "Unit Cost Trend",
+    "costStructure": "Cost Structure Comparison",
+    "labels": {
+      "date": "Date",
+      "quantity": "Quantity",
+      "totalCost": "Total Cost",
+      "laborCost": "Labor Cost",
+      "labor": "Labor",
+      "materialCost": "Material Cost",
+      "material": "Material",
+      "equipmentCost": "Equipment Cost",
+      "equipment": "Equipment",
+      "otherCost": "Other Cost",
+      "other": "Other",
+      "unitCost": "Unit Cost"
+    },
+    "actions": {
+      "exportReport": "Export Report",
+      "aiAnalysis": "AI Analysis"
+    }
+  },
+  "aiAnalysisDetail": {
+    "defaultTitles": {
+      "batch": "Batch Cost Analysis Report",
+      "weekly": "Weekly Cost Analysis Report",
+      "monthly": "Monthly Cost Analysis Report",
+      "custom": "Custom Analysis Report",
+      "default": "AI Analysis Report"
+    },
+    "reportType": {
+      "batch": "Batch Analysis",
+      "weekly": "Weekly Report",
+      "monthly": "Monthly Report",
+      "custom": "Custom"
+    },
+    "loading": "Loading...",
+    "shareReport": "Share Report",
+    "shareTitle": "Cretas Food Traceability - AI Analysis Report",
+    "reportTitle": "Report Title",
+    "reportTypeLabel": "Report Type",
+    "generatedAt": "Generated At",
+    "expiresAt": "Expires At",
+    "sessionId": "Session ID",
+    "messageCount": "Message Count",
+    "cacheHit": "Cache Hit",
+    "realTimeGenerated": "Real-time Generated",
+    "analysisContent": "Analysis Content",
+    "copySuccess": "Copied to clipboard",
+    "copyFailed": "Copy failed, please try again",
+    "errorInfo": "Error Information",
+    "aiQuota": "AI Quota",
+    "quotaUsed": "Used {{used}}/{{limit}} times",
+    "resetTime": "Reset Time",
+    "reportNotFound": "Report not found or expired",
+    "userInfoIncomplete": "User information incomplete",
+    "loadFailed": "Load failed",
+    "unknown": "Unknown",
+    "messages": "messages"
+  },
+  "aiConversationHistory": {
+    "title": "Conversation History",
+    "loading": "Loading...",
+    "missingSessionId": "Missing session ID",
+    "userInfoIncomplete": "User information incomplete",
+    "loadFailed": "Load failed",
+    "closeConfirmTitle": "Confirm Close",
+    "closeConfirmMessage": "Are you sure you want to close this session? You will not be able to continue the conversation.",
+    "closeSuccess": "Session closed",
+    "closeFailed": "Close failed",
+    "sessionId": "Session ID",
+    "relatedBatch": "Related Batch",
+    "createdAt": "Created At",
+    "messageCount": "Message Count",
+    "noRecords": "No conversation records",
+    "status": {
+      "active": "Active",
+      "closed": "Closed"
+    },
+    "role": {
+      "user": "User",
+      "assistant": "AI Assistant"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "{{minutes}} minutes ago",
+      "hoursAgo": "{{hours}} hours ago"
+    },
+    "tokensConsumed": "Consumed {{tokens}} tokens"
+  },
+  "batchComparison": {
+    "title": "Batch Comparison Analysis",
+    "selectedBatchesHint": "Selected {{count}} batches (max 5, min 2)",
+    "quotaRemaining": "{{remaining}} remaining",
+    "thinkingMode": {
+      "title": "Deep Thinking Mode",
+      "enabled": "AI deep reasoning, more accurate results",
+      "disabled": "Normal mode, faster response"
+    },
+    "dimension": {
+      "title": "Select Comparison Dimension",
+      "cost": "Cost Comparison",
+      "efficiency": "Efficiency Comparison",
+      "quality": "Quality Comparison",
+      "comprehensive": "Comprehensive Comparison"
+    },
+    "batchList": {
+      "title": "Select Batches",
+      "loading": "Loading...",
+      "empty": "No completed batches available",
+      "product": "Product:",
+      "quantity": "Quantity:",
+      "time": "Time:",
+      "pending": "Pending"
+    },
+    "loadFailed": "Load failed",
+    "selectMinBatches": "Please select at least 2 batches for comparison",
+    "maxBatchesHint": "Maximum 5 batches can be selected for comparison",
+    "userInfoIncomplete": "User information incomplete",
+    "quotaInsufficient": "Weekly AI analysis quota exhausted, please wait for next week reset",
+    "aiComparison": {
+      "title": "AI Comparison Analysis",
+      "loading": "AI is analyzing...",
+      "startAnalysis": "Start AI Comparison Analysis",
+      "quickQuestions": "Quick Follow-up",
+      "customQuestion": "Custom Question",
+      "enterQuestion": "Enter your question",
+      "cancel": "Cancel",
+      "submit": "Submit"
+    },
+    "quickQuestionsList": {
+      "costEfficiency": "Which batch has the highest cost efficiency?",
+      "optimizeEfficiency": "How to optimize the less efficient batches?",
+      "qualityDifference": "What are the main reasons for quality differences?"
+    },
+    "aiFailed": "AI analysis failed"
+  }
+}

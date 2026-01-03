@@ -7,6 +7,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } fr
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAManagementStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList, 'FAManagement'>;
@@ -31,35 +32,36 @@ function GridItem({ icon, title, color, onPress }: GridItemProps) {
 
 export function FAManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>管理</Text>
-          <Text style={styles.subtitle}>工厂运营管理中心</Text>
+          <Text style={styles.title}>{t('management.title')}</Text>
+          <Text style={styles.subtitle}>{t('management.subtitle')}</Text>
         </View>
 
         {/* 核心管理 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>核心管理</Text>
+          <Text style={styles.sectionTitle}>{t('management.coreManagement')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="account-group"
-              title="员工管理"
+              title={t('management.employeeManagement')}
               color="#667eea"
               onPress={() => navigation.navigate('EmployeeList')}
             />
             <GridItem
               icon="cog"
-              title="设备管理"
+              title={t('management.equipmentManagement')}
               color="#52c41a"
               onPress={() => navigation.navigate('EquipmentList')}
             />
             <GridItem
               icon="domain"
-              title="部门管理"
+              title={t('management.departmentManagement')}
               color="#fa8c16"
               onPress={() => navigation.navigate('DepartmentManagement')}
             />
@@ -68,23 +70,23 @@ export function FAManagementScreen() {
 
         {/* 业务管理 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>业务管理</Text>
+          <Text style={styles.sectionTitle}>{t('management.businessManagement')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="cube-outline"
-              title="产品类型"
+              title={t('management.productTypeManagement')}
               color="#1890ff"
               onPress={() => navigation.navigate('ProductTypeManagement')}
             />
             <GridItem
               icon="package-variant"
-              title="原料类型"
+              title={t('management.materialTypeManagement')}
               color="#eb2f96"
               onPress={() => navigation.navigate('MaterialTypeManagement')}
             />
             <GridItem
               icon="swap-horizontal"
-              title="转换率"
+              title={t('management.conversionRate')}
               color="#722ed1"
               onPress={() => navigation.navigate('ConversionRate')}
             />
@@ -93,23 +95,23 @@ export function FAManagementScreen() {
 
         {/* 供应链管理 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>供应链管理</Text>
+          <Text style={styles.sectionTitle}>{t('management.supplyChainManagement')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="truck-delivery"
-              title="供应商"
+              title={t('management.supplierManagement')}
               color="#13c2c2"
               onPress={() => navigation.navigate('SupplierManagement')}
             />
             <GridItem
               icon="store"
-              title="客户管理"
+              title={t('management.customerManagement')}
               color="#f5222d"
               onPress={() => navigation.navigate('CustomerManagement')}
             />
             <GridItem
               icon="truck"
-              title="出货管理"
+              title={t('management.shipmentManagement')}
               color="#faad14"
               onPress={() => navigation.navigate('ShipmentManagement')}
             />
@@ -118,48 +120,54 @@ export function FAManagementScreen() {
 
         {/* 系统配置 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>系统配置</Text>
+          <Text style={styles.sectionTitle}>{t('management.systemConfig')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="form-select"
-              title="表单配置"
+              title={t('schemaConfig.title')}
               color="#667eea"
               onPress={() => navigation.navigate('SchemaConfig')}
             />
             <GridItem
               icon="code-braces"
-              title="规则配置"
+              title={t('management.ruleConfiguration')}
               color="#9c27b0"
               onPress={() => navigation.navigate('RuleConfiguration')}
             />
             <GridItem
               icon="robot"
-              title="AI智能初始化"
+              title={t('aiBusinessInit.title')}
               color="#1890ff"
               onPress={() => navigation.navigate('AIBusinessInit')}
             />
             <GridItem
               icon="barcode"
-              title="编码规则"
+              title={t('encodingRuleConfig.title')}
               color="#fa8c16"
               onPress={() => navigation.navigate('EncodingRuleConfig')}
             />
             <GridItem
               icon="clipboard-check-outline"
-              title="质检项配置"
+              title={t('qualityCheckItemConfig.title')}
               color="#52c41a"
               onPress={() => navigation.navigate('QualityCheckItemConfig')}
+            />
+            <GridItem
+              icon="clipboard-flow-outline"
+              title={t('management.sopConfig')}
+              color="#13c2c2"
+              onPress={() => navigation.navigate('SopConfig')}
             />
           </View>
         </View>
 
         {/* 其他 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>其他</Text>
+          <Text style={styles.sectionTitle}>{t('management.other')}</Text>
           <View style={styles.grid}>
             <GridItem
               icon="delete-outline"
-              title="报废记录"
+              title={t('management.disposalRecordManagement')}
               color="#8c8c8c"
               onPress={() => navigation.navigate('DisposalRecordManagement')}
             />

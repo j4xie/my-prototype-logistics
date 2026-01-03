@@ -4,6 +4,9 @@ import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.service.SupplierAdmissionRuleService;
 import com.cretas.aims.service.SupplierAdmissionRuleService.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * 供应商准入控制器
@@ -24,6 +31,7 @@ import java.util.Map;
 @RequestMapping("/api/mobile/{factoryId}/supplier-admission")
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "供应商准入管理", description = "供应商准入评估相关接口，包括准入资格评估、供货许可检查、验收策略生成、准入规则配置、供应商评估报告等功能")
 public class SupplierAdmissionController {
 
     private final SupplierAdmissionRuleService supplierAdmissionRuleService;
@@ -37,9 +45,10 @@ public class SupplierAdmissionController {
      * @return 准入评估结果
      */
     @GetMapping("/evaluate/{supplierId}")
+    @Operation(summary = "评估供应商准入资格", description = "对指定供应商进行准入资格评估，检查资质证书、信用额度、历史记录等，返回综合评估结果")
     public ResponseEntity<Map<String, Object>> evaluateAdmission(
-            @PathVariable String factoryId,
-            @PathVariable String supplierId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "供应商ID", example = "SUP001") String supplierId) {
 
         log.info("评估供应商准入资格: factoryId={}, supplierId={}", factoryId, supplierId);
 
@@ -82,9 +91,10 @@ public class SupplierAdmissionController {
      * @return 批量评估结果
      */
     @PostMapping("/evaluate/batch")
+    @Operation(summary = "批量评估供应商准入资格", description = "对多个供应商进行批量准入资格评估，返回每个供应商的评估结果列表")
     public ResponseEntity<Map<String, Object>> evaluateAdmissionBatch(
-            @PathVariable String factoryId,
-            @RequestBody Map<String, Object> request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "批量评估请求，包含supplierIds数组") Map<String, Object> request) {
 
         log.info("批量评估供应商准入: factoryId={}", factoryId);
 
@@ -92,7 +102,7 @@ public class SupplierAdmissionController {
 
         try {
             @SuppressWarnings("unchecked")
-            java.util.List<String> supplierIds = (java.util.List<String>) request.get("supplierIds");
+            List<String> supplierIds = (List<String>) request.get("supplierIds");
 
             if (supplierIds == null || supplierIds.isEmpty()) {
                 response.put("success", false);
@@ -100,14 +110,19 @@ public class SupplierAdmissionController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            java.util.List<Map<String, Object>> results = new java.util.ArrayList<>();
+            // 优化：批量查询供应商避免 N+1 问题
+            Map<String, Supplier> supplierMap = supplierRepository
+                    .findByIdInAndFactoryId(supplierIds, factoryId)
+                    .stream()
+                    .collect(Collectors.toMap(Supplier::getId, Function.identity()));
+
+            List<Map<String, Object>> results = new java.util.ArrayList<>();
 
             for (String supplierId : supplierIds) {
                 Map<String, Object> resultItem = new HashMap<>();
                 resultItem.put("supplierId", supplierId);
 
-                Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                        .orElse(null);
+                Supplier supplier = supplierMap.get(supplierId);
 
                 if (supplier == null) {
                     resultItem.put("success", false);
@@ -145,10 +160,11 @@ public class SupplierAdmissionController {
      * @return 供货许可结果
      */
     @GetMapping("/permission/{supplierId}")
+    @Operation(summary = "检查供应商供货许可", description = "检查指定供应商对特定原料类型的供货许可状态，验证是否允许供货")
     public ResponseEntity<Map<String, Object>> checkSupplyPermission(
-            @PathVariable String factoryId,
-            @PathVariable String supplierId,
-            @RequestParam String materialTypeId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "供应商ID", example = "SUP001") String supplierId,
+            @RequestParam @Parameter(description = "原料类型ID", example = "MT001") String materialTypeId) {
 
         log.info("检查供货许可: factoryId={}, supplierId={}, materialTypeId={}",
                 factoryId, supplierId, materialTypeId);
@@ -190,9 +206,10 @@ public class SupplierAdmissionController {
      * @return 验收策略
      */
     @PostMapping("/acceptance-strategy")
+    @Operation(summary = "生成验收策略", description = "根据供应商信息、原料类型和数量，生成相应的验收策略，包括抽检比例、检测项目等")
     public ResponseEntity<Map<String, Object>> generateAcceptanceStrategy(
-            @PathVariable String factoryId,
-            @RequestBody Map<String, Object> request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "验收策略请求，包含supplierId、materialTypeId、quantity") Map<String, Object> request) {
 
         log.info("生成验收策略: factoryId={}", factoryId);
 
@@ -249,8 +266,9 @@ public class SupplierAdmissionController {
      * @return 规则配置
      */
     @GetMapping("/rules")
+    @Operation(summary = "获取供应商准入规则配置", description = "获取工厂的供应商准入规则配置信息，包括准入评分阈值、资质要求、信用额度标准等")
     public ResponseEntity<Map<String, Object>> getRuleConfiguration(
-            @PathVariable String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
 
         log.info("获取准入规则配置: factoryId={}", factoryId);
 
@@ -282,9 +300,10 @@ public class SupplierAdmissionController {
      * @return 更新后的配置
      */
     @PutMapping("/rules")
+    @Operation(summary = "更新供应商准入规则配置", description = "更新工厂的供应商准入规则配置，可调整评分阈值、资质要求、信用额度标准等")
     public ResponseEntity<Map<String, Object>> updateRuleConfiguration(
-            @PathVariable String factoryId,
-            @RequestBody SupplierRuleConfig config) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "准入规则配置信息") SupplierRuleConfig config) {
 
         log.info("更新准入规则配置: factoryId={}", factoryId);
 
@@ -317,9 +336,10 @@ public class SupplierAdmissionController {
      * @return 综合评估报告
      */
     @GetMapping("/report/{supplierId}")
+    @Operation(summary = "获取供应商详细评估报告", description = "获取供应商的综合评估报告，包含准入评估、供货能力、历史记录等信息")
     public ResponseEntity<Map<String, Object>> getSupplierReport(
-            @PathVariable String factoryId,
-            @PathVariable String supplierId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "供应商ID", example = "SUP001") String supplierId) {
 
         log.info("获取供应商评估报告: factoryId={}, supplierId={}", factoryId, supplierId);
 

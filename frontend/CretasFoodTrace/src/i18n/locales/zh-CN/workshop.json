@@ -1,0 +1,556 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "retry": "重试",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "search": "搜索",
+    "viewAll": "查看全部",
+    "noData": "暂无数据"
+  },
+  "home": {
+    "title": "车间主任工作台",
+    "greeting": {
+      "earlyMorning": "凌晨好",
+      "morning": "早上好",
+      "forenoon": "上午好",
+      "noon": "中午好",
+      "afternoon": "下午好",
+      "evening": "晚上好",
+      "lateNight": "夜深了"
+    },
+    "subtitle": "今日任务安排已更新",
+    "nextTask": {
+      "title": "下一批任务",
+      "urgent": "紧急",
+      "assignedWorkers": "已分配 {{count}} 人",
+      "plannedStart": "计划 {{time}} 开始",
+      "startTask": "开始任务"
+    },
+    "todayOverview": "今日任务概览",
+    "stats": {
+      "assigned": "已分配",
+      "inProgress": "进行中",
+      "completed": "已完成"
+    },
+    "inProgressBatches": "进行中批次",
+    "personnelStatus": "人员状态",
+    "personnel": {
+      "onDuty": "在岗",
+      "onLeave": "请假",
+      "absent": "缺勤"
+    },
+    "equipmentStatus": "设备状态",
+    "equipment": {
+      "running": "运行中",
+      "idle": "空闲",
+      "needMaintenance": "需维护"
+    },
+    "batch": {
+      "output": "{{current}}kg / {{target}}kg",
+      "estimated": "预计 {{time}}"
+    }
+  },
+  "notifications": {
+    "title": "通知",
+    "markAllRead": "全部已读",
+    "empty": "暂无通知",
+    "types": {
+      "task": "新任务分配",
+      "alert": "设备告警",
+      "info": "人员请假",
+      "success": "批次完成"
+    },
+    "time": {
+      "minutesAgo": "{{count}}分钟前",
+      "hoursAgo": "{{count}}小时前",
+      "yesterday": "昨天 {{time}}"
+    }
+  },
+  "taskGuide": {
+    "title": "任务执行",
+    "steps": {
+      "step1": "步骤 1/3: 前往工位",
+      "step2": "步骤 2/3: 确认设备",
+      "step3": "步骤 3/3: 开始生产"
+    },
+    "location": {
+      "workshop": "车间",
+      "line": "生产线",
+      "station": "工位",
+      "equipment": "设备"
+    },
+    "viewMap": "查看车间地图",
+    "arrivedConfirm": "我已到达工位",
+    "nextStep": "下一步：确认设备",
+    "targetOutput": "目标{{quantity}}kg"
+  },
+  "profile": {
+    "title": "我的",
+    "role": "车间主任",
+    "stats": {
+      "managedBatches": "管理批次",
+      "onDutyPersonnel": "在岗人员",
+      "runningEquipment": "设备运行"
+    },
+    "sections": {
+      "accountSettings": "账户设置",
+      "systemSettings": "系统设置",
+      "helpSupport": "帮助与支持"
+    },
+    "menu": {
+      "personalInfo": "个人信息",
+      "changePassword": "修改密码",
+      "notificationSettings": "通知设置",
+      "settings": "系统设置",
+      "about": "关于",
+      "logout": "退出登录"
+    }
+  },
+  "workers": {
+    "title": "人员管理",
+    "searchPlaceholder": "搜索姓名或工号...",
+    "filters": {
+      "all": "全部",
+      "onDuty": "在岗",
+      "onLeave": "请假",
+      "temporary": "临时工"
+    },
+    "stats": {
+      "onDuty": "在岗",
+      "onLeave": "请假",
+      "absent": "缺勤",
+      "temporary": "临时工"
+    },
+    "status": {
+      "onDuty": "在岗",
+      "offDuty": "离岗",
+      "onLeave": "请假",
+      "absent": "缺勤",
+      "unknown": "未知",
+      "available": "可用",
+      "busy": "忙碌",
+      "normal": "正常",
+      "late": "迟到",
+      "early": "早退",
+      "leave": "休息"
+    },
+    "tempBadge": "临时",
+    "currentTask": "当前: {{task}}",
+    "hours": "{{hours}}h",
+    "efficiency": {
+      "gradeA": "A",
+      "gradeB": "B",
+      "gradeC": "C",
+      "gradeD": "D",
+      "label": "效率 {{value}}%"
+    },
+    "assign": {
+      "title": "分配员工",
+      "batchInfo": "批次信息",
+      "productName": "产品名称",
+      "requiredWorkers": "需要 {{required}} 名员工 · 已选 {{selected}} 名",
+      "selectWorkers": "选择员工",
+      "confirmButton": "确认分配 ({{selected}}/{{required}})",
+      "minWorkersAlert": "请至少选择 {{required}} 名员工",
+      "confirmTitle": "确认分配",
+      "confirmMessage": "确定将 {{workers}} 分配到批次 {{batch}}？",
+      "successMessage": "员工分配成功！"
+    },
+    "attendance": {
+      "title": "考勤历史",
+      "monthSelector": "月份选择",
+      "stats": {
+        "workDays": "出勤天数",
+        "late": "迟到",
+        "absent": "缺勤",
+        "totalHours": "总工时"
+      },
+      "listHeaders": {
+        "date": "日期",
+        "clockTime": "打卡",
+        "workHours": "工时",
+        "status": "状态"
+      },
+      "weekdays": {
+        "monday": "周一",
+        "tuesday": "周二",
+        "wednesday": "周三",
+        "thursday": "周四",
+        "friday": "周五",
+        "saturday": "周六",
+        "sunday": "周日"
+      }
+    },
+    "clockIn": {
+      "title": "打卡管理",
+      "currentTime": "当前时间",
+      "todayStats": {
+        "clockedIn": "已打卡",
+        "late": "迟到",
+        "absent": "缺勤",
+        "expected": "应到"
+      },
+      "todayRecords": "今日打卡记录",
+      "notClockedIn": "未打卡",
+      "clockTime": "打卡时间: {{time}}"
+    },
+    "detail": {
+      "title": "员工详情",
+      "basicInfo": {
+        "title": "基本信息",
+        "phone": "联系电话",
+        "joinDate": "入职日期",
+        "department": "所属部门"
+      },
+      "statsCard": {
+        "todayHours": "今日工时",
+        "efficiencyGrade": "效率评级",
+        "overallEfficiency": "综合效率"
+      },
+      "aiScore": {
+        "title": "AI效率评分",
+        "attendance": "出勤率",
+        "quality": "质量",
+        "speed": "效率",
+        "trend": "近7天效率提升 {{percent}}%"
+      },
+      "recentTasks": {
+        "title": "近期任务",
+        "today": "今天",
+        "yesterday": "昨天",
+        "dayBefore": "前天",
+        "statusInProgress": "进行中",
+        "statusCompleted": "已完成"
+      }
+    }
+  },
+  "batches": {
+    "title": "批次管理",
+    "searchPlaceholder": "搜索批次号...",
+    "filters": {
+      "all": "全部",
+      "inProgress": "进行中",
+      "pending": "待开始",
+      "completed": "已完成"
+    },
+    "stats": {
+      "inProgress": "进行中",
+      "pending": "待开始",
+      "completed": "已完成"
+    },
+    "status": {
+      "urgent": "[急] ",
+      "pending": "待开始",
+      "inProgress": "进行中",
+      "completed": "已完成"
+    },
+    "fields": {
+      "product": "产品",
+      "target": "目标",
+      "output": "产量",
+      "completedTime": "完成时间",
+      "plannedStart": "计划开始",
+      "progress": "进度"
+    },
+    "progressInfo": "{{current}}kg / {{target}}kg",
+    "estimated": "预计 {{time}}"
+  },
+  "equipment": {
+    "title": "设备管理",
+    "searchPlaceholder": "搜索设备名称或编号...",
+    "status": {
+      "running": "运行中",
+      "idle": "空闲",
+      "maintenance": "维护中",
+      "offline": "离线",
+      "fault": "故障",
+      "unknown": "未知"
+    },
+    "stats": {
+      "running": "运行中",
+      "idle": "空闲",
+      "needMaintenance": "需维护",
+      "total": "总计"
+    },
+    "sections": {
+      "needAttention": "需要关注",
+      "running": "运行中",
+      "idle": "空闲"
+    },
+    "currentTask": "当前: {{task}}",
+    "alert": {
+      "title": "告警详情",
+      "priority": {
+        "high": "高优先级",
+        "medium": "中优先级",
+        "low": "低优先级",
+        "unknown": "未知"
+      },
+      "handled": "已处理",
+      "equipmentInfo": "设备信息",
+      "equipmentName": "设备名称",
+      "equipmentId": "设备编号",
+      "location": "位置",
+      "suggestedActions": "建议操作",
+      "handleHistory": "处理历史",
+      "confirmHandle": "确认处理",
+      "confirmHandleMsg": "确认已处理此告警？",
+      "escalate": "上报",
+      "escalateMsg": "确认上报此告警给设备管理员？",
+      "escalateConfirm": "确认上报",
+      "handleSuccess": "告警已标记为已处理",
+      "escalateSuccess": "告警已上报给设备管理员",
+      "confirmButton": "确认处理"
+    },
+    "maintenance": {
+      "title": "维护记录",
+      "lastMaintenance": "上次维护",
+      "nextMaintenance": "下次维护",
+      "maintenanceCycle": "维护周期",
+      "daysRemaining": "还剩 {{days}} 天",
+      "overdue": "已逾期",
+      "days": "{{days}} 天",
+      "history": "维护历史",
+      "types": {
+        "routine": "定期保养",
+        "repair": "维修",
+        "inspection": "检查",
+        "other": "其他"
+      },
+      "status": {
+        "completed": "已完成",
+        "pending": "进行中",
+        "scheduled": "已计划",
+        "unknown": "未知"
+      },
+      "requestMaintenance": "申请维护",
+      "requestConfirm": "确认提交维护申请？",
+      "requestSuccess": "维护申请已提交，等待设备管理员安排"
+    }
+  },
+  "taskGuideDetail": {
+    "title": "任务执行",
+    "batchProduct": "{{product}} · 目标{{target}}kg",
+    "step1": {
+      "title": "步骤 1/3: 前往工位",
+      "workshop": "车间",
+      "line": "生产线",
+      "station": "工位",
+      "equipment": "设备",
+      "viewMap": "查看车间地图",
+      "arrivedConfirm": "我已到达工位",
+      "nextStep": "下一步：确认设备"
+    },
+    "step2": {
+      "title": "步骤 2/3: 确认设备",
+      "equipmentStatus": {
+        "running": "运行中",
+        "starting": "启动中...",
+        "idle": "空闲"
+      },
+      "oee": "OEE",
+      "lastMaintenance": "上次维护",
+      "startEquipment": "启动设备",
+      "starting": "启动中...",
+      "started": "已启动",
+      "reportIssue": "报告故障",
+      "reportIssueTitle": "报告设备问题",
+      "reportIssueMsg": "确定要报告设备故障吗？这将通知设备管理员。",
+      "reportIssueConfirm": "确认报告",
+      "issueReported": "已提交",
+      "issueReportedMsg": "设备故障报告已提交，设备管理员将尽快处理。",
+      "equipmentReady": "设备已启动并运行正常",
+      "nextStep": "下一步：召集人员"
+    },
+    "step3": {
+      "title": "步骤 3/3: 召集人员",
+      "stats": {
+        "ready": "已到齐",
+        "pending": "待确认",
+        "total": "总人数"
+      },
+      "assignedWorkers": "系统分配人员",
+      "personnelReady": "人员已到齐",
+      "startProduction": "确认开始生产",
+      "confirmStart": "确认开始生产",
+      "confirmStartMsg": "批次 {{batchNumber}} 即将开始生产，确定吗？",
+      "confirmButton": "确认开始"
+    }
+  },
+  "batchDetail": {
+    "title": "批次详情",
+    "status": {
+      "inProgress": "进行中"
+    },
+    "currentStage": "当前工艺环节",
+    "processFlow": "工艺流程",
+    "participants": "参与人员",
+    "equipment": "使用设备",
+    "stages": {
+      "defrost": "解冻",
+      "clean": "清洗",
+      "slice": "切片",
+      "package": "包装",
+      "warehouse": "入库"
+    },
+    "stageStatus": {
+      "completed": "已完成",
+      "inProgress": "进行中",
+      "pending": "待进行"
+    },
+    "stageDuration": {
+      "inProgress": "进行中",
+      "estimated": "预计{{minutes}}分钟完成"
+    },
+    "time": {
+      "start": "开始",
+      "estimated": "预计"
+    },
+    "equipmentStatus": {
+      "running": "运行中"
+    },
+    "actions": {
+      "enterData": "录入数据",
+      "completeBatch": "完成批次"
+    }
+  },
+  "batchStage": {
+    "title": "{{stageName}} - 数据录入",
+    "submit": "提交",
+    "autoData": {
+      "title": "自动采集数据 (只读)",
+      "refresh": "刷新",
+      "duration": "时长",
+      "envTemp": "环境温度",
+      "inputWeight": "投入重量",
+      "outputWeight": "产出重量",
+      "dataSource": "数据来源",
+      "updatedAt": "更新于"
+    },
+    "aiData": {
+      "title": "AI辅助识别 (请确认/修正)",
+      "productCount": "产品计数 (AI识别)",
+      "confidence": "置信度",
+      "confirmedDefects": "确认不合格数",
+      "viewDefects": "查看AI标记图片",
+      "unit": {
+        "pieces": "件",
+        "percent": "%"
+      }
+    },
+    "manualData": {
+      "title": "手动录入数据",
+      "reworkCount": "返工数量 (件)",
+      "thicknessStd": "切片厚度标准差 (mm)",
+      "actualWorkers": "实际参与人数"
+    },
+    "notes": {
+      "title": "备注与问题汇报",
+      "placeholder": "输入备注或问题..."
+    },
+    "comparison": {
+      "title": "AI对比分析",
+      "lossRate": "当前损耗率",
+      "passRate": "当前合格率",
+      "industryAvg": "行业均值"
+    },
+    "actions": {
+      "save": "保存数据"
+    },
+    "alerts": {
+      "submitSuccess": "提交成功",
+      "dataSaved": "工艺环节数据已保存"
+    }
+  },
+  "batchComplete": {
+    "title": "完成批次",
+    "summary": {
+      "title": "批次生产完成",
+      "productionData": "生产数据汇总"
+    },
+    "data": {
+      "targetQuantity": "目标产量",
+      "actualQuantity": "实际产量",
+      "qualifiedQuantity": "合格数量",
+      "qualityRate": "合格率",
+      "totalTime": "总耗时",
+      "workers": "参与人数",
+      "people": "人"
+    },
+    "checklist": {
+      "title": "完成确认",
+      "qualityCheck": "质检已完成",
+      "dataComplete": "数据已录入完整",
+      "equipmentReset": "设备已复位清洁"
+    },
+    "actions": {
+      "confirm": "确认完成批次"
+    },
+    "alerts": {
+      "confirmTitle": "确认完成",
+      "confirmMessage": "确定完成批次 {{batchNumber}} 吗？",
+      "successTitle": "成功",
+      "successMessage": "批次已完成！"
+    }
+  },
+  "materialConsumption": {
+    "title": "原料消耗",
+    "batchInfo": {
+      "currentStage": "{{stage}}"
+    },
+    "stats": {
+      "batches": "消耗批次",
+      "plannedTotal": "计划总量",
+      "actualUsage": "实际用量"
+    },
+    "list": {
+      "title": "消耗记录"
+    },
+    "record": {
+      "status": {
+        "consumed": "已消耗",
+        "pending": "待消耗"
+      },
+      "plannedQuantity": "计划用量",
+      "actualQuantity": "实际用量",
+      "variance": "偏差",
+      "consumedAt": "消耗时间",
+      "operator": "操作员"
+    },
+    "actions": {
+      "add": "添加消耗记录"
+    },
+    "alerts": {
+      "addConsumption": "添加消耗",
+      "selectFromInventory": "从库存选择原料批次进行消耗记录"
+    }
+  },
+  "batchStart": {
+    "title": "创建批次",
+    "selectProduct": "选择产品 *",
+    "targetQuantity": "目标产量 (kg) *",
+    "notes": "备注 (可选)",
+    "placeholder": {
+      "targetQuantity": "请输入目标产量",
+      "notes": "输入备注信息..."
+    },
+    "info": {
+      "title": "提示",
+      "message": "创建批次后，系统将自动分配工位、设备和人员。请在任务开始前完成任务引导流程。"
+    },
+    "actions": {
+      "cancel": "取消",
+      "create": "创建批次"
+    },
+    "alerts": {
+      "selectProduct": "请选择产品",
+      "enterQuantity": "请输入目标产量",
+      "confirmCreate": "确认创建",
+      "confirmMessage": "确定创建新批次吗？\n产品：{{product}}\n目标产量：{{quantity}}kg",
+      "successTitle": "成功",
+      "successMessage": "批次已创建"
+    }
+  }
+}

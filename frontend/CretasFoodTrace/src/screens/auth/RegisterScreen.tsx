@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useRegister } from '../../hooks/useRegister';
 import { RegisterRequest } from '../../types/auth';
 import { NeoCard, NeoButton, ScreenWrapper } from '../../components/ui';
@@ -27,6 +28,8 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation('auth');
+
   // Step 1: Phone Verification
   const [phoneNumber, setPhoneNumber] = useState('');
 
@@ -57,7 +60,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
   const handleVerifyPhone = async () => {
     if (!phoneNumber.trim()) {
-      Alert.alert('提示', '请输入手机号码');
+      Alert.alert(t('register.alerts.hint'), t('register.alerts.phoneRequired'));
       return;
     }
     const result = await verifyPhoneNumber(phoneNumber);
@@ -68,17 +71,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
   const handleRegister = async () => {
     if (!username.trim() || !password.trim() || !realName.trim() || !factoryId.trim()) {
-      Alert.alert('提示', '请填写所有必填项');
+      Alert.alert(t('register.alerts.hint'), t('register.alerts.allFieldsRequired'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('提示', '两次输入的密码不一致');
+      Alert.alert(t('register.alerts.hint'), t('register.alerts.passwordMismatch'));
       return;
     }
 
     if (!tempToken) {
-      Alert.alert('错误', '验证信息过期');
+      Alert.alert(t('register.alerts.error'), t('register.alerts.tokenExpired'));
       return;
     }
 
@@ -156,15 +159,15 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const renderPhoneVerification = () => (
     <View>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>步骤 1/2</Text>
-        <Text style={styles.stepDescription}>手机验证</Text>
+        <Text style={styles.stepTitle}>{t('register.step1of2')}</Text>
+        <Text style={styles.stepDescription}>{t('register.phoneVerification')}</Text>
       </View>
 
-      {renderInput("请输入手机号码", phoneNumber, setPhoneNumber, "phone-portrait-outline", false, false, undefined, "phone-pad")}
+      {renderInput(t('register.phonePlaceholder'), phoneNumber, setPhoneNumber, "phone-portrait-outline", false, false, undefined, "phone-pad")}
 
       <View style={styles.hintContainer}>
         <Ionicons name="information-circle-outline" size={16} color={theme.colors.primary} />
-        <Text style={styles.hintText}>系统将自动验证手机号是否在白名单中</Text>
+        <Text style={styles.hintText}>{t('register.hint')}</Text>
       </View>
 
       {error && (
@@ -181,7 +184,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         disabled={isLoading || !phoneNumber.trim()}
         style={styles.nextButton}
       >
-        验证手机
+        {t('register.verifyPhone')}
       </NeoButton>
     </View>
   );
@@ -189,19 +192,19 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const renderInfoForm = () => (
     <View>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>步骤 2/2</Text>
-        <Text style={styles.stepDescription}>填写完整信息</Text>
+        <Text style={styles.stepTitle}>{t('register.step2of2')}</Text>
+        <Text style={styles.stepDescription}>{t('register.fillCompleteInfo')}</Text>
       </View>
 
-      {renderInput("用户名 (必填)", username, setUsername, "person-outline")}
-      {renderInput("真实姓名 (必填)", realName, setRealName, "card-outline")}
-      {renderInput("工厂ID (必填)", factoryId, setFactoryId, "business-outline")}
-      {renderInput("部门 (可选)", department, setDepartment, "briefcase-outline")}
-      {renderInput("职位 (可选)", position, setPosition, "shield-checkmark-outline")}
-      {renderInput("邮箱 (可选)", email, setEmail, "mail-outline", false, false, undefined, "email-address")}
-      
-      {renderInput("密码 (必填)", password, setPassword, "lock-closed-outline", true, showPassword, () => setShowPassword(!showPassword))}
-      {renderInput("确认密码 (必填)", confirmPassword, setConfirmPassword, "lock-closed-outline", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
+      {renderInput(t('register.usernamePlaceholder'), username, setUsername, "person-outline")}
+      {renderInput(t('register.realNamePlaceholder'), realName, setRealName, "card-outline")}
+      {renderInput(t('register.factoryIdPlaceholder'), factoryId, setFactoryId, "business-outline")}
+      {renderInput(t('register.departmentPlaceholder'), department, setDepartment, "briefcase-outline")}
+      {renderInput(t('register.positionPlaceholder'), position, setPosition, "shield-checkmark-outline")}
+      {renderInput(t('register.emailPlaceholder'), email, setEmail, "mail-outline", false, false, undefined, "email-address")}
+
+      {renderInput(t('register.passwordPlaceholder'), password, setPassword, "lock-closed-outline", true, showPassword, () => setShowPassword(!showPassword))}
+      {renderInput(t('register.confirmPasswordLabel'), confirmPassword, setConfirmPassword, "lock-closed-outline", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
 
       {error && (
         <View style={styles.errorContainer}>
@@ -217,7 +220,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         disabled={isLoading}
         style={styles.nextButton}
       >
-        完成注册
+        {t('register.completeRegistration')}
       </NeoButton>
     </View>
   );
@@ -230,7 +233,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>用户注册</Text>
+        <Text style={styles.headerTitle}>{t('register.headerTitle')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -239,8 +242,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <View style={styles.logoCircle}>
             <Ionicons name="person-add-outline" size={40} color={theme.colors.primary} />
           </View>
-          <Text style={styles.title}>创建账户</Text>
-          <Text style={styles.subtitle}>加入白垩纪食品溯源系统</Text>
+          <Text style={styles.title}>{t('register.createAccount')}</Text>
+          <Text style={styles.subtitle}>{t('register.joinSystem')}</Text>
         </View>
 
         <NeoCard style={styles.formCard}>

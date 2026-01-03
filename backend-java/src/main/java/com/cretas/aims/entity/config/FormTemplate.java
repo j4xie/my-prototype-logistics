@@ -36,8 +36,9 @@ import javax.persistence.*;
 public class FormTemplate extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", columnDefinition = "VARCHAR(36)")
+    @GeneratedValue(generator = "uuid2")
+    @org.hibernate.annotations.GenericGenerator(name = "uuid2", strategy = "uuid2")
+    @Column(name = "id", length = 36)
     private String id;
 
     /**

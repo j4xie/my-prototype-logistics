@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -184,4 +185,19 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
            "AND b.startTime IS NOT NULL AND b.endTime IS NOT NULL AND b.createdAt >= :startDate")
     java.util.List<ProductionBatch> findCompletedBatchesWithTimes(@Param("factoryId") String factoryId,
                                                                    @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 根据批次号查找（用于公开溯源查询）
+     * 解决 N+1 问题：替代 findAll().stream().filter()
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.batchNumber = :batchNumber")
+    Optional<ProductionBatch> findByBatchNumber(@Param("batchNumber") String batchNumber);
+
+    /**
+     * 批量查询多个生产批次 - 解决 N+1 查询问题
+     * @param ids 生产批次ID集合
+     * @return 生产批次列表
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.id IN :ids")
+    java.util.List<ProductionBatch> findByIdIn(@Param("ids") Collection<Long> ids);
 }

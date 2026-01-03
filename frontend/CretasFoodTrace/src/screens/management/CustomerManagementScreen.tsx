@@ -17,6 +17,7 @@ import {
   Menu,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { customerApiClient, Customer, CreateCustomerRequest } from '../../services/api/customerApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError } from '../../utils/errorHandler';
@@ -32,6 +33,7 @@ const customerLogger = logger.createContextLogger('CustomerManagement');
  */
 export default function CustomerManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -69,19 +71,19 @@ export default function CustomerManagementScreen() {
 
   // 客户类型选项
   const customerTypeOptions = [
-    { label: '分销商', value: 'distributor' },
-    { label: '零售商', value: 'retailer' },
-    { label: '直客', value: 'direct' },
-    { label: '其他', value: 'other' },
+    { label: t('customerManagement.customerTypes.distributor'), value: 'distributor' },
+    { label: t('customerManagement.customerTypes.retailer'), value: 'retailer' },
+    { label: t('customerManagement.customerTypes.direct'), value: 'direct' },
+    { label: t('customerManagement.customerTypes.other'), value: 'other' },
   ];
 
   // 行业选项
   const industryOptions = [
-    { label: '餐饮', value: 'restaurant' },
-    { label: '超市', value: 'supermarket' },
-    { label: '电商', value: 'ecommerce' },
-    { label: '食品加工', value: 'food_processing' },
-    { label: '其他', value: 'other' },
+    { label: t('customerManagement.industries.restaurant'), value: 'restaurant' },
+    { label: t('customerManagement.industries.supermarket'), value: 'supermarket' },
+    { label: t('customerManagement.industries.ecommerce'), value: 'ecommerce' },
+    { label: t('customerManagement.industries.foodProcessing'), value: 'food_processing' },
+    { label: t('customerManagement.industries.other'), value: 'other' },
   ];
 
   useEffect(() => {
@@ -109,13 +111,13 @@ export default function CustomerManagementScreen() {
           isArray: Array.isArray(response.data),
         });
         setCustomers([]);
-        Alert.alert('提示', '客户列表数据格式异常，请联系技术支持');
+        Alert.alert(t('common.error'), t('common.error'));
       }
     } catch (error) {
       customerLogger.error('加载客户列表失败', error as Error, {
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '加载客户列表失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -145,14 +147,14 @@ export default function CustomerManagementScreen() {
           isArray: Array.isArray(results),
         });
         setCustomers([]);
-        Alert.alert('提示', '搜索结果数据格式异常');
+        Alert.alert(t('common.error'), t('common.error'));
       }
     } catch (error) {
       customerLogger.error('搜索客户失败', error as Error, {
         keyword: searchQuery,
         factoryId: user?.factoryId,
       });
-      Alert.alert('错误', '搜索失败');
+      Alert.alert(t('common.error'), t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -193,7 +195,7 @@ export default function CustomerManagementScreen() {
   const handleSave = async () => {
     // 验证必填项
     if (!formData.name || !formData.phone) {
-      Alert.alert('提示', '客户名称和联系电话不能为空');
+      Alert.alert(t('common.hint'), t('customerManagement.validation.namePhoneRequired'));
       return;
     }
 
@@ -205,7 +207,7 @@ export default function CustomerManagementScreen() {
           formData as Partial<CreateCustomerRequest>,
           user?.factoryId
         );
-        Alert.alert('成功', '客户信息已更新');
+        Alert.alert(t('common.success'), t('customerManagement.messages.updateSuccess'));
       } else {
         // 创建客户
         /* if (!formData.customerCode) {
@@ -216,7 +218,7 @@ export default function CustomerManagementScreen() {
           formData as CreateCustomerRequest,
           user?.factoryId
         );
-        Alert.alert('成功', '客户创建成功');
+        Alert.alert(t('common.success'), t('customerManagement.messages.createSuccess'));
       }
 
       customerLogger.info(editingCustomer ? '客户更新成功' : '客户创建成功', {
@@ -230,18 +232,18 @@ export default function CustomerManagementScreen() {
         isEdit: !!editingCustomer,
         customerCode: formData.customerCode,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.operationFailed'));
     }
   };
 
   const handleDelete = (customerId: string, customerName: string) => {
     Alert.alert(
-      '确认删除',
-      `确定要删除客户 "${customerName}" 吗？此操作不可撤销。`,
+      t('common.confirmDelete'),
+      t('customerManagement.messages.deleteConfirm', { name: customerName }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '删除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -250,14 +252,14 @@ export default function CustomerManagementScreen() {
                 customerId,
                 customerName,
               });
-              Alert.alert('成功', '客户已删除');
+              Alert.alert(t('common.success'), t('customerManagement.messages.deleteSuccess'));
               loadCustomers();
             } catch (error) {
               customerLogger.error('删除客户失败', error as Error, {
                 customerId,
                 customerName,
               });
-              Alert.alert('错误', (error as any).response?.data?.message || '删除失败');
+              Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.deleteFailed'));
             }
           },
         },
@@ -277,35 +279,35 @@ export default function CustomerManagementScreen() {
         customerId,
         newStatus: !currentStatus ? '启用' : '停用',
       });
-      Alert.alert('成功', currentStatus ? '客户已停用' : '客户已启用');
+      Alert.alert(t('common.success'), currentStatus ? t('customerManagement.messages.disabled') : t('customerManagement.messages.enabled'));
       loadCustomers();
     } catch (error) {
       customerLogger.error('切换客户状态失败', error as Error, {
         customerId,
         currentStatus,
       });
-      Alert.alert('错误', (error as any).response?.data?.message || '操作失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('common.operationFailed'));
     }
   };
 
   const getCustomerTypeName = (type?: string) => {
     switch (type) {
-      case 'distributor': return '分销商';
-      case 'retailer': return '零售商';
-      case 'direct': return '直客';
-      case 'other': return '其他';
-      default: return type || '未分类';
+      case 'distributor': return t('customerManagement.customerTypes.distributor');
+      case 'retailer': return t('customerManagement.customerTypes.retailer');
+      case 'direct': return t('customerManagement.customerTypes.direct');
+      case 'other': return t('customerManagement.customerTypes.other');
+      default: return type || t('common.uncategorized');
     }
   };
 
   const getIndustryName = (industry?: string) => {
     switch (industry) {
-      case 'restaurant': return '餐饮';
-      case 'supermarket': return '超市';
-      case 'ecommerce': return '电商';
-      case 'food_processing': return '食品加工';
-      case 'other': return '其他';
-      default: return industry || '未分类';
+      case 'restaurant': return t('customerManagement.industries.restaurant');
+      case 'supermarket': return t('customerManagement.industries.supermarket');
+      case 'ecommerce': return t('customerManagement.industries.ecommerce');
+      case 'food_processing': return t('customerManagement.industries.foodProcessing');
+      case 'other': return t('customerManagement.industries.other');
+      default: return industry || t('common.uncategorized');
     }
   };
 
@@ -321,12 +323,12 @@ export default function CustomerManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="客户管理" />
+          <Appbar.Content title={t('customerManagement.title')} />
         </Appbar.Header>
         <View style={styles.noPermission}>
           <List.Icon icon="lock" color="#999" />
-          <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
-          <Text style={styles.noPermissionHint}>仅限工厂超管和平台管理员</Text>
+          <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
+          <Text style={styles.noPermissionHint}>{t('common.adminOnly')}</Text>
         </View>
       </View>
     );
@@ -337,14 +339,14 @@ export default function CustomerManagementScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="客户管理" />
+        <Appbar.Content title={t('customerManagement.title')} />
         <Appbar.Action icon="refresh" onPress={loadCustomers} />
       </Appbar.Header>
 
       <ScrollView style={styles.content}>
         {/* Search */}
         <Searchbar
-          placeholder="搜索客户名称、编码、联系人"
+          placeholder={t('customerManagement.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           onSubmitEditing={handleSearch}
@@ -358,9 +360,9 @@ export default function CustomerManagementScreen() {
               value={filterStatus}
               onValueChange={setFilterStatus}
               buttons={[
-                { value: 'all', label: '全部' },
-                { value: 'active', label: '已启用' },
-                { value: 'inactive', label: '已停用' },
+                { value: 'all', label: t('common.all') },
+                { value: 'active', label: t('common.enabled') },
+                { value: 'inactive', label: t('common.disabled') },
               ]}
             />
           </Card.Content>
@@ -372,19 +374,19 @@ export default function CustomerManagementScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{customers.length}</Text>
-                <Text style={styles.statLabel}>总数</Text>
+                <Text style={styles.statLabel}>{t('customerManagement.stats.total')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {customers.filter(c => c.isActive).length}
                 </Text>
-                <Text style={styles.statLabel}>启用</Text>
+                <Text style={styles.statLabel}>{t('customerManagement.stats.enabled')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {customers.filter(c => !c.isActive).length}
                 </Text>
-                <Text style={styles.statLabel}>停用</Text>
+                <Text style={styles.statLabel}>{t('customerManagement.stats.disabled')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -394,14 +396,14 @@ export default function CustomerManagementScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : filteredCustomers.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content style={styles.emptyContent}>
               <List.Icon icon="account-group-outline" color="#999" />
-              <Text style={styles.emptyText}>暂无客户</Text>
-              <Text style={styles.emptyHint}>点击右下角"+"按钮创建客户</Text>
+              <Text style={styles.emptyText}>{t('customerManagement.empty.title')}</Text>
+              <Text style={styles.emptyHint}>{t('customerManagement.empty.hint')}</Text>
             </Card.Content>
           </Card>
         ) : (
@@ -413,7 +415,7 @@ export default function CustomerManagementScreen() {
                   <View style={styles.customerTitleRow}>
                     <View>
                       <Text style={styles.customerName}>{customer.name}</Text>
-                      <Text style={styles.customerCode}>编码: {customer.customerCode}</Text>
+                      <Text style={styles.customerCode}>{t('customerManagement.form.code')}: {customer.customerCode}</Text>
                     </View>
                     <View style={styles.chips}>
                       <Chip
@@ -428,7 +430,7 @@ export default function CustomerManagementScreen() {
                           fontSize: 11
                         }}
                       >
-                        {customer.isActive ? '启用' : '停用'}
+                        {customer.isActive ? t('common.enabled') : t('common.disabled')}
                       </Chip>
                       {customer.customerType && (
                         <Chip
@@ -481,7 +483,7 @@ export default function CustomerManagementScreen() {
                     style={styles.actionButton}
                     compact
                   >
-                    编辑
+                    {t('common.edit')}
                   </Button>
                   <Button
                     mode="outlined"
@@ -490,7 +492,7 @@ export default function CustomerManagementScreen() {
                     style={styles.actionButton}
                     compact
                   >
-                    {customer.isActive ? '停用' : '启用'}
+                    {customer.isActive ? t('common.disable') : t('common.enable')}
                   </Button>
                   <Button
                     mode="outlined"
@@ -500,7 +502,7 @@ export default function CustomerManagementScreen() {
                     compact
                     textColor="#C62828"
                   >
-                    删除
+                    {t('common.delete')}
                   </Button>
                 </View>
               </Card.Content>
@@ -519,90 +521,90 @@ export default function CustomerManagementScreen() {
           contentContainerStyle={styles.modalContent}
         >
           <Text style={styles.modalTitle}>
-            {editingCustomer ? '编辑客户' : '创建客户'}
+            {editingCustomer ? t('customerManagement.modal.editTitle') : t('customerManagement.modal.createTitle')}
           </Text>
 
           <ScrollView style={styles.modalScrollView}>
             {/* Customer Code */}
             {
               editingCustomer && <TextInput
-                label="客户编码 *"
+                label={`${t('customerManagement.form.code')} *`}
                 value={formData.customerCode}
                 onChangeText={(text) => setFormData({ ...formData, customerCode: text })}
                 mode="outlined"
                 style={styles.input}
                 disabled={!!editingCustomer}
-                placeholder="例如：CUS001"
+                placeholder={t('customerManagement.form.codePlaceholder')}
               />
             }
 
             {/* Name */}
             <TextInput
-              label="客户名称 *"
+              label={`${t('customerManagement.form.name')} *`}
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如：XX超市"
+              placeholder={t('customerManagement.form.namePlaceholder')}
             />
 
             {/* Contact Person */}
             <TextInput
-              label="联系人"
+              label={t('customerManagement.form.contactPerson')}
               value={formData.contactPerson}
               onChangeText={(text) => setFormData({ ...formData, contactPerson: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如：李四"
+              placeholder={t('customerManagement.form.contactPersonPlaceholder')}
             />
 
             {/* Contact Phone */}
             <TextInput
-              label="联系电话 *"
+              label={`${t('customerManagement.form.phone')} *`}
               value={formData.phone}
               onChangeText={(text) => setFormData({ ...formData, phone: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="phone-pad"
-              placeholder="例如：13800138000"
+              placeholder={t('customerManagement.form.phonePlaceholder')}
             />
 
             {/* Email */}
             <TextInput
-              label="邮箱"
+              label={t('customerManagement.form.email')}
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
               mode="outlined"
               style={styles.input}
               keyboardType="email-address"
-              placeholder="例如：customer@example.com"
+              placeholder={t('customerManagement.form.emailPlaceholder')}
             />
 
             {/* Address */}
             <TextInput
-              label="地址"
+              label={t('customerManagement.form.address')}
               value={formData.shippingAddress}
               onChangeText={(text) => setFormData({ ...formData, shippingAddress: text })}
               mode="outlined"
               style={styles.input}
               multiline
               numberOfLines={2}
-              placeholder="详细地址"
+              placeholder={t('customerManagement.form.addressPlaceholder')}
             />
 
             {/* Business Type */}
             <TextInput
-              label="业务类型"
+              label={t('customerManagement.form.businessType')}
               value={formData.businessType}
               onChangeText={(text) => setFormData({ ...formData, businessType: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如：水产品零售"
+              placeholder={t('customerManagement.form.businessTypePlaceholder')}
             />
 
             {/* Customer Type */}
             <View style={styles.input}>
-              <Text style={styles.selectLabel}>客户类型</Text>
+              <Text style={styles.selectLabel}>{t('customerManagement.form.customerType')}</Text>
               <Menu
                 visible={customerTypeMenuVisible}
                 onDismiss={() => setCustomerTypeMenuVisible(false)}
@@ -614,7 +616,7 @@ export default function CustomerManagementScreen() {
                     contentStyle={{ justifyContent: 'space-between' }}
                     style={styles.selectButton}
                   >
-                    {customerTypeOptions.find(o => o.value === formData.customerType)?.label || '请选择'}
+                    {customerTypeOptions.find(o => o.value === formData.customerType)?.label || t('common.pleaseSelect')}
                   </Button>
                 }
               >
@@ -633,7 +635,7 @@ export default function CustomerManagementScreen() {
 
             {/* Industry */}
             <View style={styles.input}>
-              <Text style={styles.selectLabel}>行业</Text>
+              <Text style={styles.selectLabel}>{t('customerManagement.form.industry')}</Text>
               <Menu
                 visible={industryMenuVisible}
                 onDismiss={() => setIndustryMenuVisible(false)}
@@ -645,7 +647,7 @@ export default function CustomerManagementScreen() {
                     contentStyle={{ justifyContent: 'space-between' }}
                     style={styles.selectButton}
                   >
-                    {industryOptions.find(o => o.value === formData.industry)?.label || '请选择'}
+                    {industryOptions.find(o => o.value === formData.industry)?.label || t('common.pleaseSelect')}
                   </Button>
                 }
               >
@@ -669,14 +671,14 @@ export default function CustomerManagementScreen() {
               onPress={() => setModalVisible(false)}
               style={styles.modalButton}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               mode="contained"
               onPress={handleSave}
               style={styles.modalButton}
             >
-              {editingCustomer ? '保存' : '创建'}
+              {editingCustomer ? t('common.save') : t('common.create')}
             </Button>
           </View>
         </Modal>
@@ -688,7 +690,7 @@ export default function CustomerManagementScreen() {
           icon="plus"
           style={styles.fab}
           onPress={handleAdd}
-          label="创建客户"
+          label={t('customerManagement.createCustomer')}
         />
       )}
     </View>

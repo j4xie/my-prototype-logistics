@@ -1,0 +1,325 @@
+{
+  "whitelist": {
+    "list": {
+      "title": "白名单管理",
+      "search": "搜索姓名或手机号...",
+      "loading": "加载中...",
+      "empty": "暂无白名单成员",
+      "addMember": "添加成员"
+    },
+    "add": {
+      "title": "添加白名单",
+      "fullName": "姓名",
+      "fullNamePlaceholder": "请输入姓名",
+      "fullNameError": "请输入姓名",
+      "phone": "手机号",
+      "phonePlaceholder": "请输入手机号",
+      "phoneError": "请输入有效的手机号",
+      "submit": "添加",
+      "cancel": "取消",
+      "success": "添加成功",
+      "confirmBack": "确定"
+    },
+    "status": {
+      "active": "已启用",
+      "inactive": "已禁用"
+    },
+    "actions": {
+      "disable": "禁用",
+      "enable": "启用",
+      "confirmDisable": "确认禁用",
+      "confirmDisableMsg": "确定要禁用该成员吗？",
+      "confirmEnable": "确认启用",
+      "confirmEnableMsg": "确定要启用该成员吗？",
+      "confirmDelete": "确认删除",
+      "confirmDeleteMsg": "确定要删除该成员吗？"
+    }
+  },
+  "department": {
+    "list": {
+      "title": "部门管理",
+      "search": "搜索部门名称...",
+      "loading": "加载中...",
+      "empty": "暂无部门",
+      "addDepartment": "添加部门",
+      "active": "正常",
+      "inactive": "停用",
+      "members": "成员",
+      "manager": "负责人"
+    },
+    "add": {
+      "title": "添加部门",
+      "name": "部门名称",
+      "nameRequired": "*",
+      "namePlaceholder": "请输入部门名称",
+      "nameError": "请输入部门名称",
+      "description": "部门描述",
+      "descriptionPlaceholder": "请输入部门描述",
+      "manager": "部门负责人",
+      "selectManager": "请选择负责人",
+      "noManager": "暂不指定",
+      "status": "启用状态",
+      "statusHint": "关闭后该部门将不可用",
+      "cancel": "取消",
+      "submit": "创建",
+      "success": "成功",
+      "successMsg": "部门创建成功",
+      "confirmBack": "确定",
+      "error": "失败",
+      "errorMsg": "创建失败",
+      "loadManagerError": "加载管理人员失败",
+      "createError": "创建失败，请重试",
+      "inputPrompt": "提示",
+      "inputPromptMsg": "请输入部门名称"
+    },
+    "detail": {
+      "title": "部门详情",
+      "loading": "加载中...",
+      "notFound": "部门信息不存在",
+      "loadError": "加载部门信息失败",
+      "active": "正常运行",
+      "inactive": "已停用",
+      "basicInfo": "基本信息",
+      "manager": "负责人",
+      "noManager": "未指定",
+      "memberCount": "成员数量",
+      "memberUnit": "人",
+      "createdAt": "创建时间",
+      "members": "部门成员",
+      "noMembers": "暂无成员",
+      "position": "员工",
+      "confirmEnable": "确认启用",
+      "confirmDisable": "确认停用",
+      "confirmEnableMsg": "确定要启用该部门吗？",
+      "confirmDisableMsg": "确定要停用该部门吗？",
+      "toggleError": "操作失败",
+      "errorTitle": "错误"
+    }
+  },
+  "profile": {
+    "title": "个人中心",
+    "user": {
+      "defaultName": "用户",
+      "role": "人力资源管理员",
+      "factoryDefault": "未分配工厂"
+    },
+    "stats": {
+      "employees": "在职员工",
+      "departments": "部门数量",
+      "attendance": "本月出勤"
+    },
+    "menu": {
+      "management": "管理功能",
+      "settings": "个人设置",
+      "system": "系统",
+      "department": "部门管理",
+      "whitelist": "白名单管理",
+      "scheduling": "排班管理",
+      "myInfo": "个人信息",
+      "myAttendance": "我的考勤",
+      "notifications": "消息通知",
+      "systemSettings": "系统设置",
+      "help": "帮助中心",
+      "about": "关于",
+      "developing": "功能开发中"
+    },
+    "logout": {
+      "confirm": "确认退出",
+      "confirmMsg": "确定要退出登录吗？",
+      "cancel": "取消",
+      "button": "退出登录",
+      "error": "退出失败"
+    },
+    "version": "版本 1.0.0"
+  },
+  "staff": {
+    "list": {
+      "title": "员工管理",
+      "search": "搜索员工...",
+      "filter": "筛选",
+      "loading": "加载中...",
+      "empty": "暂无员工数据",
+      "addStaff": "添加员工",
+      "loadError": "加载员工列表失败",
+      "filterAll": "全部",
+      "filterActive": "在岗",
+      "filterOnLeave": "休假",
+      "filterResigned": "离职",
+      "filterSuspended": "停职",
+      "noDepartment": "未分配部门",
+      "positionDefault": "员工"
+    },
+    "add": {
+      "title": "添加员工",
+      "basicInfo": "基本信息",
+      "workInfo": "工作信息",
+      "username": "用户名",
+      "usernameRequired": "*",
+      "usernameError": "请输入用户名",
+      "usernameMinError": "用户名至少3个字符",
+      "fullName": "姓名",
+      "fullNameRequired": "*",
+      "fullNameError": "请输入姓名",
+      "phone": "手机号",
+      "phoneRequired": "*",
+      "phoneError": "请输入手机号",
+      "phoneInvalid": "请输入有效的手机号",
+      "email": "邮箱",
+      "emailInvalid": "请输入有效的邮箱",
+      "department": "选择部门",
+      "role": "角色",
+      "position": "职位",
+      "submit": "添加员工",
+      "success": "成功",
+      "successMsg": "员工添加成功，默认密码为 123456",
+      "confirmBack": "确定",
+      "error": "错误",
+      "errorMsg": "添加失败，请重试",
+      "loadDeptError": "加载部门列表失败",
+      "roles": {
+        "worker": "普通员工",
+        "teamLeader": "班组长",
+        "deptAdmin": "部门管理员",
+        "qualityInspector": "质检员",
+        "warehouseKeeper": "仓库管理员"
+      }
+    },
+    "detail": {
+      "title": "员工详情",
+      "loading": "加载中...",
+      "notFound": "员工信息不存在",
+      "loadError": "加载员工详情失败",
+      "noDepartment": "未分配部门",
+      "positionDefault": "员工",
+      "basicInfo": "基本信息",
+      "phone": "手机号",
+      "email": "邮箱",
+      "hireDate": "入职日期",
+      "employeeCode": "工号",
+      "attendance": "本月考勤",
+      "workDays": "出勤天数",
+      "lateDays": "迟到",
+      "earlyLeaveDays": "早退",
+      "absentDays": "缺勤",
+      "workSummary": "工时汇总",
+      "totalBatches": "参与批次",
+      "totalHours": "总工时",
+      "totalEarnings": "总收入",
+      "recentBatches": "最近参与批次",
+      "aiAnalysisButton": "AI 分析",
+      "noValue": "-"
+    },
+    "aiAnalysis": {
+      "title": "AI 分析",
+      "loading": "加载分析结果...",
+      "empty": "暂无分析数据",
+      "emptyHint": "点击下方按钮开始AI分析",
+      "analyze": "开始分析",
+      "reanalyze": "重新分析",
+      "overall": "综合评分",
+      "analysisDate": "分析时间",
+      "ability": "能力评估",
+      "efficiency": "工作效率",
+      "quality": "质量表现",
+      "attendance": "出勤情况",
+      "teamwork": "团队协作",
+      "strengths": "优势特点",
+      "improvements": "待改进",
+      "suggestions": "AI 建议",
+      "loadError": "加载AI分析失败",
+      "reanalyzeError": "重新分析失败"
+    }
+  },
+  "analytics": {
+    "performance": {
+      "title": "绩效分析",
+      "loading": "加载中...",
+      "period": {
+        "month": "本月",
+        "quarter": "本季",
+        "year": "本年"
+      },
+      "stats": {
+        "avgScore": "平均分",
+        "excellent": "优秀",
+        "needAttention": "需关注",
+        "noValue": "-"
+      },
+      "distribution": "绩效等级分布",
+      "employeeList": "员工绩效列表",
+      "empty": "暂无绩效数据",
+      "loadError": "加载绩效数据失败",
+      "grades": {
+        "excellent": "优秀",
+        "good": "良好",
+        "average": "一般",
+        "poor": "待改进"
+      },
+      "positionDefault": "员工"
+    },
+    "laborCost": {
+      "title": "工时成本",
+      "loading": "加载中...",
+      "period": {
+        "week": "本周",
+        "month": "本月",
+        "quarter": "本季"
+      },
+      "stats": {
+        "totalCost": "总成本",
+        "totalHours": "总工时",
+        "employees": "参与员工",
+        "avgRate": "时薪均值"
+      },
+      "deptDistribution": "部门成本分布",
+      "workerRank": "员工工时排行",
+      "empty": "暂无数据",
+      "loadError": "加载工时成本数据失败",
+      "noData": "暂无数据",
+      "deptNoAssign": "未分配"
+    }
+  },
+  "production": {
+    "batchWorkers": {
+      "title": "批次员工",
+      "loading": "加载中...",
+      "summary": {
+        "totalWorkers": "总人数",
+        "totalHours": "总工时",
+        "working": "工作中"
+      },
+      "status": {
+        "working": "工作中",
+        "completed": "已完成",
+        "paused": "已暂停",
+        "unknown": "未知"
+      },
+      "noDepartment": "未分配部门",
+      "workTime": "工时",
+      "empty": "暂无分配员工",
+      "emptyHint": "点击下方按钮添加员工",
+      "addWorker": "添加员工",
+      "addWorkerHint": "添加员工功能即将上线",
+      "confirmRemove": "移除员工",
+      "confirmRemoveMsg": "确定要将 {name} 从该批次移除吗？",
+      "removeError": "移除失败，请重试",
+      "loadError": "加载批次员工数据失败"
+    },
+    "batchAssignment": {
+      "title": "批次分配",
+      "loading": "加载中...",
+      "search": "搜索批次号或产品名...",
+      "empty": "暂无批次任务",
+      "loadError": "加载批次分配数据失败",
+      "status": {
+        "in_progress": "进行中",
+        "pending": "待处理",
+        "completed": "已完成"
+      },
+      "assigned": "已分配",
+      "required": "人",
+      "workHours": "工时",
+      "laborCost": "成本"
+    }
+  }
+}
