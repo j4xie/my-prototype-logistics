@@ -1,9 +1,4 @@
 ---
-description: 
-globs: 
-alwaysApply: false
----
----
 description: 项目管理与质量控制详细规范 - 修改项目文档时的完整指导时 - 更新README或任务列表时的规范流程时 - 管理重构阶段文档时的质量控制时 - 项目状态跟踪和进度管理时
 globs: 
 alwaysApply: false

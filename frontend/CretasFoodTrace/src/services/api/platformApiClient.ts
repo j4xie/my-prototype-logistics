@@ -33,6 +33,15 @@ export interface FactoryDTO {
   subscriptionPlan?: string;
   contactName?: string;
   contactEmail?: string;
+  // Extended properties for factory detail view
+  departmentCount?: number;
+  productTypeCount?: number;
+  blueprintName?: string;
+  blueprintVersion?: string;
+  blueprintSynced?: boolean;
+  blueprintUpdatedAt?: string;
+  aiQuotaUsed?: number;
+  aiQuotaTotal?: number;
 }
 
 // 创建工厂请求

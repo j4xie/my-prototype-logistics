@@ -4,12 +4,6 @@ globs:
 alwaysApply: false
 ---
 
----
-description: Cursor Rule规则格式规范和文件组织指南 - 创建和管理.cursor/rules目录下的规则文件时 - 定义规则文件模板结构、命名规范、必需字段和格式指南
-globs: 
-alwaysApply: false
----
-
 # Cursor Rule 规则格式规范
 
 ## 规则文件模板结构

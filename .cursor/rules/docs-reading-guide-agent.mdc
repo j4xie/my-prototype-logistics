@@ -1,9 +1,4 @@
 ---
-description: - 开始新的开发任务时 - 进行架构相关工作时 - 需要了解项目规范和标准时 - 进行API开发或集成时 - 组件开发和设计时
-globs: 
-alwaysApply: false
----
----
 description: 开始新的开发任务时 - 进行架构相关工作时 - 需要了解项目规范和标准时 - 进行API开发或集成时 - 组件开发和设计时
 globs: 
 alwaysApply: false

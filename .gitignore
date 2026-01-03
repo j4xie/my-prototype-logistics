@@ -77,4 +77,13 @@ _archived/
 *.apk
 
 # 产品图片目录（不推送到仓库）
-MallCenter/product image/ 
+MallCenter/product image/
+
+# 临时 I18N 迁移文档（开发过程中生成，不需要版本控制）
+frontend/CretasFoodTrace/*I18N*.md
+frontend/CretasFoodTrace/*_MIGRATION*.md
+frontend/CretasFoodTrace/batch-*.txt
+frontend/CretasFoodTrace/batch-*.json
+frontend/CretasFoodTrace/hr-i18n-*.json
+frontend/CretasFoodTrace/warehouse-*.json
+frontend/CretasFoodTrace/migrate-*.sh
