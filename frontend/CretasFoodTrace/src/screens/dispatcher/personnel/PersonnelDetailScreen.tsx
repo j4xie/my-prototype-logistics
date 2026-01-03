@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 
 // 调度员主题色
 const DISPATCHER_THEME = {
@@ -121,6 +122,7 @@ const mockEmployee: Employee = {
 };
 
 export default function PersonnelDetailScreen() {
+  const { t } = useTranslation('dispatcher');
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [employee] = useState<Employee>(mockEmployee);
@@ -145,16 +147,16 @@ export default function PersonnelDetailScreen() {
   };
 
   const handleEdit = () => {
-    Alert.alert('提示', '编辑功能开发中');
+    Alert.alert(t('common.info'), t('personnelDetailScreen.editInDevelopment'));
   };
 
   const handleDisable = () => {
     Alert.alert(
-      '确认停用',
-      `确定要停用员工 ${employee.name} 吗？停用后将无法分配任务。`,
+      t('personnelDetailScreen.confirmDisable'),
+      t('personnelDetailScreen.disableWarning', { name: employee.name }),
       [
-        { text: '取消', style: 'cancel' },
-        { text: '确定停用', style: 'destructive', onPress: () => {} },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('personnelDetailScreen.confirmDisableButton'), style: 'destructive', onPress: () => {} },
       ]
     );
   };
@@ -171,20 +173,20 @@ export default function PersonnelDetailScreen() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'working': return '工作中';
-      case 'idle': return '空闲';
-      case 'off_duty': return '离岗';
-      case 'on_leave': return '请假';
+      case 'working': return t('personnelDetailScreen.status.working');
+      case 'idle': return t('personnelDetailScreen.status.idle');
+      case 'off_duty': return t('personnelDetailScreen.status.offDuty');
+      case 'on_leave': return t('personnelDetailScreen.status.onLeave');
       default: return status;
     }
   };
 
   const getContractTypeText = (type: string) => {
     switch (type) {
-      case 'full_time': return '正式工';
-      case 'part_time': return '兼职';
-      case 'temporary': return '临时工';
-      case 'dispatch': return '派遣工';
+      case 'full_time': return t('personnelDetailScreen.contractType.fullTime');
+      case 'part_time': return t('personnelDetailScreen.contractType.partTime');
+      case 'temporary': return t('personnelDetailScreen.contractType.temporary');
+      case 'dispatch': return t('personnelDetailScreen.contractType.dispatch');
       default: return type;
     }
   };
@@ -200,9 +202,9 @@ export default function PersonnelDetailScreen() {
 
   const getTaskStatusText = (status: string) => {
     switch (status) {
-      case 'completed': return '已完成';
-      case 'in_progress': return '进行中';
-      case 'cancelled': return '已取消';
+      case 'completed': return t('personnelDetailScreen.taskStatus.completed');
+      case 'in_progress': return t('personnelDetailScreen.taskStatus.inProgress');
+      case 'cancelled': return t('personnelDetailScreen.taskStatus.cancelled');
       default: return status;
     }
   };
@@ -312,7 +314,7 @@ export default function PersonnelDetailScreen() {
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>员工详情</Text>
+        <Text style={styles.headerTitle}>{t('personnelDetailScreen.title')}</Text>
         <TouchableOpacity onPress={handleEdit}>
           <Ionicons name="create-outline" size={24} color="#fff" />
         </TouchableOpacity>
@@ -360,22 +362,22 @@ export default function PersonnelDetailScreen() {
 
         {/* 工作信息 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>工作信息</Text>
+          <Text style={styles.sectionTitle}>{t('personnelDetailScreen.workInfo')}</Text>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>所属车间</Text>
+              <Text style={styles.infoLabel}>{t('personnelDetailScreen.workshop')}</Text>
               <Text style={styles.infoValue}>{employee.workshop}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>职位</Text>
+              <Text style={styles.infoLabel}>{t('personnelDetailScreen.position')}</Text>
               <Text style={styles.infoValue}>{employee.position}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>入职日期</Text>
+              <Text style={styles.infoLabel}>{t('personnelDetailScreen.hireDate')}</Text>
               <Text style={styles.infoValue}>{employee.hireDate}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>工龄</Text>
+              <Text style={styles.infoLabel}>{t('personnelDetailScreen.tenure')}</Text>
               <Text style={styles.infoValue}>{employee.tenure}</Text>
             </View>
           </View>
@@ -383,14 +385,14 @@ export default function PersonnelDetailScreen() {
 
         {/* 工时统计 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>本周工时</Text>
+          <Text style={styles.sectionTitle}>{t('personnelDetailScreen.weeklyHours')}</Text>
           <View style={styles.hoursCard}>
             <View style={styles.hoursMain}>
               <Text style={styles.hoursValue}>{employee.weeklyHours}</Text>
               <Text style={styles.hoursUnit}>/ {employee.maxWeeklyHours}h</Text>
             </View>
             <View style={styles.hoursExtra}>
-              <Text style={styles.overtimeLabel}>加班</Text>
+              <Text style={styles.overtimeLabel}>{t('personnelDetailScreen.overtime')}</Text>
               <Text style={styles.overtimeValue}>{employee.overtimeHours}h</Text>
             </View>
           </View>
@@ -406,7 +408,7 @@ export default function PersonnelDetailScreen() {
 
         {/* 技能等级 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>技能等级</Text>
+          <Text style={styles.sectionTitle}>{t('personnelDetailScreen.skillLevel')}</Text>
           <View style={styles.skillsGrid}>
             {employee.skills.map(renderSkillBar)}
           </View>
@@ -414,7 +416,7 @@ export default function PersonnelDetailScreen() {
 
         {/* 绩效指标 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>绩效指标</Text>
+          <Text style={styles.sectionTitle}>{t('personnelDetailScreen.performanceMetrics')}</Text>
           <View style={styles.metricsGrid}>
             {employee.performance.map(renderPerformanceMetric)}
           </View>
@@ -422,7 +424,7 @@ export default function PersonnelDetailScreen() {
 
         {/* 近期任务 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>近期任务</Text>
+          <Text style={styles.sectionTitle}>{t('personnelDetailScreen.recentTasks')}</Text>
           <View style={styles.tasksList}>
             {employee.recentTasks.map(renderRecentTask)}
           </View>
@@ -432,11 +434,11 @@ export default function PersonnelDetailScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.transferButton} onPress={handleTransfer}>
             <Ionicons name="swap-horizontal" size={18} color={DISPATCHER_THEME.primary} />
-            <Text style={styles.transferButtonText}>调动</Text>
+            <Text style={styles.transferButtonText}>{t('personnelDetailScreen.transfer')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.disableButton} onPress={handleDisable}>
             <Ionicons name="ban-outline" size={18} color={DISPATCHER_THEME.danger} />
-            <Text style={styles.disableButtonText}>停用</Text>
+            <Text style={styles.disableButtonText}>{t('personnelDetailScreen.disable')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

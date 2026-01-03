@@ -24,6 +24,7 @@ import { Text, Card, ActivityIndicator, Button, ProgressBar } from 'react-native
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { hrApiClient } from '../../../services/api/hrApiClient';
 import { MarkdownRenderer } from '../../../components/common/MarkdownRenderer';
@@ -54,6 +55,7 @@ export default function StaffAIAnalysisScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteParams>();
   const { staffId } = route.params;
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -144,7 +146,7 @@ export default function StaffAIAnalysisScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={HR_THEME.primary} />
-        <Text style={styles.loadingText}>加载分析结果...</Text>
+        <Text style={styles.loadingText}>{t('staff.ai.loading')}</Text>
       </View>
     );
   }
@@ -155,7 +157,7 @@ export default function StaffAIAnalysisScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI 分析</Text>
+        <Text style={styles.headerTitle}>{t('staff.ai.title')}</Text>
         <TouchableOpacity onPress={handleReanalyze} style={styles.refreshBtn} disabled={analyzing}>
           <MaterialCommunityIcons
             name="refresh"
@@ -180,8 +182,8 @@ export default function StaffAIAnalysisScreen() {
                 size={64}
                 color={HR_THEME.textMuted}
               />
-              <Text style={styles.emptyTitle}>暂无分析数据</Text>
-              <Text style={styles.emptyText}>点击下方按钮开始AI分析</Text>
+              <Text style={styles.emptyTitle}>{t('staff.ai.noData')}</Text>
+              <Text style={styles.emptyText}>{t('staff.ai.startHint')}</Text>
               <Button
                 mode="contained"
                 onPress={handleReanalyze}
@@ -191,7 +193,7 @@ export default function StaffAIAnalysisScreen() {
                 buttonColor={HR_THEME.primary}
                 icon="robot"
               >
-                开始分析
+                {t('staff.ai.startAnalysis')}
               </Button>
             </Card.Content>
           </Card>
@@ -202,10 +204,10 @@ export default function StaffAIAnalysisScreen() {
               <Card.Content style={styles.overallContent}>
                 <View style={styles.overallScore}>
                   <Text style={styles.overallValue}>{analysis.scores.overall}</Text>
-                  <Text style={styles.overallLabel}>综合评分</Text>
+                  <Text style={styles.overallLabel}>{t('staff.ai.overallScore')}</Text>
                 </View>
                 <Text style={styles.analysisDate}>
-                  分析时间: {analysis.analysisDate}
+                  {t('staff.ai.analysisDate')}: {analysis.analysisDate}
                 </Text>
               </Card.Content>
             </Card>
@@ -213,11 +215,11 @@ export default function StaffAIAnalysisScreen() {
             {/* 分项评分 */}
             <Card style={styles.sectionCard}>
               <Card.Content>
-                <Text style={styles.sectionTitle}>能力评估</Text>
-                {renderScoreItem('工作效率', analysis.scores.efficiency, 'speedometer')}
-                {renderScoreItem('质量表现', analysis.scores.quality, 'check-decagram')}
-                {renderScoreItem('出勤情况', analysis.scores.attendance, 'calendar-check')}
-                {renderScoreItem('团队协作', analysis.scores.teamwork, 'account-group')}
+                <Text style={styles.sectionTitle}>{t('staff.ai.sections.ability')}</Text>
+                {renderScoreItem(t('staff.ai.scores.efficiency'), analysis.scores.efficiency, 'speedometer')}
+                {renderScoreItem(t('staff.ai.scores.quality'), analysis.scores.quality, 'check-decagram')}
+                {renderScoreItem(t('staff.ai.scores.attendance'), analysis.scores.attendance, 'calendar-check')}
+                {renderScoreItem(t('staff.ai.scores.teamwork'), analysis.scores.teamwork, 'account-group')}
               </Card.Content>
             </Card>
 
@@ -226,7 +228,7 @@ export default function StaffAIAnalysisScreen() {
               <Card.Content>
                 <View style={styles.listHeader}>
                   <MaterialCommunityIcons name="star" size={20} color={HR_THEME.success} />
-                  <Text style={styles.sectionTitle}>优势特点</Text>
+                  <Text style={styles.sectionTitle}>{t('staff.ai.sections.strengths')}</Text>
                 </View>
                 {analysis.strengths.map((item, index) => (
                   <View key={index} style={styles.listItem}>
@@ -246,7 +248,7 @@ export default function StaffAIAnalysisScreen() {
               <Card.Content>
                 <View style={styles.listHeader}>
                   <MaterialCommunityIcons name="alert-circle" size={20} color={HR_THEME.warning} />
-                  <Text style={styles.sectionTitle}>待改进</Text>
+                  <Text style={styles.sectionTitle}>{t('staff.ai.sections.improvements')}</Text>
                 </View>
                 {analysis.improvements.map((item, index) => (
                   <View key={index} style={styles.listItem}>
@@ -266,7 +268,7 @@ export default function StaffAIAnalysisScreen() {
               <Card.Content>
                 <View style={styles.listHeader}>
                   <MaterialCommunityIcons name="lightbulb" size={20} color={HR_THEME.info} />
-                  <Text style={styles.sectionTitle}>AI 建议</Text>
+                  <Text style={styles.sectionTitle}>{t('staff.ai.sections.suggestions')}</Text>
                 </View>
                 <MarkdownRenderer content={analysis.suggestions} />
               </Card.Content>

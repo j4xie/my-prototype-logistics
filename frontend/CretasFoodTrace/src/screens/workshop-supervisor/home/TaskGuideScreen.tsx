@@ -13,6 +13,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSHomeStackParamList, 'TaskGuide'>;
@@ -22,6 +23,7 @@ export function TaskGuideScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const { batchId, batchNumber } = route.params || {};
+  const { t } = useTranslation('workshop');
 
   const [isArrived, setIsArrived] = useState(false);
 

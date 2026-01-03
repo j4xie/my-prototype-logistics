@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>报表总览 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">数据报表</div>
+      <div class="header-right">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 时间选择器 -->
+      <div style="display: flex; gap: 8px; margin-bottom: 16px; overflow-x: auto; padding-bottom: 4px;">
+        <div style="padding: 8px 16px; background: #1a1a2e; color: white; border-radius: 20px; font-size: 13px; white-space: nowrap;">今日</div>
+        <div style="padding: 8px 16px; background: white; border: 1px solid #e8e8e8; border-radius: 20px; font-size: 13px; white-space: nowrap; color: #595959;">本周</div>
+        <div style="padding: 8px 16px; background: white; border: 1px solid #e8e8e8; border-radius: 20px; font-size: 13px; white-space: nowrap; color: #595959;">本月</div>
+        <div style="padding: 8px 16px; background: white; border: 1px solid #e8e8e8; border-radius: 20px; font-size: 13px; white-space: nowrap; color: #595959;">自定义</div>
+      </div>
+
+      <!-- 核心指标卡片 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 14px; opacity: 0.8; margin-bottom: 16px;">平台核心指标</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+          <div>
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 4px;">总工厂数</div>
+            <div style="font-size: 28px; font-weight: 700;">156</div>
+            <div style="font-size: 11px; color: #52c41a;">+8 本月新增</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 4px;">活跃工厂</div>
+            <div style="font-size: 28px; font-weight: 700;">142</div>
+            <div style="font-size: 11px; opacity: 0.7;">活跃率 91%</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 4px;">总产量(吨)</div>
+            <div style="font-size: 28px; font-weight: 700;">8,567</div>
+            <div style="font-size: 11px; color: #52c41a;">+15% 较上月</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; opacity: 0.7; margin-bottom: 4px;">质量合格率</div>
+            <div style="font-size: 28px; font-weight: 700;">98.5%</div>
+            <div style="font-size: 11px; color: #52c41a;">+0.3%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 报表快捷入口 -->
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 15px; font-weight: 600; color: #262626; margin-bottom: 12px;">报表分类</div>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+          <a href="report-production.html" style="text-decoration: none; background: white; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #1890ff, #40a9ff); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <line x1="12" y1="20" x2="12" y2="10"/>
+                <line x1="18" y1="20" x2="18" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="16"/>
+              </svg>
+            </div>
+            <span style="font-size: 14px; color: #262626; font-weight: 500;">生产报表</span>
+          </a>
+          <a href="report-quality.html" style="text-decoration: none; background: white; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #52c41a, #95de64); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <span style="font-size: 14px; color: #262626; font-weight: 500;">质量报表</span>
+          </a>
+          <a href="report-factory-ranking.html" style="text-decoration: none; background: white; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #faad14, #ffc53d); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </div>
+            <span style="font-size: 14px; color: #262626; font-weight: 500;">工厂排行</span>
+          </a>
+          <a href="quota-usage-stats.html" style="text-decoration: none; background: white; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+            <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #722ed1, #b37feb); border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <span style="font-size: 14px; color: #262626; font-weight: 500;">配额统计</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- 趋势图占位 -->
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <span style="font-size: 15px; font-weight: 600; color: #262626;">产量趋势</span>
+          <span style="font-size: 12px; color: #1890ff;">查看详情</span>
+        </div>
+        <div style="height: 160px; background: linear-gradient(180deg, rgba(24,144,255,0.1) 0%, rgba(24,144,255,0.02) 100%); border-radius: 8px; display: flex; align-items: flex-end; padding: 12px; gap: 8px;">
+          <div style="flex: 1; height: 40%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 55%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 45%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 70%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 60%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 85%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+          <div style="flex: 1; height: 75%; background: linear-gradient(180deg, #1890ff, #40a9ff); border-radius: 4px 4px 0 0;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 11px; color: #8c8c8c;">
+          <span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span>
+        </div>
+      </div>
+
+      <!-- 最近生成的报表 -->
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="font-size: 15px; font-weight: 600; color: #262626; margin-bottom: 12px;">最近报表</div>
+
+        <div style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: #e6f7ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">12月生产月报</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2025-12-31 生成</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+
+        <div style="display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: #f6ffed; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">Q4质量分析报告</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2025-12-30 生成</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+
+        <div style="display: flex; align-items: center; padding: 12px 0;">
+          <div style="width: 40px; height: 40px; background: #fff7e6; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#faad14" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+            </svg>
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; color: #262626; font-weight: 500;">工厂评级报告</div>
+            <div style="font-size: 12px; color: #8c8c8c;">2025-12-28 生成</div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bfbfbf" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

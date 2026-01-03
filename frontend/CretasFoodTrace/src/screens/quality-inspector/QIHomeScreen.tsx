@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList, QIBatch, QualityStatistics } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
@@ -25,6 +26,7 @@ import { useAuthStore } from '../../store/authStore';
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
 export default function QIHomeScreen() {
+  const { t } = useTranslation('quality');
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
@@ -115,8 +117,8 @@ export default function QIHomeScreen() {
           <Ionicons name="person-circle" size={48} color={QI_COLORS.primary} />
         </View>
         <View style={styles.welcomeText}>
-          <Text style={styles.greeting}>欢迎回来</Text>
-          <Text style={styles.userName}>{user?.fullName || user?.username || '质检员'}</Text>
+          <Text style={styles.greeting}>{t('home.welcomeBack')}</Text>
+          <Text style={styles.userName}>{user?.fullName || user?.username || t('home.qualityInspector')}</Text>
         </View>
         <TouchableOpacity style={styles.notificationBtn} onPress={handleNotifications}>
           <Ionicons name="notifications-outline" size={24} color={QI_COLORS.text} />
@@ -132,7 +134,7 @@ export default function QIHomeScreen() {
       <TouchableOpacity style={styles.nextBatchCard} onPress={handleStartInspection} activeOpacity={0.8}>
         <View style={styles.nextBatchHeader}>
           <Ionicons name="flash" size={20} color="#fff" />
-          <Text style={styles.nextBatchTitle}>下一个待检批次</Text>
+          <Text style={styles.nextBatchTitle}>{t('home.nextPendingBatch')}</Text>
         </View>
         {nextBatch ? (
           <View style={styles.nextBatchContent}>
@@ -140,21 +142,21 @@ export default function QIHomeScreen() {
             <Text style={styles.productName}>{nextBatch.productName}</Text>
             <View style={styles.batchInfo}>
               <Text style={styles.batchInfoText}>
-                数量: {nextBatch.quantity} {nextBatch.unit}
+                {t('home.quantity')}: {nextBatch.quantity} {nextBatch.unit}
               </Text>
               {nextBatch.sourceProcess && (
-                <Text style={styles.batchInfoText}>来源: {nextBatch.sourceProcess}</Text>
+                <Text style={styles.batchInfoText}>{t('home.source')}: {nextBatch.sourceProcess}</Text>
               )}
             </View>
           </View>
         ) : (
           <View style={styles.nextBatchContent}>
-            <Text style={styles.noBatchText}>暂无待检批次</Text>
-            <Text style={styles.noBatchSubText}>点击查看检验记录</Text>
+            <Text style={styles.noBatchText}>{t('home.noPendingBatch')}</Text>
+            <Text style={styles.noBatchSubText}>{t('home.clickToViewRecords')}</Text>
           </View>
         )}
         <View style={styles.nextBatchAction}>
-          <Text style={styles.startText}>{nextBatch ? '开始质检' : '查看列表'}</Text>
+          <Text style={styles.startText}>{nextBatch ? t('home.startInspection') : t('home.viewList')}</Text>
           <Ionicons name="arrow-forward" size={20} color="#fff" />
         </View>
       </TouchableOpacity>
@@ -165,25 +167,25 @@ export default function QIHomeScreen() {
           <Text style={[styles.statValue, { color: '#E65100' }]}>
             {statistics?.today.pending ?? '-'}
           </Text>
-          <Text style={styles.statLabel}>待检</Text>
+          <Text style={styles.statLabel}>{t('home.pending')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#E3F2FD' }]}>
           <Text style={[styles.statValue, { color: '#1565C0' }]}>
             {loading ? '-' : '1'}
           </Text>
-          <Text style={styles.statLabel}>进行中</Text>
+          <Text style={styles.statLabel}>{t('home.inProgress')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#E8F5E9' }]}>
           <Text style={[styles.statValue, { color: '#2E7D32' }]}>
             {statistics?.today.passed ?? '-'}
           </Text>
-          <Text style={styles.statLabel}>已通过</Text>
+          <Text style={styles.statLabel}>{t('home.passed')}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: '#FFEBEE' }]}>
           <Text style={[styles.statValue, { color: '#C62828' }]}>
             {statistics?.today.failed ?? '-'}
           </Text>
-          <Text style={styles.statLabel}>未通过</Text>
+          <Text style={styles.statLabel}>{t('home.failed')}</Text>
         </View>
       </View>
 
@@ -191,31 +193,31 @@ export default function QIHomeScreen() {
       <View style={styles.metricsRow}>
         {/* 合格率 */}
         <View style={styles.metricCard}>
-          <Text style={styles.metricTitle}>今日合格率</Text>
+          <Text style={styles.metricTitle}>{t('home.todayPassRate')}</Text>
           <View style={styles.rateCircle}>
             <Text style={styles.rateValue}>{passRate}</Text>
             <Text style={styles.rateUnit}>%</Text>
           </View>
           <Text style={styles.metricSubText}>
-            {statistics?.today.passed ?? 0}/{statistics?.today.total ?? 0} 批次通过
+            {t('home.batchesPassed', { passed: statistics?.today.passed ?? 0, total: statistics?.today.total ?? 0 })}
           </Text>
         </View>
 
         {/* 效率 */}
         <View style={styles.metricCard}>
-          <Text style={styles.metricTitle}>平均检验时间</Text>
+          <Text style={styles.metricTitle}>{t('home.avgInspectionTime')}</Text>
           <View style={styles.timeDisplay}>
             <Ionicons name="time-outline" size={24} color={QI_COLORS.secondary} />
             <Text style={styles.timeValue}>8.5</Text>
-            <Text style={styles.timeUnit}>分钟/批</Text>
+            <Text style={styles.timeUnit}>{t('home.minutesPerBatch')}</Text>
           </View>
-          <Text style={styles.metricSubText}>较昨日提升 12%</Text>
+          <Text style={styles.metricSubText}>{t('home.improvedFromYesterday', { percent: 12 })}</Text>
         </View>
       </View>
 
       {/* 快捷操作 */}
       <View style={styles.quickActions}>
-        <Text style={styles.sectionTitle}>快捷操作</Text>
+        <Text style={styles.sectionTitle}>{t('home.quickActions')}</Text>
         <View style={styles.actionGrid}>
           <TouchableOpacity
             style={styles.actionItem}
@@ -224,7 +226,7 @@ export default function QIHomeScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#E8F5E9' }]}>
               <Ionicons name="scan" size={24} color={QI_COLORS.primary} />
             </View>
-            <Text style={styles.actionText}>扫码质检</Text>
+            <Text style={styles.actionText}>{t('home.scanInspection')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -234,7 +236,7 @@ export default function QIHomeScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#E3F2FD' }]}>
               <Ionicons name="mic" size={24} color={QI_COLORS.secondary} />
             </View>
-            <Text style={styles.actionText}>语音质检</Text>
+            <Text style={styles.actionText}>{t('home.voiceInspection')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -244,7 +246,7 @@ export default function QIHomeScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#FFF3E0' }]}>
               <Ionicons name="document-text" size={24} color="#E65100" />
             </View>
-            <Text style={styles.actionText}>检验记录</Text>
+            <Text style={styles.actionText}>{t('home.inspectionRecords')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -254,7 +256,7 @@ export default function QIHomeScreen() {
             <View style={[styles.actionIcon, { backgroundColor: '#F3E5F5' }]}>
               <Ionicons name="bar-chart" size={24} color="#7B1FA2" />
             </View>
-            <Text style={styles.actionText}>数据分析</Text>
+            <Text style={styles.actionText}>{t('home.dataAnalysis')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -264,10 +266,10 @@ export default function QIHomeScreen() {
         <View style={styles.alertSection}>
           <View style={styles.alertHeader}>
             <Ionicons name="warning" size={20} color={QI_COLORS.danger} />
-            <Text style={styles.alertTitle}>异常提醒</Text>
+            <Text style={styles.alertTitle}>{t('home.exceptionAlert')}</Text>
           </View>
           <Text style={styles.alertText}>
-            今日有 {statistics.today.failed} 批次未通过检验，请及时处理
+            {t('home.batchesFailedToday', { count: statistics.today.failed })}
           </Text>
         </View>
       )}

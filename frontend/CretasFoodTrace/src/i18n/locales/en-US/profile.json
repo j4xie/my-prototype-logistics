@@ -1,0 +1,122 @@
+{
+  "title": "Profile",
+  "defaultUser": "User",
+  "sections": {
+    "accountSettings": "Account Settings",
+    "systemSettings": "System Settings",
+    "helpSupport": "Help & Support"
+  },
+  "menu": {
+    "personalInfo": "Personal Info",
+    "changePassword": "Change Password",
+    "notificationSettings": "Notifications",
+    "systemSettings": "System Settings",
+    "dataExport": "Data Export",
+    "helpCenter": "Help Center",
+    "feedback": "Feedback",
+    "about": "About",
+    "logout": "Logout",
+    "membership": "Membership",
+    "settings": "Settings",
+    "operationLog": "Operation Log",
+    "statistics": "Statistics"
+  },
+  "roles": {
+    "factoryAdmin": "Factory Admin",
+    "factorySuperAdmin": "Factory Super Admin",
+    "platformAdmin": "Platform Admin",
+    "workshopSupervisor": "Workshop Supervisor",
+    "warehouseManager": "Warehouse Manager",
+    "hrManager": "HR Manager",
+    "dispatcher": "Dispatcher",
+    "operator": "Operator",
+    "viewer": "Viewer"
+  },
+  "personalInfo": {
+    "title": "Personal Info",
+    "avatar": "Avatar",
+    "username": "Username",
+    "realName": "Real Name",
+    "phone": "Phone",
+    "email": "Email",
+    "department": "Department",
+    "factory": "Factory",
+    "role": "Role",
+    "position": "Position",
+    "joinDate": "Join Date",
+    "save": "Save",
+    "edit": "Edit",
+    "saving": "Saving...",
+    "loading": "Loading...",
+    "basicInfo": "Basic Info",
+    "workInfo": "Work Info",
+    "enterPlaceholder": "Enter {{field}}",
+    "updateSuccess": "Profile updated successfully",
+    "updateFailed": "Update failed, please try again"
+  },
+  "changePassword": {
+    "title": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Submit",
+    "passwordHint": "At least 8 characters with letters and numbers"
+  },
+  "notificationSettings": {
+    "title": "Notification Settings",
+    "pushNotification": "Push Notifications",
+    "emailNotification": "Email Notifications",
+    "smsNotification": "SMS Notifications",
+    "systemAlert": "System Alerts",
+    "taskReminder": "Task Reminders",
+    "productionAlert": "Production Alerts",
+    "qualityAlert": "Quality Alerts"
+  },
+  "systemSettings": {
+    "title": "System Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "fontSize": "Font Size",
+    "cache": "Cache",
+    "clearCache": "Clear Cache"
+  },
+  "helpCenter": {
+    "title": "Help Center",
+    "faq": "FAQ",
+    "userGuide": "User Guide",
+    "contactSupport": "Contact Support"
+  },
+  "feedback": {
+    "title": "Feedback",
+    "placeholder": "Please enter your feedback...",
+    "submit": "Submit",
+    "thankYou": "Thank you for your feedback!"
+  },
+  "about": {
+    "title": "About",
+    "version": "Version",
+    "appName": "Cretas Food Trace",
+    "copyright": "Copyright",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfService": "Terms of Service",
+    "checkUpdate": "Check for Updates"
+  },
+  "logout": {
+    "confirmTitle": "Logout",
+    "confirmMessage": "Are you sure you want to logout?",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "messages": {
+    "saveSuccess": "Saved successfully",
+    "saveFailed": "Save failed",
+    "passwordChanged": "Password changed successfully",
+    "passwordMismatch": "Passwords do not match",
+    "cacheCleared": "Cache cleared",
+    "updateAvailable": "Update available",
+    "noUpdate": "Already up to date"
+  }
+}

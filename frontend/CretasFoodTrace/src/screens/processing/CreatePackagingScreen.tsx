@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Image } from 'react-native';
 import { Text, Appbar, TextInput, Button, IconButton, ActivityIndicator, Divider } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ScreenWrapper, NeoCard, NeoButton } from '../../components/ui';
 import { theme } from '../../theme';
 import { useAuthStore } from '../../store/authStore';
 
 export default function CreatePackagingScreen() {
+    const { t } = useTranslation('processing');
     const navigation = useNavigation();
     const { user } = useAuthStore();
     const [currentStep, setCurrentStep] = useState(1);
@@ -19,15 +21,15 @@ export default function CreatePackagingScreen() {
 
     // Mock Products
     const products = [
-        { id: 'P001', name: '冷冻鲈鱼片', icon: 'fish' },
-        { id: 'P002', name: '鲜虾仁', icon: 'shrimp' }, // Note: 'shrimp' might not be a valid icon, using fallback
-        { id: 'P003', name: '带鱼段', icon: 'fish' },
-        { id: 'P004', name: '鱿鱼圈', icon: 'circle-outline' },
+        { id: 'P001', name: t('packaging.products.frozenBass'), icon: 'fish' },
+        { id: 'P002', name: t('packaging.products.shrimp'), icon: 'shrimp' }, // Note: 'shrimp' might not be a valid icon, using fallback
+        { id: 'P003', name: t('packaging.products.ribbonFish'), icon: 'fish' },
+        { id: 'P004', name: t('packaging.products.squidRings'), icon: 'circle-outline' },
     ];
 
     const handleNext = () => {
-        if (currentStep === 1 && !selectedProduct) return Alert.alert('提示', '请选择产品');
-        if (currentStep === 2 && !quantity) return Alert.alert('提示', '请输入重量');
+        if (currentStep === 1 && !selectedProduct) return Alert.alert(t('common.hint', { defaultValue: '提示' }), t('packaging.validation.selectProduct'));
+        if (currentStep === 2 && !quantity) return Alert.alert(t('common.hint', { defaultValue: '提示' }), t('packaging.validation.enterWeight'));
         setCurrentStep(c => c + 1);
     };
 
@@ -36,11 +38,11 @@ export default function CreatePackagingScreen() {
         try {
             // Simulate API call
             await new Promise(resolve => setTimeout(resolve, 1500));
-            Alert.alert('打包完成', '标签已打印，请贴标', [
-                { text: '确定', onPress: () => navigation.goBack() }
+            Alert.alert(t('packaging.dialog.completeTitle'), t('packaging.dialog.completeMessage'), [
+                { text: t('packaging.dialog.ok'), onPress: () => navigation.goBack() }
             ]);
         } catch (error) {
-            Alert.alert('失败', '请重试');
+            Alert.alert(t('packaging.messages.failed'), t('packaging.messages.retry'));
         } finally {
             setLoading(false);
         }
@@ -51,7 +53,7 @@ export default function CreatePackagingScreen() {
             case 1: // Select Product
                 return (
                     <View style={styles.stepContainer}>
-                        <Text variant="headlineSmall" style={styles.title}>第一步: 选择产品</Text>
+                        <Text variant="headlineSmall" style={styles.title}>{t('packaging.steps.selectProduct')}</Text>
                         <View style={styles.grid}>
                             {products.map((p) => (
                                 <TouchableOpacity
@@ -85,9 +87,9 @@ export default function CreatePackagingScreen() {
             case 2: // Quantity & Boxes
                 return (
                     <View style={styles.stepContainer}>
-                        <Text variant="headlineSmall" style={styles.title}>第二步: 规格与数量</Text>
+                        <Text variant="headlineSmall" style={styles.title}>{t('packaging.steps.specAndQuantity')}</Text>
 
-                        <Text style={styles.label}>单箱重量 (kg)</Text>
+                        <Text style={styles.label}>{t('packaging.fields.weightPerBox')}</Text>
                         <TextInput
                             style={styles.bigInput}
                             value={quantity}
@@ -97,7 +99,7 @@ export default function CreatePackagingScreen() {
                             right={<TextInput.Affix text="kg" />}
                         />
 
-                        <Text style={styles.label}>箱数</Text>
+                        <Text style={styles.label}>{t('packaging.fields.boxCount')}</Text>
                         <View style={styles.counterContainer}>
                             <IconButton
                                 icon="minus-circle-outline"
@@ -118,26 +120,26 @@ export default function CreatePackagingScreen() {
                 const product = products.find(p => p.id === selectedProduct);
                 return (
                     <View style={styles.stepContainer}>
-                        <Text variant="headlineSmall" style={styles.title}>第三步: 确认并打印</Text>
+                        <Text variant="headlineSmall" style={styles.title}>{t('packaging.steps.confirmAndPrint')}</Text>
 
                         <NeoCard style={styles.summaryCard} padding="l">
                             <View style={styles.row}>
-                                <Text style={styles.label}>产品:</Text>
+                                <Text style={styles.label}>{t('packaging.fields.product')}:</Text>
                                 <Text style={styles.value}>{product?.name}</Text>
                             </View>
                             <Divider style={styles.divider} />
                             <View style={styles.row}>
-                                <Text style={styles.label}>规格:</Text>
+                                <Text style={styles.label}>{t('packaging.fields.specification')}:</Text>
                                 <Text style={styles.value}>{quantity} kg/箱</Text>
                             </View>
                             <Divider style={styles.divider} />
                             <View style={styles.row}>
-                                <Text style={styles.label}>数量:</Text>
+                                <Text style={styles.label}>{t('packaging.fields.quantity')}:</Text>
                                 <Text style={styles.value}>{boxCount} 箱</Text>
                             </View>
                             <Divider style={styles.divider} />
                             <View style={styles.totalRow}>
-                                <Text style={styles.totalLabel}>总重量:</Text>
+                                <Text style={styles.totalLabel}>{t('packaging.fields.totalWeight')}:</Text>
                                 <Text style={styles.totalValue}>
                                     {(parseFloat(quantity || '0') * parseInt(boxCount)).toFixed(1)} kg
                                 </Text>
@@ -146,7 +148,7 @@ export default function CreatePackagingScreen() {
 
                         <View style={styles.printPreview}>
                             <IconButton icon="printer" size={32} />
-                            <Text>将自动打印 {boxCount} 张标签</Text>
+                            <Text>{t('packaging.print.preview', { count: Number(boxCount) })}</Text>
                         </View>
                     </View>
                 );
@@ -159,7 +161,7 @@ export default function CreatePackagingScreen() {
         <ScreenWrapper edges={['top']} backgroundColor={theme.colors.background}>
             <Appbar.Header elevated>
                 <Appbar.BackAction onPress={() => navigation.goBack()} />
-                <Appbar.Content title={`产品包装 (步骤 ${currentStep}/3)`} />
+                <Appbar.Content title={t('packaging.stepOf', { current: currentStep, total: 3 })} />
             </Appbar.Header>
 
             <ScrollView contentContainerStyle={styles.content}>
@@ -168,13 +170,13 @@ export default function CreatePackagingScreen() {
                 <View style={styles.actions}>
                     {currentStep > 1 && (
                         <Button mode="outlined" onPress={() => setCurrentStep(c => c - 1)} style={styles.btn}>
-                            上一步
+                            {t('packaging.actions.previous')}
                         </Button>
                     )}
 
                     {currentStep < 3 ? (
                         <Button mode="contained" onPress={handleNext} style={[styles.btn, { flex: 1 }]}>
-                            下一步
+                            {t('packaging.actions.next')}
                         </Button>
                     ) : (
                         <Button
@@ -184,7 +186,7 @@ export default function CreatePackagingScreen() {
                             style={[styles.btn, { flex: 1 }]}
                             icon="printer"
                         >
-                            打印标签并完成
+                            {t('packaging.actions.printAndComplete')}
                         </Button>
                     )}
                 </View>

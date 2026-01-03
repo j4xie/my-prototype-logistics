@@ -13,6 +13,7 @@ import { Text, Card, SegmentedButtons, ActivityIndicator } from 'react-native-pa
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { timeStatsApiClient } from '../../../services/api/timeStatsApiClient';
 import { HR_THEME } from '../../../types/hrNavigation';
@@ -42,6 +43,7 @@ interface AttendanceStats {
 
 export default function AttendanceStatsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<PeriodType>('week');
@@ -64,7 +66,7 @@ export default function AttendanceStatsScreen() {
         });
       }
     } catch (error) {
-      console.error('加载考勤统计失败:', error);
+      console.error(t('common.loading'), error);
       // 设置默认数据
       setStats({
         totalEmployees: 45,
@@ -113,7 +115,7 @@ export default function AttendanceStatsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>考勤统计</Text>
+        <Text style={styles.headerTitle}>{t('attendance.stats.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -122,9 +124,9 @@ export default function AttendanceStatsScreen() {
           value={period}
           onValueChange={(value) => setPeriod(value as PeriodType)}
           buttons={[
-            { value: 'week', label: '本周' },
-            { value: 'month', label: '本月' },
-            { value: 'quarter', label: '本季度' },
+            { value: 'week', label: t('attendance.stats.period.week') },
+            { value: 'month', label: t('attendance.stats.period.month') },
+            { value: 'quarter', label: t('attendance.stats.period.quarter') },
           ]}
           style={styles.segmented}
         />
@@ -143,7 +145,7 @@ export default function AttendanceStatsScreen() {
                 <MaterialCommunityIcons name="percent" size={24} color={HR_THEME.primary} />
               </View>
               <Text style={styles.statValue}>{stats?.avgAttendanceRate?.toFixed(1) ?? 0}%</Text>
-              <Text style={styles.statLabel}>平均出勤率</Text>
+              <Text style={styles.statLabel}>{t('attendance.stats.avgAttendanceRate')}</Text>
             </Card.Content>
           </Card>
 
@@ -153,7 +155,7 @@ export default function AttendanceStatsScreen() {
                 <MaterialCommunityIcons name="clock-outline" size={24} color={HR_THEME.info} />
               </View>
               <Text style={styles.statValue}>{stats?.avgDailyHours?.toFixed(1) ?? 0}h</Text>
-              <Text style={styles.statLabel}>日均工时</Text>
+              <Text style={styles.statLabel}>{t('attendance.stats.avgHoursPerDay')}</Text>
             </Card.Content>
           </Card>
 
@@ -163,7 +165,7 @@ export default function AttendanceStatsScreen() {
                 <MaterialCommunityIcons name="account-group" size={24} color={HR_THEME.success} />
               </View>
               <Text style={styles.statValue}>{stats?.totalEmployees ?? 0}</Text>
-              <Text style={styles.statLabel}>在岗人数</Text>
+              <Text style={styles.statLabel}>{t('attendance.stats.onSiteCount')}</Text>
             </Card.Content>
           </Card>
 
@@ -173,7 +175,7 @@ export default function AttendanceStatsScreen() {
                 <MaterialCommunityIcons name="timer-sand" size={24} color={HR_THEME.warning} />
               </View>
               <Text style={styles.statValue}>{stats?.totalWorkHours ?? 0}h</Text>
-              <Text style={styles.statLabel}>总工时</Text>
+              <Text style={styles.statLabel}>{t('attendance.stats.totalHours')}</Text>
             </Card.Content>
           </Card>
         </View>
@@ -181,28 +183,28 @@ export default function AttendanceStatsScreen() {
         {/* 异常统计 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>异常统计</Text>
+            <Text style={styles.sectionTitle}>{t('attendance.stats.anomalyStats')}</Text>
             <View style={styles.anomalyGrid}>
               <View style={styles.anomalyItem}>
                 <View style={[styles.anomalyIcon, { backgroundColor: '#fff7e6' }]}>
                   <MaterialCommunityIcons name="clock-alert" size={20} color={HR_THEME.warning} />
                 </View>
                 <Text style={styles.anomalyValue}>{stats?.lateCount ?? 0}</Text>
-                <Text style={styles.anomalyLabel}>迟到</Text>
+                <Text style={styles.anomalyLabel}>{t('attendance.stats.late')}</Text>
               </View>
               <View style={styles.anomalyItem}>
                 <View style={[styles.anomalyIcon, { backgroundColor: '#e6f7ff' }]}>
                   <MaterialCommunityIcons name="exit-run" size={20} color={HR_THEME.info} />
                 </View>
                 <Text style={styles.anomalyValue}>{stats?.earlyLeaveCount ?? 0}</Text>
-                <Text style={styles.anomalyLabel}>早退</Text>
+                <Text style={styles.anomalyLabel}>{t('attendance.stats.earlyLeave')}</Text>
               </View>
               <View style={styles.anomalyItem}>
                 <View style={[styles.anomalyIcon, { backgroundColor: '#fff2f0' }]}>
                   <MaterialCommunityIcons name="account-off" size={20} color={HR_THEME.danger} />
                 </View>
                 <Text style={styles.anomalyValue}>{stats?.absentCount ?? 0}</Text>
-                <Text style={styles.anomalyLabel}>缺勤</Text>
+                <Text style={styles.anomalyLabel}>{t('attendance.stats.absent')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -211,7 +213,7 @@ export default function AttendanceStatsScreen() {
         {/* 部门排行 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>部门出勤排行</Text>
+            <Text style={styles.sectionTitle}>{t('attendance.stats.departmentRanking')}</Text>
             {stats?.departmentStats?.map((dept, index) => (
               <View key={index} style={styles.deptRow}>
                 <View style={styles.deptRank}>

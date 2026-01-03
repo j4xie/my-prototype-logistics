@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { Text, Card, List, Divider, Checkbox, Button, ActivityIndicator, Chip } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export interface SelectedBatch {
   id: string;
@@ -45,8 +46,8 @@ interface MaterialBatchSelectorProps {
 }
 
 /**
- * 原材料批次选择器
- * 用于生产计划创建时选择原料批次
+ * Material Batch Selector Component
+ * Used for selecting material batches when creating production plans
  */
 export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
   availableBatches,
@@ -55,6 +56,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
   onSelect,
   mode = 'fifo',
 }) => {
+  const { t } = useTranslation('common');
   const [localSelections, setLocalSelections] = useState<Map<string, number>>(new Map());
 
   // 初始化：如果是FIFO模式，自动推荐批次
@@ -104,7 +106,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
       if (allocateQty > 0) {
         newSelections.set(batchId, allocateQty);
       } else {
-        Alert.alert('提示', '已满足需求量，无需再选择批次');
+        Alert.alert(t('materialBatchSelector.demandSatisfied'), t('materialBatchSelector.noNeedMore'));
         return;
       }
     }
@@ -122,7 +124,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
     } else if (newQty <= maxQty) {
       newSelections.set(batchId, newQty);
     } else {
-      Alert.alert('错误', `超出批次可用量 ${maxQty}kg`);
+      Alert.alert(t('error.general'), t('materialBatchSelector.exceedsAvailable', { max: maxQty }));
       return;
     }
 
@@ -160,20 +162,20 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* 标题和统计 */}
+      {/* Header and Stats */}
       <View style={styles.header}>
-        <Text variant="titleMedium" style={styles.title}>原材料批次选择</Text>
+        <Text variant="titleMedium" style={styles.title}>{t('materialBatchSelector.title')}</Text>
         {mode === 'fifo' && (
-          <Chip icon="auto-fix" compact>FIFO推荐</Chip>
+          <Chip icon="auto-fix" compact>{t('materialBatchSelector.fifoRecommended')}</Chip>
         )}
       </View>
 
-      {/* 需求量和选中量统计 */}
+      {/* Required and Selected Quantity Stats */}
       <Card style={styles.statsCard} mode="outlined">
         <Card.Content>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text variant="labelSmall" style={styles.statLabel}>需求量</Text>
+              <Text variant="labelSmall" style={styles.statLabel}>{t('materialBatchSelector.requiredQuantity')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
                 {requiredQuantity.toFixed(1)}kg
               </Text>
@@ -182,7 +184,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
             <List.Icon icon="arrow-right" />
 
             <View style={styles.statItem}>
-              <Text variant="labelSmall" style={styles.statLabel}>已选量</Text>
+              <Text variant="labelSmall" style={styles.statLabel}>{t('materialBatchSelector.selectedQuantity')}</Text>
               <Text
                 variant="titleMedium"
                 style={[
@@ -198,7 +200,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
               <>
                 <List.Icon icon="alert" color="#F44336" />
                 <View style={styles.statItem}>
-                  <Text variant="labelSmall" style={styles.statLabel}>还需</Text>
+                  <Text variant="labelSmall" style={styles.statLabel}>{t('materialBatchSelector.stillNeed')}</Text>
                   <Text variant="titleMedium" style={[styles.statValue, styles.statInsufficient]}>
                     {shortage.toFixed(1)}kg
                   </Text>
@@ -208,24 +210,24 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
 
             {isSufficient && (
               <Chip icon="check-circle" textStyle={{ color: '#4CAF50' }} compact>
-                已满足
+                {t('materialBatchSelector.satisfied')}
               </Chip>
             )}
           </View>
         </Card.Content>
       </Card>
 
-      {/* 批次列表 */}
+      {/* Batch List */}
       {availableBatches.length === 0 ? (
         <Card style={styles.emptyCard}>
           <Card.Content>
             <View style={styles.emptyContainer}>
               <List.Icon icon="package-variant-closed" color="#9E9E9E" />
               <Text variant="bodyMedium" style={styles.emptyText}>
-                暂无可用批次
+                {t('materialBatchSelector.noBatchesAvailable')}
               </Text>
               <Text variant="bodySmall" style={styles.emptyHint}>
-                请先入库该原料
+                {t('materialBatchSelector.pleaseInboundFirst')}
               </Text>
             </View>
           </Card.Content>
@@ -269,39 +271,39 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
                             {item.batchNumber}
                           </Text>
                           {item.qualityGrade && (
-                            <Chip compact style={styles.gradeChip}>{item.qualityGrade}级</Chip>
+                            <Chip compact style={styles.gradeChip}>{item.qualityGrade}{t('materialBatchSelector.grade')}</Chip>
                           )}
                         </View>
                       </View>
                     </View>
 
-                    {/* 批次详情 */}
+                    {/* Batch Details */}
                     <View style={styles.batchDetails}>
                       <View style={styles.detailRow}>
                         <List.Icon icon="package-variant" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
-                          可用: <Text style={styles.detailValue}>{remainingQty}kg</Text>
+                          {t('materialBatchSelector.available')}: <Text style={styles.detailValue}>{remainingQty}kg</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
                         <List.Icon icon="currency-cny" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
-                          单价: <Text style={styles.detailValue}>¥{item.unitPrice}/kg</Text>
+                          {t('materialBatchSelector.unitPrice')}: <Text style={styles.detailValue}>¥{item.unitPrice}/kg</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
                         <List.Icon icon="store" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
-                          供应商: <Text style={styles.detailValue}>{item.supplier.name}</Text>
+                          {t('materialBatchSelector.supplier')}: <Text style={styles.detailValue}>{item.supplier.name}</Text>
                         </Text>
                       </View>
 
                       <View style={styles.detailRow}>
                         <List.Icon icon="calendar" style={styles.detailIcon} />
                         <Text variant="bodySmall" style={styles.detailText}>
-                          入库: <Text style={styles.detailValue}>
+                          {t('materialBatchSelector.inboundDate')}: <Text style={styles.detailValue}>
                             {new Date(item.inboundDate).toLocaleDateString('zh-CN')}
                           </Text>
                         </Text>
@@ -311,29 +313,29 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
                         <View style={styles.detailRow}>
                           <List.Icon icon="clock-alert-outline" style={styles.detailIcon} />
                           <Text variant="bodySmall" style={styles.detailText}>
-                            保质期: <Text style={[
+                            {t('materialBatchSelector.expiryDate')}: <Text style={[
                               styles.detailValue,
                               isExpiringSoon && styles.expiryWarning
                             ]}>
                               {new Date(item.expiryDate).toLocaleDateString('zh-CN')}
-                              {daysToExpiry !== null && ` (${daysToExpiry}天)`}
+                              {daysToExpiry !== null && ` (${daysToExpiry}${t('materialBatchSelector.days')})`}
                             </Text>
                           </Text>
                         </View>
                       )}
                     </View>
 
-                    {/* 已选中状态 */}
+                    {/* Selected Status */}
                     {isSelected && (
                       <View style={styles.selectedInfo}>
                         <Text variant="bodySmall" style={styles.selectedLabel}>
-                          已分配量:
+                          {t('materialBatchSelector.allocated')}:
                         </Text>
                         <Text variant="titleSmall" style={styles.selectedQuantity}>
                           {allocatedQty.toFixed(1)}kg
                         </Text>
                         <Text variant="bodySmall" style={styles.selectedCost}>
-                          成本: ¥{(allocatedQty * parseFloat(item.unitPrice.toString())).toFixed(2)}
+                          {t('materialBatchSelector.cost')}: ¥{(allocatedQty * parseFloat(item.unitPrice.toString())).toFixed(2)}
                         </Text>
                       </View>
                     )}
@@ -348,7 +350,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
               <Card style={styles.summaryCard} mode="elevated">
                 <Card.Content>
                   <Text variant="titleSmall" style={styles.summaryTitle}>
-                    选中批次汇总
+                    {t('materialBatchSelector.summary')}
                   </Text>
                   <Divider style={styles.summaryDivider} />
 
@@ -369,7 +371,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
                   <Divider style={styles.summaryDivider} />
 
                   <View style={styles.summaryTotal}>
-                    <Text variant="titleSmall">合计</Text>
+                    <Text variant="titleSmall">{t('materialBatchSelector.total')}</Text>
                     <Text variant="titleSmall" style={styles.summaryTotalQuantity}>
                       {totalSelected.toFixed(1)}kg
                     </Text>
@@ -382,7 +384,7 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
                     <View style={styles.warningBox}>
                       <List.Icon icon="alert" color="#F44336" />
                       <Text variant="bodySmall" style={styles.warningText}>
-                        ⚠️ 选中批次不足，还需 {shortage.toFixed(1)}kg
+                        {t('materialBatchSelector.insufficientWarning', { shortage: shortage.toFixed(1) })}
                       </Text>
                     </View>
                   )}
@@ -393,14 +395,14 @@ export const MaterialBatchSelector: React.FC<MaterialBatchSelectorProps> = ({
         />
       )}
 
-      {/* 操作提示 */}
+      {/* Operation Hints */}
       {availableBatches.length > 0 && (
         <View style={styles.hintBox}>
           <List.Icon icon="information-outline" color="#757575" />
           <Text variant="bodySmall" style={styles.hintText}>
             {mode === 'fifo'
-              ? '系统已按FIFO（先进先出）原则自动推荐批次，您可手动调整'
-              : '请手动选择批次以满足生产需求'}
+              ? t('materialBatchSelector.fifoHint')
+              : t('materialBatchSelector.manualHint')}
           </Text>
         </View>
       )}

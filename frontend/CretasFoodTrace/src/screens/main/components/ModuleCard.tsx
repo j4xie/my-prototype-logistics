@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Dimensions } from 'react-native';
 import { Text, Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { ModuleConfig } from '../../../types/navigation';
 import { NeoCard, StatusBadge } from '../../../components/ui';
 import { theme } from '../../../theme';
@@ -25,6 +26,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
   onPress,
   disabled = false
 }) => {
+  const { t } = useTranslation('common');
   const isAvailable = module.status === 'available';
   const isComingSoon = module.status === 'coming_soon';
   const isLocked = module.status === 'locked';
@@ -35,10 +37,10 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({
   // Get status badge config
   const renderStatusBadge = () => {
     if (isComingSoon) {
-      return <StatusBadge status="即将上线" variant="info" style={styles.badge} />;
+      return <StatusBadge status={t('moduleStatus.comingSoon')} variant="info" style={styles.badge} />;
     }
     if (isLocked) {
-      return <StatusBadge status="已锁定" variant="default" style={styles.badge} />;
+      return <StatusBadge status={t('moduleStatus.locked')} variant="default" style={styles.badge} />;
     }
     if (module.progress !== undefined && module.progress < 100) {
       return <StatusBadge status={`${module.progress}%`} variant="warning" style={styles.badge} />;

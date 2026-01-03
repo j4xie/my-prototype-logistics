@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import { aiApiClient, ReportSummary } from '../../../services/api/aiApiClient';
 
@@ -25,6 +26,7 @@ type ReportType = 'all' | 'batch' | 'weekly' | 'monthly' | 'custom';
 
 export function AIReportScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,13 +41,13 @@ export function AIReportScreen() {
       const response = await aiApiClient.getReports(params);
       setReports(response.reports || []);
     } catch (err) {
-      console.error('加载报告列表失败:', err);
-      setError('加载失败，请稍后重试');
+      console.error(t('aiReport.loadFailed') || 'Load reports failed:', err);
+      setError(t('aiReport.loadFailedMessage'));
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [filterType]);
+  }, [filterType, t]);
 
   useEffect(() => {
     loadReports();
@@ -78,10 +80,10 @@ export function AIReportScreen() {
 
   const getReportTypeLabel = (type: string): string => {
     const labels: Record<string, string> = {
-      batch: '批次分析',
-      weekly: '周报',
-      monthly: '月报',
-      custom: '自定义',
+      batch: t('aiReport.batchAnalysis'),
+      weekly: t('aiReport.weeklyReport'),
+      monthly: t('aiReport.monthlyReport'),
+      custom: t('aiReport.customReport'),
     };
     return labels[type] || type;
   };
@@ -106,7 +108,7 @@ export function AIReportScreen() {
           <Text
             style={[styles.filterTabText, filterType === type && styles.filterTabTextActive]}
           >
-            {type === 'all' ? '全部' : getReportTypeLabel(type)}
+            {type === 'all' ? t('common.all') : getReportTypeLabel(type)}
           </Text>
         </TouchableOpacity>
       ))}
@@ -150,20 +152,20 @@ export function AIReportScreen() {
         <View style={styles.reportStats}>
           {item.totalCost !== undefined && (
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>总成本</Text>
+              <Text style={styles.statLabel}>{t('aiReport.totalCost')}</Text>
               <Text style={styles.statValue}>¥{item.totalCost.toFixed(2)}</Text>
             </View>
           )}
           {item.keyFindingsCount !== undefined && (
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>关键发现</Text>
-              <Text style={styles.statValue}>{item.keyFindingsCount} 项</Text>
+              <Text style={styles.statLabel}>{t('aiReport.keyFindings')}</Text>
+              <Text style={styles.statValue}>{item.keyFindingsCount} {t('aiReport.items')}</Text>
             </View>
           )}
           {item.suggestionsCount !== undefined && (
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>建议</Text>
-              <Text style={styles.statValue}>{item.suggestionsCount} 条</Text>
+              <Text style={styles.statLabel}>{t('aiReport.suggestions')}</Text>
+              <Text style={styles.statValue}>{item.suggestionsCount} {t('aiReport.items')}</Text>
             </View>
           )}
         </View>
@@ -178,12 +180,12 @@ export function AIReportScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Icon source="arrow-left" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>数据报表</Text>
+          <Text style={styles.headerTitle}>{t('aiReport.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -196,7 +198,7 @@ export function AIReportScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>数据报表</Text>
+        <Text style={styles.headerTitle}>{t('aiReport.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -222,8 +224,8 @@ export function AIReportScreen() {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Icon source="file-document-outline" size={48} color="#ccc" />
-            <Text style={styles.emptyText}>暂无报告</Text>
-            <Text style={styles.emptyHint}>完成AI分析后，报告将显示在这里</Text>
+            <Text style={styles.emptyText}>{t('aiReport.noReports')}</Text>
+            <Text style={styles.emptyHint}>{t('aiReport.noReportsHint')}</Text>
           </View>
         }
       />

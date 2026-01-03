@@ -17,6 +17,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import {
   qualityInspectionApiClient,
@@ -30,6 +31,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 export function QualityAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('management');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -68,8 +70,8 @@ export function QualityAnalysisScreen() {
         setTrends(trendsResponse.data);
       }
     } catch (err) {
-      console.error('加载质量数据失败:', err);
-      setError('数据加载失败，请稍后重试');
+      console.error('Load quality data failed:', err);
+      setError(t('qualityAnalysis.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -102,7 +104,7 @@ export function QualityAnalysisScreen() {
       return (
         <View style={styles.chartEmpty}>
           <Icon source="chart-line" size={32} color="#ccc" />
-          <Text style={styles.chartEmptyText}>暂无趋势数据</Text>
+          <Text style={styles.chartEmptyText}>{t('qualityAnalysis.noTrendData')}</Text>
         </View>
       );
     }
@@ -127,14 +129,14 @@ export function QualityAnalysisScreen() {
                   ]}
                 />
                 <Text style={styles.chartBarLabel}>
-                  {new Date(point.date).getDate()}日
+                  {new Date(point.date).getDate()}{t('qualityAnalysis.dayUnit')}
                 </Text>
               </View>
             );
           })}
         </View>
         <View style={styles.chartLegend}>
-          <Text style={styles.chartLegendText}>最近7天合格率趋势</Text>
+          <Text style={styles.chartLegendText}>{t('qualityAnalysis.last7DaysTrend')}</Text>
         </View>
       </View>
     );
@@ -147,12 +149,12 @@ export function QualityAnalysisScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
             <Icon source="arrow-left" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>质量分析</Text>
+          <Text style={styles.headerTitle}>{t('qualityAnalysis.title')}</Text>
           <View style={{ width: 40 }} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -165,7 +167,7 @@ export function QualityAnalysisScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>质量分析</Text>
+        <Text style={styles.headerTitle}>{t('qualityAnalysis.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -193,7 +195,7 @@ export function QualityAnalysisScreen() {
                   selectedDays === days && styles.periodBtnTextActive,
                 ]}
               >
-                {days}天
+                {t('qualityAnalysis.days', { count: days })}
               </Text>
             </TouchableOpacity>
           ))}
@@ -217,61 +219,61 @@ export function QualityAnalysisScreen() {
               <Text style={styles.statValue}>
                 {formatPercent(statistics.averagePassRate)}
               </Text>
-              <Text style={styles.statLabel}>平均合格率</Text>
+              <Text style={styles.statLabel}>{t('qualityAnalysis.averagePassRate')}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: '#667eea20' }]}>
                 <Icon source="clipboard-check" size={24} color="#667eea" />
               </View>
               <Text style={styles.statValue}>{statistics.totalInspections || 0}</Text>
-              <Text style={styles.statLabel}>总检验次数</Text>
+              <Text style={styles.statLabel}>{t('qualityAnalysis.totalInspections')}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: '#48bb7820' }]}>
                 <Icon source="thumb-up" size={24} color="#48bb78" />
               </View>
               <Text style={styles.statValue}>{statistics.passedInspections || 0}</Text>
-              <Text style={styles.statLabel}>合格批次</Text>
+              <Text style={styles.statLabel}>{t('qualityAnalysis.passedBatches')}</Text>
             </View>
             <View style={styles.statCard}>
               <View style={[styles.statIcon, { backgroundColor: '#e53e3e20' }]}>
                 <Icon source="thumb-down" size={24} color="#e53e3e" />
               </View>
               <Text style={styles.statValue}>{statistics.failedInspections || 0}</Text>
-              <Text style={styles.statLabel}>不合格批次</Text>
+              <Text style={styles.statLabel}>{t('qualityAnalysis.failedBatches')}</Text>
             </View>
           </View>
         )}
 
         {/* 趋势图 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>合格率趋势</Text>
+          <Text style={styles.sectionTitle}>{t('qualityAnalysis.passRateTrend')}</Text>
           <View style={styles.chartCard}>{renderTrendChart()}</View>
         </View>
 
         {/* 详细统计 */}
         {statistics && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>详细统计</Text>
+            <Text style={styles.sectionTitle}>{t('qualityAnalysis.detailedStats')}</Text>
             <View style={styles.detailCard}>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>总抽样数量</Text>
+                <Text style={styles.detailLabel}>{t('qualityAnalysis.totalSampleSize')}</Text>
                 <Text style={styles.detailValue}>{statistics.totalSampleSize || 0}</Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>合格数量</Text>
+                <Text style={styles.detailLabel}>{t('qualityAnalysis.passCount')}</Text>
                 <Text style={[styles.detailValue, { color: '#48bb78' }]}>
                   {statistics.totalPassCount || 0}
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>不合格数量</Text>
+                <Text style={styles.detailLabel}>{t('qualityAnalysis.failCount')}</Text>
                 <Text style={[styles.detailValue, { color: '#e53e3e' }]}>
                   {statistics.totalFailCount || 0}
                 </Text>
               </View>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>条件合格</Text>
+                <Text style={styles.detailLabel}>{t('qualityAnalysis.conditionalPass')}</Text>
                 <Text style={[styles.detailValue, { color: '#ed8936' }]}>
                   {statistics.conditionalInspections || 0}
                 </Text>

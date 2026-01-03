@@ -132,4 +132,9 @@ public interface SupplierRepository extends JpaRepository<Supplier, String> {
      */
     @Query("SELECT SUM(s.currentBalance) FROM Supplier s WHERE s.factoryId = :factoryId")
     BigDecimal calculateTotalOutstandingBalance(@Param("factoryId") String factoryId);
+
+    /**
+     * 根据ID列表和工厂ID批量查找供应商
+     */
+    List<Supplier> findByIdInAndFactoryId(List<String> ids, String factoryId);
 }

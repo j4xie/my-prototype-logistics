@@ -31,6 +31,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { WHHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
@@ -87,6 +88,7 @@ interface TempZone {
 type NavigationProp = NativeStackNavigationProp<WHHomeStackParamList>;
 
 export default function WHHomeScreen() {
+  const { t } = useTranslation('warehouse');
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
   const { user } = useAuthStore();
@@ -139,12 +141,12 @@ export default function WHHomeScreen() {
         const mappedTasks: OutboundTask[] = shipments.map((s: ShipmentRecord) => ({
           id: s.id,
           orderId: s.shipmentNumber || s.orderNumber || s.id,
-          customer: s.customerId || '未知客户',
+          customer: s.customerId || t('messages.unknownCustomer'),
           product: s.productName || '商品',
           quantity: s.quantity || 0,
           unit: s.unit || 'kg',
           status: mapShipmentStatus(s.status),
-          dispatchTime: s.shipmentDate ? `${new Date(s.shipmentDate).toLocaleDateString()} 发出` : '待安排',
+          dispatchTime: s.shipmentDate ? `${new Date(s.shipmentDate).toLocaleDateString()} 发出` : t('messages.toBeArranged'),
           urgent: false, // 后端没有urgent字段，默认false
         }));
         setOutboundTasks(mappedTasks);
@@ -161,12 +163,12 @@ export default function WHHomeScreen() {
         const mappedBatches: InboundTask[] = (Array.isArray(batches) ? batches : []).map((b: MaterialBatch) => ({
           id: b.id,
           batchId: b.batchNumber || b.id,
-          supplier: b.supplierName || b.supplierId || '未知供应商',
-          material: b.materialName || '原材料',
+          supplier: b.supplierName || b.supplierId || t('messages.unknownSupplier'),
+          material: b.materialName || t('messages.unknownMaterial'),
           quantity: b.inboundQuantity || 0,
           unit: 'kg',
           status: mapBatchStatus(b.status),
-          arrivalTime: b.inboundDate ? `入库时间: ${new Date(b.inboundDate).toLocaleDateString()}` : '待入库',
+          arrivalTime: b.inboundDate ? `${t('home.inboundTask.inboundTime')}: ${new Date(b.inboundDate).toLocaleDateString()}` : t('home.status.pending'),
         }));
         setInboundTasks(mappedBatches.slice(0, 5)); // 只显示前5条
         logger.info(`[WHHomeScreen] 加载入库批次成功: ${mappedBatches.length}条`);
@@ -183,7 +185,7 @@ export default function WHHomeScreen() {
         (Array.isArray(lowStockBatches) ? lowStockBatches : []).forEach((b: MaterialBatch) => {
           alertItems.push({
             id: b.id,
-            materialName: b.materialName || b.batchNumber || '未知材料',
+            materialName: b.materialName || b.batchNumber || t('messages.unknownMaterial'),
             materialType: b.storageType || 'fresh',
             currentStock: b.remainingQuantity || 0,
             safetyStock: 100, // 安全库存暂时硬编码
@@ -198,7 +200,7 @@ export default function WHHomeScreen() {
         (Array.isArray(expiringBatches) ? expiringBatches : []).forEach((b: MaterialBatch) => {
           alertItems.push({
             id: b.id,
-            materialName: b.materialName || b.batchNumber || '未知材料',
+            materialName: b.materialName || b.batchNumber || t('messages.unknownMaterial'),
             materialType: b.storageType || 'fresh',
             currentStock: b.remainingQuantity || 0,
             safetyStock: 100,
@@ -238,7 +240,7 @@ export default function WHHomeScreen() {
 
     } catch (error) {
       logger.error('[WHHomeScreen] 加载数据失败:', error);
-      handleError(error, { title: '加载仓储首页数据失败' });
+      handleError(error, { title: t('messages.loadFailed') });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -282,38 +284,38 @@ export default function WHHomeScreen() {
     if (type === 'outbound') {
       switch (status) {
         case 'waiting':
-          label = '待打包';
+          label = t('home.status.waiting');
           color = '#FF9800';
           break;
         case 'packing':
-          label = '打包中';
+          label = t('home.status.packing');
           color = '#2196F3';
           break;
         case 'packed':
-          label = '已打包';
+          label = t('home.status.packed');
           color = '#4CAF50';
           break;
         case 'shipped':
-          label = '已发货';
+          label = t('home.status.shipped');
           color = '#9E9E9E';
           break;
       }
     } else {
       switch (status) {
         case 'pending':
-          label = '待入库';
+          label = t('home.status.pending');
           color = '#FF9800';
           break;
         case 'arrived':
-          label = '已到货';
+          label = t('home.status.arrived');
           color = '#2196F3';
           break;
         case 'inspecting':
-          label = '质检中';
+          label = t('home.status.inspecting');
           color = '#9C27B0';
           break;
         case 'completed':
-          label = '已入库';
+          label = t('home.status.completed');
           color = '#4CAF50';
           break;
       }
@@ -348,15 +350,15 @@ export default function WHHomeScreen() {
 
           <View style={styles.cardInfo}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>客户</Text>
+              <Text style={styles.infoLabel}>{t('home.outboundTask.customer')}</Text>
               <Text style={styles.infoValue}>{task.customer}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>产品</Text>
+              <Text style={styles.infoLabel}>{t('home.outboundTask.product')}</Text>
               <Text style={styles.infoValue}>{task.product}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>数量</Text>
+              <Text style={styles.infoLabel}>{t('home.outboundTask.quantity')}</Text>
               <Text style={styles.infoValue}>
                 {task.quantity} {task.unit}
               </Text>
@@ -370,7 +372,7 @@ export default function WHHomeScreen() {
                 task.urgent && styles.urgentText,
               ]}
             >
-              {task.urgent && '[急] '}
+              {task.urgent && t('home.outboundTask.urgent')}
               {task.dispatchTime}
             </Text>
             <TouchableOpacity
@@ -381,7 +383,7 @@ export default function WHHomeScreen() {
               }}
             >
               <Text style={styles.actionText}>
-                {task.status === 'packing' ? '完成打包' : '开始打包'}
+                {task.status === 'packing' ? t('home.outboundTask.finishPacking') : t('home.outboundTask.startPacking')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -407,15 +409,15 @@ export default function WHHomeScreen() {
 
           <View style={styles.cardInfo}>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>供应商</Text>
+              <Text style={styles.infoLabel}>{t('home.inboundTask.supplier')}</Text>
               <Text style={styles.infoValue}>{task.supplier}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>货品</Text>
+              <Text style={styles.infoLabel}>{t('home.inboundTask.goods')}</Text>
               <Text style={styles.infoValue}>{task.material}</Text>
             </View>
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>预计数量</Text>
+              <Text style={styles.infoLabel}>{t('home.inboundTask.expectedQuantity')}</Text>
               <Text style={styles.infoValue}>
                 {task.quantity} {task.unit}
               </Text>
@@ -433,7 +435,7 @@ export default function WHHomeScreen() {
             </Text>
             <TouchableOpacity style={styles.actionBtn}>
               <Text style={styles.actionText}>
-                {task.status === 'arrived' ? '完成入库' : '确认入库'}
+                {task.status === 'arrived' ? t('home.inboundTask.finishInbound') : t('home.inboundTask.confirmInbound')}
               </Text>
             </TouchableOpacity>
           </View>
@@ -456,10 +458,10 @@ export default function WHHomeScreen() {
       <Surface style={styles.header}>
         <View style={styles.headerContent}>
           <Text variant="headlineSmall" style={styles.headerTitle}>
-            仓储工作台
+            {t('home.title')}
           </Text>
           <Text variant="bodySmall" style={styles.headerSubtitle}>
-            今日入库 {inboundTasks.length} 单 | 待出货 {stats.pendingOutbound} 单
+            {t('home.headerSubtitle', { inbound: inboundTasks.length, pending: stats.pendingOutbound })}
           </Text>
         </View>
         <IconButton
@@ -487,11 +489,11 @@ export default function WHHomeScreen() {
             buttons={[
               {
                 value: 'outbound',
-                label: `出货任务 (${outboundTasks.length})`,
+                label: `${t('home.tabs.outbound')} (${outboundTasks.length})`,
               },
               {
                 value: 'inbound',
-                label: `入库任务 (${inboundTasks.length})`,
+                label: `${t('home.tabs.inbound')} (${inboundTasks.length})`,
               },
             ]}
             style={styles.segmentedButtons}
@@ -503,11 +505,11 @@ export default function WHHomeScreen() {
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
               {activeTab === 'outbound'
-                ? '今日出货 - 按发出时间排序'
-                : '今日入库 - 调度安排'}
+                ? t('home.sections.todayOutbound')
+                : t('home.sections.todayInbound')}
             </Text>
             <TouchableOpacity>
-              <Text style={styles.sectionMore}>查看全部 &gt;</Text>
+              <Text style={styles.sectionMore}>{t('home.sections.viewAll')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -522,36 +524,36 @@ export default function WHHomeScreen() {
             <View style={[styles.statIcon, { backgroundColor: '#E3F2FD' }]}>
               <Text style={{ fontSize: 20 }}>📦</Text>
             </View>
-            <Text style={styles.statTitle}>今日入库</Text>
+            <Text style={styles.statTitle}>{t('home.stats.todayInbound')}</Text>
             <Text style={styles.statValue}>{stats.todayInbound}</Text>
-            <Text style={styles.statUnit}>kg</Text>
+            <Text style={styles.statUnit}>{t('home.units.kg')}</Text>
           </Surface>
 
           <Surface style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: '#E8F5E9' }]}>
               <Text style={{ fontSize: 20 }}>🚚</Text>
             </View>
-            <Text style={styles.statTitle}>今日出库</Text>
+            <Text style={styles.statTitle}>{t('home.stats.todayOutbound')}</Text>
             <Text style={styles.statValue}>{stats.todayOutbound.toLocaleString()}</Text>
-            <Text style={styles.statUnit}>kg</Text>
+            <Text style={styles.statUnit}>{t('home.units.kg')}</Text>
           </Surface>
 
           <Surface style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: '#FFF3E0' }]}>
               <Text style={{ fontSize: 20 }}>⏳</Text>
             </View>
-            <Text style={styles.statTitle}>待出货</Text>
+            <Text style={styles.statTitle}>{t('home.stats.pendingOutbound')}</Text>
             <Text style={styles.statValue}>{stats.pendingOutbound}</Text>
-            <Text style={styles.statUnit}>单</Text>
+            <Text style={styles.statUnit}>{t('home.units.orders')}</Text>
           </Surface>
 
           <Surface style={styles.statCard}>
             <View style={[styles.statIcon, { backgroundColor: '#FFEBEE' }]}>
               <Text style={{ fontSize: 20 }}>⚠️</Text>
             </View>
-            <Text style={styles.statTitle}>库存预警</Text>
+            <Text style={styles.statTitle}>{t('home.stats.alertCount')}</Text>
             <Text style={styles.statValue}>{stats.alertCount}</Text>
-            <Text style={styles.statUnit}>项</Text>
+            <Text style={styles.statUnit}>{t('home.units.items')}</Text>
           </Surface>
         </View>
 
@@ -559,10 +561,10 @@ export default function WHHomeScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              库存预警
+              {t('home.alerts.title')}
             </Text>
             <TouchableOpacity>
-              <Text style={styles.sectionMore}>查看全部 &gt;</Text>
+              <Text style={styles.sectionMore}>{t('home.sections.viewAll')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -587,9 +589,9 @@ export default function WHHomeScreen() {
                 <View style={styles.alertContent}>
                   <Text style={styles.alertName}>{alert.materialName}</Text>
                   <Text style={styles.alertDetail}>
-                    安全库存: {alert.safetyStock}
+                    {t('home.alerts.safetyStock')}: {alert.safetyStock}
                     {alert.unit}
-                    {alert.isExpiring && ' | 即将过期'}
+                    {alert.isExpiring && ` | ${t('home.alerts.expiring')}`}
                   </Text>
                 </View>
                 <Text style={styles.alertValue}>
@@ -608,11 +610,11 @@ export default function WHHomeScreen() {
           <Surface style={styles.tempMonitorCard}>
             <View style={styles.tempMonitorHeader}>
               <Text variant="titleMedium" style={styles.sectionTitle}>
-                温控监控
+                {t('home.tempMonitor.title')}
               </Text>
               <View style={styles.tempStatus}>
                 <View style={styles.statusDot} />
-                <Text style={styles.statusText}>在线</Text>
+                <Text style={styles.statusText}>{t('home.tempMonitor.online')}</Text>
               </View>
             </View>
 
@@ -642,7 +644,7 @@ export default function WHHomeScreen() {
                       }}
                       compact
                     >
-                      {zone.status === 'normal' ? '正常' : zone.status === 'warning' ? '警告' : '异常'}
+                      {zone.status === 'normal' ? t('home.tempMonitor.normal') : zone.status === 'warning' ? t('home.tempMonitor.warning') : t('home.tempMonitor.error')}
                     </Chip>
                   </View>
                   <View style={styles.tempValue}>

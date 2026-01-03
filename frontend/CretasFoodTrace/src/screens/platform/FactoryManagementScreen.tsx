@@ -19,6 +19,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { platformAPI, FactoryDTO, CreateFactoryRequest } from '../../services/api/platformApiClient';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { handleError } from '../../utils/errorHandler';
@@ -35,6 +36,7 @@ type NavigationProp = NativeStackNavigationProp<PlatformStackParamList, 'Factory
 
 export default function FactoryManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('platform');
   const [factories, setFactories] = useState<any[]>([]);
   const [filteredFactories, setFilteredFactories] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -101,8 +103,8 @@ export default function FactoryManagementScreen() {
           const mapped = {
             id: factory.id,
             name: factory.name || factory.factoryName, // ✅ API返回name字段，factoryName作为后备
-            industry: '食品加工', // 后端暂无此字段
-            region: factory.address || '未知',
+            industry: t('factory.foodProcessing'), // 后端暂无此字段
+            region: factory.address || t('factory.unknown'),
             status: factory.isActive !== false ? 'active' : 'inactive',
             aiQuota: 100, // 后端暂无此字段
             totalUsers: factory.totalUsers || 0,
@@ -128,8 +130,8 @@ export default function FactoryManagementScreen() {
 
       // ✅ GOOD: 不返回假数据，使用统一错误处理
       handleError(error, {
-        title: '加载失败',
-        customMessage: '无法加载工厂列表，请稍后重试',
+        title: t('errors.loadFailed'),
+        customMessage: t('factoryManagement.messages.loadFailed'),
       });
       setFactories([]); // 不显示假数据
     } finally {
@@ -146,11 +148,11 @@ export default function FactoryManagementScreen() {
   const handleFactoryPress = (factory: any) => {
     Alert.alert(
       factory.name,
-      `ID: ${factory.id}\n行业: ${factory.industry}\n地区: ${factory.region}\n用户数: ${factory.totalUsers}\nAI配额: ${factory.aiQuota}次/周`,
+      `ID: ${factory.id}\n${t('factory.industry')}: ${factory.industry}\n${t('factory.region')}: ${factory.region}\n${t('factory.usersCount')}: ${factory.totalUsers}\nAI${t('common.buttons.quota', { defaultValue: '配额' })}: ${factory.aiQuota}${t('factory.weeklyQuota')}`,
       [
-        { text: '取消', style: 'cancel' },
-        { text: '初始化模板', onPress: () => handleSetupTemplates(factory) },
-        { text: '编辑', onPress: () => handleEditFactory(factory) },
+        { text: t('common.buttons.cancel'), style: 'cancel' },
+        { text: t('factoryManagement.actions.setupTemplates'), onPress: () => handleSetupTemplates(factory) },
+        { text: t('common.buttons.edit'), onPress: () => handleEditFactory(factory) },
       ]
     );
   };
@@ -170,7 +172,7 @@ export default function FactoryManagementScreen() {
   };
 
   const handleViewDetails = (factory: any) => {
-    Alert.alert('工厂详情', `详情页面开发中\n工厂: ${factory.name}`);
+    Alert.alert(t('factoryManagement.viewDetails'), t('factoryManagement.detailsInDevelopment', { name: factory.name }));
   };
 
   const handleSetupTemplates = (factory: any) => {
@@ -209,7 +211,7 @@ export default function FactoryManagementScreen() {
   const handleSubmitFactory = async () => {
     // 验证必填字段
     if (!formData.name.trim()) {
-      Alert.alert('验证失败', '请输入工厂名称');
+      Alert.alert(t('dialogs.validationFailed'), t('factoryManagement.validation.nameRequired'));
       return;
     }
 
@@ -219,12 +221,12 @@ export default function FactoryManagementScreen() {
         // 编辑模式
         factoryMgmtLogger.info('更新工厂', { factoryId: editingFactoryId, data: formData });
         await platformAPI.updateFactory(editingFactoryId, formData);
-        Alert.alert('成功', '工厂信息已更新');
+        Alert.alert(t('success.title'), t('factoryManagement.messages.updateSuccess'));
       } else {
         // 添加模式
         factoryMgmtLogger.info('创建工厂', { data: formData });
         await platformAPI.createFactory(formData as CreateFactoryRequest);
-        Alert.alert('成功', '工厂已创建');
+        Alert.alert(t('success.title'), t('factoryManagement.messages.createSuccess'));
       }
 
       handleCloseDialog();
@@ -232,8 +234,8 @@ export default function FactoryManagementScreen() {
     } catch (error) {
       factoryMgmtLogger.error(editMode ? '更新工厂失败' : '创建工厂失败', error as Error);
       handleError(error, {
-        title: editMode ? '更新失败' : '创建失败',
-        customMessage: editMode ? '无法更新工厂信息，请重试' : '无法创建工厂，请重试',
+        title: editMode ? t('errors.updateFailed') : t('errors.createFailed'),
+        customMessage: editMode ? t('factoryManagement.messages.updateFailed') : t('factoryManagement.messages.createFailed'),
       });
     } finally {
       setSubmitting(false);
@@ -256,11 +258,11 @@ export default function FactoryManagementScreen() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'active':
-        return '运营中';
+        return t('factory.status.active');
       case 'inactive':
-        return '未激活';
+        return t('factory.status.inactive');
       case 'suspended':
-        return '已暂停';
+        return t('factory.status.suspended');
       default:
         return status;
     }
@@ -315,13 +317,13 @@ export default function FactoryManagementScreen() {
               <View style={styles.detailItem}>
                 <List.Icon icon="account-group" />
                 <Text variant="bodySmall" style={styles.detailText}>
-                  {factory.totalUsers} 用户
+                  {factory.totalUsers} {t('factory.users')}
                 </Text>
               </View>
               <View style={styles.detailItem}>
                 <List.Icon icon="robot" />
                 <Text variant="bodySmall" style={styles.detailText}>
-                  {factory.aiQuota}次/周
+                  {factory.aiQuota}{t('factory.weeklyQuota')}
                 </Text>
               </View>
             </View>
@@ -331,7 +333,7 @@ export default function FactoryManagementScreen() {
             {/* 底部操作 */}
             <View style={styles.actionsRow}>
               <Text variant="bodySmall" style={styles.createdText}>
-                创建: {factory.createdAt}
+                {t('factory.createdAt')}: {factory.createdAt}
               </Text>
               <View style={styles.actionButtons}>
                 <IconButton
@@ -362,11 +364,11 @@ export default function FactoryManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="工厂管理" />
+          <Appbar.Content title={t('factoryManagement.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载工厂数据中...</Text>
+          <Text style={styles.loadingText}>{t('factoryManagement.loadingFactories')}</Text>
         </View>
       </View>
     );
@@ -376,7 +378,7 @@ export default function FactoryManagementScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="工厂管理" />
+        <Appbar.Content title={t('factoryManagement.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
       </Appbar.Header>
 
@@ -386,7 +388,7 @@ export default function FactoryManagementScreen() {
       >
         {/* 搜索栏 */}
         <Searchbar
-          placeholder="搜索工厂名称、ID、行业..."
+          placeholder={t('factoryManagement.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchBar}
@@ -401,7 +403,7 @@ export default function FactoryManagementScreen() {
                   {factories.length}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  工厂总数
+                  {t('stats.totalFactories')}
                 </Text>
               </View>
               <View style={styles.statDivider} />
@@ -410,7 +412,7 @@ export default function FactoryManagementScreen() {
                   {factories.filter((f) => f.status === 'active').length}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  运营中
+                  {t('stats.activeFactories')}
                 </Text>
               </View>
               <View style={styles.statDivider} />
@@ -419,7 +421,7 @@ export default function FactoryManagementScreen() {
                   {factories.reduce((sum, f) => sum + f.totalUsers, 0)}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  总用户数
+                  {t('stats.totalUserCount')}
                 </Text>
               </View>
             </View>
@@ -429,7 +431,7 @@ export default function FactoryManagementScreen() {
         {/* 工厂列表 */}
         <View style={styles.listHeader}>
           <Text variant="titleMedium" style={styles.listTitle}>
-            工厂列表 ({filteredFactories.length})
+            {t('factoryManagement.factoryList')} ({filteredFactories.length})
           </Text>
         </View>
 
@@ -437,7 +439,7 @@ export default function FactoryManagementScreen() {
           <Card style={styles.emptyCard} mode="elevated">
             <Card.Content>
               <Text variant="bodyLarge" style={styles.emptyText}>
-                {searchQuery ? '未找到匹配的工厂' : '暂无工厂数据'}
+                {searchQuery ? t('factoryManagement.noFactoriesFound') : t('factoryManagement.noFactoryData')}
               </Text>
             </Card.Content>
           </Card>
@@ -449,44 +451,44 @@ export default function FactoryManagementScreen() {
       </ScrollView>
 
       {/* 添加工厂按钮 */}
-      <FAB icon="plus" style={styles.fab} onPress={handleAddFactory} label="添加工厂" />
+      <FAB icon="plus" style={styles.fab} onPress={handleAddFactory} label={t('factoryManagement.addFactory')} />
 
       {/* 添加/编辑工厂对话框 */}
       <Portal>
         <Dialog visible={dialogVisible} onDismiss={handleCloseDialog} style={styles.dialog}>
-          <Dialog.Title>{editMode ? '编辑工厂' : '添加工厂'}</Dialog.Title>
+          <Dialog.Title>{editMode ? t('factoryManagement.editFactory') : t('factoryManagement.addFactory')}</Dialog.Title>
           <Dialog.ScrollArea style={styles.dialogScroll}>
             <ScrollView>
               <TextInput
-                label="工厂名称 *"
+                label={t('factoryManagement.form.factoryName')}
                 value={formData.name}
                 onChangeText={(text) => setFormData({ ...formData, name: text })}
                 mode="outlined"
                 style={styles.input}
               />
               <TextInput
-                label="行业类型"
+                label={t('factoryManagement.form.industryType')}
                 value={formData.industry}
                 onChangeText={(text) => setFormData({ ...formData, industry: text })}
                 mode="outlined"
                 style={styles.input}
               />
               <TextInput
-                label="地址"
+                label={t('factoryManagement.form.address')}
                 value={formData.address}
                 onChangeText={(text) => setFormData({ ...formData, address: text })}
                 mode="outlined"
                 style={styles.input}
               />
               <TextInput
-                label="联系人"
+                label={t('factoryManagement.form.contactName')}
                 value={formData.contactName}
                 onChangeText={(text) => setFormData({ ...formData, contactName: text })}
                 mode="outlined"
                 style={styles.input}
               />
               <TextInput
-                label="联系电话"
+                label={t('factoryManagement.form.contactPhone')}
                 value={formData.contactPhone}
                 onChangeText={(text) => setFormData({ ...formData, contactPhone: text })}
                 mode="outlined"
@@ -494,7 +496,7 @@ export default function FactoryManagementScreen() {
                 style={styles.input}
               />
               <TextInput
-                label="联系邮箱"
+                label={t('factoryManagement.form.contactEmail')}
                 value={formData.contactEmail}
                 onChangeText={(text) => setFormData({ ...formData, contactEmail: text })}
                 mode="outlined"
@@ -505,10 +507,10 @@ export default function FactoryManagementScreen() {
           </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={handleCloseDialog} disabled={submitting}>
-              取消
+              {t('factoryManagement.actions.cancel')}
             </Button>
             <Button onPress={handleSubmitFactory} loading={submitting} disabled={submitting}>
-              {editMode ? '更新' : '创建'}
+              {editMode ? t('factoryManagement.actions.update') : t('factoryManagement.actions.create')}
             </Button>
           </Dialog.Actions>
         </Dialog>

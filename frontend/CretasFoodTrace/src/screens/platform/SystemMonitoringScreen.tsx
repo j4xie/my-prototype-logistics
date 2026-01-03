@@ -16,6 +16,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { logger } from '../../utils/logger';
 import { platformAPI, SystemMetrics, ActivityLog } from '../../services/api/platformApiClient';
+import { useTranslation } from 'react-i18next';
 
 // 创建SystemMonitoring专用logger
 const systemMonitorLogger = logger.createContextLogger('SystemMonitoring');
@@ -59,6 +60,7 @@ const DEFAULT_METRICS: SystemMetrics = {
 };
 
 export default function SystemMonitoringScreen() {
+  const { t } = useTranslation('platform');
   const navigation = useNavigation<NavigationProp>();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);

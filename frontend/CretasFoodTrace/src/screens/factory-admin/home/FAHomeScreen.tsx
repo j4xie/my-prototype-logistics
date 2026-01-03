@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import { dashboardAPI, DashboardOverviewData, AlertsDashboardData } from '../../../services/api/dashboardApiClient';
@@ -47,6 +48,7 @@ interface AIInsight {
 export function FAHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('home');
 
   // 状态
   const [refreshing, setRefreshing] = useState(false);
@@ -60,30 +62,34 @@ export function FAHomeScreen() {
   // AI 洞察 (本地计算，简化显示)
   const [aiInsight, setAIInsight] = useState<AIInsight>({
     status: 'loading',
-    message: '正在分析今日生产数据...',
+    message: t('ai.analyzing'),
     metrics: { qualityRate: 0, unitCost: 0, avgCycle: 0 },
   });
 
   // 获取当前日期
   const getFormattedDate = () => {
     const now = new Date();
-    const weekDays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+    const weekDays = [
+      t('date.weekdays.sun'), t('date.weekdays.mon'), t('date.weekdays.tue'),
+      t('date.weekdays.wed'), t('date.weekdays.thu'), t('date.weekdays.fri'),
+      t('date.weekdays.sat')
+    ];
     const month = now.getMonth() + 1;
     const day = now.getDate();
     const weekDay = weekDays[now.getDay()];
-    return `${month}月${day}日 ${weekDay}`;
+    return `${month}${t('date.month')}${day}${t('date.day')} ${weekDay}`;
   };
 
   // 获取问候语
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 6) return '凌晨好';
-    if (hour < 9) return '早上好';
-    if (hour < 12) return '上午好';
-    if (hour < 14) return '中午好';
-    if (hour < 18) return '下午好';
-    if (hour < 22) return '晚上好';
-    return '夜深了';
+    if (hour < 6) return t('greetings.earlyMorning');
+    if (hour < 9) return t('greetings.morning');
+    if (hour < 12) return t('greetings.lateMorning');
+    if (hour < 14) return t('greetings.noon');
+    if (hour < 18) return t('greetings.afternoon');
+    if (hour < 22) return t('greetings.evening');
+    return t('greetings.lateNight');
   };
 
   // 加载 Dashboard 数据
@@ -115,7 +121,8 @@ export function FAHomeScreen() {
         const avgCycle = kpi?.avgCycleHours ?? 0;
 
         // 尝试获取最新AI报告摘要作为洞察文字
-        let insightMessage = '今日生产运行正常';
+        let insightMessage: string = t('ai.normalProduction');
+        let useLocalRule = true;
         try {
           const reportsRes = await aiApiClient.getReports({ reportType: 'custom' });
           if (reportsRes?.reports && reportsRes.reports.length > 0) {
@@ -124,6 +131,7 @@ export function FAHomeScreen() {
             const title = latestReport?.title;
             if (title && title.length > 10) {
               insightMessage = title;
+              useLocalRule = false;
             }
           }
         } catch (aiError) {
@@ -131,13 +139,13 @@ export function FAHomeScreen() {
         }
 
         // 如果没有AI报告，使用本地规则生成洞察文字
-        if (insightMessage === '今日生产运行正常') {
+        if (useLocalRule) {
           if (qualityRate < 95) {
-            insightMessage = '今日良品率偏低，建议关注质检环节';
+            insightMessage = t('ai.lowQualityRate');
           } else if (efficiency < 85) {
-            insightMessage = '生产效率有提升空间，可优化排产';
+            insightMessage = t('ai.lowEfficiency');
           } else if (qualityRate >= 98 && efficiency >= 95) {
-            insightMessage = '生产状态极佳，各项指标优于预期';
+            insightMessage = t('ai.excellentStatus');
           }
         }
 
@@ -153,10 +161,10 @@ export function FAHomeScreen() {
       }
     } catch (err) {
       console.error('加载 Dashboard 数据失败:', err);
-      setError('数据加载失败，请下拉刷新重试');
+      setError(t('error.loadFailed'));
       setAIInsight({
         status: 'error',
-        message: '暂时无法获取洞察数据',
+        message: t('ai.noData'),
         metrics: { qualityRate: 0, unitCost: 0, avgCycle: 0 },
       });
     } finally {
@@ -225,7 +233,7 @@ export function FAHomeScreen() {
     return [
       {
         value: todayStats?.todayOutputKg?.toFixed(0) ?? '--',
-        label: '今日产量(kg)',
+        label: t('stats.todayOutput'),
         icon: 'scale',
         color: '#667eea',
         trend: outputTrend,
@@ -233,7 +241,7 @@ export function FAHomeScreen() {
       },
       {
         value: todayStats?.totalBatches ?? overviewData?.summary?.totalBatches ?? '--',
-        label: '今日批次',
+        label: t('stats.todayBatches'),
         icon: 'package-variant',
         color: '#48bb78',
         trend: batchTrend,
@@ -241,14 +249,14 @@ export function FAHomeScreen() {
       },
       {
         value: todayStats?.totalMaterialBatches ?? todayStats?.materialReceived ?? '--',
-        label: '原料批次',
+        label: t('stats.materialBatches'),
         icon: 'truck-delivery',
         color: '#ed8936',
         onPress: () => navigation.navigate('MaterialBatch'),
       },
       {
         value: alertsSummary?.activeAlerts ?? overviewData?.summary?.activeAlerts ?? '--',
-        label: '今日告警',
+        label: t('stats.todayAlerts'),
         icon: 'alert-circle',
         color: alertsSummary?.criticalAlerts && alertsSummary.criticalAlerts > 0 ? '#e53e3e' : '#a0aec0',
         onPress: () => navigation.navigate('AIAlerts'),
@@ -260,7 +268,7 @@ export function FAHomeScreen() {
   const quickActions = [
     {
       icon: 'plus-circle',
-      label: '新建计划',
+      label: t('quickActions.createPlan'),
       color: '#667eea',
       onPress: () => {
         navigation.getParent()?.navigate('FAAITab', { screen: 'CreatePlan' });
@@ -268,7 +276,7 @@ export function FAHomeScreen() {
     },
     {
       icon: 'chart-line',
-      label: '数据报表',
+      label: t('quickActions.dataReport'),
       color: '#48bb78',
       onPress: () => {
         navigation.getParent()?.navigate('FAAITab', { screen: 'AIReport' });
@@ -276,7 +284,7 @@ export function FAHomeScreen() {
     },
     {
       icon: 'account-group',
-      label: '人员管理',
+      label: t('quickActions.staffManagement'),
       color: '#ed8936',
       onPress: () => {
         navigation.getParent()?.navigate('FAManagementTab', { screen: 'EmployeeList' });
@@ -284,7 +292,7 @@ export function FAHomeScreen() {
     },
     {
       icon: 'cog',
-      label: '系统配置',
+      label: t('quickActions.systemConfig'),
       color: '#805ad5',
       onPress: () => {
         navigation.getParent()?.navigate('FAProfileTab', { screen: 'SystemSettings' });
@@ -337,7 +345,7 @@ export function FAHomeScreen() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -361,7 +369,7 @@ export function FAHomeScreen() {
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeLeft}>
             <Text style={styles.greeting}>
-              {getGreeting()}，{user?.username ?? '管理员'}
+              {getGreeting()}，{user?.username ?? t('greetings.defaultUser')}
             </Text>
             <Text style={styles.dateText}>{getFormattedDate()}</Text>
           </View>
@@ -390,14 +398,14 @@ export function FAHomeScreen() {
           <View style={styles.aiHeader}>
             <View style={styles.aiTitleRow}>
               <Icon source="robot" size={20} color="#fff" />
-              <Text style={styles.aiTitle}>AI 智能洞察</Text>
+              <Text style={styles.aiTitle}>{t('ai.title')}</Text>
             </View>
             <View style={[
               styles.aiStatusBadge,
               aiInsight.status === 'success' ? styles.aiStatusSuccess : styles.aiStatusLoading
             ]}>
               <Text style={styles.aiStatusText}>
-                {aiInsight.status === 'success' ? '已分析' : '分析中'}
+                {aiInsight.status === 'success' ? t('ai.analyzed') : t('ai.analyzing_status')}
               </Text>
             </View>
           </View>
@@ -410,28 +418,28 @@ export function FAHomeScreen() {
               <Text style={styles.aiMetricValue}>
                 {aiInsight.metrics.qualityRate.toFixed(1)}%
               </Text>
-              <Text style={styles.aiMetricLabel}>良品率</Text>
+              <Text style={styles.aiMetricLabel}>{t('ai.metrics.qualityRate')}</Text>
             </View>
             <View style={styles.aiMetricDivider} />
             <View style={styles.aiMetricItem}>
               <Text style={styles.aiMetricValue}>
                 ¥{aiInsight.metrics.unitCost.toFixed(1)}
               </Text>
-              <Text style={styles.aiMetricLabel}>单位成本</Text>
+              <Text style={styles.aiMetricLabel}>{t('ai.metrics.unitCost')}</Text>
             </View>
             <View style={styles.aiMetricDivider} />
             <View style={styles.aiMetricItem}>
               <Text style={styles.aiMetricValue}>
                 {aiInsight.metrics.avgCycle.toFixed(1)}h
               </Text>
-              <Text style={styles.aiMetricLabel}>平均周期</Text>
+              <Text style={styles.aiMetricLabel}>{t('ai.metrics.avgCycle')}</Text>
             </View>
           </View>
         </View>
 
         {/* 统计卡片 */}
         <View style={styles.statsSection}>
-          <Text style={styles.sectionTitle}>今日概览</Text>
+          <Text style={styles.sectionTitle}>{t('sections.todayOverview')}</Text>
           <View style={styles.statsGrid}>
             {getStatCards().map(renderStatCard)}
           </View>
@@ -439,7 +447,7 @@ export function FAHomeScreen() {
 
         {/* 快捷操作 */}
         <View style={styles.quickActionsSection}>
-          <Text style={styles.sectionTitle}>快捷操作</Text>
+          <Text style={styles.sectionTitle}>{t('sections.quickActions')}</Text>
           <View style={styles.quickActionsGrid}>
             {quickActions.map(renderQuickAction)}
           </View>
@@ -448,14 +456,14 @@ export function FAHomeScreen() {
         {/* 开发者工具 - 仅在开发模式显示 */}
         {__DEV__ && (
           <View style={styles.quickActionsSection}>
-            <Text style={styles.sectionTitle}>🛠️ 开发者工具</Text>
+            <Text style={styles.sectionTitle}>{t('sections.devTools')}</Text>
             <TouchableOpacity
               style={[styles.quickAction, { backgroundColor: '#8B5CF6' }]}
               onPress={() => navigation.navigate('FormilyDemo')}
               activeOpacity={0.8}
             >
               <Icon source="form-select" size={24} color="#fff" />
-              <Text style={styles.quickActionLabel}>Formily 演示</Text>
+              <Text style={styles.quickActionLabel}>{t('quickActions.formilyDemo')}</Text>
             </TouchableOpacity>
           </View>
         )}

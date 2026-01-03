@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 /**
@@ -203,4 +204,22 @@ public interface QualityInspectionRepository extends JpaRepository<QualityInspec
     Double calculateFirstPassRate(@Param("factoryId") String factoryId,
                                   @Param("startDate") LocalDate startDate,
                                   @Param("endDate") LocalDate endDate);
+
+    /**
+     * 统计指定工厂的质检记录总数
+     */
+    long countByFactoryId(String factoryId);
+
+    /**
+     * 统计指定工厂和结果的质检记录数
+     */
+    long countByFactoryIdAndResult(String factoryId, String result);
+
+    /**
+     * 批量查询多个质检记录 - 解决 N+1 查询问题
+     * @param ids 质检记录ID集合
+     * @return 质检记录列表
+     */
+    @Query("SELECT q FROM QualityInspection q WHERE q.id IN :ids")
+    List<QualityInspection> findByIdIn(@Param("ids") Collection<String> ids);
 }

@@ -18,6 +18,7 @@ import {
   Menu,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { departmentApiClient, DepartmentDTO, ApiResponse, PagedResponse } from '../../services/api/departmentApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getUserRole, getFactoryId } from '../../types/auth';
@@ -33,6 +34,7 @@ const departmentLogger = logger.createContextLogger('DepartmentManagement');
  */
 export default function DepartmentManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   const [departments, setDepartments] = useState<DepartmentDTO[]>([]);
@@ -65,14 +67,14 @@ export default function DepartmentManagementScreen() {
 
   // 预设颜色
   const presetColors = [
-    { name: '蓝色', value: '#2196F3' },
-    { name: '绿色', value: '#4CAF50' },
-    { name: '橙色', value: '#FF9800' },
-    { name: '红色', value: '#F44336' },
-    { name: '紫色', value: '#9C27B0' },
-    { name: '青色', value: '#00BCD4' },
-    { name: '粉色', value: '#E91E63' },
-    { name: '棕色', value: '#795548' },
+    { name: t('departmentManagement.colors.blue'), value: '#2196F3' },
+    { name: t('departmentManagement.colors.green'), value: '#4CAF50' },
+    { name: t('departmentManagement.colors.orange'), value: '#FF9800' },
+    { name: t('departmentManagement.colors.red'), value: '#F44336' },
+    { name: t('departmentManagement.colors.purple'), value: '#9C27B0' },
+    { name: t('departmentManagement.colors.cyan'), value: '#00BCD4' },
+    { name: t('departmentManagement.colors.pink'), value: '#E91E63' },
+    { name: t('departmentManagement.colors.brown'), value: '#795548' },
   ];
 
   useEffect(() => {
@@ -100,8 +102,8 @@ export default function DepartmentManagementScreen() {
       }
     } catch (error: unknown) {
       departmentLogger.error('加载部门失败', error, { factoryId: getFactoryId(user) });
-      const errorMessage = error instanceof Error ? error.message : '加载部门失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,22 +111,22 @@ export default function DepartmentManagementScreen() {
 
   const handleInitializeDefaults = () => {
     Alert.alert(
-      '初始化默认部门',
-      '将创建4个默认部门（加工、物流、质量、管理）。已有部门的工厂将跳过此操作。',
+      t('departmentManagement.initializeDefaults'),
+      t('departmentManagement.initializeConfirm'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: async () => {
             try {
               await departmentApiClient.initializeDefaultDepartments(getFactoryId(user));
               departmentLogger.info('默认部门初始化成功', { factoryId: getFactoryId(user) });
-              Alert.alert('成功', '默认部门初始化成功');
+              Alert.alert(t('common.success'), t('departmentManagement.initializeSuccess'));
               loadDepartments();
             } catch (error: unknown) {
               departmentLogger.error('初始化失败', error, { factoryId: getFactoryId(user) });
-              const errorMessage = error instanceof Error ? error.message : '初始化失败';
-              Alert.alert('错误', errorMessage);
+              const errorMessage = error instanceof Error ? error.message : t('departmentManagement.initializeFailed');
+              Alert.alert(t('common.error'), errorMessage);
             }
           },
         },
@@ -154,8 +156,8 @@ export default function DepartmentManagementScreen() {
       }
     } catch (error: unknown) {
       departmentLogger.error('搜索失败', error, { keyword: searchQuery });
-      const errorMessage = error instanceof Error ? error.message : '搜索失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -195,7 +197,7 @@ export default function DepartmentManagementScreen() {
 
   const handleSave = async () => {
     if (!formData.name) {
-      Alert.alert('提示', '部门名称不能为空');
+      Alert.alert(t('common.error'), t('departmentManagement.messages.nameRequired'));
       return;
     }
 
@@ -211,7 +213,7 @@ export default function DepartmentManagementScreen() {
           departmentId: editingItem.id,
           departmentName: formData.name,
         });
-        Alert.alert('成功', '部门更新成功');
+        Alert.alert(t('common.success'), t('departmentManagement.messages.updateSuccess'));
       } else {
         // 创建
         await departmentApiClient.createDepartment(
@@ -222,7 +224,7 @@ export default function DepartmentManagementScreen() {
           departmentName: formData.name,
           departmentCode: formData.code,
         });
-        Alert.alert('成功', '部门创建成功');
+        Alert.alert(t('common.success'), t('departmentManagement.messages.createSuccess'));
       }
       setModalVisible(false);
       loadDepartments();
@@ -231,19 +233,19 @@ export default function DepartmentManagementScreen() {
         isEdit: !!editingItem,
         departmentName: formData.name,
       });
-      const errorMessage = error instanceof Error ? error.message : (editingItem ? '更新失败' : '创建失败');
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), errorMessage);
     }
   };
 
   const handleDelete = (item: DepartmentDTO) => {
     Alert.alert(
-      '确认删除',
-      `确定要删除部门"${item.name}"吗？此操作不可撤销。\n\n注意：有子部门或员工的部门无法删除。`,
+      t('common.confirm'),
+      t('departmentManagement.messages.deleteConfirm', { name: item.name }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '删除',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -253,7 +255,7 @@ export default function DepartmentManagementScreen() {
                   departmentId: item.id,
                   departmentName: item.name,
                 });
-                Alert.alert('成功', '部门删除成功');
+                Alert.alert(t('common.success'), t('departmentManagement.messages.deleteSuccess'));
                 loadDepartments();
               }
             } catch (error: unknown) {
@@ -261,8 +263,8 @@ export default function DepartmentManagementScreen() {
                 departmentId: item.id,
                 departmentName: item.name,
               });
-              const errorMessage = error instanceof Error ? error.message : '删除失败';
-              Alert.alert('错误', errorMessage);
+              const errorMessage = error instanceof Error ? error.message : t('common.error');
+              Alert.alert(t('common.error'), errorMessage);
             }
           },
         },
@@ -283,7 +285,7 @@ export default function DepartmentManagementScreen() {
           departmentName: item.name,
           newStatus: !item.isActive,
         });
-        Alert.alert('成功', item.isActive ? '已停用' : '已启用');
+        Alert.alert(t('common.success'), item.isActive ? t('departmentManagement.messages.statusUpdated') : t('departmentManagement.messages.statusActivated'));
         loadDepartments();
       }
     } catch (error: unknown) {
@@ -291,8 +293,8 @@ export default function DepartmentManagementScreen() {
         departmentId: item.id,
         departmentName: item.name,
       });
-      const errorMessage = error instanceof Error ? error.message : '操作失败';
-      Alert.alert('错误', errorMessage);
+      const errorMessage = error instanceof Error ? error.message : t('common.error');
+      Alert.alert(t('common.error'), errorMessage);
     }
   };
 
@@ -301,12 +303,12 @@ export default function DepartmentManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="部门管理" />
+          <Appbar.Content title={t('departmentManagement.title')} />
         </Appbar.Header>
         <View style={styles.noPermission}>
           <List.Icon icon="lock" color="#999" />
-          <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
-          <Text style={styles.noPermissionHint}>仅限工厂超管和权限管理员</Text>
+          <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
+          <Text style={styles.noPermissionHint}>{t('common.permissionHint')}</Text>
         </View>
       </View>
     );
@@ -317,7 +319,7 @@ export default function DepartmentManagementScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="部门管理" />
+        <Appbar.Content title={t('departmentManagement.title')} />
         <Appbar.Action icon="refresh" onPress={loadDepartments} />
         <Appbar.Action icon="cog-outline" onPress={handleInitializeDefaults} />
       </Appbar.Header>
@@ -326,7 +328,7 @@ export default function DepartmentManagementScreen() {
       <ScrollView style={styles.content}>
         {/* Search */}
         <Searchbar
-          placeholder="搜索部门编码、名称"
+          placeholder={t('departmentManagement.searchPlaceholder')}
           onChangeText={setSearchQuery}
           value={searchQuery}
           onSubmitEditing={handleSearch}
@@ -339,19 +341,19 @@ export default function DepartmentManagementScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{departments.length}</Text>
-                <Text style={styles.statLabel}>总部门数</Text>
+                <Text style={styles.statLabel}>{t('departmentManagement.stats.total')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {departments.filter(d => d.isActive).length}
                 </Text>
-                <Text style={styles.statLabel}>启用中</Text>
+                <Text style={styles.statLabel}>{t('departmentManagement.stats.enabled')}</Text>
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
                   {departments.reduce((sum, d) => sum + (d.employeeCount || 0), 0)}
                 </Text>
-                <Text style={styles.statLabel}>总员工数</Text>
+                <Text style={styles.statLabel}>{t('departmentManagement.stats.totalEmployees')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -361,20 +363,20 @@ export default function DepartmentManagementScreen() {
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : departments.length === 0 ? (
           <Card style={styles.emptyCard}>
             <Card.Content style={styles.emptyContent}>
               <List.Icon icon="office-building-outline" color="#999" />
-              <Text style={styles.emptyText}>暂无部门</Text>
-              <Text style={styles.emptyHint}>点击右下角"+"按钮添加部门</Text>
+              <Text style={styles.emptyText}>{t('departmentManagement.empty.noDepartments')}</Text>
+              <Text style={styles.emptyHint}>{t('departmentManagement.empty.hint')}</Text>
               <Button
                 mode="outlined"
                 onPress={handleInitializeDefaults}
                 style={{ marginTop: 16 }}
               >
-                初始化默认部门
+                {t('departmentManagement.initializeDefaults')}
               </Button>
             </Card.Content>
           </Card>
@@ -427,21 +429,21 @@ export default function DepartmentManagementScreen() {
                   {item.managerName && (
                     <View style={styles.infoItem}>
                       <List.Icon icon="account-tie" style={styles.infoIcon} />
-                      <Text style={styles.infoLabel}>负责人: </Text>
+                      <Text style={styles.infoLabel}>{t('departmentManagement.form.manager')}: </Text>
                       <Text style={styles.infoValue}>{item.managerName}</Text>
                     </View>
                   )}
                   <View style={styles.infoItem}>
                     <List.Icon icon="account-group" style={styles.infoIcon} />
-                    <Text style={styles.infoLabel}>员工: </Text>
-                    <Text style={styles.infoValue}>{item.employeeCount || 0}人</Text>
+                    <Text style={styles.infoLabel}>{t('departmentManagement.form.employees')}: </Text>
+                    <Text style={styles.infoValue}>{t('departmentManagement.form.employeeCount', { count: item.employeeCount || 0 })}</Text>
                   </View>
                 </View>
 
                 {item.parentDepartmentName && (
                   <View style={styles.infoItem}>
                     <List.Icon icon="sitemap" style={styles.infoIcon} />
-                    <Text style={styles.infoLabel}>上级部门: </Text>
+                    <Text style={styles.infoLabel}>{t('departmentManagement.form.parentDepartment')}: </Text>
                     <Text style={styles.infoValue}>{item.parentDepartmentName}</Text>
                   </View>
                 )}
@@ -459,11 +461,11 @@ export default function DepartmentManagementScreen() {
                       color: item.isActive ? '#4CAF50' : '#F44336',
                     }}
                   >
-                    {item.isActive ? '启用中' : '已停用'}
+                    {item.isActive ? t('common.enabled') : t('common.disabled')}
                   </Chip>
                   {item.displayOrder !== undefined && (
                     <Chip mode="outlined" compact style={styles.orderChip}>
-                      排序: {item.displayOrder}
+                      {t('departmentManagement.form.displayOrder')}: {item.displayOrder}
                     </Chip>
                   )}
                 </View>
@@ -483,7 +485,7 @@ export default function DepartmentManagementScreen() {
           contentContainerStyle={styles.modalContent}
         >
           <Text style={styles.modalTitle}>
-            {editingItem ? '编辑部门' : '添加部门'}
+            {editingItem ? t('departmentManagement.edit') : t('departmentManagement.add')}
           </Text>
 
           <ScrollView
@@ -491,49 +493,49 @@ export default function DepartmentManagementScreen() {
             contentContainerStyle={{ paddingBottom: 16 }}
           >
             <TextInput
-              label="部门名称 *"
+              label={`${t('departmentManagement.form.name')} *`}
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如: 生产部/质检部/物流部"
+              placeholder={t('departmentManagement.form.namePlaceholder')}
             />
 
             <TextInput
-              label="部门编码"
+              label={t('departmentManagement.form.code')}
               value={formData.code}
               onChangeText={(text) => setFormData({ ...formData, code: text.toUpperCase() })}
               mode="outlined"
               style={styles.input}
-              placeholder="例如: DEPT001"
+              placeholder={t('departmentManagement.form.codePlaceholder')}
               autoCapitalize="characters"
               disabled={!!editingItem}
             />
 
             <TextInput
-              label="描述"
+              label={t('departmentManagement.form.description')}
               value={formData.description}
               onChangeText={(text) => setFormData({ ...formData, description: text })}
               mode="outlined"
               style={styles.input}
               multiline
               numberOfLines={2}
-              placeholder="部门详细描述"
+              placeholder={t('departmentManagement.form.descriptionPlaceholder')}
             />
 
             <TextInput
-              label="显示顺序"
+              label={t('departmentManagement.form.displayOrder')}
               value={formData.displayOrder?.toString() || '0'}
               onChangeText={(text) => setFormData({ ...formData, displayOrder: parseInt(text) || 0 })}
               mode="outlined"
               style={styles.input}
               keyboardType="number-pad"
-              placeholder="数字越小越靠前"
+              placeholder={t('departmentManagement.form.displayOrderPlaceholder')}
             />
 
             {/* Color Picker */}
             <View style={styles.colorPickerContainer}>
-              <Text style={styles.colorLabel}>部门颜色</Text>
+              <Text style={styles.colorLabel}>{t('departmentManagement.form.departmentColor')}</Text>
               <View style={styles.colorGrid}>
                 {presetColors.map((color) => (
                   <Button
@@ -554,7 +556,7 @@ export default function DepartmentManagementScreen() {
             </View>
 
             <View style={styles.switchRow}>
-              <Text style={styles.switchLabel}>是否启用</Text>
+              <Text style={styles.switchLabel}>{t('departmentManagement.form.isActive')}</Text>
               <Switch
                 value={formData.isActive}
                 onValueChange={(value) => setFormData({ ...formData, isActive: value })}
@@ -567,13 +569,13 @@ export default function DepartmentManagementScreen() {
               mode="outlined"
               onPress={() => setModalVisible(false)}
             >
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               mode="contained"
               onPress={handleSave}
             >
-              {editingItem ? '更新' : '创建'}
+              {editingItem ? t('common.update') : t('common.create')}
             </Button>
           </View>
         </Modal>
@@ -585,7 +587,7 @@ export default function DepartmentManagementScreen() {
           icon="plus"
           style={styles.fab}
           onPress={handleAdd}
-          label="添加部门"
+          label={t('departmentManagement.add')}
         />
       )}
     </View>

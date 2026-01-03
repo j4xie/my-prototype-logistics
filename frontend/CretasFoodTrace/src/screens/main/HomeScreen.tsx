@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-nat
 import { Text, Avatar, Icon } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { ModuleConfig } from '../../types/navigation';
 import { ModuleCard } from './components/ModuleCard';
@@ -22,6 +23,7 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<MainTabParamList, 'Hom
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('home');
 
   // Module Configuration
   const modules: ModuleConfig[] = useMemo(() => {
@@ -33,9 +35,9 @@ export default function HomeScreen() {
     const allModules: ModuleConfig[] = [
       {
         id: 'processing',
-        name: '生产模块',
+        name: t('modules.processing.name'),
         icon: 'cube-outline',
-        description: '批次管理、质检、成本核算',
+        description: t('modules.processing.description'),
         status: 'available',
         progress: 27,
         requiredPermissions: ['processing_access'],
@@ -44,27 +46,27 @@ export default function HomeScreen() {
       },
       {
         id: 'logistics',
-        name: '物流模块',
+        name: t('modules.logistics.name'),
         icon: 'truck-delivery',
-        description: '运输管理、配送追踪',
+        description: t('modules.logistics.description'),
         status: 'coming_soon',
         requiredPermissions: ['logistics_access'],
         color: '#FAAD14', // Neo Orange
       },
       {
         id: 'trace',
-        name: '溯源模块',
+        name: t('modules.trace.name'),
         icon: 'qrcode-scan',
-        description: '产品追溯、信息查询',
+        description: t('modules.trace.description'),
         status: 'coming_soon',
         requiredPermissions: ['trace_access'],
         color: '#722ED1', // Neo Purple
       },
       {
         id: 'admin',
-        name: '用户管理',
+        name: t('modules.admin.name'),
         icon: 'account-cog',
-        description: '用户、角色、权限管理',
+        description: t('modules.admin.description'),
         status: 'available',
         requiredPermissions: ['admin_access'],
         route: 'AdminTab',
@@ -72,9 +74,9 @@ export default function HomeScreen() {
       },
       {
         id: 'settings',
-        name: '系统设置',
+        name: t('modules.settings.name'),
         icon: 'cog',
-        description: '个人设置、系统配置',
+        description: t('modules.settings.description'),
         status: 'available',
         requiredPermissions: [],
         color: '#595959', // Neo Gray
@@ -96,16 +98,22 @@ export default function HomeScreen() {
         return false;
       });
     });
-  }, [user]);
+  }, [user, t]);
 
   const handleModulePress = (module: ModuleConfig) => {
     if (module.status === 'coming_soon') {
-      Alert.alert('即将上线', `${module.name}正在开发中,敬请期待!`);
+      Alert.alert(
+        t('alerts.comingSoon.title'),
+        t('alerts.comingSoon.message', { moduleName: module.name })
+      );
       return;
     }
 
     if (module.status === 'locked') {
-      Alert.alert('无权访问', `您没有权限访问${module.name}`);
+      Alert.alert(
+        t('alerts.noAccess.title'),
+        t('alerts.noAccess.message', { moduleName: module.name })
+      );
       return;
     }
 
@@ -113,16 +121,16 @@ export default function HomeScreen() {
       // @ts-ignore - Dynamic routing
       navigation.navigate(module.route as keyof MainTabParamList);
     } else if (module.id === 'settings') {
-      Alert.alert('系统设置', '此功能正在完善中');
+      Alert.alert(t('alerts.settingsInProgress.title'), t('alerts.settingsInProgress.message'));
     }
   };
 
   // User Display Info
   const displayName = user?.fullName || user?.username || 'User';
   const roleText = user?.userType === 'platform'
-    ? '平台管理员'
+    ? t('roles.platformAdmin')
     : user?.userType === 'factory'
-      ? getRoleDisplayName(user.factoryUser?.role || 'viewer')
+      ? getRoleDisplayName(user.factoryUser?.role || 'viewer', t)
       : 'User';
 
   return (
@@ -142,12 +150,12 @@ export default function HomeScreen() {
               color={theme.colors.onPrimaryContainer}
             />
             <View style={styles.userText}>
-              <Text variant="titleMedium" style={styles.greeting}>你好, {displayName}</Text>
+              <Text variant="titleMedium" style={styles.greeting}>{t('greeting')}, {displayName}</Text>
               <Text variant="bodySmall" style={styles.role}>{roleText}</Text>
             </View>
           </View>
-          <TouchableOpacity 
-            onPress={() => Alert.alert('通知', '暂无新通知')}
+          <TouchableOpacity
+            onPress={() => Alert.alert(t('alerts.notification.title'), t('alerts.notification.noNew'))}
             style={styles.notificationButton}
           >
             <Icon source="bell-outline" size={24} color={theme.colors.onSurface} />
@@ -163,7 +171,7 @@ export default function HomeScreen() {
 
         {/* Modules Grid */}
         <View style={styles.section}>
-          <Text variant="titleLarge" style={styles.sectionTitle}>功能模块</Text>
+          <Text variant="titleLarge" style={styles.sectionTitle}>{t('sections.modules')}</Text>
           <View style={styles.modulesGrid}>
             {modules.map(module => (
               <ModuleCard
@@ -181,14 +189,14 @@ export default function HomeScreen() {
   );
 }
 
-function getRoleDisplayName(role: string): string {
+function getRoleDisplayName(role: string, t: (key: string) => string): string {
   const roleMap: Record<string, string> = {
-    factory_super_admin: '工厂超级管理员',
-    permission_admin: '权限管理员',
-    department_admin: '部门管理员',
-    operator: '操作员',
-    viewer: '查看者',
-    unactivated: '未激活用户',
+    factory_super_admin: t('roles.factorySuperAdmin'),
+    permission_admin: t('roles.permissionAdmin'),
+    department_admin: t('roles.departmentAdmin'),
+    operator: t('roles.operator'),
+    viewer: t('roles.viewer'),
+    unactivated: t('roles.unactivated'),
   };
   return roleMap[role] || role;
 }

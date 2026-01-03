@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
@@ -40,6 +41,7 @@ const NOTIFICATION_ICONS: Record<Notification['type'], { icon: string; color: st
 };
 
 export default function QINotificationsScreen() {
+  const { t } = useTranslation('quality');
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId;
@@ -108,7 +110,7 @@ export default function QINotificationsScreen() {
 
       setNotifications(mockData);
     } catch (error) {
-      console.error('加载通知失败:', error);
+      console.error(t('notifications.loading'), error);
     } finally {
       setLoading(false);
     }
@@ -127,10 +129,10 @@ export default function QINotificationsScreen() {
   };
 
   const handleMarkAllAsRead = () => {
-    Alert.alert('全部标为已读', '确定将所有通知标为已读吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('notifications.markAllRead'), t('notifications.confirmMarkAll'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '确定',
+        text: t('common.confirm'),
         onPress: () => {
           setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
         },
@@ -139,10 +141,10 @@ export default function QINotificationsScreen() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('删除通知', '确定删除这条通知吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('notifications.deleteNotification'), t('notifications.confirmDelete'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('notifications.delete'),
         style: 'destructive',
         onPress: () => {
           setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -209,9 +211,9 @@ export default function QINotificationsScreen() {
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
       <Ionicons name="notifications-off-outline" size={64} color={QI_COLORS.disabled} />
-      <Text style={styles.emptyTitle}>暂无通知</Text>
+      <Text style={styles.emptyTitle}>{t('notifications.noNotifications')}</Text>
       <Text style={styles.emptySubtitle}>
-        {filter === 'unread' ? '没有未读通知' : filter === 'urgent' ? '没有紧急通知' : '通知列表为空'}
+        {filter === 'unread' ? t('notifications.noUnread') : filter === 'urgent' ? t('notifications.noUrgent') : t('notifications.emptyList')}
       </Text>
     </View>
   );
@@ -220,7 +222,7 @@ export default function QINotificationsScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载通知中...</Text>
+        <Text style={styles.loadingText}>{t('notifications.loading')}</Text>
       </View>
     );
   }
@@ -230,13 +232,13 @@ export default function QINotificationsScreen() {
       {/* 筛选栏 */}
       <View style={styles.filterBar}>
         <View style={styles.filterTabs}>
-          {renderFilterTab('all', '全部')}
-          {renderFilterTab('unread', '未读', unreadCount)}
-          {renderFilterTab('urgent', '紧急')}
+          {renderFilterTab('all', t('notifications.all'))}
+          {renderFilterTab('unread', t('notifications.unread'), unreadCount)}
+          {renderFilterTab('urgent', t('notifications.urgent'))}
         </View>
         {unreadCount > 0 && (
           <TouchableOpacity style={styles.markAllBtn} onPress={handleMarkAllAsRead}>
-            <Text style={styles.markAllText}>全部已读</Text>
+            <Text style={styles.markAllText}>{t('notifications.markAllRead')}</Text>
           </TouchableOpacity>
         )}
       </View>

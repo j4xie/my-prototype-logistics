@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>蓝图预览 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="blueprint-detail.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">蓝图预览</div>
+      <div class="header-right"></div>
+    </div>
+
+    <!-- Tab切换 -->
+    <div style="padding: 12px 16px; background: white; border-bottom: 1px solid #f0f0f0;">
+      <div style="display: flex; gap: 8px;">
+        <span style="padding: 8px 16px; background: #667eea; color: white; border-radius: 20px; font-size: 14px; cursor: pointer;">产品类型</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; color: #595959; border-radius: 20px; font-size: 14px; cursor: pointer;">原材料</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; color: #595959; border-radius: 20px; font-size: 14px; cursor: pointer;">部门</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; color: #595959; border-radius: 20px; font-size: 14px; cursor: pointer;">表单</span>
+        <span style="padding: 8px 16px; background: #f5f5f5; color: #595959; border-radius: 20px; font-size: 14px; cursor: pointer;">规则</span>
+      </div>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content">
+      <!-- 蓝图信息 -->
+      <div style="background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 16px; padding: 16px; margin-bottom: 20px; color: white;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600;">
+            水
+          </div>
+          <div>
+            <div style="font-size: 16px; font-weight: 600;">水产加工标准版</div>
+            <div style="font-size: 13px; opacity: 0.9;">版本 v2.0.1 · 预览模式</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 产品类型列表 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">产品类型 (12)</span>
+        <span style="font-size: 13px; color: #8c8c8c;">应用到工厂后可自定义</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <!-- 产品1 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(82, 196, 26, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #52c41a; font-size: 14px; font-weight: 600;">
+            鱼
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">冰鲜带鱼段</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT001 · 冰鲜类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品2 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(82, 196, 26, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #52c41a; font-size: 14px; font-weight: 600;">
+            鱼
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">冰鲜黄鱼片</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT002 · 冰鲜类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品3 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(24, 144, 255, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #1890ff; font-size: 14px; font-weight: 600;">
+            冻
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">冷冻鱿鱼圈</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT003 · 冷冻类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品4 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(250, 173, 20, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #faad14; font-size: 14px; font-weight: 600;">
+            糜
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">即食鱼糜制品</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT004 · 即食类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品5 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(250, 173, 20, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #faad14; font-size: 14px; font-weight: 600;">
+            调
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">调味鱼块</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT005 · 调味类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品6 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(114, 46, 209, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #722ed1; font-size: 14px; font-weight: 600;">
+            丸
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">鱼肉丸</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT006 · 丸类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品7 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(255, 77, 79, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #ff4d4f; font-size: 14px; font-weight: 600;">
+            烤
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">烤鱼片</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT007 · 烤制类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 产品8 -->
+        <div style="display: flex; align-items: center; gap: 12px; padding-bottom: 12px; margin-bottom: 12px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 40px; height: 40px; background: rgba(82, 196, 26, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #52c41a; font-size: 14px; font-weight: 600;">
+            柳
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 14px; font-weight: 500; color: #262626;">鱼柳</div>
+            <div style="font-size: 12px; color: #8c8c8c;">产品ID: PT008 · 切片类</div>
+          </div>
+          <span class="tag info" style="font-size: 11px;">默认</span>
+        </div>
+
+        <!-- 更多产品 -->
+        <div style="text-align: center; padding: 8px;">
+          <span style="font-size: 13px; color: #667eea; cursor: pointer;">查看更多 (4个)</span>
+        </div>
+      </div>
+
+      <!-- 转换率配置预览 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">默认转换率</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+        <div style="font-size: 13px; color: #8c8c8c; margin-bottom: 12px;">
+          原材料 → 产品的默认转换率配置
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 14px; color: #262626;">新鲜带鱼 → 冰鲜带鱼段</div>
+            <span style="font-size: 14px; font-weight: 500; color: #667eea;">65%</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 14px; color: #262626;">新鲜黄鱼 → 冰鲜黄鱼片</div>
+            <span style="font-size: 14px; font-weight: 500; color: #667eea;">60%</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 14px; color: #262626;">新鲜鱿鱼 → 冷冻鱿鱼圈</div>
+            <span style="font-size: 14px; font-weight: 500; color: #667eea;">55%</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: #f5f5f5; border-radius: 8px;">
+            <div style="font-size: 14px; color: #262626;">鱼糜原料 → 即食鱼糜制品</div>
+            <span style="font-size: 14px; font-weight: 500; color: #667eea;">85%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 质检规则预览 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">质检规则示例</span>
+      </div>
+
+      <div style="background: white; border-radius: 12px; padding: 16px;">
+        <div style="font-size: 13px; color: #8c8c8c; margin-bottom: 12px;">
+          基于Drools规则引擎的质量检测规则
+        </div>
+
+        <!-- 规则代码预览 -->
+        <div style="background: #1e1e1e; border-radius: 8px; padding: 12px; font-family: monospace; font-size: 12px; color: #d4d4d4; overflow-x: auto;">
+          <div><span style="color: #569cd6;">rule</span> <span style="color: #ce9178;">"温度检测规则"</span></div>
+          <div style="padding-left: 16px;"><span style="color: #569cd6;">when</span></div>
+          <div style="padding-left: 24px;"><span style="color: #d4d4d4;">$batch : MaterialBatch(</span></div>
+          <div style="padding-left: 32px;"><span style="color: #d4d4d4;">temperature > 4 ||</span></div>
+          <div style="padding-left: 32px;"><span style="color: #d4d4d4;">temperature < -18</span></div>
+          <div style="padding-left: 24px;"><span style="color: #d4d4d4;">)</span></div>
+          <div style="padding-left: 16px;"><span style="color: #569cd6;">then</span></div>
+          <div style="padding-left: 24px;"><span style="color: #d4d4d4;">$batch.setStatus(</span><span style="color: #ce9178;">"REJECTED"</span><span style="color: #d4d4d4;">);</span></div>
+          <div style="padding-left: 24px;"><span style="color: #d4d4d4;">alert(</span><span style="color: #ce9178;">"温度异常"</span><span style="color: #d4d4d4;">);</span></div>
+          <div><span style="color: #569cd6;">end</span></div>
+        </div>
+
+        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap;">
+          <span class="tag" style="background: rgba(24, 144, 255, 0.1); color: #1890ff;">验证规则 x4</span>
+          <span class="tag" style="background: rgba(114, 46, 209, 0.1); color: #722ed1;">质检规则 x3</span>
+          <span class="tag" style="background: rgba(255, 77, 79, 0.1); color: #ff4d4f;">告警规则 x2</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

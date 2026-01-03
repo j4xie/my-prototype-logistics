@@ -26,6 +26,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { hrApiClient } from '../../../services/api/hrApiClient';
 import { useAuthStore } from '../../../store/authStore';
@@ -76,6 +77,7 @@ const StatCard: React.FC<StatCardProps> = ({
 export default function HRHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<HRDashboardStats | null>(null);
@@ -103,8 +105,8 @@ export default function HRHomeScreen() {
         setAnomalies(mappedAnomalies);
       }
     } catch (error) {
-      console.error('加载 HR 仪表板数据失败:', error);
-      Alert.alert('错误', '加载数据失败，请稍后重试');
+      console.error(t('messages.loadFailed'), error);
+      Alert.alert(t('messages.error'), t('messages.retryLater'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -130,7 +132,7 @@ export default function HRHomeScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={HR_THEME.primary} />
-        <Text style={styles.loadingText}>加载中...</Text>
+        <Text style={styles.loadingText}>{t('home.loading')}</Text>
       </View>
     );
   }
@@ -142,16 +144,16 @@ export default function HRHomeScreen() {
         <View style={styles.headerGradient}>
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.headerTitle}>人事管理</Text>
+              <Text style={styles.headerTitle}>{t('home.title')}</Text>
               <Text style={styles.headerSubtitle}>
-                {user?.username || 'HR管理员'}
+                {user?.username || t('profile.role')}
               </Text>
             </View>
             <IconButton
               icon="bell-outline"
               iconColor="#fff"
               size={24}
-              onPress={() => Alert.alert('提示', '通知功能即将上线')}
+              onPress={() => Alert.alert(t('messages.tip'), t('home.notifications.comingSoon'))}
             />
           </View>
         </View>
@@ -167,33 +169,33 @@ export default function HRHomeScreen() {
         {/* 统计卡片 */}
         <View style={styles.statsGrid}>
           <StatCard
-            title="在岗人数"
+            title={t('home.stats.onSite')}
             value={stats?.todayOnSite ?? 0}
             icon="account-check"
             color={HR_THEME.success}
-            subtext={`总员工 ${stats?.totalStaff ?? 0}`}
+            subtext={`${t('home.stats.totalStaff')} ${stats?.totalStaff ?? 0}`}
           />
           <StatCard
-            title="今日迟到"
+            title={t('home.stats.lateToday')}
             value={stats?.lateCount ?? 0}
             icon="clock-alert"
             color={HR_THEME.warning}
             onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
           />
           <StatCard
-            title="待激活白名单"
+            title={t('home.stats.pendingWhitelist')}
             value={stats?.whitelistPending ?? 0}
             icon="shield-check"
             color={HR_THEME.primary}
             onPress={() => navigation.navigate('WhitelistList' as any)}
           />
           <StatCard
-            title="本月入职"
+            title={t('home.stats.thisMonthNewHires')}
             value={stats?.thisMonthNewHires ?? 0}
             icon="account-plus"
             color={HR_THEME.accent}
             subtext={stats?.lastMonthNewHires !== undefined
-              ? `上月 ${stats.lastMonthNewHires}`
+              ? `${t('home.stats.lastMonth')} ${stats.lastMonthNewHires}`
               : undefined
             }
             onPress={() => navigation.navigate('NewHires')}
@@ -204,7 +206,7 @@ export default function HRHomeScreen() {
         <Card style={styles.attendanceCard}>
           <Card.Content>
             <View style={styles.attendanceHeader}>
-              <Text style={styles.sectionTitle}>今日出勤率</Text>
+              <Text style={styles.sectionTitle}>{t('home.attendance.title')}</Text>
               <Text style={styles.attendanceRate}>
                 {((stats?.attendanceRate ?? 0) * 100).toFixed(1)}%
               </Text>
@@ -222,7 +224,7 @@ export default function HRHomeScreen() {
 
         {/* 快捷操作 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>快捷操作</Text>
+          <Text style={styles.sectionTitle}>{t('home.quickActions.title')}</Text>
           <View style={styles.quickActions}>
             {HR_QUICK_ACTIONS.map((action) => (
               <TouchableOpacity
@@ -251,11 +253,11 @@ export default function HRHomeScreen() {
         {/* 考勤异常 */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>考勤异常</Text>
+            <Text style={styles.sectionTitle}>{t('home.anomaly.title')}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
             >
-              <Text style={styles.viewAll}>查看全部</Text>
+              <Text style={styles.viewAll}>{t('home.anomaly.viewAll')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -267,7 +269,7 @@ export default function HRHomeScreen() {
                   size={48}
                   color={HR_THEME.success}
                 />
-                <Text style={styles.emptyText}>今日暂无考勤异常</Text>
+                <Text style={styles.emptyText}>{t('home.anomaly.noAnomalies')}</Text>
               </Card.Content>
             </Card>
           ) : (

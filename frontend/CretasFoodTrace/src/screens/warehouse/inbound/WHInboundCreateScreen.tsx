@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from "react-i18next";
 import { WHInboundStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -32,6 +33,7 @@ type NavigationProp = NativeStackNavigationProp<WHInboundStackParamList>;
 export function WHInboundCreateScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('warehouse');
 
   // 表单状态
   const [formData, setFormData] = useState({
@@ -75,11 +77,11 @@ export function WHInboundCreateScreen() {
       };
 
       await materialBatchApiClient.createBatch(batchData);
-      Alert.alert('成功', '入库单创建成功', [
-        { text: '确定', onPress: () => navigation.goBack() }
+      Alert.alert(t('inbound.create.success'), t('inbound.create.successMessage'), [
+        { text: t('inbound.create.confirm'), onPress: () => navigation.goBack() }
       ]);
     } catch (error) {
-      handleError(error, { title: '创建入库单失败' });
+      handleError(error, { title: t('messages.createFailed') });
     } finally {
       setSubmitting(false);
     }
@@ -87,14 +89,14 @@ export function WHInboundCreateScreen() {
 
   const handleSubmit = () => {
     if (!formData.material || !formData.supplier || !formData.quantity) {
-      Alert.alert("提示", "请填写必填项");
+      Alert.alert(t('inbound.create.alert'), t('inbound.create.fillRequired'));
       return;
     }
 
-    Alert.alert("确认提交", "确定要创建此入库单吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('inbound.create.confirmSubmit'), t('inbound.create.confirmMessage'), [
+      { text: t('inbound.create.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.create.confirm'),
         onPress: submitInbound,
       },
     ]);
@@ -114,7 +116,7 @@ export function WHInboundCreateScreen() {
         >
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>新建入库</Text>
+        <Text style={styles.headerTitle}>{t('inbound.create.title')}</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -129,17 +131,17 @@ export function WHInboundCreateScreen() {
         >
           {/* 物料信息 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>物料信息</Text>
+            <Text style={styles.sectionTitle}>{t('inbound.create.materialInfo')}</Text>
 
             <View style={styles.formItem}>
               <Text style={styles.label}>
-                物料名称 <Text style={styles.required}>*</Text>
+                {t('inbound.create.materialName')} <Text style={styles.required}>{t('inbound.create.required')}</Text>
               </Text>
               <TextInput
                 mode="outlined"
                 value={formData.material}
                 onChangeText={(v) => updateField("material", v)}
-                placeholder="请输入物料名称"
+                placeholder={t('inbound.create.placeholders.materialName')}
                 style={styles.input}
                 outlineColor="#ddd"
                 activeOutlineColor="#4CAF50"
@@ -147,12 +149,12 @@ export function WHInboundCreateScreen() {
             </View>
 
             <View style={styles.formItem}>
-              <Text style={styles.label}>物料类型</Text>
+              <Text style={styles.label}>{t('inbound.create.materialType')}</Text>
               <View style={styles.typeSelector}>
                 {[
-                  { key: "fresh", label: "鲜品" },
-                  { key: "frozen", label: "冻品" },
-                  { key: "dry", label: "干货" },
+                  { key: "fresh", label: t('inventory.filter.fresh') },
+                  { key: "frozen", label: t('inventory.filter.frozen') },
+                  { key: "dry", label: t('inventory.filter.dry') },
                 ].map((type) => (
                   <TouchableOpacity
                     key={type.key}
@@ -179,13 +181,13 @@ export function WHInboundCreateScreen() {
 
             <View style={styles.formItem}>
               <Text style={styles.label}>
-                供应商 <Text style={styles.required}>*</Text>
+                {t('inbound.create.supplier')} <Text style={styles.required}>{t('inbound.create.required')}</Text>
               </Text>
               <TextInput
                 mode="outlined"
                 value={formData.supplier}
                 onChangeText={(v) => updateField("supplier", v)}
-                placeholder="请选择或输入供应商"
+                placeholder={t('inbound.create.placeholders.supplier')}
                 style={styles.input}
                 outlineColor="#ddd"
                 activeOutlineColor="#4CAF50"
@@ -195,18 +197,18 @@ export function WHInboundCreateScreen() {
 
           {/* 数量与价格 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>数量与价格</Text>
+            <Text style={styles.sectionTitle}>{t('inbound.create.quantityPrice')}</Text>
 
             <View style={styles.formRow}>
               <View style={[styles.formItem, { flex: 1 }]}>
                 <Text style={styles.label}>
-                  数量(kg) <Text style={styles.required}>*</Text>
+                  {t('inbound.create.quantity')} <Text style={styles.required}>{t('inbound.create.required')}</Text>
                 </Text>
                 <TextInput
                   mode="outlined"
                   value={formData.quantity}
                   onChangeText={(v) => updateField("quantity", v)}
-                  placeholder="0"
+                  placeholder={t('inbound.create.placeholders.quantity')}
                   keyboardType="numeric"
                   style={styles.input}
                   outlineColor="#ddd"
@@ -215,12 +217,12 @@ export function WHInboundCreateScreen() {
               </View>
               <View style={{ width: 12 }} />
               <View style={[styles.formItem, { flex: 1 }]}>
-                <Text style={styles.label}>单价(元/kg)</Text>
+                <Text style={styles.label}>{t('inbound.create.unitPrice')}</Text>
                 <TextInput
                   mode="outlined"
                   value={formData.unitPrice}
                   onChangeText={(v) => updateField("unitPrice", v)}
-                  placeholder="0.00"
+                  placeholder={t('inbound.create.placeholders.unitPrice')}
                   keyboardType="decimal-pad"
                   style={styles.input}
                   outlineColor="#ddd"
@@ -232,16 +234,16 @@ export function WHInboundCreateScreen() {
 
           {/* 保质信息 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>保质信息</Text>
+            <Text style={styles.sectionTitle}>{t('inbound.create.qualityInfo')}</Text>
 
             <View style={styles.formRow}>
               <View style={[styles.formItem, { flex: 1 }]}>
-                <Text style={styles.label}>生产日期</Text>
+                <Text style={styles.label}>{t('inbound.create.productionDate')}</Text>
                 <TextInput
                   mode="outlined"
                   value={formData.productionDate}
                   onChangeText={(v) => updateField("productionDate", v)}
-                  placeholder="YYYY-MM-DD"
+                  placeholder={t('inbound.create.placeholders.productionDate')}
                   style={styles.input}
                   outlineColor="#ddd"
                   activeOutlineColor="#4CAF50"
@@ -249,12 +251,12 @@ export function WHInboundCreateScreen() {
               </View>
               <View style={{ width: 12 }} />
               <View style={[styles.formItem, { flex: 1 }]}>
-                <Text style={styles.label}>保质期至</Text>
+                <Text style={styles.label}>{t('inbound.create.expiryDate')}</Text>
                 <TextInput
                   mode="outlined"
                   value={formData.expiryDate}
                   onChangeText={(v) => updateField("expiryDate", v)}
-                  placeholder="YYYY-MM-DD"
+                  placeholder={t('inbound.create.placeholders.expiryDate')}
                   style={styles.input}
                   outlineColor="#ddd"
                   activeOutlineColor="#4CAF50"
@@ -263,12 +265,12 @@ export function WHInboundCreateScreen() {
             </View>
 
             <View style={styles.formItem}>
-              <Text style={styles.label}>存储温度</Text>
+              <Text style={styles.label}>{t('inbound.create.storageTemp')}</Text>
               <TextInput
                 mode="outlined"
                 value={formData.storageTemp}
                 onChangeText={(v) => updateField("storageTemp", v)}
-                placeholder="如: -2°C ~ 4°C"
+                placeholder={t('inbound.create.placeholders.storageTemp')}
                 style={styles.input}
                 outlineColor="#ddd"
                 activeOutlineColor="#4CAF50"
@@ -278,12 +280,12 @@ export function WHInboundCreateScreen() {
 
           {/* 备注 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>备注</Text>
+            <Text style={styles.sectionTitle}>{t('inbound.create.remarks')}</Text>
             <TextInput
               mode="outlined"
               value={formData.remarks}
               onChangeText={(v) => updateField("remarks", v)}
-              placeholder="请输入备注信息"
+              placeholder={t('inbound.create.placeholders.remarks')}
               multiline
               numberOfLines={3}
               style={[styles.input, styles.textArea]}
@@ -304,7 +306,7 @@ export function WHInboundCreateScreen() {
           style={styles.cancelButton}
           labelStyle={styles.cancelButtonLabel}
         >
-          取消
+          {t('inbound.create.cancel')}
         </Button>
         <Button
           mode="contained"
@@ -314,7 +316,7 @@ export function WHInboundCreateScreen() {
           disabled={submitting}
           loading={submitting}
         >
-          {submitting ? '提交中...' : '提交入库'}
+          {submitting ? t('inbound.create.submitting') : t('inbound.create.submit')}
         </Button>
       </View>
     </SafeAreaView>

@@ -25,6 +25,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { aiApiClient, AICostAnalysisResponse } from '../../../services/api/aiApiClient';
 import { useAuthStore } from '../../../store/authStore';
 
@@ -37,18 +38,19 @@ interface Message {
   isLoading?: boolean;
 }
 
-// 快捷问题列表
-const QUICK_QUESTIONS = [
-  '本周成本较上周如何变化？',
-  '哪个产品成本最低？',
-  '如何优化生产成本？',
-  '今日生产效率分析',
-];
-
 export default function AIChatScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('home');
   const scrollViewRef = useRef<ScrollView>(null);
+
+  // 快捷问题列表
+  const QUICK_QUESTIONS = [
+    t('aiChat.question1'),
+    t('aiChat.question2'),
+    t('aiChat.question3'),
+    t('aiChat.question4'),
+  ];
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
@@ -156,8 +158,8 @@ export default function AIChatScreen() {
       setMessages((prev) => prev.filter((msg) => msg.id !== loadingMessageId));
 
       // 显示错误提示
-      const errorMessage = error instanceof Error ? error.message : '网络请求失败';
-      Alert.alert('发送失败', errorMessage, [{ text: '确定' }]);
+      const errorMessage = error instanceof Error ? error.message : t('aiChat.networkError');
+      Alert.alert(t('aiChat.sendFailed'), errorMessage, [{ text: t('common.confirm') }]);
     } finally {
       setIsLoading(false);
     }
@@ -180,7 +182,7 @@ export default function AIChatScreen() {
           </View>
           <View style={styles.aiMessageBubble}>
             <ActivityIndicator size="small" color="#667eea" />
-            <Text style={styles.loadingText}>AI 正在思考...</Text>
+            <Text style={styles.loadingText}>{t('aiChat.thinking')}</Text>
           </View>
         </View>
       );
@@ -245,23 +247,23 @@ export default function AIChatScreen() {
         </View>
         <View style={styles.aiMessageBubble}>
           <Text style={styles.aiMessageText}>
-            您好！我是 AI 智能分析助手。
+            {t('aiChat.welcome')}
           </Text>
           <Text style={[styles.aiMessageText, { marginTop: 8 }]}>
-            我可以帮您分析：
+            {t('aiChat.canHelp')}
           </Text>
           <View style={styles.bulletList}>
-            <Text style={styles.bulletItem}>• 成本趋势与优化建议</Text>
-            <Text style={styles.bulletItem}>• 产品成本对比分析</Text>
-            <Text style={styles.bulletItem}>• 部门成本分布</Text>
-            <Text style={styles.bulletItem}>• 批次成本明细</Text>
+            <Text style={styles.bulletItem}>• {t('aiChat.help1')}</Text>
+            <Text style={styles.bulletItem}>• {t('aiChat.help2')}</Text>
+            <Text style={styles.bulletItem}>• {t('aiChat.help3')}</Text>
+            <Text style={styles.bulletItem}>• {t('aiChat.help4')}</Text>
           </View>
         </View>
       </View>
 
       {/* 快捷问题 */}
       <View style={styles.quickQuestionsContainer}>
-        <Text style={styles.quickQuestionsTitle}>快捷问题</Text>
+        <Text style={styles.quickQuestionsTitle}>{t('aiChat.quickQuestions')}</Text>
         <View style={styles.quickQuestionsGrid}>
           {QUICK_QUESTIONS.map((question, index) => (
             <TouchableOpacity
@@ -285,7 +287,7 @@ export default function AIChatScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <IconButton icon="chevron-left" size={28} iconColor="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI 智能分析助手</Text>
+        <Text style={styles.headerTitle}>{t('aiChat.title')}</Text>
         <View style={{ width: 48 }} />
       </View>
 
@@ -294,7 +296,7 @@ export default function AIChatScreen() {
         <View style={styles.quotaBanner}>
           <IconButton icon="information" size={16} iconColor="#faad14" />
           <Text style={styles.quotaText}>
-            剩余对话次数：<Text style={styles.quotaNumber}>{quotaRemaining}</Text> 次
+            {t('aiChat.remainingQuota')}：<Text style={styles.quotaNumber}>{quotaRemaining}</Text> {t('aiChat.times')}
           </Text>
         </View>
       )}
@@ -324,7 +326,7 @@ export default function AIChatScreen() {
               style={styles.input}
               value={inputText}
               onChangeText={setInputText}
-              placeholder="输入您的问题..."
+              placeholder={t('aiChat.inputPlaceholder')}
               placeholderTextColor="#999"
               multiline
               maxLength={500}

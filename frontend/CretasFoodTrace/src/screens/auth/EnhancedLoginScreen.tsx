@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useLogin } from '../../hooks/useLogin';
 import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
@@ -35,6 +36,8 @@ interface LandingViewProps {
 }
 
 const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
+  const { t } = useTranslation('auth');
+
   return (
     <LinearGradient
       colors={['#2d5016', '#4a7c2c', '#6b9e54']}
@@ -53,8 +56,8 @@ const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
           <View style={styles.logoCircle}>
             <Ionicons name="leaf" size={56} color="#FFFFFF" />
           </View>
-          <Text style={styles.brandTitle}>白垩纪食品溯源</Text>
-          <Text style={styles.brandSubtitle}>移动端管理系统</Text>
+          <Text style={styles.brandTitle}>{t('brand.name')}</Text>
+          <Text style={styles.brandSubtitle}>{t('brand.subtitle')}</Text>
         </View>
 
         {/* 底部按钮 */}
@@ -64,7 +67,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
             onPress={onLogin}
             activeOpacity={0.8}
           >
-            <Text style={styles.landingPrimaryButtonText}>登录</Text>
+            <Text style={styles.landingPrimaryButtonText}>{t('login.loginButton')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -72,7 +75,7 @@ const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
             onPress={onRegister}
             activeOpacity={0.8}
           >
-            <Text style={styles.landingSecondaryButtonText}>注册用户</Text>
+            <Text style={styles.landingSecondaryButtonText}>{t('login.register')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -124,12 +127,15 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
   clearError,
   retry,
 }) => {
+  const { t } = useTranslation('auth');
+  const { t: tCommon } = useTranslation('common');
+
   const renderNetworkStatus = () => {
     if (!networkStatus) {
       return (
         <View style={styles.networkStatus}>
           <Ionicons name="cloud-offline" size={16} color={theme.colors.error} />
-          <Text style={[styles.networkStatusText, { color: theme.colors.error }]}>网络离线</Text>
+          <Text style={[styles.networkStatusText, { color: theme.colors.error }]}>{t('network.offline')}</Text>
         </View>
       );
     }
@@ -144,7 +150,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
         <Text style={styles.errorText}>{error}</Text>
         {retryCount > 0 && (
           <TouchableOpacity onPress={retry}>
-            <Text style={styles.retryText}>重试</Text>
+            <Text style={styles.retryText}>{tCommon('buttons.retry')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -161,7 +167,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
         showsVerticalScrollIndicator={false}
       >
         {/* 顶部标题 */}
-        <Text style={styles.loginTitle}>登录</Text>
+        <Text style={styles.loginTitle}>{t('login.title')}</Text>
 
         {/* 网络状态 */}
         {renderNetworkStatus()}
@@ -169,7 +175,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
         {/* 表单卡片 */}
         <View style={styles.formCard}>
           {/* 用户名输入 */}
-          <Text style={styles.inputLabel}>用户名</Text>
+          <Text style={styles.inputLabel}>{t('login.username')}</Text>
           <View style={styles.inputContainer}>
             <Ionicons
               name="person-outline"
@@ -179,7 +185,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
             />
             <TextInput
               style={styles.input}
-              placeholder="abc"
+              placeholder={t('login.usernamePlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
               value={username}
               onChangeText={onUsernameChange}
@@ -191,7 +197,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
           </View>
 
           {/* 密码输入 */}
-          <Text style={styles.inputLabel}>密码</Text>
+          <Text style={styles.inputLabel}>{t('login.password')}</Text>
           <View style={styles.inputContainer}>
             <Ionicons
               name="lock-closed-outline"
@@ -201,7 +207,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
             />
             <TextInput
               style={styles.input}
-              placeholder="abc"
+              placeholder={t('login.passwordPlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
               value={password}
               onChangeText={onPasswordChange}
@@ -232,7 +238,7 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
               size={20}
               color={rememberMe ? theme.colors.primary : theme.colors.onSurfaceVariant}
             />
-            <Text style={styles.rememberText}>记住我并启用生物识别登录</Text>
+            <Text style={styles.rememberText}>{t('login.rememberMe')}</Text>
           </TouchableOpacity>
 
           {/* 错误提示 */}
@@ -251,14 +257,14 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
             {isLoading ? (
               <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={styles.loginButtonText}>登录</Text>
+              <Text style={styles.loginButtonText}>{t('login.loginButton')}</Text>
             )}
           </TouchableOpacity>
 
           {/* 分隔线 */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>其他登录方式</Text>
+            <Text style={styles.dividerText}>{t('login.otherMethods')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -267,14 +273,14 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
             style={styles.secondaryButton}
             onPress={onNavigateRegister}
           >
-            <Text style={styles.secondaryButtonText}>注册用户</Text>
+            <Text style={styles.secondaryButtonText}>{t('login.register')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
             onPress={onNavigateForgotPassword}
           >
-            <Text style={styles.secondaryButtonText}>忘记密码</Text>
+            <Text style={styles.secondaryButtonText}>{t('login.forgotPassword')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -287,6 +293,8 @@ const LoginFormView: React.FC<LoginFormViewProps> = ({
 
 // ========== 主组件 ==========
 export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
+  const { t } = useTranslation('auth');
+
   // 视图状态：'landing' 或 'login'
   const [currentView, setCurrentView] = useState<'landing' | 'login'>('landing');
 
@@ -329,7 +337,7 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
 
   const handleLogin = async () => {
     if (!username.trim() || !password.trim()) {
-      Alert.alert('提示', '请输入用户名和密码');
+      Alert.alert(t('alerts.hint'), t('messages.inputRequired'));
       return;
     }
 
@@ -353,12 +361,12 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
 
   const handleBiometricLogin = async () => {
     if (!biometricStatus.available) {
-      Alert.alert('提示', '设备不支持生物识别功能');
+      Alert.alert(t('alerts.hint'), t('messages.biometricNotSupported'));
       return;
     }
 
     if (!biometricStatus.isEnrolled) {
-      Alert.alert('提示', '生物识别登录未启用，请先进行普通登录');
+      Alert.alert(t('alerts.hint'), t('messages.biometricNotEnabled'));
       return;
     }
 
@@ -368,15 +376,16 @@ export const EnhancedLoginScreen: React.FC<LoginScreenProps> = ({ navigation }) 
       if (success) {
         navigateToMain();
       }
-    } catch (error: any) {
-      Alert.alert('生物识别登录失败', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : t('messages.biometricFailed');
+      Alert.alert(t('biometric.title'), errorMessage);
     }
   };
 
   const navigateToMain = () => {
     const { user } = useAuthStore.getState();
     if (!user) {
-      Alert.alert('错误', '登录状态异常,请重试');
+      Alert.alert(t('alerts.error'), t('messages.loginStateError'));
       return;
     }
     const route = getPostLoginRoute(user);

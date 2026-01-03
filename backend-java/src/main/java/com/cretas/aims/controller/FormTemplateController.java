@@ -40,7 +40,7 @@ import java.util.Optional;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/form-templates")
-@Tag(name = "表单模板管理", description = "动态表单模板配置接口")
+@Tag(name = "表单模板管理", description = "动态表单模板配置相关接口，包括表单模板的创建、查询、更新、删除，按实体类型获取Schema，Schema JSON轻量查询，模板启用/禁用切换，支持的实体类型列表，模板使用统计，版本管理（历史查看、版本详情、版本回滚、版本差异比较）等功能")
 public class FormTemplateController {
 
     private final FormTemplateService formTemplateService;
@@ -61,12 +61,10 @@ public class FormTemplateController {
      * 前端加载表单时调用此接口获取自定义 Schema
      */
     @GetMapping("/{entityType}")
-    @Operation(summary = "获取实体类型的表单模板", description = "前端获取自定义Schema用于与默认Schema合并")
+    @Operation(summary = "获取实体类型的表单模板", description = "根据实体类型获取工厂的自定义表单模板，前端用于与默认Schema合并。如果无自定义模板则返回空，前端使用内置默认Schema")
     public ApiResponse<Map<String, Object>> getByEntityType(
-            @Parameter(description = "工厂ID", required = true)
-            @PathVariable @NotBlank String factoryId,
-            @Parameter(description = "实体类型", required = true, example = "QUALITY_CHECK")
-            @PathVariable @NotBlank String entityType) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "实体类型: MATERIAL_BATCH/QUALITY_CHECK/PRODUCTION_BATCH等", example = "QUALITY_CHECK") String entityType) {
 
         log.debug("获取表单模板: factoryId={}, entityType={}", factoryId, entityType);
 
@@ -95,10 +93,10 @@ public class FormTemplateController {
      * 轻量接口，仅返回 schema_json 内容
      */
     @GetMapping("/{entityType}/schema")
-    @Operation(summary = "仅获取Schema JSON", description = "轻量接口，仅返回schema内容")
+    @Operation(summary = "仅获取Schema JSON", description = "轻量级接口，仅返回该实体类型的schema_json原始内容，适合前端直接解析使用。如无自定义模板则返回空对象{}")
     public ResponseEntity<String> getSchemaJson(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String entityType) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "实体类型: MATERIAL_BATCH/QUALITY_CHECK/PRODUCTION_BATCH等", example = "MATERIAL_BATCH") String entityType) {
 
         log.debug("获取 Schema JSON: factoryId={}, entityType={}", factoryId, entityType);
 
@@ -118,11 +116,11 @@ public class FormTemplateController {
      * 分页获取工厂的所有表单模板
      */
     @GetMapping
-    @Operation(summary = "分页获取表单模板列表")
+    @Operation(summary = "分页获取表单模板列表", description = "获取工厂的所有表单模板列表，支持分页，按创建时间倒序排列")
     public ApiResponse<Map<String, Object>> getTemplateList(
-            @PathVariable @NotBlank String factoryId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") int page,
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页数量", example = "10") int size) {
 
         log.debug("获取模板列表: factoryId={}, page={}, size={}", factoryId, page, size);
 
@@ -148,11 +146,11 @@ public class FormTemplateController {
      * 创建表单模板
      */
     @PostMapping
-    @Operation(summary = "创建表单模板")
+    @Operation(summary = "创建表单模板", description = "为指定实体类型创建新的表单模板，包含Schema JSON定义。同一工厂同一实体类型只能有一个活跃模板")
     public ApiResponse<FormTemplate> createTemplate(
-            @PathVariable @NotBlank String factoryId,
-            @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody CreateTemplateRequest request) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestHeader("Authorization") @Parameter(description = "Bearer Token") String authorization,
+            @Valid @RequestBody @Parameter(description = "模板创建请求，包含实体类型、名称、Schema JSON") CreateTemplateRequest request) {
 
         String token = TokenUtils.extractToken(authorization);
         Long userId = mobileService.getUserFromToken(token).getId();
@@ -176,12 +174,12 @@ public class FormTemplateController {
      * 如果同类型模板已存在则更新，否则创建
      */
     @PutMapping("/{entityType}")
-    @Operation(summary = "创建或更新表单模板")
+    @Operation(summary = "创建或更新表单模板", description = "如果该实体类型的模板已存在则更新，否则创建新模板。更新时会自动创建版本记录")
     public ApiResponse<FormTemplate> createOrUpdateTemplate(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String entityType,
-            @RequestHeader("Authorization") String authorization,
-            @Valid @RequestBody UpdateTemplateRequest request) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "实体类型: MATERIAL_BATCH/QUALITY_CHECK/PRODUCTION_BATCH等", example = "QUALITY_CHECK") String entityType,
+            @RequestHeader("Authorization") @Parameter(description = "Bearer Token") String authorization,
+            @Valid @RequestBody @Parameter(description = "模板更新请求，包含名称、Schema JSON、UI Schema JSON") UpdateTemplateRequest request) {
 
         String token = TokenUtils.extractToken(authorization);
         Long userId = mobileService.getUserFromToken(token).getId();
@@ -203,11 +201,11 @@ public class FormTemplateController {
      * 更新模板
      */
     @PutMapping("/id/{id}")
-    @Operation(summary = "更新表单模板")
+    @Operation(summary = "更新表单模板", description = "根据模板ID更新表单模板内容，包括名称、Schema JSON和UI Schema JSON")
     public ApiResponse<FormTemplate> updateTemplate(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id,
-            @Valid @RequestBody UpdateTemplateRequest request) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @Valid @RequestBody @Parameter(description = "模板更新请求") UpdateTemplateRequest request) {
 
         log.info("更新表单模板: id={}", id);
 
@@ -225,11 +223,11 @@ public class FormTemplateController {
      * 启用/禁用模板
      */
     @PatchMapping("/id/{id}/active")
-    @Operation(summary = "启用/禁用模板")
+    @Operation(summary = "启用/禁用模板", description = "切换表单模板的启用状态。禁用后前端将使用内置默认Schema")
     public ApiResponse<FormTemplate> toggleActive(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id,
-            @RequestParam boolean active) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @RequestParam @Parameter(description = "是否启用：true-启用，false-禁用", example = "true") boolean active) {
 
         log.info("切换模板状态: id={}, active={}", id, active);
 
@@ -245,10 +243,10 @@ public class FormTemplateController {
      * 删除模板
      */
     @DeleteMapping("/id/{id}")
-    @Operation(summary = "删除表单模板")
+    @Operation(summary = "删除表单模板", description = "永久删除指定的表单模板及其所有版本记录，删除后无法恢复")
     public ApiResponse<Void> deleteTemplate(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
         log.info("删除表单模板: id={}", id);
 
@@ -261,9 +259,9 @@ public class FormTemplateController {
      * 获取支持的实体类型列表
      */
     @GetMapping("/entity-types")
-    @Operation(summary = "获取支持的实体类型")
+    @Operation(summary = "获取支持的实体类型", description = "获取系统支持自定义表单的所有实体类型列表，如MATERIAL_BATCH、QUALITY_CHECK、PRODUCTION_BATCH等")
     public ApiResponse<List<String>> getSupportedEntityTypes(
-            @PathVariable @NotBlank String factoryId) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId) {
 
         List<String> entityTypes = formTemplateService.getSupportedEntityTypes();
         return ApiResponse.success(entityTypes);
@@ -273,9 +271,9 @@ public class FormTemplateController {
      * 获取模板统计信息
      */
     @GetMapping("/statistics")
-    @Operation(summary = "获取模板统计信息")
+    @Operation(summary = "获取模板统计信息", description = "获取工厂表单模板的使用统计，包括总模板数、各类型模板数、启用/禁用数量等")
     public ApiResponse<Map<String, Object>> getStatistics(
-            @PathVariable @NotBlank String factoryId) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId) {
 
         log.debug("获取模板统计: factoryId={}", factoryId);
 
@@ -287,10 +285,10 @@ public class FormTemplateController {
      * 检查是否有自定义模板
      */
     @GetMapping("/{entityType}/exists")
-    @Operation(summary = "检查是否存在自定义模板")
+    @Operation(summary = "检查是否存在自定义模板", description = "检查指定实体类型是否已配置自定义表单模板，用于前端判断是否需要请求自定义Schema")
     public ApiResponse<Boolean> checkExists(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String entityType) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "实体类型", example = "QUALITY_CHECK") String entityType) {
 
         boolean exists = formTemplateService.hasCustomTemplate(factoryId, entityType);
         return ApiResponse.success(exists);
@@ -302,10 +300,10 @@ public class FormTemplateController {
      * 获取模板的版本历史
      */
     @GetMapping("/id/{id}/versions")
-    @Operation(summary = "获取版本历史", description = "获取模板的所有历史版本")
+    @Operation(summary = "获取版本历史", description = "获取模板的所有历史版本列表，按版本号倒序排列，包含每个版本的变更摘要和创建者信息")
     public ApiResponse<List<VersionDTO>> getVersionHistory(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
         log.debug("获取版本历史: templateId={}", id);
 
@@ -328,11 +326,11 @@ public class FormTemplateController {
      * 获取特定版本详情
      */
     @GetMapping("/id/{id}/versions/{version}")
-    @Operation(summary = "获取特定版本详情")
+    @Operation(summary = "获取特定版本详情", description = "获取模板指定历史版本的完整信息，包含完整的Schema JSON内容")
     public ApiResponse<FormTemplateVersion> getVersionDetail(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id,
-            @PathVariable Integer version) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @PathVariable @Parameter(description = "版本号", example = "3") Integer version) {
 
         log.debug("获取版本详情: templateId={}, version={}", id, version);
 
@@ -355,12 +353,12 @@ public class FormTemplateController {
      * 回滚到指定版本
      */
     @PostMapping("/id/{id}/rollback")
-    @Operation(summary = "回滚版本", description = "回滚模板到指定历史版本")
+    @Operation(summary = "回滚版本", description = "将模板回滚到指定的历史版本，回滚后会创建新的版本记录，记录回滚原因")
     public ApiResponse<FormTemplate> rollbackToVersion(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id,
-            @RequestBody RollbackRequest request,
-            @RequestHeader("Authorization") String authorization) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @RequestBody @Parameter(description = "回滚请求，包含目标版本号和回滚原因") RollbackRequest request,
+            @RequestHeader("Authorization") @Parameter(description = "Bearer Token") String authorization) {
 
         String token = TokenUtils.extractToken(authorization);
         Long userId = mobileService.getUserFromToken(token).getId();
@@ -381,12 +379,12 @@ public class FormTemplateController {
      * 比较两个版本的差异
      */
     @GetMapping("/id/{id}/versions/compare")
-    @Operation(summary = "比较版本差异")
+    @Operation(summary = "比较版本差异", description = "比较两个历史版本之间的差异，返回两个版本的Schema JSON和变更摘要供前端进行差异展示")
     public ApiResponse<VersionCompareResult> compareVersions(
-            @PathVariable @NotBlank String factoryId,
-            @PathVariable @NotBlank String id,
-            @RequestParam Integer fromVersion,
-            @RequestParam Integer toVersion) {
+            @PathVariable @NotBlank @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @NotBlank @Parameter(description = "模板ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @RequestParam @Parameter(description = "起始版本号", example = "1") Integer fromVersion,
+            @RequestParam @Parameter(description = "目标版本号", example = "3") Integer toVersion) {
 
         log.debug("比较版本差异: templateId={}, from={}, to={}", id, fromVersion, toVersion);
 

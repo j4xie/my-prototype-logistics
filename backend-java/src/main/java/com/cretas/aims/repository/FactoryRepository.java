@@ -90,4 +90,11 @@ public interface FactoryRepository extends JpaRepository<Factory, String> {
      */
     @Query("SELECT COALESCE(SUM(COALESCE(f.aiWeeklyQuota, 50)), 0) FROM Factory f WHERE f.isActive = true")
     Integer sumActiveFactoriesAIQuota();
+
+    /**
+     * 获取所有激活工厂的ID列表
+     * @return 工厂ID列表
+     */
+    @Query("SELECT f.id FROM Factory f WHERE f.isActive = true")
+    List<String> findAllActiveFactoryIds();
 }

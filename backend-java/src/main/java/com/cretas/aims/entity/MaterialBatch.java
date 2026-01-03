@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
 import lombok.*;
 import javax.persistence.*;
+import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -55,18 +56,24 @@ public class MaterialBatch extends BaseEntity {
     // 核心字段 - 存储在数据库
     // ===================================================================
 
+    @NotNull(message = "入库数量不能为空")
+    @Positive(message = "入库数量必须大于0")
     @Column(name = "receipt_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal receiptQuantity;
 
+    @NotBlank(message = "数量单位不能为空")
     @Column(name = "quantity_unit", nullable = false, length = 20)
     private String quantityUnit;
 
+    @PositiveOrZero(message = "每单位重量不能为负数")
     @Column(name = "weight_per_unit", precision = 10, scale = 3)
     private BigDecimal weightPerUnit;
 
+    @PositiveOrZero(message = "已用数量不能为负数")
     @Column(name = "used_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal usedQuantity = BigDecimal.ZERO;
 
+    @PositiveOrZero(message = "预留数量不能为负数")
     @Column(name = "reserved_quantity", nullable = false, precision = 10, scale = 2)
     private BigDecimal reservedQuantity = BigDecimal.ZERO;
 

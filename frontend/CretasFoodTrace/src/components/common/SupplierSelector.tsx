@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { supplierApiClient, Supplier } from '../../services/api/supplierApiClient';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 
@@ -19,10 +20,11 @@ interface SupplierSelectorProps {
 export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
   value,
   onSelect,
-  label = '供应商',
-  placeholder = '选择供应商',
+  label,
+  placeholder,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -34,7 +36,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
   const [newContactPerson, setNewContactPerson] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
-  const [newBusinessType, setNewBusinessType] = useState('水产批发');
+  const [newBusinessType, setNewBusinessType] = useState<string>('水产批发');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
 
   const handleCreateSupplier = async () => {
     if (!newSupplierName.trim()) {
-      Alert.alert('验证错误', '请输入供应商名称');
+      Alert.alert(t('form.validation.validationError'), t('selectors.supplier.pleaseEnterName'));
       return;
     }
 
@@ -122,7 +124,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
       handleModalClose();
     } catch (error) {
       console.error('❌ Failed to create supplier:', error);
-      Alert.alert('创建失败', getErrorMsg(error) || '请重试');
+      Alert.alert(t('selectors.supplier.createFailed'), getErrorMsg(error) || t('buttons.retry'));
     } finally {
       setCreating(false);
     }
@@ -139,8 +141,8 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
       >
         <View pointerEvents="none">
           <TextInput
-            label={label + ' *'}
-            placeholder={placeholder}
+            label={(label || t('selectors.supplier.label')) + ' *'}
+            placeholder={placeholder || t('selectors.supplier.placeholder')}
             mode="outlined"
             value={value}
             editable={false}
@@ -161,12 +163,12 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text variant="titleLarge">选择{label}</Text>
-              <Button onPress={handleModalClose}>取消</Button>
+              <Text variant="titleLarge">{t('selectors.supplier.title')}</Text>
+              <Button onPress={handleModalClose}>{t('buttons.cancel')}</Button>
             </View>
 
             <Searchbar
-              placeholder="搜索供应商名称、代码、联系人..."
+              placeholder={t('selectors.supplier.search')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={styles.searchBar}
@@ -175,7 +177,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" />
-                <Text style={styles.loadingText}>加载中...</Text>
+                <Text style={styles.loadingText}>{t('status.loading')}</Text>
               </View>
             ) : (
               <FlatList
@@ -195,7 +197,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <Text variant="bodyMedium" style={styles.emptyText}>
-                      {searchQuery ? `未找到匹配的${label}` : `暂无${label}`}
+                      {searchQuery ? t('selectors.supplier.notFound') : t('selectors.supplier.empty')}
                     </Text>
                   </View>
                 }
@@ -206,59 +208,59 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                       style={styles.addButton}
                       onPress={() => setShowAddForm(true)}
                     >
-                      <Text style={styles.addButtonText}>➕ 找不到？点击添加新{label}</Text>
+                      <Text style={styles.addButtonText}>➕ {t('selectors.supplier.addNew')}</Text>
                     </TouchableOpacity>
                   ) : (
                     // 创建表单
                     <View style={styles.addForm}>
-                      <Text variant="titleMedium" style={styles.formTitle}>添加新{label}</Text>
+                      <Text variant="titleMedium" style={styles.formTitle}>{t('selectors.supplier.addNewTitle')}</Text>
 
                       <TextInput
-                        label="供应商名称 *"
+                        label={t('selectors.supplier.name') + ' *'}
                         value={newSupplierName}
                         onChangeText={setNewSupplierName}
                         mode="outlined"
-                        placeholder="例如: 陈老板海鲜批发"
+                        placeholder={t('selectors.supplier.namePlaceholder')}
                         style={styles.formInput}
                         autoFocus
                       />
 
                       <TextInput
-                        label="联系人"
+                        label={t('selectors.supplier.contactPerson')}
                         value={newContactPerson}
                         onChangeText={setNewContactPerson}
                         mode="outlined"
-                        placeholder="例如: 陈老板"
+                        placeholder={t('selectors.supplier.contactPersonPlaceholder')}
                         style={styles.formInput}
                       />
 
                       <TextInput
-                        label="联系电话"
+                        label={t('selectors.supplier.phone')}
                         value={newContactPhone}
                         onChangeText={setNewContactPhone}
                         mode="outlined"
-                        placeholder="例如: +8613800000001"
+                        placeholder={t('selectors.supplier.phonePlaceholder')}
                         keyboardType="phone-pad"
                         style={styles.formInput}
                       />
 
                       <TextInput
-                        label="地址"
+                        label={t('selectors.supplier.address')}
                         value={newAddress}
                         onChangeText={setNewAddress}
                         mode="outlined"
-                        placeholder="例如: 深圳市水产批发市场"
+                        placeholder={t('selectors.supplier.addressPlaceholder')}
                         style={styles.formInput}
                       />
 
-                      <Text variant="bodySmall" style={styles.formLabel}>业务类型</Text>
+                      <Text variant="bodySmall" style={styles.formLabel}>{t('selectors.supplier.businessType')}</Text>
                       <SegmentedButtons
                         value={newBusinessType}
                         onValueChange={setNewBusinessType}
                         buttons={[
-                          { value: '水产批发', label: '批发' },
-                          { value: '进口商', label: '进口' },
-                          { value: '其他', label: '其他' },
+                          { value: t('selectors.supplier.businessTypes.wholesale'), label: t('selectors.supplier.businessTypes.wholesale') },
+                          { value: t('selectors.supplier.businessTypes.import'), label: t('selectors.supplier.businessTypes.import') },
+                          { value: t('selectors.supplier.businessTypes.other'), label: t('selectors.supplier.businessTypes.other') },
                         ]}
                         style={styles.formSegment}
                       />
@@ -275,7 +277,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                           }}
                           disabled={creating}
                         >
-                          取消
+                          {t('buttons.cancel')}
                         </Button>
                         <Button
                           mode="contained"
@@ -283,7 +285,7 @@ export const SupplierSelector: React.FC<SupplierSelectorProps> = ({
                           loading={creating}
                           disabled={creating}
                         >
-                          保存
+                          {t('buttons.save')}
                         </Button>
                       </View>
                     </View>

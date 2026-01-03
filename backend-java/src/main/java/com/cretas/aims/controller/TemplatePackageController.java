@@ -40,7 +40,7 @@ import java.util.*;
 @Slf4j
 @RestController
 @RequestMapping("/api/platform")
-@Tag(name = "行业模板包", description = "行业模板包管理，用于工厂快速初始化配置")
+@Tag(name = "行业模板包", description = "行业模板包管理相关接口，包括模板包列表查询、详情获取、创建/更新/删除、设为默认、使用情况统计、工厂模板初始化等功能。用于平台管理员创建行业标准配置模板，工厂可快速导入使用")
 @Validated
 public class TemplatePackageController {
 
@@ -163,9 +163,9 @@ public class TemplatePackageController {
      */
     @GetMapping("/template-packages/{id}")
     @Operation(summary = "获取模板包详情",
-               description = "获取指定行业模板包的详细配置")
+               description = "获取指定行业模板包的详细配置，包括模板JSON内容、版本号、创建时间等")
     public ApiResponse<IndustryTemplatePackageDTO> getTemplatePackage(
-            @PathVariable @Parameter(description = "模板包ID") String id) {
+            @PathVariable @Parameter(description = "模板包ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id) {
 
         log.info("获取模板包详情: id={}", id);
 
@@ -192,10 +192,10 @@ public class TemplatePackageController {
      */
     @PostMapping("/factories/{factoryId}/initialize-templates")
     @Operation(summary = "初始化工厂模板",
-               description = "将行业模板包导入到指定工厂，快速完成配置初始化")
+               description = "将行业模板包导入到指定工厂，快速完成配置初始化。支持选择是否覆盖已有配置，仅平台管理员和工厂超级管理员可操作")
     public ApiResponse<InitializeTemplateResult> initializeFactoryTemplates(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @Valid @RequestBody @Parameter(description = "初始化请求") InitializeTemplateRequest request,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @Valid @RequestBody @Parameter(description = "初始化请求，包含模板包ID和是否覆盖选项") InitializeTemplateRequest request,
             HttpServletRequest httpRequest) {
 
         // 1. 权限验证
@@ -303,9 +303,9 @@ public class TemplatePackageController {
      */
     @PostMapping("/template-packages")
     @Operation(summary = "创建行业模板包",
-               description = "创建新的行业配置模板包")
+               description = "创建新的行业配置模板包，仅平台管理员可操作。需要提供行业代码、名称和模板JSON配置")
     public ApiResponse<IndustryTemplatePackageDTO> createTemplatePackage(
-            @Valid @RequestBody CreateTemplatePackageRequest request,
+            @Valid @RequestBody @Parameter(description = "创建请求，包含行业代码、名称、描述、模板JSON等") CreateTemplatePackageRequest request,
             HttpServletRequest httpRequest) {
 
         // 权限验证 - 仅平台管理员可创建
@@ -366,10 +366,10 @@ public class TemplatePackageController {
      */
     @PutMapping("/template-packages/{id}")
     @Operation(summary = "更新行业模板包",
-               description = "更新现有行业模板包配置")
+               description = "更新现有行业模板包配置，仅平台管理员可操作。更新后版本号自动递增")
     public ApiResponse<IndustryTemplatePackageDTO> updateTemplatePackage(
-            @PathVariable @Parameter(description = "模板包ID") String id,
-            @Valid @RequestBody UpdateTemplatePackageRequest request,
+            @PathVariable @Parameter(description = "模板包ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
+            @Valid @RequestBody @Parameter(description = "更新请求，可更新名称、描述、模板JSON、默认标记等") UpdateTemplatePackageRequest request,
             HttpServletRequest httpRequest) {
 
         // 权限验证
@@ -437,9 +437,9 @@ public class TemplatePackageController {
      */
     @DeleteMapping("/template-packages/{id}")
     @Operation(summary = "删除行业模板包",
-               description = "删除指定的行业模板包 (软删除)")
+               description = "删除指定的行业模板包（软删除），仅平台管理员可操作。如果模板包已被工厂使用则无法删除")
     public ApiResponse<Void> deleteTemplatePackage(
-            @PathVariable @Parameter(description = "模板包ID") String id,
+            @PathVariable @Parameter(description = "模板包ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
             HttpServletRequest httpRequest) {
 
         // 权限验证
@@ -486,9 +486,9 @@ public class TemplatePackageController {
      */
     @PutMapping("/template-packages/{id}/set-default")
     @Operation(summary = "设为默认模板",
-               description = "将指定模板包设为默认模板")
+               description = "将指定模板包设为默认模板，仅平台管理员可操作。设置后其他模板包的默认标记将被清除")
     public ApiResponse<IndustryTemplatePackageDTO> setDefaultTemplate(
-            @PathVariable @Parameter(description = "模板包ID") String id,
+            @PathVariable @Parameter(description = "模板包ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
             HttpServletRequest httpRequest) {
 
         // 权限验证
@@ -532,9 +532,9 @@ public class TemplatePackageController {
      */
     @GetMapping("/template-packages/{id}/usage")
     @Operation(summary = "获取模板使用情况",
-               description = "查看哪些工厂使用了该模板包")
+               description = "查看哪些工厂使用了该模板包，返回使用工厂列表和初始化时间")
     public ApiResponse<TemplateUsageInfo> getTemplateUsage(
-            @PathVariable @Parameter(description = "模板包ID") String id,
+            @PathVariable @Parameter(description = "模板包ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String id,
             HttpServletRequest httpRequest) {
 
         log.info("获取模板使用情况: id={}", id);
