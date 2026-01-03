@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
 import { Chip, Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export type BatchStatus =
   | 'planning'
@@ -17,67 +18,69 @@ interface BatchStatusBadgeProps {
 }
 
 /**
- * 批次状态徽章组件
- * 7种状态,不同颜色和图标
+ * Batch Status Badge Component
+ * 7 statuses with different colors and icons
  */
 export const BatchStatusBadge: React.FC<BatchStatusBadgeProps> = ({
   status,
   size = 'medium',
 }) => {
+  const { t } = useTranslation('processing');
+
   const getStatusConfig = () => {
     switch (status) {
       case 'planning':
         return {
-          label: '计划中',
-          color: '#2196F3', // 蓝色
+          label: t('batchStatus.planning'),
+          color: '#2196F3',
           backgroundColor: '#E3F2FD',
           icon: 'clock-outline',
         };
       case 'in_progress':
         return {
-          label: '进行中',
-          color: '#FF9800', // 橙色
+          label: t('batchStatus.inProgress'),
+          color: '#FF9800',
           backgroundColor: '#FFF3E0',
           icon: 'play-circle',
         };
       case 'paused':
         return {
-          label: '已暂停',
-          color: '#F44336', // 红色
+          label: t('batchStatus.paused'),
+          color: '#F44336',
           backgroundColor: '#FFEBEE',
           icon: 'pause-circle',
         };
       case 'quality_check':
         return {
-          label: '质检中',
-          color: '#FFC107', // 黄色
+          label: t('batchStatus.qualityCheck'),
+          color: '#FFC107',
           backgroundColor: '#FFF8E1',
           icon: 'shield-check',
         };
       case 'completed':
         return {
-          label: '已完成',
-          color: '#4CAF50', // 绿色
+          label: t('batchStatus.completed'),
+          color: '#4CAF50',
           backgroundColor: '#E8F5E9',
           icon: 'check-circle',
         };
       case 'failed':
         return {
-          label: '已失败',
-          color: '#C62828', // 深红色
+          label: t('batchStatus.failed'),
+          color: '#C62828',
           backgroundColor: '#FFCDD2',
           icon: 'close-circle',
         };
       case 'cancelled':
         return {
-          label: '已取消',
-          color: '#9E9E9E', // 灰色
+          label: t('batchStatus.cancelled'),
+          color: '#9E9E9E',
           backgroundColor: '#F5F5F5',
           icon: 'cancel',
         };
       default:
         return {
-          label: '未知',
+          label: t('batchStatus.unknown'),
           color: '#757575',
           backgroundColor: '#EEEEEE',
           icon: 'help-circle',

@@ -12,6 +12,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import { useAuthStore } from '../../store/authStore';
 import { platformAPI } from '../../services/api/platformApiClient';
@@ -33,6 +34,7 @@ type SimpleRoutes = Exclude<keyof PlatformStackParamList, 'FactorySetup' | 'Indu
 export default function PlatformDashboardScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('platform');
   const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState({
     totalFactories: 0,
@@ -137,8 +139,8 @@ export default function PlatformDashboardScreen() {
     } catch (error) {
       platformDashboardLogger.error('加载平台统计失败', error as Error);
       handleError(error, {
-        title: '加载失败',
-        customMessage: '无法加载平台统计数据',
+        title: t('errors.loadFailed'),
+        customMessage: t('errors.cannotLoadPlatformStats'),
       });
     } finally {
       setRefreshing(false);
@@ -157,8 +159,8 @@ export default function PlatformDashboardScreen() {
   }> = [
     {
       id: 'factories',
-      title: '工厂管理',
-      description: '管理所有工厂信息、配置',
+      title: t('management.factoryManagement.title'),
+      description: t('management.factoryManagement.description'),
       icon: 'factory',
       route: 'FactoryManagement',
       count: stats.totalFactories,
@@ -166,8 +168,8 @@ export default function PlatformDashboardScreen() {
     },
     {
       id: 'users',
-      title: '用户管理',
-      description: '跨工厂用户管理、权限设置',
+      title: t('management.userManagement.title'),
+      description: t('management.userManagement.description'),
       icon: 'account-group',
       route: 'UserManagement',
       count: stats.totalUsers,
@@ -175,16 +177,16 @@ export default function PlatformDashboardScreen() {
     },
     {
       id: 'whitelist',
-      title: '白名单管理',
-      description: '注册白名单、邀请码管理',
+      title: t('management.whitelistManagement.title'),
+      description: t('management.whitelistManagement.description'),
       icon: 'shield-check',
       route: 'WhitelistManagement',
       color: '#607D8B',
     },
     {
       id: 'ai-quota',
-      title: 'AI配额管理',
-      description: '管理各工厂AI调用配额',
+      title: t('management.aiQuotaManagement.title'),
+      description: t('management.aiQuotaManagement.description'),
       icon: 'robot',
       route: 'AIQuotaManagement',
       count: `${stats.aiUsageThisWeek}/${stats.aiQuotaTotal}`,
@@ -192,24 +194,24 @@ export default function PlatformDashboardScreen() {
     },
     {
       id: 'system-monitor',
-      title: '系统监控',
-      description: '平台运营数据、性能监控',
+      title: t('management.systemMonitoring.title'),
+      description: t('management.systemMonitoring.description'),
       icon: 'monitor-dashboard',
       route: 'SystemMonitoring',
       color: '#FF9800',
     },
     {
       id: 'reports',
-      title: '平台报表',
-      description: '数据统计、导出报表',
+      title: t('management.platformReports.title'),
+      description: t('management.platformReports.description'),
       icon: 'chart-bar',
       route: 'PlatformReports',
       color: '#00BCD4',
     },
     {
       id: 'industry-templates',
-      title: '行业模板管理',
-      description: '管理行业模板包，配置表单结构',
+      title: t('management.industryTemplateManagement.title'),
+      description: t('management.industryTemplateManagement.description'),
       icon: 'file-document-multiple',
       route: 'IndustryTemplateManagement',
       color: '#673AB7',
@@ -241,7 +243,7 @@ export default function PlatformDashboardScreen() {
   return (
     <View style={styles.container}>
       <Appbar.Header elevated>
-        <Appbar.Content title="平台管理中心" />
+        <Appbar.Content title={t('dashboard.title')} />
         <Appbar.Action icon="bell-outline" onPress={() => {}} />
       </Appbar.Header>
 
@@ -256,10 +258,10 @@ export default function PlatformDashboardScreen() {
               <Avatar.Icon size={48} icon="crown" style={styles.crownAvatar} />
               <View style={styles.welcomeText}>
                 <Text variant="titleLarge" style={styles.welcomeTitle}>
-                  欢迎回来，{user?.fullName || '管理员'}
+                  {t('dashboard.welcomeBack', { name: user?.fullName || t('home.greetings.defaultUser') })}
                 </Text>
                 <Text variant="bodyMedium" style={styles.welcomeSubtitle}>
-                  平台超级管理员
+                  {t('dashboard.platformSuperAdmin')}
                 </Text>
               </View>
             </View>
@@ -268,7 +270,7 @@ export default function PlatformDashboardScreen() {
 
         {/* 快速统计 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="📊 平台概览" />
+          <Card.Title title={t('dashboard.platformOverview')} />
           <Card.Content>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
@@ -276,7 +278,7 @@ export default function PlatformDashboardScreen() {
                   {stats.totalFactories}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  工厂总数
+                  {t('stats.totalFactories')}
                 </Text>
               </View>
               <View style={styles.statItem}>
@@ -284,7 +286,7 @@ export default function PlatformDashboardScreen() {
                   {stats.totalUsers}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  用户总数
+                  {t('stats.totalUsers')}
                 </Text>
               </View>
               <View style={styles.statItem}>
@@ -292,7 +294,7 @@ export default function PlatformDashboardScreen() {
                   {stats.aiUsageThisWeek}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  本周AI调用
+                  {t('stats.weeklyAICalls')}
                 </Text>
               </View>
             </View>
@@ -301,7 +303,7 @@ export default function PlatformDashboardScreen() {
 
         {/* 生产概览 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="🏭 生产概览" />
+          <Card.Title title={t('dashboard.productionOverview')} />
           <Card.Content>
             <View style={styles.productionGrid}>
               <View style={styles.productionMainStat}>
@@ -309,7 +311,7 @@ export default function PlatformDashboardScreen() {
                   {stats.totalProductionToday.toFixed(1)}
                 </Text>
                 <Text variant="bodyMedium" style={styles.productionLabel}>
-                  今日总产量 (吨)
+                  {t('production.todayOutput')}
                 </Text>
               </View>
               <Divider style={styles.productionDivider} />
@@ -327,7 +329,7 @@ export default function PlatformDashboardScreen() {
                         {stats.totalBatches}
                       </Text>
                       <Text variant="bodySmall" style={styles.productionSubLabel}>
-                        总批次数
+                        {t('production.totalBatches')}
                       </Text>
                     </View>
                   </View>
@@ -345,7 +347,7 @@ export default function PlatformDashboardScreen() {
                         {stats.completedBatches}
                       </Text>
                       <Text variant="bodySmall" style={styles.productionSubLabel}>
-                        已完成批次
+                        {t('production.completedBatches')}
                       </Text>
                     </View>
                   </View>
@@ -365,7 +367,7 @@ export default function PlatformDashboardScreen() {
                           : '0.0'}%
                       </Text>
                       <Text variant="bodySmall" style={styles.productionSubLabel}>
-                        完成率
+                        {t('production.completionRate')}
                       </Text>
                     </View>
                   </View>
@@ -378,11 +380,11 @@ export default function PlatformDashboardScreen() {
         {/* 工厂状态列表 */}
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="🏢 工厂状态"
+            title={t('dashboard.factoryStatus')}
             right={(props) => (
               <Pressable onPress={() => navigation.navigate('FactoryManagement')}>
                 <Text variant="bodyMedium" style={{ color: '#2196F3', marginRight: 16 }}>
-                  查看全部
+                  {t('dashboard.viewAll')}
                 </Text>
               </Pressable>
             )}
@@ -409,7 +411,7 @@ export default function PlatformDashboardScreen() {
                               {factory.name || factory.factoryName}
                             </Text>
                             <Text variant="bodySmall" style={styles.factoryMeta}>
-                              {factory.industry || '食品加工'} • {factory.address || '地址未设置'}
+                              {factory.industry || t('factory.foodProcessing')} • {factory.address || t('factory.addressNotSet')}
                             </Text>
                           </View>
                           <Chip
@@ -423,13 +425,13 @@ export default function PlatformDashboardScreen() {
                               backgroundColor: factory.status === 'active' ? '#E8F5E9' : '#F5F5F5',
                             }}
                           >
-                            {factory.status === 'active' ? '运营中' : '已停用'}
+                            {factory.status === 'active' ? t('factory.status.active') : t('factory.status.stopped')}
                           </Chip>
                         </View>
                         <View style={styles.factoryStats}>
                           <View style={styles.factoryStatItem}>
                             <Text variant="bodySmall" style={styles.factoryStatLabel}>
-                              用户数
+                              {t('factory.usersCount')}
                             </Text>
                             <Text variant="bodyMedium" style={styles.factoryStatValue}>
                               {factory.totalUsers || 0}
@@ -437,7 +439,7 @@ export default function PlatformDashboardScreen() {
                           </View>
                           <View style={styles.factoryStatItem}>
                             <Text variant="bodySmall" style={styles.factoryStatLabel}>
-                              批次数
+                              {t('factory.batchesCount')}
                             </Text>
                             <Text variant="bodyMedium" style={styles.factoryStatValue}>
                               {factory.totalBatches || 0}
@@ -445,7 +447,7 @@ export default function PlatformDashboardScreen() {
                           </View>
                           <View style={styles.factoryStatItem}>
                             <Text variant="bodySmall" style={styles.factoryStatLabel}>
-                              联系人
+                              {t('factory.contactPerson')}
                             </Text>
                             <Text variant="bodyMedium" style={styles.factoryStatValue}>
                               {factory.contactName || factory.contactPerson || '-'}
@@ -462,7 +464,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.emptyState}>
                 <Avatar.Icon icon="factory" size={48} color="#BDBDBD" style={{ backgroundColor: 'transparent' }} />
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无工厂数据
+                  {t('dashboard.noFactoryData')}
                 </Text>
               </View>
             )}
@@ -471,7 +473,7 @@ export default function PlatformDashboardScreen() {
 
         {/* 管理功能列表 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="🛠️ 管理功能" />
+          <Card.Title title={t('dashboard.managementFunctions')} />
           <Card.Content>
             {managementFeatures.map((feature, index) => (
               <React.Fragment key={feature.id}>
@@ -513,7 +515,7 @@ export default function PlatformDashboardScreen() {
 
         {/* 快捷操作 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="⚡ 快捷操作" />
+          <Card.Title title={t('dashboard.quickActions')} />
           <Card.Content>
             <View style={styles.quickActionsGrid}>
               <Pressable
@@ -522,7 +524,7 @@ export default function PlatformDashboardScreen() {
               >
                 <Avatar.Icon icon="plus-circle" size={40} color="#2196F3" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
-                  添加工厂
+                  {t('quickActions.addFactory')}
                 </Text>
               </Pressable>
               <Pressable
@@ -531,7 +533,7 @@ export default function PlatformDashboardScreen() {
               >
                 <Avatar.Icon icon="account-plus" size={40} color="#4CAF50" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
-                  添加用户
+                  {t('quickActions.addUser')}
                 </Text>
               </Pressable>
               <Pressable
@@ -540,7 +542,7 @@ export default function PlatformDashboardScreen() {
               >
                 <Avatar.Icon icon="shield-plus" size={40} color="#607D8B" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
-                  添加白名单
+                  {t('quickActions.addWhitelist')}
                 </Text>
               </Pressable>
               <Pressable
@@ -549,7 +551,7 @@ export default function PlatformDashboardScreen() {
               >
                 <Avatar.Icon icon="robot" size={40} color="#9C27B0" style={styles.quickIcon} />
                 <Text variant="bodySmall" style={styles.quickText}>
-                  AI配额
+                  {t('quickActions.aiQuota')}
                 </Text>
               </Pressable>
             </View>
@@ -561,10 +563,10 @@ export default function PlatformDashboardScreen() {
           <Card.Title
             title={
               stats.systemHealth === 'healthy'
-                ? '🟢 系统状态'
+                ? t('systemStatus.healthy')
                 : stats.systemHealth === 'warning'
-                ? '🟡 系统状态'
-                : '🔴 系统状态'
+                ? t('systemStatus.warning')
+                : t('systemStatus.error')
             }
           />
           <Card.Content>
@@ -592,17 +594,17 @@ export default function PlatformDashboardScreen() {
                 <View style={styles.healthText}>
                   <Text variant="titleMedium" style={{ fontWeight: '700' }}>
                     {stats.systemHealth === 'healthy'
-                      ? '系统运行正常'
+                      ? t('systemStatus.systemNormal')
                       : stats.systemHealth === 'warning'
-                      ? '系统存在警告'
-                      : '系统异常'}
+                      ? t('systemStatus.systemWarning')
+                      : t('systemStatus.systemError')}
                   </Text>
                   <Text variant="bodySmall" style={{ color: '#757575', marginTop: 4 }}>
                     {stats.systemHealth === 'healthy'
-                      ? '所有服务正常运行'
+                      ? t('systemStatus.allServicesNormal')
                       : stats.systemHealth === 'warning'
-                      ? '部分服务存在异常，建议检查'
-                      : '系统服务异常，请立即处理'}
+                      ? t('systemStatus.someServicesAbnormal')
+                      : t('systemStatus.systemAbnormal')}
                   </Text>
                 </View>
               </View>
@@ -615,7 +617,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.statusLeft}>
                 <Avatar.Icon icon="api" size={32} color="#2196F3" style={styles.statusIcon} />
                 <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
-                  API服务
+                  {t('systemStatus.apiService')}
                 </Text>
               </View>
               <Chip
@@ -624,7 +626,7 @@ export default function PlatformDashboardScreen() {
                 textStyle={{ color: '#4CAF50', fontWeight: '600' }}
                 style={{ backgroundColor: '#E8F5E9' }}
               >
-                正常
+                {t('systemStatus.normal')}
               </Chip>
             </View>
             <Divider style={styles.statusDivider} />
@@ -632,7 +634,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.statusLeft}>
                 <Avatar.Icon icon="database" size={32} color="#FF9800" style={styles.statusIcon} />
                 <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
-                  数据库
+                  {t('systemStatus.database')}
                 </Text>
               </View>
               <Chip
@@ -641,7 +643,7 @@ export default function PlatformDashboardScreen() {
                 textStyle={{ color: '#4CAF50', fontWeight: '600' }}
                 style={{ backgroundColor: '#E8F5E9' }}
               >
-                正常
+                {t('systemStatus.normal')}
               </Chip>
             </View>
             <Divider style={styles.statusDivider} />
@@ -649,7 +651,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.statusLeft}>
                 <Avatar.Icon icon="robot" size={32} color="#9C27B0" style={styles.statusIcon} />
                 <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
-                  DeepSeek AI
+                  {t('systemStatus.deepSeekAI')}
                 </Text>
               </View>
               <Chip
@@ -658,7 +660,7 @@ export default function PlatformDashboardScreen() {
                 textStyle={{ color: '#4CAF50', fontWeight: '600' }}
                 style={{ backgroundColor: '#E8F5E9' }}
               >
-                正常
+                {t('systemStatus.normal')}
               </Chip>
             </View>
             <Divider style={styles.statusDivider} />
@@ -666,7 +668,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.statusLeft}>
                 <Avatar.Icon icon="upload-network" size={32} color="#00BCD4" style={styles.statusIcon} />
                 <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
-                  文件服务
+                  {t('systemStatus.fileService')}
                 </Text>
               </View>
               <Chip
@@ -675,19 +677,19 @@ export default function PlatformDashboardScreen() {
                 textStyle={{ color: '#4CAF50', fontWeight: '600' }}
                 style={{ backgroundColor: '#E8F5E9' }}
               >
-                正常
+                {t('systemStatus.normal')}
               </Chip>
             </View>
 
             {/* 系统指标 */}
             <Divider style={{ marginVertical: 16 }} />
             <Text variant="bodyMedium" style={{ fontWeight: '600', marginBottom: 12 }}>
-              系统指标
+              {t('systemStatus.systemMetrics')}
             </Text>
             <View style={styles.metricsGrid}>
               <View style={styles.metricItem}>
                 <Text variant="bodySmall" style={styles.metricLabel}>
-                  活跃工厂
+                  {t('stats.activeFactories')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.metricValue, { color: '#4CAF50' }]}>
                   {stats.activeFactories}/{stats.totalFactories}
@@ -695,7 +697,7 @@ export default function PlatformDashboardScreen() {
               </View>
               <View style={styles.metricItem}>
                 <Text variant="bodySmall" style={styles.metricLabel}>
-                  活跃用户
+                  {t('stats.activeUsers')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.metricValue, { color: '#2196F3' }]}>
                   {stats.activeUsers}/{stats.totalUsers}
@@ -703,7 +705,7 @@ export default function PlatformDashboardScreen() {
               </View>
               <View style={styles.metricItem}>
                 <Text variant="bodySmall" style={styles.metricLabel}>
-                  完成率
+                  {t('stats.completionRate')}
                 </Text>
                 <Text variant="titleMedium" style={[styles.metricValue, { color: '#FF9800' }]}>
                   {stats.totalBatches > 0

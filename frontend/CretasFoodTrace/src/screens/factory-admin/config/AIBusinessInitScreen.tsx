@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 import { Icon, Chip, Card, Button, Divider, Portal, Modal } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import aiBusinessDataApi, {
   FactoryBatchInitResponse,
   AIBusinessDataResponse,
@@ -30,50 +31,50 @@ import aiBusinessDataApi, {
 const INDUSTRY_TEMPLATES = [
   {
     id: 'seafood',
-    name: '水产加工',
+    name: 'aiBusinessInit.industryTemplates.seafood',
     icon: 'fish',
     color: '#1890ff',
-    description: '水产品加工厂，生产鱼罐头、虾仁、鱼片等',
+    description: 'aiBusinessInit.industryTemplates.seafoodDesc',
     prompt: '水产品加工厂',
   },
   {
     id: 'prepared_food',
-    name: '预制菜',
+    name: 'aiBusinessInit.industryTemplates.preparedFood',
     icon: 'food-variant',
     color: '#52c41a',
-    description: '预制菜加工厂，生产酸菜鱼、红烧肉等',
+    description: 'aiBusinessInit.industryTemplates.preparedFoodDesc',
     prompt: '预制菜加工厂',
   },
   {
     id: 'meat',
-    name: '肉类加工',
+    name: 'aiBusinessInit.industryTemplates.meat',
     icon: 'food-steak',
     color: '#f5222d',
-    description: '肉类加工厂，生产香肠、腊肉、肉丸等',
+    description: 'aiBusinessInit.industryTemplates.meatDesc',
     prompt: '肉类加工厂',
   },
   {
     id: 'dairy',
-    name: '乳制品',
+    name: 'aiBusinessInit.industryTemplates.dairy',
     icon: 'cow',
     color: '#faad14',
-    description: '乳制品加工厂，生产牛奶、酸奶、奶酪等',
+    description: 'aiBusinessInit.industryTemplates.dairyDesc',
     prompt: '乳制品加工厂',
   },
   {
     id: 'beverage',
-    name: '饮料加工',
+    name: 'aiBusinessInit.industryTemplates.beverage',
     icon: 'cup',
     color: '#722ed1',
-    description: '饮料加工厂，生产果汁、茶饮、矿泉水等',
+    description: 'aiBusinessInit.industryTemplates.beverageDesc',
     prompt: '饮料加工厂',
   },
   {
     id: 'custom',
-    name: '自定义',
+    name: 'aiBusinessInit.industryTemplates.custom',
     icon: 'pencil',
     color: '#8c8c8c',
-    description: '自定义描述您的工厂和产品',
+    description: 'aiBusinessInit.industryTemplates.customDesc',
     prompt: '',
   },
 ];
@@ -82,6 +83,7 @@ const INDUSTRY_TEMPLATES = [
 
 export default function AIBusinessInitScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('home');
 
   // 状态
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -122,7 +124,7 @@ export default function AIBusinessInitScreen() {
   const handleGenerate = async () => {
     const description = getFullDescription();
     if (!description.trim()) {
-      Alert.alert('提示', '请输入工厂描述或选择行业模板');
+      Alert.alert(t('common.tip'), t('aiBusinessInit.enterDescriptionOrSelectTemplate'));
       return;
     }
 
@@ -142,11 +144,11 @@ export default function AIBusinessInitScreen() {
         setEditedConversionRates(response.suggestedData.conversionRates || []);
         setStep('preview');
       } else {
-        Alert.alert('生成失败', response.message || '请稍后重试');
+        Alert.alert(t('aiBusinessInit.generateFailed'), response.message || t('aiBusinessInit.pleaseRetryLater'));
       }
     } catch (error) {
       console.error('AI 生成失败:', error);
-      Alert.alert('错误', '生成失败，请检查网络连接');
+      Alert.alert(t('common.error'), t('aiBusinessInit.generateFailedCheckNetwork'));
     } finally {
       setLoading(false);
     }
@@ -166,13 +168,13 @@ export default function AIBusinessInitScreen() {
       setStep('result');
 
       if (result.success) {
-        Alert.alert('成功', result.message);
+        Alert.alert(t('common.success'), result.message);
       } else {
-        Alert.alert('部分失败', result.message);
+        Alert.alert(t('aiBusinessInit.partialFailed'), result.message);
       }
     } catch (error) {
       console.error('初始化失败:', error);
-      Alert.alert('错误', '初始化失败，请稍后重试');
+      Alert.alert(t('common.error'), t('aiBusinessInit.initFailedRetryLater'));
     } finally {
       setLoading(false);
     }
@@ -210,10 +212,10 @@ export default function AIBusinessInitScreen() {
     <>
       {/* 工厂名称 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>工厂名称（可选）</Text>
+        <Text style={styles.sectionTitle}>{t('aiBusinessInit.factoryNameOptional')}</Text>
         <TextInput
           style={styles.input}
-          placeholder="请输入工厂名称"
+          placeholder={t('aiBusinessInit.enterFactoryName')}
           value={factoryName}
           onChangeText={setFactoryName}
         />
@@ -221,7 +223,7 @@ export default function AIBusinessInitScreen() {
 
       {/* 行业模板 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>选择行业模板</Text>
+        <Text style={styles.sectionTitle}>{t('aiBusinessInit.selectIndustryTemplate')}</Text>
         <View style={styles.templateGrid}>
           {INDUSTRY_TEMPLATES.map((template) => (
             <TouchableOpacity
@@ -240,7 +242,7 @@ export default function AIBusinessInitScreen() {
               >
                 <Icon source={template.icon} size={24} color={template.color} />
               </View>
-              <Text style={styles.templateName}>{template.name}</Text>
+              <Text style={styles.templateName}>{t(template.name)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -249,14 +251,14 @@ export default function AIBusinessInitScreen() {
       {/* 详细描述 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
-          {selectedTemplate === 'custom' ? '工厂描述' : '补充描述（可选）'}
+          {selectedTemplate === 'custom' ? t('aiBusinessInit.factoryDescription') : t('aiBusinessInit.additionalDescriptionOptional')}
         </Text>
         <TextInput
           style={[styles.input, styles.textArea]}
           placeholder={
             selectedTemplate === 'custom'
-              ? '请描述您的工厂类型和主要产品...\n例如：水产品加工厂，主要生产带鱼罐头、黄花鱼罐头'
-              : '补充更多细节...\n例如：主要生产带鱼罐头、酸菜鱼预制菜'
+              ? t('aiBusinessInit.customDescriptionPlaceholder')
+              : t('aiBusinessInit.additionalDescriptionPlaceholder')
           }
           value={customDescription}
           onChangeText={setCustomDescription}
@@ -276,7 +278,7 @@ export default function AIBusinessInitScreen() {
           icon="robot"
           style={styles.generateButton}
         >
-          AI 智能生成
+          {t('aiBusinessInit.aiGenerate')}
         </Button>
       </View>
     </>
@@ -291,7 +293,7 @@ export default function AIBusinessInitScreen() {
           <Card.Content>
             <View style={styles.summaryHeader}>
               <Icon source="robot" size={20} color="#667eea" />
-              <Text style={styles.summaryTitle}>AI 分析</Text>
+              <Text style={styles.summaryTitle}>{t('aiBusinessInit.aiAnalysis')}</Text>
             </View>
             <Text style={styles.summaryText}>{aiResponse.aiSummary}</Text>
             <View style={styles.industryBadge}>
@@ -306,8 +308,8 @@ export default function AIBusinessInitScreen() {
       {/* 产品类型 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>产品类型</Text>
-          <Chip compact>{editedProductTypes.length} 项</Chip>
+          <Text style={styles.sectionTitle}>{t('aiBusinessInit.productTypes')}</Text>
+          <Chip compact>{t('aiBusinessInit.itemCount', { count: editedProductTypes.length })}</Chip>
         </View>
         {editedProductTypes.map((pt, index) => (
           <View key={index} style={styles.dataItem}>
@@ -331,8 +333,8 @@ export default function AIBusinessInitScreen() {
       {/* 原材料类型 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>原材料类型</Text>
-          <Chip compact>{editedMaterialTypes.length} 项</Chip>
+          <Text style={styles.sectionTitle}>{t('aiBusinessInit.materialTypes')}</Text>
+          <Chip compact>{t('aiBusinessInit.itemCount', { count: editedMaterialTypes.length })}</Chip>
         </View>
         {editedMaterialTypes.map((mt, index) => (
           <View key={index} style={styles.dataItem}>
@@ -359,8 +361,8 @@ export default function AIBusinessInitScreen() {
       {editedConversionRates.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>转换率配置</Text>
-            <Chip compact>{editedConversionRates.length} 项</Chip>
+            <Text style={styles.sectionTitle}>{t('aiBusinessInit.conversionRateConfig')}</Text>
+            <Chip compact>{t('aiBusinessInit.itemCount', { count: editedConversionRates.length })}</Chip>
           </View>
           {editedConversionRates.map((cr, index) => (
             <View key={index} style={styles.dataItem}>
@@ -370,7 +372,7 @@ export default function AIBusinessInitScreen() {
                   <Text style={styles.dataItemName}>
                     {cr.materialTypeCode} → {cr.productTypeCode}
                   </Text>
-                  <Text style={styles.dataItemCode}>转换率: {cr.rate}</Text>
+                  <Text style={styles.dataItemCode}>{t('aiBusinessInit.conversionRate')}: {cr.rate}</Text>
                 </View>
               </View>
               <TouchableOpacity
@@ -391,7 +393,7 @@ export default function AIBusinessInitScreen() {
           onPress={handleRestart}
           style={styles.halfButton}
         >
-          重新生成
+          {t('aiBusinessInit.regenerate')}
         </Button>
         <Button
           mode="contained"
@@ -401,7 +403,7 @@ export default function AIBusinessInitScreen() {
           style={styles.halfButton}
           icon="check"
         >
-          确认创建
+          {t('aiBusinessInit.confirmCreate')}
         </Button>
       </View>
     </>
@@ -420,7 +422,7 @@ export default function AIBusinessInitScreen() {
               color={initResult?.success ? '#52c41a' : '#faad14'}
             />
             <Text style={styles.resultTitle}>
-              {initResult?.success ? '初始化完成' : '部分完成'}
+              {initResult?.success ? t('aiBusinessInit.initCompleted') : t('aiBusinessInit.partialCompleted')}
             </Text>
           </View>
           <Text style={styles.resultMessage}>{initResult?.message}</Text>
@@ -435,10 +437,10 @@ export default function AIBusinessInitScreen() {
             <Text style={styles.statValue}>
               {initResult.stats.productTypesCreated}
             </Text>
-            <Text style={styles.statLabel}>产品类型</Text>
+            <Text style={styles.statLabel}>{t('aiBusinessInit.productTypes')}</Text>
             {initResult.stats.productTypesSkipped > 0 && (
               <Text style={styles.statSkipped}>
-                ({initResult.stats.productTypesSkipped} 已存在)
+                ({t('aiBusinessInit.alreadyExists', { count: initResult.stats.productTypesSkipped })})
               </Text>
             )}
           </View>
@@ -447,10 +449,10 @@ export default function AIBusinessInitScreen() {
             <Text style={styles.statValue}>
               {initResult.stats.materialTypesCreated}
             </Text>
-            <Text style={styles.statLabel}>原材料类型</Text>
+            <Text style={styles.statLabel}>{t('aiBusinessInit.materialTypes')}</Text>
             {initResult.stats.materialTypesSkipped > 0 && (
               <Text style={styles.statSkipped}>
-                ({initResult.stats.materialTypesSkipped} 已存在)
+                ({t('aiBusinessInit.alreadyExists', { count: initResult.stats.materialTypesSkipped })})
               </Text>
             )}
           </View>
@@ -459,10 +461,10 @@ export default function AIBusinessInitScreen() {
             <Text style={styles.statValue}>
               {initResult.stats.conversionsCreated}
             </Text>
-            <Text style={styles.statLabel}>转换率</Text>
+            <Text style={styles.statLabel}>{t('aiBusinessInit.conversionRates')}</Text>
             {initResult.stats.conversionsSkipped > 0 && (
               <Text style={styles.statSkipped}>
-                ({initResult.stats.conversionsSkipped} 已存在)
+                ({t('aiBusinessInit.alreadyExists', { count: initResult.stats.conversionsSkipped })})
               </Text>
             )}
           </View>
@@ -477,14 +479,14 @@ export default function AIBusinessInitScreen() {
           icon="check"
           style={styles.generateButton}
         >
-          完成
+          {t('aiBusinessInit.done')}
         </Button>
         <Button
           mode="text"
           onPress={handleRestart}
           style={{ marginTop: 12 }}
         >
-          继续添加
+          {t('aiBusinessInit.continueAdding')}
         </Button>
       </View>
     </>
@@ -501,13 +503,13 @@ export default function AIBusinessInitScreen() {
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>AI 智能初始化</Text>
+          <Text style={styles.headerTitle}>{t('aiBusinessInit.title')}</Text>
           <Text style={styles.headerSubtitle}>
             {step === 'input'
-              ? '描述您的工厂，AI 自动生成配置'
+              ? t('aiBusinessInit.subtitle')
               : step === 'preview'
-              ? '确认生成的业务数据'
-              : '初始化完成'}
+              ? t('aiBusinessInit.confirmData')
+              : t('aiBusinessInit.completed')}
           </Text>
         </View>
       </View>
@@ -529,7 +531,7 @@ export default function AIBusinessInitScreen() {
             )}
           </View>
           <Text style={[styles.stepText, step === 'input' && styles.stepTextActive]}>
-            描述工厂
+            {t('aiBusinessInit.steps.describe')}
           </Text>
         </View>
         <View style={styles.stepLine} />
@@ -548,7 +550,7 @@ export default function AIBusinessInitScreen() {
             )}
           </View>
           <Text style={[styles.stepText, step === 'preview' && styles.stepTextActive]}>
-            确认数据
+            {t('aiBusinessInit.steps.confirm')}
           </Text>
         </View>
         <View style={styles.stepLine} />
@@ -562,7 +564,7 @@ export default function AIBusinessInitScreen() {
             <Text style={styles.stepNumber}>3</Text>
           </View>
           <Text style={[styles.stepText, step === 'result' && styles.stepTextActive]}>
-            完成
+            {t('aiBusinessInit.steps.complete')}
           </Text>
         </View>
       </View>
@@ -578,7 +580,7 @@ export default function AIBusinessInitScreen() {
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>
-            {step === 'input' ? 'AI 正在分析...' : '正在创建...'}
+            {step === 'input' ? t('aiBusinessInit.aiAnalyzing') : t('aiBusinessInit.creating')}
           </Text>
         </View>
       )}

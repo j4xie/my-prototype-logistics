@@ -2,6 +2,9 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.ShipmentRecord;
 import com.cretas.aims.service.ShipmentRecordService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -25,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/shipments")
 @RequiredArgsConstructor
+@Tag(name = "出货管理", description = "出货记录管理相关接口，包括出货记录的创建、查询、状态更新、物流追踪、统计分析等功能")
 public class ShipmentController {
 
     private final ShipmentRecordService shipmentRecordService;
@@ -33,11 +37,12 @@ public class ShipmentController {
      * 获取出货记录列表（分页）
      */
     @GetMapping
+    @Operation(summary = "获取出货记录列表", description = "分页查询指定工厂的出货记录，支持按状态筛选。返回分页信息和出货记录列表")
     public ResponseEntity<?> getShipments(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String status) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @RequestParam(defaultValue = "0") @Parameter(description = "页码（0-based）", example = "0") int page,
+            @RequestParam(defaultValue = "10") @Parameter(description = "每页大小", example = "10") int size,
+            @RequestParam(required = false) @Parameter(description = "出货状态过滤", example = "pending") String status) {
         try {
             Page<ShipmentRecord> shipments;
             if (status != null && !status.isEmpty()) {
@@ -69,9 +74,10 @@ public class ShipmentController {
      * 按客户查询出货记录
      */
     @GetMapping("/customer/{customerId}")
+    @Operation(summary = "按客户查询出货记录", description = "根据客户ID查询该客户的所有出货记录，用于查看特定客户的发货历史")
     public ResponseEntity<?> getByCustomer(
-            @PathVariable String factoryId,
-            @PathVariable String customerId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "客户ID", example = "CUST001", required = true) String customerId) {
         try {
             List<ShipmentRecord> shipments = shipmentRecordService.getByCustomer(factoryId, customerId);
             return ResponseEntity.ok(Map.of(
@@ -91,10 +97,11 @@ public class ShipmentController {
      * 按日期范围查询
      */
     @GetMapping("/date-range")
+    @Operation(summary = "按日期范围查询出货记录", description = "根据日期范围查询出货记录，用于统计分析和报表生成")
     public ResponseEntity<?> getByDateRange(
-            @PathVariable String factoryId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Parameter(description = "开始日期", example = "2026-01-01", required = true) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) @Parameter(description = "结束日期", example = "2026-01-31", required = true) LocalDate endDate) {
         try {
             List<ShipmentRecord> shipments = shipmentRecordService.getByDateRange(factoryId, startDate, endDate);
             return ResponseEntity.ok(Map.of(
@@ -114,9 +121,10 @@ public class ShipmentController {
      * 物流追踪查询
      */
     @GetMapping("/tracking/{trackingNumber}")
+    @Operation(summary = "物流追踪查询", description = "根据物流追踪号查询出货记录，用于客户查询物流状态或内部追踪货物")
     public ResponseEntity<?> getByTrackingNumber(
-            @PathVariable String factoryId,
-            @PathVariable String trackingNumber) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "物流追踪号", example = "SF1234567890", required = true) String trackingNumber) {
         try {
             return shipmentRecordService.getByTrackingNumber(trackingNumber)
                     .map(shipment -> ResponseEntity.ok(Map.of(
@@ -137,7 +145,8 @@ public class ShipmentController {
      * 获取出货统计
      */
     @GetMapping("/stats")
-    public ResponseEntity<?> getStats(@PathVariable String factoryId) {
+    @Operation(summary = "获取出货统计", description = "获取工厂出货统计数据，包括各状态（待发货、已发货、已送达、已退货）的出货数量汇总")
+    public ResponseEntity<?> getStats(@PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId) {
         try {
             Map<String, Object> stats = new HashMap<>();
             stats.put("total", shipmentRecordService.countByFactoryId(factoryId));
@@ -159,15 +168,41 @@ public class ShipmentController {
         }
     }
 
+    /**
+     * 获取最近出货记录
+     */
+    @GetMapping("/recent")
+    @Operation(summary = "获取最近出货记录", description = "获取最近N条出货记录，按创建时间倒序排列，用于首页快速查看或仪表盘展示")
+    public ResponseEntity<?> getRecentShipments(
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @RequestParam(defaultValue = "10") @Parameter(description = "返回记录数量，默认10条", example = "10") int limit) {
+        try {
+            // 获取最近N条出货记录
+            Page<ShipmentRecord> shipments = shipmentRecordService.getByFactoryId(factoryId, 0, limit);
+
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", shipments.getContent()
+            ));
+        } catch (Exception e) {
+            log.error("获取最近出货记录失败", e);
+            return ResponseEntity.badRequest().body(Map.of(
+                "success", false,
+                "message", e.getMessage()
+            ));
+        }
+    }
+
     // ==================== 通配符路径放在最后 ====================
 
     /**
      * 获取单个出货记录
      */
     @GetMapping("/{id}")
+    @Operation(summary = "获取出货记录详情", description = "根据ID获取单个出货记录的详细信息，包括客户信息、物流追踪号、发货状态等")
     public ResponseEntity<?> getShipment(
-            @PathVariable String factoryId,
-            @PathVariable String id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "出货记录ID（UUID格式）", example = "550e8400-e29b-41d4-a716-446655440000", required = true) String id) {
         try {
             return shipmentRecordService.getById(id)
                     .map(shipment -> ResponseEntity.ok(Map.of(
@@ -188,10 +223,11 @@ public class ShipmentController {
      * 创建出货记录
      */
     @PostMapping
+    @Operation(summary = "创建出货记录", description = "创建新的出货记录，需要指定客户信息、发货产品、数量等。系统将自动记录创建人和创建时间")
     public ResponseEntity<?> createShipment(
-            @PathVariable String factoryId,
-            @RequestAttribute("userId") Long userId,
-            @RequestBody ShipmentRecord shipment) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @RequestAttribute("userId") @Parameter(hidden = true) Long userId,
+            @RequestBody @Parameter(description = "出货记录信息，包含customerId、productBatchId、quantity、shippingAddress等") ShipmentRecord shipment) {
         try {
             shipment.setFactoryId(factoryId);
             shipment.setRecordedBy(userId);
@@ -214,10 +250,11 @@ public class ShipmentController {
      * 更新出货记录
      */
     @PutMapping("/{id}")
+    @Operation(summary = "更新出货记录", description = "更新指定的出货记录信息，可修改发货地址、联系方式、备注等字段")
     public ResponseEntity<?> updateShipment(
-            @PathVariable String factoryId,
-            @PathVariable String id,
-            @RequestBody ShipmentRecord updateData) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "出货记录ID（UUID格式）", example = "550e8400-e29b-41d4-a716-446655440000", required = true) String id,
+            @RequestBody @Parameter(description = "更新数据，包含需要修改的字段") ShipmentRecord updateData) {
         try {
             ShipmentRecord updated = shipmentRecordService.updateShipment(id, updateData);
             return ResponseEntity.ok(Map.of(
@@ -238,10 +275,11 @@ public class ShipmentController {
      * 更新出货状态
      */
     @PutMapping("/{id}/status")
+    @Operation(summary = "更新出货状态", description = "更新出货记录的状态，支持的状态包括：pending（待发货）、shipped（已发货）、delivered（已送达）、returned（已退货）")
     public ResponseEntity<?> updateStatus(
-            @PathVariable String factoryId,
-            @PathVariable String id,
-            @RequestBody Map<String, String> body) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "出货记录ID（UUID格式）", example = "550e8400-e29b-41d4-a716-446655440000", required = true) String id,
+            @RequestBody @Parameter(description = "状态信息 {\"status\": \"shipped\"}，可选值: pending/shipped/delivered/returned") Map<String, String> body) {
         try {
             String status = body.get("status");
             ShipmentRecord updated = shipmentRecordService.updateStatus(id, status);
@@ -263,9 +301,10 @@ public class ShipmentController {
      * 删除出货记录
      */
     @DeleteMapping("/{id}")
+    @Operation(summary = "删除出货记录", description = "删除指定的出货记录，已发货或已送达的记录建议保留以便追溯")
     public ResponseEntity<?> deleteShipment(
-            @PathVariable String factoryId,
-            @PathVariable String id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001", required = true) String factoryId,
+            @PathVariable @Parameter(description = "出货记录ID（UUID格式）", example = "550e8400-e29b-41d4-a716-446655440000", required = true) String id) {
         try {
             shipmentRecordService.deleteShipment(id);
             return ResponseEntity.ok(Map.of(

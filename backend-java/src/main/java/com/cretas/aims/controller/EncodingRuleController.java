@@ -34,7 +34,7 @@ import java.util.*;
 @RequestMapping("/api/mobile/{factoryId}/encoding-rules")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "EncodingRules", description = "编码规则配置API")
+@Tag(name = "编码规则配置", description = "编码规则管理相关接口，包括编码规则的增删改查、编码生成与预览、序列号管理、模板验证、占位符列表获取、实体类型列表、系统默认规则、统计信息等功能。支持自定义编码格式如 {PREFIX}-{DATE:yyyyMMdd}-{SEQ:4}")
 public class EncodingRuleController {
 
     private final EncodingRuleService encodingRuleService;
@@ -45,12 +45,12 @@ public class EncodingRuleController {
      * 生成编码
      */
     @PostMapping("/generate/{entityType}")
-    @Operation(summary = "生成编码", description = "根据规则生成下一个编码")
+    @Operation(summary = "生成编码", description = "根据配置的编码规则生成下一个唯一编码，会自动递增序列号。支持传入上下文参数用于动态占位符替换")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'warehouse_keeper')")
     public ApiResponse<Map<String, String>> generateCode(
-            @PathVariable String factoryId,
-            @PathVariable String entityType,
-            @RequestBody(required = false) Map<String, String> context
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "实体类型: MATERIAL_BATCH/PROCESSING_BATCH/SHIPMENT等", example = "MATERIAL_BATCH") String entityType,
+            @RequestBody(required = false) @io.swagger.v3.oas.annotations.Parameter(description = "上下文参数，用于动态占位符替换，如{\"customField\":\"value\"}") Map<String, String> context
     ) {
         log.info("生成编码 - factoryId={}, entityType={}", factoryId, entityType);
 
@@ -67,11 +67,11 @@ public class EncodingRuleController {
      * 预览编码（不消耗序号）
      */
     @GetMapping("/preview/{entityType}")
-    @Operation(summary = "预览编码", description = "预览下一个编码，不消耗序号")
+    @Operation(summary = "预览编码", description = "预览下一个将要生成的编码，不消耗序列号，可用于表单预填或确认编码格式")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'warehouse_keeper')")
     public ApiResponse<Map<String, String>> previewCode(
-            @PathVariable String factoryId,
-            @PathVariable String entityType
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType
     ) {
         log.info("预览编码 - factoryId={}, entityType={}", factoryId, entityType);
 
@@ -85,12 +85,12 @@ public class EncodingRuleController {
      * 获取编码规则列表
      */
     @GetMapping
-    @Operation(summary = "获取编码规则列表", description = "分页获取工厂的编码规则列表")
+    @Operation(summary = "获取编码规则列表", description = "分页获取工厂配置的所有编码规则列表，包含各实体类型的编码规则及其状态")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> getRules(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "1") @io.swagger.v3.oas.annotations.Parameter(description = "页码（1-based）", example = "1") int page,
+            @RequestParam(defaultValue = "20") @io.swagger.v3.oas.annotations.Parameter(description = "每页数量", example = "20") int size
     ) {
         log.info("获取编码规则列表 - factoryId={}, page={}, size={}", factoryId, page, size);
 
@@ -110,11 +110,11 @@ public class EncodingRuleController {
      * 获取单个编码规则
      */
     @GetMapping("/{ruleId}")
-    @Operation(summary = "获取编码规则详情", description = "获取单个编码规则的详细信息")
+    @Operation(summary = "获取编码规则详情", description = "根据规则ID获取单个编码规则的完整配置信息，包含编码模板、日期格式、序列号长度等")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<EncodingRule> getRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "编码规则ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId
     ) {
         log.info("获取编码规则 - factoryId={}, ruleId={}", factoryId, ruleId);
 
@@ -135,11 +135,11 @@ public class EncodingRuleController {
      * 获取指定实体类型的编码规则
      */
     @GetMapping("/entity-type/{entityType}")
-    @Operation(summary = "获取实体类型的编码规则", description = "获取指定实体类型的编码规则")
+    @Operation(summary = "获取实体类型的编码规则", description = "根据实体类型获取工厂配置的编码规则，用于业务模块获取对应的编码生成规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'warehouse_keeper')")
     public ApiResponse<EncodingRule> getRuleByEntityType(
-            @PathVariable String factoryId,
-            @PathVariable String entityType
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "实体类型", example = "MATERIAL_BATCH") String entityType
     ) {
         log.info("获取实体类型编码规则 - factoryId={}, entityType={}", factoryId, entityType);
 
@@ -155,11 +155,11 @@ public class EncodingRuleController {
      * 创建编码规则
      */
     @PostMapping
-    @Operation(summary = "创建编码规则", description = "创建新的编码规则")
+    @Operation(summary = "创建编码规则", description = "为工厂创建新的编码规则，配置实体类型、编码模板、前缀、日期格式、序列号长度和重置周期等")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<EncodingRule> createRule(
-            @PathVariable String factoryId,
-            @Valid @RequestBody CreateEncodingRuleRequest request,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @Valid @RequestBody @io.swagger.v3.oas.annotations.Parameter(description = "编码规则创建请求，包含实体类型、规则名称、编码模板等配置") CreateEncodingRuleRequest request,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("创建编码规则 - factoryId={}, entityType={}, ruleName={}",
@@ -187,12 +187,12 @@ public class EncodingRuleController {
      * 更新编码规则
      */
     @PutMapping("/{ruleId}")
-    @Operation(summary = "更新编码规则", description = "更新编码规则配置")
+    @Operation(summary = "更新编码规则", description = "更新指定编码规则的配置信息，可修改编码模板、前缀、日期格式、序列号长度等，但不会重置已生成的序列号")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<EncodingRule> updateRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId,
-            @Valid @RequestBody UpdateEncodingRuleRequest request,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "编码规则ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId,
+            @Valid @RequestBody @io.swagger.v3.oas.annotations.Parameter(description = "编码规则更新请求") UpdateEncodingRuleRequest request,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("更新编码规则 - factoryId={}, ruleId={}", factoryId, ruleId);
@@ -226,12 +226,12 @@ public class EncodingRuleController {
      * 启用/禁用编码规则
      */
     @PutMapping("/{ruleId}/enabled")
-    @Operation(summary = "启用/禁用编码规则", description = "切换编码规则的启用状态")
+    @Operation(summary = "启用/禁用编码规则", description = "切换编码规则的启用状态。禁用后该规则将不再用于编码生成，系统会使用默认规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<EncodingRule> toggleEnabled(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId,
-            @RequestParam boolean enabled
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "编码规则ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId,
+            @RequestParam @io.swagger.v3.oas.annotations.Parameter(description = "是否启用：true-启用，false-禁用", example = "true") boolean enabled
     ) {
         log.info("切换编码规则状态 - factoryId={}, ruleId={}, enabled={}", factoryId, ruleId, enabled);
 
@@ -243,11 +243,11 @@ public class EncodingRuleController {
      * 删除编码规则
      */
     @DeleteMapping("/{ruleId}")
-    @Operation(summary = "删除编码规则", description = "软删除编码规则")
+    @Operation(summary = "删除编码规则", description = "软删除编码规则，删除后该规则将不再可用，但历史生成的编码不受影响")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<String> deleteRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "编码规则ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId
     ) {
         log.info("删除编码规则 - factoryId={}, ruleId={}", factoryId, ruleId);
 
@@ -259,11 +259,11 @@ public class EncodingRuleController {
      * 重置序列号
      */
     @PostMapping("/{ruleId}/reset-sequence")
-    @Operation(summary = "重置序列号", description = "将编码规则的序列号重置为0")
+    @Operation(summary = "重置序列号", description = "将编码规则的当前序列号重置为0，下次生成编码时从1开始。通常在更换年度或业务周期时使用")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<String> resetSequence(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "编码规则ID（UUID）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId
     ) {
         log.info("重置编码规则序列号 - factoryId={}, ruleId={}", factoryId, ruleId);
 
@@ -277,11 +277,11 @@ public class EncodingRuleController {
      * 验证编码模板
      */
     @PostMapping("/validate-pattern")
-    @Operation(summary = "验证编码模板", description = "验证编码模板格式是否正确")
+    @Operation(summary = "验证编码模板", description = "验证编码模板格式是否正确，检查占位符语法、日期格式等。返回验证结果和模板解析预览")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> validatePattern(
-            @PathVariable String factoryId,
-            @RequestBody Map<String, String> request
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @io.swagger.v3.oas.annotations.Parameter(description = "验证请求，格式: {\"pattern\": \"{PREFIX}-{DATE:yyyyMMdd}-{SEQ:4}\"}") Map<String, String> request
     ) {
         String pattern = request.get("pattern");
         if (pattern == null || pattern.isEmpty()) {
@@ -296,10 +296,10 @@ public class EncodingRuleController {
      * 获取支持的占位符列表
      */
     @GetMapping("/placeholders")
-    @Operation(summary = "获取占位符列表", description = "获取所有支持的编码占位符")
+    @Operation(summary = "获取占位符列表", description = "获取所有支持的编码占位符及其说明，如{PREFIX}前缀、{DATE:format}日期、{SEQ:n}序列号、{FACTORY}工厂代码等")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<List<Map<String, String>>> getPlaceholders(
-            @PathVariable String factoryId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         List<Map<String, String>> placeholders = encodingRuleService.getSupportedPlaceholders();
         return ApiResponse.success(placeholders);
@@ -309,10 +309,10 @@ public class EncodingRuleController {
      * 获取编码规则统计
      */
     @GetMapping("/statistics")
-    @Operation(summary = "获取统计信息", description = "获取编码规则统计信息")
+    @Operation(summary = "获取统计信息", description = "获取工厂编码规则的统计信息，包括总规则数、启用数、各实体类型规则配置情况、最近生成的编码等")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> getStatistics(
-            @PathVariable String factoryId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         Map<String, Object> stats = encodingRuleService.getStatistics(factoryId);
         return ApiResponse.success(stats);
@@ -322,10 +322,10 @@ public class EncodingRuleController {
      * 获取系统默认规则
      */
     @GetMapping("/system-defaults")
-    @Operation(summary = "获取系统默认规则", description = "获取系统级默认编码规则")
+    @Operation(summary = "获取系统默认规则", description = "获取平台预置的系统级默认编码规则，可作为工厂自定义规则的模板参考")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<List<EncodingRule>> getSystemDefaults(
-            @PathVariable String factoryId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         List<EncodingRule> defaults = encodingRuleService.getSystemDefaultRules();
         return ApiResponse.success(defaults);
@@ -335,10 +335,10 @@ public class EncodingRuleController {
      * 获取实体类型列表
      */
     @GetMapping("/entity-types")
-    @Operation(summary = "获取实体类型列表", description = "获取所有支持的实体类型")
+    @Operation(summary = "获取实体类型列表", description = "获取所有支持配置编码规则的实体类型，包含类型代码、名称和默认前缀")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<List<Map<String, String>>> getEntityTypes(
-            @PathVariable String factoryId
+            @PathVariable @io.swagger.v3.oas.annotations.Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         List<Map<String, String>> entityTypes = List.of(
             Map.of("code", "MATERIAL_BATCH", "name", "原材料批次", "defaultPrefix", "MB"),

@@ -12,10 +12,11 @@ import {
   Button,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
-import { useAuthStore } from '../../store/authStore';
-import { handleError, getErrorMsg } from '../../utils/errorHandler';
-import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
+import { materialBatchApiClient } from '../../../services/api/materialBatchApiClient';
+import { useAuthStore } from '../../../store/authStore';
+import { handleError, getErrorMsg } from '../../../utils/errorHandler';
+import { logger } from '../../../utils/logger';
 
 // 创建InventoryStatistics专用logger
 const inventoryStatsLogger = logger.createContextLogger('InventoryStatistics');
@@ -32,6 +33,7 @@ const inventoryStatsLogger = logger.createContextLogger('InventoryStatistics');
  */
 export default function InventoryStatisticsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('warehouse');
   const { user } = useAuthStore();
   const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
 
@@ -162,7 +164,7 @@ export default function InventoryStatisticsScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="库存统计" />
+        <Appbar.Content title={t('inventoryStats.title')} />
         <Appbar.Action icon="refresh" onPress={loadData} />
       </Appbar.Header>
 
@@ -173,13 +175,13 @@ export default function InventoryStatisticsScreen() {
         {/* 库存价值 */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            库存价值
+            {t('inventoryStats.inventoryValue')}
           </Text>
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common:status.loading')}</Text>
             </View>
           ) : (
             <>
@@ -189,7 +191,7 @@ export default function InventoryStatisticsScreen() {
                     {formatCurrency(valuationData.totalValue)}
                   </Text>
                   <Text variant="bodySmall" style={styles.valueLabel}>
-                    总库存价值
+                    {t('inventoryStats.totalInventoryValue')}
                   </Text>
                 </View>
                 <View style={styles.valueItem}>
@@ -197,17 +199,17 @@ export default function InventoryStatisticsScreen() {
                     {formatCurrency(valuationData.totalCost)}
                   </Text>
                   <Text variant="bodySmall" style={styles.valueLabel}>
-                    总成本
+                    {t('inventoryStats.totalCost')}
                   </Text>
                 </View>
               </View>
 
               <View style={styles.valueMeta}>
                 <Text variant="bodySmall" style={styles.metaText}>
-                  平均单价: {formatCurrency(valuationData.averageUnitPrice)}/kg
+                  {t('inventoryStats.averageUnitPrice')}: {formatCurrency(valuationData.averageUnitPrice)}/kg
                 </Text>
                 <Text variant="bodySmall" style={styles.metaText}>
-                  统计日期: {valuationData.valuationDate}
+                  {t('inventoryStats.statisticsDate')}: {valuationData.valuationDate}
                 </Text>
               </View>
             </>
@@ -217,38 +219,38 @@ export default function InventoryStatisticsScreen() {
         {/* 批次状态分布 */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            批次状态分布
+            {t('inventoryStats.batchStatusDistribution')}
           </Text>
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common:status.loading')}</Text>
             </View>
           ) : (
             <>
               <View style={styles.statsGrid}>
                 <View style={styles.statCard}>
                   <Text style={styles.statValue}>{batchDistribution.totalBatches}</Text>
-                  <Text style={styles.statLabel}>总批次</Text>
+                  <Text style={styles.statLabel}>{t('inventoryStats.totalBatches')}</Text>
                 </View>
                 <View style={styles.statCard}>
                   <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                     {batchDistribution.availableBatches}
                   </Text>
-                  <Text style={styles.statLabel}>可用</Text>
+                  <Text style={styles.statLabel}>{t('inventoryStats.available')}</Text>
                 </View>
                 <View style={styles.statCard}>
                   <Text style={[styles.statValue, { color: '#2196F3' }]}>
                     {batchDistribution.reservedBatches}
                   </Text>
-                  <Text style={styles.statLabel}>已预留</Text>
+                  <Text style={styles.statLabel}>{t('inventoryStats.reserved')}</Text>
                 </View>
                 <View style={styles.statCard}>
                   <Text style={[styles.statValue, { color: '#9E9E9E' }]}>
                     {batchDistribution.depletedBatches}
                   </Text>
-                  <Text style={styles.statLabel}>已耗尽</Text>
+                  <Text style={styles.statLabel}>{t('inventoryStats.depleted')}</Text>
                 </View>
               </View>
 
@@ -256,7 +258,7 @@ export default function InventoryStatisticsScreen() {
               <View style={styles.progressSection}>
                 <View style={styles.progressItem}>
                   <View style={styles.progressHeader}>
-                    <Text style={styles.progressLabel}>可用批次</Text>
+                    <Text style={styles.progressLabel}>{t('inventoryStats.availableBatches')}</Text>
                     <Text style={styles.progressValue}>
                       {batchDistribution.totalBatches > 0
                         ? ((batchDistribution.availableBatches / batchDistribution.totalBatches) * 100).toFixed(1)
@@ -277,7 +279,7 @@ export default function InventoryStatisticsScreen() {
 
                 <View style={styles.progressItem}>
                   <View style={styles.progressHeader}>
-                    <Text style={styles.progressLabel}>已预留批次</Text>
+                    <Text style={styles.progressLabel}>{t('inventoryStats.reservedBatches')}</Text>
                     <Text style={styles.progressValue}>
                       {batchDistribution.totalBatches > 0
                         ? ((batchDistribution.reservedBatches / batchDistribution.totalBatches) * 100).toFixed(1)
@@ -304,15 +306,15 @@ export default function InventoryStatisticsScreen() {
         {lowStockBatches.length > 0 && (
           <Surface style={styles.section} elevation={1}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              低库存警告 ({lowStockBatches.length})
+              {t('inventoryStats.lowStockWarning')} ({lowStockBatches.length})
             </Text>
 
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title>批次号</DataTable.Title>
-                <DataTable.Title>物料</DataTable.Title>
-                <DataTable.Title numeric>剩余</DataTable.Title>
-                <DataTable.Title>状态</DataTable.Title>
+                <DataTable.Title>{t('inventoryStats.batchNumber')}</DataTable.Title>
+                <DataTable.Title>{t('inventoryStats.material')}</DataTable.Title>
+                <DataTable.Title numeric>{t('inventoryStats.remaining')}</DataTable.Title>
+                <DataTable.Title>{t('inventoryStats.status')}</DataTable.Title>
               </DataTable.Header>
 
               {lowStockBatches.slice(0, 10).map((batch, index) => (
@@ -350,7 +352,7 @@ export default function InventoryStatisticsScreen() {
                         fontSize: 11,
                       }}
                     >
-                      {(batch as any).remainingQuantity < 10 ? '紧急' : '预警'}
+                      {(batch as any).remainingQuantity < 10 ? t('inventoryStats.urgent') : t('inventoryStats.warning')}
                     </Chip>
                   </DataTable.Cell>
                 </DataTable.Row>
@@ -359,8 +361,8 @@ export default function InventoryStatisticsScreen() {
 
             {lowStockBatches.length > 10 && (
               <View style={styles.moreButton}>
-                <Button mode="text" onPress={() => Alert.alert('提示', '查看全部低库存批次功能即将上线')}>
-                  查看全部 {lowStockBatches.length} 条警告
+                <Button mode="text" onPress={() => Alert.alert(t('inventoryStats.hint'), t('inventoryStats.viewAllComingSoon'))}>
+                  {t('inventoryStats.viewAllWarnings', { count: lowStockBatches.length })}
                 </Button>
               </View>
             )}
@@ -371,11 +373,11 @@ export default function InventoryStatisticsScreen() {
         {!loading && lowStockBatches.length === 0 && (
           <Surface style={styles.section} elevation={1}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              低库存警告
+              {t('inventoryStats.lowStockWarning')}
             </Text>
             <View style={styles.emptyContainer}>
               <Text variant="bodyMedium" style={styles.emptyText}>
-                ✅ 所有批次库存充足
+                {t('inventoryStats.allBatchesSufficient')}
               </Text>
             </View>
           </Surface>

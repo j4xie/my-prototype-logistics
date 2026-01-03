@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   QI_COLORS,
@@ -38,6 +39,7 @@ export default function QIRecordsScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId;
+  const { t } = useTranslation('quality');
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -162,7 +164,7 @@ export default function QIRecordsScreen() {
       <View style={styles.recordFooter}>
         <Text style={styles.timeText}>{formatDateTime(item.inspectedAt)}</Text>
         <View style={[styles.statusBadge, item.passed ? styles.statusPass : styles.statusFail]}>
-          <Text style={styles.statusText}>{item.passed ? '合格' : '不合格'}</Text>
+          <Text style={styles.statusText}>{item.passed ? t('records.passed') : t('records.failed')}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -173,7 +175,7 @@ export default function QIRecordsScreen() {
     return (
       <View style={styles.loadingFooter}>
         <ActivityIndicator size="small" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载更多...</Text>
+        <Text style={styles.loadingText}>{t('records.loadMore')}</Text>
       </View>
     );
   };
@@ -183,8 +185,8 @@ export default function QIRecordsScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="document-text-outline" size={64} color={QI_COLORS.disabled} />
-        <Text style={styles.emptyTitle}>暂无检验记录</Text>
-        <Text style={styles.emptySubtitle}>完成质检后记录将显示在这里</Text>
+        <Text style={styles.emptyTitle}>{t('records.noRecords')}</Text>
+        <Text style={styles.emptySubtitle}>{t('records.recordsWillShowHere')}</Text>
       </View>
     );
   };
@@ -193,17 +195,17 @@ export default function QIRecordsScreen() {
     <View style={styles.container}>
       {/* 筛选栏 */}
       <View style={styles.filterBar}>
-        {renderFilterTab('all', '全部')}
-        {renderFilterTab('today', '今日')}
-        {renderFilterTab('passed', '合格')}
-        {renderFilterTab('failed', '不合格')}
+        {renderFilterTab('all', t('records.all'))}
+        {renderFilterTab('today', t('records.today'))}
+        {renderFilterTab('passed', t('records.passed'))}
+        {renderFilterTab('failed', t('records.failed'))}
       </View>
 
       {/* 记录列表 */}
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={QI_COLORS.primary} />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('trend.loading')}</Text>
         </View>
       ) : (
         <FlatList

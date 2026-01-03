@@ -24,12 +24,14 @@ import { Text, Card, Searchbar, Chip, Avatar, FAB, ActivityIndicator, Menu } fro
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { userApiClient } from '../../../services/api/userApiClient';
 import { HR_THEME, STAFF_STATUS_CONFIG, type StaffListItem, type StaffStatus } from '../../../types/hrNavigation';
 
 export default function StaffListScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -131,7 +133,7 @@ export default function StaffListScreen() {
                 </Chip>
               </View>
               <Text style={styles.meta}>
-                {item.department || '未分配部门'} · {item.position || item.roleName || '员工'}
+                {item.department || t('staff.list.noDepartment')} · {item.position || item.roleName || t('staff.list.employee')}
               </Text>
               {item.phone && (
                 <Text style={styles.phone}>{item.phone}</Text>
@@ -149,11 +151,11 @@ export default function StaffListScreen() {
   };
 
   const statusOptions: { value: StaffStatus | 'all'; label: string }[] = [
-    { value: 'all', label: '全部' },
-    { value: 'active', label: '在岗' },
-    { value: 'on_leave', label: '休假' },
-    { value: 'resigned', label: '离职' },
-    { value: 'suspended', label: '停职' },
+    { value: 'all', label: t('staff.list.filter.all') },
+    { value: 'active', label: t('staff.list.filter.active') },
+    { value: 'on_leave', label: t('staff.list.filter.onLeave') },
+    { value: 'resigned', label: t('staff.list.filter.resigned') },
+    { value: 'suspended', label: t('staff.list.filter.suspended') },
   ];
 
   if (loading && staffList.length === 0) {
@@ -167,12 +169,12 @@ export default function StaffListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>员工管理</Text>
+        <Text style={styles.headerTitle}>{t('staff.list.title')}</Text>
       </View>
 
       <View style={styles.filterContainer}>
         <Searchbar
-          placeholder="搜索员工..."
+          placeholder={t('staff.list.searchPlaceholder')}
           value={searchQuery}
           onChangeText={(text) => {
             setSearchQuery(text);
@@ -191,7 +193,7 @@ export default function StaffListScreen() {
             >
               <MaterialCommunityIcons name="filter" size={20} color={HR_THEME.primary} />
               <Text style={styles.filterText}>
-                {statusOptions.find((o) => o.value === statusFilter)?.label || '筛选'}
+                {statusOptions.find((o) => o.value === statusFilter)?.label || t('staff.list.filter.title')}
               </Text>
             </TouchableOpacity>
           }
@@ -228,7 +230,7 @@ export default function StaffListScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>暂无员工数据</Text>
+            <Text style={styles.emptyText}>{t('staff.list.empty')}</Text>
           </View>
         }
         ListFooterComponent={

@@ -13,6 +13,7 @@ import { Text, Card, Avatar, Button, ActivityIndicator, Chip, Divider } from 're
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { departmentApiClient } from '../../../services/api/departmentApiClient';
 import { HR_THEME, type HRStackParamList, type Department } from '../../../types/hrNavigation';
@@ -37,6 +38,7 @@ export default function DepartmentDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteParams>();
   const { departmentId } = route.params;
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -52,7 +54,7 @@ export default function DepartmentDetailScreen() {
       }
     } catch (error) {
       console.error('加载部门详情失败:', error);
-      Alert.alert('错误', '加载部门信息失败');
+      Alert.alert(t('messages.error'), t('department.detail.loadFailed'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,22 +73,26 @@ export default function DepartmentDetailScreen() {
   const handleToggleStatus = async () => {
     if (!department) return;
 
-    const action = department.isActive ? '停用' : '启用';
-    Alert.alert(`确认${action}`, `确定要${action}该部门吗？`, [
-      { text: '取消', style: 'cancel' },
-      { text: '确定', onPress: async () => {
-        try {
-          const numericId = typeof departmentId === 'string' ? parseInt(departmentId, 10) : departmentId;
-          await departmentApiClient.updateDepartment(numericId, {
-            name: department.name, // required field
-            isActive: !department.isActive,
-          });
-          loadData();
-        } catch (error) {
-          Alert.alert('错误', `${action}失败`);
-        }
-      }},
-    ]);
+    const actionKey = department.isActive ? 'disable' : 'enable';
+    Alert.alert(
+      t(`department.detail.${actionKey}Confirm`),
+      t(`department.detail.${actionKey}Message`),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.confirm'), onPress: async () => {
+          try {
+            const numericId = typeof departmentId === 'string' ? parseInt(departmentId, 10) : departmentId;
+            await departmentApiClient.updateDepartment(numericId, {
+              name: department.name, // required field
+              isActive: !department.isActive,
+            });
+            loadData();
+          } catch (error) {
+            Alert.alert(t('messages.error'), t(`department.detail.${actionKey}Failed`));
+          }
+        }},
+      ]
+    );
   };
 
   if (loading) {
@@ -100,7 +106,7 @@ export default function DepartmentDetailScreen() {
   if (!department) {
     return (
       <View style={styles.errorContainer}>
-        <Text>部门信息不存在</Text>
+        <Text>{t('department.detail.notFound')}</Text>
       </View>
     );
   }
@@ -111,7 +117,7 @@ export default function DepartmentDetailScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>部门详情</Text>
+        <Text style={styles.headerTitle}>{t('department.detail.title')}</Text>
         <TouchableOpacity onPress={handleToggleStatus} style={styles.statusBtn}>
           <MaterialCommunityIcons
             name={department.isActive ? 'pause-circle' : 'play-circle'}
@@ -140,7 +146,7 @@ export default function DepartmentDetailScreen() {
                 backgroundColor: department.isActive ? '#f6ffed' : '#f5f5f5'
               }]}
             >
-              {department.isActive ? '正常运行' : '已停用'}
+              {department.isActive ? t('department.detail.status.active') : t('department.detail.status.disabled')}
             </Chip>
             {department.description && (
               <Text style={styles.description}>{department.description}</Text>
@@ -151,22 +157,22 @@ export default function DepartmentDetailScreen() {
         {/* 基本信息 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>基本信息</Text>
+            <Text style={styles.sectionTitle}>{t('department.detail.sections.basicInfo')}</Text>
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="account-tie" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>负责人</Text>
-              <Text style={styles.infoValue}>{department.managerName || '未指定'}</Text>
+              <Text style={styles.infoLabel}>{t('department.detail.fields.manager')}</Text>
+              <Text style={styles.infoValue}>{department.managerName || t('department.detail.noManager')}</Text>
             </View>
             <Divider style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="account-group" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>成员数量</Text>
-              <Text style={styles.infoValue}>{department.memberCount ?? 0} 人</Text>
+              <Text style={styles.infoLabel}>{t('department.detail.fields.memberCount')}</Text>
+              <Text style={styles.infoValue}>{t('department.detail.memberCountValue', { count: department.memberCount ?? 0 })}</Text>
             </View>
             <Divider style={styles.divider} />
             <View style={styles.infoRow}>
               <MaterialCommunityIcons name="calendar" size={18} color={HR_THEME.textSecondary} />
-              <Text style={styles.infoLabel}>创建时间</Text>
+              <Text style={styles.infoLabel}>{t('department.detail.fields.createdAt')}</Text>
               <Text style={styles.infoValue}>{department.createdAt?.split('T')[0] || '-'}</Text>
             </View>
           </Card.Content>
@@ -176,8 +182,8 @@ export default function DepartmentDetailScreen() {
         <Card style={styles.sectionCard}>
           <Card.Content>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>部门成员</Text>
-              <Text style={styles.memberCount}>{department.members?.length ?? 0} 人</Text>
+              <Text style={styles.sectionTitle}>{t('department.detail.sections.members')}</Text>
+              <Text style={styles.memberCount}>{t('department.detail.memberCountValue', { count: department.members?.length ?? 0 })}</Text>
             </View>
 
             {department.members && department.members.length > 0 ? (
@@ -191,7 +197,7 @@ export default function DepartmentDetailScreen() {
                     />
                     <View style={styles.memberInfo}>
                       <Text style={styles.memberName}>{member.fullName || member.username}</Text>
-                      <Text style={styles.memberPosition}>{member.position || '员工'}</Text>
+                      <Text style={styles.memberPosition}>{member.position || t('department.detail.employee')}</Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => navigation.navigate('StaffDetail' as any, { staffId: member.id })}
@@ -205,7 +211,7 @@ export default function DepartmentDetailScreen() {
             ) : (
               <View style={styles.emptyMembers}>
                 <MaterialCommunityIcons name="account-off-outline" size={48} color={HR_THEME.textMuted} />
-                <Text style={styles.emptyText}>暂无成员</Text>
+                <Text style={styles.emptyText}>{t('department.detail.noMembers')}</Text>
               </View>
             )}
           </Card.Content>

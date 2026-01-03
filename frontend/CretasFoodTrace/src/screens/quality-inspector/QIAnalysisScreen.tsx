@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import {
   QI_COLORS,
@@ -63,6 +64,7 @@ export default function QIAnalysisScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId;
+  const { t } = useTranslation('quality');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -183,7 +185,7 @@ export default function QIAnalysisScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>加载分析数据...</Text>
+        <Text style={styles.loadingText}>{t('analysis.loadingData')}</Text>
       </View>
     );
   }
@@ -209,16 +211,16 @@ export default function QIAnalysisScreen() {
     >
       {/* 时间周期选择 */}
       <View style={styles.periodBar}>
-        {renderPeriodTab('week', '本周')}
-        {renderPeriodTab('month', '本月')}
-        {renderPeriodTab('quarter', '本季度')}
+        {renderPeriodTab('week', t('analysis.thisWeek'))}
+        {renderPeriodTab('month', t('analysis.thisMonth'))}
+        {renderPeriodTab('quarter', t('analysis.thisQuarter'))}
       </View>
 
       {/* 概览卡片 */}
       <View style={styles.overviewCard}>
         <View style={styles.overviewItem}>
           <Text style={styles.overviewValue}>{data?.overview.totalInspections || 0}</Text>
-          <Text style={styles.overviewLabel}>检验批次</Text>
+          <Text style={styles.overviewLabel}>{t('analysis.inspectedBatches')}</Text>
         </View>
         <View style={styles.overviewDivider} />
         <View style={styles.overviewItem}>
@@ -231,21 +233,21 @@ export default function QIAnalysisScreen() {
               <Ionicons name="trending-down" size={20} color={QI_COLORS.danger} />
             )}
           </View>
-          <Text style={styles.overviewLabel}>合格率</Text>
+          <Text style={styles.overviewLabel}>{t('analysis.passRate')}</Text>
         </View>
         <View style={styles.overviewDivider} />
         <View style={styles.overviewItem}>
           <Text style={styles.overviewValue}>{data?.overview.avgScore.toFixed(1)}</Text>
-          <Text style={styles.overviewLabel}>平均分</Text>
+          <Text style={styles.overviewLabel}>{t('analysis.avgScore')}</Text>
         </View>
       </View>
 
       {/* 等级分布 */}
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>等级分布</Text>
+          <Text style={styles.sectionTitle}>{t('analysis.gradeDistribution')}</Text>
           <TouchableOpacity onPress={handleViewTrend}>
-            <Text style={styles.sectionAction}>查看趋势</Text>
+            <Text style={styles.sectionAction}>{t('analysis.viewTrend')}</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.gradeCard}>
@@ -258,19 +260,19 @@ export default function QIAnalysisScreen() {
 
       {/* 分类评分 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>分类平均分</Text>
+        <Text style={styles.sectionTitle}>{t('analysis.categoryAvgScore')}</Text>
         <View style={styles.categoryCard}>
-          {renderCategoryScore('外观', 'eye-outline', data?.categoryScores.appearance || 0)}
-          {renderCategoryScore('气味', 'flower-outline', data?.categoryScores.smell || 0)}
-          {renderCategoryScore('规格', 'resize-outline', data?.categoryScores.specification || 0)}
-          {renderCategoryScore('重量', 'scale-outline', data?.categoryScores.weight || 0)}
-          {renderCategoryScore('包装', 'cube-outline', data?.categoryScores.packaging || 0)}
+          {renderCategoryScore(t('analysis.appearance'), 'eye-outline', data?.categoryScores.appearance || 0)}
+          {renderCategoryScore(t('analysis.smell'), 'flower-outline', data?.categoryScores.smell || 0)}
+          {renderCategoryScore(t('analysis.specification'), 'resize-outline', data?.categoryScores.specification || 0)}
+          {renderCategoryScore(t('analysis.weight'), 'scale-outline', data?.categoryScores.weight || 0)}
+          {renderCategoryScore(t('analysis.packaging'), 'cube-outline', data?.categoryScores.packaging || 0)}
         </View>
       </View>
 
       {/* 常见问题 */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>常见问题</Text>
+        <Text style={styles.sectionTitle}>{t('analysis.commonIssues')}</Text>
         <View style={styles.issuesCard}>
           {data?.recentIssues.map((issue, index) => (
             <View key={index} style={styles.issueItem}>
@@ -292,7 +294,7 @@ export default function QIAnalysisScreen() {
       {/* 生成报告按钮 */}
       <TouchableOpacity style={styles.reportBtn} onPress={handleGenerateReport}>
         <Ionicons name="document-text-outline" size={20} color="#fff" />
-        <Text style={styles.reportBtnText}>生成质检报告</Text>
+        <Text style={styles.reportBtnText}>{t('analysis.generateReport')}</Text>
       </TouchableOpacity>
     </ScrollView>
   );

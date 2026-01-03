@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.config.AIQuotaConfig;
 import com.cretas.aims.repository.config.AIQuotaConfigRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +39,8 @@ public class AIQuotaConfigController {
      */
     @GetMapping
     @Operation(summary = "获取配额配置列表", description = "获取指定工厂的所有AI配额配置")
-    public ResponseEntity<Map<String, Object>> getConfigs(@PathVariable String factoryId) {
+    public ResponseEntity<Map<String, Object>> getConfigs(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
         try {
             // 查询工厂级别配置
             List<AIQuotaConfig> factoryConfigs = quotaConfigRepository
@@ -70,7 +72,7 @@ public class AIQuotaConfigController {
     @PostMapping
     @Operation(summary = "创建配额配置", description = "为工厂创建新的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> createConfig(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody AIQuotaConfigRequest request) {
         try {
             // 参数校验
@@ -133,8 +135,8 @@ public class AIQuotaConfigController {
     @PutMapping("/{configId}")
     @Operation(summary = "更新配额配置", description = "更新指定的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> updateConfig(
-            @PathVariable String factoryId,
-            @PathVariable String configId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "配额配置ID") @PathVariable String configId,
             @RequestBody AIQuotaConfigRequest request) {
         try {
             // 查询配置
@@ -192,8 +194,8 @@ public class AIQuotaConfigController {
     @DeleteMapping("/{configId}")
     @Operation(summary = "删除配额配置", description = "删除指定的AI配额配置规则")
     public ResponseEntity<Map<String, Object>> deleteConfig(
-            @PathVariable String factoryId,
-            @PathVariable String configId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "配额配置ID") @PathVariable String configId) {
         try {
             // 查询配置
             AIQuotaConfig config = quotaConfigRepository.findById(configId)
@@ -240,8 +242,8 @@ public class AIQuotaConfigController {
     @GetMapping("/{configId}")
     @Operation(summary = "获取配额配置详情", description = "获取指定AI配额配置的详细信息")
     public ResponseEntity<Map<String, Object>> getConfig(
-            @PathVariable String factoryId,
-            @PathVariable String configId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "配额配置ID") @PathVariable String configId) {
         try {
             AIQuotaConfig config = quotaConfigRepository.findById(configId)
                     .orElseThrow(() -> new RuntimeException("配置不存在: configId=" + configId));

@@ -14,11 +14,12 @@ import {
   HelperText,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { useAuthStore } from '../../store/authStore';
-import { materialBatchApiClient, MaterialBatch as MaterialBatchType } from '../../services/api/materialBatchApiClient';
-import { getFactoryId } from '../../types/auth';
-import { handleError, getErrorMsg } from '../../utils/errorHandler';
-import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
+import { useAuthStore } from '../../../store/authStore';
+import { materialBatchApiClient, MaterialBatch as MaterialBatchType } from '../../../services/api/materialBatchApiClient';
+import { getFactoryId } from '../../../types/auth';
+import { handleError, getErrorMsg } from '../../../utils/errorHandler';
+import { logger } from '../../../utils/logger';
 
 // 创建InventoryCheck专用logger
 const inventoryCheckLogger = logger.createContextLogger('InventoryCheck');
@@ -54,6 +55,7 @@ interface CheckRecord {
  */
 export default function InventoryCheckScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('warehouse');
   const { user } = useAuthStore();
 
   // 批次数据
@@ -86,7 +88,7 @@ export default function InventoryCheckScreen() {
     try {
       const factoryId = getCurrentFactoryId();
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('inventoryCheck.error'), t('inventoryCheck.factoryNotFound'));
         return;
       }
 
@@ -125,7 +127,7 @@ export default function InventoryCheckScreen() {
       inventoryCheckLogger.error('加载批次失败', error as Error, {
         factoryId: getCurrentFactoryId(),
       });
-      Alert.alert('加载失败', '无法加载批次数据，请稍后重试');
+      Alert.alert(t('inventoryCheck.loadFailed'), t('inventoryCheck.cannotLoadBatches'));
       setBatches([]);
     } finally {
       setLoading(false);
@@ -152,12 +154,12 @@ export default function InventoryCheckScreen() {
    */
   const handleAddRecord = () => {
     if (!selectedBatch) {
-      Alert.alert('提示', '请先选择批次');
+      Alert.alert(t('inventoryCheck.hint'), t('inventoryCheck.pleaseSelectBatch'));
       return;
     }
 
     if (!actualQuantity || parseFloat(actualQuantity) < 0) {
-      Alert.alert('提示', '请输入有效的实际数量');
+      Alert.alert(t('inventoryCheck.hint'), t('inventoryCheck.pleaseEnterValidQuantity'));
       return;
     }
 
@@ -180,17 +182,17 @@ export default function InventoryCheckScreen() {
     setSelectedBatch(null);
     setActualQuantity('');
 
-    Alert.alert('成功', '已添加盘点记录');
+    Alert.alert(t('inventoryCheck.success'), t('inventoryCheck.recordAdded'));
   };
 
   /**
    * 删除盘点记录
    */
   const handleDeleteRecord = (index: number) => {
-    Alert.alert('确认删除', '确定要删除这条盘点记录吗？', [
-      { text: '取消', style: 'cancel' },
+    Alert.alert(t('inventoryCheck.confirmDelete'), t('inventoryCheck.confirmDeleteRecord'), [
+      { text: t('common:buttons.cancel'), style: 'cancel' },
       {
-        text: '删除',
+        text: t('common:buttons.delete'),
         style: 'destructive',
         onPress: () => {
           const newRecords = [...checkRecords];
@@ -206,7 +208,7 @@ export default function InventoryCheckScreen() {
    */
   const handleSaveCheck = async () => {
     if (checkRecords.length === 0) {
-      Alert.alert('提示', '请至少添加一条盘点记录');
+      Alert.alert(t('inventoryCheck.hint'), t('inventoryCheck.pleaseAddAtLeastOneRecord'));
       return;
     }
 
@@ -215,7 +217,7 @@ export default function InventoryCheckScreen() {
     try {
       const factoryId = getCurrentFactoryId();
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('inventoryCheck.error'), t('inventoryCheck.factoryNotFound'));
         setSaving(false);
         return;
       }
@@ -237,11 +239,15 @@ export default function InventoryCheckScreen() {
 
       if (failedCount > 0) {
         Alert.alert(
-          '部分失败',
-          `已保存 ${results.length - failedCount}/${results.length} 条盘点记录\n\n${failedCount} 条记录保存失败，请检查后重试`,
+          t('inventoryCheck.partialFailed'),
+          t('inventoryCheck.partialFailedMessage', {
+            saved: results.length - failedCount,
+            total: results.length,
+            failed: failedCount
+          }),
           [
             {
-              text: '确定',
+              text: t('common:buttons.ok'),
               onPress: () => {
                 setCheckRecords([]);
                 loadBatches();
@@ -251,11 +257,11 @@ export default function InventoryCheckScreen() {
         );
       } else {
         Alert.alert(
-          '盘点完成',
-          `已保存 ${checkRecords.length} 条盘点记录\n\n差异已同步到库存系统`,
+          t('inventoryCheck.checkComplete'),
+          t('inventoryCheck.checkCompleteMessage', { count: checkRecords.length }),
           [
             {
-              text: '确定',
+              text: t('common:buttons.ok'),
               onPress: () => {
                 setCheckRecords([]);
                 loadBatches();
@@ -276,7 +282,7 @@ export default function InventoryCheckScreen() {
         factoryId: getCurrentFactoryId(),
         recordCount: checkRecords.length,
       });
-      Alert.alert('保存失败', (error as any).message || '保存盘点记录时出现错误');
+      Alert.alert(t('inventoryCheck.saveFailed'), (error as any).message || t('inventoryCheck.saveError'));
     } finally {
       setSaving(false);
     }
@@ -287,11 +293,11 @@ export default function InventoryCheckScreen() {
    */
   const getDifferenceChip = (differenceRate: number) => {
     if (Math.abs(differenceRate) < 1) {
-      return <Chip mode="flat" compact style={{ backgroundColor: '#4CAF50' }} textStyle={{ color: 'white' }}>正常</Chip>;
+      return <Chip mode="flat" compact style={{ backgroundColor: '#4CAF50' }} textStyle={{ color: 'white' }}>{t('inventoryCheck.statusNormal')}</Chip>;
     } else if (Math.abs(differenceRate) < 5) {
-      return <Chip mode="flat" compact style={{ backgroundColor: '#FF9800' }} textStyle={{ color: 'white' }}>偏差</Chip>;
+      return <Chip mode="flat" compact style={{ backgroundColor: '#FF9800' }} textStyle={{ color: 'white' }}>{t('inventoryCheck.statusDeviation')}</Chip>;
     } else {
-      return <Chip mode="flat" compact style={{ backgroundColor: '#F44336' }} textStyle={{ color: 'white' }}>异常</Chip>;
+      return <Chip mode="flat" compact style={{ backgroundColor: '#F44336' }} textStyle={{ color: 'white' }}>{t('inventoryCheck.statusAbnormal')}</Chip>;
     }
   };
 
@@ -299,20 +305,20 @@ export default function InventoryCheckScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="库存盘点" />
+        <Appbar.Content title={t('inventoryCheck.title')} />
       </Appbar.Header>
 
       <ScrollView style={styles.content}>
         {/* 批次选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="选择批次" titleVariant="titleMedium" />
+          <Card.Title title={t('inventoryCheck.selectBatch')} titleVariant="titleMedium" />
           <Card.Content>
             <Menu
               visible={batchMenuVisible}
               onDismiss={() => setBatchMenuVisible(false)}
               anchor={
                 <TextInput
-                  label="批次号"
+                  label={t('inventoryCheck.batchNumber')}
                   value={selectedBatch?.batchNumber || ''}
                   mode="outlined"
                   editable={false}
@@ -337,14 +343,14 @@ export default function InventoryCheckScreen() {
                 <View style={styles.batchInfo}>
                   <View style={styles.infoRow}>
                     <Text variant="bodyMedium" style={styles.infoLabel}>
-                      物料类型：
+                      {t('inventoryCheck.materialType')}
                     </Text>
                     <Text variant="bodyMedium">{selectedBatch.materialTypeId}</Text>
                   </View>
 
                   <View style={styles.infoRow}>
                     <Text variant="bodyMedium" style={styles.infoLabel}>
-                      系统数量：
+                      {t('inventoryCheck.systemQuantity')}
                     </Text>
                     <Text variant="bodyMedium" style={styles.systemQuantity}>
                       {selectedBatch.systemQuantity} {selectedBatch.unit}
@@ -355,7 +361,7 @@ export default function InventoryCheckScreen() {
                 <Divider style={styles.divider} />
 
                 <TextInput
-                  label={`实际数量 (${selectedBatch.unit})`}
+                  label={t('inventoryCheck.actualQuantityLabel', { unit: selectedBatch.unit })}
                   value={actualQuantity}
                   onChangeText={setActualQuantity}
                   mode="outlined"
@@ -363,7 +369,7 @@ export default function InventoryCheckScreen() {
                   style={styles.input}
                 />
                 <HelperText type="info">
-                  请输入实际盘点的数量
+                  {t('inventoryCheck.enterActualQuantityHint')}
                 </HelperText>
 
                 <Button
@@ -373,7 +379,7 @@ export default function InventoryCheckScreen() {
                   disabled={!actualQuantity}
                   style={styles.addButton}
                 >
-                  添加盘点记录
+                  {t('inventoryCheck.addRecord')}
                 </Button>
               </>
             )}
@@ -383,15 +389,15 @@ export default function InventoryCheckScreen() {
         {/* 盘点记录列表 */}
         {checkRecords.length > 0 && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="盘点记录" titleVariant="titleMedium" />
+            <Card.Title title={t('inventoryCheck.checkRecords')} titleVariant="titleMedium" />
             <Card.Content>
               <DataTable>
                 <DataTable.Header>
-                  <DataTable.Title>批次</DataTable.Title>
-                  <DataTable.Title numeric>系统</DataTable.Title>
-                  <DataTable.Title numeric>实际</DataTable.Title>
-                  <DataTable.Title numeric>差异</DataTable.Title>
-                  <DataTable.Title>状态</DataTable.Title>
+                  <DataTable.Title>{t('inventoryCheck.batch')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('inventoryCheck.system')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('inventoryCheck.actual')}</DataTable.Title>
+                  <DataTable.Title numeric>{t('inventoryCheck.difference')}</DataTable.Title>
+                  <DataTable.Title>{t('inventoryCheck.status')}</DataTable.Title>
                 </DataTable.Header>
 
                 {checkRecords.map((record, index) => (
@@ -433,7 +439,7 @@ export default function InventoryCheckScreen() {
                   onPress={() => handleDeleteRecord(checkRecords.length - 1)}
                   textColor="#F44336"
                 >
-                  删除最后一条
+                  {t('inventoryCheck.deleteLastRecord')}
                 </Button>
               </View>
             </Card.Content>
@@ -443,7 +449,7 @@ export default function InventoryCheckScreen() {
         {/* 统计汇总 */}
         {checkRecords.length > 0 && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="统计汇总" titleVariant="titleMedium" />
+            <Card.Title title={t('inventoryCheck.summary')} titleVariant="titleMedium" />
             <Card.Content>
               <View style={styles.statsRow}>
                 <View style={styles.statItem}>
@@ -451,7 +457,7 @@ export default function InventoryCheckScreen() {
                     {checkRecords.length}
                   </Text>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    盘点批次
+                    {t('inventoryCheck.checkedBatches')}
                   </Text>
                 </View>
 
@@ -470,7 +476,7 @@ export default function InventoryCheckScreen() {
                     {checkRecords.filter(r => r.difference > 0).length}
                   </Text>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    盘盈批次
+                    {t('inventoryCheck.surplusBatches')}
                   </Text>
                 </View>
 
@@ -489,7 +495,7 @@ export default function InventoryCheckScreen() {
                     {checkRecords.filter(r => r.difference < 0).length}
                   </Text>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    盘亏批次
+                    {t('inventoryCheck.deficitBatches')}
                   </Text>
                 </View>
               </View>
@@ -508,7 +514,7 @@ export default function InventoryCheckScreen() {
             style={styles.saveButton}
             contentStyle={styles.saveButtonContent}
           >
-            {saving ? '保存中...' : '保存盘点结果'}
+            {saving ? t('common:status.saving') : t('inventoryCheck.saveCheckResult')}
           </Button>
         )}
 

@@ -24,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -243,14 +244,22 @@ public class MaterialConsumptionController {
                 .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        // 按材料类型分组统计
+        // 按材料类型分组统计（优化：批量查询避免 N+1）
+        Set<String> batchIds = consumptions.stream()
+                .map(MaterialConsumption::getBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, MaterialBatch> batchMap = batchIds.isEmpty() ? Collections.emptyMap() :
+                materialBatchRepository.findAllById(batchIds).stream()
+                        .collect(Collectors.toMap(MaterialBatch::getId, Function.identity()));
+
         Map<String, Map<String, BigDecimal>> byMaterialType = new HashMap<>();
         for (MaterialConsumption c : consumptions) {
             String batchId = c.getBatchId();
             if (batchId != null) {
-                Optional<MaterialBatch> batchOpt = materialBatchRepository.findById(batchId);
-                String materialTypeName = batchOpt.map(b -> b.getMaterialTypeId() != null
-                        ? b.getMaterialTypeId() : "未知材料").orElse("未知材料");
+                MaterialBatch batch = batchMap.get(batchId);
+                String materialTypeName = (batch != null && batch.getMaterialTypeId() != null)
+                        ? batch.getMaterialTypeId() : "未知材料";
 
                 byMaterialType.computeIfAbsent(materialTypeName, k -> {
                     Map<String, BigDecimal> m = new HashMap<>();
@@ -328,17 +337,56 @@ public class MaterialConsumptionController {
 
     /**
      * 丰富消耗记录列表（添加关联信息）
+     * 优化：使用批量查询避免 N+1 问题
      */
     private List<Map<String, Object>> enrichConsumptions(List<MaterialConsumption> consumptions) {
+        if (consumptions.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 批量查询原材料批次信息
+        Set<String> batchIds = consumptions.stream()
+                .map(MaterialConsumption::getBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, MaterialBatch> batchMap = batchIds.isEmpty() ? Collections.emptyMap() :
+                materialBatchRepository.findAllById(batchIds).stream()
+                        .collect(Collectors.toMap(MaterialBatch::getId, Function.identity()));
+
+        // 批量查询记录人信息
+        Set<Long> userIds = consumptions.stream()
+                .map(MaterialConsumption::getRecordedBy)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, User> userMap = userIds.isEmpty() ? Collections.emptyMap() :
+                userRepository.findAllById(userIds).stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        // 使用预加载的 Map 进行丰富
         return consumptions.stream()
-                .map(this::enrichConsumption)
+                .map(c -> enrichConsumptionWithMaps(c, batchMap, userMap))
                 .collect(Collectors.toList());
     }
 
     /**
      * 丰富单条消耗记录（添加关联信息）
+     * 用于单条记录查询场景
+     * 注意：单条记录查询场景下，直接查询是可接受的，因为只有 1-2 次查询
      */
     private Map<String, Object> enrichConsumption(MaterialConsumption c) {
+        // 对于单条记录，使用 enrichConsumptions 批量方法以保持一致性
+        List<Map<String, Object>> result = enrichConsumptions(Collections.singletonList(c));
+        return result.isEmpty() ? new HashMap<>() : result.get(0);
+    }
+
+    /**
+     * 使用预加载的 Map 丰富消耗记录
+     */
+    private Map<String, Object> enrichConsumptionWithMaps(
+            MaterialConsumption c,
+            Map<String, MaterialBatch> batchMap,
+            Map<Long, User> userMap) {
+
         Map<String, Object> map = new HashMap<>();
         map.put("id", c.getId());
         map.put("factoryId", c.getFactoryId());
@@ -355,19 +403,21 @@ public class MaterialConsumptionController {
         map.put("createdAt", c.getCreatedAt());
         map.put("updatedAt", c.getUpdatedAt());
 
-        // 添加原材料批次名称
+        // 添加原材料批次名称（从预加载的 Map 中获取）
         if (c.getBatchId() != null) {
-            materialBatchRepository.findById(c.getBatchId()).ifPresent(batch -> {
+            MaterialBatch batch = batchMap.get(c.getBatchId());
+            if (batch != null) {
                 map.put("batchNumber", batch.getBatchNumber());
                 map.put("materialTypeId", batch.getMaterialTypeId());
-            });
+            }
         }
 
-        // 添加记录人名称
+        // 添加记录人名称（从预加载的 Map 中获取）
         if (c.getRecordedBy() != null) {
-            userRepository.findById(c.getRecordedBy()).ifPresent(user -> {
+            User user = userMap.get(c.getRecordedBy());
+            if (user != null) {
                 map.put("recorderName", user.getFullName() != null ? user.getFullName() : user.getUsername());
-            });
+            }
         }
 
         return map;

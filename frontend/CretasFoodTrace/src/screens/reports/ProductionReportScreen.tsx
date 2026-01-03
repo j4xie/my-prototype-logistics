@@ -12,6 +12,7 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
@@ -35,6 +36,7 @@ const productionReportLogger = logger.createContextLogger('ProductionReport');
 export default function ProductionReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,7 +55,7 @@ export default function ProductionReportScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('production.error'), t('production.cannotGetFactoryInfo'));
         return;
       }
 
@@ -95,8 +97,8 @@ export default function ProductionReportScreen() {
         timeRange,
       });
       handleError(error, {
-        title: '加载失败',
-        customMessage: '加载生产数据失败，请稍后重试',
+        title: t('production.loadFailed'),
+        customMessage: t('production.loadProductionDataFailed'),
       });
       setRecentBatches([]);
       setProductionStats(null);
@@ -173,14 +175,14 @@ export default function ProductionReportScreen() {
       string,
       { label: string; color: string; bgColor: string }
     > = {
-      completed: { label: '已完成', color: '#4CAF50', bgColor: '#E8F5E9' },
-      COMPLETED: { label: '已完成', color: '#4CAF50', bgColor: '#E8F5E9' },
-      in_progress: { label: '进行中', color: '#2196F3', bgColor: '#E3F2FD' },
-      pending: { label: '待开始', color: '#FF9800', bgColor: '#FFF3E0' },
-      cancelled: { label: '已取消', color: '#F44336', bgColor: '#FFEBEE' },
+      completed: { label: t('status.completed'), color: '#4CAF50', bgColor: '#E8F5E9' },
+      COMPLETED: { label: t('status.completed'), color: '#4CAF50', bgColor: '#E8F5E9' },
+      in_progress: { label: t('status.inProgress'), color: '#2196F3', bgColor: '#E3F2FD' },
+      pending: { label: t('status.pending'), color: '#FF9800', bgColor: '#FFF3E0' },
+      cancelled: { label: t('status.cancelled'), color: '#F44336', bgColor: '#FFEBEE' },
     };
 
-    const config = statusMap[status] || statusMap['pending'] || { label: '未知', color: '#666', bgColor: '#f5f5f5' };
+    const config = statusMap[status] || statusMap['pending'] || { label: t('status.unknown'), color: '#666', bgColor: '#f5f5f5' };
 
     return (
       <Chip
@@ -198,7 +200,7 @@ export default function ProductionReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="生产报表" />
+        <Appbar.Content title={t('production.title')} />
         <Appbar.Action icon="refresh" onPress={loadProductionData} />
       </Appbar.Header>
 
@@ -209,15 +211,15 @@ export default function ProductionReportScreen() {
         {/* 时间范围选择 */}
         <Surface style={styles.timeRangeCard} elevation={1}>
           <Text variant="bodyMedium" style={styles.sectionLabel}>
-            时间范围
+            {t('production.timeRange')}
           </Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'day', label: '今日' },
-              { value: 'week', label: '本周' },
-              { value: 'month', label: '本月' },
+              { value: 'day', label: t('production.today') },
+              { value: 'week', label: t('production.thisWeek') },
+              { value: 'month', label: t('production.thisMonth') },
             ]}
             style={styles.segmentedButtons}
           />
@@ -226,56 +228,56 @@ export default function ProductionReportScreen() {
         {/* 统计概览 */}
         <Surface style={styles.statsCard} elevation={1}>
           <Text variant="titleMedium" style={styles.statsTitle}>
-            生产统计
+            {t('production.productionStats')}
           </Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : productionStats ? (
             <View style={styles.statsGrid}>
               <View style={styles.statBox}>
                 <Text style={styles.statValue}>{productionStats.totalBatches}</Text>
-                <Text style={styles.statLabel}>生产批次</Text>
+                <Text style={styles.statLabel}>{t('production.productionBatches')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                   {formatQuantity(productionStats.totalOutput)}
                 </Text>
-                <Text style={styles.statLabel}>总产量(kg)</Text>
+                <Text style={styles.statLabel}>{t('production.totalOutput')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#2196F3' }]}>
                   {productionStats.completionRate.toFixed(1)}%
                 </Text>
-                <Text style={styles.statLabel}>完成率</Text>
+                <Text style={styles.statLabel}>{t('production.completionRate')}</Text>
               </View>
               <View style={styles.statBox}>
                 <Text style={[styles.statValue, { color: '#FF9800' }]}>
                   {formatQuantity(productionStats.avgOutput)}
                 </Text>
-                <Text style={styles.statLabel}>平均产量</Text>
+                <Text style={styles.statLabel}>{t('production.avgOutput')}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无统计数据</Text>
+              <Text style={styles.emptyText}>{t('production.noStatsData')}</Text>
             </View>
           )}
         </Surface>
 
         {/* 最近批次列表 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="最近完成批次" titleVariant="titleMedium" />
+          <Card.Title title={t('production.recentCompletedBatches')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>批次号</DataTable.Title>
-              <DataTable.Title>产品</DataTable.Title>
-              <DataTable.Title numeric>产量</DataTable.Title>
-              <DataTable.Title>状态</DataTable.Title>
+              <DataTable.Title>{t('production.batchNumber')}</DataTable.Title>
+              <DataTable.Title>{t('production.product')}</DataTable.Title>
+              <DataTable.Title numeric>{t('production.output')}</DataTable.Title>
+              <DataTable.Title>{t('production.status')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -285,7 +287,7 @@ export default function ProductionReportScreen() {
             ) : recentBatches.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无批次记录
+                  {t('production.noBatchRecords')}
                 </Text>
               </View>
             ) : (

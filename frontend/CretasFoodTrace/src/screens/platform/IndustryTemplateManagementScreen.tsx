@@ -42,6 +42,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PlatformStackParamList } from '../../navigation/PlatformStackNavigator';
 import {
@@ -85,6 +86,7 @@ const INDUSTRY_COLORS: Record<string, string> = {
 
 export function IndustryTemplateManagementScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('platform');
 
   // 状态管理
   const [loading, setLoading] = useState(true);
@@ -108,14 +110,14 @@ export function IndustryTemplateManagementScreen() {
     } catch (error) {
       templateLogger.error('加载模板列表失败', error as Error);
       handleError(error, {
-        title: '加载失败',
-        customMessage: '无法加载行业模板列表',
+        title: t('industryTemplate.management.loadFailed'),
+        customMessage: t('industryTemplate.management.loadFailed'),
       });
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadTemplates();
@@ -161,12 +163,12 @@ export function IndustryTemplateManagementScreen() {
       if (detail) {
         setSelectedTemplate(detail);
       } else {
-        Alert.alert('错误', '无法加载模板详情');
+        Alert.alert(t('industryTemplate.management.loadFailed'), t('industryTemplate.management.loadFailed'));
         setDetailModalVisible(false);
       }
     } catch (error) {
       templateLogger.error('加载模板详情失败', error as Error);
-      Alert.alert('错误', '加载模板详情失败');
+      Alert.alert(t('industryTemplate.management.loadFailed'), t('industryTemplate.management.loadFailed'));
       setDetailModalVisible(false);
     } finally {
       setLoadingDetail(false);
@@ -176,26 +178,26 @@ export function IndustryTemplateManagementScreen() {
   // 设置为默认模板
   const handleSetDefault = async (template: IndustryTemplatePackage) => {
     if (template.isDefault) {
-      Alert.alert('提示', '该模板已经是默认模板');
+      Alert.alert(t('industryTemplate.management.setAsDefaultDisabled'), t('industryTemplate.management.setAsDefaultDisabled'));
       return;
     }
 
     Alert.alert(
-      '确认设置',
-      `确定要将"${template.industryName}"设置为默认模板吗？`,
+      t('industryTemplate.management.confirmSetDefault'),
+      t('industryTemplate.management.confirmSetDefaultMessage', { name: template.industryName }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('industryTemplate.management.close'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('industryTemplate.edit.save'),
           onPress: async () => {
             try {
               await templatePackageApiClient.setDefaultTemplate(template.id);
               templateLogger.info('设置默认模板', { templateId: template.id });
-              Alert.alert('成功', '已设置为默认模板');
+              Alert.alert(t('industryTemplate.edit.success'), t('industryTemplate.management.setDefaultSuccess'));
               loadTemplates();
             } catch (error) {
               templateLogger.error('设置默认模板失败', error as Error);
-              Alert.alert('错误', '设置默认模板失败');
+              Alert.alert(t('industryTemplate.management.loadFailed'), t('industryTemplate.management.setDefaultFailed'));
             }
           },
         },
@@ -206,22 +208,22 @@ export function IndustryTemplateManagementScreen() {
   // 删除模板
   const handleDelete = async (template: IndustryTemplatePackage) => {
     Alert.alert(
-      '确认删除',
-      `确定要删除"${template.industryName}"模板吗？此操作无法恢复。`,
+      t('industryTemplate.management.confirmDelete'),
+      t('industryTemplate.management.confirmDeleteMessage', { name: template.industryName }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('industryTemplate.management.close'), style: 'cancel' },
         {
-          text: '删除',
+          text: t('industryTemplate.management.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await templatePackageApiClient.deleteTemplatePackage(template.id);
               templateLogger.info('删除模板', { templateId: template.id });
-              Alert.alert('成功', '模板已删除');
+              Alert.alert(t('industryTemplate.edit.success'), t('industryTemplate.management.deleteSuccess'));
               loadTemplates();
             } catch (error) {
               templateLogger.error('删除模板失败', error as Error);
-              Alert.alert('错误', '删除模板失败，可能有工厂正在使用该模板');
+              Alert.alert(t('industryTemplate.management.loadFailed'), t('industryTemplate.management.deleteFailed'));
             }
           },
         },
@@ -281,12 +283,12 @@ export function IndustryTemplateManagementScreen() {
                         textStyle={styles.defaultChipText}
                         style={styles.defaultChip}
                       >
-                        推荐
+                        {t('industryTemplate.management.recommendedBadge')}
                       </Chip>
                     )}
                   </View>
                   <Text variant="bodySmall" style={styles.industryCode}>
-                    {template.industryCode} · v{template.version}
+                    {template.industryCode} · {t('industryTemplate.management.version', { version: template.version })}
                   </Text>
                 </View>
               </View>
@@ -304,7 +306,7 @@ export function IndustryTemplateManagementScreen() {
                 <Menu.Item
                   leadingIcon="pencil"
                   onPress={() => handleEdit(template)}
-                  title="编辑"
+                  title={t('industryTemplate.management.edit')}
                 />
                 <Menu.Item
                   leadingIcon="star"
@@ -312,7 +314,7 @@ export function IndustryTemplateManagementScreen() {
                     setMenuVisible(null);
                     handleSetDefault(template);
                   }}
-                  title="设为默认"
+                  title={t('industryTemplate.management.setAsDefault')}
                   disabled={template.isDefault}
                 />
                 <Divider />
@@ -322,7 +324,7 @@ export function IndustryTemplateManagementScreen() {
                     setMenuVisible(null);
                     handleDelete(template);
                   }}
-                  title="删除"
+                  title={t('industryTemplate.management.delete')}
                   titleStyle={{ color: '#F44336' }}
                 />
               </Menu>
@@ -339,7 +341,7 @@ export function IndustryTemplateManagementScreen() {
                   style={styles.metaIcon}
                 />
                 <Text variant="bodySmall" style={styles.metaText}>
-                  包含 {template.schemaCount || template.entityTypes?.length || 0} 个模板
+                  {t('industryTemplate.management.containsTemplates', { count: template.schemaCount || template.entityTypes?.length || 0 })}
                 </Text>
               </View>
               {template.description && (
@@ -384,7 +386,7 @@ export function IndustryTemplateManagementScreen() {
                 icon="chevron-right"
                 contentStyle={{ flexDirection: 'row-reverse' }}
               >
-                详情
+                {t('industryTemplate.management.details')}
               </Button>
             </View>
           </Card.Content>
@@ -415,7 +417,7 @@ export function IndustryTemplateManagementScreen() {
               <View style={styles.modalLoading}>
                 <ActivityIndicator size="large" color="#2196F3" />
                 <Text variant="bodyMedium" style={{ marginTop: 16 }}>
-                  加载中...
+                  {t('industryTemplate.management.modalLoading')}
                 </Text>
               </View>
             ) : (
@@ -442,7 +444,7 @@ export function IndustryTemplateManagementScreen() {
                         textStyle={styles.defaultChipText}
                         style={[styles.defaultChip, { marginTop: 8 }]}
                       >
-                        推荐模板
+                        {t('industryTemplate.management.recommendedBadge')}
                       </Chip>
                     )}
                   </View>
@@ -458,7 +460,7 @@ export function IndustryTemplateManagementScreen() {
 
                 {/* 包含的表单类型 */}
                 <Text variant="titleMedium" style={styles.sectionTitle}>
-                  包含的表单类型
+                  {t('industryTemplate.management.includedFormTypes')}
                 </Text>
                 {schemas.map((entityType, index) => (
                   <List.Item
@@ -474,7 +476,7 @@ export function IndustryTemplateManagementScreen() {
                 <View style={styles.modalMeta}>
                   <View style={styles.modalMetaItem}>
                     <Text variant="bodySmall" style={styles.modalMetaLabel}>
-                      创建时间
+                      {t('industryTemplate.management.createdAt')}
                     </Text>
                     <Text variant="bodyMedium">
                       {new Date(selectedTemplate.createdAt).toLocaleDateString('zh-CN')}
@@ -483,7 +485,7 @@ export function IndustryTemplateManagementScreen() {
                   {selectedTemplate.updatedAt && (
                     <View style={styles.modalMetaItem}>
                       <Text variant="bodySmall" style={styles.modalMetaLabel}>
-                        更新时间
+                        {t('industryTemplate.management.updatedAt')}
                       </Text>
                       <Text variant="bodyMedium">
                         {new Date(selectedTemplate.updatedAt).toLocaleDateString('zh-CN')}
@@ -502,14 +504,14 @@ export function IndustryTemplateManagementScreen() {
                     }}
                     style={styles.modalButton}
                   >
-                    编辑模板
+                    {t('industryTemplate.management.editTemplate')}
                   </Button>
                   <Button
                     mode="contained"
                     onPress={() => setDetailModalVisible(false)}
                     style={styles.modalButton}
                   >
-                    关闭
+                    {t('industryTemplate.management.close')}
                   </Button>
                 </View>
               </>
@@ -525,7 +527,7 @@ export function IndustryTemplateManagementScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#2196F3" />
         <Text variant="bodyMedium" style={{ marginTop: 16 }}>
-          加载行业模板...
+          {t('industryTemplate.management.loading')}
         </Text>
       </View>
     );
@@ -535,7 +537,7 @@ export function IndustryTemplateManagementScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="行业模板管理" />
+        <Appbar.Content title={t('industryTemplate.management.title')} />
         <Appbar.Action icon="refresh" onPress={onRefresh} />
       </Appbar.Header>
 
@@ -543,7 +545,7 @@ export function IndustryTemplateManagementScreen() {
         {/* 搜索和筛选 */}
         <View style={styles.filterRow}>
           <Searchbar
-            placeholder="搜索模板..."
+            placeholder={t('industryTemplate.management.searchPlaceholder')}
             value={searchQuery}
             onChangeText={setSearchQuery}
             style={styles.searchBar}
@@ -557,7 +559,7 @@ export function IndustryTemplateManagementScreen() {
             style={styles.filterChip}
             showSelectedCheck={false}
           >
-            全部
+            {t('industryTemplate.management.all')}
           </Chip>
           <Chip
             selected={filterStatus === 'default'}
@@ -565,7 +567,7 @@ export function IndustryTemplateManagementScreen() {
             style={styles.filterChip}
             showSelectedCheck={false}
           >
-            推荐模板
+            {t('industryTemplate.management.recommended')}
           </Chip>
           <Chip
             selected={filterStatus === 'custom'}
@@ -573,7 +575,7 @@ export function IndustryTemplateManagementScreen() {
             style={styles.filterChip}
             showSelectedCheck={false}
           >
-            自定义模板
+            {t('industryTemplate.management.custom')}
           </Chip>
         </View>
 
@@ -594,12 +596,12 @@ export function IndustryTemplateManagementScreen() {
                 style={{ backgroundColor: 'transparent' }}
               />
               <Text variant="bodyLarge" style={styles.emptyText}>
-                {searchQuery ? '未找到匹配的模板' : '暂无行业模板'}
+                {searchQuery ? t('industryTemplate.management.noMatch') : t('industryTemplate.management.noTemplates')}
               </Text>
               <Text variant="bodySmall" style={styles.emptySubtext}>
                 {searchQuery
-                  ? '请尝试其他搜索关键词'
-                  : '点击右下角按钮创建新模板'}
+                  ? t('industryTemplate.management.tryOtherKeywords')
+                  : t('industryTemplate.management.createNewTemplate')}
               </Text>
             </View>
           )}
@@ -609,7 +611,7 @@ export function IndustryTemplateManagementScreen() {
       </View>
 
       {/* 创建按钮 */}
-      <FAB icon="plus" style={styles.fab} onPress={handleCreate} label="新建模板" />
+      <FAB icon="plus" style={styles.fab} onPress={handleCreate} label={t('industryTemplate.management.newTemplate')} />
 
       {/* 详情模态框 */}
       {renderDetailModal()}

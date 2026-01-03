@@ -24,6 +24,7 @@ import { Text, Card, SegmentedButtons, Avatar, ActivityIndicator } from 'react-n
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { timeStatsApiClient } from '../../../services/api/timeStatsApiClient';
 import {
@@ -37,6 +38,7 @@ type Period = 'week' | 'month' | 'quarter';
 
 export default function LaborCostScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('month');

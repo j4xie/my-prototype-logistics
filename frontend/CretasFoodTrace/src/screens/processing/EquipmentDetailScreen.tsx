@@ -25,8 +25,9 @@ import { useAuthStore } from '../../store/authStore';
 import { Alert } from 'react-native';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
 
-// 创建EquipmentDetail专用logger
+// Create EquipmentDetail context logger
 const equipmentDetailLogger = logger.createContextLogger('EquipmentDetail');
 
 // Types
@@ -51,6 +52,7 @@ interface EquipmentInfo {
   installDate: string;
   lastMaintenanceDate?: string;
   nextMaintenanceDate?: string;
+  operatorName?: string;  // Operator name
 }
 
 interface RealtimeParameters {
@@ -72,17 +74,18 @@ interface MaintenanceRecord {
 }
 
 /**
- * 设备详情页面
- * P1-005: 设备详情页
+ * Equipment Detail Screen
+ * P1-005: Equipment Detail Page
  *
- * 功能:
- * - 设备基本信息展示
- * - 实时参数监控
- * - 维护记录历史
- * - 运行状态统计
- * - 导航到告警列表
+ * Features:
+ * - Equipment basic information display
+ * - Real-time parameter monitoring
+ * - Maintenance history records
+ * - Running status statistics
+ * - Navigation to alert list
  */
 export default function EquipmentDetailScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<EquipmentDetailScreenNavigationProp>();
   const route = useRoute<EquipmentDetailScreenRouteProp>();
   const { equipmentId } = route.params;
@@ -117,7 +120,7 @@ export default function EquipmentDetailScreen() {
     setLoading(true);
     try {
       // API integration - GET /equipment/{equipmentId}
-      equipmentDetailLogger.debug('获取设备详情', { factoryId, equipmentId });
+      equipmentDetailLogger.debug('Fetching equipment detail', { factoryId, equipmentId });
 
       // Calculate date range for performance metrics (last 30 days)
       const endDate = new Date().toISOString().split('T')[0];
@@ -143,7 +146,7 @@ export default function EquipmentDetailScreen() {
         equipmentApiClient.getEquipmentStatistics(Number(equipmentId), factoryId).catch(() => ({ data: null })),
       ]);
 
-      equipmentDetailLogger.info('设备详情加载成功', {
+      equipmentDetailLogger.info('Equipment detail loaded successfully', {
         equipmentId,
         name: (equipmentResponse as any).data.name,
         status: (equipmentResponse as any).data.status,
@@ -178,6 +181,7 @@ export default function EquipmentDetailScreen() {
         installDate: eq.purchaseDate || 'Unknown',
         lastMaintenanceDate: eq.lastMaintenanceDate,
         nextMaintenanceDate: eq.nextMaintenanceDate,
+        operatorName: eq.operatorName,
       };
 
       setEquipment(equipmentInfo);
@@ -192,7 +196,7 @@ export default function EquipmentDetailScreen() {
       const records: MaintenanceRecord[] = history.map((record) => ({
         id: String(record.id),
         date: record.maintenanceDate,
-        type: '定期保养', // Backend doesn't distinguish types
+        type: 'Routine Maintenance', // Backend doesn't distinguish types
         technician: record.performedBy || 'Unknown',
         description: record.description || 'N/A',
         cost: record.cost || 0,
@@ -203,21 +207,21 @@ export default function EquipmentDetailScreen() {
       // Set performance metrics
       if ((oeeResponse as any).data) {
         setOeeData((oeeResponse as any).data);
-        equipmentDetailLogger.info('OEE数据加载成功', {
+        equipmentDetailLogger.info('OEE data loaded successfully', {
           oee: ((oeeResponse as any).data.oee * 100).toFixed(1) + '%',
         });
       }
 
       if ((depreciatedValueResponse as any).data) {
         setDepreciatedValue((depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data);
-        equipmentDetailLogger.info('折旧价值加载成功', {
+        equipmentDetailLogger.info('Depreciated value loaded successfully', {
           value: (depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data,
         });
       }
 
       if ((usageStatsResponse as any).data) {
         setUsageStats((usageStatsResponse as any).data);
-        equipmentDetailLogger.info('使用统计加载成功', {
+        equipmentDetailLogger.info('Usage statistics loaded successfully', {
           utilizationRate: (usageStatsResponse as any).data.utilizationRate,
         });
       }
@@ -244,20 +248,20 @@ export default function EquipmentDetailScreen() {
 
         setActiveAlertsCount(totalAlerts);
       } catch (alertError) {
-        equipmentDetailLogger.warn('获取告警数量失败', alertError);
+        equipmentDetailLogger.warn('Failed to fetch alert count', alertError);
         setActiveAlertsCount(0);
       }
 
     } catch (error) {
-      equipmentDetailLogger.error('加载设备详情失败', error, { equipmentId });
+      equipmentDetailLogger.error('Failed to load equipment detail', error, { equipmentId });
 
-      // ✅ GOOD: 不返回假数据，使用统一错误处理
+      // GOOD: No fallback to fake data, use unified error handling
       handleError(error, {
-        title: '加载失败',
-        customMessage: '无法加载设备详情，请稍后重试',
+        title: t('equipmentDetail.messages.loadFailed'),
+        customMessage: t('equipmentDetail.messages.loadError'),
       });
 
-      // 设置为null，让UI显示错误状态
+      // Set to null to trigger error UI state
       setEquipment(null);
     } finally {
       setLoading(false);
@@ -272,16 +276,7 @@ export default function EquipmentDetailScreen() {
 
   // Helper functions
   const getStatusLabel = (status: EquipmentStatus): string => {
-    switch (status) {
-      case 'running':
-        return '运行中';
-      case 'idle':
-        return '空闲';
-      case 'maintenance':
-        return '维护中';
-      case 'offline':
-        return '离线';
-    }
+    return t(`equipmentDetail.status.${status}`);
   };
 
   const getStatusColor = (status: EquipmentStatus): string => {
@@ -303,11 +298,11 @@ export default function EquipmentDetailScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="设备详情" />
+          <Appbar.Content title={t('equipmentDetail.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('equipmentDetail.loading')}</Text>
         </View>
       </View>
     );
@@ -319,12 +314,12 @@ export default function EquipmentDetailScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="设备详情" />
+          <Appbar.Content title={t('equipmentDetail.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <Text style={styles.errorText}>未找到设备信息</Text>
+          <Text style={styles.errorText}>{t('equipmentDetail.messages.notFound')}</Text>
           <Button mode="contained" onPress={fetchEquipmentDetail} style={{ marginTop: 16 }}>
-            重试
+            {t('equipmentDetail.retry')}
           </Button>
         </View>
       </View>
@@ -378,19 +373,19 @@ export default function EquipmentDetailScreen() {
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{uptime}%</Text>
-              <Text style={styles.statLabel}>运行率</Text>
+              <Text style={styles.statLabel}>{t('equipmentDetail.stats.uptime')}</Text>
             </View>
             <Divider style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{activeAlertsCount}</Text>
-              <Text style={styles.statLabel}>活动告警</Text>
+              <Text style={styles.statLabel}>{t('equipmentDetail.stats.activeAlerts')}</Text>
             </View>
             <Divider style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>
                 {maintenanceRecords.length}
               </Text>
-              <Text style={styles.statLabel}>维护记录</Text>
+              <Text style={styles.statLabel}>{t('equipmentDetail.stats.maintenanceCount')}</Text>
             </View>
           </View>
         </Surface>
@@ -398,40 +393,50 @@ export default function EquipmentDetailScreen() {
         {/* Basic Information */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            基本信息
+            {t('equipmentDetail.sections.basicInfo')}
           </Text>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>设备编号</Text>
+            <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.equipmentId')}</Text>
             <Text style={styles.infoValue}>{equipment.id}</Text>
           </View>
 
           <Divider style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>制造商</Text>
+            <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.manufacturer')}</Text>
             <Text style={styles.infoValue}>{equipment.manufacturer}</Text>
           </View>
 
           <Divider style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>安装位置</Text>
+            <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.location')}</Text>
             <Text style={styles.infoValue}>{equipment.location}</Text>
           </View>
 
           <Divider style={styles.divider} />
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>安装日期</Text>
+            <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.installDate')}</Text>
             <Text style={styles.infoValue}>{equipment.installDate}</Text>
           </View>
+
+          {equipment.operatorName && (
+            <>
+              <Divider style={styles.divider} />
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.operator')}</Text>
+                <Text style={styles.infoValue}>{equipment.operatorName}</Text>
+              </View>
+            </>
+          )}
 
           {equipment.lastMaintenanceDate && (
             <>
               <Divider style={styles.divider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>上次维护</Text>
+                <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.lastMaintenance')}</Text>
                 <Text style={styles.infoValue}>
                   {equipment.lastMaintenanceDate}
                 </Text>
@@ -443,7 +448,7 @@ export default function EquipmentDetailScreen() {
             <>
               <Divider style={styles.divider} />
               <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>下次维护</Text>
+                <Text style={styles.infoLabel}>{t('equipmentDetail.basicInfo.nextMaintenance')}</Text>
                 <Text style={[styles.infoValue, styles.highlight]}>
                   {equipment.nextMaintenanceDate}
                 </Text>
@@ -455,13 +460,13 @@ export default function EquipmentDetailScreen() {
         {/* Realtime Parameters */}
         <Surface style={styles.section} elevation={1}>
           <Text variant="titleMedium" style={styles.sectionTitle}>
-            实时参数
+            {t('equipmentDetail.sections.realtimeParams')}
           </Text>
 
           {parameters.temperature !== undefined && (
             <View style={styles.parameterItem}>
               <View style={styles.parameterHeader}>
-                <Text style={styles.parameterLabel}>温度</Text>
+                <Text style={styles.parameterLabel}>{t('equipmentDetail.realtimeParams.temperature')}</Text>
                 <Text style={styles.parameterValue}>
                   {parameters.temperature}°C
                 </Text>
@@ -477,7 +482,7 @@ export default function EquipmentDetailScreen() {
           {parameters.pressure !== undefined && (
             <View style={styles.parameterItem}>
               <View style={styles.parameterHeader}>
-                <Text style={styles.parameterLabel}>压力</Text>
+                <Text style={styles.parameterLabel}>{t('equipmentDetail.realtimeParams.pressure')}</Text>
                 <Text style={styles.parameterValue}>
                   {parameters.pressure} bar
                 </Text>
@@ -493,7 +498,7 @@ export default function EquipmentDetailScreen() {
           {parameters.speed !== undefined && (
             <View style={styles.parameterItem}>
               <View style={styles.parameterHeader}>
-                <Text style={styles.parameterLabel}>转速</Text>
+                <Text style={styles.parameterLabel}>{t('equipmentDetail.realtimeParams.speed')}</Text>
                 <Text style={styles.parameterValue}>
                   {parameters.speed} rpm
                 </Text>
@@ -509,7 +514,7 @@ export default function EquipmentDetailScreen() {
           {parameters.power !== undefined && (
             <View style={styles.parameterItem}>
               <View style={styles.parameterHeader}>
-                <Text style={styles.parameterLabel}>功率</Text>
+                <Text style={styles.parameterLabel}>{t('equipmentDetail.realtimeParams.power')}</Text>
                 <Text style={styles.parameterValue}>
                   {parameters.power}%
                 </Text>
@@ -527,14 +532,14 @@ export default function EquipmentDetailScreen() {
         {(oeeData || depreciatedValue || usageStats) && (
           <Surface style={styles.section} elevation={1}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              性能分析
+              {t('equipmentDetail.sections.performanceAnalysis')}
             </Text>
 
             {/* OEE Metrics */}
             {oeeData && (
               <>
                 <View style={styles.oeeContainer}>
-                  <Text style={styles.oeeLabel}>OEE (设备综合效率)</Text>
+                  <Text style={styles.oeeLabel}>{t('equipmentDetail.performance.oee')}</Text>
                   <Text style={styles.oeeValue}>
                     {(oeeData.oee * 100).toFixed(1)}%
                   </Text>
@@ -542,19 +547,19 @@ export default function EquipmentDetailScreen() {
 
                 <View style={styles.oeeBreakdown}>
                   <View style={styles.oeeItem}>
-                    <Text style={styles.oeeItemLabel}>可用率</Text>
+                    <Text style={styles.oeeItemLabel}>{t('equipmentDetail.performance.availability')}</Text>
                     <Text style={styles.oeeItemValue}>
                       {(oeeData.availability * 100).toFixed(1)}%
                     </Text>
                   </View>
                   <View style={styles.oeeItem}>
-                    <Text style={styles.oeeItemLabel}>性能率</Text>
+                    <Text style={styles.oeeItemLabel}>{t('equipmentDetail.performance.performance')}</Text>
                     <Text style={styles.oeeItemValue}>
                       {(oeeData.performance * 100).toFixed(1)}%
                     </Text>
                   </View>
                   <View style={styles.oeeItem}>
-                    <Text style={styles.oeeItemLabel}>质量率</Text>
+                    <Text style={styles.oeeItemLabel}>{t('equipmentDetail.performance.quality')}</Text>
                     <Text style={styles.oeeItemValue}>
                       {(oeeData.quality * 100).toFixed(1)}%
                     </Text>
@@ -569,7 +574,7 @@ export default function EquipmentDetailScreen() {
             {depreciatedValue !== null && (
               <>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>当前折旧后价值</Text>
+                  <Text style={styles.infoLabel}>{t('equipmentDetail.performance.depreciatedValue')}</Text>
                   <Text style={[styles.infoValue, styles.valueHighlight]}>
                     ¥{depreciatedValue.toFixed(2)}
                   </Text>
@@ -583,25 +588,25 @@ export default function EquipmentDetailScreen() {
             {usageStats && (
               <>
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>总运行时间</Text>
+                  <Text style={styles.infoLabel}>{t('equipmentDetail.performance.totalRuntime')}</Text>
                   <Text style={styles.infoValue}>
-                    {usageStats.totalRuntime ? `${usageStats.totalRuntime}小时` : 'N/A'}
+                    {usageStats.totalRuntime ? t('equipmentDetail.hours', { value: usageStats.totalRuntime }) : 'N/A'}
                   </Text>
                 </View>
 
                 <Divider style={styles.divider} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>停机时间</Text>
+                  <Text style={styles.infoLabel}>{t('equipmentDetail.performance.downtime')}</Text>
                   <Text style={styles.infoValue}>
-                    {usageStats.downtime ? `${usageStats.downtime}小时` : 'N/A'}
+                    {usageStats.downtime ? t('equipmentDetail.hours', { value: usageStats.downtime }) : 'N/A'}
                   </Text>
                 </View>
 
                 <Divider style={styles.divider} />
 
                 <View style={styles.infoRow}>
-                  <Text style={styles.infoLabel}>设备利用率</Text>
+                  <Text style={styles.infoLabel}>{t('equipmentDetail.performance.utilizationRate')}</Text>
                   <Text style={[styles.infoValue, styles.valueHighlight]}>
                     {usageStats.utilizationRate ? `${usageStats.utilizationRate.toFixed(1)}%` : 'N/A'}
                   </Text>
@@ -611,9 +616,9 @@ export default function EquipmentDetailScreen() {
                   <>
                     <Divider style={styles.divider} />
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>平均故障间隔(MTBF)</Text>
+                      <Text style={styles.infoLabel}>{t('equipmentDetail.performance.mtbf')}</Text>
                       <Text style={styles.infoValue}>
-                        {usageStats.mtbf}小时
+                        {t('equipmentDetail.hours', { value: usageStats.mtbf })}
                       </Text>
                     </View>
                   </>
@@ -623,9 +628,9 @@ export default function EquipmentDetailScreen() {
                   <>
                     <Divider style={styles.divider} />
                     <View style={styles.infoRow}>
-                      <Text style={styles.infoLabel}>平均修复时间(MTTR)</Text>
+                      <Text style={styles.infoLabel}>{t('equipmentDetail.performance.mttr')}</Text>
                       <Text style={styles.infoValue}>
-                        {usageStats.mttr}小时
+                        {t('equipmentDetail.hours', { value: usageStats.mttr })}
                       </Text>
                     </View>
                   </>
@@ -639,7 +644,7 @@ export default function EquipmentDetailScreen() {
         <Surface style={styles.section} elevation={1}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
-              维护记录
+              {t('equipmentDetail.sections.maintenanceRecords')}
             </Text>
             <Chip mode="flat" style={styles.countChip}>
               {maintenanceRecords.length}
@@ -649,10 +654,10 @@ export default function EquipmentDetailScreen() {
           {maintenanceRecords.length > 0 ? (
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title>日期</DataTable.Title>
-                <DataTable.Title>类型</DataTable.Title>
-                <DataTable.Title>技术员</DataTable.Title>
-                <DataTable.Title numeric>费用</DataTable.Title>
+                <DataTable.Title>{t('equipmentDetail.maintenanceRecords.date')}</DataTable.Title>
+                <DataTable.Title>{t('equipmentDetail.maintenanceRecords.type')}</DataTable.Title>
+                <DataTable.Title>{t('equipmentDetail.maintenanceRecords.technician')}</DataTable.Title>
+                <DataTable.Title numeric>{t('equipmentDetail.maintenanceRecords.cost')}</DataTable.Title>
               </DataTable.Header>
 
               {maintenanceRecords.slice(0, 5).map((record) => (
@@ -665,7 +670,7 @@ export default function EquipmentDetailScreen() {
               ))}
             </DataTable>
           ) : (
-            <Text style={styles.emptyText}>暂无维护记录</Text>
+            <Text style={styles.emptyText}>{t('equipmentDetail.maintenanceRecords.empty')}</Text>
           )}
         </Surface>
 
@@ -677,7 +682,7 @@ export default function EquipmentDetailScreen() {
             onPress={() => navigation.navigate('EquipmentAlerts', { equipmentId: String(equipmentId) })}
             style={styles.actionButton}
           >
-            查看告警
+            {t('equipmentDetail.actions.viewAlerts')}
           </Button>
           <Button
             mode="contained"
@@ -685,7 +690,7 @@ export default function EquipmentDetailScreen() {
             onPress={() => {}}
             style={styles.actionButton}
           >
-            维护记录
+            {t('equipmentDetail.actions.maintenanceRecord')}
           </Button>
         </View>
       </ScrollView>

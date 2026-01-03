@@ -16,6 +16,7 @@ import {
   Avatar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ManagementStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
@@ -50,6 +51,7 @@ interface ErrorState {
  */
 export default function HRDashboardScreen() {
   const navigation = useNavigation<HRDashboardNavigationProp>();
+  const { t } = useTranslation('hr');
   const { user } = useAuthStore();
 
   // 状态管理
@@ -70,24 +72,32 @@ export default function HRDashboardScreen() {
   // 获取当前日期格式化
   const getFormattedDate = (): string => {
     const now = new Date();
-    const days = ['日', '一', '二', '三', '四', '五', '六'];
+    const days = [
+      t('dashboard.weekdays.sun'),
+      t('dashboard.weekdays.mon'),
+      t('dashboard.weekdays.tue'),
+      t('dashboard.weekdays.wed'),
+      t('dashboard.weekdays.thu'),
+      t('dashboard.weekdays.fri'),
+      t('dashboard.weekdays.sat')
+    ];
     const year = now.getFullYear();
     const month = now.getMonth() + 1;
     const date = now.getDate();
     const day = days[now.getDay()];
-    return `${year}年${month}月${date}日 星期${day}`;
+    return t('dashboard.dateFormat', { year, month, date, day });
   };
 
   // 获取问候语
   const getGreeting = (): string => {
     const hour = new Date().getHours();
-    if (hour < 6) return '凌晨好';
-    if (hour < 9) return '早上好';
-    if (hour < 12) return '上午好';
-    if (hour < 14) return '中午好';
-    if (hour < 18) return '下午好';
-    if (hour < 22) return '晚上好';
-    return '夜深了';
+    if (hour < 6) return t('dashboard.greetings.earlyMorning');
+    if (hour < 9) return t('dashboard.greetings.morning');
+    if (hour < 12) return t('dashboard.greetings.lateMorning');
+    if (hour < 14) return t('dashboard.greetings.noon');
+    if (hour < 18) return t('dashboard.greetings.afternoon');
+    if (hour < 22) return t('dashboard.greetings.evening');
+    return t('dashboard.greetings.lateNight');
   };
 
   // 加载仪表板数据
@@ -122,7 +132,7 @@ export default function HRDashboardScreen() {
       hrLogger.error('加载HR仪表板数据失败', err);
       handleError(err, { showAlert: false, logError: true });
       setError({
-        message: err instanceof Error ? err.message : '加载数据失败，请稍后重试',
+        message: err instanceof Error ? err.message : t('dashboard.loadFailed'),
         canRetry: true,
       });
     } finally {
@@ -242,7 +252,7 @@ export default function HRDashboardScreen() {
   return (
     <View style={styles.container}>
       <Appbar.Header style={styles.header} elevated>
-        <Appbar.Content title="HR管理员" titleStyle={styles.headerTitle} />
+        <Appbar.Content title={t('dashboard.title')} titleStyle={styles.headerTitle} />
         <Appbar.Action icon="bell-outline" onPress={() => {}} color="#fff" />
         <Appbar.Action icon="refresh" onPress={loadDashboardData} color="#fff" />
       </Appbar.Header>
@@ -257,7 +267,7 @@ export default function HRDashboardScreen() {
         <View style={styles.welcomeSection}>
           <View style={styles.welcomeText}>
             <Text style={styles.greeting}>
-              {getGreeting()}，{user?.fullName || user?.username || 'HR管理员'}
+              {getGreeting()}{t('dashboard.greetingSuffix')}{user?.fullName || user?.username || t('dashboard.defaultHRAdmin')}
             </Text>
             <Text style={styles.welcomeDate}>{getFormattedDate()}</Text>
           </View>
@@ -270,7 +280,7 @@ export default function HRDashboardScreen() {
 
         {/* 今日人员概览 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>今日人员概览</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.todayOverview')}</Text>
         </View>
 
         {loading ? (
@@ -284,7 +294,7 @@ export default function HRDashboardScreen() {
               <Text style={styles.errorText}>{error.message}</Text>
               {error.canRetry && (
                 <TouchableOpacity style={styles.retryButton} onPress={loadDashboardData}>
-                  <Text style={styles.retryText}>点击重试</Text>
+                  <Text style={styles.retryText}>{t('common:buttons.retry')}</Text>
                 </TouchableOpacity>
               )}
             </Card.Content>
@@ -296,7 +306,7 @@ export default function HRDashboardScreen() {
               '#1890ff',
               '#e6f7ff',
               `${dashboardData.todayOnSite}/${dashboardData.totalStaff}`,
-              '在岗人数',
+              t('dashboard.onDutyCount'),
               { value: `${dashboardData.attendanceRate}%`, type: 'normal' }
             )}
             {renderStatCard(
@@ -304,9 +314,9 @@ export default function HRDashboardScreen() {
               '#ff4d4f',
               '#fff1f0',
               String(dashboardData.lateCount),
-              '迟到人数',
+              t('dashboard.lateCount'),
               dashboardData.lateCount > 0
-                ? { value: '需关注', type: 'warning' }
+                ? { value: t('dashboard.needsAttention'), type: 'warning' }
                 : undefined
             )}
             {renderStatCard(
@@ -314,14 +324,14 @@ export default function HRDashboardScreen() {
               '#fa8c16',
               '#fff7e6',
               String(dashboardData.whitelistPending),
-              '白名单待激活'
+              t('dashboard.whitelistPending')
             )}
             {renderStatCard(
               'calendar-check',
               '#52c41a',
               '#f6ffed',
               String(dashboardData.thisMonthNewHires),
-              '本月入职',
+              t('dashboard.thisMonthNewHires'),
               dashboardData.newHiresChange !== undefined && dashboardData.newHiresChange !== 0
                 ? {
                     value: dashboardData.newHiresChange > 0
@@ -336,10 +346,10 @@ export default function HRDashboardScreen() {
 
         {/* 待处理事项 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>待处理事项</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.pendingItems')}</Text>
           {pendingCount > 0 && (
             <View style={styles.pendingBadge}>
-              <Text style={styles.pendingBadgeText}>{pendingCount} 待处理</Text>
+              <Text style={styles.pendingBadgeText}>{t('dashboard.pendingCount', { count: pendingCount })}</Text>
             </View>
           )}
         </View>
@@ -355,8 +365,8 @@ export default function HRDashboardScreen() {
                   <MaterialCommunityIcons name="shield-check" size={20} color="#fa8c16" />
                 </View>
                 <View style={styles.todoTextContent}>
-                  <Text style={styles.todoTitle}>白名单待激活</Text>
-                  <Text style={styles.todoDesc}>{dashboardData.whitelistPending}人待激活</Text>
+                  <Text style={styles.todoTitle}>{t('dashboard.whitelistPending')}</Text>
+                  <Text style={styles.todoDesc}>{t('dashboard.pendingActivation', { count: dashboardData.whitelistPending })}</Text>
                 </View>
                 <View style={styles.todoBadge}>
                   <Text style={styles.todoBadgeText}>{dashboardData.whitelistPending}</Text>
@@ -373,8 +383,8 @@ export default function HRDashboardScreen() {
                   <MaterialCommunityIcons name="clock-alert-outline" size={20} color="#ff4d4f" />
                 </View>
                 <View style={styles.todoTextContent}>
-                  <Text style={styles.todoTitle}>考勤异常</Text>
-                  <Text style={styles.todoDesc}>{anomalies.length}人需处理</Text>
+                  <Text style={styles.todoTitle}>{t('dashboard.attendanceAnomaly')}</Text>
+                  <Text style={styles.todoDesc}>{t('dashboard.needsProcessing', { count: anomalies.length })}</Text>
                 </View>
                 <View style={[styles.todoBadge, styles.todoBadgeError]}>
                   <Text style={styles.todoBadgeText}>{anomalies.length}</Text>
@@ -385,7 +395,7 @@ export default function HRDashboardScreen() {
             {pendingCount === 0 && (
               <View style={styles.emptyTodo}>
                 <MaterialCommunityIcons name="check-circle-outline" size={48} color="#52c41a" />
-                <Text style={styles.emptyTodoText}>暂无待处理事项</Text>
+                <Text style={styles.emptyTodoText}>{t('dashboard.noPendingItems')}</Text>
               </View>
             )}
           </Card.Content>
@@ -395,7 +405,7 @@ export default function HRDashboardScreen() {
         {anomalies.length > 0 && (
           <>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>今日考勤异常</Text>
+              <Text style={styles.sectionTitle}>{t('dashboard.todayAttendanceAnomalies')}</Text>
             </View>
             <Card style={styles.anomalyCard}>
               <Card.Content>
@@ -406,7 +416,7 @@ export default function HRDashboardScreen() {
                     onPress={() => navigation.navigate('AttendanceStats' as never)}
                   >
                     <Text style={styles.viewMoreText}>
-                      查看全部 {anomalies.length} 条记录
+                      {t('dashboard.viewAllRecords', { count: anomalies.length })}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -417,7 +427,7 @@ export default function HRDashboardScreen() {
 
         {/* 快捷操作 */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>快捷操作</Text>
+          <Text style={styles.sectionTitle}>{t('dashboard.quickActions')}</Text>
         </View>
         <View style={styles.quickActionsGrid}>
           {HR_QUICK_ACTIONS.map(renderQuickAction)}

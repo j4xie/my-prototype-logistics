@@ -24,6 +24,7 @@ import { Text, Card, Chip, Avatar, ActivityIndicator, SegmentedButtons } from 'r
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { hrApiClient } from '../../../services/api/hrApiClient';
 import {
@@ -38,6 +39,7 @@ type Period = 'month' | 'quarter' | 'year';
 
 export default function PerformanceScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<Period>('month');
@@ -92,7 +94,7 @@ export default function PerformanceScreen() {
             <Text style={styles.statValue}>
               {stats?.avgScore?.toFixed(1) ?? '-'}
             </Text>
-            <Text style={styles.statLabel}>平均分</Text>
+            <Text style={styles.statLabel}>{t('analytics.performance.stats.avgScore')}</Text>
           </Card.Content>
         </Card>
         <Card style={styles.statCard}>
@@ -105,7 +107,7 @@ export default function PerformanceScreen() {
             <Text style={styles.statValue}>
               {stats?.excellentCount ?? 0}
             </Text>
-            <Text style={styles.statLabel}>优秀</Text>
+            <Text style={styles.statLabel}>{t('analytics.performance.stats.excellent')}</Text>
           </Card.Content>
         </Card>
         <Card style={styles.statCard}>
@@ -118,7 +120,7 @@ export default function PerformanceScreen() {
             <Text style={styles.statValue}>
               {stats?.needAttentionCount ?? 0}
             </Text>
-            <Text style={styles.statLabel}>需关注</Text>
+            <Text style={styles.statLabel}>{t('analytics.performance.stats.needsAttention')}</Text>
           </Card.Content>
         </Card>
       </View>
@@ -126,7 +128,7 @@ export default function PerformanceScreen() {
       {/* 等级分布 */}
       <Card style={styles.distributionCard}>
         <Card.Content>
-          <Text style={styles.sectionTitle}>绩效等级分布</Text>
+          <Text style={styles.sectionTitle}>{t('analytics.performance.gradeDistribution')}</Text>
           <View style={styles.gradeBar}>
             {stats?.gradeDistribution?.map((item) => {
               const config = PERFORMANCE_GRADE_CONFIG[item.grade];
@@ -157,7 +159,7 @@ export default function PerformanceScreen() {
         </Card.Content>
       </Card>
 
-      <Text style={styles.listTitle}>员工绩效列表</Text>
+      <Text style={styles.listTitle}>{t('analytics.performance.employeeList')}</Text>
     </View>
   );
 
@@ -215,7 +217,7 @@ export default function PerformanceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>绩效分析</Text>
+        <Text style={styles.headerTitle}>{t('analytics.performance.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -224,9 +226,9 @@ export default function PerformanceScreen() {
           value={period}
           onValueChange={(value) => setPeriod(value as Period)}
           buttons={[
-            { value: 'month', label: '本月' },
-            { value: 'quarter', label: '本季' },
-            { value: 'year', label: '本年' },
+            { value: 'month', label: t('analytics.performance.period.month') },
+            { value: 'quarter', label: t('analytics.performance.period.quarter') },
+            { value: 'year', label: t('analytics.performance.period.year') },
           ]}
           style={styles.segmented}
         />
@@ -248,7 +250,7 @@ export default function PerformanceScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>暂无绩效数据</Text>
+            <Text style={styles.emptyText}>{t('analytics.performance.empty')}</Text>
           </View>
         }
       />

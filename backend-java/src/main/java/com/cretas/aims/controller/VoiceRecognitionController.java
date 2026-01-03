@@ -11,6 +11,9 @@ import com.cretas.aims.entity.voice.VoiceRecognitionHistory;
 import com.cretas.aims.service.IFlytekVoiceService;
 import com.cretas.aims.service.VoiceRecognitionService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,6 +39,7 @@ import java.util.Map;
  * @since 2025-12-28
  * @updated 2025-12-31 - 添加历史记录、配置管理、批量识别功能
  */
+@Tag(name = "语音识别", description = "讯飞语音识别代理 API，支持实时识别、历史记录、配置管理、批量识别")
 @RestController
 @RequestMapping("/api/mobile")
 @CrossOrigin(origins = "*")
@@ -53,6 +57,7 @@ public class VoiceRecognitionController {
      *
      * POST /api/mobile/voice/recognize
      */
+    @Operation(summary = "语音识别", description = "将音频数据转换为文本，支持多种音频格式和采样率")
     @PostMapping("/voice/recognize")
     public ResponseEntity<ApiResponse<VoiceRecognitionResponse>> recognize(
             @Valid @RequestBody VoiceRecognitionRequest request) {
@@ -86,11 +91,12 @@ public class VoiceRecognitionController {
      *
      * POST /api/mobile/{factoryId}/voice/recognize
      */
+    @Operation(summary = "语音识别(带历史)", description = "语音识别并自动保存识别历史记录，记录用户、设备、IP等信息")
     @PostMapping("/{factoryId}/voice/recognize")
     public ResponseEntity<ApiResponse<VoiceRecognitionResponse>> recognizeWithHistory(
-            @PathVariable String factoryId,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String username,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "用户ID", example = "1") @RequestParam(required = false) Long userId,
+            @Parameter(description = "用户名", example = "admin") @RequestParam(required = false) String username,
             @Valid @RequestBody VoiceRecognitionRequest request,
             HttpServletRequest httpRequest) {
 
@@ -122,6 +128,7 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/voice/health
      */
+    @Operation(summary = "检查语音服务状态", description = "检查讯飞语音识别服务的可用性和版本信息")
     @GetMapping("/voice/health")
     public ResponseEntity<ApiResponse<Map<String, Object>>> health() {
         Map<String, Object> status = new HashMap<>();
@@ -137,6 +144,7 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/voice/formats
      */
+    @Operation(summary = "获取支持的音频格式", description = "返回支持的采样率、音频格式、编码方式、语言等信息")
     @GetMapping("/voice/formats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getSupportedFormats() {
         Map<String, Object> formats = new HashMap<>();
@@ -157,15 +165,16 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/{factoryId}/voice/history
      */
+    @Operation(summary = "获取语音识别历史记录", description = "分页查询语音识别历史，支持按用户、业务场景、时间范围筛选")
     @GetMapping("/{factoryId}/voice/history")
     public ResponseEntity<ApiResponse<Page<VoiceRecognitionHistory>>> getHistory(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) String businessScene,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "页码，从0开始", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "用户ID", example = "1") @RequestParam(required = false) Long userId,
+            @Parameter(description = "业务场景: QUALITY_INSPECTION/MATERIAL_RECEIPT等", example = "QUALITY_INSPECTION") @RequestParam(required = false) String businessScene,
+            @Parameter(description = "开始时间", example = "2025-01-01T00:00:00") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @Parameter(description = "结束时间", example = "2025-01-31T23:59:59") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<VoiceRecognitionHistory> history;
@@ -188,11 +197,12 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/{factoryId}/voice/stats
      */
+    @Operation(summary = "获取识别统计数据", description = "获取指定时间范围内的语音识别统计，包括调用次数、成功率等")
     @GetMapping("/{factoryId}/voice/stats")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(
-            @PathVariable String factoryId,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "开始时间，默认30天前", example = "2025-01-01T00:00:00") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startTime,
+            @Parameter(description = "结束时间，默认当前时间", example = "2025-01-31T23:59:59") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endTime) {
 
         if (startTime == null) {
             startTime = LocalDateTime.now().minusDays(30);
@@ -212,8 +222,10 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/{factoryId}/voice/config
      */
+    @Operation(summary = "获取语音识别配置", description = "获取工厂的语音识别配置，包括默认参数、限额、存储设置等")
     @GetMapping("/{factoryId}/voice/config")
-    public ResponseEntity<ApiResponse<VoiceRecognitionConfig>> getConfig(@PathVariable String factoryId) {
+    public ResponseEntity<ApiResponse<VoiceRecognitionConfig>> getConfig(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
         VoiceRecognitionConfig config = voiceRecognitionService.getOrCreateConfig(factoryId);
         return ResponseEntity.ok(ApiResponse.success(config));
     }
@@ -223,11 +235,12 @@ public class VoiceRecognitionController {
      *
      * PUT /api/mobile/{factoryId}/voice/config
      */
+    @Operation(summary = "更新语音识别配置", description = "更新工厂的语音识别配置，包括默认语言、采样率、限额等")
     @PutMapping("/{factoryId}/voice/config")
     public ResponseEntity<ApiResponse<VoiceRecognitionConfig>> updateConfig(
-            @PathVariable String factoryId,
-            @RequestParam Long userId,
-            @RequestParam String username,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "操作用户ID", example = "1") @RequestParam Long userId,
+            @Parameter(description = "操作用户名", example = "admin") @RequestParam String username,
             @Valid @RequestBody VoiceRecognitionConfigDTO configDTO) {
 
         VoiceRecognitionConfig config = convertToEntity(configDTO);
@@ -245,11 +258,12 @@ public class VoiceRecognitionController {
      *
      * POST /api/mobile/{factoryId}/voice/batch
      */
+    @Operation(summary = "创建批量识别任务", description = "创建批量语音识别任务，一次提交多个音频文件进行异步识别")
     @PostMapping("/{factoryId}/voice/batch")
     public ResponseEntity<ApiResponse<BatchVoiceTask>> createBatchTask(
-            @PathVariable String factoryId,
-            @RequestParam Long userId,
-            @RequestParam String username,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "用户ID", example = "1") @RequestParam Long userId,
+            @Parameter(description = "用户名", example = "admin") @RequestParam String username,
             @Valid @RequestBody BatchVoiceTaskRequest request) {
 
         try {
@@ -280,12 +294,13 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/{factoryId}/voice/batch
      */
+    @Operation(summary = "获取批量任务列表", description = "分页查询批量语音识别任务，支持按状态筛选")
     @GetMapping("/{factoryId}/voice/batch")
     public ResponseEntity<ApiResponse<Page<BatchVoiceTask>>> getBatchTasks(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String status) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "页码，从0开始", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "任务状态: PENDING/PROCESSING/COMPLETED/FAILED/CANCELLED", example = "PROCESSING") @RequestParam(required = false) String status) {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<BatchVoiceTask> tasks;
@@ -304,10 +319,11 @@ public class VoiceRecognitionController {
      *
      * GET /api/mobile/{factoryId}/voice/batch/{taskNumber}
      */
+    @Operation(summary = "获取批量任务详情", description = "获取批量识别任务的详细信息，包括每个音频文件的识别结果")
     @GetMapping("/{factoryId}/voice/batch/{taskNumber}")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getBatchTaskDetail(
-            @PathVariable String factoryId,
-            @PathVariable String taskNumber) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "任务编号", example = "BATCH-20250101-001") @PathVariable String taskNumber) {
 
         try {
             Map<String, Object> result = voiceRecognitionService.getBatchTaskResult(taskNumber);
@@ -322,11 +338,12 @@ public class VoiceRecognitionController {
      *
      * DELETE /api/mobile/{factoryId}/voice/batch/{taskNumber}
      */
+    @Operation(summary = "取消批量任务", description = "取消待处理或处理中的批量识别任务")
     @DeleteMapping("/{factoryId}/voice/batch/{taskNumber}")
     public ResponseEntity<ApiResponse<BatchVoiceTask>> cancelBatchTask(
-            @PathVariable String factoryId,
-            @PathVariable String taskNumber,
-            @RequestParam Long userId) {
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "任务编号", example = "BATCH-20250101-001") @PathVariable String taskNumber,
+            @Parameter(description = "操作用户ID", example = "1") @RequestParam Long userId) {
 
         try {
             BatchVoiceTask task = voiceRecognitionService.cancelBatchTask(taskNumber, userId);

@@ -23,6 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 import { speechRecognitionService } from '../../services/voice/SpeechRecognitionService';
 import { SpeechRecognitionStatus } from '../../services/voice/types';
+import { useTranslation } from 'react-i18next';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 type RouteProps = RouteProp<QualityInspectorStackParamList, 'QIVoice'>;
@@ -33,19 +34,20 @@ interface VoiceCommand {
   type: 'user' | 'system';
 }
 
-const VOICE_HINTS = [
-  '外观正常，评分18分',
-  '气味正常，满分',
-  '规格符合标准，给16分',
-  '包装完整，20分',
-  '不合格，有异味',
-];
-
 export default function QIVoiceScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation('quality');
   const { batchId, batchNumber } = route.params;
+
+  const VOICE_HINTS = [
+    t('voice.hints.appearance'),
+    t('voice.hints.smell'),
+    t('voice.hints.specification'),
+    t('voice.hints.packaging'),
+    t('voice.hints.failed'),
+  ];
 
   const [status, setStatus] = useState<SpeechRecognitionStatus>('idle');
   const [commands, setCommands] = useState<VoiceCommand[]>([]);
@@ -77,12 +79,12 @@ export default function QIVoiceScreen() {
     });
 
     const unsubError = speechRecognitionService.addErrorListener((error) => {
-      Alert.alert('语音识别错误', error.message);
+      Alert.alert(t('voice.voiceRecognitionError'), error.message);
       setIsListening(false);
     });
 
     // 添加欢迎消息
-    addCommand('您好，我是AI语音助手。请说出检验项目和评分，例如"外观正常，18分"', 'system');
+    addCommand(t('voice.aiGreeting'), 'system');
 
     return () => {
       unsubResult();
@@ -133,26 +135,26 @@ export default function QIVoiceScreen() {
 
     if (lowerText.includes('外观')) {
       const score = extractScore(text);
-      response = `已记录外观评分：${score}分`;
+      response = t('voice.recordedAppearance', { score });
     } else if (lowerText.includes('气味')) {
       const score = extractScore(text);
-      response = `已记录气味评分：${score}分`;
+      response = t('voice.recordedSmell', { score });
     } else if (lowerText.includes('规格')) {
       const score = extractScore(text);
-      response = `已记录规格评分：${score}分`;
+      response = t('voice.recordedSpecification', { score });
     } else if (lowerText.includes('重量')) {
       const score = extractScore(text);
-      response = `已记录重量评分：${score}分`;
+      response = t('voice.recordedWeight', { score });
     } else if (lowerText.includes('包装')) {
       const score = extractScore(text);
-      response = `已记录包装评分：${score}分`;
+      response = t('voice.recordedPackaging', { score });
     } else if (lowerText.includes('完成') || lowerText.includes('提交')) {
-      response = '好的，即将提交检验结果';
+      response = t('voice.submittingResult');
       setTimeout(() => {
         navigation.goBack();
       }, 1500);
     } else {
-      response = '请说明检验项目（外观/气味/规格/重量/包装）和评分';
+      response = t('voice.pleaseSpecifyItem');
     }
 
     // 延迟添加系统回复
@@ -201,7 +203,7 @@ export default function QIVoiceScreen() {
         await speechRecognitionService.startListening();
       } catch (error) {
         console.error('开始录音失败:', error);
-        Alert.alert('录音失败', '无法启动录音，请检查麦克风权限');
+        Alert.alert(t('voice.recordingFailed'), t('voice.cannotStartRecording'));
       }
     }
   };
@@ -214,8 +216,8 @@ export default function QIVoiceScreen() {
     <View style={styles.container}>
       {/* 批次信息 */}
       <View style={styles.batchHeader}>
-        <Text style={styles.batchNumber}>{batchNumber || '选择批次'}</Text>
-        {batchId && <Text style={styles.batchId}>批次ID: {batchId}</Text>}
+        <Text style={styles.batchNumber}>{batchNumber || t('voice.selectBatch')}</Text>
+        {batchId && <Text style={styles.batchId}>{t('voice.batchId')}: {batchId}</Text>}
       </View>
 
       {/* 对话区域 */}
@@ -261,7 +263,7 @@ export default function QIVoiceScreen() {
 
       {/* 提示语 */}
       <View style={styles.hintsSection}>
-        <Text style={styles.hintsTitle}>试试说：</Text>
+        <Text style={styles.hintsTitle}>{t('voice.trySaying')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {VOICE_HINTS.map((hint, index) => (
             <TouchableOpacity
@@ -301,7 +303,7 @@ export default function QIVoiceScreen() {
           </Animated.View>
         </TouchableOpacity>
         <Text style={styles.micHint}>
-          {isListening ? '正在聆听...' : status === 'processing' ? '识别中...' : '点击开始语音'}
+          {isListening ? t('voice.listening') : status === 'processing' ? t('voice.processing') : t('voice.clickToStart')}
         </Text>
       </View>
 
@@ -309,11 +311,11 @@ export default function QIVoiceScreen() {
       <View style={styles.bottomActions}>
         <TouchableOpacity style={styles.actionBtn} onPress={handleBack}>
           <Ionicons name="arrow-back" size={20} color={QI_COLORS.text} />
-          <Text style={styles.actionBtnText}>返回表单</Text>
+          <Text style={styles.actionBtnText}>{t('voice.returnToForm')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionBtn}>
           <Ionicons name="settings-outline" size={20} color={QI_COLORS.text} />
-          <Text style={styles.actionBtnText}>语音设置</Text>
+          <Text style={styles.actionBtnText}>{t('voice.voiceSettings')}</Text>
         </TouchableOpacity>
       </View>
     </View>

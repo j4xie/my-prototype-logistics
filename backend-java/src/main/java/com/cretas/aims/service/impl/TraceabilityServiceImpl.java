@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.traceability.TraceabilityDTO;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.repository.*;
+import com.cretas.aims.service.EncodingRuleService;
 import com.cretas.aims.service.TraceabilityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +36,10 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     private final FactoryRepository factoryRepository;
     private final SupplierRepository supplierRepository;
     private final CustomerRepository customerRepository;
+    private final EncodingRuleService encodingRuleService;
+
+    /** 溯源码实体类型标识 */
+    private static final String TRACE_CODE_ENTITY_TYPE = "TRACE_CODE";
 
     @Override
     @Transactional(readOnly = true)
@@ -110,8 +113,8 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 .findByFactoryIdAndBatchNumber(factoryId, batchNumber);
         List<TraceabilityDTO.ShipmentInfo> shipments = buildShipmentInfoList(shipmentRecords);
 
-        // 6. 生成溯源码
-        String traceCode = generateTraceCode(batchNumber);
+        // 6. 生成溯源码（使用工厂ID以支持配置化规则）
+        String traceCode = generateTraceCode(factoryId, batchNumber);
 
         // 7. 构建完整响应
         return TraceabilityDTO.FullTraceResponse.builder()
@@ -130,11 +133,10 @@ public class TraceabilityServiceImpl implements TraceabilityService {
         log.info("公开溯源查询: batchNumber={}", batchNumber);
 
         // 1. 跨工厂查找生产批次（公开查询不限制工厂）
-        List<ProductionBatch> batches = productionBatchRepository.findAll().stream()
-                .filter(b -> b.getBatchNumber().equals(batchNumber))
-                .collect(Collectors.toList());
+        // N+1 修复：使用直接查询替代 findAll().stream().filter()
+        Optional<ProductionBatch> batchOpt = productionBatchRepository.findByBatchNumber(batchNumber);
 
-        if (batches.isEmpty()) {
+        if (batchOpt.isEmpty()) {
             log.warn("公开查询未找到批次: {}", batchNumber);
             return TraceabilityDTO.PublicTraceResponse.builder()
                     .batchNumber(batchNumber)
@@ -144,7 +146,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                     .build();
         }
 
-        ProductionBatch batch = batches.get(0);
+        ProductionBatch batch = batchOpt.get();
         String factoryId = batch.getFactoryId();
 
         // 2. 获取工厂信息（脱敏）
@@ -183,7 +185,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
                 .certificationInfo("食品安全认证")
                 .materials(publicMaterials)
                 .qualityInspection(publicQuality)
-                .traceCode(generateTraceCode(batchNumber))
+                .traceCode(generateTraceCode(factoryId, batchNumber))
                 .queryTime(LocalDateTime.now())
                 .isValid(true)
                 .message("溯源信息查询成功")
@@ -221,27 +223,46 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     /**
      * 构建原材料信息列表
+     * N+1 修复：使用批量查询 + Map 替代循环中的单独查询
      */
     private List<TraceabilityDTO.MaterialInfo> buildMaterialInfoList(List<MaterialConsumption> consumptions) {
-        List<TraceabilityDTO.MaterialInfo> materials = new ArrayList<>();
+        if (consumptions.isEmpty()) {
+            return new ArrayList<>();
+        }
 
+        // 1. 批量查询所有 MaterialBatch
+        Set<String> batchIds = consumptions.stream()
+                .map(MaterialConsumption::getBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, MaterialBatch> batchMap = materialBatchRepository.findAllById(batchIds)
+                .stream().collect(Collectors.toMap(MaterialBatch::getId, Function.identity()));
+
+        // 2. 批量查询所有 Supplier
+        Set<String> supplierIds = batchMap.values().stream()
+                .map(MaterialBatch::getSupplierId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, Supplier> supplierMap = supplierIds.isEmpty() ? Collections.emptyMap() :
+                supplierRepository.findAllById(supplierIds)
+                        .stream().collect(Collectors.toMap(Supplier::getId, Function.identity()));
+
+        // 3. 使用 Map 关联数据
+        List<TraceabilityDTO.MaterialInfo> materials = new ArrayList<>();
         for (MaterialConsumption consumption : consumptions) {
-            // 获取原材料批次信息
-            Optional<MaterialBatch> materialOpt = materialBatchRepository.findById(consumption.getBatchId());
-            if (materialOpt.isEmpty()) {
+            MaterialBatch materialBatch = batchMap.get(consumption.getBatchId());
+            if (materialBatch == null) {
                 continue;
             }
 
-            MaterialBatch materialBatch = materialOpt.get();
-
-            // 获取供应商信息
+            // 从 Map 获取供应商信息
             String supplierName = "未知供应商";
             String supplierCode = "";
             if (materialBatch.getSupplierId() != null) {
-                Optional<Supplier> supplierOpt = supplierRepository.findById(materialBatch.getSupplierId());
-                if (supplierOpt.isPresent()) {
-                    supplierName = supplierOpt.get().getName();
-                    supplierCode = supplierOpt.get().getSupplierCode();
+                Supplier supplier = supplierMap.get(materialBatch.getSupplierId());
+                if (supplier != null) {
+                    supplierName = supplier.getName();
+                    supplierCode = supplier.getSupplierCode();
                 }
             }
 
@@ -273,17 +294,31 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     /**
      * 构建质检信息列表
+     * N+1 修复：使用批量查询 + Map 替代循环中的单独查询
      */
     private List<TraceabilityDTO.QualityInfo> buildQualityInfoList(List<QualityInspection> inspections) {
-        List<TraceabilityDTO.QualityInfo> qualityInfos = new ArrayList<>();
+        if (inspections.isEmpty()) {
+            return new ArrayList<>();
+        }
 
+        // 批量查询所有检验员
+        Set<Long> inspectorIds = inspections.stream()
+                .map(QualityInspection::getInspectorId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, User> inspectorMap = inspectorIds.isEmpty() ? Collections.emptyMap() :
+                userRepository.findAllById(inspectorIds)
+                        .stream().collect(Collectors.toMap(User::getId, Function.identity()));
+
+        // 使用 Map 关联数据
+        List<TraceabilityDTO.QualityInfo> qualityInfos = new ArrayList<>();
         for (QualityInspection inspection : inspections) {
-            // 获取检验员名称
+            // 从 Map 获取检验员名称
             String inspectorName = "检验员";
             if (inspection.getInspectorId() != null) {
-                Optional<User> userOpt = userRepository.findById(inspection.getInspectorId());
-                if (userOpt.isPresent()) {
-                    inspectorName = userOpt.get().getFullName();
+                User inspector = inspectorMap.get(inspection.getInspectorId());
+                if (inspector != null) {
+                    inspectorName = inspector.getFullName();
                 }
             }
 
@@ -303,17 +338,31 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     /**
      * 构建出货信息列表
+     * N+1 修复：使用批量查询 + Map 替代循环中的单独查询
      */
     private List<TraceabilityDTO.ShipmentInfo> buildShipmentInfoList(List<ShipmentRecord> shipmentRecords) {
-        List<TraceabilityDTO.ShipmentInfo> shipments = new ArrayList<>();
+        if (shipmentRecords.isEmpty()) {
+            return new ArrayList<>();
+        }
 
+        // 批量查询所有客户
+        Set<String> customerIds = shipmentRecords.stream()
+                .map(ShipmentRecord::getCustomerId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, Customer> customerMap = customerIds.isEmpty() ? Collections.emptyMap() :
+                customerRepository.findAllById(customerIds)
+                        .stream().collect(Collectors.toMap(Customer::getId, Function.identity()));
+
+        // 使用 Map 关联数据
+        List<TraceabilityDTO.ShipmentInfo> shipments = new ArrayList<>();
         for (ShipmentRecord record : shipmentRecords) {
-            // 获取客户名称
+            // 从 Map 获取客户名称
             String customerName = "客户";
             if (record.getCustomerId() != null) {
-                Optional<Customer> customerOpt = customerRepository.findById(record.getCustomerId());
-                if (customerOpt.isPresent()) {
-                    customerName = customerOpt.get().getName();
+                Customer customer = customerMap.get(record.getCustomerId());
+                if (customer != null) {
+                    customerName = customer.getName();
                 }
             }
 
@@ -334,29 +383,50 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     /**
      * 构建公开原材料信息列表（脱敏）
+     * N+1 修复：使用批量查询 + Map 替代循环中的单独查询
      */
     private List<TraceabilityDTO.PublicMaterialInfo> buildPublicMaterialInfoList(List<MaterialConsumption> consumptions) {
-        List<TraceabilityDTO.PublicMaterialInfo> materials = new ArrayList<>();
+        if (consumptions.isEmpty()) {
+            return new ArrayList<>();
+        }
 
+        // 1. 批量查询所有 MaterialBatch
+        Set<String> batchIds = consumptions.stream()
+                .map(MaterialConsumption::getBatchId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, MaterialBatch> batchMap = materialBatchRepository.findAllById(batchIds)
+                .stream().collect(Collectors.toMap(MaterialBatch::getId, Function.identity()));
+
+        // 2. 批量查询所有 Supplier
+        Set<String> supplierIds = batchMap.values().stream()
+                .map(MaterialBatch::getSupplierId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<String, Supplier> supplierMap = supplierIds.isEmpty() ? Collections.emptyMap() :
+                supplierRepository.findAllById(supplierIds)
+                        .stream().collect(Collectors.toMap(Supplier::getId, Function.identity()));
+
+        // 3. 使用 Map 关联数据
+        List<TraceabilityDTO.PublicMaterialInfo> materials = new ArrayList<>();
         for (MaterialConsumption consumption : consumptions) {
-            Optional<MaterialBatch> materialOpt = materialBatchRepository.findById(consumption.getBatchId());
-            if (materialOpt.isEmpty()) {
+            MaterialBatch materialBatch = batchMap.get(consumption.getBatchId());
+            if (materialBatch == null) {
                 continue;
             }
 
-            MaterialBatch materialBatch = materialOpt.get();
             String materialType = "原材料";
             if (materialBatch.getMaterialType() != null) {
                 materialType = materialBatch.getMaterialType().getName();
             }
 
-            // 获取产地信息（简化）
+            // 从 Map 获取产地信息（简化）
             String origin = "国内";
             if (materialBatch.getSupplierId() != null) {
-                Optional<Supplier> supplierOpt = supplierRepository.findById(materialBatch.getSupplierId());
-                if (supplierOpt.isPresent() && supplierOpt.get().getAddress() != null) {
+                Supplier supplier = supplierMap.get(materialBatch.getSupplierId());
+                if (supplier != null && supplier.getAddress() != null) {
                     // 只显示省/市级别
-                    String address = supplierOpt.get().getAddress();
+                    String address = supplier.getAddress();
                     if (address.contains("省")) {
                         origin = address.split("省")[0] + "省";
                     } else if (address.contains("市")) {
@@ -377,8 +447,44 @@ public class TraceabilityServiceImpl implements TraceabilityService {
 
     /**
      * 生成溯源码
+     *
+     * 优先使用 EncodingRuleService 配置化生成溯源码
+     * 如果未配置溯源码规则，则使用默认格式
+     *
+     * @param batchNumber 批次号
+     * @return 溯源码
      */
     private String generateTraceCode(String batchNumber) {
-        return "TRACE-" + batchNumber + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        return generateTraceCode(null, batchNumber);
+    }
+
+    /**
+     * 生成溯源码（带工厂ID）
+     *
+     * 优先使用 EncodingRuleService 配置化生成溯源码
+     * 如果未配置溯源码规则，则使用默认格式
+     *
+     * @param factoryId 工厂ID（可选）
+     * @param batchNumber 批次号
+     * @return 溯源码
+     */
+    private String generateTraceCode(String factoryId, String batchNumber) {
+        try {
+            // 尝试使用配置化的编码规则生成溯源码
+            if (factoryId != null) {
+                // 使用上下文变量传递批次号信息
+                Map<String, String> context = new HashMap<>();
+                context.put("BATCH", batchNumber);
+                return encodingRuleService.generateCode(factoryId, TRACE_CODE_ENTITY_TYPE, context);
+            } else {
+                // 没有工厂ID时，尝试使用系统默认规则
+                return encodingRuleService.generateCode("SYSTEM", TRACE_CODE_ENTITY_TYPE);
+            }
+        } catch (Exception e) {
+            // 如果编码规则未配置或生成失败，使用默认格式
+            log.debug("使用默认溯源码格式: {}", e.getMessage());
+            return "TRACE-" + batchNumber + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        }
     }
 }
+

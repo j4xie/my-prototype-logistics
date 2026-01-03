@@ -1,0 +1,325 @@
+{
+  "whitelist": {
+    "list": {
+      "title": "Whitelist Management",
+      "search": "Search name or phone...",
+      "loading": "Loading...",
+      "empty": "No whitelist members",
+      "addMember": "Add Member"
+    },
+    "add": {
+      "title": "Add Whitelist",
+      "fullName": "Full Name",
+      "fullNamePlaceholder": "Enter full name",
+      "fullNameError": "Please enter full name",
+      "phone": "Phone",
+      "phonePlaceholder": "Enter phone number",
+      "phoneError": "Please enter valid phone number",
+      "submit": "Add",
+      "cancel": "Cancel",
+      "success": "Added successfully",
+      "confirmBack": "OK"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "actions": {
+      "disable": "Disable",
+      "enable": "Enable",
+      "confirmDisable": "Confirm Disable",
+      "confirmDisableMsg": "Are you sure to disable this member?",
+      "confirmEnable": "Confirm Enable",
+      "confirmEnableMsg": "Are you sure to enable this member?",
+      "confirmDelete": "Confirm Delete",
+      "confirmDeleteMsg": "Are you sure to delete this member?"
+    }
+  },
+  "department": {
+    "list": {
+      "title": "Department Management",
+      "search": "Search department name...",
+      "loading": "Loading...",
+      "empty": "No departments",
+      "addDepartment": "Add Department",
+      "active": "Active",
+      "inactive": "Inactive",
+      "members": "Members",
+      "manager": "Manager"
+    },
+    "add": {
+      "title": "Add Department",
+      "name": "Department Name",
+      "nameRequired": "*",
+      "namePlaceholder": "Enter department name",
+      "nameError": "Please enter department name",
+      "description": "Description",
+      "descriptionPlaceholder": "Enter description",
+      "manager": "Department Manager",
+      "selectManager": "Select manager",
+      "noManager": "No manager",
+      "status": "Status",
+      "statusHint": "Department will be unavailable when disabled",
+      "cancel": "Cancel",
+      "submit": "Create",
+      "success": "Success",
+      "successMsg": "Department created successfully",
+      "confirmBack": "OK",
+      "error": "Error",
+      "errorMsg": "Creation failed",
+      "loadManagerError": "Failed to load managers",
+      "createError": "Creation failed, please try again",
+      "inputPrompt": "Prompt",
+      "inputPromptMsg": "Please enter department name"
+    },
+    "detail": {
+      "title": "Department Detail",
+      "loading": "Loading...",
+      "notFound": "Department not found",
+      "loadError": "Failed to load department info",
+      "active": "Active",
+      "inactive": "Inactive",
+      "basicInfo": "Basic Info",
+      "manager": "Manager",
+      "noManager": "Unassigned",
+      "memberCount": "Member Count",
+      "memberUnit": "members",
+      "createdAt": "Created At",
+      "members": "Department Members",
+      "noMembers": "No members",
+      "position": "Employee",
+      "confirmEnable": "Confirm Enable",
+      "confirmDisable": "Confirm Disable",
+      "confirmEnableMsg": "Are you sure to enable this department?",
+      "confirmDisableMsg": "Are you sure to disable this department?",
+      "toggleError": "Operation failed",
+      "errorTitle": "Error"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "user": {
+      "defaultName": "User",
+      "role": "HR Administrator",
+      "factoryDefault": "No factory assigned"
+    },
+    "stats": {
+      "employees": "Active Employees",
+      "departments": "Departments",
+      "attendance": "This Month"
+    },
+    "menu": {
+      "management": "Management",
+      "settings": "Settings",
+      "system": "System",
+      "department": "Departments",
+      "whitelist": "Whitelist",
+      "scheduling": "Scheduling",
+      "myInfo": "My Info",
+      "myAttendance": "My Attendance",
+      "notifications": "Notifications",
+      "systemSettings": "System Settings",
+      "help": "Help Center",
+      "about": "About",
+      "developing": "Coming Soon"
+    },
+    "logout": {
+      "confirm": "Confirm Logout",
+      "confirmMsg": "Are you sure to logout?",
+      "cancel": "Cancel",
+      "button": "Logout",
+      "error": "Logout failed"
+    },
+    "version": "Version 1.0.0"
+  },
+  "staff": {
+    "list": {
+      "title": "Staff Management",
+      "search": "Search staff...",
+      "filter": "Filter",
+      "loading": "Loading...",
+      "empty": "No staff data",
+      "addStaff": "Add Staff",
+      "loadError": "Failed to load staff list",
+      "filterAll": "All",
+      "filterActive": "Active",
+      "filterOnLeave": "On Leave",
+      "filterResigned": "Resigned",
+      "filterSuspended": "Suspended",
+      "noDepartment": "Unassigned",
+      "positionDefault": "Employee"
+    },
+    "add": {
+      "title": "Add Staff",
+      "basicInfo": "Basic Info",
+      "workInfo": "Work Info",
+      "username": "Username",
+      "usernameRequired": "*",
+      "usernameError": "Please enter username",
+      "usernameMinError": "Username must be at least 3 characters",
+      "fullName": "Full Name",
+      "fullNameRequired": "*",
+      "fullNameError": "Please enter full name",
+      "phone": "Phone",
+      "phoneRequired": "*",
+      "phoneError": "Please enter phone",
+      "phoneInvalid": "Please enter valid phone number",
+      "email": "Email",
+      "emailInvalid": "Please enter valid email",
+      "department": "Select Department",
+      "role": "Role",
+      "position": "Position",
+      "submit": "Add Staff",
+      "success": "Success",
+      "successMsg": "Staff added successfully, default password is 123456",
+      "confirmBack": "OK",
+      "error": "Error",
+      "errorMsg": "Failed to add staff",
+      "loadDeptError": "Failed to load departments",
+      "roles": {
+        "worker": "Worker",
+        "teamLeader": "Team Leader",
+        "deptAdmin": "Department Admin",
+        "qualityInspector": "Quality Inspector",
+        "warehouseKeeper": "Warehouse Keeper"
+      }
+    },
+    "detail": {
+      "title": "Staff Detail",
+      "loading": "Loading...",
+      "notFound": "Staff not found",
+      "loadError": "Failed to load staff info",
+      "noDepartment": "Unassigned",
+      "positionDefault": "Employee",
+      "basicInfo": "Basic Info",
+      "phone": "Phone",
+      "email": "Email",
+      "hireDate": "Hire Date",
+      "employeeCode": "Employee Code",
+      "attendance": "This Month Attendance",
+      "workDays": "Work Days",
+      "lateDays": "Late",
+      "earlyLeaveDays": "Early Leave",
+      "absentDays": "Absent",
+      "workSummary": "Work Summary",
+      "totalBatches": "Batches",
+      "totalHours": "Total Hours",
+      "totalEarnings": "Total Earnings",
+      "recentBatches": "Recent Batches",
+      "aiAnalysisButton": "AI Analysis",
+      "noValue": "-"
+    },
+    "aiAnalysis": {
+      "title": "AI Analysis",
+      "loading": "Loading analysis...",
+      "empty": "No analysis data",
+      "emptyHint": "Click below to start AI analysis",
+      "analyze": "Start Analysis",
+      "reanalyze": "Reanalyze",
+      "overall": "Overall Score",
+      "analysisDate": "Analysis Date",
+      "ability": "Ability Assessment",
+      "efficiency": "Efficiency",
+      "quality": "Quality",
+      "attendance": "Attendance",
+      "teamwork": "Teamwork",
+      "strengths": "Strengths",
+      "improvements": "Improvements",
+      "suggestions": "AI Suggestions",
+      "loadError": "Failed to load AI analysis",
+      "reanalyzeError": "Failed to reanalyze"
+    }
+  },
+  "analytics": {
+    "performance": {
+      "title": "Performance Analysis",
+      "loading": "Loading...",
+      "period": {
+        "month": "This Month",
+        "quarter": "This Quarter",
+        "year": "This Year"
+      },
+      "stats": {
+        "avgScore": "Avg Score",
+        "excellent": "Excellent",
+        "needAttention": "Need Attention",
+        "noValue": "-"
+      },
+      "distribution": "Grade Distribution",
+      "employeeList": "Employee Performance",
+      "empty": "No performance data",
+      "loadError": "Failed to load performance data",
+      "grades": {
+        "excellent": "Excellent",
+        "good": "Good",
+        "average": "Average",
+        "poor": "Poor"
+      },
+      "positionDefault": "Employee"
+    },
+    "laborCost": {
+      "title": "Labor Cost",
+      "loading": "Loading...",
+      "period": {
+        "week": "This Week",
+        "month": "This Month",
+        "quarter": "This Quarter"
+      },
+      "stats": {
+        "totalCost": "Total Cost",
+        "totalHours": "Total Hours",
+        "employees": "Employees",
+        "avgRate": "Avg Rate"
+      },
+      "deptDistribution": "Department Distribution",
+      "workerRank": "Worker Hours Ranking",
+      "empty": "No data",
+      "loadError": "Failed to load labor cost data",
+      "noData": "No data",
+      "deptNoAssign": "Unassigned"
+    }
+  },
+  "production": {
+    "batchWorkers": {
+      "title": "Batch Workers",
+      "loading": "Loading...",
+      "summary": {
+        "totalWorkers": "Total",
+        "totalHours": "Total Hours",
+        "working": "Working"
+      },
+      "status": {
+        "working": "Working",
+        "completed": "Completed",
+        "paused": "Paused",
+        "unknown": "Unknown"
+      },
+      "noDepartment": "Unassigned",
+      "workTime": "Work Time",
+      "empty": "No workers assigned",
+      "emptyHint": "Click below to add workers",
+      "addWorker": "Add Worker",
+      "addWorkerHint": "Add worker feature coming soon",
+      "confirmRemove": "Remove Worker",
+      "confirmRemoveMsg": "Are you sure to remove {name} from this batch?",
+      "removeError": "Failed to remove worker",
+      "loadError": "Failed to load batch workers"
+    },
+    "batchAssignment": {
+      "title": "Batch Assignment",
+      "loading": "Loading...",
+      "search": "Search batch or product...",
+      "empty": "No batch tasks",
+      "loadError": "Failed to load batch assignments",
+      "status": {
+        "in_progress": "In Progress",
+        "pending": "Pending",
+        "completed": "Completed"
+      },
+      "assigned": "Assigned",
+      "required": "required",
+      "workHours": "hours",
+      "laborCost": "cost"
+    }
+  }
+}

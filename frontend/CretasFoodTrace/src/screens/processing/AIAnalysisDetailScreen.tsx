@@ -17,6 +17,7 @@ import {
   Menu,
 } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import * as Clipboard from 'expo-clipboard';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { aiApiClient, AICostAnalysisResponse } from '../../services/api/aiApiClient';
@@ -45,6 +46,7 @@ type AIAnalysisDetailScreenProps = ProcessingScreenProps<'AIAnalysisDetail'>;
  * @since 2025-11-05
  */
 export default function AIAnalysisDetailScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<AIAnalysisDetailScreenProps['navigation']>();
   const route = useRoute<AIAnalysisDetailScreenProps['route']>();
   const { user } = useAuthStore();
@@ -56,14 +58,18 @@ export default function AIAnalysisDetailScreen() {
    * 从Markdown内容提取干净的标题
    */
   const extractCleanTitle = (rawTitle: string | undefined): string => {
-    if (!rawTitle) {
-      const defaultTitles: Record<string, string> = {
-        batch: '批次成本分析报告',
-        weekly: '周度成本分析报告',
-        monthly: '月度成本分析报告',
-        custom: '自定义分析报告',
+    const getDefaultTitle = (type: string): string => {
+      const titleKeys: Record<string, string> = {
+        batch: 'aiAnalysisDetail.defaultTitles.batch',
+        weekly: 'aiAnalysisDetail.defaultTitles.weekly',
+        monthly: 'aiAnalysisDetail.defaultTitles.monthly',
+        custom: 'aiAnalysisDetail.defaultTitles.custom',
       };
-      return defaultTitles[reportType] || 'AI分析报告';
+      return t(titleKeys[type] || 'aiAnalysisDetail.defaultTitles.default');
+    };
+
+    if (!rawTitle) {
+      return getDefaultTitle(reportType);
     }
 
     // 移除 Markdown 标记
@@ -88,13 +94,7 @@ export default function AIAnalysisDetailScreen() {
 
     // 如果标题为空或无意义，返回默认
     if (!cleanTitle || cleanTitle.length < 2) {
-      const defaultTitles: Record<string, string> = {
-        batch: '批次成本分析报告',
-        weekly: '周度成本分析报告',
-        monthly: '月度成本分析报告',
-        custom: '自定义分析报告',
-      };
-      return defaultTitles[reportType] || 'AI分析报告';
+      return getDefaultTitle(reportType);
     }
 
     return cleanTitle;
@@ -122,7 +122,7 @@ export default function AIAnalysisDetailScreen() {
 
       const factoryId = user?.factoryUser?.factoryId;
       if (!factoryId) {
-        Alert.alert('错误', '用户信息不完整');
+        Alert.alert(t('common.error') || 'Error', t('aiAnalysisDetail.userInfoIncomplete'));
         return;
       }
 
@@ -147,7 +147,7 @@ export default function AIAnalysisDetailScreen() {
         factoryId: factoryId,
         errorStatus: (error as any).response?.status,
       });
-      Alert.alert('加载失败', getErrorMsg(error) || '请稍后重试');
+      Alert.alert(t('aiAnalysisDetail.loadFailed'), getErrorMsg(error) || t('aiAnalysisDetail.messages.retryMessage'));
     } finally {
       setLoading(false);
     }
@@ -161,23 +161,23 @@ export default function AIAnalysisDetailScreen() {
       if (!report) return;
 
       const shareContent = `
-【白垩纪食品溯源系统 - AI分析报告】
+${t('aiAnalysisDetail.shareTemplate.header')}
 
-报告标题: ${title}
-报告类型: ${getReportTypeLabel(reportType)}
-生成时间: ${report.generatedAt ? new Date(report.generatedAt).toLocaleString('zh-CN') : '未知'}
+${t('aiAnalysisDetail.shareTemplate.reportTitle', { title })}
+${t('aiAnalysisDetail.shareTemplate.reportType', { type: getReportTypeLabel(reportType) })}
+${t('aiAnalysisDetail.shareTemplate.generatedAt', { time: report.generatedAt ? new Date(report.generatedAt).toLocaleString() : t('aiAnalysisDetail.unknown') })}
 
-分析内容:
+${t('aiAnalysisDetail.shareTemplate.analysisContent')}
 ${report.analysis}
 
 ---
-会话ID: ${report.session_id || 'N/A'}
-${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString('zh-CN')}` : ''}
+${t('aiAnalysisDetail.shareTemplate.sessionId', { id: report.session_id || 'N/A' })}
+${report.expiresAt ? t('aiAnalysisDetail.shareTemplate.expiresAt', { time: new Date(report.expiresAt).toLocaleString() }) : ''}
 `;
 
       await Share.share({
         message: shareContent,
-        title: '白垩纪食品溯源系统 - AI分析报告',
+        title: t('aiAnalysisDetail.shareTitle'),
       });
 
       aiAnalysisLogger.info('AI报表已分享', { reportId, reportType });
@@ -191,27 +191,27 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
    * 获取报告类型标签
    */
   const getReportTypeLabel = (type: string) => {
-    const typeMap = {
-      batch: '批次分析',
-      weekly: '周报',
-      monthly: '月报',
-      custom: '自定义',
+    const typeKeys: Record<string, string> = {
+      batch: 'aiAnalysisDetail.reportType.batch',
+      weekly: 'aiAnalysisDetail.reportType.weekly',
+      monthly: 'aiAnalysisDetail.reportType.monthly',
+      custom: 'aiAnalysisDetail.reportType.custom',
     };
-    return typeMap[type as keyof typeof typeMap] || type;
+    return t(typeKeys[type] || type);
   };
 
   /**
    * 获取报告类型配置
    */
   const getReportTypeChip = (type: string) => {
-    const typeMap = {
-      batch: { label: '批次分析', icon: 'package-variant', color: '#2196F3' },
-      weekly: { label: '周报', icon: 'calendar-week', color: '#4CAF50' },
-      monthly: { label: '月报', icon: 'calendar-month', color: '#FF9800' },
-      custom: { label: '自定义', icon: 'tune', color: '#9C27B0' },
+    const typeConfig: Record<string, { labelKey: string; icon: string; color: string }> = {
+      batch: { labelKey: 'aiAnalysisDetail.reportType.batch', icon: 'package-variant', color: '#2196F3' },
+      weekly: { labelKey: 'aiAnalysisDetail.reportType.weekly', icon: 'calendar-week', color: '#4CAF50' },
+      monthly: { labelKey: 'aiAnalysisDetail.reportType.monthly', icon: 'calendar-month', color: '#FF9800' },
+      custom: { labelKey: 'aiAnalysisDetail.reportType.custom', icon: 'tune', color: '#9C27B0' },
     };
 
-    const config = typeMap[type as keyof typeof typeMap] || typeMap.custom;
+    const config = typeConfig[type] || typeConfig.custom;
 
     return (
       <Chip
@@ -220,7 +220,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
         style={[styles.typeChip, { backgroundColor: config.color }]}
         textStyle={{ color: '#FFFFFF' }}
       >
-        {config.label}
+        {t(config.labelKey)}
       </Chip>
     );
   };
@@ -229,9 +229,9 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
    * 格式化时间
    */
   const formatDateTime = (dateString?: string) => {
-    if (!dateString) return '未知';
+    if (!dateString) return t('aiAnalysisDetail.unknown');
     const date = new Date(dateString);
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(undefined, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -258,7 +258,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
         >
           <Menu.Item
             onPress={handleShareReport}
-            title="分享报告"
+            title={t('aiAnalysisDetail.shareReport')}
             leadingIcon="share-variant"
           />
         </Menu>
@@ -267,7 +267,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text variant="bodyMedium" style={styles.loadingText}>加载中...</Text>
+          <Text variant="bodyMedium" style={styles.loadingText}>{t('aiAnalysisDetail.loading')}</Text>
         </View>
       ) : report ? (
         <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -287,7 +287,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 {/* 生成时间 */}
                 {report.generatedAt && (
                   <View style={styles.metadataItem}>
-                    <Text variant="bodySmall" style={styles.metadataLabel}>生成时间</Text>
+                    <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiAnalysisDetail.generatedAt')}</Text>
                     <Text variant="bodyMedium" style={styles.metadataValue}>
                       {formatDateTime(report.generatedAt)}
                     </Text>
@@ -297,7 +297,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 {/* 过期时间 */}
                 {report.expiresAt && (
                   <View style={styles.metadataItem}>
-                    <Text variant="bodySmall" style={styles.metadataLabel}>过期时间</Text>
+                    <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiAnalysisDetail.expiresAt')}</Text>
                     <Text variant="bodyMedium" style={styles.metadataValue}>
                       {formatDateTime(report.expiresAt)}
                     </Text>
@@ -307,7 +307,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 {/* 会话ID */}
                 {report.session_id && (
                   <View style={styles.metadataItem}>
-                    <Text variant="bodySmall" style={styles.metadataLabel}>会话ID</Text>
+                    <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiAnalysisDetail.sessionId')}</Text>
                     <Text variant="bodyMedium" style={styles.metadataValue} numberOfLines={1}>
                       {report.session_id}
                     </Text>
@@ -317,9 +317,9 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                 {/* 消息数量 */}
                 {report.messageCount !== undefined && (
                   <View style={styles.metadataItem}>
-                    <Text variant="bodySmall" style={styles.metadataLabel}>消息数量</Text>
+                    <Text variant="bodySmall" style={styles.metadataLabel}>{t('aiAnalysisDetail.messageCount')}</Text>
                     <Text variant="bodyMedium" style={styles.metadataValue}>
-                      {report.messageCount} 条
+                      {report.messageCount} {t('aiAnalysisDetail.messages')}
                     </Text>
                   </View>
                 )}
@@ -337,7 +337,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                         compact
                         style={styles.performanceChip}
                       >
-                        {report.cacheHit ? '缓存命中' : '实时生成'}
+                        {report.cacheHit ? t('aiAnalysisDetail.cacheHit') : t('aiAnalysisDetail.realTimeGenerated')}
                       </Chip>
                     )}
                     {report.responseTimeMs !== undefined && (
@@ -360,7 +360,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
           <Card style={styles.contentCard} mode="elevated">
             <Card.Content>
               <View style={styles.contentHeader}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>分析内容</Text>
+                <Text variant="titleMedium" style={styles.sectionTitle}>{t('aiAnalysisDetail.analysisContent')}</Text>
                 <IconButton
                   icon="content-copy"
                   size={20}
@@ -368,11 +368,11 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                     try {
                       if (report?.analysis) {
                         await Clipboard.setStringAsync(report.analysis);
-                        Alert.alert('提示', '已复制到剪贴板');
+                        Alert.alert(t('common.hint') || 'Hint', t('aiAnalysisDetail.copySuccess'));
                       }
                     } catch (error) {
                       aiAnalysisLogger.error('复制AI分析内容失败', error as Error, { reportId });
-                      Alert.alert('错误', '复制失败，请重试');
+                      Alert.alert(t('common.error') || 'Error', t('aiAnalysisDetail.copyFailed'));
                     }
                   }}
                 />
@@ -391,7 +391,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
             <Card style={styles.errorCard} mode="elevated">
               <Card.Content>
                 <View style={styles.errorHeader}>
-                  <Text variant="titleMedium" style={styles.errorTitle}>错误信息</Text>
+                  <Text variant="titleMedium" style={styles.errorTitle}>{t('aiAnalysisDetail.errorInfo')}</Text>
                 </View>
                 <Text variant="bodyMedium" style={styles.errorText}>
                   {report.errorMessage}
@@ -405,9 +405,9 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
             <Card style={styles.quotaCard} mode="outlined">
               <Card.Content>
                 <View style={styles.quotaRow}>
-                  <Text variant="bodyMedium" style={styles.quotaLabel}>AI配额</Text>
+                  <Text variant="bodyMedium" style={styles.quotaLabel}>{t('aiAnalysisDetail.aiQuota')}</Text>
                   <Text variant="bodyMedium" style={styles.quotaValue}>
-                    已使用 {report.quota.usedQuota}/{report.quota.weeklyQuota} 次
+                    {t('aiAnalysisDetail.quotaUsed', { used: report.quota.usedQuota, limit: report.quota.weeklyQuota })}
                   </Text>
                 </View>
                 <View style={styles.quotaProgressBar}>
@@ -422,7 +422,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
                   />
                 </View>
                 <Text variant="bodySmall" style={styles.quotaHint}>
-                  重置时间: {report.quota.resetDate}
+                  {t('aiAnalysisDetail.resetTime')}: {report.quota.resetDate}
                 </Text>
               </Card.Content>
             </Card>
@@ -430,7 +430,7 @@ ${report.expiresAt ? `过期时间: ${new Date(report.expiresAt).toLocaleString(
         </ScrollView>
       ) : (
         <View style={styles.emptyContainer}>
-          <Text variant="titleMedium" style={styles.emptyText}>报告不存在或已过期</Text>
+          <Text variant="titleMedium" style={styles.emptyText}>{t('aiAnalysisDetail.reportNotFound')}</Text>
         </View>
       )}
     </View>
