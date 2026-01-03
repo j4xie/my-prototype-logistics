@@ -1,9 +1,4 @@
 ---
-description: 
-globs: **/*.jsx,**/*.js,**/*.tsx,**/*.ts,web-app/**/*.jsx,web-app/ **/*.js
-alwaysApply: false
----
----
 description: UI设计系统与组件规范 - 开发React/Next.js前端组件时 - 实现UI界面和样式时 - 使用Shadcn UI、Tailwind CSS时 - 遵循Neo Minimal iOS-Style Admin UI设计语言
 globs: **/*.tsx, **/*.jsx, **/*.ts, **/*.js
 alwaysApply: false
