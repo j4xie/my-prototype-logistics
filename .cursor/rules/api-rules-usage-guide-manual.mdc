@@ -1,9 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: false
----
----
 description: API开发统一管理规则 - API接口设计开发时 - API集成实现时 - API文档编写时 - API规则选择困难时 - 提供API开发核心原则和智能路由指导
 globs:
 alwaysApply: false
