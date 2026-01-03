@@ -1,9 +1,4 @@
 ---
-description:
-globs:
-alwaysApply: false
----
----
 description: 核心开发原则详细指导 - 所有代码开发和修改活动的详细指导时 - 项目管理和文档维护的深度规范时 - 代码审查和质量控制的具体标准时 - 新团队成员的完整培训指导时
 globs: 
 alwaysApply: false

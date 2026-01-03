@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
+import java.math.BigDecimal;
+
 /**
  * 清理低效关键词的请求DTO
  */
@@ -15,10 +17,10 @@ public class CleanupRequest {
     /**
      * Wilson Score 阈值，低于此值的关键词将被清理
      */
-    private Double threshold;
+    private BigDecimal threshold;
 
     /**
      * 最小负面反馈次数，达到此次数的关键词将被清理
      */
-    private Integer minNegative;
+    private int minNegative;
 }
