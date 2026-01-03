@@ -14,9 +14,11 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 export function BatchStartScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('workshop');
   const [selectedProduct, setSelectedProduct] = useState('');
   const [targetQuantity, setTargetQuantity] = useState('');
   const [notes, setNotes] = useState('');
@@ -31,24 +33,25 @@ export function BatchStartScreen() {
 
   const handleSubmit = () => {
     if (!selectedProduct) {
-      Alert.alert('提示', '请选择产品');
+      Alert.alert(t('batchStart.info.title'), t('batchStart.alerts.selectProduct'));
       return;
     }
     if (!targetQuantity) {
-      Alert.alert('提示', '请输入目标产量');
+      Alert.alert(t('batchStart.info.title'), t('batchStart.alerts.enterQuantity'));
       return;
     }
 
+    const product = products.find(p => p.id === selectedProduct)?.name || '';
     Alert.alert(
-      '确认创建',
-      `确定创建新批次吗？\n产品：${products.find(p => p.id === selectedProduct)?.name}\n目标产量：${targetQuantity}kg`,
+      t('batchStart.alerts.confirmCreate'),
+      t('batchStart.alerts.confirmMessage', { product, quantity: targetQuantity }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('batchStart.actions.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: () => {
-            Alert.alert('成功', '批次已创建', [
-              { text: '确定', onPress: () => navigation.goBack() }
+            Alert.alert(t('batchStart.alerts.successTitle'), t('batchStart.alerts.successMessage'), [
+              { text: t('common.confirm'), onPress: () => navigation.goBack() }
             ]);
           },
         },
@@ -63,14 +66,14 @@ export function BatchStartScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="close" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>创建批次</Text>
+        <Text style={styles.headerTitle}>{t('batchStart.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         {/* 产品选择 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>选择产品 *</Text>
+          <Text style={styles.sectionTitle}>{t('batchStart.selectProduct')}</Text>
           <View style={styles.productGrid}>
             {products.map((product) => (
               <TouchableOpacity
@@ -99,14 +102,14 @@ export function BatchStartScreen() {
 
         {/* 目标产量 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>目标产量 (kg) *</Text>
+          <Text style={styles.sectionTitle}>{t('batchStart.targetQuantity')}</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
               value={targetQuantity}
               onChangeText={setTargetQuantity}
               keyboardType="numeric"
-              placeholder="请输入目标产量"
+              placeholder={t('batchStart.placeholder.targetQuantity')}
               placeholderTextColor="#999"
             />
             <Text style={styles.inputUnit}>kg</Text>
@@ -115,12 +118,12 @@ export function BatchStartScreen() {
 
         {/* 备注 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>备注 (可选)</Text>
+          <Text style={styles.sectionTitle}>{t('batchStart.notes')}</Text>
           <TextInput
             style={styles.textArea}
             value={notes}
             onChangeText={setNotes}
-            placeholder="输入备注信息..."
+            placeholder={t('batchStart.placeholder.notes')}
             placeholderTextColor="#999"
             multiline
             numberOfLines={4}
@@ -132,7 +135,7 @@ export function BatchStartScreen() {
         <View style={styles.infoCard}>
           <Icon source="information-outline" size={20} color="#1890ff" />
           <Text style={styles.infoText}>
-            创建批次后，系统将自动分配工位、设备和人员。请在任务开始前完成任务引导流程。
+            {t('batchStart.info.message')}
           </Text>
         </View>
       </ScrollView>
@@ -140,10 +143,10 @@ export function BatchStartScreen() {
       {/* 底部按钮 */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
-          <Text style={styles.cancelBtnText}>取消</Text>
+          <Text style={styles.cancelBtnText}>{t('batchStart.actions.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-          <Text style={styles.submitBtnText}>创建批次</Text>
+          <Text style={styles.submitBtnText}>{t('batchStart.actions.create')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

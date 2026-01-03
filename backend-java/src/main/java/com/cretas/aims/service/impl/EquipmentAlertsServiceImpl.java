@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.equipment.CreateEquipmentAlertRequest;
 import com.cretas.aims.dto.equipment.EquipmentAlertDTO;
 import com.cretas.aims.entity.EquipmentAlert;
 import com.cretas.aims.entity.FactoryEquipment;
@@ -11,6 +12,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.repository.EquipmentAlertRepository;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.service.EquipmentAlertsService;
+import com.cretas.aims.service.PushNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,7 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
     private final EquipmentAlertRepository alertRepository;
     private final EquipmentRepository equipmentRepository;
+    private final PushNotificationService pushNotificationService;
 
     @Override
     public PageResponse<EquipmentAlertDTO> getAlertList(String factoryId, PageRequest pageRequest,
@@ -139,6 +142,18 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
         alertRepository.save(alert);
 
+        // 发送告警确认推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "equipment_alert_acknowledged");
+            pushData.put("alertId", alert.getId());
+            pushData.put("screen", "EquipmentAlertDetail");
+            pushNotificationService.sendToFactory(factoryId, "告警已确认",
+                String.format("设备告警已被确认"), pushData);
+        } catch (Exception e) {
+            log.warn("发送告警确认推送失败: {}", e.getMessage());
+        }
+
         return convertToDTO(alert);
     }
 
@@ -161,6 +176,18 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
         alert.setResolutionNotes(resolution);
 
         alertRepository.save(alert);
+
+        // 发送告警解决推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "equipment_alert_resolved");
+            pushData.put("alertId", alert.getId());
+            pushData.put("screen", "EquipmentAlertDetail");
+            pushNotificationService.sendToFactory(factoryId, "告警已解决",
+                String.format("设备告警已解决: %s", resolution), pushData);
+        } catch (Exception e) {
+            log.warn("发送告警解决推送失败: {}", e.getMessage());
+        }
 
         return convertToDTO(alert);
     }
@@ -208,5 +235,64 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
             case "LOW": return AlertLevel.INFO;
             default: return null;
         }
+    }
+
+    @Override
+    @Transactional
+    public EquipmentAlertDTO createAlert(String factoryId, CreateEquipmentAlertRequest request) {
+        log.info("创建告警: factoryId={}, equipmentId={}, alertType={}",
+                factoryId, request.getEquipmentId(), request.getAlertType());
+
+        // 验证设备是否存在
+        FactoryEquipment equipment = equipmentRepository.findById(request.getEquipmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("设备不存在: " + request.getEquipmentId()));
+
+        // 验证设备属于该工厂
+        if (!factoryId.equals(equipment.getFactoryId())) {
+            throw new IllegalArgumentException("设备不属于该工厂");
+        }
+
+        // 构建告警实体
+        EquipmentAlert alert = EquipmentAlert.builder()
+                .factoryId(factoryId)
+                .equipmentId(request.getEquipmentId())
+                .alertType(request.getAlertType())
+                .level(request.getLevel())
+                .status(AlertStatus.ACTIVE)
+                .message(request.getMessage())
+                .details(request.getDetails())
+                .triggeredAt(LocalDateTime.now())
+                .build();
+
+        // 保存告警
+        EquipmentAlert savedAlert = alertRepository.save(alert);
+
+        log.info("告警创建成功: alertId={}", savedAlert.getId());
+
+        // 发送推送通知到工厂所有设备
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "equipment_alert");
+            pushData.put("alertId", savedAlert.getId());
+            pushData.put("alertLevel", savedAlert.getLevel().name());
+            pushData.put("equipmentId", savedAlert.getEquipmentId());
+            pushData.put("screen", "EquipmentAlertDetail");
+
+            String priority = savedAlert.getLevel() == AlertLevel.CRITICAL ? "high" : "default";
+            String title = savedAlert.getLevel() == AlertLevel.CRITICAL ? "紧急设备告警" : "设备告警";
+
+            pushNotificationService.sendToFactory(
+                factoryId,
+                title,
+                String.format("设备 %s: %s", equipment.getEquipmentName(), savedAlert.getMessage()),
+                pushData
+            );
+            log.info("设备告警推送通知已发送: alertId={}, level={}", savedAlert.getId(), savedAlert.getLevel());
+        } catch (Exception e) {
+            log.error("发送设备告警推送通知失败: alertId={}", savedAlert.getId(), e);
+            // 不阻塞告警创建流程
+        }
+
+        return convertToDTO(savedAlert);
     }
 }

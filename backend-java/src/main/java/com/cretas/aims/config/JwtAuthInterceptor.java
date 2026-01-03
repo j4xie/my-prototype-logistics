@@ -39,6 +39,9 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
     // 匹配URL中的factoryId的正则表达式
     private static final Pattern FACTORY_ID_PATTERN = Pattern.compile("/api/mobile/([^/]+)/");
 
+    // 平台API路径前缀
+    private static final String PLATFORM_API_PREFIX = "/api/platform";
+
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -96,6 +99,28 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
 
         // 跨工厂权限验证
         String requestUri = request.getRequestURI();
+
+        // 平台API权限验证 - BUG-044修复: 只有平台管理员才能访问/api/platform/**
+        if (requestUri.startsWith(PLATFORM_API_PREFIX)) {
+            // 首先检查是否有有效的认证信息
+            if (userId == null) {
+                log.warn("平台API未认证请求: uri={}", requestUri);
+                sendUnauthorizedResponse(response, "未授权，请先登录");
+                return false;
+            }
+
+            // 检查是否有平台管理员角色
+            if (tokenRole == null || !PLATFORM_ADMIN_ROLES.contains(tokenRole.toLowerCase())) {
+                log.warn("平台API权限不足: userId={}, role={}, uri={}",
+                        userId, tokenRole, requestUri);
+                sendForbiddenResponse(response, "无权访问平台管理API，需要平台管理员权限");
+                return false;
+            }
+
+            log.debug("平台API权限验证通过: userId={}, role={}", userId, tokenRole);
+            return true;
+        }
+
         String urlFactoryId = extractFactoryIdFromUrl(requestUri);
 
         if (urlFactoryId != null && !isPublicEndpoint(requestUri)) {

@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSHomeStackParamList, 'TaskGuideStep3'>;
@@ -31,6 +32,7 @@ interface AssignedWorker {
 export function TaskGuideStep3Screen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
   const { batchId, batchNumber } = route.params || {};
 
   const [isAllReady, setIsAllReady] = useState(false);
@@ -47,12 +49,12 @@ export function TaskGuideStep3Screen() {
 
   const handleStartProduction = () => {
     Alert.alert(
-      '确认开始生产',
-      `批次 ${batchNumber || 'PB-20251227-001'} 即将开始生产，确定吗？`,
+      t('taskGuideDetail.step3.confirmStart'),
+      t('taskGuideDetail.step3.confirmStartMsg', { batchNumber: batchNumber || 'PB-20251227-001' }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认开始',
+          text: t('taskGuideDetail.step3.confirmButton'),
           onPress: () => {
             // 跳转到批次详情页
             navigation.navigate('BatchDetail', { batchId: batchId || '1' });
@@ -76,7 +78,7 @@ export function TaskGuideStep3Screen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>任务执行</Text>
+        <Text style={styles.headerTitle}>{t('taskGuideDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -84,7 +86,7 @@ export function TaskGuideStep3Screen() {
         {/* 批次信息 */}
         <View style={styles.batchCard}>
           <Text style={styles.batchNumber}>{batchNumber || 'PB-20251227-001'}</Text>
-          <Text style={styles.batchProduct}>带鱼片 · 目标80kg</Text>
+          <Text style={styles.batchProduct}>{t('taskGuideDetail.batchProduct', { product: '带鱼片', target: '80' })}</Text>
         </View>
 
         {/* 步骤指示器 */}
@@ -105,30 +107,30 @@ export function TaskGuideStep3Screen() {
         {/* 步骤标题 */}
         <View style={styles.stepHeader}>
           <Icon source="account-group" size={24} color="#667eea" />
-          <Text style={styles.stepTitle}>步骤 3/3: 召集人员</Text>
+          <Text style={styles.stepTitle}>{t('taskGuideDetail.step3.title')}</Text>
         </View>
 
         {/* 人员统计 */}
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: '#f6ffed' }]}>
             <Text style={[styles.statValue, { color: '#52c41a' }]}>{readyCount}</Text>
-            <Text style={styles.statLabel}>已到齐</Text>
+            <Text style={styles.statLabel}>{t('taskGuideDetail.step3.stats.ready')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#fff7e6' }]}>
             <Text style={[styles.statValue, { color: '#faad14' }]}>
               {assignedWorkers.length - readyCount}
             </Text>
-            <Text style={styles.statLabel}>待确认</Text>
+            <Text style={styles.statLabel}>{t('taskGuideDetail.step3.stats.pending')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#f0f5ff' }]}>
             <Text style={[styles.statValue, { color: '#667eea' }]}>{assignedWorkers.length}</Text>
-            <Text style={styles.statLabel}>总人数</Text>
+            <Text style={styles.statLabel}>{t('taskGuideDetail.step3.stats.total')}</Text>
           </View>
         </View>
 
         {/* 人员列表 */}
         <View style={styles.workersSection}>
-          <Text style={styles.sectionTitle}>系统分配人员</Text>
+          <Text style={styles.sectionTitle}>{t('taskGuideDetail.step3.assignedWorkers')}</Text>
           {assignedWorkers.map((worker) => {
             const effGrade = getEfficiencyGrade(worker.efficiency);
             return (
@@ -180,7 +182,7 @@ export function TaskGuideStep3Screen() {
             color={isAllReady ? '#52c41a' : '#999'}
           />
           <Text style={[styles.confirmText, isAllReady && styles.confirmTextActive]}>
-            人员已到齐
+            {t('taskGuideDetail.step3.personnelReady')}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -193,7 +195,7 @@ export function TaskGuideStep3Screen() {
           disabled={!(isAllReady && allReady)}
         >
           <Icon source="play-circle" size={24} color="#fff" />
-          <Text style={styles.startBtnText}>确认开始生产</Text>
+          <Text style={styles.startBtnText}>{t('taskGuideDetail.step3.startProduction')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

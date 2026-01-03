@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 
 // 主题色
 const DISPATCHER_THEME = {
@@ -100,16 +101,17 @@ const mockTransferableWorkers: TransferableWorker[] = [
   { id: 'E005', name: '刘临时', avatar: '刘', employeeCode: '088', status: 'idle', skill: '包装', efficiency: 85, isTemporary: true },
 ];
 
-const transferReasons = [
-  '人员不足紧急调配',
-  '技能匹配调整',
-  '跨车间支援',
-  '定期轮岗',
-  '培训学习',
-  '其他原因',
+const transferReasonKeys = [
+  'urgentStaffing',
+  'skillMatching',
+  'crossWorkshopSupport',
+  'regularRotation',
+  'trainingLearning',
+  'other',
 ];
 
 export default function PersonnelTransferScreen() {
+  const { t } = useTranslation('dispatcher');
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -119,7 +121,7 @@ export default function PersonnelTransferScreen() {
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('18:00');
   const [selectedWorkers, setSelectedWorkers] = useState<Set<string>>(new Set());
-  const [transferReason, setTransferReason] = useState('');
+  const [transferReasonKey, setTransferReasonKey] = useState('');
   const [customReason, setCustomReason] = useState('');
 
   // 下拉选择状态
@@ -161,10 +163,10 @@ export default function PersonnelTransferScreen() {
 
     const warnings: string[] = [];
     if (sourceAfterCapacity < 50) {
-      warnings.push(`${sourceWorkshop.name}调动后人员利用率将低于50%`);
+      warnings.push(t('personnelTransferScreen.warnings.lowUtilization', { workshop: sourceWorkshop.name }));
     }
     if (targetAfterCapacity > 90) {
-      warnings.push(`${targetWorkshop.name}调动后将接近满负荷`);
+      warnings.push(t('personnelTransferScreen.warnings.nearCapacity', { workshop: targetWorkshop.name }));
     }
 
     return {
@@ -189,39 +191,43 @@ export default function PersonnelTransferScreen() {
   // 提交调动申请
   const handleSubmitTransfer = () => {
     if (!sourceWorkshop) {
-      Alert.alert('提示', '请选择源车间');
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.selectSourceWorkshop'));
       return;
     }
     if (!targetWorkshop) {
-      Alert.alert('提示', '请选择目标车间');
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.selectTargetWorkshop'));
       return;
     }
     if (sourceWorkshop.id === targetWorkshop.id) {
-      Alert.alert('提示', '源车间和目标车间不能相同');
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.sameWorkshop'));
       return;
     }
     if (selectedWorkers.size === 0) {
-      Alert.alert('提示', '请选择要调动的员工');
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.selectWorkers'));
       return;
     }
-    if (!transferReason) {
-      Alert.alert('提示', '请选择调动原因');
+    if (!transferReasonKey) {
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.selectReason'));
       return;
     }
-    if (transferReason === '其他原因' && !customReason.trim()) {
-      Alert.alert('提示', '请填写具体原因');
+    if (transferReasonKey === 'other' && !customReason.trim()) {
+      Alert.alert(t('common.info'), t('personnelTransferScreen.validation.enterCustomReason'));
       return;
     }
 
     Alert.alert(
-      '确认调动',
-      `确定将 ${selectedWorkers.size} 名员工从 ${sourceWorkshop.name} 调动到 ${targetWorkshop.name}？`,
+      t('personnelTransferScreen.confirmTransfer'),
+      t('personnelTransferScreen.confirmTransferMessage', {
+        count: selectedWorkers.size,
+        source: sourceWorkshop.name,
+        target: targetWorkshop.name
+      }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: () => {
-            Alert.alert('成功', '调动申请已提交，等待审批');
+            Alert.alert(t('common.success'), t('personnelTransferScreen.submitSuccess'));
             navigation.goBack();
           },
         },
@@ -272,7 +278,7 @@ export default function PersonnelTransferScreen() {
         >
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>人员调动</Text>
+        <Text style={styles.headerTitle}>{t('personnelTransferScreen.title')}</Text>
         <View style={styles.headerRight} />
       </LinearGradient>
 
@@ -289,11 +295,11 @@ export default function PersonnelTransferScreen() {
       >
         {/* 调动配置区 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>调动配置</Text>
+          <Text style={styles.sectionTitle}>{t('personnelTransferScreen.transferConfig')}</Text>
 
           {/* 源车间选择 */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>源车间 *</Text>
+            <Text style={styles.formLabel}>{t('personnelTransferScreen.sourceWorkshop')} *</Text>
             <TouchableOpacity
               style={styles.selectInput}
               onPress={() => {
@@ -306,7 +312,7 @@ export default function PersonnelTransferScreen() {
                 styles.selectInputText,
                 !sourceWorkshop && styles.selectPlaceholder
               ]}>
-                {sourceWorkshop ? sourceWorkshop.name : '请选择源车间'}
+                {sourceWorkshop ? sourceWorkshop.name : t('personnelTransferScreen.selectSourceWorkshop')}
               </Text>
               <Ionicons
                 name={showSourceDropdown ? 'chevron-up' : 'chevron-down'}
@@ -324,7 +330,7 @@ export default function PersonnelTransferScreen() {
 
           {/* 目标车间选择 */}
           <View style={styles.formGroup}>
-            <Text style={styles.formLabel}>目标车间 *</Text>
+            <Text style={styles.formLabel}>{t('personnelTransferScreen.targetWorkshop')} *</Text>
             <TouchableOpacity
               style={styles.selectInput}
               onPress={() => {
@@ -337,7 +343,7 @@ export default function PersonnelTransferScreen() {
                 styles.selectInputText,
                 !targetWorkshop && styles.selectPlaceholder
               ]}>
-                {targetWorkshop ? targetWorkshop.name : '请选择目标车间'}
+                {targetWorkshop ? targetWorkshop.name : t('personnelTransferScreen.selectTargetWorkshop')}
               </Text>
               <Ionicons
                 name={showTargetDropdown ? 'chevron-up' : 'chevron-down'}
@@ -356,7 +362,7 @@ export default function PersonnelTransferScreen() {
           {/* 时间范围 */}
           <View style={styles.timeRow}>
             <View style={[styles.formGroup, { flex: 1, marginRight: 8 }]}>
-              <Text style={styles.formLabel}>开始时间</Text>
+              <Text style={styles.formLabel}>{t('personnelTransferScreen.startTime')}</Text>
               <View style={styles.timeInput}>
                 <Ionicons name="time-outline" size={18} color="#999" />
                 <TextInput
@@ -368,7 +374,7 @@ export default function PersonnelTransferScreen() {
               </View>
             </View>
             <View style={[styles.formGroup, { flex: 1, marginLeft: 8 }]}>
-              <Text style={styles.formLabel}>结束时间</Text>
+              <Text style={styles.formLabel}>{t('personnelTransferScreen.endTime')}</Text>
               <View style={styles.timeInput}>
                 <Ionicons name="time-outline" size={18} color="#999" />
                 <TextInput
@@ -386,9 +392,9 @@ export default function PersonnelTransferScreen() {
         {sourceWorkshop && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>选择员工</Text>
+              <Text style={styles.sectionTitle}>{t('personnelTransferScreen.selectWorkers')}</Text>
               <Text style={styles.selectionCount}>
-                已选 {selectedWorkers.size} 人
+                {t('personnelTransferScreen.selectedCount', { count: selectedWorkers.size })}
               </Text>
             </View>
 
@@ -428,17 +434,17 @@ export default function PersonnelTransferScreen() {
                     <Text style={styles.workerCode}>({worker.employeeCode})</Text>
                     {worker.isTemporary && (
                       <View style={styles.tempBadge}>
-                        <Text style={styles.tempBadgeText}>临时</Text>
+                        <Text style={styles.tempBadgeText}>{t('personnelTransferScreen.temporary')}</Text>
                       </View>
                     )}
                   </View>
                   <View style={styles.workerMeta}>
                     <Text style={styles.workerSkill}>{worker.skill}</Text>
-                    <Text style={styles.workerEfficiency}>效率 {worker.efficiency}%</Text>
+                    <Text style={styles.workerEfficiency}>{t('personnelTransferScreen.efficiency')} {worker.efficiency}%</Text>
                   </View>
                   {worker.status === 'working' && worker.currentTask && (
                     <Text style={styles.workerTask}>
-                      当前任务: {worker.currentTask}
+                      {t('personnelTransferScreen.currentTask')}: {worker.currentTask}
                     </Text>
                   )}
                 </View>
@@ -451,7 +457,7 @@ export default function PersonnelTransferScreen() {
                     styles.workerStatusText,
                     worker.status === 'idle' ? styles.statusIdleText : styles.statusWorkingText
                   ]}>
-                    {worker.status === 'idle' ? '空闲' : '工作中'}
+                    {worker.status === 'idle' ? t('personnelTransferScreen.status.idle') : t('personnelTransferScreen.status.working')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -461,7 +467,7 @@ export default function PersonnelTransferScreen() {
 
         {/* 调动原因 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>调动原因 *</Text>
+          <Text style={styles.sectionTitle}>{t('personnelTransferScreen.transferReason')} *</Text>
 
           <TouchableOpacity
             style={styles.selectInput}
@@ -473,9 +479,9 @@ export default function PersonnelTransferScreen() {
           >
             <Text style={[
               styles.selectInputText,
-              !transferReason && styles.selectPlaceholder
+              !transferReasonKey && styles.selectPlaceholder
             ]}>
-              {transferReason || '请选择调动原因'}
+              {transferReasonKey ? t(`personnelTransferScreen.reasons.${transferReasonKey}`) : t('personnelTransferScreen.selectReason')}
             </Text>
             <Ionicons
               name={showReasonDropdown ? 'chevron-up' : 'chevron-down'}
@@ -486,25 +492,25 @@ export default function PersonnelTransferScreen() {
 
           {showReasonDropdown && (
             <View style={styles.dropdown}>
-              {transferReasons.map((reason) => (
+              {transferReasonKeys.map((reasonKey) => (
                 <TouchableOpacity
-                  key={reason}
+                  key={reasonKey}
                   style={styles.dropdownItem}
                   onPress={() => {
-                    setTransferReason(reason);
+                    setTransferReasonKey(reasonKey);
                     setShowReasonDropdown(false);
                   }}
                 >
-                  <Text style={styles.dropdownItemText}>{reason}</Text>
+                  <Text style={styles.dropdownItemText}>{t(`personnelTransferScreen.reasons.${reasonKey}`)}</Text>
                 </TouchableOpacity>
               ))}
             </View>
           )}
 
-          {transferReason === '其他原因' && (
+          {transferReasonKey === 'other' && (
             <TextInput
               style={styles.customReasonInput}
-              placeholder="请填写具体原因..."
+              placeholder={t('personnelTransferScreen.customReasonPlaceholder')}
               value={customReason}
               onChangeText={setCustomReason}
               multiline
@@ -517,25 +523,25 @@ export default function PersonnelTransferScreen() {
         {/* 影响预览 */}
         {impact && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>调动影响预览</Text>
+            <Text style={styles.sectionTitle}>{t('personnelTransferScreen.impactPreview')}</Text>
 
             <View style={styles.impactRow}>
               {/* 源车间影响 */}
               <View style={[styles.impactCard, styles.impactSource]}>
                 <Text style={styles.impactCardTitle}>
-                  <Ionicons name="arrow-up-circle" size={16} color="#ff4d4f" /> 源车间
+                  <Ionicons name="arrow-up-circle" size={16} color="#ff4d4f" /> {t('personnelTransferScreen.impact.source')}
                 </Text>
                 <Text style={styles.impactWorkshopName}>
                   {impact.sourceWorkshop.name}
                 </Text>
                 <View style={styles.impactMetric}>
-                  <Text style={styles.impactLabel}>人员</Text>
+                  <Text style={styles.impactLabel}>{t('personnelTransferScreen.impact.personnel')}</Text>
                   <Text style={styles.impactValue}>
                     {impact.sourceWorkshop.beforeWorkers} → {impact.sourceWorkshop.afterWorkers}
                   </Text>
                 </View>
                 <View style={styles.impactMetric}>
-                  <Text style={styles.impactLabel}>利用率</Text>
+                  <Text style={styles.impactLabel}>{t('personnelTransferScreen.impact.utilization')}</Text>
                   <Text style={[
                     styles.impactValue,
                     impact.sourceWorkshop.afterCapacity < 50 && styles.impactWarning
@@ -553,19 +559,19 @@ export default function PersonnelTransferScreen() {
               {/* 目标车间影响 */}
               <View style={[styles.impactCard, styles.impactTarget]}>
                 <Text style={styles.impactCardTitle}>
-                  <Ionicons name="arrow-down-circle" size={16} color="#52c41a" /> 目标车间
+                  <Ionicons name="arrow-down-circle" size={16} color="#52c41a" /> {t('personnelTransferScreen.impact.target')}
                 </Text>
                 <Text style={styles.impactWorkshopName}>
                   {impact.targetWorkshop.name}
                 </Text>
                 <View style={styles.impactMetric}>
-                  <Text style={styles.impactLabel}>人员</Text>
+                  <Text style={styles.impactLabel}>{t('personnelTransferScreen.impact.personnel')}</Text>
                   <Text style={styles.impactValue}>
                     {impact.targetWorkshop.beforeWorkers} → {impact.targetWorkshop.afterWorkers}
                   </Text>
                 </View>
                 <View style={styles.impactMetric}>
-                  <Text style={styles.impactLabel}>利用率</Text>
+                  <Text style={styles.impactLabel}>{t('personnelTransferScreen.impact.utilization')}</Text>
                   <Text style={[
                     styles.impactValue,
                     impact.targetWorkshop.afterCapacity > 90 && styles.impactWarning
@@ -600,7 +606,7 @@ export default function PersonnelTransferScreen() {
           style={styles.cancelButton}
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.cancelButtonText}>取消</Text>
+          <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[
@@ -617,7 +623,7 @@ export default function PersonnelTransferScreen() {
             style={styles.submitButtonGradient}
           >
             <Ionicons name="swap-horizontal" size={20} color="#fff" />
-            <Text style={styles.submitButtonText}>提交调动申请</Text>
+            <Text style={styles.submitButtonText}>{t('personnelTransferScreen.submitTransfer')}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

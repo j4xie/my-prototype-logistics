@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSWorkersStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSWorkersStackParamList, 'WorkerAssign'>;
@@ -21,6 +22,7 @@ type RouteProps = RouteProp<WSWorkersStackParamList, 'WorkerAssign'>;
 export function WorkerAssignScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
 
   // 可选的员工列表
   const [workers, setWorkers] = useState([
@@ -52,13 +54,13 @@ export function WorkerAssignScreen() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'available':
-        return { text: '可用', color: '#52c41a', bg: '#f6ffed' };
+        return { text: t('workers.status.available'), color: '#52c41a', bg: '#f6ffed' };
       case 'busy':
-        return { text: '忙碌', color: '#faad14', bg: '#fff7e6' };
+        return { text: t('workers.status.busy'), color: '#faad14', bg: '#fff7e6' };
       case 'off_duty':
-        return { text: '不在岗', color: '#999', bg: '#f5f5f5' };
+        return { text: t('workers.status.offDuty'), color: '#999', bg: '#f5f5f5' };
       default:
-        return { text: '未知', color: '#999', bg: '#f5f5f5' };
+        return { text: t('workers.status.unknown'), color: '#999', bg: '#f5f5f5' };
     }
   };
 
@@ -71,20 +73,23 @@ export function WorkerAssignScreen() {
   const handleConfirm = () => {
     const selectedWorkers = workers.filter((w) => w.selected);
     if (selectedWorkers.length < batch.requiredWorkers) {
-      Alert.alert('提示', `请至少选择 ${batch.requiredWorkers} 名员工`);
+      Alert.alert(t('common.confirm'), t('workers.assign.minWorkersAlert', { required: batch.requiredWorkers }));
       return;
     }
 
     Alert.alert(
-      '确认分配',
-      `确定将 ${selectedWorkers.map((w) => w.name).join('、')} 分配到批次 ${batch.batchNumber}？`,
+      t('workers.assign.confirmTitle'),
+      t('workers.assign.confirmMessage', {
+        workers: selectedWorkers.map((w) => w.name).join('、'),
+        batch: batch.batchNumber
+      }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认',
+          text: t('common.confirm'),
           onPress: () => {
-            Alert.alert('成功', '员工分配成功！', [
-              { text: '确定', onPress: () => navigation.goBack() },
+            Alert.alert(t('common.confirm'), t('workers.assign.successMessage'), [
+              { text: t('common.confirm'), onPress: () => navigation.goBack() },
             ]);
           },
         },
@@ -99,7 +104,7 @@ export function WorkerAssignScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>分配员工</Text>
+        <Text style={styles.headerTitle}>{t('workers.assign.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -111,14 +116,14 @@ export function WorkerAssignScreen() {
           <View style={styles.requiredRow}>
             <Icon source="account-group" size={16} color="#667eea" />
             <Text style={styles.requiredText}>
-              需要 {batch.requiredWorkers} 名员工 · 已选 {selectedCount} 名
+              {t('workers.assign.requiredWorkers', { required: batch.requiredWorkers, selected: selectedCount })}
             </Text>
           </View>
         </View>
 
         {/* 员工列表 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>选择员工</Text>
+          <Text style={styles.sectionTitle}>{t('workers.assign.selectWorkers')}</Text>
           <View style={styles.workersList}>
             {workers.map((worker) => {
               const statusStyle = getStatusStyle(worker.status);
@@ -175,7 +180,7 @@ export function WorkerAssignScreen() {
                           { color: getEfficiencyColor(worker.efficiency) },
                         ]}
                       >
-                        效率 {worker.efficiency}%
+                        {t('workers.efficiency.label', { value: worker.efficiency })}
                       </Text>
                     </View>
                     <View
@@ -206,7 +211,7 @@ export function WorkerAssignScreen() {
         >
           <Icon source="account-check" size={20} color="#fff" />
           <Text style={styles.confirmBtnText}>
-            确认分配 ({selectedCount}/{batch.requiredWorkers})
+            {t('workers.assign.confirmButton', { selected: selectedCount, required: batch.requiredWorkers })}
           </Text>
         </TouchableOpacity>
       </View>

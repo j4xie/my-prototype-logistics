@@ -1,0 +1,894 @@
+{
+  "home": {
+    "title": "仓储工作台",
+    "headerSubtitle": "今日入库 {{inbound}} 单 | 待出货 {{pending}} 单",
+    "tabs": {
+      "outbound": "出货任务",
+      "inbound": "入库任务"
+    },
+    "sections": {
+      "todayOutbound": "今日出货 - 按发出时间排序",
+      "todayInbound": "今日入库 - 调度安排",
+      "viewAll": "查看全部 >"
+    },
+    "stats": {
+      "todayInbound": "今日入库",
+      "todayOutbound": "今日出库",
+      "pendingOutbound": "待出货",
+      "alertCount": "库存预警"
+    },
+    "units": {
+      "kg": "kg",
+      "orders": "单",
+      "items": "项"
+    },
+    "outboundTask": {
+      "customer": "客户",
+      "product": "产品",
+      "quantity": "数量",
+      "urgent": "[急]",
+      "startPacking": "开始打包",
+      "finishPacking": "完成打包"
+    },
+    "inboundTask": {
+      "supplier": "供应商",
+      "goods": "货品",
+      "expectedQuantity": "预计数量",
+      "confirmInbound": "确认入库",
+      "finishInbound": "完成入库",
+      "inboundTime": "入库时间"
+    },
+    "status": {
+      "waiting": "待打包",
+      "packing": "打包中",
+      "packed": "已打包",
+      "shipped": "已发货",
+      "pending": "待入库",
+      "arrived": "已到货",
+      "inspecting": "质检中",
+      "completed": "已入库"
+    },
+    "alerts": {
+      "title": "库存预警",
+      "safetyStock": "安全库存",
+      "expiring": "即将过期"
+    },
+    "tempMonitor": {
+      "title": "温控监控",
+      "online": "在线",
+      "offline": "离线",
+      "normal": "正常",
+      "warning": "警告",
+      "error": "异常"
+    },
+    "tempZones": {
+      "coldStorage": "冷藏区",
+      "freezer": "冷冻区"
+    }
+  },
+  "inventory": {
+    "title": "库存管理",
+    "headerSubtitle": "在库 {{total}} 种 | 总量 {{weight}} kg",
+    "loading": "加载中...",
+    "quickActions": {
+      "check": "盘点",
+      "transfer": "调拨",
+      "location": "库位",
+      "expire": "过期"
+    },
+    "search": {
+      "placeholder": "搜索物料名称/批次号"
+    },
+    "filter": {
+      "all": "全部",
+      "fresh": "鲜品",
+      "frozen": "冻品",
+      "dry": "干货"
+    },
+    "card": {
+      "batch": "批次",
+      "location": "库位",
+      "status": "状态",
+      "warning": "预警",
+      "updated": "更新",
+      "viewDetail": "查看详情"
+    },
+    "warning": {
+      "expired": "已过期",
+      "expiringSoon": "{{days}}天后过期",
+      "expiring": "即将过期",
+      "lowStock": "库存不足",
+      "normal": "正常"
+    },
+    "overview": {
+      "title": "库存概览",
+      "materialTypes": "物料种类",
+      "totalStock": "总库存(kg)",
+      "stockValue": "库存价值",
+      "warningCount": "预警数"
+    }
+  },
+  "inbound": {
+    "title": "入库管理",
+    "headerSubtitle": "待确认 {{pending}} 单 | 今日入库 {{weight}} kg",
+    "create": {
+      "title": "新建入库",
+      "materialInfo": "物料信息",
+      "materialName": "物料名称",
+      "materialType": "物料类型",
+      "supplier": "供应商",
+      "quantityPrice": "数量与价格",
+      "quantity": "数量(kg)",
+      "unitPrice": "单价(元/kg)",
+      "qualityInfo": "保质信息",
+      "productionDate": "生产日期",
+      "expiryDate": "保质期至",
+      "storageTemp": "存储温度",
+      "remarks": "备注",
+      "required": "*",
+      "placeholders": {
+        "materialName": "请输入物料名称",
+        "supplier": "请选择或输入供应商",
+        "quantity": "0",
+        "unitPrice": "0.00",
+        "productionDate": "YYYY-MM-DD",
+        "expiryDate": "YYYY-MM-DD",
+        "storageTemp": "如: -2°C ~ 4°C",
+        "remarks": "请输入备注信息"
+      },
+      "submit": "提交入库",
+      "submitting": "提交中...",
+      "cancel": "取消",
+      "success": "成功",
+      "successMessage": "入库单创建成功",
+      "confirm": "确定",
+      "alert": "提示",
+      "fillRequired": "请填写必填项",
+      "confirmSubmit": "确认提交",
+      "confirmMessage": "确定要创建此入库单吗？"
+    },
+    "detail": {
+      "title": "入库详情",
+      "loading": "加载中...",
+      "notFound": "未找到入库记录",
+      "basicInfo": "基本信息",
+      "qualityInfo": "保质信息",
+      "logisticsInfo": "物流信息",
+      "supplier": "供应商",
+      "contact": "联系人",
+      "unitPrice": "单价",
+      "amount": "金额",
+      "productionDate": "生产日期",
+      "expiryDate": "保质期至",
+      "storageTemp": "存储温度",
+      "arrivalTime": "到货时间",
+      "vehicleNo": "车牌号",
+      "driver": "司机",
+      "phone": "联系电话",
+      "remarks": "备注",
+      "back": "返回",
+      "confirmInbound": "确认入库",
+      "confirmTitle": "确认入库",
+      "confirmMessage": "确定要确认此入库单吗？",
+      "cancel": "取消",
+      "confirm": "确定",
+      "success": "成功",
+      "successMessage": "入库确认成功，进入质检流程",
+      "status": {
+        "available": "已入库",
+        "reserved": "已预留",
+        "depleted": "已耗尽",
+        "expired": "已过期",
+        "pending": "待确认"
+      }
+    },
+    "inspect": {
+      "title": "质检作业",
+      "loading": "加载中...",
+      "notFound": "未找到批次信息",
+      "inspecting": "质检中",
+      "material": "物料",
+      "supplier": "供应商",
+      "inspectionItems": "质检项目",
+      "progress": "{{current}}/{{total}}",
+      "items": {
+        "appearance": "外观检查 - 颜色正常，无异物",
+        "smell": "气味检查 - 无异味",
+        "temp": "温度检测 - 符合冷链要求",
+        "package": "包装检查 - 完整无破损",
+        "certificate": "证书检查 - 资质齐全有效"
+      },
+      "inspectionData": "质检数据",
+      "sampleWeight": "抽样重量(kg)",
+      "actualTemp": "实测温度(°C)",
+      "inspectionRemarks": "质检备注",
+      "placeholders": {
+        "sampleWeight": "0",
+        "actualTemp": "-18",
+        "remarks": "请输入质检备注..."
+      },
+      "reject": "不通过",
+      "pass": "质检通过",
+      "passing": "提交中...",
+      "alert": "提示",
+      "completeAll": "请完成所有质检项目",
+      "passTitle": "质检通过",
+      "passMessage": "确定此批次质检通过吗？",
+      "rejectTitle": "质检不通过",
+      "rejectMessage": "确定此批次质检不通过吗？",
+      "cancel": "取消",
+      "confirm": "确定",
+      "success": "成功",
+      "passSuccess": "质检通过，请进行上架操作",
+      "rejectSuccess": "批次已标记为质检不通过",
+      "error": "错误",
+      "invalidBatchId": "批次ID无效，无法提交质检",
+      "notLoggedIn": "用户未登录"
+    },
+    "putaway": {
+      "title": "确认上架",
+      "loading": "加载中...",
+      "notFound": "未找到批次信息",
+      "material": "物料",
+      "supplier": "供应商",
+      "quantity": "数量",
+      "storageTemp": "存储温度",
+      "selectLocation": "选择库位",
+      "recommend": "推荐",
+      "putawayQuantity": "上架数量",
+      "quantityMismatch": "注意：上架数量与入库数量不一致",
+      "remarks": "备注",
+      "placeholders": {
+        "remarks": "请输入上架备注..."
+      },
+      "back": "返回",
+      "confirm": "确认上架",
+      "confirming": "提交中...",
+      "alert": "提示",
+      "selectLocationAlert": "请选择上架库位",
+      "confirmTitle": "确认上架",
+      "confirmMessage": "确定将货物上架到所选库位吗？",
+      "cancel": "取消",
+      "success": "成功",
+      "successMessage": "货物已上架完成",
+      "inspectPass": "质检通过",
+      "inspectPending": "待质检"
+    },
+    "list": {
+      "title": "入库管理",
+      "headerSubtitle": "待确认 {{pending}} 单 | 今日入库 {{weight}} kg",
+      "loading": "加载中...",
+      "newInbound": "新建入库",
+      "scanInbound": "扫码入库",
+      "search": "搜索批次号/物料/供应商",
+      "filter": {
+        "all": "全部",
+        "pending": "待确认",
+        "inspecting": "质检中",
+        "completed": "已完成"
+      },
+      "status": {
+        "pending": "待确认",
+        "inspecting": "质检中",
+        "putaway": "待上架",
+        "completed": "已完成"
+      },
+      "actions": {
+        "confirmInbound": "确认入库",
+        "continueInspect": "继续质检",
+        "confirmPutaway": "确认上架",
+        "viewDetail": "查看详情"
+      },
+      "material": "物料",
+      "supplier": "供应商",
+      "quantity": "数量",
+      "stats": {
+        "title": "今日入库统计",
+        "inboundOrders": "入库单数",
+        "inboundWeight": "入库重量(kg)",
+        "supplierCount": "供应商数",
+        "passRate": "质检合格率"
+      }
+    }
+  },
+  "batch": {
+    "detail": {
+      "title": "批次详情",
+      "loading": "加载批次详情...",
+      "noData": "暂无批次数据",
+      "status": {
+        "normal": "正常",
+        "warning": "临期提醒",
+        "danger": "已过期",
+        "expiringSoon": "即将过期"
+      },
+      "daysRemaining": "剩余 {{days}} 天 | 建议优先消耗",
+      "batchInfo": "批次信息",
+      "batchNumber": "批次号",
+      "materialName": "物料名称",
+      "materialType": "物料类型",
+      "currentQty": "当前数量",
+      "initialQty": "初始数量",
+      "consumed": "已消耗",
+      "timeInfo": "时间信息",
+      "inboundDate": "入库日期",
+      "productionDate": "生产日期",
+      "shelfLife": "保质期",
+      "expiryDate": "到期日期",
+      "daysLater": "{{days}}天后",
+      "storageInfo": "储存信息",
+      "location": "库位",
+      "temperature": "储存温度",
+      "tempStatus": "符合要求",
+      "qualityGrade": "质量等级",
+      "sourceInfo": "来源信息",
+      "supplier": "供应商",
+      "inboundNumber": "入库单号",
+      "inspector": "质检员",
+      "unitPrice": "单价",
+      "batchValue": "批次价值",
+      "aiAnalysis": "AI 质量关联分析",
+      "smartAnalysis": "智能分析",
+      "qualityScore": "质量评分",
+      "qualityDetails": {
+        "freshness": "新鲜度",
+        "tempCompliance": "温度合规",
+        "appearance": "外观品质"
+      },
+      "correlationAnalysis": "关联因素分析",
+      "correlationFactors": {
+        "supplierRating": "供应商评级",
+        "coldChain": "冷链控制",
+        "turnover": "库存周转",
+        "shelfLifePressure": "保质期压力",
+        "desc": {
+          "supplierA": "{{supplier}} A级供应商",
+          "tempControl": "全程{{temp}}恒温",
+          "turnoverDays": "周转天数{{days}}天，行业平均{{avgDays}}天",
+          "expiring": "剩余{{days}}天，建议加速消耗",
+          "good": "剩余{{days}}天，状态良好"
+        }
+      },
+      "consumptionLog": "消耗记录",
+      "currentStock": "当前库存 {{qty}}kg",
+      "actions": {
+        "trace": "追溯查询",
+        "expireHandle": "过期处理"
+      }
+    }
+  },
+  "messages": {
+    "loadFailed": "加载仓储首页数据失败",
+    "loadInventoryFailed": "加载库存数据失败",
+    "unknownCustomer": "未知客户",
+    "unknownSupplier": "未知供应商",
+    "unknownMaterial": "未知材料",
+    "defaultLocation": "默认库位",
+    "toBeArranged": "待安排",
+    "loadBatchFailed": "加载批次信息失败",
+    "loadDetailFailed": "加载入库详情失败",
+    "createFailed": "创建入库单失败",
+    "submitInspectionFailed": "提交质检失败",
+    "putawayFailed": "上架失败",
+    "loadListFailed": "加载入库列表失败",
+    "loadBatchDetailFailed": "加载批次详情失败"
+  },
+  "profile": {
+    "title": "我的",
+    "loading": "加载中...",
+    "loadStatsError": "加载统计数据失败",
+    "role": "仓储管理员",
+    "edit": "编辑",
+    "todayStats": "今日统计",
+    "stats": {
+      "inbound": "入库单",
+      "outbound": "出库单",
+      "check": "盘点",
+      "alert": "异常"
+    },
+    "sections": {
+      "commonFeatures": "常用功能",
+      "systemFeatures": "系统功能",
+      "helpFeedback": "帮助与反馈"
+    },
+    "menu": {
+      "ioStats": "出入库统计",
+      "operationLog": "操作记录",
+      "checkRecord": "盘点记录",
+      "expireHandle": "过期处理",
+      "settings": "设置",
+      "tempMonitor": "温控监控",
+      "scan": "扫码作业",
+      "recall": "召回管理",
+      "help": "使用帮助",
+      "feedback": "意见反馈",
+      "about": "关于"
+    },
+    "dialogs": {
+      "helpTitle": "使用帮助",
+      "helpMessage": "功能开发中...",
+      "feedbackTitle": "意见反馈",
+      "feedbackMessage": "功能开发中...",
+      "aboutTitle": "关于",
+      "aboutMessage": "白垩纪食品溯源系统 v1.0.0",
+      "logoutTitle": "退出登录",
+      "logoutMessage": "确定要退出登录吗?",
+      "cancel": "取消",
+      "confirm": "确定"
+    },
+    "logout": "退出登录",
+    "version": "v1.0.0"
+  },
+  "settings": {
+    "title": "设置",
+    "sections": {
+      "general": "通用设置",
+      "notification": "通知设置",
+      "security": "安全设置",
+      "about": "关于"
+    },
+    "language": "语言",
+    "theme": "主题",
+    "fontSize": "字体大小",
+    "enableNotifications": "启用通知",
+    "enableSound": "启用声音",
+    "changePassword": "修改密码",
+    "clearCache": "清除缓存",
+    "version": "版本",
+    "checkUpdate": "检查更新"
+  },
+  "operationLog": {
+    "title": "操作记录",
+    "headerSubtitle": "查看历史操作记录",
+    "loading": "加载中...",
+    "noLogs": "暂无操作记录",
+    "filter": {
+      "all": "全部",
+      "inbound": "入库",
+      "outbound": "出库",
+      "transfer": "调拨",
+      "check": "盘点"
+    },
+    "search": "搜索操作记录",
+    "operation": "操作",
+    "operator": "操作人",
+    "time": "时间",
+    "details": "详情"
+  },
+  "profileEdit": {
+    "title": "编辑个人信息",
+    "loading": "加载中...",
+    "saving": "保存中...",
+    "save": "保存",
+    "cancel": "取消",
+    "fields": {
+      "avatar": "头像",
+      "name": "姓名",
+      "email": "邮箱",
+      "phone": "电话",
+      "department": "部门",
+      "position": "职位"
+    },
+    "placeholders": {
+      "name": "请输入姓名",
+      "email": "请输入邮箱",
+      "phone": "请输入电话号码",
+      "department": "请输入部门",
+      "position": "请输入职位"
+    },
+    "success": "保存成功",
+    "error": "保存失败"
+  },
+  "outbound": {
+    "title": "出货管理",
+    "headerSubtitle": "待处理 {{pending}} 单 | 今日出库 {{weight}} kg",
+    "loading": "加载中...",
+    "loadingData": "加载出货数据...",
+    "notice": "按调度安排的发出时间排序，请优先处理紧急订单",
+    "actions": {
+      "loadingManage": "装车管理",
+      "scanOutbound": "扫码出库",
+      "startPacking": "开始打包",
+      "continuePacking": "继续打包",
+      "confirmShip": "确认发货",
+      "viewLogistics": "查看物流",
+      "viewDetails": "查看详情"
+    },
+    "filter": {
+      "all": "全部",
+      "waiting": "待打包",
+      "packing": "打包中",
+      "ready": "待发货",
+      "shipped": "已发货"
+    },
+    "status": {
+      "waiting": "待打包",
+      "packing": "打包中",
+      "ready": "待发货",
+      "shipped": "已发货",
+      "delivered": "已送达"
+    },
+    "card": {
+      "orderNumber": "订单号",
+      "urgent": "紧急",
+      "customer": "客户",
+      "product": "产品",
+      "quantity": "数量",
+      "dispatchBefore": "{{time}} 前发出",
+      "packingProgress": "打包进度: {{progress}}",
+      "packed": "已打包完成，等待装车",
+      "delivered": "{{time}} 签收"
+    },
+    "stats": {
+      "title": "今日出货统计",
+      "outboundOrders": "出货单数",
+      "outboundWeight": "出货重量(kg)",
+      "customerCount": "客户数",
+      "onTimeRate": "准时发货率"
+    },
+    "detail": {
+      "title": "出货详情",
+      "loading": "加载中...",
+      "basicInfo": "基本信息",
+      "productInfo": "产品信息",
+      "logisticsInfo": "物流信息",
+      "back": "返回"
+    },
+    "packing": {
+      "title": "打包作业",
+      "loading": "加载中...",
+      "selectBatch": "选择批次",
+      "packingList": "打包清单",
+      "scannedItems": "已扫描项目",
+      "confirmPacking": "确认打包完成",
+      "success": "打包完成"
+    },
+    "shipping": {
+      "title": "确认发货",
+      "loading": "加载中...",
+      "selectLogistics": "选择物流",
+      "trackingNumber": "运单号",
+      "driver": "司机",
+      "vehicle": "车辆",
+      "confirmShip": "确认发货",
+      "success": "发货成功"
+    },
+    "loading": {
+      "title": "装车管理",
+      "loading": "加载中...",
+      "vehicleInfo": "车辆信息",
+      "loadedItems": "已装货物",
+      "confirmLoading": "确认装车完成",
+      "success": "装车完成"
+    },
+    "tracking": {
+      "title": "物流跟踪",
+      "loading": "加载中...",
+      "trackingNumber": "运单号",
+      "logistics": "物流公司",
+      "status": "状态",
+      "timeline": "物流轨迹"
+    }
+  },
+  "shared": {
+    "batchTrace": {
+      "title": "批次追溯",
+      "loading": "加载中...",
+      "batchNumber": "批次号",
+      "traceability": "追溯信息",
+      "upstream": "上游信息",
+      "downstream": "下游信息",
+      "qualityRecords": "质检记录"
+    },
+    "recall": {
+      "title": "召回管理",
+      "loading": "加载中...",
+      "createRecall": "新建召回",
+      "recallList": "召回列表",
+      "status": {
+        "pending": "待处理",
+        "processing": "处理中",
+        "completed": "已完成"
+      },
+      "reason": "召回原因",
+      "affectedBatches": "涉及批次",
+      "actions": "处理措施"
+    },
+    "scanOperation": {
+      "title": "扫码作业",
+      "inbound": "扫码入库",
+      "outbound": "扫码出库",
+      "transfer": "扫码调拨",
+      "check": "扫码盘点",
+      "scanPrompt": "请扫描二维码或条形码",
+      "scanSuccess": "扫描成功",
+      "scanError": "扫描失败",
+      "invalidCode": "无效的二维码"
+    },
+    "alertList": {
+      "title": "库存预警",
+      "headerSubtitle": "待处理 {{count}} 项预警",
+      "loading": "加载中...",
+      "filter": {
+        "all": "全部",
+        "lowStock": "库存不足",
+        "expiring": "即将过期",
+        "expired": "已过期",
+        "tempAlert": "温度异常"
+      },
+      "types": {
+        "lowStock": "库存不足",
+        "expiring": "即将过期",
+        "expired": "已过期",
+        "tempAlert": "温度异常"
+      },
+      "handle": "处理",
+      "handled": "已处理"
+    },
+    "alertHandle": {
+      "title": "处理预警",
+      "loading": "加载中...",
+      "alertInfo": "预警信息",
+      "alertType": "预警类型",
+      "handleAction": "处理措施",
+      "handleRemark": "处理备注",
+      "confirmHandle": "确认处理",
+      "success": "处理成功"
+    },
+    "conversion": {
+      "title": "转化分析",
+      "loading": "加载中...",
+      "sourceMaterial": "源物料",
+      "targetProduct": "目标产品",
+      "conversionRate": "转化率",
+      "analysis": "分析报告"
+    }
+  },
+  "tempMonitor": {
+    "title": "温控监控",
+    "headerSubtitle": "实时监控仓库温度",
+    "loading": "加载中...",
+    "zones": {
+      "coldStorage": "冷藏区",
+      "freezer": "冷冻区",
+      "dry": "常温区"
+    },
+    "status": {
+      "normal": "正常",
+      "warning": "警告",
+      "error": "异常",
+      "offline": "离线"
+    },
+    "currentTemp": "当前温度",
+    "targetTemp": "目标温度",
+    "humidity": "湿度",
+    "lastUpdate": "更新时间",
+    "alerts": "温度告警",
+    "history": "历史记录"
+  },
+  "locationManage": {
+    "title": "库位管理",
+    "headerSubtitle": "管理仓库库位",
+    "loading": "加载中...",
+    "addLocation": "新增库位",
+    "locationCode": "库位编码",
+    "locationType": "库位类型",
+    "capacity": "容量",
+    "utilization": "利用率",
+    "status": {
+      "empty": "空闲",
+      "inUse": "使用中",
+      "full": "已满",
+      "disabled": "禁用"
+    },
+    "edit": "编辑",
+    "delete": "删除"
+  },
+  "inventoryTransfer": {
+    "title": "库存调拨",
+    "loading": "加载中...",
+    "sourceLocation": "源库位",
+    "targetLocation": "目标库位",
+    "material": "物料",
+    "quantity": "数量",
+    "reason": "调拨原因",
+    "confirmTransfer": "确认调拨",
+    "success": "调拨成功"
+  },
+  "inventoryCheck": {
+    "title": "库存盘点",
+    "loading": "加载中...",
+    "createCheck": "新建盘点",
+    "checkList": "盘点列表",
+    "status": {
+      "pending": "待盘点",
+      "checking": "盘点中",
+      "completed": "已完成"
+    },
+    "checkType": {
+      "full": "全盘",
+      "partial": "抽盘",
+      "cycle": "循环盘点"
+    },
+    "systemQty": "账面数量",
+    "actualQty": "实际数量",
+    "difference": "差异",
+    "confirmCheck": "确认盘点",
+    "success": "盘点完成",
+    "error": "错误",
+    "factoryNotFound": "无法获取工厂信息，请重新登录",
+    "loadFailed": "加载失败",
+    "cannotLoadBatches": "无法加载批次数据，请稍后重试",
+    "hint": "提示",
+    "pleaseSelectBatch": "请先选择批次",
+    "pleaseEnterValidQuantity": "请输入有效的实际数量",
+    "recordAdded": "已添加盘点记录",
+    "confirmDelete": "确认删除",
+    "confirmDeleteRecord": "确定要删除这条盘点记录吗？",
+    "pleaseAddAtLeastOneRecord": "请至少添加一条盘点记录",
+    "partialFailed": "部分失败",
+    "partialFailedMessage": "已保存 {{saved}}/{{total}} 条盘点记录\n\n{{failed}} 条记录保存失败，请检查后重试",
+    "checkComplete": "盘点完成",
+    "checkCompleteMessage": "已保存 {{count}} 条盘点记录\n\n差异已同步到库存系统",
+    "saveFailed": "保存失败",
+    "saveError": "保存盘点记录时出现错误",
+    "statusNormal": "正常",
+    "statusDeviation": "偏差",
+    "statusAbnormal": "异常",
+    "selectBatch": "选择批次",
+    "batchNumber": "批次号",
+    "materialType": "物料类型：",
+    "systemQuantity": "系统数量：",
+    "actualQuantityLabel": "实际数量 ({{unit}})",
+    "enterActualQuantityHint": "请输入实际盘点的数量",
+    "addRecord": "添加盘点记录",
+    "checkRecords": "盘点记录",
+    "batch": "批次",
+    "system": "系统",
+    "actual": "实际",
+    "deleteLastRecord": "删除最后一条",
+    "summary": "统计汇总",
+    "checkedBatches": "盘点批次",
+    "surplusBatches": "盘盈批次",
+    "deficitBatches": "盘亏批次",
+    "saveCheckResult": "保存盘点结果"
+  },
+  "inventoryStats": {
+    "title": "库存统计",
+    "inventoryValue": "库存价值",
+    "totalInventoryValue": "总库存价值",
+    "totalCost": "总成本",
+    "averageUnitPrice": "平均单价",
+    "statisticsDate": "统计日期",
+    "batchStatusDistribution": "批次状态分布",
+    "totalBatches": "总批次",
+    "available": "可用",
+    "reserved": "已预留",
+    "depleted": "已耗尽",
+    "availableBatches": "可用批次",
+    "reservedBatches": "已预留批次",
+    "lowStockWarning": "低库存警告",
+    "batchNumber": "批次号",
+    "material": "物料",
+    "remaining": "剩余",
+    "status": "状态",
+    "urgent": "紧急",
+    "warning": "预警",
+    "hint": "提示",
+    "viewAllComingSoon": "查看全部低库存批次功能即将上线",
+    "viewAllWarnings": "查看全部 {{count}} 条警告",
+    "allBatchesSufficient": "所有批次库存充足"
+  },
+  "expireHandle": {
+    "title": "过期处理",
+    "headerSubtitle": "处理即将过期和已过期物料",
+    "loading": "加载中...",
+    "filter": {
+      "all": "全部",
+      "expiring": "即将过期",
+      "expired": "已过期"
+    },
+    "daysRemaining": "剩余{{days}}天",
+    "expired": "已过期",
+    "handleAction": {
+      "consume": "优先消耗",
+      "discount": "折价处理",
+      "dispose": "报废处理",
+      "return": "退货"
+    },
+    "confirmHandle": "确认处理",
+    "success": "处理成功"
+  },
+  "ioStatistics": {
+    "title": "出入库统计",
+    "headerSubtitle": "查看出入库统计报表",
+    "loading": "加载中...",
+    "dateRange": "日期范围",
+    "inboundStats": "入库统计",
+    "outboundStats": "出库统计",
+    "totalInbound": "总入库量",
+    "totalOutbound": "总出库量",
+    "netChange": "净变化",
+    "trend": "趋势图",
+    "export": "导出"
+  },
+  "inventoryDetail": {
+    "title": "库存详情",
+    "loading": "加载中...",
+    "basicInfo": "基本信息",
+    "stockInfo": "库存信息",
+    "batchList": "批次列表",
+    "operationLog": "操作记录",
+    "materialName": "物料名称",
+    "currentStock": "当前库存",
+    "availableStock": "可用库存",
+    "reservedStock": "预留库存",
+    "location": "库位",
+    "unitPrice": "单价",
+    "totalValue": "总价值"
+  },
+  "batchDetail": {
+    "title": "批次详情",
+    "consumptionLog": "消耗记录",
+    "currentStock": "当前库存 {{qty}}kg",
+    "actions": {
+      "trace": "追溯查询",
+      "expireHandle": "过期处理"
+    }
+  },
+  "orderDetail": {
+    "title": "订单详情",
+    "loading": "加载中...",
+    "orderInfo": "订单信息",
+    "customerInfo": "客户信息",
+    "productList": "产品清单",
+    "deliveryInfo": "配送信息",
+    "paymentInfo": "支付信息",
+    "orderStatus": "订单状态",
+    "totalAmount": "总金额"
+  },
+  "conversion": {
+    "title": "转换率分析",
+    "subtitle": "AI 智能生产效率分析",
+    "period": {
+      "today": "今日",
+      "week": "本周",
+      "month": "本月",
+      "quarter": "季度"
+    },
+    "mainCard": {
+      "title": "本月整体转换率",
+      "aiTag": "AI分析",
+      "comparedToLastMonth": "较上月",
+      "industryAvg": "行业平均",
+      "target": "配置目标",
+      "gap": "差距"
+    },
+    "categoryAnalysis": "品类转换率分析",
+    "input": "投入",
+    "output": "产出",
+    "exceed": "超过目标",
+    "belowIndustry": "低于行业",
+    "meetTarget": "达到目标",
+    "excellent": "优秀",
+    "lossAnalysis": "损耗分析",
+    "normalLoss": "正常损耗",
+    "abnormalLoss": "异常损耗",
+    "abnormalDetails": "异常损耗明细",
+    "trendAnalysis": "转换率趋势",
+    "actualRate": "实际转换率",
+    "targetLine": "目标线(93%)",
+    "industryLine": "行业平均(91%)",
+    "aiOptimization": "AI 优化建议",
+    "smartAnalysis": "智能分析",
+    "aiAnalyzedAt": "AI分析于 {{time}}",
+    "generateReport": "生成报告",
+    "supplierImpact": "供应商影响分析",
+    "grade": "{{grade}}级",
+    "conversionRate": "供货转换率",
+    "qualityRate": "质检合格率",
+    "sharePercent": "供货占比",
+    "exportReport": "导出报表",
+    "deepAnalysis": "AI深度分析"
+  }
+}

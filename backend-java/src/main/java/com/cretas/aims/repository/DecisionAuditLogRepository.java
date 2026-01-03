@@ -118,4 +118,16 @@ public interface DecisionAuditLogRepository extends JpaRepository<DecisionAuditL
      */
     List<DecisionAuditLog> findByFactoryIdAndEntityTypeAndEntityId(
             String factoryId, String entityType, String entityId);
+
+    /**
+     * 批量查询：根据工厂ID、实体类型和多个实体ID查询审计日志
+     * 用于避免 N+1 查询问题
+     */
+    @Query("SELECT d FROM DecisionAuditLog d WHERE d.factoryId = :factoryId " +
+           "AND d.entityType = :entityType AND d.entityId IN :entityIds " +
+           "ORDER BY d.createdAt DESC")
+    List<DecisionAuditLog> findByFactoryIdAndEntityTypeAndEntityIdIn(
+            @Param("factoryId") String factoryId,
+            @Param("entityType") String entityType,
+            @Param("entityIds") java.util.Collection<String> entityIds);
 }

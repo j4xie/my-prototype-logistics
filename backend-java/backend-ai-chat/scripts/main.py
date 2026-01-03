@@ -2542,6 +2542,302 @@ async def ml_health():
     }
 
 
+# ==================== 意图识别 Fallback 服务 ====================
+
+class IntentClassifyRequest(BaseModel):
+    """意图分类请求"""
+    user_input: str                          # 用户原始输入
+    factory_id: str                          # 工厂ID
+    available_intents: List[Dict[str, Any]]  # 可用意图列表 [{code, name, description, category}]
+    context: Optional[Dict] = None           # 上下文信息
+    user_id: Optional[int] = None            # 用户ID
+    session_id: Optional[str] = None         # 会话ID
+
+class IntentCandidate(BaseModel):
+    """候选意图"""
+    intent_code: str
+    intent_name: str
+    confidence: float  # 0.0-1.0
+    reasoning: Optional[str] = None
+
+class IntentClassifyResponse(BaseModel):
+    """意图分类响应"""
+    success: bool
+    matched_intent_code: Optional[str] = None
+    matched_intent_name: Optional[str] = None
+    confidence: float
+    candidates: List[IntentCandidate]
+    is_ambiguous: bool               # 是否有歧义
+    needs_clarification: bool        # 是否需要澄清
+    clarification_question: Optional[str] = None
+    reasoning: Optional[str] = None  # AI推理过程
+    message: Optional[str] = None
+
+class IntentClarifyRequest(BaseModel):
+    """澄清问题生成请求"""
+    user_input: str
+    candidates: List[Dict[str, Any]]  # 候选意图列表
+    factory_id: str
+    context: Optional[Dict] = None
+
+class IntentClarifyResponse(BaseModel):
+    """澄清问题响应"""
+    success: bool
+    clarification_question: str      # 生成的澄清问题
+    options: List[Dict[str, str]]    # 选项列表 [{value, label}]
+    message: Optional[str] = None
+
+
+def build_intent_classify_prompt(user_input: str, available_intents: List[Dict]) -> str:
+    """构建意图分类提示词"""
+    intent_list = "\n".join([
+        f"- {intent['code']}: {intent['name']} ({intent.get('description', '')})"
+        for intent in available_intents
+    ])
+
+    return f"""你是一个专业的意图识别助手，负责分析用户输入并匹配最合适的意图。
+
+## 可用意图列表:
+{intent_list}
+
+## 用户输入:
+"{user_input}"
+
+## 任务要求:
+1. 分析用户输入的含义
+2. 从可用意图列表中选择最匹配的意图
+3. 给出置信度评分 (0.0-1.0)
+4. 如果有多个可能的意图，列出Top-3候选
+5. 如果置信度低于0.7，标记为需要澄清
+
+## 输出格式 (JSON):
+{{
+    "matched_intent_code": "意图代码或null",
+    "matched_intent_name": "意图名称",
+    "confidence": 0.85,
+    "candidates": [
+        {{"intent_code": "代码", "intent_name": "名称", "confidence": 0.85}},
+        {{"intent_code": "代码2", "intent_name": "名称2", "confidence": 0.65}}
+    ],
+    "is_ambiguous": false,
+    "needs_clarification": false,
+    "reasoning": "分析过程说明"
+}}
+
+请只返回JSON格式，不要有其他内容。"""
+
+
+def build_clarify_question_prompt(user_input: str, candidates: List[Dict]) -> str:
+    """构建澄清问题生成提示词"""
+    candidate_list = "\n".join([
+        f"- {c.get('intent_code', c.get('code', ''))}: {c.get('intent_name', c.get('name', ''))}"
+        for c in candidates
+    ])
+
+    return f"""你是一个友好的对话助手，需要生成一个澄清问题来帮助用户明确他们的意图。
+
+## 用户原始输入:
+"{user_input}"
+
+## 可能的意图:
+{candidate_list}
+
+## 任务要求:
+1. 生成一个简短、友好的澄清问题
+2. 问题应该帮助区分这些候选意图
+3. 提供清晰的选项让用户选择
+4. 使用自然的中文表达
+
+## 输出格式 (JSON):
+{{
+    "clarification_question": "请问您是想要...还是...?",
+    "options": [
+        {{"value": "intent_code1", "label": "选项1描述"}},
+        {{"value": "intent_code2", "label": "选项2描述"}}
+    ]
+}}
+
+请只返回JSON格式，不要有其他内容。"""
+
+
+@app.post("/api/ai/intent/classify", response_model=IntentClassifyResponse)
+async def classify_intent(request: IntentClassifyRequest):
+    """
+    意图分类 - LLM Fallback
+
+    当规则匹配失败或置信度低时，使用LLM进行意图分类
+
+    输入:
+    - user_input: 用户原始输入
+    - available_intents: 可用意图列表
+
+    输出:
+    - matched_intent_code: 匹配的意图代码
+    - confidence: 置信度 (0-1)
+    - candidates: 候选意图列表
+    - needs_clarification: 是否需要澄清
+    """
+    if not client:
+        raise HTTPException(status_code=500, detail="DASHSCOPE_API_KEY未配置")
+
+    try:
+        # 构建提示词
+        prompt = build_intent_classify_prompt(
+            request.user_input,
+            request.available_intents
+        )
+
+        messages = [
+            {"role": "system", "content": "你是食品加工溯源系统的智能意图识别助手。"},
+            {"role": "user", "content": prompt}
+        ]
+
+        # 调用Qwen
+        result = query_qwen(messages, enable_thinking=False)
+        content = result.get("content", "")
+
+        # 解析JSON响应
+        try:
+            # 尝试提取JSON部分
+            json_start = content.find("{")
+            json_end = content.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = content[json_start:json_end]
+                parsed = json.loads(json_str)
+            else:
+                raise ValueError("No JSON found in response")
+
+            # 构建候选列表
+            candidates = []
+            for c in parsed.get("candidates", []):
+                candidates.append(IntentCandidate(
+                    intent_code=c.get("intent_code", ""),
+                    intent_name=c.get("intent_name", ""),
+                    confidence=float(c.get("confidence", 0)),
+                    reasoning=c.get("reasoning")
+                ))
+
+            confidence = float(parsed.get("confidence", 0))
+            is_ambiguous = parsed.get("is_ambiguous", False)
+            needs_clarification = parsed.get("needs_clarification", confidence < 0.7)
+
+            # 如果需要澄清且有多候选，生成澄清问题
+            clarification_question = None
+            if needs_clarification and len(candidates) > 1:
+                clarify_prompt = build_clarify_question_prompt(
+                    request.user_input,
+                    [{"intent_code": c.intent_code, "intent_name": c.intent_name} for c in candidates]
+                )
+                clarify_messages = [
+                    {"role": "system", "content": "你是一个友好的对话助手。"},
+                    {"role": "user", "content": clarify_prompt}
+                ]
+                clarify_result = query_qwen(clarify_messages, enable_thinking=False)
+                try:
+                    clarify_json = json.loads(clarify_result.get("content", "{}"))
+                    clarification_question = clarify_json.get("clarification_question")
+                except:
+                    clarification_question = f"请问您是想要 {candidates[0].intent_name} 还是 {candidates[1].intent_name}？"
+
+            return IntentClassifyResponse(
+                success=True,
+                matched_intent_code=parsed.get("matched_intent_code"),
+                matched_intent_name=parsed.get("matched_intent_name"),
+                confidence=confidence,
+                candidates=candidates,
+                is_ambiguous=is_ambiguous,
+                needs_clarification=needs_clarification,
+                clarification_question=clarification_question,
+                reasoning=parsed.get("reasoning")
+            )
+
+        except json.JSONDecodeError as je:
+            return IntentClassifyResponse(
+                success=False,
+                matched_intent_code=None,
+                matched_intent_name=None,
+                confidence=0,
+                candidates=[],
+                is_ambiguous=True,
+                needs_clarification=True,
+                message=f"LLM响应解析失败: {str(je)}"
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"意图分类失败: {str(e)}")
+
+
+@app.post("/api/ai/intent/clarify", response_model=IntentClarifyResponse)
+async def generate_clarification(request: IntentClarifyRequest):
+    """
+    生成澄清问题
+
+    当意图识别有歧义时，生成友好的澄清问题帮助用户选择
+
+    输入:
+    - user_input: 用户原始输入
+    - candidates: 候选意图列表
+
+    输出:
+    - clarification_question: 澄清问题
+    - options: 选项列表
+    """
+    if not client:
+        raise HTTPException(status_code=500, detail="DASHSCOPE_API_KEY未配置")
+
+    try:
+        prompt = build_clarify_question_prompt(request.user_input, request.candidates)
+
+        messages = [
+            {"role": "system", "content": "你是一个友好的对话助手，擅长生成自然的澄清问题。"},
+            {"role": "user", "content": prompt}
+        ]
+
+        result = query_qwen(messages, enable_thinking=False)
+        content = result.get("content", "")
+
+        try:
+            json_start = content.find("{")
+            json_end = content.rfind("}") + 1
+            if json_start >= 0 and json_end > json_start:
+                parsed = json.loads(content[json_start:json_end])
+            else:
+                raise ValueError("No JSON found")
+
+            return IntentClarifyResponse(
+                success=True,
+                clarification_question=parsed.get("clarification_question", "请问您具体想要做什么？"),
+                options=parsed.get("options", [])
+            )
+
+        except:
+            # 降级：生成简单的澄清问题
+            options = [
+                {"value": c.get("intent_code", c.get("code", "")),
+                 "label": c.get("intent_name", c.get("name", ""))}
+                for c in request.candidates[:3]
+            ]
+            return IntentClarifyResponse(
+                success=True,
+                clarification_question="请问您是想要进行以下哪项操作？",
+                options=options
+            )
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"生成澄清问题失败: {str(e)}")
+
+
+@app.get("/api/ai/intent/health")
+async def intent_health():
+    """意图识别服务健康检查"""
+    return {
+        'service': 'intent-classifier',
+        'status': 'running' if client else 'unavailable',
+        'model': DASHSCOPE_MODEL,
+        'api_configured': bool(DASHSCOPE_API_KEY)
+    }
+
+
 # ==================== 启动 ====================
 if __name__ == "__main__":
     import uvicorn

@@ -1,0 +1,850 @@
+{
+  "home": {
+    "title": "Warehouse Workbench",
+    "headerSubtitle": "Today Inbound {{inbound}} | Pending Outbound {{pending}}",
+    "tabs": {
+      "outbound": "Outbound Tasks",
+      "inbound": "Inbound Tasks"
+    },
+    "sections": {
+      "todayOutbound": "Today's Outbound - Sorted by Dispatch Time",
+      "todayInbound": "Today's Inbound - Scheduled",
+      "viewAll": "View All >"
+    },
+    "stats": {
+      "todayInbound": "Today Inbound",
+      "todayOutbound": "Today Outbound",
+      "pendingOutbound": "Pending Outbound",
+      "alertCount": "Stock Alerts"
+    },
+    "units": {
+      "kg": "kg",
+      "orders": "orders",
+      "items": "items"
+    },
+    "outboundTask": {
+      "customer": "Customer",
+      "product": "Product",
+      "quantity": "Quantity",
+      "urgent": "[Urgent]",
+      "startPacking": "Start Packing",
+      "finishPacking": "Finish Packing"
+    },
+    "inboundTask": {
+      "supplier": "Supplier",
+      "goods": "Goods",
+      "expectedQuantity": "Expected Qty",
+      "confirmInbound": "Confirm Inbound",
+      "finishInbound": "Complete Inbound",
+      "inboundTime": "Inbound Time"
+    },
+    "status": {
+      "waiting": "Awaiting Pack",
+      "packing": "Packing",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "pending": "Pending Inbound",
+      "arrived": "Arrived",
+      "inspecting": "Inspecting",
+      "completed": "Completed"
+    },
+    "alerts": {
+      "title": "Stock Alerts",
+      "safetyStock": "Safety Stock",
+      "expiring": "Expiring Soon"
+    },
+    "tempMonitor": {
+      "title": "Temperature Monitor",
+      "online": "Online",
+      "offline": "Offline",
+      "normal": "Normal",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "tempZones": {
+      "coldStorage": "Cold Storage Zone",
+      "freezer": "Freezer Zone"
+    }
+  },
+  "inventory": {
+    "title": "Inventory Management",
+    "headerSubtitle": "In Stock {{total}} types | Total {{weight}} kg",
+    "loading": "Loading...",
+    "quickActions": {
+      "check": "Stocktake",
+      "transfer": "Transfer",
+      "location": "Location",
+      "expire": "Expiry"
+    },
+    "search": {
+      "placeholder": "Search material name/batch no."
+    },
+    "filter": {
+      "all": "All",
+      "fresh": "Fresh",
+      "frozen": "Frozen",
+      "dry": "Dry Goods"
+    },
+    "card": {
+      "batch": "Batch",
+      "location": "Location",
+      "status": "Status",
+      "warning": "Alert",
+      "updated": "Updated",
+      "viewDetail": "View Details"
+    },
+    "warning": {
+      "expired": "Expired",
+      "expiringSoon": "Expires in {{days}} days",
+      "expiring": "Expiring Soon",
+      "lowStock": "Low Stock",
+      "normal": "Normal"
+    },
+    "overview": {
+      "title": "Inventory Overview",
+      "materialTypes": "Material Types",
+      "totalStock": "Total Stock (kg)",
+      "stockValue": "Stock Value",
+      "warningCount": "Alerts"
+    }
+  },
+  "inbound": {
+    "title": "Inbound Management",
+    "headerSubtitle": "Pending {{pending}} | Today Inbound {{weight}} kg",
+    "create": {
+      "title": "New Inbound",
+      "materialInfo": "Material Information",
+      "materialName": "Material Name",
+      "materialType": "Material Type",
+      "supplier": "Supplier",
+      "quantityPrice": "Quantity & Price",
+      "quantity": "Quantity (kg)",
+      "unitPrice": "Unit Price (¥/kg)",
+      "qualityInfo": "Quality Information",
+      "productionDate": "Production Date",
+      "expiryDate": "Expiry Date",
+      "storageTemp": "Storage Temperature",
+      "remarks": "Remarks",
+      "required": "*",
+      "placeholders": {
+        "materialName": "Enter material name",
+        "supplier": "Select or enter supplier",
+        "quantity": "0",
+        "unitPrice": "0.00",
+        "productionDate": "YYYY-MM-DD",
+        "expiryDate": "YYYY-MM-DD",
+        "storageTemp": "e.g., -2°C ~ 4°C",
+        "remarks": "Enter remarks"
+      },
+      "submit": "Submit Inbound",
+      "submitting": "Submitting...",
+      "cancel": "Cancel",
+      "success": "Success",
+      "successMessage": "Inbound order created successfully",
+      "confirm": "Confirm",
+      "alert": "Alert",
+      "fillRequired": "Please fill in required fields",
+      "confirmSubmit": "Confirm Submission",
+      "confirmMessage": "Are you sure to create this inbound order?"
+    },
+    "detail": {
+      "title": "Inbound Details",
+      "loading": "Loading...",
+      "notFound": "Inbound record not found",
+      "basicInfo": "Basic Information",
+      "qualityInfo": "Quality Information",
+      "logisticsInfo": "Logistics Information",
+      "supplier": "Supplier",
+      "contact": "Contact",
+      "unitPrice": "Unit Price",
+      "amount": "Amount",
+      "productionDate": "Production Date",
+      "expiryDate": "Expiry Date",
+      "storageTemp": "Storage Temp",
+      "arrivalTime": "Arrival Time",
+      "vehicleNo": "Vehicle No.",
+      "driver": "Driver",
+      "phone": "Phone",
+      "remarks": "Remarks",
+      "back": "Back",
+      "confirmInbound": "Confirm Inbound",
+      "confirmTitle": "Confirm Inbound",
+      "confirmMessage": "Are you sure to confirm this inbound order?",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "success": "Success",
+      "successMessage": "Inbound confirmed, entering inspection process",
+      "status": {
+        "available": "Available",
+        "reserved": "Reserved",
+        "depleted": "Depleted",
+        "expired": "Expired",
+        "pending": "Pending"
+      }
+    },
+    "inspect": {
+      "title": "Quality Inspection",
+      "loading": "Loading...",
+      "notFound": "Batch information not found",
+      "inspecting": "Inspecting",
+      "material": "Material",
+      "supplier": "Supplier",
+      "inspectionItems": "Inspection Items",
+      "progress": "{{current}}/{{total}}",
+      "items": {
+        "appearance": "Appearance Check - Normal color, no foreign matter",
+        "smell": "Smell Check - No odor",
+        "temp": "Temperature Check - Meets cold chain requirements",
+        "package": "Package Check - Intact, no damage",
+        "certificate": "Certificate Check - Complete and valid"
+      },
+      "inspectionData": "Inspection Data",
+      "sampleWeight": "Sample Weight (kg)",
+      "actualTemp": "Actual Temp (°C)",
+      "inspectionRemarks": "Inspection Remarks",
+      "placeholders": {
+        "sampleWeight": "0",
+        "actualTemp": "-18",
+        "remarks": "Enter inspection remarks..."
+      },
+      "reject": "Reject",
+      "pass": "Pass Inspection",
+      "passing": "Submitting...",
+      "alert": "Alert",
+      "completeAll": "Please complete all inspection items",
+      "passTitle": "Pass Inspection",
+      "passMessage": "Are you sure this batch passes inspection?",
+      "rejectTitle": "Reject Inspection",
+      "rejectMessage": "Are you sure this batch fails inspection?",
+      "cancel": "Cancel",
+      "confirm": "Confirm",
+      "success": "Success",
+      "passSuccess": "Inspection passed, proceed to putaway",
+      "rejectSuccess": "Batch marked as failed inspection",
+      "error": "Error",
+      "invalidBatchId": "Invalid batch ID, cannot submit inspection",
+      "notLoggedIn": "User not logged in"
+    },
+    "putaway": {
+      "title": "Confirm Putaway",
+      "loading": "Loading...",
+      "notFound": "Batch information not found",
+      "material": "Material",
+      "supplier": "Supplier",
+      "quantity": "Quantity",
+      "storageTemp": "Storage Temp",
+      "selectLocation": "Select Location",
+      "recommend": "Recommended",
+      "putawayQuantity": "Putaway Quantity",
+      "quantityMismatch": "Notice: Putaway quantity differs from inbound quantity",
+      "remarks": "Remarks",
+      "placeholders": {
+        "remarks": "Enter putaway remarks..."
+      },
+      "back": "Back",
+      "confirm": "Confirm Putaway",
+      "confirming": "Submitting...",
+      "alert": "Alert",
+      "selectLocationAlert": "Please select a putaway location",
+      "confirmTitle": "Confirm Putaway",
+      "confirmMessage": "Are you sure to putaway goods to the selected location?",
+      "cancel": "Cancel",
+      "success": "Success",
+      "successMessage": "Putaway completed",
+      "inspectPass": "Inspection Passed",
+      "inspectPending": "Awaiting Inspection"
+    },
+    "list": {
+      "title": "Inbound Management",
+      "headerSubtitle": "Pending {{pending}} | Today Inbound {{weight}} kg",
+      "loading": "Loading...",
+      "newInbound": "New Inbound",
+      "scanInbound": "Scan Inbound",
+      "search": "Search batch/material/supplier",
+      "filter": {
+        "all": "All",
+        "pending": "Pending",
+        "inspecting": "Inspecting",
+        "completed": "Completed"
+      },
+      "status": {
+        "pending": "Pending",
+        "inspecting": "Inspecting",
+        "putaway": "Awaiting Putaway",
+        "completed": "Completed"
+      },
+      "actions": {
+        "confirmInbound": "Confirm Inbound",
+        "continueInspect": "Continue Inspection",
+        "confirmPutaway": "Confirm Putaway",
+        "viewDetail": "View Details"
+      },
+      "material": "Material",
+      "supplier": "Supplier",
+      "quantity": "Quantity",
+      "stats": {
+        "title": "Today's Inbound Statistics",
+        "inboundOrders": "Inbound Orders",
+        "inboundWeight": "Inbound Weight (kg)",
+        "supplierCount": "Suppliers",
+        "passRate": "Pass Rate"
+      }
+    }
+  },
+  "batch": {
+    "detail": {
+      "title": "Batch Details",
+      "loading": "Loading batch details...",
+      "noData": "No batch data available",
+      "status": {
+        "normal": "Normal",
+        "warning": "Expiry Warning",
+        "danger": "Expired",
+        "expiringSoon": "Expiring Soon"
+      },
+      "daysRemaining": "{{days}} days remaining | Priority consumption recommended",
+      "batchInfo": "Batch Information",
+      "batchNumber": "Batch Number",
+      "materialName": "Material Name",
+      "materialType": "Material Type",
+      "currentQty": "Current Quantity",
+      "initialQty": "Initial Quantity",
+      "consumed": "Consumed",
+      "timeInfo": "Time Information",
+      "inboundDate": "Inbound Date",
+      "productionDate": "Production Date",
+      "shelfLife": "Shelf Life",
+      "expiryDate": "Expiry Date",
+      "daysLater": "({{days}} days later)",
+      "storageInfo": "Storage Information",
+      "location": "Location",
+      "temperature": "Storage Temperature",
+      "tempStatus": "Meets Requirements",
+      "qualityGrade": "Quality Grade",
+      "sourceInfo": "Source Information",
+      "supplier": "Supplier",
+      "inboundNumber": "Inbound Number",
+      "inspector": "Inspector",
+      "unitPrice": "Unit Price",
+      "batchValue": "Batch Value",
+      "aiAnalysis": "AI Quality Correlation Analysis",
+      "smartAnalysis": "Smart Analysis",
+      "qualityScore": "Quality Score",
+      "qualityDetails": {
+        "freshness": "Freshness",
+        "tempCompliance": "Temp Compliance",
+        "appearance": "Appearance Quality"
+      },
+      "correlationAnalysis": "Correlation Factor Analysis",
+      "correlationFactors": {
+        "supplierRating": "Supplier Rating",
+        "coldChain": "Cold Chain Control",
+        "turnover": "Inventory Turnover",
+        "shelfLifePressure": "Shelf Life Pressure",
+        "desc": {
+          "supplierA": "{{supplier}} Grade A Supplier",
+          "tempControl": "Constant {{temp}} throughout",
+          "turnoverDays": "Turnover {{days}} days, industry average {{avgDays}} days",
+          "expiring": "{{days}} days remaining, accelerate consumption recommended",
+          "good": "{{days}} days remaining, in good condition"
+        }
+      },
+      "consumptionLog": "Consumption Log",
+      "currentStock": "Current stock {{qty}}kg",
+      "actions": {
+        "trace": "Traceability Query",
+        "expireHandle": "Expiry Handling"
+      }
+    }
+  },
+  "messages": {
+    "loadFailed": "Failed to load warehouse data",
+    "loadInventoryFailed": "Failed to load inventory data",
+    "unknownCustomer": "Unknown Customer",
+    "unknownSupplier": "Unknown Supplier",
+    "unknownMaterial": "Unknown Material",
+    "defaultLocation": "Default Location",
+    "toBeArranged": "To Be Arranged",
+    "loadBatchFailed": "Failed to load batch information",
+    "loadDetailFailed": "Failed to load inbound details",
+    "createFailed": "Failed to create inbound order",
+    "submitInspectionFailed": "Failed to submit inspection",
+    "putawayFailed": "Failed to putaway",
+    "loadListFailed": "Failed to load inbound list",
+    "loadBatchDetailFailed": "Failed to load batch details"
+  },
+  "profile": {
+    "title": "My Profile",
+    "loading": "Loading...",
+    "loadStatsError": "Failed to load statistics",
+    "role": "Warehouse Manager",
+    "edit": "Edit",
+    "todayStats": "Today's Statistics",
+    "stats": {
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "check": "Check",
+      "alert": "Alert"
+    },
+    "sections": {
+      "commonFeatures": "Common Features",
+      "systemFeatures": "System Features",
+      "helpFeedback": "Help & Feedback"
+    },
+    "menu": {
+      "ioStats": "I/O Statistics",
+      "operationLog": "Operation Log",
+      "checkRecord": "Check Record",
+      "expireHandle": "Expiry Handling",
+      "settings": "Settings",
+      "tempMonitor": "Temp Monitor",
+      "scan": "Scan Operation",
+      "recall": "Recall Management",
+      "help": "Help",
+      "feedback": "Feedback",
+      "about": "About"
+    },
+    "dialogs": {
+      "helpTitle": "Help",
+      "helpMessage": "Feature under development...",
+      "feedbackTitle": "Feedback",
+      "feedbackMessage": "Feature under development...",
+      "aboutTitle": "About",
+      "aboutMessage": "Cretas Food Traceability System v1.0.0",
+      "logoutTitle": "Logout",
+      "logoutMessage": "Are you sure to logout?",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "logout": "Logout",
+    "version": "v1.0.0"
+  },
+  "settings": {
+    "title": "Settings",
+    "sections": {
+      "general": "General Settings",
+      "notification": "Notification Settings",
+      "security": "Security Settings",
+      "about": "About"
+    },
+    "language": "Language",
+    "theme": "Theme",
+    "fontSize": "Font Size",
+    "enableNotifications": "Enable Notifications",
+    "enableSound": "Enable Sound",
+    "changePassword": "Change Password",
+    "clearCache": "Clear Cache",
+    "version": "Version",
+    "checkUpdate": "Check Update"
+  },
+  "operationLog": {
+    "title": "Operation Log",
+    "headerSubtitle": "View operation history",
+    "loading": "Loading...",
+    "noLogs": "No operation logs",
+    "filter": {
+      "all": "All",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "transfer": "Transfer",
+      "check": "Check"
+    },
+    "search": "Search operation log",
+    "operation": "Operation",
+    "operator": "Operator",
+    "time": "Time",
+    "details": "Details"
+  },
+  "profileEdit": {
+    "title": "Edit Profile",
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "fields": {
+      "avatar": "Avatar",
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "department": "Department",
+      "position": "Position"
+    },
+    "placeholders": {
+      "name": "Enter name",
+      "email": "Enter email",
+      "phone": "Enter phone number",
+      "department": "Enter department",
+      "position": "Enter position"
+    },
+    "success": "Saved successfully",
+    "error": "Failed to save"
+  },
+  "outbound": {
+    "title": "Outbound Management",
+    "headerSubtitle": "Pending {{pending}} | Today Outbound {{weight}} kg",
+    "loading": "Loading...",
+    "loadingData": "Loading outbound data...",
+    "notice": "Sorted by dispatch time, prioritize urgent orders",
+    "actions": {
+      "loadingManage": "Loading Management",
+      "scanOutbound": "Scan Outbound",
+      "startPacking": "Start Packing",
+      "continuePacking": "Continue Packing",
+      "confirmShip": "Confirm Ship",
+      "viewLogistics": "View Logistics",
+      "viewDetails": "View Details"
+    },
+    "filter": {
+      "all": "All",
+      "waiting": "Awaiting Pack",
+      "packing": "Packing",
+      "ready": "Ready to Ship",
+      "shipped": "Shipped"
+    },
+    "status": {
+      "waiting": "Awaiting Pack",
+      "packing": "Packing",
+      "ready": "Ready to Ship",
+      "shipped": "Shipped",
+      "delivered": "Delivered"
+    },
+    "card": {
+      "orderNumber": "Order No.",
+      "urgent": "Urgent",
+      "customer": "Customer",
+      "product": "Product",
+      "quantity": "Quantity",
+      "dispatchBefore": "Dispatch before {{time}}",
+      "packingProgress": "Packing progress: {{progress}}",
+      "packed": "Packed, awaiting loading",
+      "delivered": "Delivered at {{time}}"
+    },
+    "stats": {
+      "title": "Today's Outbound Statistics",
+      "outboundOrders": "Outbound Orders",
+      "outboundWeight": "Outbound Weight (kg)",
+      "customerCount": "Customers",
+      "onTimeRate": "On-time Rate"
+    },
+    "detail": {
+      "title": "Outbound Details",
+      "loading": "Loading...",
+      "basicInfo": "Basic Information",
+      "productInfo": "Product Information",
+      "logisticsInfo": "Logistics Information",
+      "back": "Back"
+    },
+    "packing": {
+      "title": "Packing Operation",
+      "loading": "Loading...",
+      "selectBatch": "Select Batch",
+      "packingList": "Packing List",
+      "scannedItems": "Scanned Items",
+      "confirmPacking": "Confirm Packing",
+      "success": "Packing completed"
+    },
+    "shipping": {
+      "title": "Confirm Shipping",
+      "loading": "Loading...",
+      "selectLogistics": "Select Logistics",
+      "trackingNumber": "Tracking No.",
+      "driver": "Driver",
+      "vehicle": "Vehicle",
+      "confirmShip": "Confirm Ship",
+      "success": "Shipped successfully"
+    },
+    "loading": {
+      "title": "Loading Management",
+      "loading": "Loading...",
+      "vehicleInfo": "Vehicle Information",
+      "loadedItems": "Loaded Items",
+      "confirmLoading": "Confirm Loading",
+      "success": "Loading completed"
+    },
+    "tracking": {
+      "title": "Logistics Tracking",
+      "loading": "Loading...",
+      "trackingNumber": "Tracking No.",
+      "logistics": "Logistics Company",
+      "status": "Status",
+      "timeline": "Timeline"
+    }
+  },
+  "shared": {
+    "batchTrace": {
+      "title": "Batch Traceability",
+      "loading": "Loading...",
+      "batchNumber": "Batch Number",
+      "traceability": "Traceability Info",
+      "upstream": "Upstream Info",
+      "downstream": "Downstream Info",
+      "qualityRecords": "Quality Records"
+    },
+    "recall": {
+      "title": "Recall Management",
+      "loading": "Loading...",
+      "createRecall": "Create Recall",
+      "recallList": "Recall List",
+      "status": {
+        "pending": "Pending",
+        "processing": "Processing",
+        "completed": "Completed"
+      },
+      "reason": "Recall Reason",
+      "affectedBatches": "Affected Batches",
+      "actions": "Actions"
+    },
+    "scanOperation": {
+      "title": "Scan Operation",
+      "inbound": "Scan Inbound",
+      "outbound": "Scan Outbound",
+      "transfer": "Scan Transfer",
+      "check": "Scan Check",
+      "scanPrompt": "Please scan QR code or barcode",
+      "scanSuccess": "Scan successful",
+      "scanError": "Scan failed",
+      "invalidCode": "Invalid QR code"
+    },
+    "alertList": {
+      "title": "Stock Alerts",
+      "headerSubtitle": "Pending {{count}} alerts",
+      "loading": "Loading...",
+      "filter": {
+        "all": "All",
+        "lowStock": "Low Stock",
+        "expiring": "Expiring Soon",
+        "expired": "Expired",
+        "tempAlert": "Temp Alert"
+      },
+      "types": {
+        "lowStock": "Low Stock",
+        "expiring": "Expiring Soon",
+        "expired": "Expired",
+        "tempAlert": "Temp Alert"
+      },
+      "handle": "Handle",
+      "handled": "Handled"
+    },
+    "alertHandle": {
+      "title": "Handle Alert",
+      "loading": "Loading...",
+      "alertInfo": "Alert Information",
+      "alertType": "Alert Type",
+      "handleAction": "Handle Action",
+      "handleRemark": "Handle Remark",
+      "confirmHandle": "Confirm Handle",
+      "success": "Handled successfully"
+    },
+    "conversion": {
+      "title": "Conversion Analysis",
+      "loading": "Loading...",
+      "sourceMaterial": "Source Material",
+      "targetProduct": "Target Product",
+      "conversionRate": "Conversion Rate",
+      "analysis": "Analysis Report"
+    }
+  },
+  "tempMonitor": {
+    "title": "Temperature Monitor",
+    "headerSubtitle": "Real-time warehouse temperature monitoring",
+    "loading": "Loading...",
+    "zones": {
+      "coldStorage": "Cold Storage Zone",
+      "freezer": "Freezer Zone",
+      "dry": "Dry Zone"
+    },
+    "status": {
+      "normal": "Normal",
+      "warning": "Warning",
+      "error": "Error",
+      "offline": "Offline"
+    },
+    "currentTemp": "Current Temp",
+    "targetTemp": "Target Temp",
+    "humidity": "Humidity",
+    "lastUpdate": "Last Update",
+    "alerts": "Temp Alerts",
+    "history": "History"
+  },
+  "locationManage": {
+    "title": "Location Management",
+    "headerSubtitle": "Manage warehouse locations",
+    "loading": "Loading...",
+    "addLocation": "Add Location",
+    "locationCode": "Location Code",
+    "locationType": "Location Type",
+    "capacity": "Capacity",
+    "utilization": "Utilization",
+    "status": {
+      "empty": "Empty",
+      "inUse": "In Use",
+      "full": "Full",
+      "disabled": "Disabled"
+    },
+    "edit": "Edit",
+    "delete": "Delete"
+  },
+  "inventoryTransfer": {
+    "title": "Inventory Transfer",
+    "loading": "Loading...",
+    "sourceLocation": "Source Location",
+    "targetLocation": "Target Location",
+    "material": "Material",
+    "quantity": "Quantity",
+    "reason": "Transfer Reason",
+    "confirmTransfer": "Confirm Transfer",
+    "success": "Transfer successful"
+  },
+  "inventoryCheck": {
+    "title": "Inventory Check",
+    "loading": "Loading...",
+    "createCheck": "Create Check",
+    "checkList": "Check List",
+    "status": {
+      "pending": "Pending",
+      "checking": "Checking",
+      "completed": "Completed"
+    },
+    "checkType": {
+      "full": "Full Check",
+      "partial": "Partial Check",
+      "cycle": "Cycle Check"
+    },
+    "systemQty": "System Qty",
+    "actualQty": "Actual Qty",
+    "difference": "Difference",
+    "confirmCheck": "Confirm Check",
+    "success": "Check completed",
+    "error": "Error",
+    "factoryNotFound": "Cannot get factory info, please login again",
+    "loadFailed": "Load Failed",
+    "cannotLoadBatches": "Cannot load batch data, please try again later",
+    "hint": "Hint",
+    "pleaseSelectBatch": "Please select a batch first",
+    "pleaseEnterValidQuantity": "Please enter a valid actual quantity",
+    "recordAdded": "Check record added",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeleteRecord": "Are you sure you want to delete this check record?",
+    "pleaseAddAtLeastOneRecord": "Please add at least one check record",
+    "partialFailed": "Partial Failed",
+    "partialFailedMessage": "Saved {{saved}}/{{total}} check records\n\n{{failed}} records failed to save, please check and retry",
+    "checkComplete": "Check Complete",
+    "checkCompleteMessage": "Saved {{count}} check records\n\nDifferences have been synced to inventory system",
+    "saveFailed": "Save Failed",
+    "saveError": "Error occurred while saving check records",
+    "statusNormal": "Normal",
+    "statusDeviation": "Deviation",
+    "statusAbnormal": "Abnormal",
+    "selectBatch": "Select Batch",
+    "batchNumber": "Batch Number",
+    "materialType": "Material Type: ",
+    "systemQuantity": "System Quantity: ",
+    "actualQuantityLabel": "Actual Quantity ({{unit}})",
+    "enterActualQuantityHint": "Please enter the actual checked quantity",
+    "addRecord": "Add Check Record",
+    "checkRecords": "Check Records",
+    "batch": "Batch",
+    "system": "System",
+    "actual": "Actual",
+    "deleteLastRecord": "Delete Last Record",
+    "summary": "Summary",
+    "checkedBatches": "Checked Batches",
+    "surplusBatches": "Surplus Batches",
+    "deficitBatches": "Deficit Batches",
+    "saveCheckResult": "Save Check Result"
+  },
+  "inventoryStats": {
+    "title": "Inventory Statistics",
+    "inventoryValue": "Inventory Value",
+    "totalInventoryValue": "Total Inventory Value",
+    "totalCost": "Total Cost",
+    "averageUnitPrice": "Average Unit Price",
+    "statisticsDate": "Statistics Date",
+    "batchStatusDistribution": "Batch Status Distribution",
+    "totalBatches": "Total Batches",
+    "available": "Available",
+    "reserved": "Reserved",
+    "depleted": "Depleted",
+    "availableBatches": "Available Batches",
+    "reservedBatches": "Reserved Batches",
+    "lowStockWarning": "Low Stock Warning",
+    "batchNumber": "Batch No.",
+    "material": "Material",
+    "remaining": "Remaining",
+    "status": "Status",
+    "urgent": "Urgent",
+    "warning": "Warning",
+    "hint": "Hint",
+    "viewAllComingSoon": "View all low stock batches feature coming soon",
+    "viewAllWarnings": "View all {{count}} warnings",
+    "allBatchesSufficient": "All batches have sufficient stock"
+  },
+  "expireHandle": {
+    "title": "Expiry Handling",
+    "headerSubtitle": "Handle expiring and expired materials",
+    "loading": "Loading...",
+    "filter": {
+      "all": "All",
+      "expiring": "Expiring Soon",
+      "expired": "Expired"
+    },
+    "daysRemaining": "{{days}} days remaining",
+    "expired": "Expired",
+    "handleAction": {
+      "consume": "Priority Consumption",
+      "discount": "Discount Sale",
+      "dispose": "Dispose",
+      "return": "Return"
+    },
+    "confirmHandle": "Confirm Handle",
+    "success": "Handled successfully"
+  },
+  "ioStatistics": {
+    "title": "I/O Statistics",
+    "headerSubtitle": "View inbound/outbound statistics",
+    "loading": "Loading...",
+    "dateRange": "Date Range",
+    "inboundStats": "Inbound Statistics",
+    "outboundStats": "Outbound Statistics",
+    "totalInbound": "Total Inbound",
+    "totalOutbound": "Total Outbound",
+    "netChange": "Net Change",
+    "trend": "Trend Chart",
+    "export": "Export"
+  },
+  "inventoryDetail": {
+    "title": "Inventory Details",
+    "loading": "Loading...",
+    "basicInfo": "Basic Information",
+    "stockInfo": "Stock Information",
+    "batchList": "Batch List",
+    "operationLog": "Operation Log",
+    "materialName": "Material Name",
+    "currentStock": "Current Stock",
+    "availableStock": "Available Stock",
+    "reservedStock": "Reserved Stock",
+    "location": "Location",
+    "unitPrice": "Unit Price",
+    "totalValue": "Total Value"
+  },
+  "batchDetail": {
+    "title": "Batch Details",
+    "consumptionLog": "Consumption Log",
+    "currentStock": "Current stock {{qty}}kg",
+    "actions": {
+      "trace": "Traceability Query",
+      "expireHandle": "Expiry Handling"
+    }
+  },
+  "orderDetail": {
+    "title": "Order Details",
+    "loading": "Loading...",
+    "orderInfo": "Order Information",
+    "customerInfo": "Customer Information",
+    "productList": "Product List",
+    "deliveryInfo": "Delivery Information",
+    "paymentInfo": "Payment Information",
+    "orderStatus": "Order Status",
+    "totalAmount": "Total Amount"
+  }
+}

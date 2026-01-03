@@ -13,6 +13,7 @@ import { Text, Card, Button, ActivityIndicator, Chip } from 'react-native-paper'
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { timeclockApiClient } from '../../../services/api/timeclockApiClient';
 import { useAuthStore } from '../../../store/authStore';
@@ -37,6 +38,7 @@ interface MonthSummary {
 export default function MyAttendanceScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [clockLoading, setClockLoading] = useState(false);
@@ -104,7 +106,7 @@ export default function MyAttendanceScreen() {
   const handleClockIn = async () => {
     const userId = user?.id;
     if (!userId) {
-      Alert.alert('错误', '请先登录');
+      Alert.alert(t('messages.error'), t('attendance.myAttendance.alerts.loginRequired'));
       return;
     }
     setClockLoading(true);
@@ -114,13 +116,13 @@ export default function MyAttendanceScreen() {
         location: '办公室',
       });
       if (res?.success) {
-        Alert.alert('成功', '上班打卡成功');
+        Alert.alert(t('messages.success'), t('attendance.myAttendance.alerts.clockInSuccess'));
         loadData();
       } else {
-        Alert.alert('失败', res?.message || '打卡失败');
+        Alert.alert(t('messages.error'), res?.message || t('attendance.myAttendance.alerts.clockFailed'));
       }
     } catch (error) {
-      Alert.alert('错误', '打卡失败，请重试');
+      Alert.alert(t('messages.error'), t('attendance.myAttendance.alerts.clockFailedRetry'));
     } finally {
       setClockLoading(false);
     }
@@ -129,7 +131,7 @@ export default function MyAttendanceScreen() {
   const handleClockOut = async () => {
     const userId = user?.id;
     if (!userId) {
-      Alert.alert('错误', '请先登录');
+      Alert.alert(t('messages.error'), t('attendance.myAttendance.alerts.loginRequired'));
       return;
     }
     setClockLoading(true);
@@ -138,13 +140,13 @@ export default function MyAttendanceScreen() {
         userId: userId as number,
       });
       if (res?.success) {
-        Alert.alert('成功', '下班打卡成功');
+        Alert.alert(t('messages.success'), t('attendance.myAttendance.alerts.clockOutSuccess'));
         loadData();
       } else {
-        Alert.alert('失败', res?.message || '打卡失败');
+        Alert.alert(t('messages.error'), res?.message || t('attendance.myAttendance.alerts.clockFailed'));
       }
     } catch (error) {
-      Alert.alert('错误', '打卡失败，请重试');
+      Alert.alert(t('messages.error'), t('attendance.myAttendance.alerts.clockFailedRetry'));
     } finally {
       setClockLoading(false);
     }
@@ -166,11 +168,11 @@ export default function MyAttendanceScreen() {
   const getStatusConfig = (status: TodayRecord['status']) => {
     switch (status) {
       case 'completed':
-        return { label: '已完成', color: HR_THEME.success, bgColor: '#f6ffed' };
+        return { label: t('attendance.myAttendance.status.completed'), color: HR_THEME.success, bgColor: '#f6ffed' };
       case 'working':
-        return { label: '工作中', color: HR_THEME.info, bgColor: '#e6f7ff' };
+        return { label: t('attendance.myAttendance.status.working'), color: HR_THEME.info, bgColor: '#e6f7ff' };
       default:
-        return { label: '未打卡', color: HR_THEME.textMuted, bgColor: '#f5f5f5' };
+        return { label: t('attendance.myAttendance.status.notStarted'), color: HR_THEME.textMuted, bgColor: '#f5f5f5' };
     }
   };
 
@@ -190,7 +192,7 @@ export default function MyAttendanceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>我的考勤</Text>
+        <Text style={styles.headerTitle}>{t('attendance.myAttendance.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -203,7 +205,7 @@ export default function MyAttendanceScreen() {
         <Card style={styles.todayCard}>
           <Card.Content>
             <View style={styles.todayHeader}>
-              <Text style={styles.todayTitle}>今日考勤</Text>
+              <Text style={styles.todayTitle}>{t('attendance.myAttendance.today')}</Text>
               <Chip
                 mode="flat"
                 textStyle={{ fontSize: 11, color: statusConfig.color }}
@@ -218,7 +220,7 @@ export default function MyAttendanceScreen() {
                 <View style={[styles.clockIcon, { backgroundColor: HR_THEME.success + '15' }]}>
                   <MaterialCommunityIcons name="login" size={24} color={HR_THEME.success} />
                 </View>
-                <Text style={styles.clockLabel}>上班</Text>
+                <Text style={styles.clockLabel}>{t('attendance.myAttendance.clockIn')}</Text>
                 <Text style={styles.clockTime}>{formatTime(todayRecord.clockInTime)}</Text>
               </View>
 
@@ -228,7 +230,7 @@ export default function MyAttendanceScreen() {
                 <View style={[styles.clockIcon, { backgroundColor: HR_THEME.warning + '15' }]}>
                   <MaterialCommunityIcons name="logout" size={24} color={HR_THEME.warning} />
                 </View>
-                <Text style={styles.clockLabel}>下班</Text>
+                <Text style={styles.clockLabel}>{t('attendance.myAttendance.clockOut')}</Text>
                 <Text style={styles.clockTime}>{formatTime(todayRecord.clockOutTime)}</Text>
               </View>
             </View>
@@ -236,7 +238,7 @@ export default function MyAttendanceScreen() {
             {todayRecord.workMinutes && todayRecord.workMinutes > 0 && (
               <View style={styles.workDuration}>
                 <MaterialCommunityIcons name="clock-outline" size={16} color={HR_THEME.textSecondary} />
-                <Text style={styles.durationText}>工作时长: {formatMinutes(todayRecord.workMinutes)}</Text>
+                <Text style={styles.durationText}>{t('attendance.myAttendance.workDuration')}: {formatMinutes(todayRecord.workMinutes)}</Text>
               </View>
             )}
 
@@ -251,7 +253,7 @@ export default function MyAttendanceScreen() {
                   buttonColor={HR_THEME.success}
                   icon="login"
                 >
-                  上班打卡
+                  {t('attendance.myAttendance.clockInBtn')}
                 </Button>
               )}
               {todayRecord.status === 'working' && (
@@ -264,13 +266,13 @@ export default function MyAttendanceScreen() {
                   buttonColor={HR_THEME.warning}
                   icon="logout"
                 >
-                  下班打卡
+                  {t('attendance.myAttendance.clockOutBtn')}
                 </Button>
               )}
               {todayRecord.status === 'completed' && (
                 <View style={styles.completedBadge}>
                   <MaterialCommunityIcons name="check-circle" size={20} color={HR_THEME.success} />
-                  <Text style={styles.completedText}>今日考勤已完成</Text>
+                  <Text style={styles.completedText}>{t('attendance.myAttendance.completedToday')}</Text>
                 </View>
               )}
             </View>
@@ -280,31 +282,31 @@ export default function MyAttendanceScreen() {
         {/* 本月汇总 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>本月汇总</Text>
+            <Text style={styles.sectionTitle}>{t('attendance.myAttendance.monthSummary')}</Text>
             <View style={styles.summaryGrid}>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryValue, { color: HR_THEME.success }]}>
                   {monthSummary?.workDays ?? 0}
                 </Text>
-                <Text style={styles.summaryLabel}>出勤天数</Text>
+                <Text style={styles.summaryLabel}>{t('attendance.myAttendance.workDays')}</Text>
               </View>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryValue, { color: HR_THEME.primary }]}>
                   {monthSummary?.totalHours?.toFixed(1) ?? 0}h
                 </Text>
-                <Text style={styles.summaryLabel}>总工时</Text>
+                <Text style={styles.summaryLabel}>{t('attendance.myAttendance.totalHours')}</Text>
               </View>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryValue, { color: HR_THEME.warning }]}>
                   {monthSummary?.lateDays ?? 0}
                 </Text>
-                <Text style={styles.summaryLabel}>迟到</Text>
+                <Text style={styles.summaryLabel}>{t('attendance.myAttendance.lateDays')}</Text>
               </View>
               <View style={styles.summaryItem}>
                 <Text style={[styles.summaryValue, { color: HR_THEME.info }]}>
                   {monthSummary?.avgHoursPerDay?.toFixed(1) ?? 0}h
                 </Text>
-                <Text style={styles.summaryLabel}>日均</Text>
+                <Text style={styles.summaryLabel}>{t('attendance.myAttendance.avgHoursPerDay')}</Text>
               </View>
             </View>
           </Card.Content>
@@ -313,7 +315,7 @@ export default function MyAttendanceScreen() {
         {/* 快捷入口 */}
         <Card style={styles.sectionCard}>
           <Card.Content>
-            <Text style={styles.sectionTitle}>快捷操作</Text>
+            <Text style={styles.sectionTitle}>{t('attendance.myAttendance.quickActions')}</Text>
             <View style={styles.quickActions}>
               <TouchableOpacity
                 style={styles.quickItem}
@@ -322,7 +324,7 @@ export default function MyAttendanceScreen() {
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.primary + '15' }]}>
                   <MaterialCommunityIcons name="chart-bar" size={24} color={HR_THEME.primary} />
                 </View>
-                <Text style={styles.quickLabel}>统计分析</Text>
+                <Text style={styles.quickLabel}>{t('attendance.myAttendance.statsAnalysis')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickItem}
@@ -331,7 +333,7 @@ export default function MyAttendanceScreen() {
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.warning + '15' }]}>
                   <MaterialCommunityIcons name="alert-circle" size={24} color={HR_THEME.warning} />
                 </View>
-                <Text style={styles.quickLabel}>异常记录</Text>
+                <Text style={styles.quickLabel}>{t('attendance.myAttendance.anomalyRecords')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.quickItem}
@@ -340,7 +342,7 @@ export default function MyAttendanceScreen() {
                 <View style={[styles.quickIcon, { backgroundColor: HR_THEME.info + '15' }]}>
                   <MaterialCommunityIcons name="calendar-clock" size={24} color={HR_THEME.info} />
                 </View>
-                <Text style={styles.quickLabel}>考勤管理</Text>
+                <Text style={styles.quickLabel}>{t('attendance.myAttendance.manage')}</Text>
               </TouchableOpacity>
             </View>
           </Card.Content>

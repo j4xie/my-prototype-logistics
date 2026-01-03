@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSWorkersStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSWorkersStackParamList, 'WSWorkers'>;
@@ -33,16 +34,17 @@ interface Worker {
   currentTask?: string;
 }
 
-// 筛选标签
+// 筛选标签 - labels will be replaced by i18n
 const FILTER_TABS = [
-  { key: 'all', label: '全部', count: 10 },
-  { key: 'on_duty', label: '在岗', count: 8 },
-  { key: 'on_leave', label: '请假', count: 1 },
-  { key: 'temporary', label: '临时工', count: 2 },
+  { key: 'all', count: 10 },
+  { key: 'on_duty', count: 8 },
+  { key: 'on_leave', count: 1 },
+  { key: 'temporary', count: 2 },
 ];
 
 export function WSWorkersScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('workshop');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -129,18 +131,22 @@ export function WSWorkersScreen() {
 
   // 获取状态样式
   const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'on_duty':
-        return { bg: '#52c41a', text: '在岗' };
-      case 'off_duty':
-        return { bg: '#8c8c8c', text: '离岗' };
-      case 'on_leave':
-        return { bg: '#faad14', text: '请假' };
-      case 'absent':
-        return { bg: '#ff4d4f', text: '缺勤' };
-      default:
-        return { bg: '#8c8c8c', text: '未知' };
-    }
+    const colorMap = {
+      on_duty: '#52c41a',
+      off_duty: '#8c8c8c',
+      on_leave: '#faad14',
+      absent: '#ff4d4f',
+    };
+    const keyMap = {
+      on_duty: 'onDuty',
+      off_duty: 'offDuty',
+      on_leave: 'onLeave',
+      absent: 'absent',
+    };
+    return {
+      bg: colorMap[status as keyof typeof colorMap] || '#8c8c8c',
+      text: t(`workers.status.${keyMap[status as keyof typeof keyMap] || 'unknown'}`)
+    };
   };
 
   // 获取效率等级
@@ -155,7 +161,7 @@ export function WSWorkersScreen() {
     <SafeAreaView style={styles.container}>
       {/* 头部 */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>人员管理</Text>
+        <Text style={styles.headerTitle}>{t('workers.title')}</Text>
         <TouchableOpacity
           style={styles.clockBtn}
           onPress={() => navigation.navigate('ClockIn')}
@@ -170,7 +176,7 @@ export function WSWorkersScreen() {
           <Icon source="magnify" size={20} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="搜索姓名或工号..."
+            placeholder={t('workers.searchPlaceholder')}
             placeholderTextColor="#999"
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -181,17 +187,20 @@ export function WSWorkersScreen() {
       {/* 筛选标签 */}
       <View style={styles.filterContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {FILTER_TABS.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[styles.filterTab, activeFilter === tab.key && styles.filterTabActive]}
-              onPress={() => setActiveFilter(tab.key)}
-            >
-              <Text style={[styles.filterTabText, activeFilter === tab.key && styles.filterTabTextActive]}>
-                {tab.label} ({tab.count})
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {FILTER_TABS.map(tab => {
+            const labelKey = tab.key === 'on_duty' ? 'onDuty' : tab.key === 'on_leave' ? 'onLeave' : tab.key;
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[styles.filterTab, activeFilter === tab.key && styles.filterTabActive]}
+                onPress={() => setActiveFilter(tab.key)}
+              >
+                <Text style={[styles.filterTabText, activeFilter === tab.key && styles.filterTabTextActive]}>
+                  {t(`workers.filters.${labelKey}`)} ({tab.count})
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -199,19 +208,19 @@ export function WSWorkersScreen() {
       <View style={styles.statsRow}>
         <View style={[styles.statItem, { backgroundColor: '#f6ffed' }]}>
           <Text style={[styles.statValue, { color: '#52c41a' }]}>8</Text>
-          <Text style={styles.statLabel}>在岗</Text>
+          <Text style={styles.statLabel}>{t('workers.stats.onDuty')}</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#fff7e6' }]}>
           <Text style={[styles.statValue, { color: '#faad14' }]}>1</Text>
-          <Text style={styles.statLabel}>请假</Text>
+          <Text style={styles.statLabel}>{t('workers.stats.onLeave')}</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#fff1f0' }]}>
           <Text style={[styles.statValue, { color: '#ff4d4f' }]}>1</Text>
-          <Text style={styles.statLabel}>缺勤</Text>
+          <Text style={styles.statLabel}>{t('workers.stats.absent')}</Text>
         </View>
         <View style={[styles.statItem, { backgroundColor: '#e6f7ff' }]}>
           <Text style={[styles.statValue, { color: '#1890ff' }]}>2</Text>
-          <Text style={styles.statLabel}>临时工</Text>
+          <Text style={styles.statLabel}>{t('workers.stats.temporary')}</Text>
         </View>
       </View>
 
@@ -242,7 +251,7 @@ export function WSWorkersScreen() {
                   <Text style={styles.workerName}>{worker.name}</Text>
                   {worker.isTemporary && (
                     <View style={styles.tempBadge}>
-                      <Text style={styles.tempBadgeText}>临时</Text>
+                      <Text style={styles.tempBadgeText}>{t('workers.tempBadge')}</Text>
                     </View>
                   )}
                 </View>
@@ -250,7 +259,7 @@ export function WSWorkersScreen() {
                   {worker.employeeId} | {worker.role}
                 </Text>
                 {worker.currentTask && (
-                  <Text style={styles.workerTask}>当前: {worker.currentTask}</Text>
+                  <Text style={styles.workerTask}>{t('workers.currentTask', { task: worker.currentTask })}</Text>
                 )}
               </View>
 
@@ -260,7 +269,7 @@ export function WSWorkersScreen() {
                     {efficiencyGrade.grade}
                   </Text>
                 </View>
-                <Text style={styles.hoursText}>{worker.todayHours}h</Text>
+                <Text style={styles.hoursText}>{t('workers.hours', { hours: worker.todayHours })}</Text>
               </View>
             </TouchableOpacity>
           );

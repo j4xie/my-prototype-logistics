@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
 import { Text, Appbar, Surface, Divider, ActivityIndicator, Card } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
@@ -15,6 +16,7 @@ const realtimeReportLogger = logger.createContextLogger('RealtimeReport');
 export default function RealtimeReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [realtimeData, setRealtimeData] = useState<any>(null);
@@ -24,7 +26,7 @@ export default function RealtimeReportScreen() {
     try {
       const factoryId = getFactoryId(user);
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息');
+        Alert.alert(t('common.error'), t('realtime.cannotGetFactoryInfo'));
         return;
       }
 
@@ -90,7 +92,7 @@ export default function RealtimeReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="实时监控" />
+        <Appbar.Content title={t('realtime.title')} />
         <Appbar.Action icon="refresh" onPress={loadRealtimeData} />
       </Appbar.Header>
 
@@ -99,7 +101,7 @@ export default function RealtimeReportScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <Surface style={styles.timestampCard} elevation={1}>
-          <Text variant="bodySmall" style={styles.timestampLabel}>最后更新时间</Text>
+          <Text variant="bodySmall" style={styles.timestampLabel}>{t('realtime.lastUpdate')}</Text>
           <Text variant="bodyMedium" style={styles.timestampValue}>
             {realtimeData?.timestamp
               ? realtimeData.timestamp.toLocaleTimeString('zh-CN')
@@ -108,20 +110,20 @@ export default function RealtimeReportScreen() {
         </Surface>
 
         <Surface style={styles.statsCard} elevation={1}>
-          <Text variant="titleMedium" style={styles.title}>实时状态</Text>
+          <Text variant="titleMedium" style={styles.title}>{t('realtime.realtimeData')}</Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : realtimeData ? (
             <View style={styles.statsGrid}>
               <Card style={styles.statCard}>
                 <Card.Content style={styles.statContent}>
                   <Text style={styles.statValue}>{realtimeData.activeBatches}</Text>
-                  <Text style={styles.statLabel}>进行中批次</Text>
+                  <Text style={styles.statLabel}>{t('realtime.activeBatches')}</Text>
                 </Card.Content>
               </Card>
               <Card style={styles.statCard}>
@@ -129,13 +131,13 @@ export default function RealtimeReportScreen() {
                   <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                     {realtimeData.activeEquipment}
                   </Text>
-                  <Text style={styles.statLabel}>运行中设备</Text>
+                  <Text style={styles.statLabel}>{t('realtime.activeEquipment')}</Text>
                 </Card.Content>
               </Card>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无实时数据</Text>
+              <Text style={styles.emptyText}>{t('realtime.noRealtimeData')}</Text>
             </View>
           )}
         </Surface>

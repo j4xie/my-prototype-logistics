@@ -18,6 +18,7 @@ import {
   Button,
 } from 'react-native-paper';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import {
   materialConsumptionApiClient,
@@ -44,6 +45,7 @@ export default function MaterialConsumptionHistoryScreen() {
   const navigation = useNavigation<MaterialConsumptionHistoryScreenProps['navigation']>();
   const route = useRoute<MaterialConsumptionHistoryScreenProps['route']>();
   const { productionBatchId } = route.params || {};
+  const { t } = useTranslation('processing');
 
   // Get user context
   const { user } = useAuthStore();
@@ -205,19 +207,19 @@ export default function MaterialConsumptionHistoryScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.consumptionCount}</Text>
-            <Text style={styles.statLabel}>消耗次数</Text>
+            <Text style={styles.statLabel}>{t('consumptionHistory.stats.count')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.totalQuantity.toFixed(2)}</Text>
-            <Text style={styles.statLabel}>总消耗量</Text>
+            <Text style={styles.statLabel}>{t('consumptionHistory.stats.totalQuantity')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, styles.costValue]}>
               {formatCurrency(stats.totalCost)}
             </Text>
-            <Text style={styles.statLabel}>总成本</Text>
+            <Text style={styles.statLabel}>{t('consumptionHistory.stats.totalCost')}</Text>
           </View>
         </View>
       </Surface>
@@ -243,35 +245,35 @@ export default function MaterialConsumptionHistoryScreen() {
 
       <View style={styles.cardBody}>
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>消耗数量</Text>
+          <Text style={styles.infoLabel}>{t('consumptionHistory.card.quantity')}</Text>
           <Text style={styles.infoValue}>{item.quantity} kg</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>单价</Text>
+          <Text style={styles.infoLabel}>{t('consumptionHistory.card.unitPrice')}</Text>
           <Text style={styles.infoValue}>{formatCurrency(item.unitPrice)}/kg</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>生产批次</Text>
+          <Text style={styles.infoLabel}>{t('consumptionHistory.card.productionBatch')}</Text>
           <Text style={styles.infoValue}>{item.productionBatchId ?? '-'}</Text>
         </View>
 
         <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>消耗时间</Text>
+          <Text style={styles.infoLabel}>{t('consumptionHistory.card.time')}</Text>
           <Text style={styles.infoValue}>{formatDate(item.consumptionTime)}</Text>
         </View>
 
         {item.recorderName && (
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>操作人</Text>
+            <Text style={styles.infoLabel}>{t('consumptionHistory.card.operator')}</Text>
             <Text style={styles.infoValue}>{item.recorderName}</Text>
           </View>
         )}
 
         {item.notes && (
           <View style={styles.notesRow}>
-            <Text style={styles.infoLabel}>备注</Text>
+            <Text style={styles.infoLabel}>{t('consumptionHistory.card.notes')}</Text>
             <Text style={styles.notesValue} numberOfLines={2}>
               {item.notes}
             </Text>
@@ -297,7 +299,7 @@ export default function MaterialConsumptionHistoryScreen() {
               onPress={fetchConsumptions}
               style={styles.retryButton}
             >
-              重试
+              {t('consumptionHistory.empty.retry')}
             </Button>
           )}
         </>
@@ -305,10 +307,10 @@ export default function MaterialConsumptionHistoryScreen() {
         <>
           <IconButton icon="package-variant" size={48} iconColor="#9E9E9E" />
           <Text variant="bodyLarge" style={styles.emptyText}>
-            暂无消耗记录
+            {t('consumptionHistory.empty.title')}
           </Text>
           <Text variant="bodySmall" style={styles.emptyHint}>
-            生产过程中的原材料消耗会显示在这里
+            {t('consumptionHistory.empty.hint')}
           </Text>
         </>
       )}
@@ -318,13 +320,13 @@ export default function MaterialConsumptionHistoryScreen() {
   const getFilterLabel = () => {
     switch (timeFilter) {
       case 'today':
-        return '今天';
+        return t('consumptionHistory.filter.today');
       case 'week':
-        return '近7天';
+        return t('consumptionHistory.filter.week');
       case 'month':
-        return '近30天';
+        return t('consumptionHistory.filter.month');
       default:
-        return '全部';
+        return t('consumptionHistory.filter.all');
     }
   };
 
@@ -332,7 +334,7 @@ export default function MaterialConsumptionHistoryScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="消耗记录" />
+        <Appbar.Content title={t('consumptionHistory.title')} />
         <Appbar.Action icon="refresh" onPress={handleRefresh} />
         <Menu
           visible={filterMenuVisible}
@@ -349,7 +351,7 @@ export default function MaterialConsumptionHistoryScreen() {
               setTimeFilter('all');
               setFilterMenuVisible(false);
             }}
-            title="全部"
+            title={t('consumptionHistory.filter.all')}
             leadingIcon={timeFilter === 'all' ? 'check' : undefined}
           />
           <Menu.Item
@@ -357,7 +359,7 @@ export default function MaterialConsumptionHistoryScreen() {
               setTimeFilter('today');
               setFilterMenuVisible(false);
             }}
-            title="今天"
+            title={t('consumptionHistory.filter.today')}
             leadingIcon={timeFilter === 'today' ? 'check' : undefined}
           />
           <Menu.Item
@@ -365,7 +367,7 @@ export default function MaterialConsumptionHistoryScreen() {
               setTimeFilter('week');
               setFilterMenuVisible(false);
             }}
-            title="近7天"
+            title={t('consumptionHistory.filter.week')}
             leadingIcon={timeFilter === 'week' ? 'check' : undefined}
           />
           <Menu.Item
@@ -373,14 +375,14 @@ export default function MaterialConsumptionHistoryScreen() {
               setTimeFilter('month');
               setFilterMenuVisible(false);
             }}
-            title="近30天"
+            title={t('consumptionHistory.filter.month')}
             leadingIcon={timeFilter === 'month' ? 'check' : undefined}
           />
         </Menu>
       </Appbar.Header>
 
       <Searchbar
-        placeholder="搜索批次号、原材料"
+        placeholder={t('consumptionHistory.searchPlaceholder')}
         onChangeText={setSearchQuery}
         value={searchQuery}
         style={styles.searchbar}
@@ -402,7 +404,7 @@ export default function MaterialConsumptionHistoryScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
         </View>
       ) : (
         <FlatList

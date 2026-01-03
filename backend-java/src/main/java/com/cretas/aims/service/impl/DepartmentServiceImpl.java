@@ -4,7 +4,7 @@ import com.cretas.aims.dto.DepartmentDTO;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.Department;
 import com.cretas.aims.exception.BusinessException;
-import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.DepartmentRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.DepartmentService;
@@ -80,7 +80,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         log.info("更新部门: factoryId={}, id={}", factoryId, id);
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("部门不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权限操作此部门");
@@ -117,7 +117,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         log.info("删除部门: factoryId={}, id={}", factoryId, id);
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("部门不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权限操作此部门");
@@ -144,7 +144,7 @@ public class DepartmentServiceImpl implements DepartmentService {
         log.debug("获取部门详情: factoryId={}, id={}", factoryId, id);
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("部门不存在: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
         if (!department.getFactoryId().equals(factoryId)) {
             throw new BusinessException("无权限查看此部门");
@@ -255,7 +255,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         for (Integer id : ids) {
             Department department = departmentRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("部门不存在: " + id));
+                    .orElseThrow(() -> new EntityNotFoundException("Department", String.valueOf(id)));
 
             if (!department.getFactoryId().equals(factoryId)) {
                 throw new BusinessException("无权限操作部门: " + id);

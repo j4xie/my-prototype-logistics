@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSBatchesStackParamList } from '../../../types/navigation';
 
 type RouteProps = RouteProp<WSBatchesStackParamList, 'MaterialConsumption'>;
@@ -32,6 +33,7 @@ interface ConsumptionRecord {
 }
 
 export function MaterialConsumptionScreen() {
+  const { t } = useTranslation('workshop');
   const navigation = useNavigation();
   const route = useRoute<RouteProps>();
   const batchId = route.params?.batchId || 'PB-001';
@@ -87,7 +89,7 @@ export function MaterialConsumptionScreen() {
   const completedCount = records.filter(r => r.status === 'completed').length;
 
   const handleAddConsumption = () => {
-    Alert.alert('添加消耗', '从库存选择原料批次进行消耗记录');
+    Alert.alert(t('materialConsumption.alerts.addConsumption'), t('materialConsumption.alerts.selectFromInventory'));
   };
 
   const renderRecord = ({ item }: { item: ConsumptionRecord }) => {
@@ -112,21 +114,21 @@ export function MaterialConsumptionScreen() {
               styles.statusText,
               { color: isCompleted ? '#52c41a' : '#faad14' }
             ]}>
-              {isCompleted ? '已消耗' : '待消耗'}
+              {isCompleted ? t('materialConsumption.record.status.consumed') : t('materialConsumption.record.status.pending')}
             </Text>
           </View>
         </View>
 
         <View style={styles.quantityRow}>
           <View style={styles.quantityItem}>
-            <Text style={styles.quantityLabel}>计划用量</Text>
+            <Text style={styles.quantityLabel}>{t('materialConsumption.record.plannedQuantity')}</Text>
             <Text style={styles.quantityValue}>
               {item.plannedQuantity} {item.unit}
             </Text>
           </View>
           <View style={styles.quantityDivider} />
           <View style={styles.quantityItem}>
-            <Text style={styles.quantityLabel}>实际用量</Text>
+            <Text style={styles.quantityLabel}>{t('materialConsumption.record.actualQuantity')}</Text>
             <Text style={[
               styles.quantityValue,
               !isCompleted && { color: '#999' }
@@ -136,7 +138,7 @@ export function MaterialConsumptionScreen() {
           </View>
           <View style={styles.quantityDivider} />
           <View style={styles.quantityItem}>
-            <Text style={styles.quantityLabel}>偏差</Text>
+            <Text style={styles.quantityLabel}>{t('materialConsumption.record.variance')}</Text>
             {isCompleted ? (
               <Text style={[
                 styles.quantityValue,
@@ -173,7 +175,7 @@ export function MaterialConsumptionScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>原料消耗</Text>
+        <Text style={styles.headerTitle}>{t('materialConsumption.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -185,7 +187,7 @@ export function MaterialConsumptionScreen() {
             <Text style={styles.batchProduct}>{batchInfo.productName}</Text>
           </View>
           <View style={styles.stageBadge}>
-            <Text style={styles.stageText}>{batchInfo.currentStage}</Text>
+            <Text style={styles.stageText}>{t('materialConsumption.batchInfo.currentStage', { stage: batchInfo.currentStage })}</Text>
           </View>
         </View>
       </View>
@@ -195,19 +197,19 @@ export function MaterialConsumptionScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{completedCount}/{records.length}</Text>
-            <Text style={styles.statLabel}>消耗批次</Text>
+            <Text style={styles.statLabel}>{t('materialConsumption.stats.batches')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{totalPlanned} kg</Text>
-            <Text style={styles.statLabel}>计划总量</Text>
+            <Text style={styles.statLabel}>{t('materialConsumption.stats.plannedTotal')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#52c41a' }]}>
               {totalActual} kg
             </Text>
-            <Text style={styles.statLabel}>实际用量</Text>
+            <Text style={styles.statLabel}>{t('materialConsumption.stats.actualUsage')}</Text>
           </View>
         </View>
       </View>
@@ -215,7 +217,7 @@ export function MaterialConsumptionScreen() {
       {/* 消耗记录列表 */}
       <View style={styles.listContainer}>
         <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>消耗记录</Text>
+          <Text style={styles.listTitle}>{t('materialConsumption.list.title')}</Text>
         </View>
         <FlatList
           data={records}
@@ -230,7 +232,7 @@ export function MaterialConsumptionScreen() {
       <View style={styles.footer}>
         <TouchableOpacity style={styles.addBtn} onPress={handleAddConsumption}>
           <Icon source="plus-circle" size={20} color="#fff" />
-          <Text style={styles.addBtnText}>添加消耗记录</Text>
+          <Text style={styles.addBtnText}>{t('materialConsumption.actions.add')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

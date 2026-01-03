@@ -19,6 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import { productionPlanApiClient, PlanType } from '../../../services/api/productionPlanApiClient';
 import { productTypeApiClient, ProductType } from '../../../services/api/productTypeApiClient';
@@ -27,6 +28,7 @@ type NavigationProp = NativeStackNavigationProp<FAAIStackParamList, 'CreatePlan'
 
 export function CreatePlanScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('management');
 
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -68,15 +70,15 @@ export function CreatePlanScreen() {
 
   const validateForm = (): boolean => {
     if (!selectedProductId) {
-      Alert.alert('提示', '请选择产品类型');
+      Alert.alert(t('common.tip'), t('createPlan.selectProductType'));
       return false;
     }
     if (!plannedQuantity || parseFloat(plannedQuantity) <= 0) {
-      Alert.alert('提示', '请输入有效的计划数量');
+      Alert.alert(t('common.tip'), t('createPlan.enterValidQuantity'));
       return false;
     }
     if (!plannedDate) {
-      Alert.alert('提示', '请选择计划日期');
+      Alert.alert(t('common.tip'), t('createPlan.selectPlanDate'));
       return false;
     }
     return true;
@@ -98,15 +100,15 @@ export function CreatePlanScreen() {
       });
 
       if (response.success) {
-        Alert.alert('成功', '生产计划创建成功', [
-          { text: '确定', onPress: () => navigation.goBack() },
+        Alert.alert(t('common.success'), t('createPlan.createSuccess'), [
+          { text: t('common.confirm'), onPress: () => navigation.goBack() },
         ]);
       } else {
-        Alert.alert('失败', response.message || '创建失败，请重试');
+        Alert.alert(t('common.failure'), response.message || t('createPlan.createFailed'));
       }
     } catch (err) {
       console.error('创建生产计划失败:', err);
-      Alert.alert('错误', '创建失败，请检查网络连接');
+      Alert.alert(t('common.error'), t('createPlan.networkError'));
     } finally {
       setLoading(false);
     }
@@ -127,7 +129,7 @@ export function CreatePlanScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>新建计划</Text>
+        <Text style={styles.headerTitle}>{t('createPlan.title')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -138,7 +140,7 @@ export function CreatePlanScreen() {
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           {/* 计划类型选择 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>计划类型</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.planType')}</Text>
             <View style={styles.planTypeGrid}>
               <TouchableOpacity
                 style={[
@@ -158,7 +160,7 @@ export function CreatePlanScreen() {
                     planType === 'FROM_INVENTORY' && styles.planTypeLabelActive,
                   ]}
                 >
-                  库存生产
+                  {t('createPlan.inventoryProduction')}
                 </Text>
                 <Text
                   style={[
@@ -166,7 +168,7 @@ export function CreatePlanScreen() {
                     planType === 'FROM_INVENTORY' && styles.planTypeDescActive,
                   ]}
                 >
-                  使用现有原料
+                  {t('createPlan.useExistingMaterials')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -187,7 +189,7 @@ export function CreatePlanScreen() {
                     planType === 'FUTURE' && styles.planTypeLabelActive,
                   ]}
                 >
-                  预排计划
+                  {t('createPlan.futurePlan')}
                 </Text>
                 <Text
                   style={[
@@ -195,7 +197,7 @@ export function CreatePlanScreen() {
                     planType === 'FUTURE' && styles.planTypeDescActive,
                   ]}
                 >
-                  待采购原料
+                  {t('createPlan.pendingMaterials')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -203,7 +205,7 @@ export function CreatePlanScreen() {
 
           {/* 产品选择 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>产品类型 *</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.productTypeRequired')}</Text>
             <TouchableOpacity
               style={styles.selectField}
               onPress={() => setShowProductPicker(!showProductPicker)}
@@ -213,7 +215,7 @@ export function CreatePlanScreen() {
               ) : selectedProduct ? (
                 <Text style={styles.selectValue}>{selectedProduct.name}</Text>
               ) : (
-                <Text style={styles.selectPlaceholder}>选择产品类型</Text>
+                <Text style={styles.selectPlaceholder}>{t('createPlan.selectProductTypePlaceholder')}</Text>
               )}
               <Icon source="chevron-down" size={20} color="#999" />
             </TouchableOpacity>
@@ -247,7 +249,7 @@ export function CreatePlanScreen() {
                     </TouchableOpacity>
                   ))}
                   {products.length === 0 && (
-                    <Text style={styles.pickerEmpty}>暂无产品类型</Text>
+                    <Text style={styles.pickerEmpty}>{t('createPlan.noProductTypes')}</Text>
                   )}
                 </ScrollView>
               </View>
@@ -256,13 +258,13 @@ export function CreatePlanScreen() {
 
           {/* 计划数量 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>计划数量 *</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.plannedQuantityRequired')}</Text>
             <View style={styles.inputRow}>
               <TextInput
                 style={styles.textInput}
                 value={plannedQuantity}
                 onChangeText={setPlannedQuantity}
-                placeholder="请输入数量"
+                placeholder={t('createPlan.enterQuantity')}
                 keyboardType="decimal-pad"
                 placeholderTextColor="#999"
               />
@@ -272,7 +274,7 @@ export function CreatePlanScreen() {
 
           {/* 计划日期 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>计划日期 *</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.plannedDateRequired')}</Text>
             <View style={styles.dateDisplay}>
               <Icon source="calendar" size={20} color="#667eea" />
               <Text style={styles.dateText}>{formatDate(plannedDate)}</Text>
@@ -283,7 +285,7 @@ export function CreatePlanScreen() {
                 date.setDate(date.getDate() + offset);
                 const iso = date.toISOString();
                 const dateStr = iso.split('T')[0] ?? iso.substring(0, 10);
-                const label = offset === 0 ? '今天' : offset === 1 ? '明天' : `${offset}天后`;
+                const label = offset === 0 ? t('createPlan.today') : offset === 1 ? t('createPlan.tomorrow') : t('createPlan.daysLater', { days: offset });
                 return (
                   <TouchableOpacity
                     key={offset}
@@ -309,24 +311,24 @@ export function CreatePlanScreen() {
 
           {/* 订单号 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>客户订单号 (可选)</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.customerOrderOptional')}</Text>
             <TextInput
               style={styles.textInput}
               value={customerOrderNumber}
               onChangeText={setCustomerOrderNumber}
-              placeholder="请输入客户订单号"
+              placeholder={t('createPlan.enterCustomerOrder')}
               placeholderTextColor="#999"
             />
           </View>
 
           {/* 备注 */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>备注 (可选)</Text>
+            <Text style={styles.sectionTitle}>{t('createPlan.notesOptional')}</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={notes}
               onChangeText={setNotes}
-              placeholder="请输入备注信息"
+              placeholder={t('createPlan.enterNotes')}
               placeholderTextColor="#999"
               multiline
               numberOfLines={3}
@@ -343,12 +345,12 @@ export function CreatePlanScreen() {
             {loading ? (
               <View style={styles.buttonContent}>
                 <ActivityIndicator size="small" color="#fff" />
-                <Text style={styles.submitBtnText}>创建中...</Text>
+                <Text style={styles.submitBtnText}>{t('createPlan.creating')}</Text>
               </View>
             ) : (
               <View style={styles.buttonContent}>
                 <Icon source="check" size={20} color="#fff" />
-                <Text style={styles.submitBtnText}>创建计划</Text>
+                <Text style={styles.submitBtnText}>{t('createPlan.createPlanBtn')}</Text>
               </View>
             )}
           </TouchableOpacity>

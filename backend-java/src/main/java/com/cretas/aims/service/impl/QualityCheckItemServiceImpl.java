@@ -6,6 +6,9 @@ import com.cretas.aims.entity.config.QualityCheckItemBinding;
 import com.cretas.aims.entity.enums.QualityCheckCategory;
 import com.cretas.aims.entity.enums.QualitySeverity;
 import com.cretas.aims.entity.enums.SamplingStrategy;
+import com.cretas.aims.exception.EntityNotFoundException;
+import com.cretas.aims.exception.ValidationException;
+import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.QualityCheckItemBindingRepository;
 import com.cretas.aims.repository.QualityCheckItemRepository;
 import com.cretas.aims.service.QualityCheckItemService;
@@ -16,7 +19,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityNotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -36,6 +38,7 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
 
     private final QualityCheckItemRepository qualityCheckItemRepository;
     private final QualityCheckItemBindingRepository bindingRepository;
+    private final ProductTypeRepository productTypeRepository;
 
     // ==================== 质检项 CRUD ====================
 
@@ -290,6 +293,11 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
         // 验证质检项存在
         QualityCheckItem item = findByIdAndFactory(request.getQualityCheckItemId(), factoryId);
 
+        // 验证产品类型存在
+        if (!productTypeRepository.existsById(request.getProductTypeId())) {
+            throw new ValidationException("Product type not found: " + request.getProductTypeId());
+        }
+
         // 检查是否已绑定
         if (bindingRepository.existsByProductTypeIdAndQualityCheckItemIdAndDeletedAtIsNull(
                 request.getProductTypeId(), request.getQualityCheckItemId())) {
@@ -322,7 +330,7 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
     public void unbindFromProduct(String factoryId, String bindingId) {
         QualityCheckItemBinding binding = bindingRepository.findById(bindingId)
                 .filter(b -> b.getFactoryId().equals(factoryId) && b.getDeletedAt() == null)
-                .orElseThrow(() -> new EntityNotFoundException("绑定不存在: " + bindingId));
+                .orElseThrow(() -> new EntityNotFoundException("Quality check item binding", bindingId));
 
         binding.setDeletedAt(LocalDateTime.now());
         bindingRepository.save(binding);
@@ -334,7 +342,7 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
     public QualityCheckItemBindingDTO updateBinding(String factoryId, String bindingId, BindQualityCheckItemRequest request) {
         QualityCheckItemBinding binding = bindingRepository.findById(bindingId)
                 .filter(b -> b.getFactoryId().equals(factoryId) && b.getDeletedAt() == null)
-                .orElseThrow(() -> new EntityNotFoundException("绑定不存在: " + bindingId));
+                .orElseThrow(() -> new EntityNotFoundException("Quality check item binding", bindingId));
 
         if (request.getOverrideStandardValue() != null) binding.setOverrideStandardValue(request.getOverrideStandardValue());
         if (request.getOverrideMinValue() != null) binding.setOverrideMinValue(request.getOverrideMinValue());
@@ -353,6 +361,7 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<QualityCheckItemBindingDTO> getProductBindings(String factoryId, String productTypeId) {
         return bindingRepository.findByProductTypeIdWithItems(productTypeId)
                 .stream()
@@ -440,7 +449,7 @@ public class QualityCheckItemServiceImpl implements QualityCheckItemService {
     private QualityCheckItem findByIdAndFactory(String itemId, String factoryId) {
         return qualityCheckItemRepository.findById(itemId)
                 .filter(item -> item.getFactoryId() != null && item.getFactoryId().equals(factoryId) && item.getDeletedAt() == null)
-                .orElseThrow(() -> new EntityNotFoundException("质检项不存在: " + itemId));
+                .orElseThrow(() -> new EntityNotFoundException("Quality check item", itemId));
     }
 
     private QualityCheckItemDTO toDTO(QualityCheckItem item) {

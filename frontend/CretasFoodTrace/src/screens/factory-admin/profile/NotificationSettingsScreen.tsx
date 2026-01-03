@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 interface NotificationSetting {
   key: string;
@@ -23,42 +24,43 @@ interface NotificationSetting {
 
 export function NotificationSettingsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('profile');
 
   const [settings, setSettings] = useState<NotificationSetting[]>([
     {
       key: 'push',
-      title: '推送通知',
-      description: '接收App推送消息',
+      title: t('notificationSettings.pushNotification'),
+      description: t('notificationSettings.pushDescription'),
       enabled: true,
     },
     {
       key: 'production',
-      title: '生产提醒',
-      description: '批次状态变更、生产异常等',
+      title: t('notificationSettings.productionAlert'),
+      description: t('notificationSettings.productionDescription'),
       enabled: true,
     },
     {
       key: 'quality',
-      title: '质检提醒',
-      description: '质检结果、不合格预警等',
+      title: t('notificationSettings.qualityAlert'),
+      description: t('notificationSettings.qualityDescription'),
       enabled: true,
     },
     {
       key: 'equipment',
-      title: '设备告警',
-      description: '设备故障、维护提醒等',
+      title: t('notificationSettings.equipmentAlert'),
+      description: t('notificationSettings.equipmentDescription'),
       enabled: true,
     },
     {
       key: 'inventory',
-      title: '库存提醒',
-      description: '库存不足、过期预警等',
+      title: t('notificationSettings.inventoryAlert'),
+      description: t('notificationSettings.inventoryDescription'),
       enabled: true,
     },
     {
       key: 'system',
-      title: '系统通知',
-      description: '系统更新、公告等',
+      title: t('notificationSettings.systemAlert'),
+      description: t('notificationSettings.systemDescription'),
       enabled: false,
     },
   ]);
@@ -78,13 +80,13 @@ export function NotificationSettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>通知设置</Text>
+        <Text style={styles.title}>{t('notificationSettings.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>通知类型</Text>
+          <Text style={styles.sectionTitle}>{t('notificationSettings.notificationTypes')}</Text>
           <View style={styles.settingsCard}>
             {settings.map((item, index) => (
               <View
@@ -110,11 +112,11 @@ export function NotificationSettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>免打扰时段</Text>
+          <Text style={styles.sectionTitle}>{t('notificationSettings.doNotDisturb')}</Text>
           <View style={styles.settingsCard}>
             <TouchableOpacity style={styles.menuItem}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingTitle}>开启免打扰</Text>
+                <Text style={styles.settingTitle}>{t('notificationSettings.enableDoNotDisturb')}</Text>
                 <Text style={styles.settingDescription}>22:00 - 08:00</Text>
               </View>
               <Icon source="chevron-right" size={20} color="#ccc" />
@@ -123,7 +125,7 @@ export function NotificationSettingsScreen() {
         </View>
 
         <Text style={styles.tipText}>
-          关闭推送通知后，您将无法收到任何App消息推送
+          {t('notificationSettings.disableTip')}
         </Text>
 
         <View style={{ height: 32 }} />

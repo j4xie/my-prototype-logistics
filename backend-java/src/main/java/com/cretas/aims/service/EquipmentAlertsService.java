@@ -2,6 +2,7 @@ package com.cretas.aims.service;
 
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
+import com.cretas.aims.dto.equipment.CreateEquipmentAlertRequest;
 import com.cretas.aims.dto.equipment.EquipmentAlertDTO;
 import com.cretas.aims.entity.enums.AlertStatus;
 
@@ -41,4 +42,9 @@ public interface EquipmentAlertsService {
      * 处理告警
      */
     EquipmentAlertDTO resolveAlert(String factoryId, Integer alertId, Long userId, String userName, String resolution);
+
+    /**
+     * 创建告警
+     */
+    EquipmentAlertDTO createAlert(String factoryId, CreateEquipmentAlertRequest request);
 }

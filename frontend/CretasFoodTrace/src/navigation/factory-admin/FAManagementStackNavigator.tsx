@@ -27,6 +27,7 @@ import RuleConfigurationScreen from "../../screens/management/RuleConfigurationS
 import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
 import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
 import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
+import SopConfigScreen from "../../screens/management/SopConfigScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
@@ -157,6 +158,13 @@ export function FAManagementStackNavigator() {
         name="QualityCheckItemConfig"
         component={QualityCheckItemConfigScreen}
         options={{ title: "质检项配置" }}
+      />
+
+      {/* SOP 流程配置 */}
+      <Stack.Screen
+        name="SopConfig"
+        component={SopConfigScreen}
+        options={{ title: "SOP配置" }}
       />
     </Stack.Navigator>
   );

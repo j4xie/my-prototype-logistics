@@ -1,8 +1,14 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.ai.IntentExecuteRequest;
+import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.intent.KeywordEffectiveness;
+import com.cretas.aims.utils.JwtUtil;
 import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.IntentExecutorService;
+import com.cretas.aims.service.KeywordEffectivenessService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -34,6 +40,9 @@ import java.util.Optional;
 public class AIIntentConfigController {
 
     private final AIIntentService aiIntentService;
+    private final IntentExecutorService intentExecutorService;
+    private final KeywordEffectivenessService keywordEffectivenessService;
+    private final JwtUtil jwtUtil;
 
     // ==================== 意图查询 ====================
 
@@ -75,6 +84,40 @@ public class AIIntentConfigController {
 
         List<AIIntentConfig> intents = aiIntentService.getIntentsBySensitivity(level);
         return ResponseEntity.ok(ApiResponse.success(intents));
+    }
+
+    @GetMapping("/keyword-stats")
+    @Operation(summary = "获取关键词效果统计", description = "获取指定意图的关键词效果统计数据")
+    public ResponseEntity<ApiResponse<List<KeywordEffectiveness>>> getKeywordStats(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @RequestParam(required = false) String intentCode,
+            @Parameter(description = "效果阈值") @RequestParam(required = false, defaultValue = "0") java.math.BigDecimal threshold) {
+
+        List<KeywordEffectiveness> stats = keywordEffectivenessService.getEffectiveKeywords(
+                factoryId, intentCode, threshold);
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
+    @GetMapping("/keyword-stats/count")
+    @Operation(summary = "获取关键词数量", description = "获取指定意图的关键词数量")
+    public ResponseEntity<ApiResponse<Long>> getKeywordCount(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @RequestParam(required = false) String intentCode) {
+
+        long count = keywordEffectivenessService.countKeywords(factoryId, intentCode);
+        return ResponseEntity.ok(ApiResponse.success(count));
+    }
+
+    @PostMapping("/keywords/cleanup")
+    @Operation(summary = "清理低效关键词", description = "清理效果评分低于阈值的关键词")
+    public ResponseEntity<ApiResponse<Integer>> cleanupLowEffectivenessKeywords(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody CleanupRequest request) {
+
+        int cleaned = keywordEffectivenessService.cleanupLowEffectivenessKeywords(
+                factoryId, request.getThreshold(), request.getMinNegative());
+        log.info("Cleaned {} low-effectiveness keywords for factory {}", cleaned, factoryId);
+        return ResponseEntity.ok(ApiResponse.success("清理完成，共删除 " + cleaned + " 个低效关键词", cleaned));
     }
 
     @GetMapping("/{intentCode}")
@@ -125,6 +168,64 @@ public class AIIntentConfigController {
 
         List<AIIntentConfig> matchedIntents = aiIntentService.recognizeAllIntents(request.getUserInput());
         return ResponseEntity.ok(ApiResponse.success(matchedIntents));
+    }
+
+    // ==================== 意图执行 ====================
+
+    @PostMapping("/execute")
+    @Operation(summary = "执行AI意图", description = "识别用户输入的意图并执行对应操作")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("执行AI意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        IntentExecuteResponse response = intentExecutorService.execute(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/preview")
+    @Operation(summary = "预览AI意图执行结果", description = "识别意图并预览执行结果，不实际执行")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> previewIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("预览AI意图: factoryId={}, userInput={}", factoryId, request.getUserInput());
+
+        IntentExecuteResponse response = intentExecutorService.preview(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    @PostMapping("/confirm/{confirmToken}")
+    @Operation(summary = "确认执行预览的意图", description = "确认执行之前预览的意图操作")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> confirmIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "确认Token") @PathVariable String confirmToken,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("确认执行AI意图: factoryId={}, confirmToken={}", factoryId, confirmToken);
+
+        IntentExecuteResponse response = intentExecutorService.confirm(factoryId, confirmToken, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     // ==================== 权限查询 ====================
@@ -200,6 +301,44 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.successMessage("意图配置删除成功"));
     }
 
+    // ==================== 反馈记录 ====================
+
+    @PostMapping("/feedback/positive")
+    @Operation(summary = "记录正向反馈", description = "当用户确认意图匹配正确时调用，用于关键词效果追踪")
+    public ResponseEntity<ApiResponse<Void>> recordPositiveFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody PositiveFeedbackRequest request) {
+
+        log.info("记录正向反馈: factoryId={}, intentCode={}, keywords={}",
+                factoryId, request.getIntentCode(), request.getMatchedKeywords());
+
+        aiIntentService.recordPositiveFeedback(
+                factoryId,
+                request.getIntentCode(),
+                request.getMatchedKeywords());
+
+        return ResponseEntity.ok(ApiResponse.successMessage("正向反馈已记录"));
+    }
+
+    @PostMapping("/feedback/negative")
+    @Operation(summary = "记录负向反馈", description = "当用户拒绝匹配结果并选择其他意图时调用")
+    public ResponseEntity<ApiResponse<Void>> recordNegativeFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody NegativeFeedbackRequest request) {
+
+        log.info("记录负向反馈: factoryId={}, rejected={}, selected={}, keywords={}",
+                factoryId, request.getRejectedIntentCode(),
+                request.getSelectedIntentCode(), request.getMatchedKeywords());
+
+        aiIntentService.recordNegativeFeedback(
+                factoryId,
+                request.getRejectedIntentCode(),
+                request.getSelectedIntentCode(),
+                request.getMatchedKeywords());
+
+        return ResponseEntity.ok(ApiResponse.successMessage("负向反馈已记录"));
+    }
+
     // ==================== 缓存管理 ====================
 
     @PostMapping("/cache/refresh")
@@ -265,5 +404,29 @@ public class AIIntentConfigController {
     @lombok.Data
     public static class ActiveStatusRequest {
         private boolean active;
+    }
+
+    /**
+     * 正向反馈请求
+     */
+    @lombok.Data
+    public static class PositiveFeedbackRequest {
+        /** 意图代码 */
+        private String intentCode;
+        /** 匹配到的关键词列表 */
+        private java.util.List<String> matchedKeywords;
+    }
+
+    /**
+     * 负向反馈请求
+     */
+    @lombok.Data
+    public static class NegativeFeedbackRequest {
+        /** 被拒绝的意图代码 */
+        private String rejectedIntentCode;
+        /** 用户选择的正确意图代码 */
+        private String selectedIntentCode;
+        /** 原匹配到的关键词列表 */
+        private java.util.List<String> matchedKeywords;
     }
 }

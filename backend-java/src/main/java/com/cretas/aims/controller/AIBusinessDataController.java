@@ -8,6 +8,9 @@ import com.cretas.aims.entity.RawMaterialType;
 import com.cretas.aims.repository.ConversionRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.RawMaterialTypeRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +31,7 @@ import java.util.*;
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/ai/business-data")
 @RequiredArgsConstructor
+@Tag(name = "AI业务数据初始化", description = "AI 业务数据批量初始化 API，支持产品类型、原材料类型、转换率配置的预览与创建")
 public class AIBusinessDataController {
 
     private final ProductTypeRepository productTypeRepository;
@@ -43,9 +47,10 @@ public class AIBusinessDataController {
      * @param userId    当前用户ID (从 JWT 中获取)
      * @return 创建结果统计
      */
+    @Operation(summary = "初始化业务数据", description = "根据AI建议的数据批量创建产品类型、原材料类型和转换率配置。已存在的项将被跳过，返回创建统计信息")
     @PostMapping("/initialize")
     public ResponseEntity<AIBusinessDataResponse> initializeBusinessData(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody AIBusinessDataRequest request,
             @RequestAttribute("userId") Long userId) {
 
@@ -220,9 +225,10 @@ public class AIBusinessDataController {
      * @param request   AI 建议的业务数据
      * @return 预览结果
      */
+    @Operation(summary = "预览业务数据", description = "预检AI建议的业务数据，返回哪些数据会被创建、哪些会被跳过（因已存在）")
     @PostMapping("/preview")
     public ResponseEntity<Map<String, Object>> previewBusinessData(
-            @PathVariable String factoryId,
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
             @RequestBody AIBusinessDataRequest request) {
 
         log.info("预览 AI 业务数据 - 工厂: {}", factoryId);

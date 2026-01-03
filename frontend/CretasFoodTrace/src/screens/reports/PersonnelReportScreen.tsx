@@ -12,6 +12,7 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { personnelApiClient } from '../../services/api/personnelApiClient';
 import { handleError , getErrorMsg} from '../../utils/errorHandler';
@@ -42,6 +43,7 @@ const personnelReportLogger = logger.createContextLogger('PersonnelReport');
 export default function PersonnelReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,7 +62,7 @@ export default function PersonnelReportScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('personnel.cannotGetFactoryInfo'));
         return;
       }
 
@@ -131,8 +133,8 @@ export default function PersonnelReportScreen() {
         timeRange,
       });
       const errorMessage =
-        getErrorMsg(error) || '加载人员数据失败，请稍后重试';
-      Alert.alert('加载失败', errorMessage);
+        getErrorMsg(error) || t('personnel.loadFailed');
+      Alert.alert(t('personnel.loadFailed'), errorMessage);
       setPersonnelStats(null);
       setWorkHoursRanking([]);
     } finally {
@@ -162,7 +164,7 @@ export default function PersonnelReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="人员报表" />
+        <Appbar.Content title={t('personnel.title')} />
         <Appbar.Action icon="refresh" onPress={loadPersonnelData} />
       </Appbar.Header>
 
@@ -173,15 +175,15 @@ export default function PersonnelReportScreen() {
         {/* 时间范围选择 */}
         <Surface style={styles.timeRangeCard} elevation={1}>
           <Text variant="bodyMedium" style={styles.sectionLabel}>
-            时间范围
+            {t('personnel.timeRange')}
           </Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'day', label: '今日' },
-              { value: 'week', label: '本周' },
-              { value: 'month', label: '本月' },
+              { value: 'day', label: t('personnel.today') },
+              { value: 'week', label: t('personnel.thisWeek') },
+              { value: 'month', label: t('personnel.thisMonth') },
             ]}
             style={styles.segmentedButtons}
           />
@@ -190,46 +192,46 @@ export default function PersonnelReportScreen() {
         {/* 人员总览 */}
         <Surface style={styles.statsCard} elevation={1}>
           <Text variant="titleMedium" style={styles.statsTitle}>
-            人员总览
+            {t('personnel.personnelOverview')}
           </Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : personnelStats ? (
             <>
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
                   <Text style={styles.statValue}>{personnelStats.totalEmployees}</Text>
-                  <Text style={styles.statLabel}>总人数</Text>
+                  <Text style={styles.statLabel}>{t('personnel.totalEmployees')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#4CAF50' }]}>
                     {personnelStats.totalPresent}
                   </Text>
-                  <Text style={styles.statLabel}>在岗</Text>
+                  <Text style={styles.statLabel}>{t('personnel.present')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#F44336' }]}>
                     {personnelStats.totalAbsent}
                   </Text>
-                  <Text style={styles.statLabel}>缺勤</Text>
+                  <Text style={styles.statLabel}>{t('personnel.absent')}</Text>
                 </View>
                 <View style={styles.statBox}>
                   <Text style={[styles.statValue, { color: '#2196F3' }]}>
                     {personnelStats.activeDepartments}
                   </Text>
-                  <Text style={styles.statLabel}>活跃部门</Text>
+                  <Text style={styles.statLabel}>{t('personnel.activeDepartments')}</Text>
                 </View>
               </View>
 
               <Divider style={styles.divider} />
 
               <View style={styles.attendanceRateContainer}>
-                <Text style={styles.attendanceRateLabel}>平均出勤率</Text>
+                <Text style={styles.attendanceRateLabel}>{t('personnel.avgAttendanceRate')}</Text>
                 <Text style={styles.attendanceRateValue}>
                   {personnelStats.avgAttendanceRate.toFixed(1)}%
                 </Text>
@@ -237,20 +239,20 @@ export default function PersonnelReportScreen() {
             </>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无人员数据</Text>
+              <Text style={styles.emptyText}>{t('personnel.noPersonnelData')}</Text>
             </View>
           )}
         </Surface>
 
         {/* 工时排行榜 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="工时排行榜（TOP 10）" titleVariant="titleMedium" />
+          <Card.Title title={t('personnel.workHoursRanking')} titleVariant="titleMedium" />
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>姓名</DataTable.Title>
-              <DataTable.Title>部门</DataTable.Title>
-              <DataTable.Title numeric>工时</DataTable.Title>
-              <DataTable.Title numeric>出勤率</DataTable.Title>
+              <DataTable.Title>{t('personnel.name')}</DataTable.Title>
+              <DataTable.Title>{t('personnel.department')}</DataTable.Title>
+              <DataTable.Title numeric>{t('personnel.workHours')}</DataTable.Title>
+              <DataTable.Title numeric>{t('personnel.attendanceRate')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -260,7 +262,7 @@ export default function PersonnelReportScreen() {
             ) : workHoursRanking.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无工时数据
+                  {t('personnel.noWorkHoursData')}
                 </Text>
               </View>
             ) : (

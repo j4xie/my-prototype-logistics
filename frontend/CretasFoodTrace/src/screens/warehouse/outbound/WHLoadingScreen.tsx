@@ -23,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -48,6 +49,7 @@ interface Vehicle {
 }
 
 export function WHLoadingScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
@@ -117,7 +119,7 @@ export function WHLoadingScreen() {
 
       setWaitingOrders(orders);
     } catch (error) {
-      handleError(error, { title: '加载待装车订单失败' });
+      handleError(error, { title: t('messages.loadListFailed') });
     } finally {
       setLoading(false);
     }
@@ -143,19 +145,19 @@ export function WHLoadingScreen() {
 
       // 从车辆列表中移除已发车的车辆
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));
-      Alert.alert('成功', '车辆已发车');
+      Alert.alert(t('inbound.create.success'), t('outbound.loading.success'));
     } catch (error) {
-      handleError(error, { title: '发车失败' });
+      handleError(error, { title: t('messages.loadListFailed') });
     } finally {
       setDispatching(null);
     }
   };
 
   const handleDispatch = (vehicleId: string) => {
-    Alert.alert("确认发车", "确定此车辆出发吗？", [
-      { text: "取消", style: "cancel" },
+    Alert.alert(t('outbound.loading.confirmLoading'), t('outbound.loading.confirmLoading'), [
+      { text: t('inbound.create.cancel'), style: "cancel" },
       {
-        text: "确定",
+        text: t('inbound.create.confirm'),
         onPress: () => dispatchVehicle(vehicleId),
       },
     ]);
@@ -164,11 +166,11 @@ export function WHLoadingScreen() {
   const getStatusConfig = (status: LoadingOrder["status"]) => {
     switch (status) {
       case "waiting":
-        return { label: "待装车", color: "#f57c00", bgColor: "#fff3e0" };
+        return { label: t('outbound.status.waiting'), color: "#f57c00", bgColor: "#fff3e0" };
       case "loading":
-        return { label: "装车中", color: "#1976d2", bgColor: "#e3f2fd" };
+        return { label: t('outbound.status.packing'), color: "#1976d2", bgColor: "#e3f2fd" };
       case "loaded":
-        return { label: "已装车", color: "#388e3c", bgColor: "#e8f5e9" };
+        return { label: t('outbound.status.ready'), color: "#388e3c", bgColor: "#e8f5e9" };
     }
   };
 
@@ -180,12 +182,12 @@ export function WHLoadingScreen() {
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
             <MaterialCommunityIcons name="arrow-left" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>装车管理</Text>
+          <Text style={styles.headerTitle}>{t('outbound.loading.title')}</Text>
           <View style={styles.headerRight} />
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('outbound.loading.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -277,14 +279,14 @@ export function WHLoadingScreen() {
               disabled={dispatching !== null}
               loading={dispatching === vehicle.id}
             >
-              {dispatching === vehicle.id ? '发车中...' : '确认发车'}
+              {dispatching === vehicle.id ? t('outbound.loading.loading') : t('outbound.loading.confirmLoading')}
             </Button>
           </Surface>
         ))}
 
         {/* 待装车订单 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>待装车订单</Text>
+          <Text style={styles.sectionTitle}>{t('outbound.loading.loadedItems')}</Text>
           {waitingOrders.map((order) => {
             const statusConfig = getStatusConfig(order.status);
             return (

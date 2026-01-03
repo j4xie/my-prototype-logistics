@@ -11,6 +11,7 @@ import {
   Banner,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { materialSpecApiClient, DEFAULT_SPEC_CONFIG, SpecConfig } from '../../services/api/materialSpecApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
@@ -29,6 +30,7 @@ const materialSpecLogger = logger.createContextLogger('MaterialSpecManagement');
  */
 export default function MaterialSpecManagementScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
 
   const [specConfig, setSpecConfig] = useState<SpecConfig>(DEFAULT_SPEC_CONFIG);
@@ -70,12 +72,12 @@ export default function MaterialSpecManagementScreen() {
       <View style={styles.container}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="规格配置管理" />
+          <Appbar.Content title={t('materialSpecManagement.title')} />
         </Appbar.Header>
         <View style={styles.noPermission}>
           <List.Icon icon="lock" color="#999" />
-          <Text style={styles.noPermissionText}>您没有权限访问此页面</Text>
-          <Text style={styles.noPermissionHint}>仅限工厂超管和平台管理员</Text>
+          <Text style={styles.noPermissionText}>{t('common.noPermission')}</Text>
+          <Text style={styles.noPermissionHint}>{t('common.adminOnly')}</Text>
         </View>
       </View>
     );
@@ -86,7 +88,7 @@ export default function MaterialSpecManagementScreen() {
       {/* Header */}
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="规格配置管理" />
+        <Appbar.Content title={t('materialSpecManagement.title')} />
         <Appbar.Action icon="refresh" onPress={loadSpecConfig} />
       </Appbar.Header>
 
@@ -98,28 +100,28 @@ export default function MaterialSpecManagementScreen() {
           style={styles.banner}
         >
           <Text style={styles.bannerText}>
-            📋 Phase 1-3: 当前为只读模式，仅显示配置
+            {t('materialSpecManagement.phase1to3ReadOnly')}
           </Text>
           <Text style={styles.bannerText}>
-            🚀 Phase 4: 将支持完整编辑功能
+            {t('materialSpecManagement.phase4EditSupport')}
           </Text>
         </Banner>
 
         {loading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" />
-            <Text style={styles.loadingText}>加载中...</Text>
+            <Text style={styles.loadingText}>{t('common.loading')}</Text>
           </View>
         ) : (
           <>
             {/* 配置说明 */}
             <Card style={styles.infoCard}>
               <Card.Content>
-                <Text style={styles.infoTitle}>规格配置说明</Text>
+                <Text style={styles.infoTitle}>{t('materialSpecManagement.configInfo.title')}</Text>
                 <Text style={styles.infoText}>
-                  • 每个类别可配置多个规格选项{'\n'}
-                  • 用户添加原材料时，根据所选类别自动显示对应规格{'\n'}
-                  • 用户可从列表选择或自定义输入规格
+                  {t('materialSpecManagement.configInfo.line1')}{'\n'}
+                  {t('materialSpecManagement.configInfo.line2')}{'\n'}
+                  {t('materialSpecManagement.configInfo.line3')}
                 </Text>
               </Card.Content>
             </Card>
@@ -131,7 +133,7 @@ export default function MaterialSpecManagementScreen() {
                   <View style={styles.categoryHeader}>
                     <Text style={styles.categoryName}>{category}</Text>
                     <Chip mode="outlined" compact>
-                      {specs.length} 项
+                      {specs.length} {t('materialSpecManagement.items')}
                     </Chip>
                   </View>
 
@@ -155,7 +157,7 @@ export default function MaterialSpecManagementScreen() {
                       disabled
                       style={styles.actionButton}
                     >
-                      编辑（Phase 4）
+                      {t('materialSpecManagement.editPhase4')}
                     </Button>
                     <Button
                       mode="outlined"
@@ -163,7 +165,7 @@ export default function MaterialSpecManagementScreen() {
                       disabled
                       style={styles.actionButton}
                     >
-                      恢复默认（Phase 4）
+                      {t('materialSpecManagement.restoreDefaultPhase4')}
                     </Button>
                   </View>
                 </Card.Content>

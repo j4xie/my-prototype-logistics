@@ -14,6 +14,7 @@ import {
   ProgressBar,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { factorySettingsApiClient } from '../../services/api/factorySettingsApiClient';
 import { useAuthStore } from '../../store/authStore';
 import type { AISettings, AISettingsResponse, AIUsageStats } from '../../types/processing';
@@ -30,6 +31,7 @@ const aiSettingsLogger = logger.createContextLogger('AISettings');
  */
 export default function AISettingsScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('management');
   const { user } = useAuthStore();
   const factoryId = user?.factoryId || user?.factoryUser?.factoryId;
 
@@ -93,7 +95,7 @@ export default function AISettingsScreen() {
       // 如果API不存在，使用默认设置，不显示错误提示
       const apiError = error as any;
       if (apiError.response?.status !== 404) {
-        Alert.alert('错误', getErrorMsg(error) || '加载设置失败');
+        Alert.alert(t('common.error'), getErrorMsg(error) || t('aiSettings.messages.loadFailed'));
       }
     } finally {
       setLoading(false);
@@ -148,11 +150,11 @@ export default function AISettingsScreen() {
           enabled: settings.enabled,
           tone: settings.tone,
         });
-        Alert.alert('成功', '设置已保存');
+        Alert.alert(t('common.success'), t('aiSettings.messages.saveSuccess'));
       }
     } catch (error) {
       aiSettingsLogger.error('保存AI设置失败', error as Error, { factoryId });
-      Alert.alert('错误', (error as any).response?.data?.message || '保存失败');
+      Alert.alert(t('common.error'), (error as any).response?.data?.message || t('aiSettings.messages.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -178,11 +180,11 @@ export default function AISettingsScreen() {
       <View style={styles.container}>
         <Appbar.Header elevated>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="AI分析设置" />
+          <Appbar.Content title={t('aiSettings.title')} />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" />
-          <Text style={styles.loadingText}>加载设置中...</Text>
+          <Text style={styles.loadingText}>{t('aiSettings.loading')}</Text>
         </View>
       </View>
     );
@@ -192,7 +194,7 @@ export default function AISettingsScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="AI分析设置" />
+        <Appbar.Content title={t('aiSettings.title')} />
         <Appbar.Action
           icon="content-save"
           onPress={handleSave}
@@ -203,16 +205,16 @@ export default function AISettingsScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* 配额显示卡片（只读） */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="📊 使用配额" />
+          <Card.Title title={t('aiSettings.quota.title')} />
           <Card.Content>
             <View style={styles.quotaDisplay}>
               <List.Icon icon="lock" color="#9E9E9E" />
               <View style={styles.quotaInfo}>
                 <Text variant="titleMedium" style={styles.quotaValue}>
-                  每周可用次数: {weeklyQuota}次
+                  {t('aiSettings.quota.weeklyLimit', { count: weeklyQuota })}
                 </Text>
                 <Text variant="bodySmall" style={styles.quotaHint}>
-                  * 配额由平台管理员统一管理，工厂管理员不可修改
+                  {t('aiSettings.quota.quotaHint')}
                 </Text>
               </View>
             </View>
@@ -222,15 +224,15 @@ export default function AISettingsScreen() {
                 <Divider style={styles.divider} />
                 <View style={styles.usageInfo}>
                   <View style={styles.usageRow}>
-                    <Text variant="bodyMedium">本周已用:</Text>
+                    <Text variant="bodyMedium">{t('aiSettings.quota.weeklyUsed')}</Text>
                     <Text variant="titleMedium" style={{ color: '#1976D2' }}>
-                      {usageStats?.totalCalls || 0}次
+                      {t('aiSettings.quota.times', { count: usageStats?.totalCalls || 0 })}
                     </Text>
                   </View>
                   <View style={styles.usageRow}>
-                    <Text variant="bodyMedium">剩余:</Text>
+                    <Text variant="bodyMedium">{t('aiSettings.quota.remaining')}</Text>
                     <Text variant="titleMedium" style={{ color: '#388E3C' }}>
-                      {weeklyQuota - (usageStats?.totalCalls || 0)}次
+                      {t('aiSettings.quota.times', { count: weeklyQuota - (usageStats?.totalCalls || 0) })}
                     </Text>
                   </View>
                   <ProgressBar
@@ -239,7 +241,7 @@ export default function AISettingsScreen() {
                     style={styles.progressBar}
                   />
                   <Text variant="bodySmall" style={styles.resetHint}>
-                    * 每周一0:00自动重置
+                    {t('aiSettings.quota.resetHint')}
                   </Text>
                 </View>
               </>
@@ -249,14 +251,14 @@ export default function AISettingsScreen() {
 
         {/* 基础设置 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="🔧 基础设置" />
+          <Card.Title title={t('aiSettings.basic.title')} />
           <Card.Content>
             {/* 启用/禁用 */}
             <View style={styles.settingRow}>
               <View style={styles.settingLabel}>
-                <Text variant="bodyLarge">启用AI分析</Text>
+                <Text variant="bodyLarge">{t('aiSettings.basic.enableAI')}</Text>
                 <Text variant="bodySmall" style={styles.settingHint}>
-                  关闭后所有员工将无法使用AI分析功能
+                  {t('aiSettings.basic.enableHint')}
                 </Text>
               </View>
               <Switch
@@ -270,7 +272,7 @@ export default function AISettingsScreen() {
             {/* 语气风格 */}
             <View style={styles.settingSection}>
               <Text variant="titleSmall" style={styles.sectionTitle}>
-                语气风格
+                {t('aiSettings.basic.tone')}
               </Text>
               <RadioButton.Group
                 onValueChange={(value) => updateSettings('tone', value)}
@@ -296,7 +298,7 @@ export default function AISettingsScreen() {
             {/* 分析目标 */}
             <View style={styles.settingSection}>
               <Text variant="titleSmall" style={styles.sectionTitle}>
-                分析目标
+                {t('aiSettings.basic.goal')}
               </Text>
               <RadioButton.Group
                 onValueChange={(value) => updateSettings('goal', value)}
@@ -322,7 +324,7 @@ export default function AISettingsScreen() {
             {/* 详细程度 */}
             <View style={styles.settingSection}>
               <Text variant="titleSmall" style={styles.sectionTitle}>
-                详细程度
+                {t('aiSettings.basic.detailLevel')}
               </Text>
               <RadioButton.Group
                 onValueChange={(value) => updateSettings('detailLevel', value)}
@@ -347,15 +349,15 @@ export default function AISettingsScreen() {
 
         {/* 行业标准参数 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="📊 行业标准参数" />
+          <Card.Title title={t('aiSettings.industry.title')} />
           <Card.Content>
             <Text variant="bodySmall" style={styles.cardDescription}>
-              AI将根据这些标准评估成本结构是否合理
+              {t('aiSettings.industry.description')}
             </Text>
 
             <View style={styles.parameterRow}>
               <Text variant="bodyMedium" style={styles.parameterLabel}>
-                人工成本占比标准
+                {t('aiSettings.industry.laborCost')}
               </Text>
               <View style={styles.parameterInput}>
                 <TextInput
@@ -372,7 +374,7 @@ export default function AISettingsScreen() {
 
             <View style={styles.parameterRow}>
               <Text variant="bodyMedium" style={styles.parameterLabel}>
-                设备利用率目标
+                {t('aiSettings.industry.equipmentUtilization')}
               </Text>
               <View style={styles.parameterInput}>
                 <TextInput
@@ -389,7 +391,7 @@ export default function AISettingsScreen() {
 
             <View style={styles.parameterRow}>
               <Text variant="bodyMedium" style={styles.parameterLabel}>
-                利润率目标
+                {t('aiSettings.industry.profitMargin')}
               </Text>
               <View style={styles.parameterInput}>
                 <TextInput
@@ -408,15 +410,15 @@ export default function AISettingsScreen() {
 
         {/* 自定义提示词 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="✏️ 自定义提示词（可选）" />
+          <Card.Title title={t('aiSettings.custom.title')} />
           <Card.Content>
             <Text variant="bodySmall" style={styles.cardDescription}>
-              添加额外的分析要求，将附加到每次AI分析中
+              {t('aiSettings.custom.description')}
             </Text>
             <TextInput
               mode="outlined"
-              label="自定义分析要求"
-              placeholder="例如：请特别关注节能减排和环保因素"
+              label={t('aiSettings.custom.label')}
+              placeholder={t('aiSettings.custom.placeholder')}
               value={settings.customPrompt}
               onChangeText={(value) => updateSettings('customPrompt', value)}
               multiline
@@ -429,12 +431,12 @@ export default function AISettingsScreen() {
         {/* 使用统计 */}
         {usageStats && (
           <Card style={styles.card} mode="elevated">
-            <Card.Title title="📈 本周使用统计" />
+            <Card.Title title={t('aiSettings.stats.title')} />
             <Card.Content>
               <View style={styles.statsGrid}>
                 <View style={styles.statItem}>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    总调用
+                    {t('aiSettings.stats.totalCalls')}
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
                     {usageStats?.totalCalls || 0}
@@ -442,7 +444,7 @@ export default function AISettingsScreen() {
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    分析请求
+                    {t('aiSettings.stats.analysisRequests')}
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
                     {usageStats?.byType?.analysis || 0}
@@ -450,7 +452,7 @@ export default function AISettingsScreen() {
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="bodySmall" style={styles.statLabel}>
-                    追问次数
+                    {t('aiSettings.stats.followUpQuestions')}
                   </Text>
                   <Text variant="headlineMedium" style={styles.statValue}>
                     {usageStats?.byType?.question || 0}
@@ -462,13 +464,13 @@ export default function AISettingsScreen() {
                 <>
                   <Divider style={styles.divider} />
                   <Text variant="bodySmall" style={styles.userStatsTitle}>
-                    按用户统计:
+                    {t('aiSettings.stats.byUser')}
                   </Text>
                   {Object.entries(usageStats?.byUser || {}).map(([userName, count]) => (
                     <View key={userName} style={styles.userStatRow}>
                       <Text variant="bodyMedium">{userName}</Text>
                       <Text variant="bodyMedium" style={{ color: '#1976D2' }}>
-                        {count}次
+                        {t('aiSettings.quota.times', { count })}
                       </Text>
                     </View>
                   ))}
@@ -487,7 +489,7 @@ export default function AISettingsScreen() {
           style={styles.saveButton}
           contentStyle={styles.saveButtonContent}
         >
-          保存设置
+          {t('aiSettings.save')}
         </Button>
 
         <View style={styles.bottomPadding} />

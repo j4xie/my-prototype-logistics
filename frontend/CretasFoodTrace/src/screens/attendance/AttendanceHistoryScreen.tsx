@@ -17,6 +17,7 @@ import {
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { timeclockApiClient, ClockRecord, ApiResponse, PagedResponse, AttendanceStatistics } from '../../services/api/timeclockApiClient';
 import { getFactoryId, isPlatformUser, isFactoryUser } from '../../types/auth';
@@ -58,6 +59,7 @@ const formatDate = (date: Date): string => {
 export default function AttendanceHistoryScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('hr');
 
   // 数据状态
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -152,7 +154,7 @@ export default function AttendanceHistoryScreen() {
       const factoryId = getFactoryId(user);
 
       if (!userId || !factoryId) {
-        Alert.alert('错误', '无法获取用户信息，请重新登录');
+        Alert.alert(t('messages.error'), t('attendance.history.errors.noUser'));
         return;
       }
 
@@ -192,7 +194,7 @@ export default function AttendanceHistoryScreen() {
         startDate: formatDate(startDate),
         endDate: formatDate(endDate),
       });
-      Alert.alert('加载失败', '无法加载考勤记录，请稍后重试');
+      Alert.alert(t('messages.error'), t('attendance.history.errors.loadFailed'));
       setRecords([]);
       setFilteredRecords([]);
     } finally {
@@ -241,10 +243,10 @@ export default function AttendanceHistoryScreen() {
    */
   const getStatusChip = (status: AttendanceRecord['status']) => {
     const statusMap = {
-      normal: { label: '正常', color: '#4CAF50' },
-      late: { label: '迟到', color: '#FF9800' },
-      early_leave: { label: '早退', color: '#FF9800' },
-      absent: { label: '缺勤', color: '#F44336' },
+      normal: { label: t('attendance.history.statusLabels.normal'), color: '#4CAF50' },
+      late: { label: t('attendance.history.statusLabels.late'), color: '#FF9800' },
+      early_leave: { label: t('attendance.history.statusLabels.earlyLeave'), color: '#FF9800' },
+      absent: { label: t('attendance.history.statusLabels.absent'), color: '#F44336' },
     };
 
     const config = statusMap[status];
@@ -393,18 +395,18 @@ export default function AttendanceHistoryScreen() {
     }
 
     if (!editReason.trim()) {
-      Alert.alert('验证失败', '请填写修改原因');
+      Alert.alert(t('messages.error'), t('attendance.history.editDialog.reasonRequired'));
       return;
     }
 
     // 验证时间格式 (HH:MM)
     const timeRegex = /^([0-1][0-9]|2[0-3]):([0-5][0-9])$/;
     if (editingClockIn && !timeRegex.test(editingClockIn)) {
-      Alert.alert('验证失败', '上班时间格式不正确，请使用24小时制（如：08:30）');
+      Alert.alert(t('messages.error'), t('attendance.history.editDialog.invalidTimeFormat'));
       return;
     }
     if (editingClockOut && !timeRegex.test(editingClockOut)) {
-      Alert.alert('验证失败', '下班时间格式不正确，请使用24小时制（如：17:30）');
+      Alert.alert(t('messages.error'), t('attendance.history.editDialog.invalidTimeFormat'));
       return;
     }
 
@@ -419,7 +421,7 @@ export default function AttendanceHistoryScreen() {
       const factoryId = getFactoryId(user);
 
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息');
+        Alert.alert(t('messages.error'), t('attendance.history.editDialog.noFactory'));
         return;
       }
 
@@ -464,8 +466,8 @@ export default function AttendanceHistoryScreen() {
 
       // 关闭对话框并刷新数据
       closeEditDialog();
-      Alert.alert('修改成功', '考勤记录已更新', [
-        { text: '确定', onPress: () => loadAttendanceRecords() },
+      Alert.alert(t('attendance.history.editDialog.editSuccess'), t('attendance.history.editDialog.editSuccessMsg'), [
+        { text: t('common.ok'), onPress: () => loadAttendanceRecords() },
       ]);
     } catch (error) {
       attendanceLogger.error('修改考勤记录失败', error, {
@@ -473,8 +475,8 @@ export default function AttendanceHistoryScreen() {
         clockInTime: editingClockIn,
         clockOutTime: editingClockOut,
       });
-      const errorMessage = getErrorMsg(error) || '修改考勤记录失败，请重试';
-      Alert.alert('修改失败', errorMessage);
+      const errorMessage = getErrorMsg(error) || t('attendance.history.editDialog.editFailed');
+      Alert.alert(t('attendance.history.editDialog.editFailed'), errorMessage);
     } finally {
       setSavingEdit(false);
     }
@@ -489,7 +491,7 @@ export default function AttendanceHistoryScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="考勤历史" />
+        <Appbar.Content title={t('attendance.history.title')} />
         <Appbar.Action icon="download" onPress={handleExport} />
       </Appbar.Header>
 
@@ -505,7 +507,7 @@ export default function AttendanceHistoryScreen() {
             <View style={styles.dateFilterRow}>
               <View style={styles.dateItem}>
                 <Text variant="bodySmall" style={styles.dateLabel}>
-                  开始日期
+                  {t('attendance.history.startDate')}
                 </Text>
                 <Chip
                   icon="calendar"
@@ -522,7 +524,7 @@ export default function AttendanceHistoryScreen() {
 
               <View style={styles.dateItem}>
                 <Text variant="bodySmall" style={styles.dateLabel}>
-                  结束日期
+                  {t('attendance.history.endDate')}
                 </Text>
                 <Chip
                   icon="calendar"
@@ -545,7 +547,7 @@ export default function AttendanceHistoryScreen() {
                 }}
                 style={styles.quickButton}
               >
-                近7天
+                {t('attendance.history.quickDates.last7Days')}
               </Button>
               <Button
                 mode="outlined"
@@ -556,7 +558,7 @@ export default function AttendanceHistoryScreen() {
                 }}
                 style={styles.quickButton}
               >
-                近30天
+                {t('attendance.history.quickDates.last30Days')}
               </Button>
               <Button
                 mode="outlined"
@@ -568,7 +570,7 @@ export default function AttendanceHistoryScreen() {
                 }}
                 style={styles.quickButton}
               >
-                本月
+                {t('attendance.history.quickDates.thisMonth')}
               </Button>
             </View>
           </Card.Content>
@@ -576,7 +578,7 @@ export default function AttendanceHistoryScreen() {
 
         {/* 统计数据 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="统计概览" titleVariant="titleMedium" />
+          <Card.Title title={t('attendance.history.statsOverview')} titleVariant="titleMedium" />
           <Card.Content>
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
@@ -584,7 +586,7 @@ export default function AttendanceHistoryScreen() {
                   {stats.totalWorkHours.toFixed(1)}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  总工时
+                  {t('attendance.history.totalWorkHours')}
                 </Text>
               </View>
 
@@ -593,7 +595,7 @@ export default function AttendanceHistoryScreen() {
                   {stats.totalOvertimeHours.toFixed(1)}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  加班时长
+                  {t('attendance.history.overtimeHours')}
                 </Text>
               </View>
 
@@ -602,7 +604,7 @@ export default function AttendanceHistoryScreen() {
                   {stats.normalDays}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  正常天数
+                  {t('attendance.history.normalDays')}
                 </Text>
               </View>
 
@@ -611,7 +613,7 @@ export default function AttendanceHistoryScreen() {
                   {stats.lateDays}
                 </Text>
                 <Text variant="bodySmall" style={styles.statLabel}>
-                  迟到次数
+                  {t('attendance.history.lateDays')}
                 </Text>
               </View>
             </View>
@@ -620,7 +622,7 @@ export default function AttendanceHistoryScreen() {
 
         {/* 搜索栏 */}
         <Searchbar
-          placeholder="搜索工作类型或日期"
+          placeholder={t('attendance.history.searchPlaceholder')}
           value={searchQuery}
           onChangeText={handleSearch}
           style={styles.searchbar}
@@ -630,12 +632,12 @@ export default function AttendanceHistoryScreen() {
         <Card style={styles.card} mode="elevated">
           <DataTable>
             <DataTable.Header>
-              <DataTable.Title>日期</DataTable.Title>
-              <DataTable.Title>上班</DataTable.Title>
-              <DataTable.Title>下班</DataTable.Title>
-              <DataTable.Title numeric>工时</DataTable.Title>
-              <DataTable.Title>状态</DataTable.Title>
-              <DataTable.Title>操作</DataTable.Title>
+              <DataTable.Title>{t('attendance.history.tableHeaders.date')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.history.tableHeaders.clockIn')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.history.tableHeaders.clockOut')}</DataTable.Title>
+              <DataTable.Title numeric>{t('attendance.history.tableHeaders.workHours')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.history.tableHeaders.status')}</DataTable.Title>
+              <DataTable.Title>{t('attendance.history.tableHeaders.actions')}</DataTable.Title>
             </DataTable.Header>
 
             {loading ? (
@@ -645,7 +647,7 @@ export default function AttendanceHistoryScreen() {
             ) : paginatedRecords.length === 0 ? (
               <View style={styles.emptyContainer}>
                 <Text variant="bodyMedium" style={styles.emptyText}>
-                  暂无考勤记录
+                  {t('attendance.history.noRecords')}
                 </Text>
               </View>
             ) : (
@@ -735,14 +737,14 @@ export default function AttendanceHistoryScreen() {
       {/* 编辑对话框 */}
       <Portal>
         <Dialog visible={editDialogVisible} onDismiss={closeEditDialog} style={styles.dialog}>
-          <Dialog.Title>修改考勤记录</Dialog.Title>
+          <Dialog.Title>{t('attendance.history.editDialog.title')}</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium" style={styles.dialogDescription}>
-              修改日期：{editingRecord?.date.toLocaleDateString('zh-CN')}
+              {t('attendance.history.editDialog.modifyDate')}{editingRecord?.date.toLocaleDateString('zh-CN')}
             </Text>
 
             <TextInput
-              label="上班时间 (如: 08:30)"
+              label={t('attendance.history.editDialog.clockInTime')}
               value={editingClockIn}
               onChangeText={setEditingClockIn}
               mode="outlined"
@@ -753,7 +755,7 @@ export default function AttendanceHistoryScreen() {
             />
 
             <TextInput
-              label="下班时间 (如: 17:30)"
+              label={t('attendance.history.editDialog.clockOutTime')}
               value={editingClockOut}
               onChangeText={setEditingClockOut}
               mode="outlined"
@@ -764,35 +766,35 @@ export default function AttendanceHistoryScreen() {
             />
 
             <TextInput
-              label="修改原因（必填）"
+              label={t('attendance.history.editDialog.reason')}
               value={editReason}
               onChangeText={setEditReason}
               mode="outlined"
               multiline
               numberOfLines={3}
               style={styles.reasonInput}
-              placeholder="请填写修改原因，如：忘记打卡、设备故障等"
+              placeholder={t('attendance.history.editDialog.reasonPlaceholder')}
               disabled={savingEdit}
             />
 
             {savingEdit && (
               <View style={styles.savingContainer}>
                 <ActivityIndicator size="small" />
-                <Text style={styles.savingText}>正在保存修改...</Text>
+                <Text style={styles.savingText}>{t('attendance.history.editDialog.saving')}</Text>
               </View>
             )}
           </Dialog.Content>
 
           <Dialog.Actions>
             <Button onPress={closeEditDialog} disabled={savingEdit}>
-              取消
+              {t('attendance.history.editDialog.cancel')}
             </Button>
             <Button
               onPress={handleSaveEdit}
               disabled={savingEdit || !editReason.trim()}
               mode="contained"
             >
-              保存
+              {t('attendance.history.editDialog.save')}
             </Button>
           </Dialog.Actions>
         </Dialog>

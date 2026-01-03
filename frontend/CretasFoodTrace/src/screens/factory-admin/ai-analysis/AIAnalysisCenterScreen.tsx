@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import { aiApiClient, AIQuotaInfo } from '../../../services/api/aiApiClient';
 
@@ -46,6 +47,7 @@ function MenuItem({ icon, title, subtitle, color, onPress }: MenuItemProps) {
 
 export function AIAnalysisCenterScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const { t } = useTranslation('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState<AIQuotaInfo | null>(null);
@@ -55,12 +57,12 @@ export function AIAnalysisCenterScreen() {
       const quota = await aiApiClient.getQuotaInfo();
       setQuotaInfo(quota);
     } catch (err) {
-      console.error('加载AI配额失败:', err);
+      console.error(t('aiAnalysis.loadQuotaFailed') || 'Load quota failed:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     loadQuota();
@@ -91,15 +93,15 @@ export function AIAnalysisCenterScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>AI 分析</Text>
-          <Text style={styles.subtitle}>智能数据分析与决策支持</Text>
+          <Text style={styles.title}>{t('aiAnalysis.title')}</Text>
+          <Text style={styles.subtitle}>{t('aiAnalysis.subtitle')}</Text>
         </View>
 
         {/* AI 配额卡片 */}
         <View style={styles.quotaCard}>
           <View style={styles.quotaHeader}>
             <Icon source="robot" size={24} color="#667eea" />
-            <Text style={styles.quotaTitle}>AI 分析配额</Text>
+            <Text style={styles.quotaTitle}>{t('aiAnalysis.quota')}</Text>
           </View>
           {loading ? (
             <ActivityIndicator size="small" color="#667eea" style={{ marginVertical: 16 }} />
@@ -118,21 +120,21 @@ export function AIAnalysisCenterScreen() {
                   />
                 </View>
                 <Text style={styles.quotaText}>
-                  {quotaInfo.remainingQuota} / {quotaInfo.weeklyQuota} 次剩余
+                  {quotaInfo.remainingQuota} / {quotaInfo.weeklyQuota} {t('aiAnalysis.quotaRemaining')}
                 </Text>
               </View>
               <Text style={styles.quotaReset}>
-                重置时间: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString('zh-CN') : '下周一'}
+                {t('aiAnalysis.resetTime')}: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString('zh-CN') : t('aiAnalysis.nextMonday')}
               </Text>
             </>
           ) : (
-            <Text style={styles.quotaError}>无法获取配额信息</Text>
+            <Text style={styles.quotaError}>{t('aiAnalysis.quotaLoadFailed')}</Text>
           )}
         </View>
 
         {/* 快捷分析 */}
         <View style={styles.quickActions}>
-          <Text style={styles.sectionTitle}>快捷分析</Text>
+          <Text style={styles.sectionTitle}>{t('aiAnalysis.quickAnalysis')}</Text>
           <View style={styles.quickGrid}>
             <TouchableOpacity
               style={styles.quickItem}
@@ -141,7 +143,7 @@ export function AIAnalysisCenterScreen() {
               <View style={[styles.quickIcon, { backgroundColor: '#667eea20' }]}>
                 <Icon source="chart-line" size={28} color="#667eea" />
               </View>
-              <Text style={styles.quickLabel}>成本趋势</Text>
+              <Text style={styles.quickLabel}>{t('aiAnalysis.costTrend')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickItem}
@@ -150,7 +152,7 @@ export function AIAnalysisCenterScreen() {
               <View style={[styles.quickIcon, { backgroundColor: '#1890ff20' }]}>
                 <Icon source="clipboard-check-outline" size={28} color="#1890ff" />
               </View>
-              <Text style={styles.quickLabel}>质量分析</Text>
+              <Text style={styles.quickLabel}>{t('aiAnalysis.qualityAnalysis')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickItem}
@@ -159,7 +161,7 @@ export function AIAnalysisCenterScreen() {
               <View style={[styles.quickIcon, { backgroundColor: '#fa8c1620' }]}>
                 <Icon source="robot" size={28} color="#fa8c16" />
               </View>
-              <Text style={styles.quickLabel}>AI 对话</Text>
+              <Text style={styles.quickLabel}>{t('aiAnalysis.aiChat')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.quickItem}
@@ -168,47 +170,47 @@ export function AIAnalysisCenterScreen() {
               <View style={[styles.quickIcon, { backgroundColor: '#eb2f9620' }]}>
                 <Icon source="calendar-plus" size={28} color="#eb2f96" />
               </View>
-              <Text style={styles.quickLabel}>新建计划</Text>
+              <Text style={styles.quickLabel}>{t('aiAnalysis.createPlan')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* 功能菜单 */}
         <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>全部功能</Text>
+          <Text style={styles.sectionTitle}>{t('aiAnalysis.allFeatures')}</Text>
           <View style={styles.menuCard}>
             <MenuItem
               icon="chart-line"
-              title="成本分析"
-              subtitle="生产成本趋势与优化建议"
+              title={t('aiAnalysis.costAnalysis')}
+              subtitle={t('aiAnalysis.costAnalysisDesc')}
               color="#667eea"
               onPress={() => navigation.navigate('AICostAnalysis')}
             />
             <MenuItem
               icon="file-document-outline"
-              title="数据报表"
-              subtitle="生产、库存、财务等报表"
+              title={t('aiAnalysis.dataReport')}
+              subtitle={t('aiAnalysis.dataReportDesc')}
               color="#52c41a"
               onPress={() => navigation.navigate('AIReport')}
             />
             <MenuItem
               icon="robot"
-              title="AI 对话"
-              subtitle="与AI助手对话获取分析建议"
+              title={t('aiAnalysis.aiChat')}
+              subtitle={t('aiAnalysis.aiChatDesc')}
               color="#fa8c16"
               onPress={() => navigation.navigate('AIChat')}
             />
             <MenuItem
               icon="clipboard-check-outline"
-              title="质检分析"
-              subtitle="质量检测数据分析"
+              title={t('aiAnalysis.qualityAnalysis')}
+              subtitle={t('aiAnalysis.qualityAnalysisDesc')}
               color="#1890ff"
               onPress={() => navigation.navigate('QualityAnalysis')}
             />
             <MenuItem
               icon="calendar-plus"
-              title="新建计划"
-              subtitle="创建生产计划"
+              title={t('aiAnalysis.createPlan')}
+              subtitle={t('aiAnalysis.createPlanDesc')}
               color="#eb2f96"
               onPress={() => navigation.navigate('CreatePlan')}
             />

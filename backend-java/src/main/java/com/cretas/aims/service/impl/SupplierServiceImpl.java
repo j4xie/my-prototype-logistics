@@ -6,7 +6,7 @@ import com.cretas.aims.dto.supplier.CreateSupplierRequest;
 import com.cretas.aims.dto.supplier.SupplierDTO;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.exception.BusinessException;
-import com.cretas.aims.exception.ResourceNotFoundException;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.SupplierMapper;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.service.SupplierService;
@@ -34,11 +34,14 @@ public class SupplierServiceImpl implements SupplierService {
 
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
+    private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
-    public SupplierServiceImpl(SupplierRepository supplierRepository, SupplierMapper supplierMapper) {
+    public SupplierServiceImpl(SupplierRepository supplierRepository, SupplierMapper supplierMapper,
+                              com.cretas.aims.utils.ExcelUtil excelUtil) {
         this.supplierRepository = supplierRepository;
         this.supplierMapper = supplierMapper;
+        this.excelUtil = excelUtil;
     }
 
     @Override
@@ -70,7 +73,7 @@ public class SupplierServiceImpl implements SupplierService {
     public SupplierDTO updateSupplier(String factoryId, String supplierId, CreateSupplierRequest request) {
         log.info("更新供应商: factoryId={}, supplierId={}", factoryId, supplierId);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         // 检查名称是否与其他供应商重复
         if (request.getName() != null && !request.getName().equals(supplier.getName())) {
             if (supplierRepository.existsByFactoryIdAndNameAndIdNot(factoryId, request.getName(), supplierId)) {
@@ -88,7 +91,7 @@ public class SupplierServiceImpl implements SupplierService {
     public void deleteSupplier(String factoryId, String supplierId) {
         log.info("删除供应商: factoryId={}, supplierId={}", factoryId, supplierId);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         // 检查是否有关联的原材料批次
         if (supplierRepository.hasRelatedMaterialBatches(supplierId)) {
             throw new BusinessException("供应商有关联的原材料批次，无法删除");
@@ -100,7 +103,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional(readOnly = true)
     public SupplierDTO getSupplierById(String factoryId, String supplierId) {
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         return supplierMapper.toDTO(supplier);
     }
     @Override
@@ -160,7 +163,7 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("切换供应商状态: factoryId={}, supplierId={}, isActive={}",
                 factoryId, supplierId, isActive);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         supplier.setIsActive(isActive);
         supplier.setUpdatedAt(LocalDateTime.now());
         supplier = supplierRepository.save(supplier);
@@ -174,7 +177,7 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("更新供应商评级: factoryId={}, supplierId={}, rating={}",
                 factoryId, supplierId, rating);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         if (rating < 1 || rating > 5) {
             throw new BusinessException("评级必须在1-5之间");
         }
@@ -190,7 +193,7 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("更新供应商信用额度: factoryId={}, supplierId={}, creditLimit={}",
                 factoryId, supplierId, creditLimit);
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         if (creditLimit.compareTo(BigDecimal.ZERO) < 0) {
             throw new BusinessException("信用额度不能为负数");
         }
@@ -203,7 +206,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional(readOnly = true)
     public Map<String, Object> getSupplierStatistics(String factoryId, String supplierId) {
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         Map<String, Object> statistics = new HashMap<>();
         statistics.put("supplierId", supplier.getId());
         statistics.put("supplierName", supplier.getName());
@@ -222,7 +225,7 @@ public class SupplierServiceImpl implements SupplierService {
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getSupplierHistory(String factoryId, String supplierId) {
         Supplier supplier = supplierRepository.findByIdAndFactoryId(supplierId, factoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("供应商不存在"));
+                .orElseThrow(() -> new EntityNotFoundException("Supplier", supplierId));
         // TODO: 从原材料批次表中获取供货历史
         List<Map<String, Object>> history = new ArrayList<>();
         return history;
@@ -250,7 +253,6 @@ public class SupplierServiceImpl implements SupplierService {
                 .collect(Collectors.toList());
 
         // 生成Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] excelBytes = excelUtil.exportToExcel(
                 exportDTOs,
                 com.cretas.aims.dto.supplier.SupplierExportDTO.class,
@@ -266,7 +268,6 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("生成供应商导入模板");
 
         // 使用ExcelUtil生成空模板
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         byte[] templateBytes = excelUtil.generateTemplate(
                 com.cretas.aims.dto.supplier.SupplierExportDTO.class,
                 "供应商导入模板"
@@ -284,7 +285,6 @@ public class SupplierServiceImpl implements SupplierService {
         log.info("开始从Excel批量导入供应商: factoryId={}", factoryId);
 
         // 1. 解析Excel文件
-        com.cretas.aims.utils.ExcelUtil excelUtil = new com.cretas.aims.utils.ExcelUtil();
         List<com.cretas.aims.dto.supplier.SupplierExportDTO> excelData;
         try {
             excelData = excelUtil.importFromExcel(inputStream,

@@ -11,6 +11,7 @@ import {
   ProgressBar,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { equipmentApiClient } from '../../services/api/equipmentApiClient';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
@@ -35,6 +36,7 @@ const efficiencyReportLogger = logger.createContextLogger('EfficiencyReport');
 export default function EfficiencyReportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,7 +50,7 @@ export default function EfficiencyReportScreen() {
     try {
       const factoryId = getFactoryId(user);
       if (!factoryId) {
-        Alert.alert('错误', '无法获取工厂信息，请重新登录');
+        Alert.alert(t('common.error'), t('efficiency.cannotGetFactoryInfo'));
         return;
       }
 
@@ -94,7 +96,7 @@ export default function EfficiencyReportScreen() {
         factoryId: getFactoryId(user),
         timeRange,
       });
-      Alert.alert('加载失败', getErrorMsg(error) || '加载效率数据失败');
+      Alert.alert(t('efficiency.loadFailed'), getErrorMsg(error) || t('efficiency.loadFailed'));
       setEfficiencyStats(null);
     } finally {
       setLoading(false);
@@ -117,7 +119,7 @@ export default function EfficiencyReportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="效率报表" />
+        <Appbar.Content title={t('efficiency.title')} />
         <Appbar.Action icon="refresh" onPress={loadEfficiencyData} />
       </Appbar.Header>
 
@@ -126,32 +128,32 @@ export default function EfficiencyReportScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <Surface style={styles.timeRangeCard} elevation={1}>
-          <Text variant="bodyMedium" style={styles.sectionLabel}>时间范围</Text>
+          <Text variant="bodyMedium" style={styles.sectionLabel}>{t('efficiency.timeRange')}</Text>
           <SegmentedButtons
             value={timeRange}
             onValueChange={setTimeRange}
             buttons={[
-              { value: 'day', label: '今日' },
-              { value: 'week', label: '本周' },
-              { value: 'month', label: '本月' },
+              { value: 'day', label: t('efficiency.today') },
+              { value: 'week', label: t('efficiency.thisWeek') },
+              { value: 'month', label: t('efficiency.thisMonth') },
             ]}
           />
         </Surface>
 
         <Surface style={styles.statsCard} elevation={1}>
-          <Text variant="titleMedium" style={styles.statsTitle}>效率指标</Text>
+          <Text variant="titleMedium" style={styles.statsTitle}>{t('efficiency.efficiencyMetrics')}</Text>
           <Divider style={styles.divider} />
 
           {loading ? (
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="small" />
-              <Text style={styles.loadingText}>加载中...</Text>
+              <Text style={styles.loadingText}>{t('common.loading')}</Text>
             </View>
           ) : efficiencyStats ? (
             <>
               <View style={styles.metricItem}>
                 <View style={styles.metricHeader}>
-                  <Text style={styles.metricLabel}>设备OEE</Text>
+                  <Text style={styles.metricLabel}>{t('efficiency.equipmentOEE')}</Text>
                   <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
                     {efficiencyStats.equipmentOEE.toFixed(1)}%
                   </Text>
@@ -161,7 +163,7 @@ export default function EfficiencyReportScreen() {
 
               <View style={styles.metricItem}>
                 <View style={styles.metricHeader}>
-                  <Text style={styles.metricLabel}>设备利用率</Text>
+                  <Text style={styles.metricLabel}>{t('efficiency.equipmentUtilization')}</Text>
                   <Text style={[styles.metricValue, { color: '#2196F3' }]}>
                     {efficiencyStats.equipmentUtilization.toFixed(1)}%
                   </Text>
@@ -171,7 +173,7 @@ export default function EfficiencyReportScreen() {
 
               <View style={styles.metricItem}>
                 <View style={styles.metricHeader}>
-                  <Text style={styles.metricLabel}>人员效率</Text>
+                  <Text style={styles.metricLabel}>{t('efficiency.laborEfficiency')}</Text>
                   <Text style={[styles.metricValue, { color: '#FF9800' }]}>
                     {efficiencyStats.laborEfficiency.toFixed(1)}%
                   </Text>
@@ -181,7 +183,7 @@ export default function EfficiencyReportScreen() {
 
               <View style={styles.metricItem}>
                 <View style={styles.metricHeader}>
-                  <Text style={styles.metricLabel}>整体效率</Text>
+                  <Text style={styles.metricLabel}>{t('efficiency.overallEfficiency')}</Text>
                   <Text style={[styles.metricValue, { color: '#9C27B0' }]}>
                     {efficiencyStats.overallEfficiency.toFixed(1)}%
                   </Text>
@@ -191,7 +193,7 @@ export default function EfficiencyReportScreen() {
             </>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>暂无效率数据</Text>
+              <Text style={styles.emptyText}>{t('efficiency.noEfficiencyData')}</Text>
             </View>
           )}
         </Surface>

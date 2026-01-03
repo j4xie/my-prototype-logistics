@@ -14,6 +14,7 @@ import {
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 
 type NavigationProp = NativeStackNavigationProp<WSHomeStackParamList, 'TaskGuideStep2'>;
@@ -22,6 +23,7 @@ type RouteProps = RouteProp<WSHomeStackParamList, 'TaskGuideStep2'>;
 export function TaskGuideStep2Screen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProps>();
+  const { t } = useTranslation('workshop');
   const { batchId, batchNumber } = route.params || {};
 
   const [isEquipmentReady, setIsEquipmentReady] = useState(false);
@@ -47,15 +49,15 @@ export function TaskGuideStep2Screen() {
 
   const handleReportIssue = () => {
     Alert.alert(
-      '报告设备问题',
-      '确定要报告设备故障吗？这将通知设备管理员。',
+      t('taskGuideDetail.step2.reportIssueTitle'),
+      t('taskGuideDetail.step2.reportIssueMsg'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确认报告',
+          text: t('taskGuideDetail.step2.reportIssueConfirm'),
           style: 'destructive',
           onPress: () => {
-            Alert.alert('已提交', '设备故障报告已提交，设备管理员将尽快处理。');
+            Alert.alert(t('taskGuideDetail.step2.issueReported'), t('taskGuideDetail.step2.issueReportedMsg'));
           },
         },
       ]
@@ -80,11 +82,11 @@ export function TaskGuideStep2Screen() {
   const getStatusText = () => {
     switch (equipmentStatus) {
       case 'running':
-        return '运行中';
+        return t('taskGuideDetail.step2.equipmentStatus.running');
       case 'starting':
-        return '启动中...';
+        return t('taskGuideDetail.step2.equipmentStatus.starting');
       default:
-        return '空闲';
+        return t('taskGuideDetail.step2.equipmentStatus.idle');
     }
   };
 
@@ -95,7 +97,7 @@ export function TaskGuideStep2Screen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>任务执行</Text>
+        <Text style={styles.headerTitle}>{t('taskGuideDetail.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -103,7 +105,7 @@ export function TaskGuideStep2Screen() {
         {/* 批次信息 */}
         <View style={styles.batchCard}>
           <Text style={styles.batchNumber}>{batchNumber || 'PB-20251227-001'}</Text>
-          <Text style={styles.batchProduct}>带鱼片 · 目标80kg</Text>
+          <Text style={styles.batchProduct}>{t('taskGuideDetail.batchProduct', { product: '带鱼片', target: '80' })}</Text>
         </View>
 
         {/* 步骤指示器 */}
@@ -124,7 +126,7 @@ export function TaskGuideStep2Screen() {
         {/* 步骤标题 */}
         <View style={styles.stepHeader}>
           <Icon source="cog" size={24} color="#667eea" />
-          <Text style={styles.stepTitle}>步骤 2/3: 确认设备</Text>
+          <Text style={styles.stepTitle}>{t('taskGuideDetail.step2.title')}</Text>
         </View>
 
         {/* 设备信息卡片 */}
@@ -147,12 +149,12 @@ export function TaskGuideStep2Screen() {
           <View style={styles.equipmentStats}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{equipmentInfo.oee}%</Text>
-              <Text style={styles.statLabel}>OEE</Text>
+              <Text style={styles.statLabel}>{t('taskGuideDetail.step2.oee')}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{equipmentInfo.lastMaintenance}</Text>
-              <Text style={styles.statLabel}>上次维护</Text>
+              <Text style={styles.statLabel}>{t('taskGuideDetail.step2.lastMaintenance')}</Text>
             </View>
           </View>
         </View>
@@ -173,13 +175,13 @@ export function TaskGuideStep2Screen() {
               color="#fff"
             />
             <Text style={styles.startBtnText}>
-              {equipmentStatus === 'running' ? '已启动' : equipmentStatus === 'starting' ? '启动中...' : '启动设备'}
+              {equipmentStatus === 'running' ? t('taskGuideDetail.step2.started') : equipmentStatus === 'starting' ? t('taskGuideDetail.step2.starting') : t('taskGuideDetail.step2.startEquipment')}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.issueBtn} onPress={handleReportIssue}>
             <Icon source="alert-circle" size={20} color="#ff4d4f" />
-            <Text style={styles.issueBtnText}>报告故障</Text>
+            <Text style={styles.issueBtnText}>{t('taskGuideDetail.step2.reportIssue')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -194,7 +196,7 @@ export function TaskGuideStep2Screen() {
             color={isEquipmentReady ? '#52c41a' : '#999'}
           />
           <Text style={[styles.confirmText, isEquipmentReady && styles.confirmTextActive]}>
-            设备已启动并运行正常
+            {t('taskGuideDetail.step2.equipmentReady')}
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -206,7 +208,7 @@ export function TaskGuideStep2Screen() {
           onPress={handleNext}
           disabled={!isEquipmentReady}
         >
-          <Text style={styles.nextBtnText}>下一步：召集人员</Text>
+          <Text style={styles.nextBtnText}>{t('taskGuideDetail.step2.nextStep')}</Text>
           <Icon source="arrow-right" size={20} color="#fff" />
         </TouchableOpacity>
       </View>

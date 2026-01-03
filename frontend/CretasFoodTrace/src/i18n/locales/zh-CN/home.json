@@ -1,0 +1,459 @@
+{
+  "greeting": "你好",
+  "greetings": {
+    "earlyMorning": "凌晨好",
+    "morning": "早上好",
+    "lateMorning": "上午好",
+    "noon": "中午好",
+    "afternoon": "下午好",
+    "evening": "晚上好",
+    "lateNight": "夜深了",
+    "defaultUser": "管理员"
+  },
+  "date": {
+    "month": "月",
+    "day": "日",
+    "weekdays": {
+      "sun": "周日",
+      "mon": "周一",
+      "tue": "周二",
+      "wed": "周三",
+      "thu": "周四",
+      "fri": "周五",
+      "sat": "周六"
+    }
+  },
+  "sections": {
+    "modules": "功能模块",
+    "notifications": "通知",
+    "todayOverview": "今日概览",
+    "quickActions": "快捷操作",
+    "devTools": "🛠️ 开发者工具"
+  },
+  "loading": "加载中...",
+  "error": {
+    "loadFailed": "数据加载失败，请下拉刷新重试"
+  },
+  "ai": {
+    "title": "AI 智能洞察",
+    "analyzing": "正在分析今日生产数据...",
+    "analyzed": "已分析",
+    "analyzing_status": "分析中",
+    "normalProduction": "今日生产运行正常",
+    "lowQualityRate": "今日良品率偏低，建议关注质检环节",
+    "lowEfficiency": "生产效率有提升空间，可优化排产",
+    "excellentStatus": "生产状态极佳，各项指标优于预期",
+    "noData": "暂时无法获取洞察数据",
+    "metrics": {
+      "qualityRate": "良品率",
+      "unitCost": "单位成本",
+      "avgCycle": "平均周期"
+    }
+  },
+  "stats": {
+    "todayOutput": "今日产量(kg)",
+    "todayBatches": "今日批次",
+    "materialBatches": "原料批次",
+    "todayAlerts": "今日告警"
+  },
+  "quickActions": {
+    "createPlan": "新建计划",
+    "dataReport": "数据报表",
+    "staffManagement": "人员管理",
+    "systemConfig": "系统配置",
+    "formilyDemo": "Formily 演示"
+  },
+  "modules": {
+    "processing": {
+      "name": "生产模块",
+      "description": "批次管理、质检、成本核算"
+    },
+    "logistics": {
+      "name": "物流模块",
+      "description": "运输管理、配送追踪"
+    },
+    "trace": {
+      "name": "溯源模块",
+      "description": "产品追溯、信息查询"
+    },
+    "admin": {
+      "name": "用户管理",
+      "description": "用户、角色、权限管理"
+    },
+    "settings": {
+      "name": "系统设置",
+      "description": "个人设置、系统配置"
+    }
+  },
+  "status": {
+    "available": "可用",
+    "comingSoon": "即将上线",
+    "locked": "已锁定"
+  },
+  "alerts": {
+    "title": "告警中心",
+    "loadFailed": "加载告警数据失败",
+    "severity": {
+      "critical": "严重",
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "time": {
+      "minutesAgo": "{{count}}分钟前",
+      "hoursAgo": "{{count}}小时前"
+    },
+    "summary": {
+      "critical": "严重",
+      "active": "活跃",
+      "resolved": "已解决",
+      "total": "总计"
+    },
+    "recentAlerts": "最近告警",
+    "empty": "暂无告警",
+    "systemNormal": "系统运行正常",
+    "comingSoon": {
+      "title": "即将上线",
+      "message": "{{moduleName}}正在开发中,敬请期待!"
+    },
+    "noAccess": {
+      "title": "无权访问",
+      "message": "您没有权限访问{{moduleName}}"
+    },
+    "notification": {
+      "title": "通知",
+      "noNew": "暂无新通知"
+    },
+    "settingsInProgress": {
+      "title": "系统设置",
+      "message": "此功能正在完善中"
+    }
+  },
+  "roles": {
+    "platformAdmin": "平台管理员",
+    "factorySuperAdmin": "工厂超级管理员",
+    "permissionAdmin": "权限管理员",
+    "departmentAdmin": "部门管理员",
+    "operator": "操作员",
+    "viewer": "查看者",
+    "unactivated": "未激活用户"
+  },
+  "todayBatches": {
+    "title": "今日批次",
+    "batchUnit": "批",
+    "loadFailed": "加载批次数据失败",
+    "empty": "今日暂无批次",
+    "status": {
+      "pending": "待处理",
+      "inProgress": "进行中",
+      "completed": "已完成",
+      "cancelled": "已取消"
+    },
+    "planned": "计划",
+    "actual": "实际"
+  },
+  "todayProduction": {
+    "title": "今日产量",
+    "totalOutput": "总产量 (kg)",
+    "batchCount": "批次数",
+    "batchUnit": "批",
+    "loadFailed": "数据加载失败",
+    "statusDistribution": "批次状态分布",
+    "productTypeStats": "产品类型统计",
+    "noProductData": "暂无产品数据",
+    "unknownProduct": "未知产品",
+    "status": {
+      "planned": "计划中",
+      "pending": "待处理",
+      "inProgress": "进行中",
+      "processing": "加工中",
+      "completed": "已完成",
+      "cancelled": "已取消",
+      "paused": "已暂停"
+    }
+  },
+  "management": {
+    "title": "管理",
+    "subtitle": "工厂运营管理中心",
+    "coreManagement": "核心管理",
+    "businessManagement": "业务管理",
+    "supplyChainManagement": "供应链管理",
+    "systemConfig": "系统配置",
+    "other": "其他",
+    "employeeManagement": "员工管理",
+    "equipmentManagement": "设备管理",
+    "departmentManagement": "部门管理",
+    "productTypeManagement": "产品类型",
+    "materialTypeManagement": "原料类型",
+    "conversionRate": "转换率",
+    "supplierManagement": "供应商",
+    "customerManagement": "客户管理",
+    "shipmentManagement": "出货管理",
+    "schemaConfig": "表单配置",
+    "ruleConfiguration": "规则配置",
+    "aiBusinessInit": "AI智能初始化",
+    "encodingRuleConfig": "编码规则",
+    "qualityCheckItemConfig": "质检项配置",
+    "sopConfig": "SOP配置",
+    "disposalRecordManagement": "报废记录"
+  },
+  "schemaConfig": {
+    "title": "表单配置",
+    "subtitle": "AI 智能创建字段，自定义表单模板",
+    "formTypes": "表单类型",
+    "stats": {
+      "configuredTemplates": "已配置模板",
+      "aiGenerated": "AI 生成",
+      "coverage": "覆盖率"
+    },
+    "aiAddField": "AI 添加字段",
+    "versionHistory": "版本历史",
+    "entityTypes": {
+      "qualityCheck": "质检表单",
+      "materialBatch": "原料批次",
+      "processingBatch": "生产批次",
+      "shipment": "出货单",
+      "equipment": "设备信息",
+      "disposalRecord": "报废处理"
+    },
+    "version": "版本",
+    "useDefault": "使用默认配置",
+    "dialog": {
+      "title": "AI 添加字段",
+      "inputLabel": "描述您需要的字段:",
+      "inputPlaceholder": "例如: 加一个辣度评分字段，1-5分，3分以上合格",
+      "generate": "AI 生成",
+      "generatedFields": "生成的字段",
+      "saveFields": "保存字段",
+      "savingSuccess": "已添加 {{count}} 个字段到 {{entityType}}",
+      "savingFailed": "无法保存到服务器",
+      "generateFailed": "AI 未能生成有效字段"
+    },
+    "versionDialog": {
+      "title": "版本历史",
+      "empty": "暂无版本历史",
+      "rollback": "回滚",
+      "current": "当前",
+      "confirmRollback": "确定要回滚到版本 {{version}} 吗？当前版本将被保存为历史记录。",
+      "rollbackSuccess": "已回滚到版本 {{version}}",
+      "rollbackFailed": "无法回滚到指定版本"
+    }
+  },
+  "aiBusinessInit": {
+    "title": "AI 智能初始化",
+    "subtitle": "描述您的工厂，AI 自动生成配置",
+    "factoryName": "工厂名称(可选)",
+    "factoryNamePlaceholder": "请输入工厂名称",
+    "selectIndustry": "选择行业模板",
+    "industryTemplates": {
+      "seafood": "水产加工",
+      "preparedFood": "预制菜",
+      "meat": "肉类加工",
+      "dairy": "乳制品",
+      "beverage": "饮料加工",
+      "custom": "自定义"
+    },
+    "factoryDescription": "工厂描述",
+    "supplementDescription": "补充描述(可选)",
+    "descriptionPlaceholder": "请描述您的工厂类型和主要产品...\n例如：水产品加工厂，主要生产带鱼罐头、黄花鱼罐头",
+    "supplementPlaceholder": "补充更多细节...\n例如：主要生产带鱼罐头、酸菜鱼预制菜",
+    "aiGenerate": "AI 智能生成",
+    "aiAnalysis": "AI 分析",
+    "productTypes": "产品类型",
+    "materialTypes": "原材料类型",
+    "conversionRates": "转换率配置",
+    "items": "项",
+    "regenerate": "重新生成",
+    "confirmCreate": "确认创建",
+    "initComplete": "初始化完成",
+    "partialComplete": "部分完成",
+    "complete": "完成",
+    "continueAdding": "继续添加",
+    "steps": {
+      "describeFactory": "描述工厂",
+      "confirmData": "确认数据",
+      "complete": "完成"
+    },
+    "aiAnalyzing": "AI 正在分析...",
+    "creating": "正在创建...",
+    "stats": {
+      "productTypes": "产品类型",
+      "materialTypes": "原材料类型",
+      "conversions": "转换率",
+      "alreadyExists": "已存在"
+    }
+  },
+  "encodingRuleConfig": {
+    "title": "编码规则配置",
+    "subtitle": "管理批次号生成规则",
+    "infoText": "编码规则用于自动生成各类业务单据的编号。支持日期、序列号、工厂代码等占位符。",
+    "empty": "暂无编码规则",
+    "emptySubText": "点击右下角按钮创建第一个规则",
+    "createRule": "创建编码规则",
+    "editRule": "编辑编码规则",
+    "entityType": "实体类型",
+    "ruleName": "规则名称",
+    "ruleNamePlaceholder": "如：原材料批次编码规则",
+    "ruleDescription": "规则描述",
+    "ruleDescriptionPlaceholder": "可选，描述规则用途",
+    "encodingPattern": "编码模板",
+    "encodingPatternPlaceholder": "{PREFIX}-{FACTORY}-{YYYYMMDD}-{SEQ:4}",
+    "prefix": "前缀",
+    "sequenceLength": "序号长度",
+    "resetCycle": "重置周期",
+    "resetCycles": {
+      "daily": "每日",
+      "monthly": "每月",
+      "yearly": "每年",
+      "never": "不重置"
+    },
+    "currentSequence": "当前序号",
+    "version": "版本",
+    "preview": "预览",
+    "edit": "编辑",
+    "reset": "重置",
+    "delete": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "confirmDelete": "确定要删除规则「{{ruleName}}」吗？",
+    "confirmReset": "确定要将「{{ruleName}}」的序列号重置为0吗？\n\n注意：重置后可能导致编码重复！",
+    "saveSuccess": "编码规则创建成功",
+    "updateSuccess": "编码规则更新成功",
+    "deleteSuccess": "规则已删除",
+    "resetSuccess": "序列号已重置",
+    "previewTitle": "编码预览",
+    "nextCodeWillBe": "下一个编码将是：",
+    "placeholders": {
+      "title": "支持的占位符",
+      "close": "关闭"
+    }
+  },
+  "qualityCheckItemConfig": {
+    "title": "质检项配置",
+    "statsOverview": "统计概览",
+    "total": "总数",
+    "requiredItems": "必检项",
+    "criticalItems": "关键项",
+    "searchPlaceholder": "搜索质检项...",
+    "copyFromTemplate": "从模板复制",
+    "all": "全部",
+    "categories": {
+      "sensory": "感官检测",
+      "physical": "物理检测",
+      "chemical": "化学检测",
+      "microbiological": "微生物检测",
+      "nutritional": "营养成分",
+      "packaging": "包装检测",
+      "labeling": "标签检测",
+      "other": "其他检测"
+    },
+    "createItem": "新建质检项",
+    "editItem": "编辑质检项",
+    "itemCode": "项目编号",
+    "itemName": "项目名称",
+    "itemCategory": "项目类别",
+    "itemDescription": "项目描述",
+    "checkMethod": "检测方法",
+    "standardReference": "检测标准",
+    "standardReferencePlaceholder": "如：GB 2733-2015",
+    "checkType": "检测类型",
+    "valueTypes": {
+      "numeric": "数值",
+      "text": "文本",
+      "boolean": "是/否",
+      "select": "单选",
+      "multiSelect": "多选"
+    },
+    "minValue": "最小值",
+    "maxValue": "最大值",
+    "unit": "单位",
+    "unitPlaceholder": "如：°C, %, g",
+    "samplingRatio": "抽样比例(%)",
+    "severity": "严重程度",
+    "severities": {
+      "critical": "关键",
+      "major": "重要",
+      "minor": "一般",
+      "info": "提示"
+    },
+    "isRequired": "必检项",
+    "isRequiredDesc": "是否为必须检测的项目",
+    "requirePhotoOnFail": "不合格需拍照",
+    "requirePhotoOnFailDesc": "检测不合格时是否需要拍照记录",
+    "requireNoteOnFail": "不合格需备注",
+    "requireNoteOnFailDesc": "检测不合格时是否需要填写备注",
+    "enabled": "启用",
+    "enabledDesc": "是否启用此质检项",
+    "range": "范围",
+    "standardValue": "标准值",
+    "sampling": "抽样",
+    "mustCheck": "必检",
+    "needPhoto": "需拍照",
+    "disabled": "已禁用",
+    "boundProducts": "个产品",
+    "empty": "暂无质检项，点击右下角按钮添加",
+    "noMatching": "没有找到匹配的质检项",
+    "confirmDelete": "确定要删除质检项「{{itemName}}」吗？",
+    "confirmCopyFromTemplate": "这将从系统默认模板复制质检项到您的工厂，已存在的项目将被跳过。确定继续吗？",
+    "copySuccess": "已复制 {{count}} 个质检项",
+    "saveSuccess": "保存成功",
+    "createSuccess": "创建成功",
+    "updateSuccess": "更新成功",
+    "deleteSuccess": "删除成功"
+  },
+  "materialBatch": {
+    "title": "原料批次",
+    "loadFailed": "加载原料批次失败",
+    "batchUnit": "批",
+    "empty": "暂无原料批次",
+    "status": {
+      "available": "可用",
+      "reserved": "已预留",
+      "depleted": "已用完",
+      "expired": "已过期"
+    }
+  },
+  "materialBatchDetail": {
+    "title": "原材料详情",
+    "loadFailed": "加载原材料批次详情失败",
+    "notFound": "未找到批次信息",
+    "retry": "重试",
+    "basicInfo": "基本信息",
+    "materialName": "原料名称",
+    "materialCode": "原料编码",
+    "materialCategory": "原料类别",
+    "storageType": "储存类型",
+    "storageTypes": {
+      "fresh": "鲜品",
+      "frozen": "冷冻",
+      "dry": "常温"
+    },
+    "inventoryInfo": "库存信息",
+    "inboundQuantity": "入库数量",
+    "remainingQuantity": "剩余数量",
+    "reservedQuantity": "预留数量",
+    "usedQuantity": "已用数量",
+    "supplierAndCost": "供应商与成本",
+    "supplier": "供应商",
+    "unitPrice": "单价",
+    "totalCost": "总成本",
+    "timeInfo": "时间信息",
+    "inboundDate": "入库日期",
+    "productionDate": "生产日期",
+    "expiryDate": "保质期",
+    "createdAt": "创建时间",
+    "otherInfo": "其他信息",
+    "qualityGrade": "质量等级",
+    "storageLocation": "存储位置",
+    "createdBy": "创建人",
+    "notes": "备注",
+    "status": {
+      "available": "可用",
+      "fresh": "新鲜",
+      "reserved": "已预留",
+      "depleted": "已用完",
+      "expired": "已过期",
+      "frozen": "冷冻中"
+    }
+  }
+}

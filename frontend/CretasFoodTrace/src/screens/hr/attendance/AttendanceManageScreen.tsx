@@ -24,6 +24,7 @@ import { Text, Card, Searchbar, Chip, Avatar, ActivityIndicator, SegmentedButton
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { timeclockApiClient } from '../../../services/api/timeclockApiClient';
 import { HR_THEME } from '../../../types/hrNavigation';
@@ -43,16 +44,17 @@ interface AttendanceRecord {
   date: string;
 }
 
-const STATUS_CONFIG = {
-  normal: { label: '正常', color: HR_THEME.success, bgColor: '#f6ffed' },
-  late: { label: '迟到', color: HR_THEME.warning, bgColor: '#fff7e6' },
-  early_leave: { label: '早退', color: '#faad14', bgColor: '#fffbe6' },
-  absent: { label: '缺勤', color: HR_THEME.danger, bgColor: '#fff2f0' },
-  working: { label: '工作中', color: HR_THEME.info, bgColor: '#e6f7ff' },
-};
-
 export default function AttendanceManageScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
+
+  const STATUS_CONFIG = {
+    normal: { label: t('attendance.department.statusLabels.present'), color: HR_THEME.success, bgColor: '#f6ffed' },
+    late: { label: t('attendance.department.statusLabels.late'), color: HR_THEME.warning, bgColor: '#fff7e6' },
+    early_leave: { label: t('attendance.department.statusLabels.earlyLeave'), color: '#faad14', bgColor: '#fffbe6' },
+    absent: { label: t('attendance.department.statusLabels.absent'), color: HR_THEME.danger, bgColor: '#fff2f0' },
+    working: { label: t('attendance.manage.title'), color: HR_THEME.info, bgColor: '#e6f7ff' },
+  };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('today');
@@ -97,7 +99,7 @@ export default function AttendanceManageScreen() {
         }
       }
     } catch (error) {
-      console.error('加载考勤记录失败:', error);
+      console.error(t('common.loading'), error);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -157,7 +159,7 @@ export default function AttendanceManageScreen() {
                 {statusConfig.label}
               </Chip>
             </View>
-            <Text style={styles.department}>{item.department || '未分配部门'}</Text>
+            <Text style={styles.department}>{item.department || t('staff.card.noDepartment')}</Text>
             <View style={styles.timeRow}>
               <View style={styles.timeItem}>
                 <MaterialCommunityIcons name="login" size={14} color={HR_THEME.success} />
@@ -189,7 +191,7 @@ export default function AttendanceManageScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>考勤管理</Text>
+        <Text style={styles.headerTitle}>{t('attendance.manage.title')}</Text>
       </View>
 
       <View style={styles.filterContainer}>
@@ -197,8 +199,8 @@ export default function AttendanceManageScreen() {
           value={viewMode}
           onValueChange={(value) => setViewMode(value as ViewMode)}
           buttons={[
-            { value: 'today', label: '今日' },
-            { value: 'history', label: '历史' },
+            { value: 'today', label: t('attendance.department.today') },
+            { value: 'history', label: t('attendance.history.title') },
           ]}
           style={styles.segmented}
         />
@@ -206,7 +208,7 @@ export default function AttendanceManageScreen() {
 
       <View style={styles.searchContainer}>
         <Searchbar
-          placeholder="搜索员工..."
+          placeholder={t('staff.search.placeholder')}
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={styles.searchbar}
@@ -228,7 +230,7 @@ export default function AttendanceManageScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>暂无考勤记录</Text>
+            <Text style={styles.emptyText}>{t('attendance.department.noRecords')}</Text>
           </View>
         }
       />

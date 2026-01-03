@@ -25,6 +25,7 @@ import { Text, Card, FAB, Avatar, ActivityIndicator, IconButton } from 'react-na
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect, RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { HR_THEME, type HRStackParamList } from '../../../types/hrNavigation';
@@ -47,6 +48,7 @@ export default function BatchWorkersScreen() {
   const navigation = useNavigation();
   const route = useRoute<RouteParams>();
   const { batchId, batchName } = route.params;
+  const { t } = useTranslation('hr');
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -98,19 +100,19 @@ export default function BatchWorkersScreen() {
 
   const handleRemoveWorker = (worker: BatchWorker) => {
     Alert.alert(
-      '移除员工',
-      `确定要将 ${worker.name} 从该批次移除吗？`,
+      t('production.batchWorkers.removeWorker'),
+      t('production.batchWorkers.removeConfirm', { name: worker.name }),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('common.confirm'),
           style: 'destructive',
           onPress: async () => {
             try {
               await schedulingApiClient.removeWorkerFromBatch(batchId, worker.userId);
               loadData();
             } catch (error) {
-              Alert.alert('错误', '移除失败，请重试');
+              Alert.alert(t('messages.error'), t('production.batchWorkers.removeFailed'));
             }
           },
         },
@@ -121,13 +123,13 @@ export default function BatchWorkersScreen() {
   const getStatusConfig = (status: string) => {
     switch (status) {
       case 'working':
-        return { label: '工作中', color: HR_THEME.success };
+        return { label: t('production.batchWorkers.status.working'), color: HR_THEME.success };
       case 'completed':
-        return { label: '已完成', color: HR_THEME.info };
+        return { label: t('production.batchWorkers.status.completed'), color: HR_THEME.info };
       case 'paused':
-        return { label: '已暂停', color: HR_THEME.warning };
+        return { label: t('production.batchWorkers.status.paused'), color: HR_THEME.warning };
       default:
-        return { label: '未知', color: HR_THEME.textMuted };
+        return { label: t('common.noData'), color: HR_THEME.textMuted };
     }
   };
 
@@ -151,7 +153,7 @@ export default function BatchWorkersScreen() {
                 </Text>
               </View>
             </View>
-            <Text style={styles.department}>{item.department || '未分配部门'}</Text>
+            <Text style={styles.department}>{item.department || t('production.batchWorkers.noDepartment')}</Text>
             <View style={styles.timeRow}>
               <MaterialCommunityIcons
                 name="clock-outline"
@@ -159,7 +161,7 @@ export default function BatchWorkersScreen() {
                 color={HR_THEME.textSecondary}
               />
               <Text style={styles.timeText}>
-                工时: {formatMinutes(item.workMinutes)}
+                {t('production.batchWorkers.workDuration')}: {formatMinutes(item.workMinutes)}
               </Text>
             </View>
           </View>
@@ -178,21 +180,21 @@ export default function BatchWorkersScreen() {
     <View style={styles.summaryCard}>
       <View style={styles.summaryItem}>
         <Text style={styles.summaryValue}>{workers.length}</Text>
-        <Text style={styles.summaryLabel}>总人数</Text>
+        <Text style={styles.summaryLabel}>{t('production.batchWorkers.totalCount')}</Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.summaryItem}>
         <Text style={styles.summaryValue}>
           {formatMinutes(workers.reduce((sum, w) => sum + w.workMinutes, 0))}
         </Text>
-        <Text style={styles.summaryLabel}>总工时</Text>
+        <Text style={styles.summaryLabel}>{t('production.batchWorkers.totalHours')}</Text>
       </View>
       <View style={styles.divider} />
       <View style={styles.summaryItem}>
         <Text style={styles.summaryValue}>
           {workers.filter((w) => w.status === 'working').length}
         </Text>
-        <Text style={styles.summaryLabel}>工作中</Text>
+        <Text style={styles.summaryLabel}>{t('production.batchWorkers.working')}</Text>
       </View>
     </View>
   );
@@ -212,7 +214,7 @@ export default function BatchWorkersScreen() {
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>批次员工</Text>
+          <Text style={styles.headerTitle}>{t('production.batchWorkers.title')}</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>{batchName}</Text>
         </View>
         <View style={styles.placeholder} />
@@ -234,8 +236,8 @@ export default function BatchWorkersScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>暂无分配员工</Text>
-            <Text style={styles.emptySubtext}>点击下方按钮添加员工</Text>
+            <Text style={styles.emptyText}>{t('production.batchWorkers.empty')}</Text>
+            <Text style={styles.emptySubtext}>{t('production.batchWorkers.emptyHint')}</Text>
           </View>
         }
       />
@@ -245,7 +247,7 @@ export default function BatchWorkersScreen() {
         style={styles.fab}
         onPress={() => {
           // TODO: 打开添加员工弹窗
-          Alert.alert('提示', '添加员工功能即将上线');
+          Alert.alert(t('messages.tip'), t('production.batchWorkers.alerts.addComingSoon'));
         }}
         color="#fff"
       />

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Text, Chip, Icon, ActivityIndicator, Button } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { User, getFactoryId } from '../../../types/auth';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { handleError } from '../../../utils/errorHandler';
@@ -23,6 +24,7 @@ interface StatsError {
  * 根据用户角色显示不同的快捷信息
  */
 export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
+  const { t } = useTranslation('common');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<StatsError | null>(null);
   const [statsData, setStatsData] = useState<{
@@ -57,7 +59,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
         if (!factoryId) {
           quickStatsLogger.warn('工厂ID不存在，无法加载统计数据', { userId: user.id });
           setError({
-            message: '工厂信息不完整，无法加载统计数据',
+            message: t('quickStats.factoryInfoIncomplete'),
             canRetry: false,
           });
           return;
@@ -108,7 +110,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
         } else {
           quickStatsLogger.warn('Dashboard API返回失败', { success: overviewRes.success });
           setError({
-            message: 'API返回失败，请稍后重试',
+            message: t('quickStats.apiReturnedFailure'),
             canRetry: true,
           });
         }
@@ -136,7 +138,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
     <View style={styles.errorContainer}>
       <Icon source="alert-circle-outline" size={32} color="#F44336" />
       <Text variant="bodyMedium" style={styles.errorText}>
-        {error?.message || '加载失败'}
+        {error?.message || t('error.loadFailed')}
       </Text>
       {error?.canRetry && (
         <Button
@@ -145,7 +147,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           style={styles.retryButton}
           compact
         >
-          重试
+          {t('buttons.retry')}
         </Button>
       )}
     </View>
@@ -161,7 +163,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
       return (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" />
-          <Text variant="bodySmall" style={styles.loadingText}>加载中...</Text>
+          <Text variant="bodySmall" style={styles.loadingText}>{t('status.loading')}</Text>
         </View>
       );
     }
@@ -178,14 +180,14 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="clock-outline" size={24} color="#FF9800" />
-              <Text variant="bodySmall" style={styles.statLabel}>今日工时</Text>
-              <Text variant="titleMedium" style={styles.statValue}>0.0 小时</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.todayWorkHours')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>0.0 {t('quickStats.hours')}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-clock" size={24} color="#4CAF50" />
-              <Text variant="bodySmall" style={styles.statLabel}>打卡状态</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.clockStatus')}</Text>
               <Chip mode="flat" compact style={styles.statusChip}>
-                <Text style={styles.statusText}>未打卡</Text>
+                <Text style={styles.statusText}>{t('quickStats.notClockedIn')}</Text>
               </Chip>
             </View>
           </View>
@@ -201,18 +203,18 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="package-variant" size={24} color="#2196F3" />
-              <Text variant="bodySmall" style={styles.statLabel}>进行中批次</Text>
-              <Text variant="titleMedium" style={styles.statValue}>{statsData.totalBatches} 个</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.inProgressBatches')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>{statsData.totalBatches} {t('quickStats.batches')}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-group" size={24} color="#4CAF50" />
-              <Text variant="bodySmall" style={styles.statLabel}>今日出勤</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.todayAttendance')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>{statsData.onDutyWorkers} / {statsData.totalWorkers}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="alert-circle" size={24} color="#F44336" />
-              <Text variant="bodySmall" style={styles.statLabel}>待处理</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 项</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.pending')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>-- {t('quickStats.items')}</Text>
             </View>
           </View>
         );
@@ -227,28 +229,28 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="factory" size={24} color="#2196F3" />
-              <Text variant="bodySmall" style={styles.statLabel}>今日产量</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.todayOutput')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
                 {statsData.todayOutput.toFixed(1)} kg
               </Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="check-circle" size={24} color="#4CAF50" />
-              <Text variant="bodySmall" style={styles.statLabel}>完成批次</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.completedBatches')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
                 {statsData.completedBatches} / {statsData.totalBatches}
               </Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-multiple" size={24} color="#FF9800" />
-              <Text variant="bodySmall" style={styles.statLabel}>在岗人员</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.onDutyWorkers')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
                 {statsData.onDutyWorkers} / {statsData.totalWorkers}
               </Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="cog" size={24} color="#9C27B0" />
-              <Text variant="bodySmall" style={styles.statLabel}>设备运行</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.equipmentRunning')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>
                 {statsData.activeEquipment} / {statsData.totalEquipment}
               </Text>
@@ -262,22 +264,22 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="domain" size={24} color="#2196F3" />
-              <Text variant="bodySmall" style={styles.statLabel}>活跃工厂</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.activeFactories')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>-- / --</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-group" size={24} color="#4CAF50" />
-              <Text variant="bodySmall" style={styles.statLabel}>总用户数</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 人</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.totalUsers')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>-- {t('quickStats.people')}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="cube-outline" size={24} color="#FF9800" />
-              <Text variant="bodySmall" style={styles.statLabel}>今日批次</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 个</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.todayBatches')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>-- {t('quickStats.batches')}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="chart-line" size={24} color="#9C27B0" />
-              <Text variant="bodySmall" style={styles.statLabel}>平台产量</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.platformOutput')}</Text>
               <Text variant="titleMedium" style={styles.statValue}>-- kg</Text>
             </View>
           </View>
@@ -289,13 +291,13 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.statsGrid}>
             <View style={styles.statItem}>
               <Icon source="account-check" size={24} color="#4CAF50" />
-              <Text variant="bodySmall" style={styles.statLabel}>激活用户</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 人</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.activatedUsers')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>-- {t('quickStats.people')}</Text>
             </View>
             <View style={styles.statItem}>
               <Icon source="account-clock" size={24} color="#FF9800" />
-              <Text variant="bodySmall" style={styles.statLabel}>待审核</Text>
-              <Text variant="titleMedium" style={styles.statValue}>-- 人</Text>
+              <Text variant="bodySmall" style={styles.statLabel}>{t('quickStats.pendingReview')}</Text>
+              <Text variant="titleMedium" style={styles.statValue}>-- {t('quickStats.people')}</Text>
             </View>
           </View>
         );
@@ -306,7 +308,7 @@ export const QuickStatsPanel: React.FC<QuickStatsPanelProps> = ({ user }) => {
           <View style={styles.welcomeContainer}>
             <Icon source="eye-outline" size={32} color="#9E9E9E" />
             <Text variant="bodyMedium" style={styles.welcomeText}>
-              您当前为查看者权限,可浏览工厂数据
+              {t('quickStats.viewerWelcome')}
             </Text>
           </View>
         );

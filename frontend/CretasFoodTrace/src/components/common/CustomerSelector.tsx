@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Modal, FlatList, TouchableOpacity, Alert } from 'react-native';
 import { TextInput, List, Divider, Button, Text, Searchbar, ActivityIndicator, SegmentedButtons } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { customerApiClient, Customer } from '../../services/api/customerApiClient';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 
@@ -19,10 +20,11 @@ interface CustomerSelectorProps {
 export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   value,
   onSelect,
-  label = '客户',
-  placeholder = '选择客户',
+  label,
+  placeholder,
   error,
 }) => {
+  const { t } = useTranslation('common');
   const [modalVisible, setModalVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -34,7 +36,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
   const [newContactPerson, setNewContactPerson] = useState('');
   const [newContactPhone, setNewContactPhone] = useState('');
   const [newAddress, setNewAddress] = useState('');
-  const [newBusinessType, setNewBusinessType] = useState('超市');
+  const [newBusinessType, setNewBusinessType] = useState<string>('超市');
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
 
   const handleCreateCustomer = async () => {
     if (!newCustomerName.trim()) {
-      Alert.alert('验证错误', '请输入客户名称');
+      Alert.alert(t('form.validation.validationError'), t('selectors.customer.pleaseEnterName'));
       return;
     }
 
@@ -122,7 +124,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       handleModalClose();
     } catch (error) {
       console.error('❌ Failed to create customer:', error);
-      Alert.alert('创建失败', getErrorMsg(error) || '请重试');
+      Alert.alert(t('selectors.customer.createFailed'), getErrorMsg(error) || t('buttons.retry'));
     } finally {
       setCreating(false);
     }
@@ -139,8 +141,8 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
       >
         <View pointerEvents="none">
           <TextInput
-            label={label + ' *'}
-            placeholder={placeholder}
+            label={(label || t('selectors.customer.label')) + ' *'}
+            placeholder={placeholder || t('selectors.customer.placeholder')}
             mode="outlined"
             value={value}
             editable={false}
@@ -161,12 +163,12 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text variant="titleLarge">选择{label}</Text>
-              <Button onPress={handleModalClose}>取消</Button>
+              <Text variant="titleLarge">{t('selectors.customer.title')}</Text>
+              <Button onPress={handleModalClose}>{t('buttons.cancel')}</Button>
             </View>
 
             <Searchbar
-              placeholder="搜索客户名称、代码、联系人..."
+              placeholder={t('selectors.customer.search')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               style={styles.searchBar}
@@ -175,7 +177,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
             {loading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" />
-                <Text style={styles.loadingText}>加载中...</Text>
+                <Text style={styles.loadingText}>{t('status.loading')}</Text>
               </View>
             ) : (
               <FlatList
@@ -195,7 +197,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                 ListEmptyComponent={
                   <View style={styles.emptyContainer}>
                     <Text variant="bodyMedium" style={styles.emptyText}>
-                      {searchQuery ? `未找到匹配的${label}` : `暂无${label}`}
+                      {searchQuery ? t('selectors.customer.notFound') : t('selectors.customer.empty')}
                     </Text>
                   </View>
                 }
@@ -206,60 +208,60 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                       style={styles.addButton}
                       onPress={() => setShowAddForm(true)}
                     >
-                      <Text style={styles.addButtonText}>➕ 找不到？点击添加新{label}</Text>
+                      <Text style={styles.addButtonText}>➕ {t('selectors.customer.addNew')}</Text>
                     </TouchableOpacity>
                   ) : (
                     // 创建表单
                     <View style={styles.addForm}>
-                      <Text variant="titleMedium" style={styles.formTitle}>添加新{label}</Text>
+                      <Text variant="titleMedium" style={styles.formTitle}>{t('selectors.customer.addNewTitle')}</Text>
 
                       <TextInput
-                        label="客户名称 *"
+                        label={t('selectors.customer.name') + ' *'}
                         value={newCustomerName}
                         onChangeText={setNewCustomerName}
                         mode="outlined"
-                        placeholder="例如: 大润发超市"
+                        placeholder={t('selectors.customer.namePlaceholder')}
                         style={styles.formInput}
                         autoFocus
                       />
 
                       <TextInput
-                        label="联系人"
+                        label={t('selectors.customer.contactPerson')}
                         value={newContactPerson}
                         onChangeText={setNewContactPerson}
                         mode="outlined"
-                        placeholder="例如: 王采购"
+                        placeholder={t('selectors.customer.contactPersonPlaceholder')}
                         style={styles.formInput}
                       />
 
                       <TextInput
-                        label="联系电话"
+                        label={t('selectors.customer.phone')}
                         value={newContactPhone}
                         onChangeText={setNewContactPhone}
                         mode="outlined"
-                        placeholder="例如: +8613700000002"
+                        placeholder={t('selectors.customer.phonePlaceholder')}
                         keyboardType="phone-pad"
                         style={styles.formInput}
                       />
 
                       <TextInput
-                        label="地址"
+                        label={t('selectors.customer.address')}
                         value={newAddress}
                         onChangeText={setNewAddress}
                         mode="outlined"
-                        placeholder="例如: 深圳市福田区购物中心"
+                        placeholder={t('selectors.customer.addressPlaceholder')}
                         style={styles.formInput}
                       />
 
-                      <Text variant="bodySmall" style={styles.formLabel}>业务类型</Text>
+                      <Text variant="bodySmall" style={styles.formLabel}>{t('selectors.customer.businessType')}</Text>
                       <SegmentedButtons
                         value={newBusinessType}
                         onValueChange={setNewBusinessType}
                         buttons={[
-                          { value: '超市', label: '超市' },
-                          { value: '餐饮', label: '餐饮' },
-                          { value: '批发', label: '批发' },
-                          { value: '其他', label: '其他' },
+                          { value: t('selectors.customer.businessTypes.supermarket'), label: t('selectors.customer.businessTypes.supermarket') },
+                          { value: t('selectors.customer.businessTypes.restaurant'), label: t('selectors.customer.businessTypes.restaurant') },
+                          { value: t('selectors.customer.businessTypes.wholesale'), label: t('selectors.customer.businessTypes.wholesale') },
+                          { value: t('selectors.customer.businessTypes.other'), label: t('selectors.customer.businessTypes.other') },
                         ]}
                         style={styles.formSegment}
                       />
@@ -276,7 +278,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                           }}
                           disabled={creating}
                         >
-                          取消
+                          {t('buttons.cancel')}
                         </Button>
                         <Button
                           mode="contained"
@@ -284,7 +286,7 @@ export const CustomerSelector: React.FC<CustomerSelectorProps> = ({
                           loading={creating}
                           disabled={creating}
                         >
-                          保存
+                          {t('buttons.save')}
                         </Button>
                       </View>
                     </View>

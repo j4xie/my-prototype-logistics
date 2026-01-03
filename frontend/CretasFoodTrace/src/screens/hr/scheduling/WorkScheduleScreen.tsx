@@ -24,6 +24,7 @@ import { Text, Card, FAB, Avatar, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 
 import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import {
@@ -35,6 +36,7 @@ import {
 
 export default function WorkScheduleScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -69,8 +71,12 @@ export default function WorkScheduleScreen() {
   }, [loadData]);
 
   const formatDate = (date: Date): string => {
-    const days = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-    return `${date.getMonth() + 1}月${date.getDate()}日 ${days[date.getDay()]}`;
+    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+    return t('schedule.dateFormat', {
+      month: date.getMonth() + 1,
+      day: date.getDate(),
+      weekday: t(`schedule.weekdays.${dayKey}`)
+    });
   };
 
   const goToPrevDay = () => {
@@ -144,7 +150,7 @@ export default function WorkScheduleScreen() {
                 size={16}
                 color={HR_THEME.success}
               />
-              <Text style={styles.statText}>已确认 {schedule.confirmedCount}</Text>
+              <Text style={styles.statText}>{t('schedule.confirmed')} {schedule.confirmedCount}</Text>
             </View>
             <View style={styles.statItem}>
               <MaterialCommunityIcons
@@ -153,7 +159,7 @@ export default function WorkScheduleScreen() {
                 color={HR_THEME.warning}
               />
               <Text style={styles.statText}>
-                待确认 {schedule.assignedCount - schedule.confirmedCount}
+                {t('schedule.pending')} {schedule.assignedCount - schedule.confirmedCount}
               </Text>
             </View>
           </View>
@@ -176,7 +182,7 @@ export default function WorkScheduleScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <MaterialCommunityIcons name="arrow-left" size={24} color={HR_THEME.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>排班管理</Text>
+        <Text style={styles.headerTitle}>{t('schedule.title')}</Text>
         <View style={styles.placeholder} />
       </View>
 
@@ -220,8 +226,8 @@ export default function WorkScheduleScreen() {
               size={64}
               color={HR_THEME.textMuted}
             />
-            <Text style={styles.emptyText}>当日暂无排班安排</Text>
-            <Text style={styles.emptySubtext}>点击下方按钮添加排班</Text>
+            <Text style={styles.emptyText}>{t('schedule.noSchedule')}</Text>
+            <Text style={styles.emptySubtext}>{t('schedule.addHint')}</Text>
           </View>
         ) : (
           schedules.map(renderShiftCard)

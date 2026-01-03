@@ -15,6 +15,7 @@ import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { APP_CONFIG, API_BASE_URL } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
@@ -45,6 +46,7 @@ interface ExportConfig {
 export default function DataExportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
+  const { t } = useTranslation('reports');
 
   // 报表配置
   const [reportType, setReportType] = useState<ReportType>('production');
@@ -61,23 +63,23 @@ export default function DataExportScreen() {
   const reportTypes = [
     {
       value: 'production',
-      label: '生产报表',
+      label: t('export.reportTypes.production.label'),
       icon: 'factory',
-      description: '批次号、产品、消耗、产出、转换率、状态',
+      description: t('export.reportTypes.production.description'),
       color: '#2196F3',
     },
     {
       value: 'cost',
-      label: '成本报表',
+      label: t('export.reportTypes.cost.label'),
       icon: 'currency-cny',
-      description: '批次号、成本明细、单位成本、偏差、超支金额',
+      description: t('export.reportTypes.cost.description'),
       color: '#FF9800',
     },
     {
       value: 'attendance',
-      label: '工时报表',
+      label: t('export.reportTypes.attendance.label'),
       icon: 'clock-outline',
-      description: '员工、部门、工作类型、工时、加班时间',
+      description: t('export.reportTypes.attendance.description'),
       color: '#4CAF50',
     },
   ];
@@ -86,19 +88,19 @@ export default function DataExportScreen() {
   const exportFormats = [
     {
       value: 'excel',
-      label: 'Excel',
+      label: t('export.formats.excel'),
       icon: 'microsoft-excel',
       extension: '.xlsx',
     },
     {
       value: 'pdf',
-      label: 'PDF',
+      label: t('export.formats.pdf'),
       icon: 'file-pdf-box',
       extension: '.pdf',
     },
     {
       value: 'csv',
-      label: 'CSV',
+      label: t('export.formats.csv'),
       icon: 'file-delimited',
       extension: '.csv',
     },
@@ -110,21 +112,21 @@ export default function DataExportScreen() {
   const handleExport = async () => {
     // 验证日期范围
     if (startDate > endDate) {
-      Alert.alert('日期错误', '开始日期不能晚于结束日期');
+      Alert.alert(t('common.error'), t('export.pleaseSelectDateRange'));
       return;
     }
 
     // 计算日期差（天数）
     const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     if (daysDiff > 365) {
-      Alert.alert('日期范围过大', '建议导出时间范围不超过一年');
+      Alert.alert(t('common.error'), t('export.pleaseSelectDateRange'));
       return;
     }
 
     // 获取工厂ID
     const factoryId = getFactoryId(user);
     if (!factoryId) {
-      Alert.alert('错误', '无法获取工厂信息，请重新登录');
+      Alert.alert(t('common.error'), t('export.noFactoryInfo'));
       return;
     }
 
@@ -188,7 +190,7 @@ export default function DataExportScreen() {
       if (isAvailable) {
         // 显示成功消息并提供分享选项
         Alert.alert(
-          '导出成功',
+          t('export.exportSuccess'),
           `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
           [
             {
@@ -211,7 +213,7 @@ export default function DataExportScreen() {
         );
       } else {
         Alert.alert(
-          '导出成功',
+          t('export.exportSuccess'),
           `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件已保存到：${downloadResult.uri}`,
           [{ text: '确定' }]
         );
@@ -224,19 +226,20 @@ export default function DataExportScreen() {
         errorType: (error as any).message?.includes('Network') ? 'NETWORK' : (error as any).message?.includes('401') || (error as any).message?.includes('403') ? 'AUTH' : 'UNKNOWN',
       });
 
-      let errorMessage = '生成报表时出现错误，请重试';
+      let errorMessage: string = t('export.exportFailed');
 
-      if ((error as any).message?.includes('Network request failed')) {
-        errorMessage = '网络连接失败，请检查网络设置';
-      } else if ((error as any).message?.includes('401') || (error as any).message?.includes('403')) {
-        errorMessage = '权限不足，请重新登录';
-      } else if ((error as any).message?.includes('404')) {
-        errorMessage = '报表服务暂时不可用';
-      } else if ((error as any).message) {
-        errorMessage = (error as any).message;
+      const errorMsg = (error as Error)?.message ?? '';
+      if (errorMsg.includes('Network request failed')) {
+        errorMessage = t('errors.networkFailed');
+      } else if (errorMsg.includes('401') || errorMsg.includes('403')) {
+        errorMessage = t('errors.authFailed');
+      } else if (errorMsg.includes('404')) {
+        errorMessage = t('errors.serviceUnavailable');
+      } else if (errorMsg) {
+        errorMessage = errorMsg;
       }
 
-      Alert.alert('导出失败', errorMessage);
+      Alert.alert(t('export.exportFailed'), errorMessage);
     } finally {
       setLoading(false);
     }
@@ -256,13 +259,13 @@ export default function DataExportScreen() {
     <View style={styles.container}>
       <Appbar.Header elevated>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="数据报表导出" />
+        <Appbar.Content title={t('export.title')} />
       </Appbar.Header>
 
       <ScrollView style={styles.content}>
         {/* 报表类型选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="报表类型" titleVariant="titleMedium" />
+          <Card.Title title={t('export.selectReportType')} titleVariant="titleMedium" />
           <Card.Content>
             <RadioButton.Group
               onValueChange={(value) => setReportType(value as ReportType)}
@@ -297,12 +300,12 @@ export default function DataExportScreen() {
 
         {/* 日期范围选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="日期范围" titleVariant="titleMedium" />
+          <Card.Title title={t('export.dateRange')} titleVariant="titleMedium" />
           <Card.Content>
             {/* 开始日期 */}
             <View style={styles.dateRow}>
               <Text variant="bodyMedium" style={styles.dateLabel}>
-                开始日期
+                {t('export.startDate')}
               </Text>
               <Chip
                 icon="calendar"
@@ -316,7 +319,7 @@ export default function DataExportScreen() {
             {/* 结束日期 */}
             <View style={styles.dateRow}>
               <Text variant="bodyMedium" style={styles.dateLabel}>
-                结束日期
+                {t('export.endDate')}
               </Text>
               <Chip
                 icon="calendar"
@@ -373,7 +376,7 @@ export default function DataExportScreen() {
 
         {/* 导出格式选择 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="导出格式" titleVariant="titleMedium" />
+          <Card.Title title={t('export.selectExportFormat')} titleVariant="titleMedium" />
           <Card.Content>
             <SegmentedButtons
               value={exportFormat}
@@ -398,7 +401,7 @@ export default function DataExportScreen() {
 
         {/* 报表预览信息 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="导出预览" titleVariant="titleMedium" />
+          <Card.Title title={t('export.preview')} titleVariant="titleMedium" />
           <Card.Content>
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
@@ -446,7 +449,7 @@ export default function DataExportScreen() {
           style={styles.exportButton}
           contentStyle={styles.exportButtonContent}
         >
-          {loading ? '正在生成报表...' : '导出报表'}
+          {loading ? t('export.exporting') : t('export.export')}
         </Button>
 
         <View style={styles.bottomPadding} />
@@ -485,7 +488,7 @@ export default function DataExportScreen() {
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#2196F3" />
-          <Text style={styles.loadingText}>正在生成报表，请稍候...</Text>
+          <Text style={styles.loadingText}>{t('export.exporting')}</Text>
         </View>
       )}
     </View>

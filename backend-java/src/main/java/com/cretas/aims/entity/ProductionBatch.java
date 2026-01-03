@@ -71,6 +71,7 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 计划数量
       */
+    @PositiveOrZero(message = "计划数量不能为负数")
     @Column(name = "planned_quantity", precision = 12, scale = 2)
     private BigDecimal plannedQuantity;
      /**
@@ -89,16 +90,19 @@ public class ProductionBatch extends BaseEntity {
      /**
       * 实际产量
       */
+    @PositiveOrZero(message = "实际产量不能为负数")
     @Column(name = "actual_quantity", precision = 12, scale = 2)
     private BigDecimal actualQuantity;
      /**
       * 良品数量
       */
+    @PositiveOrZero(message = "良品数量不能为负数")
     @Column(name = "good_quantity", precision = 12, scale = 2)
     private BigDecimal goodQuantity;
      /**
       * 不良品数量
       */
+    @PositiveOrZero(message = "不良品数量不能为负数")
     @Column(name = "defect_quantity", precision = 12, scale = 2)
     private BigDecimal defectQuantity;
      /**

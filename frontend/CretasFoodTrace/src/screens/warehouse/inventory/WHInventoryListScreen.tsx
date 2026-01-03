@@ -26,6 +26,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useTranslation } from 'react-i18next';
 import { WHInventoryStackParamList } from "../../../types/navigation";
 import { materialBatchApiClient, MaterialBatch } from "../../../services/api/materialBatchApiClient";
 import { handleError } from "../../../utils/errorHandler";
@@ -49,12 +50,6 @@ interface InventoryItem {
   updatedAt: string;
 }
 
-const typeConfig: Record<MaterialType, { label: string; color: string; bgColor: string }> = {
-  fresh: { label: "鲜品", color: "#4CAF50", bgColor: "#e8f5e9" },
-  frozen: { label: "冻品", color: "#2196F3", bgColor: "#e3f2fd" },
-  dry: { label: "干货", color: "#FF9800", bgColor: "#fff3e0" },
-};
-
 interface QuickAction {
   key: string;
   label: string;
@@ -62,13 +57,6 @@ interface QuickAction {
   color: string;
   screen: keyof WHInventoryStackParamList;
 }
-
-const quickActions: QuickAction[] = [
-  { key: "check", label: "盘点", icon: "clipboard-check-outline", color: "#4CAF50", screen: "WHInventoryCheck" },
-  { key: "transfer", label: "调拨", icon: "swap-horizontal", color: "#2196F3", screen: "WHInventoryTransfer" },
-  { key: "location", label: "库位", icon: "map-marker", color: "#9C27B0", screen: "WHLocationManage" },
-  { key: "expire", label: "过期", icon: "clock-alert-outline", color: "#FF5722", screen: "WHExpireHandle" },
-];
 
 // 将后端批次状态映射为仓储物料类型
 const mapBatchToMaterialType = (batch: MaterialBatch): MaterialType => {
@@ -124,6 +112,7 @@ const getWarningText = (warningType: "expire" | "low" | "normal", batch: Materia
 };
 
 export function WHInventoryListScreen() {
+  const { t } = useTranslation('warehouse');
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const [refreshing, setRefreshing] = useState(false);
@@ -138,6 +127,20 @@ export function WHInventoryListScreen() {
     expiringBatchesCount: number;
     inventoryByType?: Record<string, number>;
   } | null>(null);
+
+  // Define type config and quick actions inside component to access t()
+  const typeConfig: Record<MaterialType, { label: string; color: string; bgColor: string }> = {
+    fresh: { label: t('inventory.filter.fresh'), color: "#4CAF50", bgColor: "#e8f5e9" },
+    frozen: { label: t('inventory.filter.frozen'), color: "#2196F3", bgColor: "#e3f2fd" },
+    dry: { label: t('inventory.filter.dry'), color: "#FF9800", bgColor: "#fff3e0" },
+  };
+
+  const quickActions: QuickAction[] = [
+    { key: "check", label: t('inventory.quickActions.check'), icon: "clipboard-check-outline", color: "#4CAF50", screen: "WHInventoryCheck" },
+    { key: "transfer", label: t('inventory.quickActions.transfer'), icon: "swap-horizontal", color: "#2196F3", screen: "WHInventoryTransfer" },
+    { key: "location", label: t('inventory.quickActions.location'), icon: "map-marker", color: "#9C27B0", screen: "WHLocationManage" },
+    { key: "expire", label: t('inventory.quickActions.expire'), icon: "clock-alert-outline", color: "#FF5722", screen: "WHExpireHandle" },
+  ];
 
   // 加载库存数据
   const loadData = useCallback(async () => {

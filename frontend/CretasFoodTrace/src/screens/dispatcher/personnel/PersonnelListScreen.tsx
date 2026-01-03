@@ -27,6 +27,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, HireType } from '../../../types/dispatcher';
 
 // Local types for this screen
@@ -81,7 +82,7 @@ const mockStats = {
 const mockTaskGroups: DisplayTaskGroup[] = [
   { id: 'PB001', name: 'PB20241227001', workerCount: 6, status: 'running', progress: 75 },
   { id: 'PB002', name: 'PB20241227002', workerCount: 2, status: 'running', progress: 30 },
-  { id: 'idle', name: '空闲人员', workerCount: 2, status: 'idle' },
+  { id: 'idle', name: 'idle_personnel', workerCount: 2, status: 'idle' },
 ];
 
 const mockPersonnel: Personnel[] = [
@@ -205,21 +206,23 @@ const mockPersonnel: Personnel[] = [
   },
 ];
 
-const workshopOptions = ['全部车间', '切片车间', '包装车间', '冷冻车间'];
-const typeOptions = ['全部类型', '正式工', '临时工', '派遣工', '实习生'];
-const statusOptions = ['全部状态', '工作中', '空闲', '请假'];
+// Workshop, type and status options will be translated via t() calls
+const workshopOptionKeys = ['allWorkshops', 'slicing', 'packaging', 'freezing'];
+const typeOptionKeys = ['allTypes', 'fullTime', 'temporary', 'dispatch', 'intern'];
+const statusOptionKeys = ['allStatus', 'working', 'idle', 'leave'];
 
 export default function PersonnelListScreen() {
+  const { t } = useTranslation('dispatcher');
   const navigation = useNavigation<any>();
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [stats] = useState(mockStats);
   const [personnel] = useState<Personnel[]>(mockPersonnel);
 
-  // Filters
-  const [selectedWorkshop, setSelectedWorkshop] = useState('全部车间');
-  const [selectedType, setSelectedType] = useState('全部类型');
-  const [selectedStatus, setSelectedStatus] = useState('全部状态');
+  // Filters - use translation keys
+  const [selectedWorkshopKey, setSelectedWorkshopKey] = useState('allWorkshops');
+  const [selectedTypeKey, setSelectedTypeKey] = useState('allTypes');
+  const [selectedStatusKey, setSelectedStatusKey] = useState('allStatus');
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -235,11 +238,11 @@ export default function PersonnelListScreen() {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'working':
-        return { bg: '#e6f7ff', text: '#1890ff', label: '工作中' };
+        return { bg: '#e6f7ff', text: '#1890ff', label: t('personnel.list.tabs.working') };
       case 'idle':
-        return { bg: '#f6ffed', text: '#52c41a', label: '空闲' };
+        return { bg: '#f6ffed', text: '#52c41a', label: t('personnel.list.tabs.idle') };
       case 'leave':
-        return { bg: '#fff1f0', text: '#ff4d4f', label: '请假' };
+        return { bg: '#fff1f0', text: '#ff4d4f', label: t('personnel.list.tabs.leave') };
       default:
         return { bg: '#f5f5f5', text: '#999', label: status };
     }
@@ -248,18 +251,18 @@ export default function PersonnelListScreen() {
   const getHireTypeBadge = (hireType: HireType) => {
     switch (hireType) {
       case 'temporary':
-        return { bg: '#fff3e0', text: '#e65100', border: '#ffcc80', label: '临时' };
+        return { bg: '#fff3e0', text: '#e65100', border: '#ffcc80', label: t('personnel.list.card.temporary') };
       case 'dispatch':
-        return { bg: '#e3f2fd', text: '#1565c0', border: '#90caf9', label: '派遣' };
+        return { bg: '#e3f2fd', text: '#1565c0', border: '#90caf9', label: t('personnelListScreen.dispatch') };
       case 'intern':
-        return { bg: '#f3e5f5', text: '#7b1fa2', border: '#ce93d8', label: '实习' };
+        return { bg: '#f3e5f5', text: '#7b1fa2', border: '#ce93d8', label: t('personnelListScreen.intern') };
       default:
         return null;
     }
   };
 
   // Group personnel by workshop and task group
-  const workshops = ['切片车间', '包装车间', '冷冻车间'];
+  const workshopKeys = ['slicing', 'packaging', 'freezing'];
 
   const renderPersonnelCard = (person: Personnel) => {
     const statusStyle = getStatusStyle(person.status);
@@ -317,7 +320,7 @@ export default function PersonnelListScreen() {
         {/* Leave reason */}
         {person.status === 'leave' && person.leaveReason && (
           <Text style={styles.leaveReason}>
-            请假原因: {person.leaveReason} | 预计返岗: {person.returnDate}
+            {t('personnelListScreen.leaveReason')}: {person.leaveReason} | {t('personnelListScreen.expectedReturn')}: {person.returnDate}
           </Text>
         )}
 
@@ -326,7 +329,7 @@ export default function PersonnelListScreen() {
           <View style={styles.contractWarning}>
             <MaterialCommunityIcons name="alert" size={12} color="#f57c00" />
             <Text style={styles.contractWarningText}>
-              合同到期: {person.contractEndDate} (剩余{person.daysUntilExpiry}天)
+              {t('personnelListScreen.contractExpiry')}: {person.contractEndDate} ({t('personnelListScreen.daysRemaining', { count: person.daysUntilExpiry })})
             </Text>
           </View>
         )}
@@ -334,24 +337,24 @@ export default function PersonnelListScreen() {
         {/* Meta info */}
         <View style={styles.metaRow}>
           {person.hireType === 'full_time' && (
-            <Text style={styles.metaItem}>类型: 正式工</Text>
+            <Text style={styles.metaItem}>{t('personnelListScreen.type')}: {t('personnelListScreen.fullTime')}</Text>
           )}
           {person.hireType === 'dispatch' && person.dispatchCompany && (
-            <Text style={styles.metaItem}>派遣公司: {person.dispatchCompany}</Text>
+            <Text style={styles.metaItem}>{t('personnelListScreen.dispatchCompany')}: {person.dispatchCompany}</Text>
           )}
           <Text style={styles.metaItem}>
-            效率: <Text style={[styles.efficiency, person.efficiency < 80 && styles.efficiencyLow]}>
+            {t('personnelListScreen.efficiency')}: <Text style={[styles.efficiency, person.efficiency < 80 && styles.efficiencyLow]}>
               {person.efficiency}%
             </Text>
           </Text>
           {person.weeklyHours !== undefined && (
             <Text style={styles.metaItem}>
-              本周工时: {person.weeklyHours}h{person.maxWeeklyHours ? `/${person.maxWeeklyHours}h` : ''}
+              {t('personnelListScreen.weeklyHours')}: {person.weeklyHours}h{person.maxWeeklyHours ? `/${person.maxWeeklyHours}h` : ''}
             </Text>
           )}
           {person.overtimeAvailable !== undefined && person.overtimeAvailable > 0 && (
             <Text style={[styles.metaItem, { color: '#4caf50' }]}>
-              可加班: {person.overtimeAvailable}h
+              {t('personnelListScreen.overtimeAvailable')}: {person.overtimeAvailable}h
             </Text>
           )}
         </View>
@@ -366,9 +369,9 @@ export default function PersonnelListScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="chevron-left" size={28} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>人员管理</Text>
+        <Text style={styles.headerTitle}>{t('personnel.list.title')}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('PersonnelTransfer')}>
-          <Text style={styles.transferButton}>调动</Text>
+          <Text style={styles.transferButton}>{t('personnelListScreen.transfer')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -381,21 +384,21 @@ export default function PersonnelListScreen() {
         <View style={styles.statsSummary}>
           <View style={styles.statsItem}>
             <Text style={styles.statsValue}>{stats.total}</Text>
-            <Text style={styles.statsLabel}>总人数</Text>
-            <Text style={styles.statsSub}>临时{stats.tempWorkers}</Text>
+            <Text style={styles.statsLabel}>{t('personnel.list.stats.total')}</Text>
+            <Text style={styles.statsSub}>{t('personnelListScreen.temp')}{stats.tempWorkers}</Text>
           </View>
           <View style={styles.statsItem}>
             <Text style={[styles.statsValue, { color: '#1890ff' }]}>{stats.working}</Text>
-            <Text style={styles.statsLabel}>工作中</Text>
-            <Text style={styles.statsSub}>临时{stats.workingTemp}</Text>
+            <Text style={styles.statsLabel}>{t('personnel.list.tabs.working')}</Text>
+            <Text style={styles.statsSub}>{t('personnelListScreen.temp')}{stats.workingTemp}</Text>
           </View>
           <View style={styles.statsItem}>
             <Text style={[styles.statsValue, { color: '#52c41a' }]}>{stats.idle}</Text>
-            <Text style={styles.statsLabel}>空闲</Text>
+            <Text style={styles.statsLabel}>{t('personnel.list.stats.idle')}</Text>
           </View>
           <View style={styles.statsItem}>
             <Text style={[styles.statsValue, { color: '#fa8c16' }]}>{stats.leave}</Text>
-            <Text style={styles.statsLabel}>请假</Text>
+            <Text style={styles.statsLabel}>{t('personnel.list.stats.leave')}</Text>
           </View>
         </View>
 
@@ -410,25 +413,25 @@ export default function PersonnelListScreen() {
                 <MaterialCommunityIcons name="alert" size={16} color="#fff" />
               </View>
               <Text style={styles.contractAlertText}>
-                <Text style={styles.contractAlertCount}>{stats.expiringContracts}名</Text> 临时工合同即将到期
+                <Text style={styles.contractAlertCount}>{stats.expiringContracts}{t('personnelListScreen.people')}</Text> {t('personnelListScreen.contractExpiringAlert')}
               </Text>
             </View>
-            <Text style={styles.contractAlertAction}>查看 &gt;</Text>
+            <Text style={styles.contractAlertAction}>{t('common.viewDetail')} &gt;</Text>
           </TouchableOpacity>
         )}
 
         {/* Filters */}
         <View style={styles.filterRow}>
           <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedWorkshop}</Text>
+            <Text style={styles.filterSelectText}>{t(`personnelListScreen.filters.${selectedWorkshopKey}`)}</Text>
             <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedType}</Text>
+            <Text style={styles.filterSelectText}>{t(`personnelListScreen.filters.${selectedTypeKey}`)}</Text>
             <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedStatus}</Text>
+            <Text style={styles.filterSelectText}>{t(`personnelListScreen.filters.${selectedStatusKey}`)}</Text>
             <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
           </TouchableOpacity>
         </View>
@@ -438,7 +441,7 @@ export default function PersonnelListScreen() {
           <MaterialCommunityIcons name="magnify" size={18} color="#999" />
           <TextInput
             style={styles.searchInput}
-            placeholder="输入工号(如001)或姓名搜索..."
+            placeholder={t('personnelListScreen.searchPlaceholder')}
             placeholderTextColor="#999"
             value={searchText}
             onChangeText={setSearchText}
@@ -448,29 +451,29 @@ export default function PersonnelListScreen() {
         {/* Personnel by Workshop */}
         {/* Cutting Workshop */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>切片车间 (10人 | 任务组: 2)</Text>
+          <Text style={styles.sectionTitle}>{t('personnelListScreen.workshops.slicing')} (10{t('personnelListScreen.people')} | {t('personnelListScreen.taskGroups')}: 2)</Text>
         </View>
 
         {/* Task Group PB001 */}
         <View style={styles.taskGroup}>
           <View style={styles.taskGroupHeader}>
-            <Text style={styles.taskGroupTitle}>任务组 PB20241227001 (6人)</Text>
+            <Text style={styles.taskGroupTitle}>{t('personnelListScreen.taskGroup')} PB20241227001 (6{t('personnelListScreen.people')})</Text>
             <View style={styles.taskGroupStatus}>
-              <Text style={styles.taskGroupStatusText}>运行中 75%</Text>
+              <Text style={styles.taskGroupStatusText}>{t('personnelListScreen.running')} 75%</Text>
             </View>
           </View>
         </View>
 
         {personnel.filter(p => p.taskGroupId === 'PB001').map(renderPersonnelCard)}
 
-        <Text style={styles.moreText}>+3 更多成员...</Text>
+        <Text style={styles.moreText}>+3 {t('personnelListScreen.moreMembers')}...</Text>
 
         {/* Task Group PB002 */}
         <View style={styles.taskGroup}>
           <View style={styles.taskGroupHeader}>
-            <Text style={styles.taskGroupTitle}>任务组 PB20241227002 (2人)</Text>
+            <Text style={styles.taskGroupTitle}>{t('personnelListScreen.taskGroup')} PB20241227002 (2{t('personnelListScreen.people')})</Text>
             <View style={styles.taskGroupStatus}>
-              <Text style={styles.taskGroupStatusText}>运行中 30%</Text>
+              <Text style={styles.taskGroupStatusText}>{t('personnelListScreen.running')} 30%</Text>
             </View>
           </View>
         </View>
@@ -478,9 +481,9 @@ export default function PersonnelListScreen() {
         {/* Idle Personnel */}
         <View style={styles.taskGroup}>
           <View style={styles.taskGroupHeader}>
-            <Text style={styles.taskGroupTitle}>空闲人员 (2人)</Text>
+            <Text style={styles.taskGroupTitle}>{t('personnelListScreen.idlePersonnel')} (2{t('personnelListScreen.people')})</Text>
             <View style={[styles.taskGroupStatus, styles.taskGroupStatusIdle]}>
-              <Text style={[styles.taskGroupStatusText, { color: '#757575' }]}>可调动</Text>
+              <Text style={[styles.taskGroupStatusText, { color: '#757575' }]}>{t('personnelListScreen.transferable')}</Text>
             </View>
           </View>
         </View>
@@ -489,25 +492,25 @@ export default function PersonnelListScreen() {
 
         {/* Packaging Workshop */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>包装车间 (8人 | 任务组: 1)</Text>
+          <Text style={styles.sectionTitle}>{t('personnelListScreen.workshops.packaging')} (8{t('personnelListScreen.people')} | {t('personnelListScreen.taskGroups')}: 1)</Text>
         </View>
 
         <View style={styles.taskGroup}>
           <View style={styles.taskGroupHeader}>
-            <Text style={styles.taskGroupTitle}>任务组 PB20241227004 (6人)</Text>
+            <Text style={styles.taskGroupTitle}>{t('personnelListScreen.taskGroup')} PB20241227004 (6{t('personnelListScreen.people')})</Text>
             <View style={styles.taskGroupStatus}>
-              <Text style={styles.taskGroupStatusText}>运行中 45%</Text>
+              <Text style={styles.taskGroupStatusText}>{t('personnelListScreen.running')} 45%</Text>
             </View>
           </View>
         </View>
 
         {personnel.filter(p => p.workshopName === '包装车间').map(renderPersonnelCard)}
 
-        <Text style={styles.moreText}>+5 更多...</Text>
+        <Text style={styles.moreText}>+5 {t('personnelListScreen.more')}...</Text>
 
         {/* Freezing Workshop */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>冷冻车间 (6人 | 任务组: 1)</Text>
+          <Text style={styles.sectionTitle}>{t('personnelListScreen.workshops.freezing')} (6{t('personnelListScreen.people')} | {t('personnelListScreen.taskGroups')}: 1)</Text>
         </View>
 
         {personnel.filter(p => p.workshopName === '冷冻车间').map(renderPersonnelCard)}

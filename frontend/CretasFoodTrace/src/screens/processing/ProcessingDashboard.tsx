@@ -9,6 +9,7 @@ import { dashboardAPI } from '../../services/api/dashboardApiClient';
 import { processingApiClient, ProcessingBatch } from '../../services/api/processingApiClient';
 import { handleError } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
 
 // 创建ProcessingDashboard专用logger
 const dashboardLogger = logger.createContextLogger('ProcessingDashboard');
@@ -45,6 +46,7 @@ interface DashboardOverviewData {
 export default function ProcessingDashboard() {
   const navigation = useNavigation<ProcessingDashboardNavigationProp>();
   const { user } = useAuthStore();
+  const { t } = useTranslation('processing');
 
   // 状态管理
   const [loading, setLoading] = useState(false);
@@ -119,7 +121,7 @@ export default function ProcessingDashboard() {
       } else {
         dashboardLogger.warn('仪表板数据格式错误', { response: overviewRes });
         setError({
-          message: 'API返回数据格式错误，请稍后重试',
+          message: t('dashboard.messages.dataFormatError'),
           canRetry: true,
         });
       }
@@ -130,7 +132,7 @@ export default function ProcessingDashboard() {
         logError: true,
       });
       setError({
-        message: error instanceof Error ? error.message : '加载仪表板数据失败，请稍后重试',
+        message: error instanceof Error ? error.message : t('dashboard.messages.loadFailed'),
         canRetry: true,
       });
     } finally {
@@ -168,7 +170,7 @@ export default function ProcessingDashboard() {
   // 处理成本对比按钮点击
   const handleCostComparisonPress = () => {
     if (recentBatches.length < 2) {
-      Alert.alert('提示', '需要至少2个批次才能进行对比分析，请先创建生产批次');
+      Alert.alert(t('dashboard.messages.needTwoBatches'));
       return;
     }
     navigation.navigate('CostComparison', {
@@ -179,14 +181,14 @@ export default function ProcessingDashboard() {
   return (
     <View style={styles.container}>
       <Appbar.Header elevated>
-        <Appbar.Content title="生产仪表板" />
+        <Appbar.Content title={t('dashboard.title')} />
         <Appbar.Action icon="refresh" onPress={loadDashboardData} />
       </Appbar.Header>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* 今日概览 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="今日生产概览" />
+          <Card.Title title={t('dashboard.todayOverview')} />
           <Card.Content>
             {loading ? (
               <View style={styles.loadingContainer}>
@@ -205,7 +207,7 @@ export default function ProcessingDashboard() {
                     onPress={loadDashboardData}
                     style={styles.retryButton}
                   >
-                    重试
+                    {t('common.retry')}
                   </Button>
                 )}
               </View>
@@ -215,25 +217,25 @@ export default function ProcessingDashboard() {
                   <Text variant="headlineSmall" style={styles.statValue}>
                     {dashboardData.inProgressBatches} / {dashboardData.totalBatches}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>进行中批次</Text>
+                  <Text variant="bodySmall" style={styles.statLabel}>{t('dashboard.stats.inProgressBatches')}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="headlineSmall" style={styles.statValue}>
                     {dashboardData.completedBatches} / {dashboardData.totalBatches}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>已完成批次</Text>
+                  <Text variant="bodySmall" style={styles.statLabel}>{t('dashboard.stats.completedBatches')}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="headlineSmall" style={styles.statValue}>
                     {dashboardData.pendingInspection}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>待质检</Text>
+                  <Text variant="bodySmall" style={styles.statLabel}>{t('dashboard.stats.pendingInspection')}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Text variant="headlineSmall" style={styles.statValue}>
                     {dashboardData.onDutyWorkers} / {dashboardData.totalWorkers}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>在岗人员</Text>
+                  <Text variant="bodySmall" style={styles.statLabel}>{t('dashboard.stats.onDutyWorkers')}</Text>
                 </View>
               </View>
             )}
@@ -242,7 +244,7 @@ export default function ProcessingDashboard() {
 
         {/* 快捷操作 */}
         <Card style={styles.card} mode="elevated">
-          <Card.Title title="快捷操作" />
+          <Card.Title title={t('dashboard.quickActions.title')} />
           <Card.Content>
             {/* 工厂用户操作按钮 */}
             {canOperate && (
@@ -254,7 +256,7 @@ export default function ProcessingDashboard() {
                   style={styles.actionButton}
                   buttonColor="#1976D2"
                 >
-                  原材料入库
+                  {t('dashboard.quickActions.materialInbound')}
                 </Button>
                 <Button
                   mode="contained"
@@ -263,7 +265,7 @@ export default function ProcessingDashboard() {
                   style={styles.actionButton}
                   buttonColor="#388E3C"
                 >
-                  创建生产计划
+                  {t('dashboard.quickActions.createProductionPlan')}
                 </Button>
               </View>
             )}
@@ -274,11 +276,11 @@ export default function ProcessingDashboard() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                   <IconButton icon="eye" iconColor="#E65100" size={20} style={{ margin: 0, padding: 0, height: 20, width: 20, marginRight: 8 }} />
                   <Text variant="bodyMedium" style={styles.noticeText}>
-                    您是平台管理员，只能查看数据
+                    {t('dashboard.platformAdminNotice.title')}
                   </Text>
                 </View>
                 <Text variant="bodySmall" style={styles.noticeHint}>
-                  原材料入库和生产计划管理仅限工厂用户使用
+                  {t('dashboard.platformAdminNotice.hint')}
                 </Text>
               </View>
             )}
@@ -291,7 +293,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('BatchList', {})}
                 style={styles.actionButton}
               >
-                批次列表
+                {t('dashboard.quickActions.batchList')}
               </Button>
               <Button
                 mode="outlined"
@@ -299,7 +301,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('QualityInspectionList', {})}
                 style={styles.actionButton}
               >
-                质检记录
+                {t('dashboard.quickActions.qualityRecords')}
               </Button>
               <Button
                 mode="outlined"
@@ -307,7 +309,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('MaterialBatchManagement')}
                 style={styles.actionButton}
               >
-                原材料管理
+                {t('dashboard.quickActions.materialManagement')}
               </Button>
               <Button
                 mode="outlined"
@@ -315,7 +317,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('EquipmentMonitoring')}
                 style={styles.actionButton}
               >
-                设备监控
+                {t('dashboard.quickActions.equipmentMonitoring')}
               </Button>
               <Button
                 mode="outlined"
@@ -323,7 +325,7 @@ export default function ProcessingDashboard() {
                 onPress={() => setCostAnalysisDialogVisible(true)}
                 style={styles.actionButton}
               >
-                成本分析
+                {t('dashboard.quickActions.costAnalysis')}
               </Button>
               <Button
                 mode="outlined"
@@ -331,7 +333,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('QualityAnalytics')}
                 style={styles.actionButton}
               >
-                质检统计
+                {t('dashboard.quickActions.qualityStats')}
               </Button>
               <Button
                 mode="outlined"
@@ -339,7 +341,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('InventoryCheck')}
                 style={styles.actionButton}
               >
-                库存盘点
+                {t('dashboard.quickActions.inventoryCheck')}
               </Button>
               <Button
                 mode="outlined"
@@ -347,7 +349,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('MaterialConsumptionHistory', {})}
                 style={styles.actionButton}
               >
-                消耗记录
+                {t('dashboard.quickActions.consumptionHistory')}
               </Button>
               <Button
                 mode="outlined"
@@ -355,7 +357,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('ExceptionAlert')}
                 style={styles.actionButton}
               >
-                异常预警
+                {t('dashboard.quickActions.exceptionAlert')}
               </Button>
               <Button
                 mode="outlined"
@@ -363,7 +365,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('Traceability')}
                 style={styles.actionButton}
               >
-                产品溯源
+                {t('dashboard.quickActions.traceability')}
               </Button>
             </View>
           </Card.Content>
@@ -372,8 +374,8 @@ export default function ProcessingDashboard() {
         {/* AI智能分析 - Phase 3新增 */}
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="AI智能分析"
-            subtitle="DeepSeek驱动的智能成本分析"
+            title={t('dashboard.aiAnalysis.title')}
+            subtitle={t('dashboard.aiAnalysis.subtitle')}
           />
           <Card.Content>
             <View style={styles.actionsGrid}>
@@ -384,7 +386,7 @@ export default function ProcessingDashboard() {
                 style={styles.actionButton}
                 buttonColor="#9C27B0"
               >
-                AI分析报告
+                {t('dashboard.aiAnalysis.aiReport')}
               </Button>
               <Button
                 mode="contained"
@@ -393,7 +395,7 @@ export default function ProcessingDashboard() {
                 style={styles.actionButton}
                 buttonColor="#FF9800"
               >
-                成本对比
+                {t('dashboard.aiAnalysis.costComparison')}
               </Button>
               <Button
                 mode="outlined"
@@ -401,7 +403,7 @@ export default function ProcessingDashboard() {
                 onPress={() => navigation.navigate('TimeRangeCostAnalysis')}
                 style={styles.actionButton}
               >
-                时间范围分析
+                {t('dashboard.aiAnalysis.timeRangeAnalysis')}
               </Button>
             </View>
           </Card.Content>
@@ -410,13 +412,13 @@ export default function ProcessingDashboard() {
         {/* 最近批次 */}
         <Card style={styles.card} mode="elevated">
           <Card.Title
-            title="最近批次"
+            title={t('dashboard.recentBatches.title')}
             right={(props) => (
               <Button
                 compact
                 onPress={() => navigation.navigate('BatchList', {})}
               >
-                查看全部
+                {t('dashboard.recentBatches.viewAll')}
               </Button>
             )}
           />
@@ -430,18 +432,18 @@ export default function ProcessingDashboard() {
                         {batch.batchNumber}
                       </Text>
                       <Text variant="bodySmall" style={styles.batchMeta}>
-                        {batch.productType} · {batch.status === 'in_progress' ? '进行中' : batch.status === 'completed' ? '已完成' : batch.status}
+                        {batch.productType} · {batch.status === 'in_progress' ? t('batchList.status.inProgress') : batch.status === 'completed' ? t('batchList.status.completed') : batch.status}
                       </Text>
                     </View>
                     <Text variant="bodySmall" style={styles.batchQuantity}>
-                      {batch.actualQuantity ?? batch.targetQuantity ?? '-'} 件
+                      {batch.actualQuantity ?? batch.targetQuantity ?? '-'} {t('dashboard.recentBatches.unit')}
                     </Text>
                   </View>
                 ))}
               </View>
             ) : (
               <Text variant="bodyMedium" style={styles.placeholder}>
-                暂无批次数据
+                {t('dashboard.recentBatches.noData')}
               </Text>
             )}
           </Card.Content>
@@ -454,7 +456,7 @@ export default function ProcessingDashboard() {
           visible={costAnalysisDialogVisible}
           onDismiss={() => setCostAnalysisDialogVisible(false)}
         >
-          <Dialog.Title>选择分析方式</Dialog.Title>
+          <Dialog.Title>{t('dashboard.costDialog.title')}</Dialog.Title>
           <Dialog.Content>
             <Button
               mode="contained"
@@ -465,7 +467,7 @@ export default function ProcessingDashboard() {
               }}
               style={styles.dialogButton}
             >
-              按批次分析
+              {t('dashboard.costDialog.byBatch')}
             </Button>
             <Button
               mode="contained"
@@ -476,12 +478,12 @@ export default function ProcessingDashboard() {
               }}
               style={styles.dialogButton}
             >
-              按时间范围分析
+              {t('dashboard.costDialog.byTimeRange')}
             </Button>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setCostAnalysisDialogVisible(false)}>
-              取消
+              {t('common.cancel')}
             </Button>
           </Dialog.Actions>
         </Dialog>

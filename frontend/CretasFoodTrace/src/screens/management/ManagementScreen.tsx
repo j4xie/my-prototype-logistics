@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-nat
 import { Text, List, Divider, useTheme, Avatar, IconButton, Menu, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
@@ -10,6 +11,7 @@ import { theme } from '../../theme';
 type ManagementNavigationProp = NativeStackNavigationProp<any>;
 
 export default function ManagementScreen() {
+  const { t } = useTranslation('management');
   const navigation = useNavigation<ManagementNavigationProp>();
   const { user } = useAuthStore();
   const [exportMenuVisible, setExportMenuVisible] = useState(false);
@@ -23,40 +25,41 @@ export default function ManagementScreen() {
 
   const managementSections = [
     {
-      title: '生产配置',
+      title: t('sections.productionConfig.title'),
       icon: 'cog-outline',
       items: [
-        { id: 'product-types', title: '产品类型', desc: '配置鱼片、鱼头等类型', icon: 'fish', route: 'ProductTypeManagement' },
-        { id: 'material-types', title: '原材料类型', desc: '配置鲈鱼、带鱼等原料', icon: 'food-drumstick', route: 'MaterialTypeManagement' },
-        { id: 'conversion-rates', title: '转换率', desc: '配置原料到产品转换率', icon: 'swap-horizontal', route: 'ConversionRate' },
-        { id: 'work-types', title: '工作类型', desc: '配置工种和时薪', icon: 'account-hard-hat', route: 'WorkTypeManagement', adminOnly: true },
-        { id: 'disposal-records', title: '报废记录', desc: '管理废弃和报废记录', icon: 'delete-forever', route: 'DisposalRecordManagement', adminOnly: true },
+        { id: 'product-types', title: t('sections.productionConfig.productTypes.title'), desc: t('sections.productionConfig.productTypes.desc'), icon: 'fish', route: 'ProductTypeManagement' },
+        { id: 'material-types', title: t('sections.productionConfig.materialTypes.title'), desc: t('sections.productionConfig.materialTypes.desc'), icon: 'food-drumstick', route: 'MaterialTypeManagement' },
+        { id: 'conversion-rates', title: t('sections.productionConfig.conversionRates.title'), desc: t('sections.productionConfig.conversionRates.desc'), icon: 'swap-horizontal', route: 'ConversionRate' },
+        { id: 'work-types', title: t('sections.productionConfig.workTypes.title'), desc: t('sections.productionConfig.workTypes.desc'), icon: 'account-hard-hat', route: 'WorkTypeManagement', adminOnly: true },
+        { id: 'disposal-records', title: t('sections.productionConfig.disposalRecords.title'), desc: t('sections.productionConfig.disposalRecords.desc'), icon: 'delete-forever', route: 'DisposalRecordManagement', adminOnly: true },
       ],
     },
     {
-      title: '系统管理',
+      title: t('sections.systemManagement.title'),
       icon: 'shield-account-outline',
       items: [
-        { id: 'departments', title: '部门管理', desc: '组织架构和部门信息', icon: 'office-building', route: 'DepartmentManagement', adminOnly: true },
-        { id: 'users', title: '用户管理', desc: '用户、角色和权限', icon: 'account-cog', route: 'UserManagement', adminOnly: true },
-        { id: 'whitelist', title: '白名单', desc: '管理注册手机号', icon: 'shield-check', route: 'WhitelistManagement', adminOnly: true },
-        { id: 'work-sessions', title: '工作会话', desc: '员工工时和人工成本', icon: 'clock-outline', route: 'WorkSessionManagement', adminOnly: true },
+        { id: 'departments', title: t('sections.systemManagement.departments.title'), desc: t('sections.systemManagement.departments.desc'), icon: 'office-building', route: 'DepartmentManagement', adminOnly: true },
+        { id: 'users', title: t('sections.systemManagement.users.title'), desc: t('sections.systemManagement.users.desc'), icon: 'account-cog', route: 'UserManagement', adminOnly: true },
+        { id: 'whitelist', title: t('sections.systemManagement.whitelist.title'), desc: t('sections.systemManagement.whitelist.desc'), icon: 'shield-check', route: 'WhitelistManagement', adminOnly: true },
+        { id: 'work-sessions', title: t('sections.systemManagement.workSessions.title'), desc: t('sections.systemManagement.workSessions.desc'), icon: 'clock-outline', route: 'WorkSessionManagement', adminOnly: true },
       ],
     },
     {
-        title: '业务伙伴',
+        title: t('sections.businessPartners.title'),
         icon: 'handshake-outline',
         items: [
-            { id: 'suppliers', title: '供应商管理', desc: '管理供应商信息', icon: 'truck-delivery', route: 'SupplierManagement' },
-            { id: 'customers', title: '客户管理', desc: '管理客户信息', icon: 'store', route: 'CustomerManagement' },
-            { id: 'shipments', title: '出货管理', desc: '物流发货和配送记录', icon: 'truck-fast', route: 'ShipmentManagement' },
+            { id: 'suppliers', title: t('sections.businessPartners.suppliers.title'), desc: t('sections.businessPartners.suppliers.desc'), icon: 'truck-delivery', route: 'SupplierManagement' },
+            { id: 'customers', title: t('sections.businessPartners.customers.title'), desc: t('sections.businessPartners.customers.desc'), icon: 'store', route: 'CustomerManagement' },
+            { id: 'shipments', title: t('sections.businessPartners.shipments.title'), desc: t('sections.businessPartners.shipments.desc'), icon: 'truck-fast', route: 'ShipmentManagement' },
         ]
     },
     {
-        title: '工厂配置',
+        title: t('sections.factoryConfig.title'),
         icon: 'factory',
         items: [
-             { id: 'factory-settings', title: '工厂设置', desc: '工厂基本信息配置', icon: 'cog', route: 'FactorySettings', adminOnly: true },
+             { id: 'factory-settings', title: t('sections.factoryConfig.factorySettings.title'), desc: t('sections.factoryConfig.factorySettings.desc'), icon: 'cog', route: 'FactorySettings', adminOnly: true },
+             { id: 'intent-config', title: t('sections.factoryConfig.intentConfig.title', { defaultValue: 'AI意图配置' }), desc: t('sections.factoryConfig.intentConfig.desc', { defaultValue: '管理AI识别关键词和规则' }), icon: 'brain', route: 'IntentConfig', adminOnly: true },
         ]
     }
   ];
@@ -72,9 +75,9 @@ export default function ManagementScreen() {
       // TODO: 实现真实的导出API调用
       // 目前显示提示信息
       Alert.alert(
-        '导出数据',
-        `正在准备导出 ${getExportTypeName(exportType)} 数据...\n\n此功能将在后端API实现后可用。`,
-        [{ text: '确定' }]
+        t('export.title'),
+        `${t('export.preparing')} ${getExportTypeName(exportType)} ${t('export.notAvailable')}`,
+        [{ text: t('common.confirm') }]
       );
 
       // 模拟导出延迟
@@ -83,7 +86,7 @@ export default function ManagementScreen() {
       console.log(`导出 ${exportType} 数据`);
     } catch (error) {
       console.error('导出失败:', error);
-      Alert.alert('导出失败', '无法导出数据，请稍后重试');
+      Alert.alert(t('export.failed'), t('export.failedMessage'));
     } finally {
       setExporting(false);
     }
@@ -91,11 +94,11 @@ export default function ManagementScreen() {
 
   const getExportTypeName = (type: string): string => {
     const names: Record<string, string> = {
-      'all': '全部配置',
-      'products': '产品类型',
-      'materials': '原材料类型',
-      'users': '用户列表',
-      'departments': '部门信息',
+      'all': t('export.allConfig'),
+      'products': t('export.productTypes'),
+      'materials': t('export.materialTypes'),
+      'users': t('export.users'),
+      'departments': t('export.departments'),
     };
     return names[type] || type;
   };
@@ -105,8 +108,8 @@ export default function ManagementScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerTextContainer}>
-            <Text style={styles.headerTitle}>管理中心</Text>
-            <Text style={styles.headerSubtitle}>工厂配置与系统管理</Text>
+            <Text style={styles.headerTitle}>{t('title')}</Text>
+            <Text style={styles.headerSubtitle}>{t('subtitle')}</Text>
           </View>
 
           {/* 数据导出按钮 */}
@@ -128,29 +131,29 @@ export default function ManagementScreen() {
               <Menu.Item
                 leadingIcon="file-excel"
                 onPress={() => handleExport('all')}
-                title="导出全部配置"
+                title={t('export.allConfig')}
               />
               <Divider />
               <Menu.Item
                 leadingIcon="food"
                 onPress={() => handleExport('products')}
-                title="导出产品类型"
+                title={t('export.productTypes')}
               />
               <Menu.Item
                 leadingIcon="food-drumstick"
                 onPress={() => handleExport('materials')}
-                title="导出原材料类型"
+                title={t('export.materialTypes')}
               />
               <Divider />
               <Menu.Item
                 leadingIcon="account-group"
                 onPress={() => handleExport('users')}
-                title="导出用户列表"
+                title={t('export.users')}
               />
               <Menu.Item
                 leadingIcon="office-building"
                 onPress={() => handleExport('departments')}
-                title="导出部门信息"
+                title={t('export.departments')}
               />
             </Menu>
           )}
@@ -187,10 +190,10 @@ export default function ManagementScreen() {
         <NeoCard style={styles.infoCard} padding="m" variant="flat">
             <View style={styles.infoHeader}>
                 <Avatar.Icon size={24} icon="information" style={{ backgroundColor: 'transparent' }} color={theme.colors.primary} />
-                <Text style={styles.infoTitle}>提示</Text>
+                <Text style={styles.infoTitle}>{t('tips.title')}</Text>
             </View>
-            <Text style={styles.infoText}>• 产品类型和原料类型需先配置，才能设置转换率</Text>
-            <Text style={styles.infoText}>• 部分功能需要管理员权限</Text>
+            <Text style={styles.infoText}>• {t('tips.configFirst')}</Text>
+            <Text style={styles.infoText}>• {t('tips.adminOnly')}</Text>
         </NeoCard>
       </ScrollView>
     </ScreenWrapper>

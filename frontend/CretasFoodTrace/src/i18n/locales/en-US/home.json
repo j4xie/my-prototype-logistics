@@ -1,0 +1,459 @@
+{
+  "greeting": "Hello",
+  "greetings": {
+    "earlyMorning": "Good early morning",
+    "morning": "Good morning",
+    "lateMorning": "Good morning",
+    "noon": "Good afternoon",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "lateNight": "Working late",
+    "defaultUser": "Admin"
+  },
+  "date": {
+    "month": "/",
+    "day": "",
+    "weekdays": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    }
+  },
+  "sections": {
+    "modules": "Modules",
+    "notifications": "Notifications",
+    "todayOverview": "Today's Overview",
+    "quickActions": "Quick Actions",
+    "devTools": "🛠️ Dev Tools"
+  },
+  "loading": "Loading...",
+  "error": {
+    "loadFailed": "Failed to load data, pull down to refresh"
+  },
+  "ai": {
+    "title": "AI Insights",
+    "analyzing": "Analyzing today's production data...",
+    "analyzed": "Analyzed",
+    "analyzing_status": "Analyzing",
+    "normalProduction": "Production running normally today",
+    "lowQualityRate": "Quality rate is low today, please check QC",
+    "lowEfficiency": "Production efficiency can be improved",
+    "excellentStatus": "Excellent status, all metrics above target",
+    "noData": "Unable to get insight data",
+    "metrics": {
+      "qualityRate": "Quality Rate",
+      "unitCost": "Unit Cost",
+      "avgCycle": "Avg Cycle"
+    }
+  },
+  "stats": {
+    "todayOutput": "Output (kg)",
+    "todayBatches": "Batches",
+    "materialBatches": "Materials",
+    "todayAlerts": "Alerts"
+  },
+  "quickActions": {
+    "createPlan": "New Plan",
+    "dataReport": "Reports",
+    "staffManagement": "Staff",
+    "systemConfig": "Settings",
+    "formilyDemo": "Formily Demo"
+  },
+  "modules": {
+    "processing": {
+      "name": "Production",
+      "description": "Batch management, QC, cost analysis"
+    },
+    "logistics": {
+      "name": "Logistics",
+      "description": "Transportation, delivery tracking"
+    },
+    "trace": {
+      "name": "Traceability",
+      "description": "Product tracing, info query"
+    },
+    "admin": {
+      "name": "User Management",
+      "description": "Users, roles, permissions"
+    },
+    "settings": {
+      "name": "Settings",
+      "description": "Personal & system settings"
+    }
+  },
+  "status": {
+    "available": "Available",
+    "comingSoon": "Coming Soon",
+    "locked": "Locked"
+  },
+  "alerts": {
+    "title": "Alert Center",
+    "loadFailed": "Failed to load alert data",
+    "severity": {
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "time": {
+      "minutesAgo": "{{count}} min ago",
+      "hoursAgo": "{{count}} hrs ago"
+    },
+    "summary": {
+      "critical": "Critical",
+      "active": "Active",
+      "resolved": "Resolved",
+      "total": "Total"
+    },
+    "recentAlerts": "Recent Alerts",
+    "empty": "No Alerts",
+    "systemNormal": "System running normally",
+    "comingSoon": {
+      "title": "Coming Soon",
+      "message": "{{moduleName}} is under development. Stay tuned!"
+    },
+    "noAccess": {
+      "title": "Access Denied",
+      "message": "You don't have permission to access {{moduleName}}"
+    },
+    "notification": {
+      "title": "Notifications",
+      "noNew": "No new notifications"
+    },
+    "settingsInProgress": {
+      "title": "Settings",
+      "message": "This feature is being improved"
+    }
+  },
+  "roles": {
+    "platformAdmin": "Platform Admin",
+    "factorySuperAdmin": "Factory Super Admin",
+    "permissionAdmin": "Permission Admin",
+    "departmentAdmin": "Department Admin",
+    "operator": "Operator",
+    "viewer": "Viewer",
+    "unactivated": "Unactivated User"
+  },
+  "todayBatches": {
+    "title": "Today's Batches",
+    "batchUnit": "batches",
+    "loadFailed": "Failed to load batch data",
+    "empty": "No batches today",
+    "status": {
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "planned": "Planned",
+    "actual": "Actual"
+  },
+  "todayProduction": {
+    "title": "Today's Production",
+    "totalOutput": "Total Output (kg)",
+    "batchCount": "Batch Count",
+    "batchUnit": "batches",
+    "loadFailed": "Failed to load data",
+    "statusDistribution": "Batch Status Distribution",
+    "productTypeStats": "Product Type Statistics",
+    "noProductData": "No product data",
+    "unknownProduct": "Unknown Product",
+    "status": {
+      "planned": "Planned",
+      "pending": "Pending",
+      "inProgress": "In Progress",
+      "processing": "Processing",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "paused": "Paused"
+    }
+  },
+  "management": {
+    "title": "Management",
+    "subtitle": "Factory Operations Center",
+    "coreManagement": "Core Management",
+    "businessManagement": "Business Management",
+    "supplyChainManagement": "Supply Chain",
+    "systemConfig": "System Config",
+    "other": "Other",
+    "employeeManagement": "Employees",
+    "equipmentManagement": "Equipment",
+    "departmentManagement": "Departments",
+    "productTypeManagement": "Product Types",
+    "materialTypeManagement": "Material Types",
+    "conversionRate": "Conversion Rates",
+    "supplierManagement": "Suppliers",
+    "customerManagement": "Customers",
+    "shipmentManagement": "Shipments",
+    "schemaConfig": "Form Config",
+    "ruleConfiguration": "Rule Config",
+    "aiBusinessInit": "AI Business Init",
+    "encodingRuleConfig": "Encoding Rules",
+    "qualityCheckItemConfig": "QC Items",
+    "sopConfig": "SOP Config",
+    "disposalRecordManagement": "Disposal Records"
+  },
+  "schemaConfig": {
+    "title": "Form Configuration",
+    "subtitle": "AI-powered field creation, custom form templates",
+    "formTypes": "Form Types",
+    "stats": {
+      "configuredTemplates": "Configured Templates",
+      "aiGenerated": "AI Generated",
+      "coverage": "Coverage"
+    },
+    "aiAddField": "AI Add Field",
+    "versionHistory": "Version History",
+    "entityTypes": {
+      "qualityCheck": "Quality Check Form",
+      "materialBatch": "Material Batch",
+      "processingBatch": "Processing Batch",
+      "shipment": "Shipment",
+      "equipment": "Equipment",
+      "disposalRecord": "Disposal Record"
+    },
+    "version": "Version",
+    "useDefault": "Use Default Config",
+    "dialog": {
+      "title": "AI Add Field",
+      "inputLabel": "Describe the field you need:",
+      "inputPlaceholder": "e.g., Add a spiciness score field, 1-5 points, 3+ is qualified",
+      "generate": "AI Generate",
+      "generatedFields": "Generated Fields",
+      "saveFields": "Save Fields",
+      "savingSuccess": "Added {{count}} fields to {{entityType}}",
+      "savingFailed": "Failed to save to server",
+      "generateFailed": "AI failed to generate valid fields"
+    },
+    "versionDialog": {
+      "title": "Version History",
+      "empty": "No version history",
+      "rollback": "Rollback",
+      "current": "Current",
+      "confirmRollback": "Are you sure you want to rollback to version {{version}}? Current version will be saved as history.",
+      "rollbackSuccess": "Rolled back to version {{version}}",
+      "rollbackFailed": "Failed to rollback to specified version"
+    }
+  },
+  "aiBusinessInit": {
+    "title": "AI Business Init",
+    "subtitle": "Describe your factory, AI generates config",
+    "factoryName": "Factory Name (optional)",
+    "factoryNamePlaceholder": "Enter factory name",
+    "selectIndustry": "Select Industry Template",
+    "industryTemplates": {
+      "seafood": "Seafood Processing",
+      "preparedFood": "Prepared Food",
+      "meat": "Meat Processing",
+      "dairy": "Dairy Products",
+      "beverage": "Beverage Processing",
+      "custom": "Custom"
+    },
+    "factoryDescription": "Factory Description",
+    "supplementDescription": "Additional Description (optional)",
+    "descriptionPlaceholder": "Describe your factory type and main products...\ne.g., Seafood processing factory, mainly producing canned fish",
+    "supplementPlaceholder": "Add more details...\ne.g., Main products are canned fish, prepared fish dishes",
+    "aiGenerate": "AI Generate",
+    "aiAnalysis": "AI Analysis",
+    "productTypes": "Product Types",
+    "materialTypes": "Material Types",
+    "conversionRates": "Conversion Rates",
+    "items": "items",
+    "regenerate": "Regenerate",
+    "confirmCreate": "Confirm Create",
+    "initComplete": "Init Complete",
+    "partialComplete": "Partial Complete",
+    "complete": "Complete",
+    "continueAdding": "Continue Adding",
+    "steps": {
+      "describeFactory": "Describe Factory",
+      "confirmData": "Confirm Data",
+      "complete": "Complete"
+    },
+    "aiAnalyzing": "AI Analyzing...",
+    "creating": "Creating...",
+    "stats": {
+      "productTypes": "Product Types",
+      "materialTypes": "Material Types",
+      "conversions": "Conversions",
+      "alreadyExists": "Already Exists"
+    }
+  },
+  "encodingRuleConfig": {
+    "title": "Encoding Rule Config",
+    "subtitle": "Manage batch number generation rules",
+    "infoText": "Encoding rules are used to automatically generate document numbers. Supports date, sequence number, factory code placeholders.",
+    "empty": "No encoding rules",
+    "emptySubText": "Click the button below to create your first rule",
+    "createRule": "Create Encoding Rule",
+    "editRule": "Edit Encoding Rule",
+    "entityType": "Entity Type",
+    "ruleName": "Rule Name",
+    "ruleNamePlaceholder": "e.g., Material Batch Encoding Rule",
+    "ruleDescription": "Rule Description",
+    "ruleDescriptionPlaceholder": "Optional, describe rule purpose",
+    "encodingPattern": "Encoding Pattern",
+    "encodingPatternPlaceholder": "{PREFIX}-{FACTORY}-{YYYYMMDD}-{SEQ:4}",
+    "prefix": "Prefix",
+    "sequenceLength": "Sequence Length",
+    "resetCycle": "Reset Cycle",
+    "resetCycles": {
+      "daily": "Daily",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "never": "Never"
+    },
+    "currentSequence": "Current Sequence",
+    "version": "Version",
+    "preview": "Preview",
+    "edit": "Edit",
+    "reset": "Reset",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "confirmDelete": "Are you sure you want to delete rule \"{{ruleName}}\"?",
+    "confirmReset": "Are you sure you want to reset \"{{ruleName}}\" sequence to 0?\n\nWarning: This may cause duplicate codes!",
+    "saveSuccess": "Encoding rule created successfully",
+    "updateSuccess": "Encoding rule updated successfully",
+    "deleteSuccess": "Rule deleted",
+    "resetSuccess": "Sequence reset",
+    "previewTitle": "Code Preview",
+    "nextCodeWillBe": "Next code will be:",
+    "placeholders": {
+      "title": "Supported Placeholders",
+      "close": "Close"
+    }
+  },
+  "qualityCheckItemConfig": {
+    "title": "QC Item Config",
+    "statsOverview": "Statistics Overview",
+    "total": "Total",
+    "requiredItems": "Required Items",
+    "criticalItems": "Critical Items",
+    "searchPlaceholder": "Search QC items...",
+    "copyFromTemplate": "Copy from Template",
+    "all": "All",
+    "categories": {
+      "sensory": "Sensory",
+      "physical": "Physical",
+      "chemical": "Chemical",
+      "microbiological": "Microbiological",
+      "nutritional": "Nutritional",
+      "packaging": "Packaging",
+      "labeling": "Labeling",
+      "other": "Other"
+    },
+    "createItem": "Create QC Item",
+    "editItem": "Edit QC Item",
+    "itemCode": "Item Code",
+    "itemName": "Item Name",
+    "itemCategory": "Item Category",
+    "itemDescription": "Item Description",
+    "checkMethod": "Check Method",
+    "standardReference": "Standard Reference",
+    "standardReferencePlaceholder": "e.g., GB 2733-2015",
+    "checkType": "Check Type",
+    "valueTypes": {
+      "numeric": "Numeric",
+      "text": "Text",
+      "boolean": "Yes/No",
+      "select": "Single Select",
+      "multiSelect": "Multi Select"
+    },
+    "minValue": "Min Value",
+    "maxValue": "Max Value",
+    "unit": "Unit",
+    "unitPlaceholder": "e.g., °C, %, g",
+    "samplingRatio": "Sampling Ratio (%)",
+    "severity": "Severity",
+    "severities": {
+      "critical": "Critical",
+      "major": "Major",
+      "minor": "Minor",
+      "info": "Info"
+    },
+    "isRequired": "Required",
+    "isRequiredDesc": "Is this a required check item",
+    "requirePhotoOnFail": "Photo on Fail",
+    "requirePhotoOnFailDesc": "Require photo when check fails",
+    "requireNoteOnFail": "Note on Fail",
+    "requireNoteOnFailDesc": "Require note when check fails",
+    "enabled": "Enabled",
+    "enabledDesc": "Enable this QC item",
+    "range": "Range",
+    "standardValue": "Standard Value",
+    "sampling": "Sampling",
+    "mustCheck": "Must Check",
+    "needPhoto": "Need Photo",
+    "disabled": "Disabled",
+    "boundProducts": "products",
+    "empty": "No QC items, click button below to add",
+    "noMatching": "No matching QC items found",
+    "confirmDelete": "Are you sure you want to delete QC item \"{{itemName}}\"?",
+    "confirmCopyFromTemplate": "This will copy QC items from system template to your factory. Existing items will be skipped. Continue?",
+    "copySuccess": "Copied {{count}} QC items",
+    "saveSuccess": "Saved successfully",
+    "createSuccess": "Created successfully",
+    "updateSuccess": "Updated successfully",
+    "deleteSuccess": "Deleted successfully"
+  },
+  "materialBatch": {
+    "title": "Material Batches",
+    "loadFailed": "Failed to load material batches",
+    "batchUnit": "batches",
+    "empty": "No material batches",
+    "status": {
+      "available": "Available",
+      "reserved": "Reserved",
+      "depleted": "Depleted",
+      "expired": "Expired"
+    }
+  },
+  "materialBatchDetail": {
+    "title": "Material Details",
+    "loadFailed": "Failed to load material batch details",
+    "notFound": "Batch not found",
+    "retry": "Retry",
+    "basicInfo": "Basic Info",
+    "materialName": "Material Name",
+    "materialCode": "Material Code",
+    "materialCategory": "Material Category",
+    "storageType": "Storage Type",
+    "storageTypes": {
+      "fresh": "Fresh",
+      "frozen": "Frozen",
+      "dry": "Dry"
+    },
+    "inventoryInfo": "Inventory Info",
+    "inboundQuantity": "Inbound Qty",
+    "remainingQuantity": "Remaining Qty",
+    "reservedQuantity": "Reserved Qty",
+    "usedQuantity": "Used Qty",
+    "supplierAndCost": "Supplier & Cost",
+    "supplier": "Supplier",
+    "unitPrice": "Unit Price",
+    "totalCost": "Total Cost",
+    "timeInfo": "Time Info",
+    "inboundDate": "Inbound Date",
+    "productionDate": "Production Date",
+    "expiryDate": "Expiry Date",
+    "createdAt": "Created At",
+    "otherInfo": "Other Info",
+    "qualityGrade": "Quality Grade",
+    "storageLocation": "Storage Location",
+    "createdBy": "Created By",
+    "notes": "Notes",
+    "status": {
+      "available": "Available",
+      "fresh": "Fresh",
+      "reserved": "Reserved",
+      "depleted": "Depleted",
+      "expired": "Expired",
+      "frozen": "Frozen"
+    }
+  }
+}

@@ -1,0 +1,518 @@
+{
+  "cancel": "取消",
+  "confirm": "确认",
+  "buttons": {
+    "confirm": "确认",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "add": "添加",
+    "search": "搜索",
+    "refresh": "刷新",
+    "submit": "提交",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "retry": "重试",
+    "close": "关闭",
+    "ok": "确定",
+    "done": "完成",
+    "create": "创建",
+    "update": "更新",
+    "view": "查看",
+    "more": "更多",
+    "less": "收起",
+    "selectAll": "全选",
+    "unselectAll": "取消全选",
+    "export": "导出",
+    "import": "导入",
+    "download": "下载",
+    "upload": "上传",
+    "filter": "筛选",
+    "reset": "重置",
+    "apply": "应用",
+    "start": "开始",
+    "stop": "停止",
+    "pause": "暂停",
+    "resume": "继续"
+  },
+  "status": {
+    "loading": "加载中...",
+    "saving": "保存中...",
+    "deleting": "删除中...",
+    "submitting": "提交中...",
+    "success": "操作成功",
+    "failed": "操作失败",
+    "noData": "暂无数据",
+    "noMore": "没有更多了",
+    "pullToRefresh": "下拉刷新",
+    "releaseToRefresh": "释放刷新",
+    "refreshing": "刷新中..."
+  },
+  "validation": {
+    "required": "此字段为必填项",
+    "invalidEmail": "邮箱格式不正确",
+    "invalidPhone": "手机号格式不正确",
+    "passwordTooShort": "密码长度至少8位",
+    "passwordMismatch": "两次输入的密码不一致",
+    "invalidFormat": "格式不正确",
+    "minLength": "最少{{min}}个字符",
+    "maxLength": "最多{{max}}个字符",
+    "minValue": "最小值为{{min}}",
+    "maxValue": "最大值为{{max}}",
+    "positiveNumber": "请输入正数",
+    "integer": "请输入整数"
+  },
+  "network": {
+    "connectionFailed": "网络连接失败，请检查网络设置后重试",
+    "timeout": "请求超时，请稍后重试",
+    "serverError": "服务器繁忙，请稍后重试",
+    "unauthorized": "登录已过期，请重新登录",
+    "forbidden": "您没有权限执行此操作",
+    "notFound": "请求的资源不存在",
+    "offline": "当前处于离线状态"
+  },
+  "time": {
+    "today": "今天",
+    "yesterday": "昨天",
+    "tomorrow": "明天",
+    "thisWeek": "本周",
+    "lastWeek": "上周",
+    "thisMonth": "本月",
+    "lastMonth": "上月",
+    "thisYear": "今年",
+    "lastYear": "去年",
+    "justNow": "刚刚",
+    "minutesAgo": "{{count}}分钟前",
+    "hoursAgo": "{{count}}小时前",
+    "daysAgo": "{{count}}天前",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "dateRange": "日期范围"
+  },
+  "confirm": {
+    "delete": "确定要删除吗？",
+    "deleteTitle": "确认删除",
+    "cancel": "确定要取消吗？",
+    "cancelTitle": "确认取消",
+    "save": "确定要保存吗？",
+    "submit": "确定要提交吗？",
+    "unsavedChanges": "您有未保存的更改，确定要离开吗？",
+    "logout": "确定要退出登录吗？"
+  },
+  "empty": {
+    "list": "暂无数据",
+    "search": "未找到匹配的结果",
+    "filter": "没有符合条件的数据"
+  },
+  "error": {
+    "general": "操作失败，请稍后重试",
+    "unknown": "发生未知错误",
+    "loadFailed": "加载失败",
+    "saveFailed": "保存失败",
+    "deleteFailed": "删除失败",
+    "submitFailed": "提交失败"
+  },
+  "units": {
+    "kg": "千克",
+    "g": "克",
+    "ton": "吨",
+    "piece": "个",
+    "box": "箱",
+    "bag": "袋",
+    "bottle": "瓶",
+    "yuan": "元",
+    "percent": "%",
+    "hour": "小时",
+    "minute": "分"
+  },
+  "pagination": {
+    "total": "共 {{total}} 条",
+    "page": "第 {{current}} / {{total}} 页",
+    "itemsPerPage": "每页 {{count}} 条"
+  },
+  "materialBatchSelector": {
+    "title": "原材料批次选择",
+    "fifoRecommended": "FIFO推荐",
+    "requiredQuantity": "需求量",
+    "selectedQuantity": "已选量",
+    "stillNeed": "还需",
+    "satisfied": "已满足",
+    "noBatchesAvailable": "暂无可用批次",
+    "pleaseInboundFirst": "请先入库该原料",
+    "available": "可用",
+    "unitPrice": "单价",
+    "supplier": "供应商",
+    "inboundDate": "入库",
+    "expiryDate": "保质期",
+    "days": "天",
+    "allocated": "已分配量",
+    "cost": "成本",
+    "grade": "级",
+    "summary": "选中批次汇总",
+    "total": "合计",
+    "insufficientWarning": "⚠️ 选中批次不足，还需 {{shortage}}kg",
+    "fifoHint": "系统已按FIFO（先进先出）原则自动推荐批次，您可手动调整",
+    "manualHint": "请手动选择批次以满足生产需求",
+    "demandSatisfied": "已满足需求",
+    "noNeedMore": "已满足需求量，无需再选择批次",
+    "exceedsAvailable": "超出批次可用量 {{max}}kg"
+  },
+  "moduleStatus": {
+    "comingSoon": "即将上线",
+    "locked": "已锁定"
+  },
+  "ui": {
+    "statusBadge": {
+      "active": "激活",
+      "inactive": "停用",
+      "pending": "待处理",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "completed": "已完成",
+      "inProgress": "进行中"
+    }
+  },
+  "form": {
+    "validation": {
+      "title": "表单校验失败",
+      "foundErrors": "发现 {{count}} 个校验错误",
+      "currentValue": "当前值",
+      "aiSuggestion": "AI建议",
+      "correctedValue": "修正值",
+      "aiAnalysis": "AI 分析",
+      "confidence": "置信度",
+      "additionalInstructions": "补充说明 (可选)",
+      "aiAnalyzing": "AI 分析中...",
+      "manualEdit": "手动修改",
+      "applySuggestions": "应用建议",
+      "validationError": "验证错误",
+      "aiFailed": "AI分析失败，请手动修改",
+      "aiUnavailable": "AI服务暂时不可用"
+    },
+    "missingFields": {
+      "title": "需要补充信息",
+      "pleaseComplete": "请补充以下 {{count}} 个必填字段",
+      "required": "必填",
+      "placeholder": "请输入或使用语音",
+      "recording": "正在录音...",
+      "skip": "跳过",
+      "continue": "继续",
+      "tip": "您可以直接输入，或点击麦克风图标使用语音",
+      "aiProcessing": "AI 正在分析..."
+    }
+  },
+  "quality": {
+    "disposition": {
+      "history": "处置历史",
+      "suggestion": "处置建议",
+      "action": "处置操作"
+    }
+  },
+  "selectors": {
+    "customer": {
+      "title": "选择客户",
+      "label": "客户",
+      "placeholder": "选择客户",
+      "search": "搜索客户名称、代码、联系人...",
+      "notFound": "未找到匹配的客户",
+      "empty": "暂无客户",
+      "addNew": "找不到？点击添加新客户",
+      "addNewTitle": "添加新客户",
+      "name": "客户名称",
+      "namePlaceholder": "例如: 大润发超市",
+      "contactPerson": "联系人",
+      "contactPersonPlaceholder": "例如: 王采购",
+      "phone": "联系电话",
+      "phonePlaceholder": "例如: +8613700000002",
+      "address": "地址",
+      "addressPlaceholder": "例如: 深圳市福田区购物中心",
+      "businessType": "业务类型",
+      "businessTypes": {
+        "supermarket": "超市",
+        "restaurant": "餐饮",
+        "wholesale": "批发",
+        "other": "其他"
+      },
+      "createFailed": "创建失败",
+      "pleaseEnterName": "请输入客户名称"
+    },
+    "supplier": {
+      "title": "选择供应商",
+      "label": "供应商",
+      "placeholder": "选择供应商",
+      "search": "搜索供应商名称、代码、联系人...",
+      "notFound": "未找到匹配的供应商",
+      "empty": "暂无供应商",
+      "addNew": "找不到？点击添加新供应商",
+      "addNewTitle": "添加新供应商",
+      "name": "供应商名称",
+      "namePlaceholder": "例如: 陈老板海鲜批发",
+      "contactPerson": "联系人",
+      "contactPersonPlaceholder": "例如: 陈老板",
+      "phone": "联系电话",
+      "phonePlaceholder": "例如: +8613800000001",
+      "address": "地址",
+      "addressPlaceholder": "例如: 深圳市水产批发市场",
+      "businessType": "业务类型",
+      "businessTypes": {
+        "wholesale": "批发",
+        "import": "进口",
+        "other": "其他"
+      },
+      "createFailed": "创建失败",
+      "pleaseEnterName": "请输入供应商名称"
+    },
+    "productType": {
+      "title": "选择产品类型"
+    },
+    "materialType": {
+      "title": "选择原料类型"
+    },
+    "supervisor": {
+      "title": "选择主管"
+    }
+  },
+  "config": {
+    "diffPreview": {
+      "title": "差异预览",
+      "before": "修改前",
+      "after": "修改后"
+    },
+    "dryRunPreview": {
+      "title": "模拟运行预览"
+    }
+  },
+  "quickStats": {
+    "todayWorkHours": "今日工时",
+    "hours": "小时",
+    "clockStatus": "打卡状态",
+    "notClockedIn": "未打卡",
+    "inProgressBatches": "进行中批次",
+    "batches": "个",
+    "todayAttendance": "今日出勤",
+    "pending": "待处理",
+    "items": "项",
+    "todayOutput": "今日产量",
+    "completedBatches": "完成批次",
+    "onDutyWorkers": "在岗人员",
+    "equipmentRunning": "设备运行",
+    "activeFactories": "活跃工厂",
+    "totalUsers": "总用户数",
+    "people": "人",
+    "todayBatches": "今日批次",
+    "platformOutput": "平台产量",
+    "activatedUsers": "激活用户",
+    "pendingReview": "待审核",
+    "viewerWelcome": "您当前为查看者权限,可浏览工厂数据",
+    "factoryInfoIncomplete": "工厂信息不完整，无法加载统计数据",
+    "apiReturnedFailure": "API返回失败，请稍后重试"
+  },
+  "demo": {
+    "formily": {
+      "title": "Formily 动态表单演示",
+      "subtitle": "验证 React Native Paper 适配层功能",
+      "features": {
+        "title": "功能特性",
+        "schemaDriven": "Schema 驱动渲染",
+        "fieldLinkage": "字段联动",
+        "realtimeValidation": "实时验证",
+        "conditionalDisplay": "条件显隐",
+        "aiAssistant": "AI 助手"
+      },
+      "form": {
+        "title": "质检表单 (qualityCheckSchema)",
+        "aiEnabled": "AI 助手已启用 - 点击右下角按钮"
+      },
+      "operations": {
+        "title": "表单操作",
+        "validate": "验证",
+        "getValues": "获取值",
+        "fillExample": "填充示例",
+        "reset": "重置"
+      },
+      "realtimeValues": "实时表单值",
+      "submitResult": "提交结果",
+      "aiFillResult": "AI 填充结果",
+      "confidence": "置信度",
+      "aiGuide": {
+        "title": "AI 表单助手使用说明",
+        "step1": "1. 点击右下角 AI 悬浮按钮",
+        "step2": "2. 选择输入方式：",
+        "textInput": "• 文本输入：描述需要填写的内容，如「带鱼批次，温度-20度，合格」",
+        "voiceInput": "• 语音输入：按住说话，松开发送",
+        "photoInput": "• 拍照/相册：拍摄质检单据，AI自动识别并填充",
+        "step3": "3. AI 将自动解析并填充表单字段",
+        "step4": "4. 检查填充结果，手动修正后提交"
+      },
+      "linkageRules": {
+        "title": "联动规则说明",
+        "rule1": "1. 当「检测结果」选择「不合格」时，「不合格原因」字段显示且必填",
+        "rule2": "2. 当「检测结果」切换为其他值时，「不合格原因」自动清空并隐藏",
+        "rule3": "3. 温度输入支持范围验证: -50°C ~ 100°C",
+        "rule4": "4. 提交前必须勾选「质检员确认」"
+      },
+      "aiBanner": "AI 表单助手已启用！点击右下角悬浮按钮，使用语音、文本或拍照自动填充表单。",
+      "aiAssistantOn": "AI 助手 开",
+      "aiAssistantOff": "AI 助手 关",
+      "aiFillSuccess": "AI 填充成功",
+      "aiFillFailed": "AI 填充失败",
+      "filledFields": "已填充 {{count}} 个字段"
+    }
+  },
+  "test": {
+    "pushNotification": {
+      "title": "推送通知测试",
+      "send": "发送测试通知",
+      "sendSuccess": "通知已发送",
+      "sendFailed": "发送失败",
+      "permissionRequired": "需要通知权限",
+      "permissionDenied": "通知权限被拒绝"
+    },
+    "batchOperations": {
+      "title": "批量操作测试",
+      "selectAll": "全选",
+      "unselectAll": "取消全选",
+      "deleteSelected": "删除选中",
+      "exportSelected": "导出选中",
+      "selectedCount": "已选中 {{count}} 项",
+      "noSelection": "未选中任何项"
+    },
+    "serverConnectivity": {
+      "title": "服务器连接测试",
+      "cardTitle": "服务器连接测试",
+      "server": "服务器",
+      "networkStatus": {
+        "online": "在线",
+        "offline": "离线",
+        "unknown": "未知"
+      },
+      "progress": {
+        "title": "整体进度",
+        "completed": "{{completed}}/{{total}} ({{percentage}}%)"
+      },
+      "phase": "Phase {{number}}",
+      "summary": {
+        "title": "测试汇总",
+        "passed": "通过",
+        "failed": "失败",
+        "skipped": "跳过",
+        "duration": "耗时"
+      },
+      "actions": {
+        "runAllTests": "运行全部测试",
+        "clearResults": "清除结果"
+      },
+      "logs": {
+        "title": "测试日志",
+        "empty": "暂无日志，点击「运行全部测试」开始",
+        "startTest": "开始服务器连接测试...",
+        "serverUrl": "服务器: {{url}}",
+        "startIntegrity": "开始数据完整性测试...",
+        "testName": "测试: {{name}}",
+        "passed": "{{name}} 通过",
+        "failed": "{{name}} 失败: {{error}}",
+        "skipped": "跳过数据完整性测试 (认证失败)",
+        "completed": "测试完成!",
+        "exception": "测试异常: {{error}}"
+      },
+      "phases": {
+        "1": "网络与健康检查",
+        "2": "身份认证",
+        "3": "基础 API",
+        "4": "数据完整性"
+      },
+      "status": {
+        "pending": "待处理",
+        "running": "运行中",
+        "success": "成功",
+        "failed": "失败"
+      }
+    }
+  },
+  "traceability": {
+    "public": {
+      "title": "公开溯源查询",
+      "scanPrompt": "扫描产品二维码",
+      "inputBatchNumber": "或输入批次号",
+      "batchNumberPlaceholder": "请输入批次号",
+      "query": "查询",
+      "batchInfo": "批次信息",
+      "productionDate": "生产日期",
+      "expiryDate": "保质期",
+      "status": "状态",
+      "traceInfo": "溯源信息",
+      "noData": "未找到溯源数据",
+      "invalidBatchNumber": "请输入有效的批次号"
+    },
+    "detail": {
+      "title": "溯源详情",
+      "batchNumber": "批次号",
+      "productInfo": "产品信息",
+      "productName": "产品名称",
+      "productionDate": "生产日期",
+      "expiryDate": "保质期",
+      "quantity": "数量",
+      "materialTrace": "原料溯源",
+      "materialName": "原料名称",
+      "supplier": "供应商",
+      "inboundDate": "入库日期",
+      "qualityCheck": "质检记录",
+      "checkDate": "检查日期",
+      "result": "结果",
+      "inspector": "检验员",
+      "processing": "加工记录",
+      "stage": "阶段",
+      "operator": "操作员",
+      "completed": "完成时间",
+      "share": "分享",
+      "export": "导出"
+    },
+    "screen": {
+      "title": "溯源查询",
+      "scanToQuery": "扫码查询",
+      "recentQueries": "最近查询",
+      "noHistory": "暂无查询记录"
+    }
+  },
+  "notification": {
+    "center": {
+      "title": "通知中心",
+      "tabs": {
+        "all": "全部",
+        "unread": "未读",
+        "system": "系统",
+        "production": "生产",
+        "quality": "质量"
+      },
+      "markAllRead": "全部已读",
+      "noNotifications": "暂无通知",
+      "types": {
+        "system": "系统",
+        "production": "生产",
+        "quality": "质量",
+        "alert": "告警",
+        "approval": "审批"
+      },
+      "actions": {
+        "markRead": "标为已读",
+        "delete": "删除"
+      },
+      "timeAgo": {
+        "justNow": "刚刚",
+        "minutesAgo": "{{count}}分钟前",
+        "hoursAgo": "{{count}}小时前",
+        "daysAgo": "{{count}}天前"
+      }
+    }
+  },
+  "table": {
+    "rank": "排名",
+    "employee": "员工",
+    "workHours": "工时",
+    "efficiency": "效率"
+  },
+  "employee": "员工"
+}
+

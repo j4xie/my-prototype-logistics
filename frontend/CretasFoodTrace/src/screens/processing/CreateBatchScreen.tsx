@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TextInput as RNTextInput } from 'react-native';
 import { Text, Appbar, TextInput, ActivityIndicator } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
 import { MaterialTypeSelector, SupervisorSelector } from '../../components/processing';
@@ -15,6 +16,7 @@ type CreateBatchScreenProps = ProcessingScreenProps<'CreateBatch'>;
 type EditBatchScreenProps = ProcessingScreenProps<'EditBatch'>;
 
 export default function CreateBatchScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<CreateBatchScreenProps['navigation']>();
   const route = useRoute<EditBatchScreenProps['route'] | CreateBatchScreenProps['route']>();
   const { user } = useAuthStore();

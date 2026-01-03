@@ -20,6 +20,7 @@ import {
   Switch,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import { ProcessingScreenProps } from '../../types/navigation';
 import { processingApiClient, BatchResponse } from '../../services/api/processingApiClient';
 import { aiApiClient } from '../../services/api/aiApiClient';
@@ -47,6 +48,7 @@ type BatchComparisonScreenProps = ProcessingScreenProps<'BatchComparison'>;
  * @since 2025-11-05
  */
 export default function BatchComparisonScreen() {
+  const { t } = useTranslation('processing');
   const navigation = useNavigation<BatchComparisonScreenProps['navigation']>();
   const { user } = useAuthStore();
 

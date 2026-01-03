@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>配额概览 - 平台管理员</title>
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../components.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="../index.html" class="back-to-index">&lt; 返回角色选择</a>
+
+  <div class="mobile-container">
+    <!-- 状态栏 -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span></span>
+    </div>
+
+    <!-- 顶部导航 -->
+    <div class="header header--platform">
+      <a href="index.html" class="header-left" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </a>
+      <div class="header-title">AI配额管理</div>
+      <a href="quota-rules.html" class="header-right" style="text-decoration: none;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </a>
+    </div>
+
+    <!-- 内容区域 -->
+    <div class="content" style="padding-bottom: 20px;">
+      <!-- 总配额概览 -->
+      <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border-radius: 16px; padding: 20px; margin-bottom: 20px; color: white;">
+        <div style="font-size: 12px; opacity: 0.8; margin-bottom: 4px;">平台AI配额</div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-bottom: 16px;">
+          <span style="font-size: 32px; font-weight: 700;">1,234,567</span>
+          <span style="font-size: 14px; opacity: 0.8;">/ 2,000,000 次</span>
+        </div>
+        <!-- 进度条 -->
+        <div style="height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; margin-bottom: 12px;">
+          <div style="width: 62%; height: 100%; background: linear-gradient(90deg, #52c41a, #95de64); border-radius: 4px;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px; opacity: 0.8;">
+          <span>已使用 62%</span>
+          <span>剩余 765,433 次</span>
+        </div>
+      </div>
+
+      <!-- 配额统计卡片 -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div style="width: 36px; height: 36px; background: #e6f7ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1890ff" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+            </div>
+            <span style="font-size: 13px; color: #8c8c8c;">本月使用</span>
+          </div>
+          <div style="font-size: 24px; font-weight: 600; color: #262626;">156,789</div>
+          <div style="font-size: 12px; color: #52c41a; margin-top: 4px;">较上月 +12%</div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div style="width: 36px; height: 36px; background: #f6ffed; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#52c41a" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              </svg>
+            </div>
+            <span style="font-size: 13px; color: #8c8c8c;">接入工厂</span>
+          </div>
+          <div style="font-size: 24px; font-weight: 600; color: #262626;">12</div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">全部配额已分配</div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div style="width: 36px; height: 36px; background: #fff7e6; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fa8c16" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <span style="font-size: 13px; color: #8c8c8c;">预警工厂</span>
+          </div>
+          <div style="font-size: 24px; font-weight: 600; color: #fa8c16;">3</div>
+          <div style="font-size: 12px; color: #fa8c16; margin-top: 4px;">配额使用 >80%</div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; padding: 16px;">
+          <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+            <div style="width: 36px; height: 36px; background: #f9f0ff; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#722ed1" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <span style="font-size: 13px; color: #8c8c8c;">日均调用</span>
+          </div>
+          <div style="font-size: 24px; font-weight: 600; color: #262626;">5,226</div>
+          <div style="font-size: 12px; color: #8c8c8c; margin-top: 4px;">次/天</div>
+        </div>
+      </div>
+
+      <!-- 工厂配额列表 -->
+      <div class="section__header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <span class="section__title" style="font-size: 16px; font-weight: 600;">工厂配额分配</span>
+        <a href="quota-usage-stats.html" style="font-size: 13px; color: #667eea; text-decoration: none;">使用统计</a>
+      </div>
+
+      <!-- 工厂1 -->
+      <a href="factory-quota.html" style="display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600;">海</div>
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">海鲜加工一厂</div>
+              <div style="font-size: 12px; color: #8c8c8c;">F001 · 水产加工</div>
+            </div>
+          </div>
+          <span class="tag success">正常</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #8c8c8c;">已用 45,678 / 100,000</span>
+            <span style="color: #52c41a;">46%</span>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 46%; height: 100%; background: linear-gradient(90deg, #52c41a, #95de64); border-radius: 3px;"></div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 工厂2 - 预警 -->
+      <a href="factory-quota.html" style="display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; border: 1px solid #faad14;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600;">速</div>
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">速冻食品厂</div>
+              <div style="font-size: 12px; color: #8c8c8c;">F002 · 速冻食品</div>
+            </div>
+          </div>
+          <span class="tag warning">预警</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #8c8c8c;">已用 82,456 / 100,000</span>
+            <span style="color: #faad14;">82%</span>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 82%; height: 100%; background: linear-gradient(90deg, #faad14, #ffc53d); border-radius: 3px;"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #faad14;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          预计 8 天后达到上限
+        </div>
+      </a>
+
+      <!-- 工厂3 -->
+      <a href="factory-quota.html" style="display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #722ed1 0%, #531dab 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600;">肉</div>
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">肉类加工中心</div>
+              <div style="font-size: 12px; color: #8c8c8c;">F003 · 肉类加工</div>
+            </div>
+          </div>
+          <span class="tag success">正常</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #8c8c8c;">已用 28,345 / 80,000</span>
+            <span style="color: #52c41a;">35%</span>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 35%; height: 100%; background: linear-gradient(90deg, #52c41a, #95de64); border-radius: 3px;"></div>
+          </div>
+        </div>
+      </a>
+
+      <!-- 工厂4 - 超限 -->
+      <a href="factory-quota.html" style="display: block; background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; text-decoration: none; border: 1px solid #f5222d;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #fa8c16 0%, #d46b08 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: 600;">乳</div>
+            <div>
+              <div style="font-size: 15px; font-weight: 500; color: #262626;">乳制品加工厂</div>
+              <div style="font-size: 12px; color: #8c8c8c;">F004 · 乳制品</div>
+            </div>
+          </div>
+          <span class="tag error">超限</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px;">
+            <span style="color: #8c8c8c;">已用 52,345 / 50,000</span>
+            <span style="color: #f5222d;">105%</span>
+          </div>
+          <div style="height: 6px; background: #f0f0f0; border-radius: 3px;">
+            <div style="width: 100%; height: 100%; background: linear-gradient(90deg, #f5222d, #ff4d4f); border-radius: 3px;"></div>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #f5222d;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          已超出配额 2,345 次，服务已限流
+        </div>
+      </a>
+
+      <!-- 查看更多 -->
+      <div style="text-align: center; margin-top: 16px;">
+        <a href="factories.html" style="font-size: 14px; color: #667eea; text-decoration: none;">查看全部 12 个工厂配额</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

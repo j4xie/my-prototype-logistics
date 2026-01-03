@@ -14,15 +14,17 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 
 const APP_VERSION = '1.0.0';
 const BUILD_NUMBER = '20251228';
 
 export function AboutScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('profile');
 
   const handleCheckUpdate = () => {
-    Alert.alert('检查更新', '当前已是最新版本');
+    Alert.alert(t('about.checkUpdate'), t('about.latestVersion'));
   };
 
   const handlePrivacyPolicy = () => {
@@ -56,7 +58,7 @@ export function AboutScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icon source="arrow-left" size={24} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>关于</Text>
+        <Text style={styles.title}>{t('about.title')}</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -66,18 +68,16 @@ export function AboutScreen() {
           <View style={styles.logoContainer}>
             <Icon source="fish" size={60} color="#667eea" />
           </View>
-          <Text style={styles.appName}>白垩纪食品溯源系统</Text>
-          <Text style={styles.version}>版本 {APP_VERSION} ({BUILD_NUMBER})</Text>
+          <Text style={styles.appName}>{t('about.appName')}</Text>
+          <Text style={styles.version}>{t('about.version')} {APP_VERSION} ({BUILD_NUMBER})</Text>
         </View>
 
         {/* 功能介绍 */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>产品介绍</Text>
+          <Text style={styles.sectionTitle}>{t('about.productIntro')}</Text>
           <View style={styles.descriptionCard}>
             <Text style={styles.descriptionText}>
-              白垩纪食品溯源系统是一款专为水产加工企业打造的智能化生产管理平台。
-              通过全流程的数据采集和AI智能分析，帮助企业实现生产过程可视化、
-              质量检测自动化、成本核算精细化，全面提升企业的生产效率和管理水平。
+              {t('about.productDescription')}
             </Text>
           </View>
         </View>
@@ -87,20 +87,20 @@ export function AboutScreen() {
           <View style={styles.menuCard}>
             <MenuItem
               icon="update"
-              title="检查更新"
+              title={t('about.checkUpdate')}
               onPress={handleCheckUpdate}
               rightText={`v${APP_VERSION}`}
             />
             <View style={styles.divider} />
             <MenuItem
               icon="shield-check"
-              title="隐私政策"
+              title={t('about.privacyPolicy')}
               onPress={handlePrivacyPolicy}
             />
             <View style={styles.divider} />
             <MenuItem
               icon="file-document"
-              title="用户协议"
+              title={t('about.userAgreement')}
               onPress={handleUserAgreement}
             />
           </View>

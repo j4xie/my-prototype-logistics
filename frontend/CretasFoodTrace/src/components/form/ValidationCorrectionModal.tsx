@@ -45,6 +45,7 @@ import {
   Chip,
   useTheme,
 } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import {
   formAssistantApiClient,
   ValidationError,
@@ -94,6 +95,7 @@ export function ValidationCorrectionModal({
   onSessionIdChange,
 }: ValidationCorrectionModalProps): React.ReactElement {
   const theme = useTheme();
+  const { t } = useTranslation('common');
 
   // 状态
   const [isLoading, setIsLoading] = useState(false);
@@ -146,11 +148,11 @@ export function ValidationCorrectionModal({
       }
 
       if (!response.success) {
-        setError(response.message || 'AI分析失败，请手动修改');
+        setError(response.message || t('form.validation.aiFailed'));
       }
     } catch (err) {
       console.error('[ValidationCorrectionModal] AI请求失败:', err);
-      setError(err instanceof Error ? err.message : 'AI服务暂时不可用');
+      setError(err instanceof Error ? err.message : t('form.validation.aiUnavailable'));
     } finally {
       setIsLoading(false);
     }
@@ -222,14 +224,14 @@ export function ValidationCorrectionModal({
 
           {error.currentValue !== undefined && (
             <Text style={styles.currentValue}>
-              当前值: {JSON.stringify(error.currentValue)}
+              {t('form.validation.currentValue')}: {JSON.stringify(error.currentValue)}
             </Text>
           )}
 
           {hint && (
             <View style={[styles.hintContainer, { backgroundColor: theme.colors.primaryContainer }]}>
               <Text style={[styles.hintLabel, { color: theme.colors.primary }]}>
-                AI建议:
+                {t('form.validation.aiSuggestion')}:
               </Text>
               <Text style={styles.hintText}>{hint}</Text>
             </View>
@@ -238,7 +240,7 @@ export function ValidationCorrectionModal({
           {correctedValue !== undefined && (
             <View style={[styles.correctedContainer, { backgroundColor: theme.colors.secondaryContainer }]}>
               <Text style={[styles.correctedLabel, { color: theme.colors.secondary }]}>
-                修正值:
+                {t('form.validation.correctedValue')}:
               </Text>
               <Text style={styles.correctedValue}>
                 {JSON.stringify(correctedValue)}
@@ -267,7 +269,7 @@ export function ValidationCorrectionModal({
           {/* 标题栏 */}
           <View style={styles.header}>
             <Text variant="titleLarge" style={styles.title}>
-              表单校验失败
+              {t('form.validation.title')}
             </Text>
             <IconButton
               icon="close"
@@ -281,7 +283,7 @@ export function ValidationCorrectionModal({
           {/* 错误列表 */}
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <Text variant="bodyMedium" style={styles.sectionTitle}>
-              发现 {validationErrors.length} 个校验错误
+              {t('form.validation.foundErrors', { count: validationErrors.length })}
             </Text>
 
             {validationErrors.map((err, index) => renderErrorItem(err, index))}
@@ -292,10 +294,10 @@ export function ValidationCorrectionModal({
                 <Card.Content>
                   <View style={styles.explanationHeader}>
                     <IconButton icon="robot" size={20} />
-                    <Text variant="titleSmall">AI 分析</Text>
+                    <Text variant="titleSmall">{t('form.validation.aiAnalysis')}</Text>
                     {aiResponse.confidence > 0 && (
                       <Chip compact style={styles.confidenceChip}>
-                        置信度: {Math.round(aiResponse.confidence * 100)}%
+                        {t('form.validation.confidence')}: {Math.round(aiResponse.confidence * 100)}%
                       </Chip>
                     )}
                   </View>
@@ -320,7 +322,7 @@ export function ValidationCorrectionModal({
           <View style={styles.instructionContainer}>
             <TextInput
               mode="outlined"
-              placeholder="补充说明 (可选)"
+              placeholder={t('form.validation.additionalInstructions')}
               value={userInstruction}
               onChangeText={setUserInstruction}
               style={styles.instructionInput}
@@ -342,7 +344,7 @@ export function ValidationCorrectionModal({
             {isLoading ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="small" />
-                <Text style={styles.loadingText}>AI 分析中...</Text>
+                <Text style={styles.loadingText}>{t('form.validation.aiAnalyzing')}</Text>
               </View>
             ) : (
               <>
@@ -351,7 +353,7 @@ export function ValidationCorrectionModal({
                   onPress={handleManualRetry}
                   style={styles.button}
                 >
-                  手动修改
+                  {t('form.validation.manualEdit')}
                 </Button>
                 <Button
                   mode="contained"
@@ -359,7 +361,7 @@ export function ValidationCorrectionModal({
                   style={styles.button}
                   disabled={!aiResponse?.correctedValues || Object.keys(aiResponse.correctedValues).length === 0}
                 >
-                  应用建议
+                  {t('form.validation.applySuggestions')}
                 </Button>
               </>
             )}

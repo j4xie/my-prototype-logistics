@@ -11,6 +11,7 @@ import { aiApiClient, AIQuotaInfo } from '../../services/api/aiApiClient';
 import { AIQuota } from '../../types/processing';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { useTranslation } from 'react-i18next';
 import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 
 // 创建TimeRangeCostAnalysis专用logger

@@ -41,7 +41,7 @@ import java.util.*;
 @RequestMapping("/api/mobile/{factoryId}/rules")
 @RequiredArgsConstructor
 @Validated
-@Tag(name = "Rules", description = "规则引擎管理API")
+@Tag(name = "规则引擎", description = "规则引擎管理相关接口，包括Drools规则CRUD、DRL语法验证、规则测试执行、决策表上传、规则统计分析、状态机配置管理、状态转换验证和执行等功能。支持基于规则的业务逻辑自定义和质量检验流程控制")
 public class RuleController {
 
     private final RuleEngineService ruleEngineService;
@@ -57,10 +57,10 @@ public class RuleController {
     @Operation(summary = "获取规则列表", description = "分页获取工厂的规则列表")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> getRules(
-            @PathVariable String factoryId,
-            @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String ruleGroup
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") int page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页数量", example = "20") int size,
+            @RequestParam(required = false) @Parameter(description = "规则组名称，用于筛选特定规则组", example = "quality_rules") String ruleGroup
     ) {
         log.info("获取规则列表 - factoryId={}, page={}, size={}, ruleGroup={}",
                 factoryId, page, size, ruleGroup);
@@ -91,8 +91,8 @@ public class RuleController {
     @Operation(summary = "创建规则", description = "创建新的 DRL 规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<DroolsRule> createRule(
-            @PathVariable String factoryId,
-            @Valid @RequestBody CreateRuleRequest request,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @Valid @RequestBody @Parameter(description = "规则创建请求，包含规则组、规则名、DRL内容等") CreateRuleRequest request,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("创建规则 - factoryId={}, ruleName={}, ruleGroup={}",
@@ -139,9 +139,9 @@ public class RuleController {
     @Operation(summary = "更新规则", description = "更新规则内容")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<DroolsRule> updateRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId,
-            @Valid @RequestBody UpdateRuleRequest request,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "规则ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId,
+            @Valid @RequestBody @Parameter(description = "规则更新请求，包含规则描述、DRL内容、优先级等") UpdateRuleRequest request,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("更新规则 - factoryId={}, ruleId={}", factoryId, ruleId);
@@ -193,8 +193,8 @@ public class RuleController {
     @Operation(summary = "删除规则", description = "软删除规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<String> deleteRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "规则ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId
     ) {
         log.info("删除规则 - factoryId={}, ruleId={}", factoryId, ruleId);
 
@@ -225,8 +225,8 @@ public class RuleController {
     @Operation(summary = "验证规则语法", description = "验证 DRL 规则语法是否正确")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> validateRule(
-            @PathVariable String factoryId,
-            @RequestBody Map<String, String> request
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "规则验证请求，包含 ruleContent 字段存放DRL规则内容") Map<String, String> request
     ) {
         String drlContent = request.get("ruleContent");
         if (drlContent == null || drlContent.isEmpty()) {
@@ -247,8 +247,8 @@ public class RuleController {
     @Operation(summary = "Dry-Run 规则执行", description = "在沙箱环境中测试未保存的规则，预览执行效果")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> dryRunRule(
-            @PathVariable String factoryId,
-            @Valid @RequestBody DryRunRequest request
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @Valid @RequestBody @Parameter(description = "Dry-Run请求，包含DRL规则内容、实体类型、触发点和测试数据") DryRunRequest request
     ) {
         log.info("Dry-Run 规则执行 - factoryId={}, entityType={}", factoryId, request.getEntityType());
 
@@ -304,9 +304,9 @@ public class RuleController {
     @Operation(summary = "测试规则执行", description = "使用测试数据执行指定规则，返回执行结果")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'quality_inspector')")
     public ApiResponse<Map<String, Object>> testRule(
-            @PathVariable String factoryId,
-            @PathVariable String ruleId,
-            @RequestBody TestRuleRequest request
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "规则ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId,
+            @RequestBody @Parameter(description = "规则测试请求，包含实体类型、触发点和测试数据") TestRuleRequest request
     ) {
         log.info("测试规则执行 - factoryId={}, ruleId={}, entityType={}",
                 factoryId, ruleId, request.getEntityType());
@@ -404,10 +404,10 @@ public class RuleController {
     @Operation(summary = "上传决策表", description = "上传 Excel 决策表并生成 DRL 规则")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> uploadDecisionTable(
-            @PathVariable String factoryId,
-            @RequestParam("file") MultipartFile file,
-            @RequestParam String ruleGroup,
-            @RequestParam String ruleName,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam("file") @Parameter(description = "Excel决策表文件（.xls或.xlsx格式）") MultipartFile file,
+            @RequestParam @Parameter(description = "规则组名称", example = "quality_rules") String ruleGroup,
+            @RequestParam @Parameter(description = "规则名称", example = "质量检验评分规则") String ruleName,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("上传决策表 - factoryId={}, ruleGroup={}, ruleName={}, fileName={}",
@@ -463,7 +463,7 @@ public class RuleController {
     @Operation(summary = "获取规则统计", description = "获取规则引擎统计信息")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<Map<String, Object>> getStatistics(
-            @PathVariable String factoryId
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         Map<String, Object> stats = ruleEngineService.getStatistics(factoryId);
 
@@ -483,7 +483,7 @@ public class RuleController {
     @Operation(summary = "获取状态机列表", description = "获取工厂所有状态机配置")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<List<StateMachineConfig>> getStateMachines(
-            @PathVariable String factoryId
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
         List<StateMachineConfig> machines = stateMachineService.getAllStateMachines(factoryId);
         return ApiResponse.success(machines);
@@ -496,8 +496,8 @@ public class RuleController {
     @Operation(summary = "获取状态机详情", description = "获取指定实体类型的状态机配置")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<StateMachineConfig> getStateMachine(
-            @PathVariable String factoryId,
-            @PathVariable String entityType
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType
     ) {
         Optional<StateMachineConfig> config = stateMachineService.getStateMachine(factoryId, entityType);
         if (config.isEmpty()) {
@@ -513,9 +513,9 @@ public class RuleController {
     @Operation(summary = "保存状态机配置", description = "创建或更新状态机配置")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<StateMachineConfig> saveStateMachine(
-            @PathVariable String factoryId,
-            @PathVariable String entityType,
-            @Valid @RequestBody StateMachineConfig config,
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType,
+            @Valid @RequestBody @Parameter(description = "状态机配置，包含状态列表、转换规则、守卫条件等") StateMachineConfig config,
             @RequestAttribute("userId") Long userId
     ) {
         log.info("保存状态机配置 - factoryId={}, entityType={}", factoryId, entityType);
@@ -533,8 +533,8 @@ public class RuleController {
     @Operation(summary = "删除状态机配置", description = "删除指定实体类型的状态机配置")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
     public ApiResponse<String> deleteStateMachine(
-            @PathVariable String factoryId,
-            @PathVariable String entityType
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType
     ) {
         log.info("删除状态机配置 - factoryId={}, entityType={}", factoryId, entityType);
         stateMachineService.deleteStateMachine(factoryId, entityType);
@@ -548,9 +548,9 @@ public class RuleController {
     @Operation(summary = "获取可用转换", description = "获取当前状态可用的转换列表")
     @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin', 'workshop_supervisor', 'quality_inspector')")
     public ApiResponse<List<TransitionInfo>> getAvailableTransitions(
-            @PathVariable String factoryId,
-            @PathVariable String entityType,
-            @RequestParam String currentState
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType,
+            @RequestParam @Parameter(description = "当前状态", example = "PENDING") String currentState
     ) {
         List<TransitionInfo> transitions = stateMachineService.getAvailableTransitions(
                 factoryId, entityType, currentState, null);
@@ -671,9 +671,9 @@ public class RuleController {
     @PostMapping("/state-machines/{entityType}/validate")
     @Operation(summary = "验证状态转换", description = "验证状态转换是否允许，检查守卫条件")
     public ResponseEntity<ApiResponse<TransitionValidation>> validateTransition(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "实体类型") @PathVariable String entityType,
-            @Valid @RequestBody ExecuteTransitionRequest request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType,
+            @Valid @RequestBody @Parameter(description = "状态转换验证请求，包含实体ID、当前状态、目标状态等") ExecuteTransitionRequest request) {
 
         log.info("Validating transition for {} from {} to {}",
             entityType, request.getCurrentState(), request.getTargetState());
@@ -705,9 +705,9 @@ public class RuleController {
     @PostMapping("/state-machines/{entityType}/execute")
     @Operation(summary = "执行状态转换", description = "执行状态转换并返回结果")
     public ResponseEntity<ApiResponse<StateMachineService.TransitionResult>> executeTransition(
-            @Parameter(description = "工厂ID") @PathVariable String factoryId,
-            @Parameter(description = "实体类型") @PathVariable String entityType,
-            @Valid @RequestBody ExecuteTransitionRequest request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType,
+            @Valid @RequestBody @Parameter(description = "状态转换执行请求，包含实体ID、当前状态、目标状态、实体数据等") ExecuteTransitionRequest request) {
 
         log.info("Executing transition for {} from {} to {}",
             entityType, request.getCurrentState(), request.getTargetState());

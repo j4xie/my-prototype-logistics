@@ -249,11 +249,25 @@ export default function DSProfileScreen() {
     );
   };
 
-  // 菜单项点击
+  // 菜单项点击 - 处理跨 Tab 导航
   const handleMenuPress = (item: MenuItem) => {
     if (item.screen) {
-      // navigation.navigate(item.screen as never);
-      console.log(`Navigate to ${item.screen}`);
+      // 跨 Tab 导航映射
+      const crossTabNavigation: Record<string, { tab: string; screen: string }> = {
+        ApprovalList: { tab: 'PlanTab', screen: 'ApprovalList' },
+        Statistics: { tab: 'ProfileTab', screen: 'DSStatistics' },
+        PersonnelList: { tab: 'PersonnelTab', screen: 'PersonnelList' },
+        PersonnelSchedule: { tab: 'PersonnelTab', screen: 'PersonnelSchedule' },
+        Attendance: { tab: 'HomeTab', screen: 'Attendance' },
+      };
+
+      const navConfig = crossTabNavigation[item.screen];
+      if (navConfig) {
+        (navigation as { navigate: (tab: string, params: { screen: string }) => void })
+          .navigate(navConfig.tab, { screen: navConfig.screen });
+      } else {
+        (navigation as { navigate: (screen: string) => void }).navigate(item.screen);
+      }
     } else {
       Alert.alert(item.title, '功能开发中...');
     }

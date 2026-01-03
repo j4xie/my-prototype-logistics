@@ -1,6 +1,7 @@
 import React from 'react';
 import { View } from 'react-native';
 import { Text, Card, Divider } from 'react-native-paper';
+import { useTranslation } from 'react-i18next';
 import { BatchCostAnalysis } from '../../../../types/processing';
 import { styles } from '../styles';
 
@@ -13,12 +14,14 @@ interface ProfitAnalysisCardProps {
  * 显示利润率、保本价等财务指标
  */
 export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitAnalysis }) => {
+  const { t } = useTranslation('processing');
+
   return (
     <Card style={styles.card} mode="elevated">
-      <Card.Title title="利润分析" />
+      <Card.Title title={t('costAnalysisDashboard.profitAnalysis.title')} />
       <Card.Content>
         <View style={styles.detailRow}>
-          <Text variant="bodyMedium">预期收入</Text>
+          <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.expectedRevenue')}</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
             ¥{profitAnalysis.expectedRevenue?.toFixed(2) || '0.00'}
           </Text>
@@ -26,7 +29,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
         <Divider />
 
         <View style={styles.detailRow}>
-          <Text variant="bodyMedium">总成本</Text>
+          <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.totalCost')}</Text>
           <Text variant="bodyMedium" style={styles.detailValue}>
             ¥{profitAnalysis.totalCost.toFixed(2)}
           </Text>
@@ -36,7 +39,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
         {profitAnalysis.profitMargin !== undefined && (
           <>
             <View style={styles.detailRow}>
-              <Text variant="bodyMedium">利润</Text>
+              <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.profit')}</Text>
               <Text
                 variant="titleMedium"
                 style={[
@@ -54,7 +57,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
         {profitAnalysis.profitRate !== undefined && (
           <>
             <View style={styles.detailRow}>
-              <Text variant="bodyMedium">利润率</Text>
+              <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.profitRate')}</Text>
               <Text
                 variant="titleMedium"
                 style={[
@@ -71,7 +74,7 @@ export const ProfitAnalysisCard = React.memo<ProfitAnalysisCardProps>(({ profitA
 
         {profitAnalysis.breakEvenPrice && (
           <View style={styles.detailRow}>
-            <Text variant="bodyMedium">保本价</Text>
+            <Text variant="bodyMedium">{t('costAnalysisDashboard.profitAnalysis.breakEvenPrice')}</Text>
             <Text variant="bodyMedium" style={styles.detailValue}>
               {profitAnalysis.breakEvenPrice}
             </Text>

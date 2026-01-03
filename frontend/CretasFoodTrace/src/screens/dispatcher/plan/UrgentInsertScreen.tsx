@@ -28,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useTranslation } from 'react-i18next';
 import {
   DISPATCHER_THEME,
   InsertSlot,
@@ -47,6 +48,7 @@ interface ProductType {
 
 export default function UrgentInsertScreen() {
   const navigation = useNavigation<any>();
+  const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -126,7 +128,7 @@ export default function UrgentInsertScreen() {
 
   const analyzeSlots = async () => {
     if (!productTypeId || !quantity) {
-      Alert.alert('提示', '请填写产品类型和数量');
+      Alert.alert(t('common.info'), t('urgentInsert.validation.selectProductAndQuantity'));
       return;
     }
 
@@ -145,11 +147,11 @@ export default function UrgentInsertScreen() {
         setInsertSlots(slots);
         setHasAnalyzed(true);
       } else {
-        Alert.alert('错误', response.message ?? '获取可用时段失败');
+        Alert.alert(t('common.error'), response.message ?? t('urgentInsert.slots.noSlots'));
       }
     } catch (error) {
       console.error('Failed to analyze:', error);
-      Alert.alert('错误', '分析失败，请检查网络连接');
+      Alert.alert(t('common.error'), t('common.networkError'));
     } finally {
       setAnalyzing(false);
     }
@@ -177,23 +179,25 @@ export default function UrgentInsertScreen() {
 
   const confirmInsert = async () => {
     if (!selectedSlot) {
-      Alert.alert('提示', '请选择一个时段');
+      Alert.alert(t('common.info'), t('urgentInsert.validation.selectSlot'));
       return;
     }
 
     if (!urgentReason) {
-      Alert.alert('提示', '请填写紧急原因');
+      Alert.alert(t('common.info'), t('urgentInsert.validation.enterReason'));
       return;
     }
 
     // 如果影响等级高，显示额外确认
     if (selectedSlot.impactLevel === 'high' || selectedSlot.impactLevel === 'critical') {
       Alert.alert(
-        '高影响警告',
-        `此时段影响等级为"${selectedSlot.impactLevel === 'high' ? '高' : '严重'}"，是否确认插单？可能需要管理员审批。`,
+        t('common.warning'),
+        t('urgentInsert.confirm.highImpactWarning', {
+          level: selectedSlot.impactLevel === 'high' ? t('urgentInsert.slots.impact.high') : 'critical'
+        }),
         [
-          { text: '取消', style: 'cancel' },
-          { text: '继续', onPress: () => setShowConfirm(true) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('common.confirm'), onPress: () => setShowConfirm(true) },
         ]
       );
     } else {
@@ -233,18 +237,22 @@ export default function UrgentInsertScreen() {
         const needsApproval = plan.approvalStatus === 'PENDING';
 
         Alert.alert(
-          needsApproval ? '提交审批成功' : '插单成功',
+          needsApproval ? t('urgentInsert.confirm.approvalSuccess') : t('urgentInsert.confirm.success'),
           needsApproval
-            ? `紧急计划 ${plan.planNumber} 已创建，等待工厂经理审批。\n\n影响等级: ${selectedSlot.impactLevel === 'high' ? '高' : '严重'}\n受影响计划: ${selectedSlot.impactedPlans?.length ?? 0} 个`
-            : `紧急计划 ${plan.planNumber} 已创建，可立即执行。`,
-          [{ text: '确定', onPress: () => navigation.goBack() }]
+            ? t('urgentInsert.confirm.approvalMessage', {
+                planNumber: plan.planNumber,
+                level: selectedSlot.impactLevel === 'high' ? t('urgentInsert.slots.impact.high') : 'critical',
+                count: selectedSlot.impactedPlans?.length ?? 0
+              })
+            : t('urgentInsert.confirm.successMessage', { planNumber: plan.planNumber }),
+          [{ text: t('common.confirm'), onPress: () => navigation.goBack() }]
         );
       } else {
-        Alert.alert('错误', response.message ?? '插单失败');
+        Alert.alert(t('common.error'), response.message ?? t('urgentInsert.confirm.failed'));
       }
     } catch (error) {
       console.error('Failed to insert:', error);
-      Alert.alert('错误', '插单失败，请重试');
+      Alert.alert(t('common.error'), t('urgentInsert.confirm.failed'));
     } finally {
       setLoading(false);
       setShowConfirm(false);
@@ -253,11 +261,11 @@ export default function UrgentInsertScreen() {
 
   const getImpactColor = (level: string) => {
     switch (level) {
-      case 'none': return { bg: '#f6ffed', text: '#52c41a', label: '无影响' };
-      case 'low': return { bg: '#e6f7ff', text: '#1890ff', label: '低影响' };
-      case 'medium': return { bg: '#fff7e6', text: '#fa8c16', label: '中影响' };
-      case 'high': return { bg: '#fff1f0', text: '#ff4d4f', label: '高影响' };
-      default: return { bg: '#f5f5f5', text: '#999', label: '未知' };
+      case 'none': return { bg: '#f6ffed', text: '#52c41a', label: t('urgentInsert.slots.impact.none') };
+      case 'low': return { bg: '#e6f7ff', text: '#1890ff', label: t('urgentInsert.slots.impact.low') };
+      case 'medium': return { bg: '#fff7e6', text: '#fa8c16', label: t('urgentInsert.slots.impact.medium') };
+      case 'high': return { bg: '#fff1f0', text: '#ff4d4f', label: t('urgentInsert.slots.impact.high') };
+      default: return { bg: '#f5f5f5', text: '#999', label: 'unknown' };
     }
   };
 

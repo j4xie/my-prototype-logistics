@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, TextInput, TouchableOpacity, Statu
 import { Text, ProgressBar, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { forgotPasswordAPI } from '../../services/api/forgotPasswordApiClient';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
@@ -18,6 +19,7 @@ interface PasswordStrength {
 
 export default function ForgotPasswordScreen() {
   const navigation = useNavigation();
+  const { t } = useTranslation('auth');
 
   // Step control
   const [currentStep, setCurrentStep] = useState<Step>('phone');
@@ -52,11 +54,11 @@ export default function ForgotPasswordScreen() {
   const validatePhoneNumber = (phone: string): boolean => {
     const phoneRegex = /^1[3-9]\d{9}$/;
     if (!phone) {
-      setPhoneError('请输入手机号');
+      setPhoneError(t('forgotPassword.errors.phoneRequired'));
       return false;
     }
     if (!phoneRegex.test(phone)) {
-      setPhoneError('请输入有效的手机号');
+      setPhoneError(t('forgotPassword.errors.phoneInvalid'));
       return false;
     }
     setPhoneError('');
@@ -77,13 +79,13 @@ export default function ForgotPasswordScreen() {
         setCountdown(response.data.retryAfter || 60);
         setCurrentStep('verify');
       } else {
-        setPhoneError(response.data.message || '发送验证码失败');
+        setPhoneError(response.data.message || t('forgotPassword.errors.sendCodeFailed'));
         if (response.data.retryAfter > 0) {
           setCountdown(response.data.retryAfter);
         }
       }
     } catch (error) {
-      const errorMessage = getErrorMsg(error) || '发送验证码失败';
+      const errorMessage = getErrorMsg(error) || t('forgotPassword.errors.sendCodeFailed');
       setPhoneError(errorMessage);
     } finally {
       setLoading(false);
@@ -92,7 +94,7 @@ export default function ForgotPasswordScreen() {
 
   const handleVerifyCode = async () => {
     if (!verificationCode || verificationCode.length !== 6) {
-      setCodeError('请输入6位验证码');
+      setCodeError(t('forgotPassword.errors.codeInvalid'));
       return;
     }
     setCodeError('');
@@ -108,10 +110,10 @@ export default function ForgotPasswordScreen() {
         setResetToken(response.data.resetToken);
         setCurrentStep('reset');
       } else {
-        setCodeError(response.data.message || '验证码错误');
+        setCodeError(response.data.message || t('forgotPassword.errors.codeFailed'));
       }
     } catch (error) {
-      setCodeError(getErrorMsg(error) || '验证码错误');
+      setCodeError(getErrorMsg(error) || t('forgotPassword.errors.codeFailed'));
     } finally {
       setLoading(false);
     }
@@ -119,7 +121,7 @@ export default function ForgotPasswordScreen() {
 
   const calculatePasswordStrength = (pwd: string): PasswordStrength => {
     let score = 0;
-    if (!pwd) return { score: 0, label: '无', color: '#E0E0E0' };
+    if (!pwd) return { score: 0, label: t('forgotPassword.none'), color: '#E0E0E0' };
     if (pwd.length >= 8) score++;
     if (pwd.length >= 12) score++;
     if (/\d/.test(pwd)) score++;
@@ -129,26 +131,26 @@ export default function ForgotPasswordScreen() {
 
     const normalizedScore = Math.min(Math.max(Math.floor(score / 1.5), 0), 4);
     const strengthMap: PasswordStrength[] = [
-      { score: 0, label: '弱', color: theme.colors.error },
-      { score: 1, label: '较弱', color: '#FF9800' },
-      { score: 2, label: '中等', color: '#FFC107' },
-      { score: 3, label: '强', color: theme.colors.success },
-      { score: 4, label: '很强', color: '#2E7D32' },
+      { score: 0, label: t('forgotPassword.weak'), color: theme.colors.error },
+      { score: 1, label: t('forgotPassword.fair'), color: '#FF9800' },
+      { score: 2, label: t('forgotPassword.medium'), color: '#FFC107' },
+      { score: 3, label: t('forgotPassword.strong'), color: theme.colors.success },
+      { score: 4, label: t('forgotPassword.veryStrong'), color: '#2E7D32' },
     ];
-    return strengthMap[normalizedScore] ?? { score: 0, label: '弱', color: theme.colors.error };
+    return strengthMap[normalizedScore] ?? { score: 0, label: t('forgotPassword.weak'), color: theme.colors.error };
   };
 
   const passwordStrength = calculatePasswordStrength(newPassword);
 
   const handleResetPassword = async () => {
     if (!newPassword || newPassword.length < 8 || !/\d/.test(newPassword) || !/[a-zA-Z]/.test(newPassword)) {
-      setPasswordError('密码至少8个字符，且包含字母和数字');
+      setPasswordError(t('forgotPassword.errors.passwordInvalid'));
       return;
     }
     setPasswordError('');
 
     if (newPassword !== confirmPassword) {
-      setConfirmPasswordError('两次密码输入不一致');
+      setConfirmPasswordError(t('forgotPassword.errors.passwordMismatch'));
       return;
     }
     setConfirmPasswordError('');
@@ -167,14 +169,14 @@ export default function ForgotPasswordScreen() {
       });
 
       if (response.success && response.data.success) {
-        Alert.alert('成功', '密码重置成功，请登录', [
-          { text: '确定', onPress: () => navigation.navigate('EnhancedLogin' as never) }
+        Alert.alert(t('forgotPassword.alerts.success'), t('forgotPassword.alerts.resetSuccess'), [
+          { text: t('forgotPassword.alerts.confirm'), onPress: () => navigation.navigate('EnhancedLogin' as never) }
         ]);
       } else {
-        Alert.alert('失败', response.data.message || '重置失败');
+        Alert.alert(t('forgotPassword.alerts.failed'), response.data.message || t('forgotPassword.errors.resetFailed'));
       }
     } catch (error) {
-      Alert.alert('失败', getErrorMsg(error) || '重置失败');
+      Alert.alert(t('forgotPassword.alerts.failed'), getErrorMsg(error) || t('forgotPassword.errors.resetFailed'));
     } finally {
       setLoading(false);
     }
@@ -234,7 +236,7 @@ export default function ForgotPasswordScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="chevron-back" size={28} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>忘记密码</Text>
+        <Text style={styles.headerTitle}>{t('forgotPassword.title')}</Text>
         <View style={{ width: 44 }} />
       </View>
 
@@ -245,10 +247,10 @@ export default function ForgotPasswordScreen() {
           {currentStep === 'phone' && (
             <>
               <View style={styles.stepHeader}>
-                <Text variant="headlineSmall" style={styles.title}>验证手机号</Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>请输入注册时使用的手机号</Text>
+                <Text variant="headlineSmall" style={styles.title}>{t('forgotPassword.verifyPhoneTitle')}</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>{t('forgotPassword.verifyPhoneSubtitle')}</Text>
               </View>
-              {renderInput("手机号", phoneNumber, (t) => { setPhoneNumber(t); setPhoneError(''); }, "phone-portrait-outline", phoneError, "phone-pad", false, false, undefined, 11)}
+              {renderInput(t('forgotPassword.phone'), phoneNumber, (text) => { setPhoneNumber(text); setPhoneError(''); }, "phone-portrait-outline", phoneError, "phone-pad", false, false, undefined, 11)}
               <NeoButton
                 variant="primary"
                 onPress={handleSendCode}
@@ -256,7 +258,7 @@ export default function ForgotPasswordScreen() {
                 disabled={loading || phoneNumber.length !== 11}
                 style={styles.button}
               >
-                发送验证码
+                {t('forgotPassword.sendCode')}
               </NeoButton>
             </>
           )}
@@ -264,18 +266,18 @@ export default function ForgotPasswordScreen() {
           {currentStep === 'verify' && (
             <>
               <View style={styles.stepHeader}>
-                <Text variant="headlineSmall" style={styles.title}>输入验证码</Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>验证码已发送至 {phoneNumber}</Text>
+                <Text variant="headlineSmall" style={styles.title}>{t('forgotPassword.enterCodeTitle')}</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>{t('forgotPassword.enterCodeSubtitle', { phone: phoneNumber })}</Text>
               </View>
-              {renderInput("验证码", verificationCode, (t) => { setVerificationCode(t); setCodeError(''); }, "keypad-outline", codeError, "number-pad", false, false, undefined, 6)}
-              
+              {renderInput(t('forgotPassword.verificationCode'), verificationCode, (text) => { setVerificationCode(text); setCodeError(''); }, "keypad-outline", codeError, "number-pad", false, false, undefined, 6)}
+
               <View style={styles.resendRow}>
-                <Text style={styles.resendLabel}>未收到验证码？</Text>
+                <Text style={styles.resendLabel}>{t('forgotPassword.notReceiveCode')}</Text>
                 {countdown > 0 ? (
-                  <Text style={styles.countdownText}>{countdown}秒后重新发送</Text>
+                  <Text style={styles.countdownText}>{t('forgotPassword.resendAfter', { seconds: countdown })}</Text>
                 ) : (
                   <TouchableOpacity onPress={handleSendCode} disabled={loading}>
-                    <Text style={styles.resendButtonText}>重新发送</Text>
+                    <Text style={styles.resendButtonText}>{t('forgotPassword.resend')}</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -287,7 +289,7 @@ export default function ForgotPasswordScreen() {
                 disabled={loading || verificationCode.length !== 6}
                 style={styles.button}
               >
-                验证并继续
+                {t('forgotPassword.verifyAndContinue')}
               </NeoButton>
             </>
           )}
@@ -295,16 +297,16 @@ export default function ForgotPasswordScreen() {
           {currentStep === 'reset' && (
             <>
               <View style={styles.stepHeader}>
-                <Text variant="headlineSmall" style={styles.title}>设置新密码</Text>
-                <Text variant="bodyMedium" style={styles.subtitle}>请设置新的登录密码</Text>
+                <Text variant="headlineSmall" style={styles.title}>{t('forgotPassword.setNewPasswordTitle')}</Text>
+                <Text variant="bodyMedium" style={styles.subtitle}>{t('forgotPassword.setNewPasswordSubtitle')}</Text>
               </View>
 
-              {renderInput("新密码", newPassword, (t) => { setNewPassword(t); setPasswordError(''); }, "lock-closed-outline", passwordError, "default", true, showPassword, () => setShowPassword(!showPassword))}
-              
+              {renderInput(t('forgotPassword.newPassword'), newPassword, (text) => { setNewPassword(text); setPasswordError(''); }, "lock-closed-outline", passwordError, "default", true, showPassword, () => setShowPassword(!showPassword))}
+
               {newPassword.length > 0 && (
                 <View style={styles.strengthContainer}>
                   <Text style={styles.strengthLabel}>
-                    密码强度：<Text style={{ color: passwordStrength.color, fontWeight: 'bold' }}>{passwordStrength.label}</Text>
+                    {t('forgotPassword.passwordStrength')}<Text style={{ color: passwordStrength.color, fontWeight: 'bold' }}>{passwordStrength.label}</Text>
                   </Text>
                   <View style={styles.strengthBarBg}>
                     <View style={[styles.strengthBarFill, { width: `${(passwordStrength.score + 1) * 20}%`, backgroundColor: passwordStrength.color }]} />
@@ -312,7 +314,7 @@ export default function ForgotPasswordScreen() {
                 </View>
               )}
 
-              {renderInput("确认新密码", confirmPassword, (t) => { setConfirmPassword(t); setConfirmPasswordError(''); }, "lock-closed-outline", confirmPasswordError, "default", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
+              {renderInput(t('forgotPassword.confirmPassword'), confirmPassword, (text) => { setConfirmPassword(text); setConfirmPasswordError(''); }, "lock-closed-outline", confirmPasswordError, "default", true, showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
 
               <NeoButton
                 variant="primary"
@@ -321,17 +323,17 @@ export default function ForgotPasswordScreen() {
                 disabled={loading || !newPassword || !confirmPassword}
                 style={styles.button}
               >
-                重置密码
+                {t('forgotPassword.resetButton')}
               </NeoButton>
             </>
           )}
         </NeoCard>
 
         <NeoCard style={styles.helpCard} padding="m">
-          <Text style={styles.helpTitle}>温馨提示</Text>
-          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 密码至少8个字符</Text></View>
-          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 必须包含字母和数字</Text></View>
-          <View style={styles.bulletPoint}><Text style={styles.helpText}>• 建议包含大小写字母和特殊字符</Text></View>
+          <Text style={styles.helpTitle}>{t('forgotPassword.tipsTitle')}</Text>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>{t('forgotPassword.tip1')}</Text></View>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>{t('forgotPassword.tip2')}</Text></View>
+          <View style={styles.bulletPoint}><Text style={styles.helpText}>{t('forgotPassword.tip3')}</Text></View>
         </NeoCard>
 
       </ScrollView>

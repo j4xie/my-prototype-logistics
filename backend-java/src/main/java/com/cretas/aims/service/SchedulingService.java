@@ -52,6 +52,15 @@ public interface SchedulingService {
 
     List<WorkerAssignmentDTO> getWorkerAssignments(String factoryId, Long userId, LocalDate date);
 
+    /**
+     * 获取可用工人列表
+     * @param factoryId 工厂ID
+     * @param date 日期（可选，默认当天）
+     * @param scheduleId 排程ID（可选，用于排除已分配的工人）
+     * @return 可用工人列表
+     */
+    List<AvailableWorkerDTO> getAvailableWorkers(String factoryId, LocalDate date, String scheduleId);
+
     // ==================== AI 功能 ====================
 
     SchedulingPlanDTO generateSchedule(String factoryId, GenerateScheduleRequest request, Long userId);

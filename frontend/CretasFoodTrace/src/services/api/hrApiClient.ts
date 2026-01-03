@@ -367,6 +367,10 @@ class HRApiClient {
    * 7. 获取考勤异常列表 (按日期范围)
    * GET /api/mobile/{factoryId}/time-stats/anomaly
    * @param params 查询参数
+   *
+   * 注意: 当前后端 /time-stats/anomaly API 仅返回统计数据 (lateCount, earlyLeaveCount 等)，
+   * 不返回具体的异常记录详情。因此直接使用 getTodayAnomalies 从打卡记录中提取异常。
+   * 未来后端提供详细异常记录 API 后可以直接返回。
    */
   async getAttendanceAnomalies(params?: {
     startDate?: string;
@@ -377,89 +381,12 @@ class HRApiClient {
     factoryId?: string;
   }): Promise<AttendanceAnomaly[]> {
     try {
-      const today = this.getToday();
-      const startDate = params?.startDate || today;
-      const endDate = params?.endDate || today;
-
-      const response = await apiClient.get<{
-        code: number;
-        data: {
-          lateCount?: number;
-          earlyLeaveCount?: number;
-          absentCount?: number;
-          dailyStatsList?: Array<{
-            date: string;
-            activeWorkers?: number;
-            clockIns?: number;
-          }>;
-        };
-        message: string;
-        success: boolean;
-      }>(`${this.getPath(params?.factoryId)}/time-stats/anomaly`, {
-        params: { startDate, endDate },
-      });
-
-      if (!response.success || !response.data) {
-        return this.getTodayAnomalies(params?.factoryId);
-      }
-
-      // 将异常统计转换为异常列表格式
-      const anomalies: AttendanceAnomaly[] = [];
-      const data = response.data;
-
-      // 如果有迟到统计，生成迟到异常记录
-      if (data.lateCount && data.lateCount > 0) {
-        for (let i = 0; i < data.lateCount; i++) {
-          anomalies.push({
-            id: Date.now() + i,
-            userId: 0,
-            userName: '员工',
-            anomalyType: 'LATE',
-            anomalyTypeDisplay: '迟到',
-            date: startDate,
-            anomalyTime: startDate,
-            isResolved: false,
-          });
-        }
-      }
-
-      // 如果有早退统计
-      if (data.earlyLeaveCount && data.earlyLeaveCount > 0) {
-        for (let i = 0; i < data.earlyLeaveCount; i++) {
-          anomalies.push({
-            id: Date.now() + 1000 + i,
-            userId: 0,
-            userName: '员工',
-            anomalyType: 'EARLY_LEAVE',
-            anomalyTypeDisplay: '早退',
-            date: startDate,
-            anomalyTime: startDate,
-            isResolved: false,
-          });
-        }
-      }
-
-      // 如果有缺勤统计
-      if (data.absentCount && data.absentCount > 0) {
-        for (let i = 0; i < data.absentCount; i++) {
-          anomalies.push({
-            id: Date.now() + 2000 + i,
-            userId: 0,
-            userName: '员工',
-            anomalyType: 'ABSENT',
-            anomalyTypeDisplay: '缺勤',
-            date: startDate,
-            anomalyTime: startDate,
-            isResolved: false,
-          });
-        }
-      }
-
-      return anomalies;
+      // 当前后端仅返回异常统计，不返回具体记录
+      // 直接从打卡记录中提取异常详情
+      return await this.getTodayAnomalies(params?.factoryId);
     } catch (error) {
       console.error('[hrApiClient] 获取考勤异常列表失败:', error);
-      // 降级到今日异常
-      return this.getTodayAnomalies(params?.factoryId);
+      return [];
     }
   }
 
@@ -496,6 +423,8 @@ class HRApiClient {
   /**
    * 9. 获取绩效统计
    * GET /api/mobile/{factoryId}/time-stats/productivity
+   *
+   * 从后端获取生产力指数，并从员工绩效列表计算等级分布
    */
   async getPerformanceStats(params?: {
     period?: string;
@@ -529,49 +458,76 @@ class HRApiClient {
           break;
       }
 
-      const response = await apiClient.get<{
-        code: number;
-        data: {
-          efficiencyIndex?: number;
-          totalOutput?: number;
-          totalInputHours?: number;
-          outputPerWorker?: number;
-          outputPerHour?: number;
-          growthRate?: number;
-          improvements?: string[];
-        };
-        message: string;
-        success: boolean;
-      }>(`${this.getPath(params?.factoryId)}/time-stats/productivity`, {
-        params: { startDate, endDate },
-      });
+      // 并行获取生产力数据和员工列表
+      const [productivityResponse, employeeListResult] = await Promise.allSettled([
+        apiClient.get<{
+          code: number;
+          data: {
+            efficiencyIndex?: number;
+            totalOutput?: number;
+            totalInputHours?: number;
+            outputPerWorker?: number;
+            outputPerHour?: number;
+            growthRate?: number;
+            improvements?: string[];
+          };
+          message: string;
+          success: boolean;
+        }>(`${this.getPath(params?.factoryId)}/time-stats/productivity`, {
+          params: { startDate, endDate },
+        }),
+        this.getEmployeePerformanceList({ factoryId: params?.factoryId, size: 100 }),
+      ]);
 
-      if (!response.success || !response.data) {
-        throw new Error(response.message || '获取绩效统计失败');
+      // 解析生产力数据
+      let avgScore = 0;
+      if (productivityResponse.status === 'fulfilled' &&
+          productivityResponse.value?.success &&
+          productivityResponse.value?.data) {
+        const data = productivityResponse.value.data;
+        // 将效率指数转换为分数 (0-100)
+        avgScore = Math.round((data.efficiencyIndex || 0) * 100);
       }
 
-      const data = response.data;
-      // 将效率指数转换为分数 (0-100)
-      const avgScore = Math.round((data.efficiencyIndex || 0.85) * 100);
+      // 从员工绩效列表计算等级分布
+      let excellentCount = 0;
+      let goodCount = 0;
+      let needAttentionCount = 0;
+      let needImprovementCount = 0;
 
-      // 根据效率分布估算等级分布
-      const total = 30; // 假设总人数
-      const excellentCount = Math.round(total * 0.3);
-      const goodCount = Math.round(total * 0.4);
-      const needAttentionCount = Math.round(total * 0.2);
-      const needImprovementCount = total - excellentCount - goodCount - needAttentionCount;
+      if (employeeListResult.status === 'fulfilled' && employeeListResult.value?.content) {
+        const employees = employeeListResult.value.content;
+        for (const emp of employees) {
+          switch (emp.grade) {
+            case 'A':
+              excellentCount++;
+              break;
+            case 'B':
+              goodCount++;
+              break;
+            case 'C':
+              needAttentionCount++;
+              break;
+            case 'D':
+              needImprovementCount++;
+              break;
+          }
+        }
+      }
+
+      const total = excellentCount + goodCount + needAttentionCount + needImprovementCount;
 
       return {
         avgScore,
         excellentCount,
         needAttentionCount,
         needImprovementCount,
-        gradeDistribution: [
+        gradeDistribution: total > 0 ? [
           { grade: 'A', count: excellentCount, percentage: Math.round((excellentCount / total) * 100) },
           { grade: 'B', count: goodCount, percentage: Math.round((goodCount / total) * 100) },
           { grade: 'C', count: needAttentionCount, percentage: Math.round((needAttentionCount / total) * 100) },
           { grade: 'D', count: needImprovementCount, percentage: Math.round((needImprovementCount / total) * 100) },
-        ],
+        ] : [],
       };
     } catch (error) {
       console.error('[hrApiClient] 获取绩效统计失败:', error);

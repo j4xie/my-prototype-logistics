@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.common.PageRequest;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.entity.QualityInspection;
+import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.QualityInspectionRepository;
 import com.cretas.aims.service.QualityInspectionService;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +64,7 @@ public class QualityInspectionServiceImpl implements QualityInspectionService {
 
         return qualityInspectionRepository.findById(inspectionId)
                 .filter(inspection -> inspection.getFactoryId().equals(factoryId))
-                .orElseThrow(() -> new RuntimeException("质量检验记录不存在或无权访问"));
+                .orElseThrow(() -> new EntityNotFoundException("QualityInspection", inspectionId));
     }
 
     @Override

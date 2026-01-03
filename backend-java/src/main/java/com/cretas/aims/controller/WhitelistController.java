@@ -30,7 +30,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/whitelist")
-@Tag(name = "白名单管理", description = "白名单管理相关接口")
+@Tag(name = "白名单管理", description = "员工注册白名单管理接口，包括白名单的批量添加、查询、更新、删除，手机号验证，使用次数统计，过期管理，导入导出等功能")
 @RequiredArgsConstructor
 public class WhitelistController {
 
@@ -38,12 +38,12 @@ public class WhitelistController {
     private final MobileService mobileService;
 
     @PostMapping("/batch")
-    @Operation(summary = "批量添加白名单")
+    @Operation(summary = "批量添加白名单", description = "批量添加多个手机号到白名单，返回成功和失败的详细结果")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO.BatchResult> batchAdd(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestHeader("Authorization") String authorization,
-            @RequestBody @Valid WhitelistDTO.BatchAddRequest request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestHeader("Authorization") @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...") String authorization,
+            @RequestBody @Valid @Parameter(description = "批量添加请求，包含entries数组") WhitelistDTO.BatchAddRequest request) {
         log.info("批量添加白名单: factoryId={}, count={}", factoryId, request.getEntries().size());
         // 获取当前用户ID
         String token = TokenUtils.extractToken(authorization);
@@ -54,18 +54,18 @@ public class WhitelistController {
     }
 
     @GetMapping
-    @Operation(summary = "获取白名单列表")
+    @Operation(summary = "获取白名单列表", description = "分页获取白名单列表，支持按状态、部门、角色筛选和关键词搜索")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<PageResponse<WhitelistDTO>> getWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @Parameter(description = "状态") String status,
-            @RequestParam(required = false) @Parameter(description = "部门") String department,
-            @RequestParam(required = false) @Parameter(description = "角色") String role,
-            @RequestParam(required = false) @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size,
-            @RequestParam(defaultValue = "createdAt") @Parameter(description = "排序字段") String sortBy,
-            @RequestParam(defaultValue = "DESC") @Parameter(description = "排序方向") String sortDirection) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "状态：ACTIVE-激活/EXPIRED-过期/LIMIT_REACHED-达上限", example = "ACTIVE") String status,
+            @RequestParam(required = false) @Parameter(description = "部门筛选", example = "生产部") String department,
+            @RequestParam(required = false) @Parameter(description = "角色筛选", example = "worker") String role,
+            @RequestParam(required = false) @Parameter(description = "搜索关键词（手机号/姓名）", example = "138") String keyword,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size,
+            @RequestParam(defaultValue = "createdAt") @Parameter(description = "排序字段：createdAt/usageCount/lastUsedAt", example = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") @Parameter(description = "排序方向：ASC/DESC", example = "DESC") String sortDirection) {
 
         log.debug("获取白名单列表: factoryId={}, status={}, keyword={}", factoryId, status, keyword);
 
@@ -90,108 +90,108 @@ public class WhitelistController {
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "获取白名单详情")
+    @Operation(summary = "获取白名单详情", description = "根据ID获取白名单记录的详细信息")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO> getWhitelistById(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "白名单ID") Integer id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
         log.debug("获取白名单详情: factoryId={}, id={}", factoryId, id);
         WhitelistDTO whitelist = whitelistService.getWhitelistById(factoryId, id);
         return ApiResponse.success(whitelist);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "更新白名单")
+    @Operation(summary = "更新白名单", description = "更新白名单记录信息，包括姓名、部门、角色、有效期等")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO> updateWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "白名单ID") Integer id,
-            @RequestBody @Valid WhitelistDTO.UpdateRequest request) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id,
+            @RequestBody @Valid @Parameter(description = "更新请求内容") WhitelistDTO.UpdateRequest request) {
         log.info("更新白名单: factoryId={}, id={}", factoryId, id);
         WhitelistDTO updated = whitelistService.updateWhitelist(factoryId, id, request);
         return ApiResponse.success(updated);
     }
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除白名单")
+    @Operation(summary = "删除白名单", description = "删除指定的白名单记录（软删除）")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Void> deleteWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "白名单ID") Integer id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
         log.info("删除白名单: factoryId={}, id={}", factoryId, id);
         whitelistService.deleteWhitelist(factoryId, id);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/batch")
-    @Operation(summary = "批量删除白名单")
+    @Operation(summary = "批量删除白名单", description = "批量删除多个白名单记录，返回删除的数量")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Integer> batchDelete(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Parameter(description = "ID列表") List<Integer> ids) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "白名单ID列表") List<Integer> ids) {
         log.info("批量删除白名单: factoryId={}, ids={}", factoryId, ids);
         Integer count = whitelistService.batchDelete(factoryId, ids);
         return ApiResponse.success(count);
     }
 
     @GetMapping("/stats")
-    @Operation(summary = "获取白名单统计信息")
+    @Operation(summary = "获取白名单统计信息", description = "获取白名单的总数、激活数、过期数等统计信息")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO.WhitelistStats> getStats(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.debug("获取白名单统计: factoryId={}", factoryId);
         WhitelistDTO.WhitelistStats stats = whitelistService.getStats(factoryId);
         return ApiResponse.success(stats);
     }
 
     @PutMapping("/expired")
-    @Operation(summary = "更新过期的白名单状态")
+    @Operation(summary = "更新过期的白名单状态", description = "将已过有效期的白名单状态更新为EXPIRED，返回更新数量")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Integer> updateExpired(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("更新过期的白名单状态: factoryId={}", factoryId);
         Integer count = whitelistService.updateExpiredWhitelist();
         return ApiResponse.success(count);
     }
 
     @PutMapping("/limit-reached")
-    @Operation(summary = "更新达到使用上限的白名单状态")
+    @Operation(summary = "更新达到使用上限的白名单状态", description = "将使用次数达上限的白名单状态更新为LIMIT_REACHED，返回更新数量")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Integer> updateLimitReached(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("更新达到使用上限的白名单状态: factoryId={}", factoryId);
         Integer count = whitelistService.updateLimitReachedWhitelist();
         return ApiResponse.success(count);
     }
 
     @GetMapping("/validate/{phoneNumber}")
-    @Operation(summary = "验证手机号是否在白名单中")
+    @Operation(summary = "验证手机号是否在白名单中", description = "检查手机号是否在有效的白名单中，用于注册前验证")
     public ApiResponse<WhitelistDTO.ValidationResponse> validatePhoneNumber(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "手机号") String phoneNumber) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "手机号", example = "13812345678") String phoneNumber) {
         log.debug("验证手机号: factoryId={}, phone={}", factoryId, phoneNumber);
         WhitelistDTO.ValidationResponse response = whitelistService.validatePhoneNumber(factoryId, phoneNumber);
         return ApiResponse.success(response);
     }
 
     @PutMapping("/usage/{phoneNumber}")
-    @Operation(summary = "增加白名单使用次数")
+    @Operation(summary = "增加白名单使用次数", description = "用户注册成功后增加对应白名单的使用次数")
     public ApiResponse<Void> incrementUsage(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "手机号") String phoneNumber) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "手机号", example = "13812345678") String phoneNumber) {
         log.debug("增加使用次数: factoryId={}, phone={}", factoryId, phoneNumber);
         whitelistService.incrementUsage(factoryId, phoneNumber);
         return ApiResponse.success();
     }
 
     @GetMapping("/search")
-    @Operation(summary = "搜索白名单")
+    @Operation(summary = "搜索白名单", description = "根据关键词搜索白名单，匹配手机号、姓名等字段")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<PageResponse<WhitelistDTO>> searchWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(defaultValue = "1") @Parameter(description = "页码") Integer page,
-            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小") Integer size) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam @Parameter(description = "搜索关键词（手机号/姓名）", example = "张三") String keyword,
+            @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") Integer page,
+            @RequestParam(defaultValue = "20") @Parameter(description = "每页大小", example = "20") Integer size) {
         log.debug("搜索白名单: factoryId={}, keyword={}", factoryId, keyword);
         // 前端使用1-based索引，Spring Data使用0-based索引，需要减1
         Pageable pageable = PageRequest.of(Math.max(0, page - 1), size);
@@ -200,89 +200,89 @@ public class WhitelistController {
     }
 
     @GetMapping("/expiring")
-    @Operation(summary = "获取即将过期的白名单")
+    @Operation(summary = "获取即将过期的白名单", description = "获取指定天数内即将过期的白名单列表，用于提前提醒")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<List<WhitelistDTO>> getExpiringSoon(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "7") @Parameter(description = "天数") Integer days) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "7") @Parameter(description = "即将过期的天数范围", example = "7") Integer days) {
         log.debug("获取即将过期的白名单: factoryId={}, days={}", factoryId, days);
         List<WhitelistDTO> expiring = whitelistService.getExpiringSoon(factoryId, days);
         return ApiResponse.success(expiring);
     }
 
     @GetMapping("/most-active")
-    @Operation(summary = "获取最活跃的白名单用户")
+    @Operation(summary = "获取最活跃的白名单用户", description = "按使用次数排序获取最活跃的白名单记录")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<List<WhitelistDTO>> getMostActiveUsers(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "10") @Parameter(description = "限制数量") Integer limit) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "10") @Parameter(description = "返回记录数量", example = "10") Integer limit) {
         log.debug("获取最活跃用户: factoryId={}, limit={}", factoryId, limit);
         List<WhitelistDTO> users = whitelistService.getMostActiveUsers(factoryId, limit);
         return ApiResponse.success(users);
     }
 
     @GetMapping("/recently-used")
-    @Operation(summary = "获取最近使用的白名单")
+    @Operation(summary = "获取最近使用的白名单", description = "按最后使用时间排序获取最近使用的白名单记录")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<List<WhitelistDTO>> getRecentlyUsed(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "10") @Parameter(description = "限制数量") Integer limit) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "10") @Parameter(description = "返回记录数量", example = "10") Integer limit) {
         log.debug("获取最近使用: factoryId={}, limit={}", factoryId, limit);
         List<WhitelistDTO> users = whitelistService.getRecentlyUsed(factoryId, limit);
         return ApiResponse.success(users);
     }
 
     @GetMapping("/export")
-    @Operation(summary = "导出白名单")
+    @Operation(summary = "导出白名单", description = "将白名单数据导出为CSV格式字符串")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<String> exportWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(required = false) @Parameter(description = "状态筛选") String status) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(required = false) @Parameter(description = "状态筛选：ACTIVE/EXPIRED/LIMIT_REACHED", example = "ACTIVE") String status) {
         log.info("导出白名单: factoryId={}, status={}", factoryId, status);
         String csvData = whitelistService.exportWhitelist(factoryId, status);
         return ApiResponse.success(csvData);
     }
 
     @PostMapping("/import")
-    @Operation(summary = "导入白名单")
+    @Operation(summary = "导入白名单", description = "从CSV格式数据批量导入白名单，返回导入结果")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO.BatchResult> importWhitelist(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestBody @Parameter(description = "CSV数据") String csvData) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestBody @Parameter(description = "CSV格式数据") String csvData) {
         log.info("导入白名单: factoryId={}", factoryId);
         WhitelistDTO.BatchResult result = whitelistService.importWhitelist(factoryId, csvData);
         return ApiResponse.success(result);
     }
 
     @DeleteMapping("/cleanup")
-    @Operation(summary = "清理已删除的记录")
+    @Operation(summary = "清理已删除的记录", description = "物理删除指定天数之前已软删除的记录，释放空间")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Integer> cleanupDeleted(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @RequestParam(defaultValue = "30") @Parameter(description = "多少天前的记录") Integer daysOld) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @RequestParam(defaultValue = "30") @Parameter(description = "删除多少天前的记录", example = "30") Integer daysOld) {
         log.info("清理已删除记录: factoryId={}, daysOld={}", factoryId, daysOld);
         Integer count = whitelistService.cleanupDeleted(daysOld);
         return ApiResponse.success(count);
     }
 
     @PutMapping("/{id}/reset-usage")
-    @Operation(summary = "重置使用次数")
+    @Operation(summary = "重置使用次数", description = "将指定白名单的使用次数重置为0")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<Void> resetUsageCount(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "白名单ID") Integer id) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
         log.info("重置使用次数: factoryId={}, id={}", factoryId, id);
         whitelistService.resetUsageCount(factoryId, id);
         return ApiResponse.success();
     }
 
     @PutMapping("/{id}/extend")
-    @Operation(summary = "延长有效期")
+    @Operation(summary = "延长有效期", description = "延长指定白名单的有效期，在当前过期时间基础上增加天数")
     @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
     public ApiResponse<WhitelistDTO> extendExpiration(
-            @PathVariable @Parameter(description = "工厂ID") String factoryId,
-            @PathVariable @Parameter(description = "白名单ID") Integer id,
-            @RequestParam @Parameter(description = "延长天数") Integer days) {
+            @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
+            @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id,
+            @RequestParam @Parameter(description = "延长天数", example = "30") Integer days) {
         log.info("延长有效期: factoryId={}, id={}, days={}", factoryId, id, days);
         WhitelistDTO updated = whitelistService.extendExpiration(factoryId, id, days);
         return ApiResponse.success(updated);
