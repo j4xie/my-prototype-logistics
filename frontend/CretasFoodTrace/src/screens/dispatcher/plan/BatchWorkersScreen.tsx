@@ -13,7 +13,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -22,11 +22,14 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 
 // 调度员主题色
 const DISPATCHER_THEME = {
@@ -71,168 +74,112 @@ interface Worker {
   group: 'workshop_idle' | 'workshop_working' | 'mobile' | 'transferable';
 }
 
-// Mock 数据
-const mockBatchInfo: BatchInfo = {
-  id: '1',
-  batchNumber: 'PB20241227002',
-  product: '冷冻大虾仁',
-  quantity: '200kg',
-  workshop: '冷冻车间',
-  suggestedWorkers: '4-6',
-  estimatedHours: 6,
-  status: 'pending',
-};
+// Data transformation helpers
+const transformBatchInfo = (apiData: any): BatchInfo => ({
+  id: apiData.id || '',
+  batchNumber: apiData.batchNumber || '',
+  product: apiData.productTypeName || apiData.productName || '',
+  quantity: `${apiData.plannedQuantity || 0}kg`,
+  workshop: apiData.workshopName || '生产车间',
+  suggestedWorkers: apiData.suggestedWorkers || apiData.recommendedWorkerCount || '4-6',
+  estimatedHours: apiData.estimatedHours || apiData.estimatedDuration || 6,
+  status: (apiData.status || 'pending').toLowerCase() === 'in_progress' ? 'in_progress' : 'pending',
+});
 
-const mockWorkers: Worker[] = [
-  // 本车间空闲
-  {
-    id: '1',
-    name: '王五行',
-    avatar: '王',
-    employeeCode: '003',
-    status: 'idle',
-    efficiency: 95,
-    skill: '冷冻',
-    skillLevel: 4,
-    weeklyHours: 32,
-    maxWeeklyHours: 40,
-    group: 'workshop_idle',
-  },
-  {
-    id: '2',
-    name: '周大力',
-    avatar: '周',
-    employeeCode: '020',
-    status: 'idle',
-    efficiency: 92,
-    skill: '冷冻',
-    skillLevel: 3,
-    weeklyHours: 28,
-    maxWeeklyHours: 40,
-    group: 'workshop_idle',
-  },
-  // 本车间工作中
-  {
-    id: '3',
-    name: '吴小二',
-    avatar: '吴',
-    employeeCode: '021',
-    status: 'working',
-    efficiency: 85,
-    skill: '冷冻',
-    skillLevel: 2,
-    weeklyHours: 36,
-    maxWeeklyHours: 40,
-    currentTask: 'PB20241227001',
-    group: 'workshop_working',
-  },
-  {
-    id: '4',
-    name: '郑新手',
-    avatar: '郑',
-    employeeCode: '022',
-    status: 'idle',
-    efficiency: 78,
-    skill: '通用',
-    skillLevel: 1,
-    weeklyHours: 20,
-    maxWeeklyHours: 40,
-    group: 'workshop_idle',
-  },
-  // 机动人员
-  {
-    id: '5',
-    name: '钱多多',
-    avatar: '钱',
-    employeeCode: '050',
-    status: 'idle',
-    efficiency: 88,
-    skill: '机动',
-    skillLevel: 3,
-    weeklyHours: 25,
-    maxWeeklyHours: 40,
-    group: 'mobile',
-  },
-  {
-    id: '6',
-    name: '孙小明',
-    avatar: '孙',
-    employeeCode: '051',
-    status: 'idle',
-    efficiency: 85,
-    skill: '机动',
-    skillLevel: 2,
-    weeklyHours: 30,
-    maxWeeklyHours: 40,
-    group: 'mobile',
-  },
-  {
-    id: '7',
-    name: '赵六顺',
-    avatar: '赵',
-    employeeCode: '004',
-    status: 'idle',
-    efficiency: 90,
-    skill: '机动',
-    skillLevel: 4,
-    weeklyHours: 22,
-    maxWeeklyHours: 40,
-    group: 'mobile',
-  },
-  {
-    id: '8',
-    name: '陈临时',
-    avatar: '陈',
-    employeeCode: '088',
-    status: 'idle',
-    efficiency: 80,
-    skill: '机动',
-    skillLevel: 2,
-    weeklyHours: 35,
-    maxWeeklyHours: 40,
-    isTemporary: true,
-    contractDaysLeft: 18,
-    group: 'mobile',
-  },
-  // 可调动员工
-  {
-    id: '9',
-    name: '张三丰',
-    avatar: '张',
-    employeeCode: '001',
-    status: 'available',
-    efficiency: 95,
-    skill: '切片',
-    skillLevel: 5,
-    weeklyHours: 38,
-    maxWeeklyHours: 40,
-    workshop: '切片车间',
-    group: 'transferable',
-  },
-  {
-    id: '10',
-    name: '李四海',
-    avatar: '李',
-    employeeCode: '002',
-    status: 'available',
-    efficiency: 91,
-    skill: '包装',
-    skillLevel: 4,
-    weeklyHours: 35,
-    maxWeeklyHours: 40,
-    workshop: '包装车间',
-    group: 'transferable',
-  },
-];
+const transformWorkers = (apiWorkers: any[]): Worker[] => {
+  return (apiWorkers || []).map((w, index) => {
+    // Determine worker group based on status and attributes
+    let group: Worker['group'] = 'workshop_idle';
+    const status = (w.status || 'idle').toLowerCase();
+
+    if (w.isTransferable || w.workshop !== w.currentWorkshop) {
+      group = 'transferable';
+    } else if (w.isMobile || w.employeeType === 'mobile') {
+      group = 'mobile';
+    } else if (status === 'working' || status === 'busy') {
+      group = 'workshop_working';
+    }
+
+    return {
+      id: w.id || w.userId || String(index + 1),
+      name: w.name || w.workerName || w.userName || '',
+      avatar: (w.name || w.workerName || w.userName || '').charAt(0),
+      employeeCode: w.employeeCode || w.employeeNumber || '',
+      status: status === 'working' || status === 'busy' ? 'working' :
+              status === 'available' ? 'available' : 'idle',
+      efficiency: w.efficiency || w.efficiencyRate || 85,
+      skill: w.skill || w.skillName || '通用',
+      skillLevel: w.skillLevel || 2,
+      weeklyHours: w.weeklyHours || w.currentWeekHours || 0,
+      maxWeeklyHours: w.maxWeeklyHours || 40,
+      workshop: w.workshop || w.workshopName,
+      currentTask: w.currentTask || w.currentBatchNumber,
+      isTemporary: w.isTemporary || w.employeeType === 'temporary',
+      contractDaysLeft: w.contractDaysLeft || w.contractRemaining,
+      group,
+    };
+  });
+};
 
 export default function BatchWorkersScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const [batchInfo] = useState<BatchInfo>(mockBatchInfo);
-  const [workers] = useState<Worker[]>(mockWorkers);
-  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>(['1', '2', '4', '5']);
+  const params = route.params as { batchId?: string; scheduleId?: string } | undefined;
+  const batchId = params?.batchId || params?.scheduleId || '';
+
+  const [loading, setLoading] = useState(true);
+  const [batchInfo, setBatchInfo] = useState<BatchInfo | null>(null);
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [searchText, setSearchText] = useState('');
   const [showMoreTransferable, setShowMoreTransferable] = useState(false);
+
+  // Load batch workers data from API
+  const loadBatchWorkers = useCallback(async () => {
+    if (!batchId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await schedulingApiClient.getBatchWorkers(batchId);
+      if (response.success && response.data) {
+        // Transform batch info if included
+        if (response.data.batch || response.data.schedule) {
+          setBatchInfo(transformBatchInfo(response.data.batch || response.data.schedule));
+        }
+
+        // Transform workers list
+        const workersList = response.data.workers || response.data.availableWorkers || [];
+        setWorkers(transformWorkers(workersList));
+
+        // Set pre-assigned workers if any
+        const assignedIds = (response.data.assignedWorkerIds || response.data.selectedWorkerIds || []);
+        setSelectedWorkerIds(assignedIds.map((id: any) => String(id)));
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert('会话过期', '请重新登录');
+        } else if (status === 404) {
+          Alert.alert('未找到', '批次不存在或已被删除');
+          navigation.goBack();
+        } else {
+          Alert.alert('加载失败', error.response?.data?.message || '无法加载员工数据');
+        }
+      } else if (error instanceof Error) {
+        Alert.alert('错误', error.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [batchId, navigation]);
+
+  // Load data on mount
+  useEffect(() => {
+    loadBatchWorkers();
+  }, [loadBatchWorkers]);
 
   const handleGoBack = () => {
     navigation.goBack();
@@ -459,6 +406,57 @@ export default function BatchWorkersScreen() {
 
   const matchStatus = getMatchStatus();
 
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <LinearGradient
+          colors={[DISPATCHER_THEME.primary, DISPATCHER_THEME.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>人员分配</Text>
+          <View style={{ width: 40 }} />
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Empty state - no batch info
+  if (!batchInfo) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <LinearGradient
+          colors={[DISPATCHER_THEME.primary, DISPATCHER_THEME.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.header}
+        >
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>人员分配</Text>
+          <View style={{ width: 40 }} />
+        </LinearGradient>
+        <View style={styles.emptyStateContainer}>
+          <Ionicons name="people-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyStateText}>批次信息不存在</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadBatchWorkers}>
+            <Text style={styles.retryButtonText}>重试</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* 头部 */}
@@ -673,6 +671,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DISPATCHER_THEME.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyStateText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    backgroundColor: DISPATCHER_THEME.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#fff',
   },
   header: {
     flexDirection: 'row',

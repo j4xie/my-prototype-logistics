@@ -53,6 +53,15 @@ public interface SchedulingService {
     List<WorkerAssignmentDTO> getWorkerAssignments(String factoryId, Long userId, LocalDate date);
 
     /**
+     * 获取员工任务历史
+     * @param factoryId 工厂ID
+     * @param userId 员工ID
+     * @param limit 返回数量限制
+     * @return 任务历史列表
+     */
+    List<TaskHistoryDTO> getEmployeeTaskHistory(String factoryId, Long userId, Integer limit);
+
+    /**
      * 获取可用工人列表
      * @param factoryId 工厂ID
      * @param date 日期（可选，默认当天）
@@ -115,4 +124,45 @@ public interface SchedulingService {
      * 更新紧急阈值
      */
     void updateUrgentThreshold(String factoryId, Double threshold, Long userId);
+
+    // ==================== 自动触发排产 ====================
+
+    /**
+     * 生产计划创建后自动触发排产建议
+     * 异步执行，不阻塞主流程
+     *
+     * @param factoryId 工厂ID
+     * @param planId 生产计划ID
+     * @param planNumber 计划编号
+     * @param userId 创建人ID
+     */
+    void onProductionPlanCreated(String factoryId, String planId, String planNumber, Long userId);
+
+    /**
+     * 检查是否启用自动排产
+     *
+     * @param factoryId 工厂ID
+     * @return 是否启用
+     */
+    boolean isAutoSchedulingEnabled(String factoryId);
+
+    // ==================== 排产自动化配置 ====================
+
+    /**
+     * 获取排产自动化设置
+     *
+     * @param factoryId 工厂ID
+     * @return 排产设置
+     */
+    SchedulingSettingsDTO getSchedulingSettings(String factoryId);
+
+    /**
+     * 更新排产自动化设置
+     *
+     * @param factoryId 工厂ID
+     * @param settings 排产设置
+     * @param userId 操作用户ID
+     * @return 更新后的设置
+     */
+    SchedulingSettingsDTO updateSchedulingSettings(String factoryId, SchedulingSettingsDTO settings, Long userId);
 }

@@ -36,6 +36,7 @@ public class SchedulingDashboardDTO {
     private Integer totalWorkers;
     private Integer checkedInWorkers;
     private Integer temporaryWorkers;
+    private Integer onLeaveWorkers;
 
     // 告警统计
     private Integer totalAlerts;

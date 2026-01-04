@@ -867,6 +867,11 @@ public class MobileDTO {
          * 人均工时
          */
         private Double avgWorkHoursPerEmployee;
+
+        /**
+         * 合同即将到期人数 (30天内)
+         */
+        private Integer expiringContractsCount;
     }
 
     /**

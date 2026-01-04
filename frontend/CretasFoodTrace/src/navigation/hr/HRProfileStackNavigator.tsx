@@ -19,6 +19,10 @@ import WhitelistAddScreen from '../../screens/hr/whitelist/WhitelistAddScreen';
 import WorkScheduleScreen from '../../screens/hr/scheduling/WorkScheduleScreen';
 import StaffDetailScreen from '../../screens/hr/staff/StaffDetailScreen';
 
+// 复用现有Profile页面
+import FeedbackScreen from '../../screens/profile/FeedbackScreen';
+import MembershipScreen from '../../screens/profile/MembershipScreen';
+
 import type { HRProfileStackParamList } from '../../types/hrNavigation';
 
 const Stack = createNativeStackNavigator<HRProfileStackParamList>();
@@ -44,6 +48,8 @@ export default function HRProfileStackNavigator() {
       <Stack.Screen name="WhitelistAdd" component={WhitelistAddScreen} />
       <Stack.Screen name="WorkSchedule" component={WorkScheduleScreen} />
       <Stack.Screen name="StaffDetail" component={StaffDetailScreen} />
+      <Stack.Screen name="Feedback" component={FeedbackScreen} />
+      <Stack.Screen name="Membership" component={MembershipScreen} />
     </Stack.Navigator>
   );
 }

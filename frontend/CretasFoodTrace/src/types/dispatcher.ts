@@ -684,6 +684,48 @@ export interface PagedResponse<T> {
 
 // ==================== 调度统计 ====================
 
+/** 紧急插单统计数据 */
+export interface UrgentInsertStatistics {
+  // 总体统计
+  totalInserts: number;
+  successfulInserts: number;
+  failedInserts: number;
+  successRate: number;
+  averageImpactScore: number;
+  forcedInsertCount: number;
+  forcedInsertRate: number;
+
+  // 按时段分布
+  byPeriod?: {
+    dayShift: number;
+    nightShift: number;
+  };
+
+  // 按产品类型分布
+  byProductType?: {
+    productTypeName: string;
+    count: number;
+  }[];
+
+  // 趋势数据（最近7天）
+  trend?: {
+    date: string;
+    count: number;
+    successCount: number;
+  }[];
+
+  // 最近插单记录
+  recentInserts?: {
+    id: string;
+    productName: string;
+    quantity: number;
+    status: 'success' | 'failed' | 'pending';
+    impactScore: number;
+    isForced: boolean;
+    createdAt: string;
+  }[];
+}
+
 /** 调度统计数据 */
 export interface SchedulingStatistics {
   period: string;

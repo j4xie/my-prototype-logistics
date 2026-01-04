@@ -202,6 +202,26 @@
             <artifactId>kie-api</artifactId>
             <version>8.44.0.Final</version>
         </dependency>
+
+        <!-- MQTT Client (Eclipse Paho) -->
+        <dependency>
+            <groupId>org.eclipse.paho</groupId>
+            <artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+            <version>1.2.5</version>
+        </dependency>
+
+        <!-- Spring Integration MQTT -->
+        <dependency>
+            <groupId>org.springframework.integration</groupId>
+            <artifactId>spring-integration-mqtt</artifactId>
+        </dependency>
+
+        <!-- jSerialComm for Serial Port Communication (Virtual Scale Simulator) -->
+        <dependency>
+            <groupId>com.fazecast</groupId>
+            <artifactId>jSerialComm</artifactId>
+            <version>2.10.4</version>
+        </dependency>
     </dependencies>
 
     <build>

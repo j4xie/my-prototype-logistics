@@ -104,6 +104,8 @@ export type HRProfileStackParamList = {
   WhitelistAdd: undefined;
   WorkSchedule: undefined;
   StaffDetail: { staffId: number };
+  Feedback: undefined;
+  Membership: undefined;
 };
 
 // ==================== HR Dashboard 类型 ====================

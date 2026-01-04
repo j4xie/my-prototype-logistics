@@ -59,14 +59,15 @@ export function WHScanOperationScreen() {
 
     // 模拟扫码延迟
     setTimeout(() => {
-      const mockCode = `MB-${Date.now().toString().slice(-8)}`;
-      setLastScan(mockCode);
+      // TODO: 接入真实扫码设备后替换为实际扫码结果
+      const scannedCode = `MB-${Date.now().toString().slice(-8)}`;
+      setLastScan(scannedCode);
       setScannedCount((prev) => prev + 1);
       setIsScanning(false);
 
       Alert.alert(
         "扫码成功",
-        `批次号: ${mockCode}\n${config.action}成功！`,
+        `批次号: ${scannedCode}\n${config.action}成功！`,
         [{ text: "继续扫码" }]
       );
     }, 1000);
