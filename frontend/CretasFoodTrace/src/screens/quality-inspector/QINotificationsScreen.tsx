@@ -17,8 +17,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
 
-import { QI_COLORS } from '../../types/qualityInspector';
+import { QI_COLORS, QINotification, NotificationType } from '../../types/qualityInspector';
 import { qualityInspectorApi } from '../../services/api/qualityInspectorApi';
 import { useAuthStore } from '../../store/authStore';
 
@@ -58,59 +59,82 @@ export default function QINotificationsScreen() {
     }
   }, [factoryId]);
 
+  /**
+   * 将 API 返回的 NotificationType 映射为本地显示类型
+   */
+  const mapNotificationType = (apiType: NotificationType): Notification['type'] => {
+    switch (apiType) {
+      case 'urgent':
+        return 'urgent';
+      case 'new_batch':
+        return 'info';
+      case 'review_result':
+        return 'success';
+      case 'system':
+        return 'warning';
+      default:
+        return 'info';
+    }
+  };
+
+  /**
+   * 格式化时间为相对时间显示
+   */
+  const formatRelativeTime = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMinutes < 1) return '刚刚';
+    if (diffMinutes < 60) return `${diffMinutes}分钟前`;
+    if (diffHours < 24) return `${diffHours}小时前`;
+    if (diffDays < 7) return `${diffDays}天前`;
+    return date.toLocaleDateString();
+  };
+
+  /**
+   * 将 API 返回的 QINotification 转换为本地 Notification 格式
+   */
+  const transformNotification = (apiNotification: QINotification): Notification => ({
+    id: apiNotification.id,
+    type: mapNotificationType(apiNotification.type),
+    title: apiNotification.title,
+    content: apiNotification.content,
+    time: formatRelativeTime(apiNotification.createdAt),
+    read: apiNotification.read,
+  });
+
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      // TODO: 调用 API 获取通知
-      // const data = await qualityInspectorApi.getNotifications();
+      const response = await qualityInspectorApi.getNotifications({ page: 1, size: 20 });
 
-      // 模拟数据
-      const mockData: Notification[] = [
-        {
-          id: '1',
-          type: 'urgent',
-          title: '紧急质检任务',
-          content: '批次 PB-20251228-001 需要立即进行质检，已等待超过2小时',
-          time: '5分钟前',
-          read: false,
-        },
-        {
-          id: '2',
-          type: 'warning',
-          title: '质检异常提醒',
-          content: '批次 PB-20251228-002 的外观评分低于标准，请关注',
-          time: '30分钟前',
-          read: false,
-        },
-        {
-          id: '3',
-          type: 'success',
-          title: '质检完成通知',
-          content: '您今日已完成12批次质检，合格率92%',
-          time: '1小时前',
-          read: true,
-        },
-        {
-          id: '4',
-          type: 'info',
-          title: '系统维护通知',
-          content: '今晚22:00-23:00将进行系统维护，届时部分功能可能无法使用',
-          time: '2小时前',
-          read: true,
-        },
-        {
-          id: '5',
-          type: 'info',
-          title: '考勤提醒',
-          content: '您今日尚未打上班卡，请尽快完成打卡',
-          time: '3小时前',
-          read: true,
-        },
-      ];
-
-      setNotifications(mockData);
+      if (response && response.content) {
+        const transformedNotifications = response.content.map(transformNotification);
+        setNotifications(transformedNotifications);
+      } else {
+        console.error('API returned empty data');
+        setNotifications([]);
+      }
     } catch (error) {
-      console.error(t('notifications.loading'), error);
+      console.error('Failed to load notifications:', error);
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert(t('common.error'), t('common.sessionExpired'));
+        } else {
+          Alert.alert(
+            t('common.error'),
+            error.response?.data?.message || t('notifications.loadFailed')
+          );
+        }
+      } else if (error instanceof Error) {
+        Alert.alert(t('common.error'), error.message);
+      }
+      setNotifications([]);
     } finally {
       setLoading(false);
     }

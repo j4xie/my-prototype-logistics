@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import {
   Text,
@@ -18,60 +19,42 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons as Icon } from '@expo/vector-icons';
+import { isAxiosError } from 'axios';
 import { WorkStackParamList } from '../../types/navigation';
+import { workTypeApiClient, WorkType as ApiWorkType } from '../../services/api/workTypeApiClient';
 
 /**
- * 工作类型接口
+ * 工作类型接口 (UI display format)
  */
 interface WorkType {
   code: string;
+  name: string;
   description: string;
-  color: string | null;
+  color: string;
   department: string | null;
-  displayOrder: number | null;
 }
 
-/**
- * Mock工作类型数据
- * TODO: 后续从后端API获取
- */
-const mockWorkTypes: WorkType[] = [
-  {
-    code: 'WT-RECEIVE',
-    description: '原料接收入库',
-    color: '#4CAF50',
-    department: 'processing',
-    displayOrder: 1,
-  },
-  {
-    code: 'WT-INSPECT',
-    description: '原料的质量检验',
-    color: '#2196F3',
-    department: 'processing',
-    displayOrder: 2,
-  },
-  {
-    code: 'WT-PROCESS',
-    description: '原料加工成产品',
-    color: '#FF9800',
-    department: 'processing',
-    displayOrder: 3,
-  },
-  {
-    code: 'WT-PACKAGE',
-    description: '产品的包装和标签',
-    color: '#9C27B0',
-    department: 'processing',
-    displayOrder: 4,
-  },
-  {
-    code: 'WT-STORAGE',
-    description: '产品的冷库存储',
-    color: '#00BCD4',
-    department: 'processing',
-    displayOrder: 5,
-  },
-];
+// Default colors for work types (fallback when not provided by API)
+const workTypeColors: Record<string, string> = {
+  'WT-RECEIVE': '#4CAF50',
+  'WT-INSPECT': '#2196F3',
+  'WT-PROCESS': '#FF9800',
+  'WT-PACKAGE': '#9C27B0',
+  'WT-STORAGE': '#00BCD4',
+};
+
+const defaultColor = '#667eea';
+
+// Transform API work type to UI format
+function transformWorkType(apiType: ApiWorkType): WorkType {
+  return {
+    code: apiType.code,
+    name: apiType.name,
+    description: apiType.description || apiType.name,
+    color: workTypeColors[apiType.code] || defaultColor,
+    department: apiType.department || null,
+  };
+}
 
 /**
  * 工作类型图标映射
@@ -124,26 +107,37 @@ export function WorkTypeListScreen() {
 
   /**
    * 加载工作类型列表
-   * TODO: 接入后端API
    */
-  const loadWorkTypes = async () => {
+  const loadWorkTypes = useCallback(async () => {
     setLoading(true);
     try {
-      // TODO: 替换为真实API调用
-      // const response = await workTypeApiClient.getAvailableWorkTypes();
-      // setWorkTypes(response.data);
+      const response = await workTypeApiClient.getActiveWorkTypes();
 
-      // 临时使用mock数据
-      await new Promise((resolve) => setTimeout(resolve, 500)); // 模拟网络延迟
-      setWorkTypes(mockWorkTypes);
-      setFilteredWorkTypes(mockWorkTypes);
+      // Handle both array response and wrapped response
+      const apiWorkTypes = Array.isArray(response) ? response : (response as any)?.data || [];
+      const transformed = apiWorkTypes.map(transformWorkType);
+
+      setWorkTypes(transformed);
+      setFilteredWorkTypes(transformed);
     } catch (error) {
-      console.error('加载工作类型失败:', error);
-      // TODO: 显示错误提示
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert('会话过期', '请重新登录');
+        } else if (status === 404 || status === 501) {
+          // API not implemented yet - show empty state
+          console.warn('工作类型API未实现，显示空列表');
+          setWorkTypes([]);
+          setFilteredWorkTypes([]);
+        } else {
+          console.error('加载工作类型失败:', error.response?.data?.message || error.message);
+          Alert.alert('加载失败', '无法加载工作类型列表');
+        }
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   /**
    * 下拉刷新
@@ -181,7 +175,7 @@ export function WorkTypeListScreen() {
         // 其他类型 (加工、存储等) -> 通用工作向导
         navigation.navigate('WorkTypeForm', {
           workTypeCode: workType.code,
-          workTypeName: workType.description,
+          workTypeName: workType.name,
         });
     }
   };
@@ -200,7 +194,7 @@ export function WorkTypeListScreen() {
           <View
             style={[
               styles.iconContainer,
-              { backgroundColor: item.color || theme.colors.primary },
+              { backgroundColor: item.color },
             ]}
           >
             <Icon name={getWorkTypeIcon(item.code)} size={32} color="#fff" />
@@ -209,7 +203,7 @@ export function WorkTypeListScreen() {
           {/* 信息 */}
           <View style={styles.infoContainer}>
             <Text variant="titleMedium" style={styles.title}>
-              {item.description}
+              {item.name}
             </Text>
             <Text variant="bodySmall" style={styles.code}>
               {item.code}

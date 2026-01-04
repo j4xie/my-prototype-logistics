@@ -45,18 +45,51 @@ export default function DSHomeScreen() {
     try {
       setLoading(true);
       const dashboardRes = await schedulingApiClient.getDashboard();
-      if (dashboardRes.success) {
+      if (dashboardRes.success && dashboardRes.data) {
         setDashboard(dashboardRes.data);
       }
-      // Workshop status will come from dashboard workers stats
-      // or use mock data for now until backend provides workshop list
-      setWorkshops([
-        { workshopId: 'W1', workshopName: '切片车间', totalWorkers: 10, activeWorkers: 8, idleWorkers: 2, temporaryWorkers: 1, utilization: 85, currentOutput: 450, targetOutput: 500, efficiency: 90, activeTaskGroups: [], alerts: [] },
-        { workshopId: 'W2', workshopName: '包装车间', totalWorkers: 8, activeWorkers: 6, idleWorkers: 2, temporaryWorkers: 0, utilization: 70, currentOutput: 300, targetOutput: 400, efficiency: 75, activeTaskGroups: [], alerts: [] },
-        { workshopId: 'W3', workshopName: '冷冻车间', totalWorkers: 6, activeWorkers: 2, idleWorkers: 4, temporaryWorkers: 0, utilization: 45, currentOutput: 150, targetOutput: 300, efficiency: 50, activeTaskGroups: [], alerts: [] },
-      ]);
+
+      // TODO: P2 - Replace with real workshop status API when available
+      // Currently using mock data. Backend needs to provide:
+      // GET /api/mobile/{factoryId}/workshops/status
+      // The production lines API doesn't include worker statistics
+      const linesRes = await schedulingApiClient.getProductionLines();
+      if (linesRes.success && linesRes.data && linesRes.data.length > 0) {
+        // Transform production lines to workshop status format
+        const workshopMap = new Map<string, WorkshopStatus>();
+        for (const line of linesRes.data) {
+          const workshopId = line.workshopId || 'default';
+          if (!workshopMap.has(workshopId)) {
+            workshopMap.set(workshopId, {
+              workshopId,
+              workshopName: line.workshopName || line.name || '未命名车间',
+              totalWorkers: 0,
+              activeWorkers: 0,
+              idleWorkers: 0,
+              temporaryWorkers: 0,
+              utilization: line.status === 'active' ? 0.8 : 0,
+              currentOutput: 0,
+              targetOutput: line.capacity || 0,
+              efficiency: line.status === 'active' ? 0.85 : 0,
+              activeTaskGroups: [],
+              alerts: [],
+            });
+          }
+        }
+        if (workshopMap.size > 0) {
+          setWorkshops(Array.from(workshopMap.values()));
+        } else {
+          // Fallback when no workshops found from production lines
+          setWorkshops(fallbackWorkshops);
+        }
+      } else {
+        // Fallback when API returns no data
+        setWorkshops(fallbackWorkshops);
+      }
     } catch (error) {
       console.error('加载调度首页数据失败:', error);
+      // Fallback when API call fails
+      setWorkshops(fallbackWorkshops);
     } finally {
       setLoading(false);
     }
@@ -236,7 +269,7 @@ export default function DSHomeScreen() {
         </View>
 
         <View style={styles.workshopMiniList}>
-          {(workshops.length > 0 ? workshops : mockWorkshops).slice(0, 3).map((workshop, index) => (
+          {(workshops.length > 0 ? workshops : fallbackWorkshops).slice(0, 3).map((workshop, index) => (
             <TouchableOpacity
               key={workshop.workshopId || index}
               style={styles.workshopMiniCard}
@@ -272,7 +305,7 @@ export default function DSHomeScreen() {
               <Text style={styles.quickPersonnelAction}>调动人员 {'>'}</Text>
             </TouchableOpacity>
           </View>
-          {(workshops.length > 0 ? workshops : mockWorkshops).slice(0, 3).map((workshop, index) => (
+          {(workshops.length > 0 ? workshops : fallbackWorkshops).slice(0, 3).map((workshop, index) => (
             <View key={workshop.workshopId || index} style={styles.quickPersonnelRow}>
               <Text style={styles.quickPersonnelWorkshop}>{workshop.workshopName}</Text>
               <View style={styles.quickPersonnelStats}>
@@ -353,8 +386,10 @@ export default function DSHomeScreen() {
   );
 }
 
-// Mock data for initial display
-const mockWorkshops: WorkshopStatus[] = [
+// Fallback data when API fails or returns empty results
+// TODO: P2 - Replace with real workshop status API when available
+// Backend needs to provide: GET /api/mobile/{factoryId}/workshops/status
+const fallbackWorkshops: WorkshopStatus[] = [
   {
     workshopId: 'WS001',
     workshopName: '切片车间',

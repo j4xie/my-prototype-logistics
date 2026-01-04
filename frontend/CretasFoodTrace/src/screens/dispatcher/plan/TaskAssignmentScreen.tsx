@@ -11,7 +11,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -64,108 +67,144 @@ interface Task {
 
 type FilterType = 'pending' | 'in_progress' | 'completed' | 'all';
 
-// Mock 数据
-const mockTaskStats: TaskStats = {
-  pending: 8,
-  inProgress: 5,
-  assigned: 15,
-  completed: 3,
-};
+/**
+ * TODO: P2 Mock数据替换
+ *
+ * 建议使用的API:
+ * - schedulingApiClient.getDashboard() - 获取调度仪表盘统计数据
+ * - schedulingApiClient.getPlans() - 获取调度计划列表
+ * - schedulingApiClient.getPendingBatches() - 获取待排产批次
+ * - schedulingApiClient.getWorkerAssignments() - 获取工人分配列表
+ *
+ * 数据转换建议:
+ * - TaskStats 可从 getDashboard() 的统计数据中获取
+ * - Task 可从 getPlans() + getWorkerAssignments() 组合获取
+ */
 
-const mockTasks: Task[] = [
-  {
-    id: '1',
-    name: 'PB20241227001',
-    product: '冷冻带鱼段',
-    quantity: '500kg',
-    workshop: '切片车间',
-    deadline: '12-28 18:00',
-    priority: 'high',
-    status: 'pending',
-    requiredWorkers: 6,
-    assignedWorkers: 0,
-  },
-  {
-    id: '2',
-    name: 'PB20241227002',
-    product: '冷冻虾仁',
-    quantity: '300kg',
-    workshop: '分拣车间',
-    deadline: '12-28 20:00',
-    priority: 'medium',
-    status: 'pending',
-    requiredWorkers: 4,
-    assignedWorkers: 0,
-  },
-  {
-    id: '3',
-    name: 'PB20241227003',
-    product: '鱿鱼圈',
-    quantity: '400袋',
-    workshop: '包装车间',
-    deadline: '12-29 10:00',
-    priority: 'low',
-    status: 'pending',
-    requiredWorkers: 3,
-    assignedWorkers: 0,
-  },
-  {
-    id: '4',
-    name: 'PB20241226001',
-    product: '带鱼段切片',
-    quantity: '600kg',
-    workshop: '切片车间',
-    deadline: '12-28 15:00',
-    priority: 'high',
-    status: 'in_progress',
-    requiredWorkers: 6,
-    assignedWorkers: 5,
-    progress: 65,
-    supervisor: '张三丰',
-  },
-  {
-    id: '5',
-    name: 'PB20241226002',
-    product: '大虾仁分选',
-    quantity: '250kg',
-    workshop: '分拣车间',
-    deadline: '12-28 16:00',
-    priority: 'medium',
-    status: 'in_progress',
-    requiredWorkers: 4,
-    assignedWorkers: 4,
-    progress: 45,
-    supervisor: '李四海',
-  },
-  {
-    id: '6',
-    name: 'PB20241225001',
-    product: '冻品包装',
-    quantity: '800袋',
-    workshop: '包装车间',
-    deadline: '12-27 18:00',
-    priority: 'low',
-    status: 'completed',
-    requiredWorkers: 3,
-    assignedWorkers: 3,
-    progress: 100,
-    supervisor: '王五行',
-  },
-];
+// 默认空数据（替代原Mock数据）
+const defaultTaskStats: TaskStats = {
+  pending: 0,
+  inProgress: 0,
+  assigned: 0,
+  completed: 0,
+};
 
 export default function TaskAssignmentScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
-  const [stats] = useState<TaskStats>(mockTaskStats);
-  const [tasks] = useState<Task[]>(mockTasks);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<TaskStats>(defaultTaskStats);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('pending');
+
+  // 加载任务数据
+  const loadData = useCallback(async () => {
+    try {
+      // 使用 getDashboard 获取统计数据
+      const dashboardResponse = await schedulingApiClient.getDashboard();
+      if (dashboardResponse.success && dashboardResponse.data) {
+        const dashboard = dashboardResponse.data;
+        // 从仪表盘数据中提取统计信息
+        // SchedulingDashboard type has overview.totalPlans, activePlans, etc.
+        setStats({
+          pending: dashboard.overview?.totalPlans - dashboard.overview?.activePlans - dashboard.overview?.completedPlans || 0,
+          inProgress: dashboard.overview?.activePlans || 0,
+          assigned: 0, // Dashboard doesn't provide assigned count separately
+          completed: dashboard.overview?.completedPlans || 0,
+        });
+
+        // Dashboard doesn't have todaySchedules - need to fetch plans separately
+        // For now, try to get plans list
+        try {
+          const todayDate = new Date().toISOString().split('T')[0];
+          const plansResponse = await schedulingApiClient.getPlans({
+            startDate: todayDate,
+            endDate: todayDate,
+            page: 0,
+            size: 50,
+          });
+
+          if (plansResponse.success && plansResponse.data?.content) {
+            const transformedTasks: Task[] = [];
+            for (const plan of plansResponse.data.content) {
+              // Each plan may have lineSchedules
+              if (plan.lineSchedules && plan.lineSchedules.length > 0) {
+                for (const schedule of plan.lineSchedules) {
+                  const scheduleStatus = schedule.status?.toLowerCase();
+                  transformedTasks.push({
+                    id: schedule.id || String(plan.id),
+                    name: schedule.productionPlanNumber || `计划-${plan.id}`,
+                    product: schedule.productTypeName || '未知产品',
+                    quantity: `${schedule.plannedQuantity || 0}kg`,
+                    workshop: schedule.productionLineName || '未分配',
+                    deadline: schedule.plannedEndTime || '-',
+                    priority: 'medium', // SchedulingPlan doesn't have priority field
+                    status: scheduleStatus === 'in_progress' ? 'in_progress' :
+                            scheduleStatus === 'completed' ? 'completed' :
+                            scheduleStatus === 'confirmed' ? 'assigned' : 'pending',
+                    requiredWorkers: schedule.workerCount || 4,
+                    assignedWorkers: schedule.workerAssignments?.length || 0,
+                    progress: schedule.actualQuantity && schedule.plannedQuantity
+                      ? Math.round((schedule.actualQuantity / schedule.plannedQuantity) * 100)
+                      : 0,
+                    supervisor: undefined,
+                  });
+                }
+              } else {
+                // No lineSchedules, create a task from the plan itself
+                transformedTasks.push({
+                  id: String(plan.id),
+                  name: `计划-${plan.id}`,
+                  product: plan.productTypeName || '未知产品',
+                  quantity: `${plan.estimatedOutput || 0}kg`,
+                  workshop: '未分配',
+                  deadline: plan.planDate || '-',
+                  priority: 'medium',
+                  status: plan.status === 'in_progress' ? 'in_progress' :
+                          plan.status === 'completed' ? 'completed' :
+                          plan.status === 'confirmed' ? 'assigned' : 'pending',
+                  requiredWorkers: plan.totalWorkers || 4,
+                  assignedWorkers: 0,
+                  progress: plan.actualOutput && plan.estimatedOutput
+                    ? Math.round((plan.actualOutput / plan.estimatedOutput) * 100)
+                    : 0,
+                  supervisor: undefined,
+                });
+              }
+            }
+            setTasks(transformedTasks);
+          }
+        } catch (plansError) {
+          console.error('获取计划列表失败:', plansError);
+        }
+      }
+    } catch (error) {
+      console.error('加载任务数据失败:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Alert.alert('登录已过期', '请重新登录');
+        } else {
+          Alert.alert('加载失败', error.response?.data?.message || '网络错误');
+        }
+      }
+    }
+  }, []);
+
+  // 初始加载
+  useEffect(() => {
+    const initLoad = async () => {
+      setLoading(true);
+      await loadData();
+      setLoading(false);
+    };
+    initLoad();
+  }, [loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: 调用 API 刷新数据
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadData();
     setRefreshing(false);
-  }, []);
+  }, [loadData]);
 
   const handleGoBack = () => {
     navigation.goBack();

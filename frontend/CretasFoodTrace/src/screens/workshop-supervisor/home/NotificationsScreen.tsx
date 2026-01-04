@@ -1,7 +1,7 @@
 /**
  * 通知列表页面
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,10 +10,13 @@ import {
   TouchableOpacity,
   FlatList,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Icon } from 'react-native-paper';
+import { Icon, ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { notificationApiClient, Notification as ApiNotification } from '../../../services/api/notificationApiClient';
 
 interface Notification {
   id: string;
@@ -24,49 +27,96 @@ interface Notification {
   isRead: boolean;
 }
 
+// Transform API notification type to UI type
+function mapNotificationType(apiType: string): 'task' | 'alert' | 'info' | 'success' {
+  switch (apiType) {
+    case 'ALERT':
+    case 'WARNING':
+      return 'alert';
+    case 'SUCCESS':
+      return 'success';
+    case 'INFO':
+    case 'SYSTEM':
+      return 'info';
+    default:
+      return 'task';
+  }
+}
+
+// Format relative time
+function formatRelativeTime(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return '刚刚';
+  if (diffMins < 60) return `${diffMins}分钟前`;
+  if (diffHours < 24) return `${diffHours}小时前`;
+  if (diffDays < 7) return `${diffDays}天前`;
+  return date.toLocaleDateString('zh-CN');
+}
+
 export function NotificationsScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('workshop');
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
-  const [notifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'task',
-      title: '新任务分配',
-      content: '批次 PB-20251227-004 已分配给您，请及时处理',
-      time: '5分钟前',
-      isRead: false,
-    },
-    {
-      id: '2',
-      type: 'alert',
-      title: '设备告警',
-      content: '切片机A (EQ-001) 温度异常，请检查',
-      time: '15分钟前',
-      isRead: false,
-    },
-    {
-      id: '3',
-      type: 'info',
-      title: '人员请假',
-      content: '陈志强 (EMP-005) 今日请假',
-      time: '1小时前',
-      isRead: true,
-    },
-    {
-      id: '4',
-      type: 'success',
-      title: '批次完成',
-      content: '批次 PB-20251226-008 已完成，产量85kg',
-      time: '昨天 16:30',
-      isRead: true,
-    },
-  ]);
+  const loadNotifications = useCallback(async () => {
+    try {
+      const response = await notificationApiClient.getNotifications({
+        page: 1,
+        size: 50,
+      });
 
-  const onRefresh = useCallback(() => {
+      if (response.success && response.data?.content) {
+        const transformed = response.data.content.map((item: ApiNotification) => ({
+          id: String(item.id),
+          type: mapNotificationType(item.type),
+          title: item.title,
+          content: item.content,
+          time: formatRelativeTime(item.createdAt),
+          isRead: item.isRead,
+        }));
+        setNotifications(transformed);
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert('会话过期', '请重新登录');
+        } else {
+          console.error('加载通知失败:', error.response?.data?.message || error.message);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 500);
+    await loadNotifications();
+    setRefreshing(false);
+  }, [loadNotifications]);
+
+  const handleMarkAllRead = useCallback(async () => {
+    try {
+      const response = await notificationApiClient.markAllAsRead();
+      if (response.success) {
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      }
+    } catch (error) {
+      console.error('标记已读失败:', error);
+    }
   }, []);
 
   const getTypeStyle = (type: string) => {
@@ -107,6 +157,23 @@ export function NotificationsScreen() {
     );
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon source="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
+          <View style={{ width: 60 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#667eea" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 头部 */}
@@ -115,7 +182,7 @@ export function NotificationsScreen() {
           <Icon source="arrow-left" size={24} color="#fff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('notifications.title')}</Text>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={handleMarkAllRead}>
           <Text style={styles.headerAction}>{t('notifications.markAllRead')}</Text>
         </TouchableOpacity>
       </View>
@@ -143,6 +210,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',

@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -23,6 +24,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../../store/authStore';
+import { isAxiosError } from 'axios';
+import { ruleConfigApiClient, StateMachineConfig } from '../../../services/api/ruleConfigApiClient';
 
 // State Machine mock data
 interface StateMachineState {
@@ -43,93 +46,42 @@ interface StateMachine {
   states: StateMachineState[];
 }
 
-const MOCK_STATE_MACHINES: StateMachine[] = [
-  {
-    id: '1',
-    entityName: '原材料批次',
-    entityCode: 'MaterialBatch',
-    stateCount: 6,
-    transitionCount: 12,
-    status: 'running',
-    lastModified: '2024-03-15',
-    borderColor: '#1890ff',
-    states: [
-      { id: 's1', name: '待入库', color: '#faad14' },
-      { id: 's2', name: '已入库', color: '#52c41a' },
-      { id: 's3', name: '检验中', color: '#1890ff' },
-      { id: 's4', name: '已使用', color: '#722ed1' },
-    ],
-  },
-  {
-    id: '2',
-    entityName: '生产批次',
-    entityCode: 'ProductionBatch',
-    stateCount: 7,
-    transitionCount: 15,
-    status: 'running',
-    lastModified: '2024-03-14',
-    borderColor: '#52c41a',
-    states: [
-      { id: 's1', name: '待生产', color: '#faad14' },
-      { id: 's2', name: '生产中', color: '#1890ff' },
-      { id: 's3', name: '已完成', color: '#52c41a' },
-      { id: 's4', name: '已入库', color: '#722ed1' },
-    ],
-  },
-  {
-    id: '3',
-    entityName: '质检单',
-    entityCode: 'QualityInspection',
-    stateCount: 5,
-    transitionCount: 8,
-    status: 'running',
-    lastModified: '2024-03-13',
-    borderColor: '#722ed1',
-    states: [
-      { id: 's1', name: '待检验', color: '#faad14' },
-      { id: 's2', name: '检验中', color: '#1890ff' },
-      { id: 's3', name: '已通过', color: '#52c41a' },
-      { id: 's4', name: '不合格', color: '#f5222d' },
-    ],
-  },
-  {
-    id: '4',
-    entityName: '出货单',
-    entityCode: 'Shipment',
-    stateCount: 5,
-    transitionCount: 6,
-    status: 'running',
-    lastModified: '2024-03-12',
-    borderColor: '#fa8c16',
-    states: [
-      { id: 's1', name: '待发货', color: '#faad14' },
-      { id: 's2', name: '已发货', color: '#1890ff' },
-      { id: 's3', name: '已签收', color: '#52c41a' },
-    ],
-  },
-  {
-    id: '5',
-    entityName: '设备维护单',
-    entityCode: 'MaintenanceOrder',
-    stateCount: 5,
-    transitionCount: 4,
-    status: 'draft',
-    lastModified: '2024-03-11',
-    borderColor: '#f5222d',
-    states: [
-      { id: 's1', name: '待处理', color: '#faad14' },
-      { id: 's2', name: '处理中', color: '#1890ff' },
-      { id: 's3', name: '已完成', color: '#52c41a' },
-    ],
-  },
-];
+// 实体类型对应的颜色
+const ENTITY_BORDER_COLORS: Record<string, string> = {
+  MaterialBatch: '#1890ff',
+  ProcessingBatch: '#52c41a',
+  QualityInspection: '#722ed1',
+  Shipment: '#fa8c16',
+  Equipment: '#f5222d',
+  DisposalRecord: '#13c2c2',
+};
+
+// 将API返回的StateMachineConfig转换为UI的StateMachine格式
+const mapApiToStateMachine = (config: StateMachineConfig): StateMachine => ({
+  id: config.id || config.entityType,
+  entityName: config.machineName,
+  entityCode: config.entityType,
+  stateCount: config.states?.length || 0,
+  transitionCount: config.transitions?.length || 0,
+  status: config.enabled ? 'running' : 'draft',
+  lastModified: config.updatedAt?.split('T')[0] ?? new Date().toISOString().split('T')[0] ?? '',
+  borderColor: ENTITY_BORDER_COLORS[config.entityType] || '#8c8c8c',
+  states: (config.states || []).slice(0, 4).map((s, idx) => ({
+    id: `s${idx + 1}`,
+    name: s.name,
+    color: s.color || '#8c8c8c',
+  })),
+});
 
 const StateMachineListScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation();
-  const { user, currentFactory } = useAuthStore();
+  const { user, getFactoryId } = useAuthStore();
+  const currentFactoryId = getFactoryId();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [stateMachines, setStateMachines] = useState<StateMachine[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [factoryMenuVisible, setFactoryMenuVisible] = useState(false);
   const [selectedFactory, setSelectedFactory] = useState({
@@ -143,19 +95,41 @@ const StateMachineListScreen: React.FC = () => {
     { id: 'F003', name: '冷冻水产厂' },
   ];
 
+  // 加载状态机列表
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await ruleConfigApiClient.getStateMachines();
+      if (response && Array.isArray(response)) {
+        setStateMachines(response.map(mapApiToStateMachine));
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        Alert.alert('加载失败', error.response?.data?.message || '获取状态机列表失败');
+      } else if (error instanceof Error) {
+        Alert.alert('加载失败', error.message);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1500);
-  }, []);
+    loadData();
+  }, [loadData]);
 
   const handleFactorySelect = (factory: { id: string; name: string }) => {
     setSelectedFactory(factory);
     setFactoryMenuVisible(false);
   };
 
-  const filteredStateMachines = MOCK_STATE_MACHINES.filter(
+  const filteredStateMachines = stateMachines.filter(
     (sm) =>
       sm.entityName.includes(searchQuery) ||
       sm.entityCode.toLowerCase().includes(searchQuery.toLowerCase())
@@ -163,9 +137,9 @@ const StateMachineListScreen: React.FC = () => {
 
   // Statistics
   const statistics = {
-    totalMachines: MOCK_STATE_MACHINES.length,
-    totalStates: MOCK_STATE_MACHINES.reduce((sum, sm) => sum + sm.stateCount, 0),
-    totalTransitions: MOCK_STATE_MACHINES.reduce(
+    totalMachines: stateMachines.length,
+    totalStates: stateMachines.reduce((sum, sm) => sum + sm.stateCount, 0),
+    totalTransitions: stateMachines.reduce(
       (sum, sm) => sum + sm.transitionCount,
       0
     ),

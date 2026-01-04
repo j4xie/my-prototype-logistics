@@ -1,10 +1,13 @@
 package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.cretas.aims.entity.enums.DeviceCategory;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -77,8 +80,96 @@ public class FactoryEquipment extends BaseEntity {
     private String serialNumber;
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
+
+    @Column(name = "operator_id")
+    private Long operatorId;
+
+    /**
+     * 操作员姓名 (从User表关联查询，由Service层填充)
+     */
+    @Transient
+    private String operatorName;
+
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // ========== IoT 相关字段 ==========
+
+    /**
+     * IoT设备编码
+     */
+    @Column(name = "iot_device_code", length = 100)
+    private String iotDeviceCode;
+
+    /**
+     * 设备类别: TRADITIONAL / IOT_SCALE / IOT_CAMERA / IOT_SENSOR
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "device_category", length = 20)
+    private DeviceCategory deviceCategory;
+
+    /**
+     * 关联秤协议配置 scale_protocol_configs.id
+     */
+    @Column(name = "scale_protocol_id", length = 50)
+    private String scaleProtocolId;
+
+    /**
+     * 关联秤品牌型号 scale_brand_models.id
+     */
+    @Column(name = "scale_brand_model_id", length = 50)
+    private String scaleBrandModelId;
+
+    /**
+     * MQTT订阅主题
+     */
+    @Column(name = "mqtt_topic", length = 255)
+    private String mqttTopic;
+
+    /**
+     * 秤连接参数 (JSON格式)
+     * 示例: {"comPort":"COM3", "baudRate":9600}
+     */
+    @Column(name = "scale_connection_params", columnDefinition = "TEXT")
+    private String scaleConnectionParams;
+
+    /**
+     * 最后一次称重值
+     */
+    @Column(name = "last_weight_reading", precision = 12, scale = 4)
+    private BigDecimal lastWeightReading;
+
+    /**
+     * 最后称重时间
+     */
+    @Column(name = "last_weight_time")
+    private LocalDateTime lastWeightTime;
+
+    /**
+     * 最后数据接收时间
+     */
+    @Column(name = "last_data_received")
+    private LocalDateTime lastDataReceived;
+
+    // ========== 单位转换方法 ==========
+
+    /**
+     * 获取维护间隔（天）- 供前端使用
+     * 后端存储为小时，前端期望天数
+     */
+    @JsonProperty("maintenanceInterval")
+    public Integer getMaintenanceIntervalDays() {
+        return maintenanceIntervalHours != null ? maintenanceIntervalHours / 24 : null;
+    }
+
+    /**
+     * 设置维护间隔（天）- 接收前端传入
+     * 自动转换为小时存储
+     */
+    @JsonProperty("maintenanceInterval")
+    public void setMaintenanceIntervalDays(Integer days) {
+        this.maintenanceIntervalHours = days != null ? days * 24 : null;
+    }
 
     // 乐观锁版本号
     @Version

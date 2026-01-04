@@ -1,0 +1,18 @@
+# =============================================================================
+# Test Configuration
+# =============================================================================
+
+gateway:
+  factory-id: TEST-F001
+
+mqtt:
+  enabled: false
+
+serial:
+  enabled: false
+  ports: []
+
+logging:
+  level:
+    root: WARN
+    com.cretas.edge: DEBUG
