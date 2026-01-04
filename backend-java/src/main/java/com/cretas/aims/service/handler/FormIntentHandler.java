@@ -54,20 +54,26 @@ public class FormIntentHandler implements IntentHandler {
                 factoryId, intentConfig.getIntentCode(), request.getEntityType());
 
         try {
-            // 1. 调用AI服务生成Schema
-            Map<String, Object> generatedSchema = callAIGenerateSchema(factoryId, request);
+            // 1. 优先从 context 中解析字段定义（无需AI）
+            Map<String, Object> generatedSchema = parseFieldsFromContext(request);
 
-            if (generatedSchema == null || !Boolean.TRUE.equals(generatedSchema.get("success"))) {
-                return IntentExecuteResponse.builder()
-                        .intentRecognized(true)
-                        .intentCode(intentConfig.getIntentCode())
-                        .intentName(intentConfig.getIntentName())
-                        .intentCategory("FORM")
-                        .status("FAILED")
-                        .message("AI生成Schema失败: " + (generatedSchema != null ?
-                                generatedSchema.get("message") : "无响应"))
-                        .executedAt(LocalDateTime.now())
-                        .build();
+            // 2. 如果 context 没有字段定义，调用AI服务生成Schema
+            if (generatedSchema == null) {
+                generatedSchema = callAIGenerateSchema(factoryId, request);
+
+                if (generatedSchema == null || !Boolean.TRUE.equals(generatedSchema.get("success"))) {
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .intentName(intentConfig.getIntentName())
+                            .intentCategory("FORM")
+                            .status("FAILED")
+                            .message("AI生成Schema失败: " + (generatedSchema != null ?
+                                    generatedSchema.get("message") : "无响应") +
+                                    "\n\n您可以直接提供 context 参数: {fields: [{name, type, label, required}]}")
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
             }
 
             // 2. 获取或创建FormTemplate
@@ -244,6 +250,53 @@ public class FormIntentHandler implements IntentHandler {
     }
 
     // ==================== 辅助方法 ====================
+
+    /**
+     * 从 context 中解析字段定义（无需AI服务）
+     * 支持格式: {fields: [{name, type, label, required, ...}]}
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseFieldsFromContext(IntentExecuteRequest request) {
+        if (request.getContext() == null || request.getContext().isEmpty()) {
+            return null;
+        }
+
+        Object fieldsObj = request.getContext().get("fields");
+        if (fieldsObj == null) {
+            return null;
+        }
+
+        List<Map<String, Object>> fields;
+        if (fieldsObj instanceof List) {
+            fields = (List<Map<String, Object>>) fieldsObj;
+        } else {
+            return null;
+        }
+
+        if (fields.isEmpty()) {
+            return null;
+        }
+
+        // 验证字段格式
+        for (Map<String, Object> field : fields) {
+            if (field.get("name") == null) {
+                log.warn("字段缺少 name 属性: {}", field);
+                return null;
+            }
+            // 设置默认类型
+            if (field.get("type") == null) {
+                field.put("type", "string");
+            }
+        }
+
+        log.info("从context解析表单字段: fieldCount={}", fields.size());
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("fields", fields);
+        result.put("suggestions", List.of());
+        return result;
+    }
 
     /**
      * 调用AI服务生成Schema

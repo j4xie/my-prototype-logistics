@@ -1,0 +1,117 @@
+# =============================================================================
+# Cretas Edge Gateway Configuration
+# 边缘网关配置文件
+# =============================================================================
+
+server:
+  port: 8088
+
+spring:
+  application:
+    name: cretas-edge-gateway
+
+# =============================================================================
+# 网关配置
+# =============================================================================
+gateway:
+  # 工厂ID（部署时必须配置）
+  factory-id: ${FACTORY_ID:F001}
+  # 设备名称
+  device-name: ${DEVICE_NAME:edge-gateway-1}
+
+# =============================================================================
+# MQTT 配置
+# =============================================================================
+mqtt:
+  # 是否启用 MQTT
+  enabled: true
+  # MQTT Broker 地址
+  broker-url: ${MQTT_BROKER_URL:tcp://139.196.165.140:1883}
+  # 客户端ID前缀
+  client-id-prefix: cretas-edge
+  # 认证信息（从环境变量读取）
+  username: ${MQTT_USERNAME:}
+  password: ${MQTT_PASSWORD:}
+  # 连接参数
+  connection-timeout: 30
+  keep-alive-interval: 60
+  auto-reconnect: true
+  max-reconnect-delay: 128000
+  clean-session: true
+  # QoS 级别 (0=最多一次, 1=至少一次, 2=仅一次)
+  qos: 1
+  # 主题前缀
+  topic-prefix: cretas/scale
+  # 批量发送配置
+  batch-size: 10
+  flush-interval: 1000
+  # 离线队列大小
+  offline-queue-size: 10000
+
+# =============================================================================
+# 串口配置
+# =============================================================================
+serial:
+  # 是否启用串口采集
+  enabled: true
+  # 默认串口参数
+  default-baud-rate: 9600
+  default-data-bits: 8
+  default-stop-bits: 1
+  default-parity: NONE
+  # 读取超时（毫秒）
+  read-timeout: 1000
+  # 数据采集间隔（毫秒）
+  polling-interval: 500
+  # 协议配置URL（从后端动态获取协议）
+  protocol-config-url: ${PROTOCOL_CONFIG_URL:http://139.196.165.140:10010/api/mobile/edge/protocols}
+  # 协议配置刷新间隔（秒）
+  protocol-refresh-interval: 300
+
+  # 串口设备列表
+  ports:
+    # 示例：柯力D2008电子秤
+    - device-id: scale-001
+      port-name: ${SCALE_001_PORT:COM1}  # Windows: COM1, Linux: /dev/ttyUSB0
+      scale-brand: 柯力D2008
+      protocol: KELI_D2008
+      baud-rate: 9600
+      data-bits: 8
+      stop-bits: 1
+      parity: NONE
+      enabled: true
+
+    # 示例：第二台秤（默认禁用）
+    - device-id: scale-002
+      port-name: ${SCALE_002_PORT:COM2}
+      scale-brand: 托利多ICS
+      protocol: TOLEDO_ICS
+      baud-rate: 9600
+      enabled: false
+
+# =============================================================================
+# 日志配置
+# =============================================================================
+logging:
+  level:
+    root: INFO
+    com.cretas.edge: DEBUG
+    com.fazecast.jSerialComm: WARN
+    org.eclipse.paho: INFO
+  file:
+    name: logs/edge-gateway.log
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+
+# =============================================================================
+# 管理端点
+# =============================================================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always

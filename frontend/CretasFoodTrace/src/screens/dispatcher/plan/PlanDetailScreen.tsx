@@ -22,12 +22,18 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Modal,
+  TextInput,
+  Switch,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 
 // 主题颜色
 const DISPATCHER_THEME = {
@@ -52,12 +58,15 @@ interface PlanDetail {
   supervisor: string;
   planDate: string;
   priority: 'high' | 'medium' | 'low';
-  status: 'pending' | 'in_progress' | 'completed' | 'paused';
+  status: 'draft' | 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'paused' | 'cancelled';
   progress: number;
   completedQuantity: string;
   remainingQuantity: string;
   estimatedCompletion: string;
 }
+
+// 可重排状态列表
+const RESCHEDULABLE_STATUSES = ['draft', 'pending', 'confirmed', 'paused'];
 
 // 原料匹配类型
 interface MaterialMatch {
@@ -84,83 +93,158 @@ interface ProductionBatch {
   progress: number;
 }
 
-// Mock 数据
-const mockPlanDetail: PlanDetail = {
-  id: '1',
-  planNumber: 'PP20241227001',
-  product: '冷冻带鱼段',
-  quantity: '500kg',
-  workshop: '切片车间',
-  supervisor: '张主任',
-  planDate: '2025-12-27',
-  priority: 'high',
-  status: 'in_progress',
-  progress: 65,
-  completedQuantity: '325kg',
-  remainingQuantity: '175kg',
-  estimatedCompletion: '今日 16:30',
+// Data transformation helpers
+const transformPlanToDetail = (apiPlan: any): PlanDetail => {
+  const status = (apiPlan.status || 'pending').toLowerCase();
+  const plannedQty = apiPlan.plannedQuantity || 0;
+  const actualQty = apiPlan.actualQuantity || 0;
+  const progress = plannedQty > 0 ? Math.round((actualQty / plannedQty) * 100) : 0;
+
+  return {
+    id: apiPlan.id || '',
+    planNumber: apiPlan.planNumber || apiPlan.id || '',
+    product: apiPlan.productTypeName || apiPlan.productName || '',
+    quantity: `${plannedQty}kg`,
+    workshop: apiPlan.workshopName || '生产车间',
+    supervisor: apiPlan.supervisorName || apiPlan.createdByName || '',
+    planDate: apiPlan.planDate || apiPlan.plannedDate || '',
+    priority: apiPlan.priority === 1 ? 'high' : apiPlan.priority === 3 ? 'low' : 'medium',
+    status: status as PlanDetail['status'],
+    progress,
+    completedQuantity: `${actualQty}kg`,
+    remainingQuantity: `${Math.max(0, plannedQty - actualQty)}kg`,
+    estimatedCompletion: apiPlan.estimatedCompletion || apiPlan.expectedCompletionDate || '',
+  };
 };
 
-const mockMaterials: MaterialMatch[] = [
-  {
-    id: '1',
-    name: '带鱼原料',
-    batchNumber: 'MB20241225001',
-    required: '550kg',
-    available: '600kg',
-    matched: true,
-  },
-  {
-    id: '2',
-    name: '包装袋',
-    batchNumber: 'PKG20241220001',
-    required: '500个',
-    available: '800个',
-    matched: true,
-  },
-];
+const transformMaterials = (apiMaterials: any[]): MaterialMatch[] => {
+  return (apiMaterials || []).map((m, index) => ({
+    id: m.id || String(index + 1),
+    name: m.materialTypeName || m.name || '',
+    batchNumber: m.batchNumber || '',
+    required: `${m.requiredQuantity || m.required || 0}${m.unit || 'kg'}`,
+    available: `${m.availableQuantity || m.available || 0}${m.unit || 'kg'}`,
+    matched: m.matched ?? ((m.availableQuantity || 0) >= (m.requiredQuantity || 0)),
+  }));
+};
 
-const mockWorkers: AssignedWorker[] = [
-  { id: '1', name: '张', avatar: '张' },
-  { id: '2', name: '李', avatar: '李' },
-  { id: '3', name: '王', avatar: '王' },
-  { id: '4', name: '赵', avatar: '赵' },
-  { id: '5', name: '陈', avatar: '陈' },
-];
+const transformWorkers = (apiWorkers: any[]): AssignedWorker[] => {
+  return (apiWorkers || []).map((w, index) => ({
+    id: w.id || w.userId || String(index + 1),
+    name: w.name || w.workerName || w.userName || '',
+    avatar: (w.name || w.workerName || w.userName || '').charAt(0),
+  }));
+};
 
-const mockBatches: ProductionBatch[] = [
-  { id: '1', batchNumber: 'PB20241227001', status: 'in_progress', progress: 65 },
-  { id: '2', batchNumber: 'PB20241227002', status: 'pending', progress: 0 },
-];
+const transformBatches = (apiBatches: any[]): ProductionBatch[] => {
+  return (apiBatches || []).map((b, index) => ({
+    id: b.id || String(index + 1),
+    batchNumber: b.batchNumber || '',
+    status: (b.status || 'pending').toLowerCase() === 'in_progress' ? 'in_progress' :
+            (b.status || 'pending').toLowerCase() === 'completed' ? 'completed' : 'pending',
+    progress: b.progress || b.completionPercent || 0,
+  }));
+};
 
 export default function PlanDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { t } = useTranslation('dispatcher');
+  const params = route.params as { planId?: string } | undefined;
+  const planId = params?.planId || '';
+
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [plan] = useState<PlanDetail>(mockPlanDetail);
-  const [materials] = useState<MaterialMatch[]>(mockMaterials);
-  const [workers] = useState<AssignedWorker[]>(mockWorkers);
-  const [batches] = useState<ProductionBatch[]>(mockBatches);
+  const [plan, setPlan] = useState<PlanDetail | null>(null);
+  const [materials, setMaterials] = useState<MaterialMatch[]>([]);
+  const [workers, setWorkers] = useState<AssignedWorker[]>([]);
+  const [batches, setBatches] = useState<ProductionBatch[]>([]);
+
+  // 重排相关状态
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [keepAssignments, setKeepAssignments] = useState(true);
+  const [isRescheduling, setIsRescheduling] = useState(false);
+
+  // Load plan data from API
+  const loadPlanData = useCallback(async () => {
+    if (!planId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      // Fetch plan details
+      const planResponse = await schedulingApiClient.getPlan(planId);
+      if (planResponse.success && planResponse.data) {
+        setPlan(transformPlanToDetail(planResponse.data));
+
+        // Extract materials from plan if available
+        if (planResponse.data.materials) {
+          setMaterials(transformMaterials(planResponse.data.materials));
+        }
+
+        // Extract workers from plan if available
+        if (planResponse.data.workers || planResponse.data.assignedWorkers) {
+          setWorkers(transformWorkers(planResponse.data.workers || planResponse.data.assignedWorkers));
+        }
+
+        // Extract batches from plan if available
+        if (planResponse.data.batches || planResponse.data.schedules) {
+          setBatches(transformBatches(planResponse.data.batches || planResponse.data.schedules));
+        }
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert(t('errors.unauthorized'), t('errors.loginExpired'));
+        } else if (status === 404) {
+          Alert.alert(t('errors.notFound'), t('plan.notFound'));
+          navigation.goBack();
+        } else {
+          Alert.alert(t('errors.loadFailed'), error.response?.data?.message || t('plan.loadError'));
+        }
+      } else if (error instanceof Error) {
+        Alert.alert(t('errors.error'), error.message);
+      }
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [planId, navigation, t]);
+
+  // Load data on mount
+  React.useEffect(() => {
+    loadPlanData();
+  }, [loadPlanData]);
+
+  // 判断是否可以重排
+  const canReschedule = plan ? RESCHEDULABLE_STATUSES.includes(plan.status) : false;
 
   // 下拉刷新
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: 调用API刷新数据
-    setTimeout(() => setRefreshing(false), 1000);
-  }, []);
+    await loadPlanData();
+  }, [loadPlanData]);
 
   // 获取状态标签样式
   const getStatusStyle = (status: string) => {
     switch (status) {
+      case 'draft':
+        return { backgroundColor: '#f5f5f5', color: '#999' };
+      case 'pending':
+        return { backgroundColor: '#fff7e6', color: '#fa8c16' };
+      case 'confirmed':
+        return { backgroundColor: '#f0f5ff', color: '#597ef7' };
       case 'in_progress':
         return { backgroundColor: '#e6f7ff', color: '#1890ff' };
       case 'completed':
         return { backgroundColor: '#f6ffed', color: '#52c41a' };
-      case 'pending':
-        return { backgroundColor: '#fff7e6', color: '#fa8c16' };
       case 'paused':
         return { backgroundColor: '#fff1f0', color: '#ff4d4f' };
+      case 'cancelled':
+        return { backgroundColor: '#fafafa', color: '#bfbfbf' };
       default:
         return { backgroundColor: '#f5f5f5', color: '#666' };
     }
@@ -169,14 +253,20 @@ export default function PlanDetailScreen() {
   // 获取状态文本
   const getStatusText = (status: string) => {
     switch (status) {
+      case 'draft':
+        return '草稿';
+      case 'pending':
+        return '待开始';
+      case 'confirmed':
+        return '已确认';
       case 'in_progress':
         return '进行中';
       case 'completed':
         return '已完成';
-      case 'pending':
-        return '待开始';
       case 'paused':
         return '已暂停';
+      case 'cancelled':
+        return '已取消';
       default:
         return status;
     }
@@ -233,6 +323,67 @@ export default function PlanDetailScreen() {
     );
   };
 
+  // 打开重排弹窗
+  const openRescheduleModal = () => {
+    setRescheduleReason('');
+    setKeepAssignments(true);
+    setShowRescheduleModal(true);
+  };
+
+  // 关闭重排弹窗
+  const closeRescheduleModal = () => {
+    setShowRescheduleModal(false);
+    setRescheduleReason('');
+  };
+
+  // 重新排程
+  const handleReschedule = async () => {
+    if (!rescheduleReason.trim()) {
+      Alert.alert('提示', '请输入重排原因');
+      return;
+    }
+
+    setIsRescheduling(true);
+    try {
+      const result = await schedulingApiClient.reschedule({
+        planId: plan.id,
+        reason: rescheduleReason.trim(),
+        keepAssignments,
+      });
+
+      if (result.success) {
+        Alert.alert('成功', '排程已重新生成', [
+          {
+            text: '确定',
+            onPress: () => {
+              closeRescheduleModal();
+              onRefresh(); // 刷新页面数据
+            },
+          },
+        ]);
+      } else {
+        Alert.alert('失败', result.message || '重新排程失败');
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert('错误', '登录已过期，请重新登录');
+        } else if (status === 403) {
+          Alert.alert('权限不足', '您没有权限执行此操作');
+        } else {
+          Alert.alert('失败', error.response?.data?.message || '重新排程失败');
+        }
+      } else if (error instanceof Error) {
+        Alert.alert('错误', error.message);
+      } else {
+        Alert.alert('失败', '重新排程失败，请稍后重试');
+      }
+    } finally {
+      setIsRescheduling(false);
+    }
+  };
+
   // 渲染原料匹配卡片
   const renderMaterialCard = (material: MaterialMatch) => (
     <View
@@ -287,6 +438,53 @@ export default function PlanDetailScreen() {
       <Text style={styles.batchProgress}>进度 {batch.progress}%</Text>
     </TouchableOpacity>
   );
+
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>计划详情</Text>
+          <View style={styles.editButton} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+          <Text style={styles.loadingText}>加载中...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // No plan found
+  if (!plan) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>计划详情</Text>
+          <View style={styles.editButton} />
+        </View>
+        <View style={styles.emptyContainer}>
+          <Ionicons name="document-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyText}>计划不存在或已被删除</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadPlanData}>
+            <Text style={styles.retryButtonText}>重试</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -433,14 +631,23 @@ export default function PlanDetailScreen() {
 
       {/* 底部操作栏 */}
       <View style={styles.bottomActions}>
+        {canReschedule && (
+          <TouchableOpacity
+            style={styles.rescheduleButton}
+            onPress={openRescheduleModal}
+          >
+            <Ionicons name="refresh" size={16} color={DISPATCHER_THEME.info} />
+            <Text style={styles.rescheduleButtonText}>重新排程</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
-          style={styles.secondaryButton}
+          style={[styles.secondaryButton, canReschedule && styles.smallerButton]}
           onPress={handlePausePlan}
         >
           <Text style={styles.secondaryButtonText}>暂停计划</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.primaryButton}
+          style={[styles.primaryButton, canReschedule && styles.smallerButton]}
           onPress={handleCompletePlan}
         >
           <LinearGradient
@@ -453,6 +660,88 @@ export default function PlanDetailScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      {/* 重排确认弹窗 */}
+      <Modal
+        visible={showRescheduleModal}
+        transparent
+        animationType="fade"
+        onRequestClose={closeRescheduleModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* 弹窗标题 */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <Ionicons name="refresh" size={20} color={DISPATCHER_THEME.primary} />
+                <Text style={styles.modalTitle}>重新排程</Text>
+              </View>
+              <TouchableOpacity onPress={closeRescheduleModal} disabled={isRescheduling}>
+                <Ionicons name="close" size={24} color="#999" />
+              </TouchableOpacity>
+            </View>
+
+            {/* 提示信息 */}
+            <Text style={styles.modalHint}>
+              重新排程将重新计算生产安排，请说明原因以便追溯。
+            </Text>
+
+            {/* 原因输入 */}
+            <Text style={styles.inputLabel}>重排原因 <Text style={styles.required}>*</Text></Text>
+            <TextInput
+              style={styles.reasonInput}
+              placeholder="请输入重排原因（如：紧急订单插入、工人变动等）"
+              placeholderTextColor="#999"
+              value={rescheduleReason}
+              onChangeText={setRescheduleReason}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+              editable={!isRescheduling}
+            />
+
+            {/* 保留分配选项 */}
+            <View style={styles.switchRow}>
+              <View style={styles.switchLabel}>
+                <Text style={styles.switchTitle}>保留现有工人分配</Text>
+                <Text style={styles.switchDesc}>关闭后将重新分配所有工人</Text>
+              </View>
+              <Switch
+                value={keepAssignments}
+                onValueChange={setKeepAssignments}
+                trackColor={{ false: '#e0e0e0', true: DISPATCHER_THEME.secondary }}
+                thumbColor={keepAssignments ? DISPATCHER_THEME.primary : '#f4f3f4'}
+                disabled={isRescheduling}
+              />
+            </View>
+
+            {/* 操作按钮 */}
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={styles.modalCancelButton}
+                onPress={closeRescheduleModal}
+                disabled={isRescheduling}
+              >
+                <Text style={styles.modalCancelText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalConfirmButton,
+                  !rescheduleReason.trim() && styles.modalConfirmButtonDisabled,
+                ]}
+                onPress={handleReschedule}
+                disabled={!rescheduleReason.trim() || isRescheduling}
+              >
+                {isRescheduling ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.modalConfirmText}>确认重排</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -461,6 +750,40 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: DISPATCHER_THEME.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    backgroundColor: DISPATCHER_THEME.primary,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -747,6 +1070,136 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   primaryButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#fff',
+  },
+  // 重排按钮样式
+  rescheduleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    backgroundColor: '#e6f7ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#91d5ff',
+  },
+  rescheduleButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: DISPATCHER_THEME.info,
+  },
+  smallerButton: {
+    flex: 0.8,
+  },
+  // 弹窗样式
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalHint: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  required: {
+    color: DISPATCHER_THEME.danger,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    minHeight: 80,
+    marginBottom: 16,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#f0f0f0',
+    marginBottom: 16,
+  },
+  switchLabel: {
+    flex: 1,
+    marginRight: 12,
+  },
+  switchTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 2,
+  },
+  switchDesc: {
+    fontSize: 12,
+    color: '#999',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#666',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: DISPATCHER_THEME.primary,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalConfirmButtonDisabled: {
+    backgroundColor: '#d9d9d9',
+  },
+  modalConfirmText: {
     fontSize: 15,
     fontWeight: '500',
     color: '#fff',

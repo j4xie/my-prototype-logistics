@@ -12,7 +12,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { equipmentApiClient } from '../../../services/api/equipmentApiClient';
 
 const { width } = Dimensions.get('window');
 
@@ -86,216 +89,153 @@ interface ResourceAlert {
   timestamp: string;
 }
 
-// 模拟数据
-const mockWorkshops: Workshop[] = [
-  {
-    id: 'W1',
-    name: '切片车间',
-    productionLines: [
-      {
-        id: 'L1',
-        name: '切片A线',
-        status: 'running',
-        currentTask: '带鱼片 100kg',
-        progress: 75,
-        capacity: 100,
-        currentOutput: 75,
-        workers: 5,
-        maxWorkers: 6,
-      },
-      {
-        id: 'L2',
-        name: '切片B线',
-        status: 'running',
-        currentTask: '鲅鱼片 80kg',
-        progress: 40,
-        capacity: 100,
-        currentOutput: 40,
-        workers: 4,
-        maxWorkers: 6,
-      },
-    ],
-    totalWorkers: 12,
-    availableWorkers: 3,
-    utilization: 85,
-  },
-  {
-    id: 'W2',
-    name: '包装车间',
-    productionLines: [
-      {
-        id: 'L3',
-        name: '包装线1',
-        status: 'idle',
-        capacity: 150,
-        currentOutput: 0,
-        workers: 0,
-        maxWorkers: 4,
-      },
-      {
-        id: 'L4',
-        name: '包装线2',
-        status: 'maintenance',
-        capacity: 150,
-        currentOutput: 0,
-        workers: 1,
-        maxWorkers: 4,
-      },
-    ],
-    totalWorkers: 8,
-    availableWorkers: 7,
-    utilization: 25,
-  },
-  {
-    id: 'W3',
-    name: '速冻车间',
-    productionLines: [
-      {
-        id: 'L5',
-        name: '速冻线1',
-        status: 'running',
-        currentTask: '带鱼片冷冻',
-        progress: 60,
-        capacity: 200,
-        currentOutput: 120,
-        workers: 3,
-        maxWorkers: 4,
-      },
-    ],
-    totalWorkers: 6,
-    availableWorkers: 2,
-    utilization: 60,
-  },
-];
-
-const mockEquipments: Equipment[] = [
-  {
-    id: 'E1',
-    name: '切片机A',
-    type: '切片设备',
-    status: 'normal',
-    workshopId: 'W1',
-    workshopName: '切片车间',
-    lastMaintenance: '2025-12-20',
-    nextMaintenance: '2026-01-20',
-    runtime: 156,
-  },
-  {
-    id: 'E2',
-    name: '切片机B',
-    type: '切片设备',
-    status: 'warning',
-    workshopId: 'W1',
-    workshopName: '切片车间',
-    lastMaintenance: '2025-11-15',
-    nextMaintenance: '2025-12-30',
-    runtime: 423,
-    alerts: ['即将到期保养'],
-  },
-  {
-    id: 'E3',
-    name: '包装机1',
-    type: '包装设备',
-    status: 'error',
-    workshopId: 'W2',
-    workshopName: '包装车间',
-    lastMaintenance: '2025-12-10',
-    runtime: 89,
-    alerts: ['传感器故障', '需要更换配件'],
-  },
-  {
-    id: 'E4',
-    name: '速冻机1',
-    type: '冷冻设备',
-    status: 'normal',
-    workshopId: 'W3',
-    workshopName: '速冻车间',
-    lastMaintenance: '2025-12-25',
-    nextMaintenance: '2026-01-25',
-    runtime: 48,
-  },
-];
-
-const mockAlerts: ResourceAlert[] = [
-  {
-    id: 'A1',
-    type: 'equipment',
-    level: 'critical',
-    title: '设备故障',
-    message: '包装机1传感器故障，需要紧急维修',
-    resourceId: 'E3',
-    resourceName: '包装机1',
-    timestamp: '2025-12-29 09:30',
-  },
-  {
-    id: 'A2',
-    type: 'capacity',
-    level: 'warning',
-    title: '产能瓶颈',
-    message: '切片车间产能利用率达85%，接近饱和',
-    resourceId: 'W1',
-    resourceName: '切片车间',
-    timestamp: '2025-12-29 10:00',
-  },
-  {
-    id: 'A3',
-    type: 'worker',
-    level: 'info',
-    title: '人员不足',
-    message: '切片A线缺少1名工人，建议调配',
-    resourceId: 'L1',
-    resourceName: '切片A线',
-    timestamp: '2025-12-29 10:15',
-  },
-  {
-    id: 'A4',
-    type: 'equipment',
-    level: 'warning',
-    title: '保养提醒',
-    message: '切片机B即将到期保养，请安排维护',
-    resourceId: 'E2',
-    resourceName: '切片机B',
-    timestamp: '2025-12-29 08:00',
-  },
-];
+/**
+ * TODO: P2 Mock数据替换
+ *
+ * 已使用的API:
+ * - schedulingApiClient.getProductionLines() - 获取产线列表
+ * - schedulingApiClient.getUnresolvedAlerts() - 获取未解决告警
+ * - equipmentApiClient.getEquipments() - 获取设备列表
+ *
+ * 数据转换说明:
+ * - Workshop 从产线数据按车间分组生成
+ * - Equipment 从设备API直接获取
+ * - ResourceAlert 从调度告警和设备告警合并
+ */
 
 export default function ResourceOverviewScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('dispatcher');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [workshops, setWorkshops] = useState<Workshop[]>(mockWorkshops);
-  const [equipments, setEquipments] = useState<Equipment[]>(mockEquipments);
-  const [alerts, setAlerts] = useState<ResourceAlert[]>(mockAlerts);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [equipments, setEquipments] = useState<Equipment[]>([]);
+  const [alerts, setAlerts] = useState<ResourceAlert[]>([]);
   const [selectedTab, setSelectedTab] = useState<'workshop' | 'equipment' | 'alert'>('workshop');
 
   // 加载数据
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      // TODO: 调用API获取资源数据
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setWorkshops(mockWorkshops);
-      setEquipments(mockEquipments);
-      setAlerts(mockAlerts);
+
+      // 并行获取多个数据源
+      const linesPromise = schedulingApiClient.getProductionLines().catch(() => ({ success: false, data: [] as any[] }));
+      const alertsPromise = schedulingApiClient.getUnresolvedAlerts().catch(() => ({ success: false, data: [] as any[] }));
+      const equipmentsPromise = equipmentApiClient.getEquipments().catch(() => ({ success: false, data: { content: [] as any[] } }));
+
+      const [linesResponse, alertsResponse, equipmentsResponseRaw] = await Promise.all([
+        linesPromise,
+        alertsPromise,
+        equipmentsPromise,
+      ]);
+      const equipmentsResponse = equipmentsResponseRaw as { success: boolean; data: { content: any[] } | null };
+
+      // 处理产线数据 -> Workshop
+      if (linesResponse.success && linesResponse.data) {
+        const workshopMap = new Map<string, Workshop>();
+        const lines = linesResponse.data;
+
+        lines.forEach((line: any) => {
+          const workshopId = line.workshopId || 'default';
+          const workshopName = line.workshopName || '未分配车间';
+
+          if (!workshopMap.has(workshopId)) {
+            workshopMap.set(workshopId, {
+              id: workshopId,
+              name: workshopName,
+              productionLines: [],
+              totalWorkers: 0,
+              availableWorkers: 0,
+              utilization: 0,
+            });
+          }
+
+          const workshop = workshopMap.get(workshopId)!;
+          const lineStatus = line.status === 'active' ? 'running' : line.status === 'maintenance' ? 'maintenance' : 'idle';
+
+          workshop.productionLines.push({
+            id: line.id || String(workshop.productionLines.length + 1),
+            name: line.name || `产线${workshop.productionLines.length + 1}`,
+            status: lineStatus,
+            currentTask: line.currentTask,
+            progress: line.progress || 0,
+            capacity: line.capacity || 100,
+            currentOutput: line.currentOutput || 0,
+            workers: line.currentWorkers || 0,
+            maxWorkers: line.maxWorkers || 4,
+          });
+
+          workshop.totalWorkers += line.maxWorkers || 4;
+          workshop.availableWorkers += (line.maxWorkers || 4) - (line.currentWorkers || 0);
+        });
+
+        // 计算利用率
+        workshopMap.forEach(workshop => {
+          const runningLines = workshop.productionLines.filter(l => l.status === 'running').length;
+          workshop.utilization = Math.round((runningLines / Math.max(workshop.productionLines.length, 1)) * 100);
+        });
+
+        setWorkshops(Array.from(workshopMap.values()));
+      }
+
+      // 处理设备数据
+      if (equipmentsResponse.success && equipmentsResponse.data?.content) {
+        const equipmentList = equipmentsResponse.data.content;
+        const transformedEquipments: Equipment[] = equipmentList.map((eq: any) => ({
+          id: String(eq.id),
+          name: eq.name || eq.equipmentName || '-',
+          type: eq.type || '通用设备',
+          status: eq.status === 'active' ? 'normal' : eq.status === 'fault' ? 'error' : eq.status === 'maintenance' ? 'warning' : 'offline',
+          workshopId: eq.workshopId || '',
+          workshopName: eq.workshopName || eq.location || '-',
+          lastMaintenance: eq.lastMaintenanceDate,
+          nextMaintenance: eq.nextMaintenanceDate,
+          runtime: eq.totalRunningHours || 0,
+          alerts: eq.status === 'fault' ? ['设备故障'] : eq.status === 'maintenance' ? ['维护中'] : undefined,
+        }));
+        setEquipments(transformedEquipments);
+      }
+
+      // 处理告警数据
+      if (alertsResponse.success && alertsResponse.data) {
+        const alertsList = alertsResponse.data;
+        const transformedAlerts: ResourceAlert[] = alertsList.map((alert: any) => ({
+          id: String(alert.id),
+          type: alert.alertType?.includes('equipment') ? 'equipment' : alert.alertType?.includes('worker') ? 'worker' : 'capacity',
+          level: alert.severity === 'CRITICAL' ? 'critical' : alert.severity === 'WARNING' ? 'warning' : 'info',
+          title: alert.title || alert.alertType || '系统告警',
+          message: alert.message || alert.description || '-',
+          resourceId: String(alert.resourceId || alert.scheduleId || ''),
+          resourceName: alert.resourceName || alert.scheduleName || '-',
+          timestamp: alert.createdAt || alert.triggeredAt || new Date().toISOString(),
+        }));
+        setAlerts(transformedAlerts);
+      }
+
     } catch (error) {
       console.error('加载资源数据失败:', error);
-      Alert.alert(t('common.error'), t('resource.loadError'));
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Alert.alert('登录已过期', '请重新登录');
+        } else {
+          Alert.alert('加载失败', error.response?.data?.message || '网络错误');
+        }
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // 下拉刷新
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await loadData();
     setRefreshing(false);
-  };
+  }, [loadData]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   // 获取产线状态信息
   const getLineStatusInfo = (status: string) => {

@@ -1056,6 +1056,43 @@
       "enterCustomReason": "请填写具体原因"
     }
   },
+  "schedulingSettings": {
+    "title": "排产设置",
+    "loading": "加载中...",
+    "save": "保存设置",
+    "automationMode": {
+      "title": "自动化模式",
+      "description": "选择AI排产的自动化程度",
+      "fullAuto": "全自动",
+      "fullAutoDesc": "AI自动生成并执行排产计划，无需人工干预",
+      "humanConfirm": "人工确认",
+      "humanConfirmDesc": "AI生成排产建议，需人工审核确认后执行",
+      "disabled": "禁用",
+      "disabledDesc": "完全手动排产，不使用AI辅助",
+      "recommended": "推荐"
+    },
+    "riskThreshold": {
+      "title": "风险阈值设置",
+      "description": "设置完成概率的风险等级划分阈值",
+      "lowRisk": "低风险阈值",
+      "lowRiskHint": "完成概率高于此值视为低风险",
+      "lowRiskLabel": "低风险: >{{lowRisk}}%",
+      "mediumRisk": "中风险阈值",
+      "mediumRiskHint": "完成概率高于此值视为中风险，低于视为高风险",
+      "mediumRiskLabel": "中风险: {{mediumRisk}}%-{{lowRisk}}%",
+      "highRiskLabel": "高风险: <{{mediumRisk}}%"
+    },
+    "notifications": {
+      "title": "通知设置",
+      "enable": "启用通知",
+      "enableDesc": "接收排产相关的推送通知和预警提醒"
+    },
+    "messages": {
+      "loadFailed": "加载设置失败",
+      "saveSuccess": "设置保存成功",
+      "saveFailed": "保存设置失败"
+    }
+  },
   "personnelListScreen": {
     "dispatch": "派遣",
     "intern": "实习",

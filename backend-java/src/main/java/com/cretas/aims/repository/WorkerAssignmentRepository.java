@@ -53,4 +53,22 @@ public interface WorkerAssignmentRepository extends JpaRepository<WorkerAssignme
      */
     @Query("SELECT wa FROM WorkerAssignment wa WHERE wa.scheduleId IN :scheduleIds")
     List<WorkerAssignment> findByScheduleIdIn(@Param("scheduleIds") Collection<String> scheduleIds);
+
+    /**
+     * 获取员工近期任务历史
+     * 按分配时间倒序，返回最近的任务记录
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @return 任务分配列表（包含排程信息）
+     */
+    @Query("SELECT wa FROM WorkerAssignment wa " +
+           "JOIN FETCH wa.schedule ls " +
+           "JOIN FETCH ls.plan sp " +
+           "WHERE sp.factoryId = :factoryId " +
+           "AND wa.userId = :userId " +
+           "ORDER BY wa.assignedAt DESC")
+    List<WorkerAssignment> findRecentByFactoryIdAndUserId(
+            @Param("factoryId") String factoryId,
+            @Param("userId") Long userId);
 }
