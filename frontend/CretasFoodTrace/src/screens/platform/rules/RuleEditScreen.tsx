@@ -38,6 +38,8 @@ import {
   EntityType,
   CreateRuleRequest,
   UpdateRuleRequest,
+  RuleValidationResult,
+  AIRuleParseResponse,
 } from '../../../services/api/ruleConfigApiClient';
 import { useAuthStore } from '../../../store/authStore';
 import { createLogger } from '../../../utils/logger';
@@ -140,7 +142,8 @@ export default function RuleEditScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<any>>();
   const route = useRoute<RouteProp<RuleEditRouteParams, 'RuleEdit'>>();
   const { t, i18n } = useTranslation();
-  const { factoryId } = useAuthStore();
+  const { getFactoryId } = useAuthStore();
+  const factoryId = getFactoryId();
 
   const ruleId = route.params?.ruleId;
   const isEditMode = !!ruleId;
@@ -183,10 +186,7 @@ export default function RuleEditScreen() {
   const [aiPrompt, setAiPrompt] = useState('');
 
   // Validation state
-  const [validationResult, setValidationResult] = useState<{
-    valid: boolean;
-    errors: string[];
-  } | null>(null);
+  const [validationResult, setValidationResult] = useState<RuleValidationResult | null>(null);
 
   // Load existing rule for edit mode
   useEffect(() => {
@@ -200,14 +200,18 @@ export default function RuleEditScreen() {
 
     setLoading(true);
     try {
-      const rule = await ruleConfigApiClient.getRuleById(factoryId, id);
-      setRuleName(rule.ruleName);
-      setRuleIdInput(rule.ruleId);
-      setRuleGroup(rule.ruleGroup);
-      setPriority(rule.priority || 50);
-      setDescription(rule.ruleDescription || '');
-      setDrlContent(rule.ruleContent);
-      setEnabledImmediately(rule.enabled);
+      const loadedRule = await ruleConfigApiClient.getRuleById(id, factoryId);
+      if (!loadedRule) {
+        Alert.alert(t('common.error', 'Error'), t('rules.notFound', 'Rule not found'));
+        return;
+      }
+      setRuleName(loadedRule.ruleName);
+      setRuleIdInput(loadedRule.id);
+      setRuleGroup(loadedRule.ruleGroup);
+      setPriority(loadedRule.priority || 50);
+      setDescription(loadedRule.ruleDescription || '');
+      setDrlContent(loadedRule.ruleContent);
+      setEnabledImmediately(loadedRule.enabled);
       logger.info('Rule loaded successfully', { ruleId: id });
     } catch (error) {
       logger.error('Failed to load rule', error);
@@ -237,8 +241,10 @@ export default function RuleEditScreen() {
     }
   };
 
-  const getGroupConfig = (group: RuleGroup) => {
-    return RULE_GROUPS.find(g => g.key === group) || RULE_GROUPS[0];
+  type GroupConfig = { key: RuleGroup; label: string; labelEn: string; color: string; icon: string };
+  const getGroupConfig = (group: RuleGroup): GroupConfig => {
+    const defaultConfig = RULE_GROUPS[0]!;
+    return RULE_GROUPS.find(g => g.key === group) ?? defaultConfig;
   };
 
   // Add condition
@@ -299,9 +305,9 @@ export default function RuleEditScreen() {
 
     setValidating(true);
     try {
-      const result = await ruleConfigApiClient.validateDRL(factoryId, drlContent);
+      const result = await ruleConfigApiClient.validateDRL(drlContent, factoryId);
       setValidationResult(result);
-      if (result.valid) {
+      if (result.isValid) {
         Alert.alert(
           t('rules.validationSuccess', 'Validation Successful'),
           t('rules.drlValid', 'DRL syntax is valid')
@@ -329,19 +335,18 @@ export default function RuleEditScreen() {
 
     setAiGenerating(true);
     try {
-      const response = await ruleConfigApiClient.parseRule(factoryId, {
+      const response = await ruleConfigApiClient.parseRule({
         userInput: aiPrompt,
         ruleGroup,
-        existingRules: [],
-      });
+      }, factoryId);
 
-      if (response.success && response.generatedDRL) {
-        setDrlContent(response.generatedDRL);
-        if (response.suggestedName) {
-          setRuleName(response.suggestedName);
+      if (response.success && response.drlContent) {
+        setDrlContent(response.drlContent);
+        if (response.ruleName) {
+          setRuleName(response.ruleName);
         }
-        if (response.suggestedDescription) {
-          setDescription(response.suggestedDescription);
+        if (response.ruleDescription) {
+          setDescription(response.ruleDescription);
         }
         Alert.alert(
           t('rules.aiGenerated', 'AI Generated'),
@@ -376,8 +381,9 @@ export default function RuleEditScreen() {
     // Build conditions
     if (conditions.length > 0) {
       const conditionsByEntity = conditions.reduce((acc, c) => {
-        if (!acc[c.entity]) acc[c.entity] = [];
-        acc[c.entity].push(c);
+        const entity = c.entity;
+        if (!acc[entity]) acc[entity] = [];
+        acc[entity]!.push(c);
         return acc;
       }, {} as Record<string, Condition[]>);
 
@@ -454,7 +460,7 @@ export default function RuleEditScreen() {
           ruleContent: drlContent,
           priority,
         };
-        await ruleConfigApiClient.updateRule(factoryId, ruleId, updateData);
+        await ruleConfigApiClient.updateRule(ruleId, updateData, factoryId);
         logger.info('Rule updated successfully', { ruleId });
         Alert.alert(
           t('common.success', 'Success'),
@@ -471,7 +477,7 @@ export default function RuleEditScreen() {
           priority,
           enabled: enabledImmediately,
         };
-        await ruleConfigApiClient.createRule(factoryId, createData);
+        await ruleConfigApiClient.createRule(createData, factoryId);
         logger.info('Rule created successfully');
         Alert.alert(
           t('common.success', 'Success'),
@@ -545,7 +551,7 @@ export default function RuleEditScreen() {
                       onPress: async () => {
                         if (factoryId && ruleId) {
                           try {
-                            await ruleConfigApiClient.deleteRule(factoryId, ruleId);
+                            await ruleConfigApiClient.deleteRule(ruleId, factoryId);
                             navigation.goBack();
                           } catch (error) {
                             Alert.alert(t('common.error', 'Error'), t('rules.deleteFailed', 'Failed to delete rule'));
@@ -770,14 +776,14 @@ export default function RuleEditScreen() {
               </View>
 
               {validationResult && (
-                <View style={[styles.validationResult, !validationResult.valid && styles.validationError]}>
+                <View style={[styles.validationResult, !validationResult.isValid && styles.validationError]}>
                   <IconButton
-                    icon={validationResult.valid ? 'check-circle' : 'alert-circle'}
-                    iconColor={validationResult.valid ? '#52c41a' : '#f5222d'}
+                    icon={validationResult.isValid ? 'check-circle' : 'alert-circle'}
+                    iconColor={validationResult.isValid ? '#52c41a' : '#f5222d'}
                     size={20}
                   />
-                  <Text style={[styles.validationText, !validationResult.valid && styles.validationErrorText]}>
-                    {validationResult.valid
+                  <Text style={[styles.validationText, !validationResult.isValid && styles.validationErrorText]}>
+                    {validationResult.isValid
                       ? t('rules.syntaxValid', 'Syntax is valid')
                       : validationResult.errors[0]}
                   </Text>

@@ -326,6 +326,23 @@ public class SchedulingController {
         return ApiResponse.success("获取成功", workers);
     }
 
+    /**
+     * 获取员工任务历史
+     */
+    @GetMapping("/workers/{userId}/task-history")
+    @Operation(summary = "获取员工任务历史", description = "获取指定员工的近期任务执行记录，包含工时和完成状态")
+    public ApiResponse<List<TaskHistoryDTO>> getEmployeeTaskHistory(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId,
+            @Parameter(description = "员工用户ID", example = "22")
+            @PathVariable Long userId,
+            @Parameter(description = "返回数量限制（默认10条）", example = "10")
+            @RequestParam(defaultValue = "10") Integer limit) {
+        log.info("获取员工任务历史: factoryId={}, userId={}, limit={}", factoryId, userId, limit);
+        List<TaskHistoryDTO> history = schedulingService.getEmployeeTaskHistory(factoryId, userId, limit);
+        return ApiResponse.success("获取成功", history);
+    }
+
     // ==================== AI 辅助功能 ====================
 
     /**
@@ -909,6 +926,37 @@ public class SchedulingController {
         com.cretas.aims.dto.production.ProductionPlanDTO plan = urgentInsertService.approveForceInsert(
                 factoryId, planId, approverId, false, reason);
         return ApiResponse.success("已拒绝", plan);
+    }
+
+    // ==================== 排产自动化配置 ====================
+
+    /**
+     * 获取排产自动化设置
+     */
+    @GetMapping("/settings")
+    @Operation(summary = "获取排产设置", description = "获取排产自动化配置，包括自动排产模式、风险阈值、通知开关等")
+    public ApiResponse<SchedulingSettingsDTO> getSchedulingSettings(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId) {
+        log.info("获取排产设置: factoryId={}", factoryId);
+        SchedulingSettingsDTO settings = schedulingService.getSchedulingSettings(factoryId);
+        return ApiResponse.success("获取成功", settings);
+    }
+
+    /**
+     * 更新排产自动化设置
+     */
+    @PutMapping("/settings")
+    @Operation(summary = "更新排产设置", description = "更新排产自动化配置，支持部分更新")
+    public ApiResponse<SchedulingSettingsDTO> updateSchedulingSettings(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId,
+            @Valid @RequestBody SchedulingSettingsDTO settings,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("更新排产设置: factoryId={}, settings={}, userId={}", factoryId, settings, userId);
+        SchedulingSettingsDTO updatedSettings = schedulingService.updateSchedulingSettings(factoryId, settings, userId);
+        return ApiResponse.success("更新成功", updatedSettings);
     }
 
     // ==================== 辅助方法 ====================

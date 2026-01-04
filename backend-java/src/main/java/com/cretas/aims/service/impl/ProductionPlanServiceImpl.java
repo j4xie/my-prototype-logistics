@@ -12,6 +12,7 @@ import com.cretas.aims.exception.ResourceNotFoundException;
 import com.cretas.aims.mapper.ProductionPlanMapper;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.ProductionPlanService;
+import com.cretas.aims.service.SchedulingService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -43,6 +46,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
     private final ProductTypeRepository productTypeRepository;
     private final ProductionPlanMapper productionPlanMapper;
     private final ConversionRepository conversionRepository;
+    private final SchedulingService schedulingService;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
     public ProductionPlanServiceImpl(
@@ -52,7 +56,8 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
             ProductionPlanBatchUsageRepository planBatchUsageRepository,
             ProductTypeRepository productTypeRepository,
             ProductionPlanMapper productionPlanMapper,
-            ConversionRepository conversionRepository) {
+            ConversionRepository conversionRepository,
+            SchedulingService schedulingService) {
         this.productionPlanRepository = productionPlanRepository;
         this.materialBatchRepository = materialBatchRepository;
         this.materialConsumptionRepository = materialConsumptionRepository;
@@ -60,6 +65,7 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         this.productTypeRepository = productTypeRepository;
         this.productionPlanMapper = productionPlanMapper;
         this.conversionRepository = conversionRepository;
+        this.schedulingService = schedulingService;
     }
 
     @Override
@@ -80,6 +86,26 @@ public class ProductionPlanServiceImpl implements ProductionPlanService {
         }
 
         log.info("创建生产计划成功: planNumber={}", plan.getPlanNumber());
+
+        // 触发自动排产（在事务提交后异步执行，确保数据已持久化）
+        final String finalPlanId = plan.getId();
+        final String finalPlanNumber = plan.getPlanNumber();
+        final String finalFactoryId = factoryId;
+        final Long finalUserId = userId;
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                try {
+                    schedulingService.onProductionPlanCreated(finalFactoryId, finalPlanId, finalPlanNumber, finalUserId);
+                    log.debug("已触发自动排产（事务提交后）: planId={}", finalPlanId);
+                } catch (Exception e) {
+                    // 自动排产失败不影响计划创建
+                    log.error("触发自动排产失败: planId={}, error={}", finalPlanId, e.getMessage());
+                }
+            }
+        });
+
         return toDTOWithConversionInfo(plan);
     }
 

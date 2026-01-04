@@ -37,6 +37,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import Slider from '@react-native-community/slider';
+import { isAxiosError } from 'axios';
 import { platformAPI, FactoryDTO, UpdateFactoryRequest } from '../../../services/api/platformApiClient';
 import { handleError } from '../../../utils/errorHandler';
 import { logger } from '../../../utils/logger';
@@ -139,37 +140,71 @@ export default function FactoryEditScreen() {
     loadFactoryData();
   }, [factoryId]);
 
+  /**
+   * 将 API 返回的 FactoryDTO 转换为 FormData 格式
+   */
+  const transformFactoryToFormData = (factory: FactoryDTO): FormData => ({
+    factoryName: factory.factoryName || factory.name || '',
+    factoryCode: factory.id || '',
+    industryType: factory.industry || '',
+    description: '', // FactoryDTO 没有 description 字段，默认为空
+    contactName: factory.contactName || factory.contactPerson || '',
+    contactPhone: factory.contactPhone || '',
+    address: factory.address || '',
+    isActive: factory.status === 'active' || factory.isActive === true,
+    blueprintName: factory.blueprintName || '',
+    blueprintVersion: factory.blueprintVersion || '',
+    autoSyncBlueprint: factory.blueprintSynced ?? true,
+    aiQuota: factory.aiQuotaTotal || 500,
+    aiQuotaUsed: factory.aiQuotaUsed || 0,
+  });
+
   const loadFactoryData = async () => {
     setLoading(true);
     try {
       factoryEditLogger.info('Loading factory data', { factoryId });
 
-      // In production, this would call API
-      // For now, using mock data based on the prototype
-      const mockData: FormData = {
-        factoryName: '海鲜加工一厂',
-        factoryCode: 'F001',
-        industryType: 'seafood',
-        description: '主要从事带鱼、黄鱼等海产品的加工生产，拥有完整的冷链加工设备。',
-        contactName: '张经理',
-        contactPhone: '138-1234-5678',
-        address: '浙江省宁波市北仑区港城大道188号',
-        isActive: true,
-        blueprintName: '水产加工标准版',
-        blueprintVersion: 'v2.0.1',
-        autoSyncBlueprint: true,
-        aiQuota: 500,
-        aiQuotaUsed: 286,
-      };
+      const response = await platformAPI.getFactoryById(factoryId);
 
-      setFormData(mockData);
-      setOriginalData(mockData);
+      if (response.success && response.data) {
+        const formDataFromApi = transformFactoryToFormData(response.data);
+        setFormData(formDataFromApi);
+        setOriginalData(formDataFromApi);
+        factoryEditLogger.info('Factory data loaded successfully', { factoryId });
+      } else {
+        factoryEditLogger.error('API returned error', { message: response.message });
+        Alert.alert(
+          t('errors.loadFailed', { defaultValue: '加载失败' }),
+          response.message || t('factoryEdit.messages.loadFailed', { defaultValue: '无法加载工厂信息' })
+        );
+        navigation.goBack();
+      }
     } catch (error) {
       factoryEditLogger.error('Failed to load factory data', error as Error);
-      handleError(error, {
-        title: t('errors.loadFailed', { defaultValue: '加载失败' }),
-        customMessage: t('factoryEdit.messages.loadFailed', { defaultValue: '无法加载工厂信息' }),
-      });
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert(
+            t('common.error', { defaultValue: '错误' }),
+            t('common.sessionExpired', { defaultValue: '登录已过期，请重新登录' })
+          );
+        } else if (status === 404) {
+          Alert.alert(
+            t('errors.notFound', { defaultValue: '未找到' }),
+            t('factoryEdit.messages.factoryNotFound', { defaultValue: '工厂不存在或已被删除' })
+          );
+        } else {
+          Alert.alert(
+            t('errors.loadFailed', { defaultValue: '加载失败' }),
+            error.response?.data?.message || t('factoryEdit.messages.loadFailed', { defaultValue: '无法加载工厂信息' })
+          );
+        }
+      } else {
+        handleError(error, {
+          title: t('errors.loadFailed', { defaultValue: '加载失败' }),
+          customMessage: t('factoryEdit.messages.loadFailed', { defaultValue: '无法加载工厂信息' }),
+        });
+      }
       navigation.goBack();
     } finally {
       setLoading(false);

@@ -57,6 +57,7 @@ public class DataOperationIntentHandler implements IntentHandler {
 
     // 支持的实体类型映射
     private static final Map<String, String> ENTITY_ALIASES = Map.ofEntries(
+            // 中文别名
             Map.entry("产品", "PRODUCT_TYPE"),
             Map.entry("产品类型", "PRODUCT_TYPE"),
             Map.entry("生产计划", "PRODUCTION_PLAN"),
@@ -64,11 +65,16 @@ public class DataOperationIntentHandler implements IntentHandler {
             Map.entry("批次", "PRODUCTION_BATCH"),
             Map.entry("生产批次", "PRODUCTION_BATCH"),
             Map.entry("加工批次", "PRODUCTION_BATCH"),
-            Map.entry("PROCESSING_BATCH", "PRODUCTION_BATCH"),
-            Map.entry("ProcessingBatch", "PRODUCTION_BATCH"),
             Map.entry("原材料", "MATERIAL_BATCH"),
             Map.entry("原料批次", "MATERIAL_BATCH"),
-            Map.entry("原材料批次", "MATERIAL_BATCH")
+            Map.entry("原材料批次", "MATERIAL_BATCH"),
+            // PascalCase 形式 (Python AI返回)
+            Map.entry("ProductType", "PRODUCT_TYPE"),
+            Map.entry("ProductionPlan", "PRODUCTION_PLAN"),
+            Map.entry("ProcessingBatch", "PRODUCTION_BATCH"),
+            Map.entry("MaterialBatch", "MATERIAL_BATCH"),
+            // SCREAMING_SNAKE_CASE 形式
+            Map.entry("PROCESSING_BATCH", "PRODUCTION_BATCH")
     );
 
     @Override
@@ -86,12 +92,18 @@ public class DataOperationIntentHandler implements IntentHandler {
                     request.getUserInput().substring(0, 50) + "..." : request.getUserInput());
 
         try {
-            // 1. 调用AI服务解析用户意图
-            Map<String, Object> parsedIntent = callAIParseIntent(factoryId, request);
+            // 1. 优先使用 context 中的结构化数据（无需AI解析）
+            Map<String, Object> parsedIntent = parseFromContext(request);
 
-            if (parsedIntent == null || !Boolean.TRUE.equals(parsedIntent.get("success"))) {
-                return buildFailedResponse(intentConfig, "AI解析意图失败: " +
-                        (parsedIntent != null ? parsedIntent.get("message") : "无响应"));
+            // 2. 如果 context 不完整，尝试调用AI服务解析
+            if (parsedIntent == null) {
+                parsedIntent = callAIParseIntent(factoryId, request);
+
+                if (parsedIntent == null || !Boolean.TRUE.equals(parsedIntent.get("success"))) {
+                    return buildFailedResponse(intentConfig, "AI解析意图失败: " +
+                            (parsedIntent != null ? parsedIntent.get("message") : "无响应") +
+                            "\n\n您可以直接提供 context 参数: {entityType, entityId, updates: {field: value}}");
+                }
             }
 
             // 2. 提取解析结果
@@ -119,6 +131,7 @@ public class DataOperationIntentHandler implements IntentHandler {
             }
 
             // 4. 构建成功响应
+            String finalOperation = operation != null ? operation : "UPDATE";
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
@@ -132,7 +145,7 @@ public class DataOperationIntentHandler implements IntentHandler {
                             "entityType", entityType,
                             "entityId", affected.getEntityId(),
                             "updates", updates,
-                            "operation", operation
+                            "operation", finalOperation
                     ))
                     .affectedEntities(List.of(affected))
                     .executedAt(LocalDateTime.now())
@@ -247,9 +260,15 @@ public class DataOperationIntentHandler implements IntentHandler {
         Optional<ProductType> optEntity;
         if (entityId != null) {
             optEntity = productTypeRepository.findById(entityId);
+        } else if (identifier != null) {
+            // 先尝试按 id 查找（identifier可能就是id）
+            optEntity = productTypeRepository.findById(identifier);
+            // 如果按id找不到，再按code查找
+            if (optEntity.isEmpty()) {
+                optEntity = productTypeRepository.findByFactoryIdAndCode(factoryId, identifier);
+            }
         } else {
-            // 按产品代码查找
-            optEntity = productTypeRepository.findByFactoryIdAndCode(factoryId, identifier);
+            optEntity = Optional.empty();
         }
 
         if (optEntity.isEmpty()) {
@@ -410,6 +429,72 @@ public class DataOperationIntentHandler implements IntentHandler {
     // ==================== 辅助方法 ====================
 
     /**
+     * 从 context 中解析结构化数据（无需AI服务）
+     * 支持格式: {entityType, entityId/entityIdentifier, updates: {field: value}}
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseFromContext(IntentExecuteRequest request) {
+        if (request.getContext() == null || request.getContext().isEmpty()) {
+            return null;
+        }
+
+        Map<String, Object> context = request.getContext();
+
+        // 检查必要字段
+        String entityType = getStringValue(context, "entityType");
+        String entityId = getStringValue(context, "entityId");
+        String entityIdentifier = getStringValue(context, "entityIdentifier");
+        Object updatesObj = context.get("updates");
+
+        // entityType 和 (entityId 或 entityIdentifier) 和 updates 都必须存在
+        if (entityType == null || (entityId == null && entityIdentifier == null)) {
+            return null;
+        }
+
+        // 解析 updates
+        Map<String, Object> updates = null;
+        if (updatesObj instanceof Map) {
+            updates = (Map<String, Object>) updatesObj;
+        } else if (updatesObj == null) {
+            // 如果没有 updates 字段，尝试从 context 中提取非元数据字段作为 updates
+            updates = new HashMap<>();
+            for (Map.Entry<String, Object> entry : context.entrySet()) {
+                String key = entry.getKey();
+                if (!key.equals("entityType") && !key.equals("entityId") &&
+                    !key.equals("entityIdentifier") && !key.equals("operation")) {
+                    updates.put(key, entry.getValue());
+                }
+            }
+            if (updates.isEmpty()) {
+                return null;
+            }
+        }
+
+        if (updates == null || updates.isEmpty()) {
+            return null;
+        }
+
+        // 构建解析结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("entityType", entityType);
+        result.put("entityId", entityId);
+        result.put("entityIdentifier", entityIdentifier);
+        result.put("updates", updates);
+        result.put("operation", getStringValue(context, "operation"));
+
+        log.info("从context解析数据操作: entityType={}, entityId={}, updates={}",
+                entityType, entityId != null ? entityId : entityIdentifier, updates);
+
+        return result;
+    }
+
+    private String getStringValue(Map<String, Object> map, String key) {
+        Object value = map.get(key);
+        return value != null ? value.toString() : null;
+    }
+
+    /**
      * 调用AI服务解析用户意图
      */
     private Map<String, Object> callAIParseIntent(String factoryId, IntentExecuteRequest request) {
@@ -433,8 +518,17 @@ public class DataOperationIntentHandler implements IntentHandler {
 
             ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.POST, entity, Map.class);
 
-            if (response.getStatusCode() == HttpStatus.OK) {
-                return response.getBody();
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> body = response.getBody();
+                // Python返回snake_case，转换为Java期望的camelCase
+                Map<String, Object> result = new HashMap<>();
+                result.put("success", body.get("success"));
+                result.put("entityType", body.get("entity_type"));
+                result.put("entityIdentifier", body.get("entity_identifier"));
+                result.put("updates", body.get("updates"));
+                result.put("operation", body.get("operation"));
+                result.put("message", body.get("message"));
+                return result;
             }
             return null;
 

@@ -12,7 +12,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,7 +20,11 @@ import {
   ScrollView,
   TouchableOpacity,
   RefreshControl,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
@@ -86,103 +90,117 @@ interface Workshop {
 
 type FilterType = 'all' | 'slicing' | 'packaging' | 'freezing' | 'storage';
 
-// Mock 数据
-const mockWorkshops: Workshop[] = [
-  {
-    id: '1',
-    name: '切片车间',
-    type: 'slicing',
-    status: 'running',
-    supervisor: '张主任',
-    tasks: { completed: 2, inProgress: 3, pending: 1 },
-    progress: 75,
-    taskGroups: [
-      { id: '1', name: 'PB20241227001 带鱼段切片', workerCount: 6, progress: 75, isActive: true },
-      { id: '2', name: 'PB20241227002 虾仁分拣', workerCount: 2, progress: 30, isActive: false },
-    ],
-    workers: [
-      { id: '1', name: '三丰', avatar: '张', employeeCode: '001' },
-      { id: '2', name: '四海', avatar: '李', employeeCode: '002' },
-      { id: '3', name: '五行', avatar: '王', employeeCode: '003' },
-      { id: '4', name: '六顺', avatar: '赵', employeeCode: '004' },
-      { id: '5', name: '七星', avatar: '陈', employeeCode: '005' },
-      { id: '6', name: '八方', avatar: '孙', employeeCode: '006' },
-      { id: '7', name: '临一', avatar: '刘', employeeCode: '088', isTemporary: true },
-      { id: '8', name: '临二', avatar: '周', employeeCode: '089', isTemporary: true },
-    ],
-    capacity: 10,
-    temporaryCount: 2,
-    equipment: [
-      { id: '1', name: '切片机A', status: 'running' },
-      { id: '2', name: '切片机B', status: 'running' },
-      { id: '3', name: '清洗线', status: 'idle' },
-    ],
-    themeColors: [DISPATCHER_THEME.primary, DISPATCHER_THEME.accent],
-  },
-  {
-    id: '2',
-    name: '包装车间',
-    type: 'packaging',
-    status: 'running',
-    supervisor: '李主任',
-    tasks: { completed: 1, inProgress: 2, pending: 0 },
-    progress: 60,
-    taskGroups: [
-      { id: '3', name: 'PB20241227003 虾仁包装', workerCount: 6, progress: 60, isActive: true },
-    ],
-    workers: [
-      { id: '9', name: '九华', avatar: '马', employeeCode: '010' },
-      { id: '10', name: '十全', avatar: '钱', employeeCode: '011' },
-      { id: '11', name: '百川', avatar: '吴', employeeCode: '012' },
-      { id: '12', name: '千里', avatar: '郑', employeeCode: '013' },
-      { id: '13', name: '万年', avatar: '冯', employeeCode: '014' },
-      { id: '14', name: '临三', avatar: '胡', employeeCode: '090', isTemporary: true },
-    ],
-    capacity: 8,
-    temporaryCount: 1,
-    equipment: [
-      { id: '4', name: '封口机A', status: 'running' },
-      { id: '5', name: '封口机B', status: 'running' },
-    ],
-    themeColors: [DISPATCHER_THEME.success, '#95de64'],
-  },
-  {
-    id: '3',
-    name: '冷冻车间',
-    type: 'freezing',
-    status: 'idle',
-    supervisor: '王主任',
-    tasks: { completed: 0, inProgress: 0, pending: 0 },
-    progress: 0,
-    taskGroups: [],
-    workers: [
-      { id: '15', name: '大山', avatar: '卫', employeeCode: '020' },
-      { id: '16', name: '小河', avatar: '褚', employeeCode: '021' },
-    ],
-    capacity: 6,
-    temporaryCount: 0,
-    equipment: [
-      { id: '6', name: '速冻机A', status: 'idle' },
-      { id: '7', name: '速冻机B', status: 'maintenance' },
-    ],
-    warningMessage: '人员不足，建议调入4人以满足下一任务需求',
-    themeColors: [DISPATCHER_THEME.info, '#69c0ff'],
-  },
-];
+/**
+ * TODO: P2 Mock数据替换
+ *
+ * 建议使用的API:
+ * - schedulingApiClient.getProductionLines() - 获取产线列表
+ * - schedulingApiClient.getDashboard() - 获取调度仪表盘数据
+ * - schedulingApiClient.getWorkerAssignments() - 获取工人分配
+ * - equipmentApiClient.getEquipments() - 获取设备列表
+ *
+ * 数据转换建议:
+ * - 将产线数据按车间(workshop)分组
+ * - 从 getDashboard 获取任务进度统计
+ * - 从 getWorkerAssignments 获取人员信息
+ */
 
 export default function WorkshopStatusScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('dispatcher');
   const [refreshing, setRefreshing] = useState(false);
-  const [workshops] = useState<Workshop[]>(mockWorkshops);
+  const [loading, setLoading] = useState(true);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
   const [activeFilter, setActiveFilter] = useState<FilterType>('all');
+
+  // 加载车间状态数据
+  const loadData = useCallback(async () => {
+    try {
+      // 获取产线列表并按车间分组
+      const linesResponse = await schedulingApiClient.getProductionLines();
+      if (linesResponse.success && linesResponse.data) {
+        const lines = linesResponse.data;
+
+        // 按车间分组产线
+        const workshopMap = new Map<string, Workshop>();
+
+        lines.forEach((line: any) => {
+          const workshopId = line.workshopId || 'default';
+          const workshopName = line.workshopName || '未分配车间';
+
+          if (!workshopMap.has(workshopId)) {
+            // 根据车间名称判断类型
+            let workshopType: Workshop['type'] = 'storage';
+            if (workshopName.includes('切片')) workshopType = 'slicing';
+            else if (workshopName.includes('包装')) workshopType = 'packaging';
+            else if (workshopName.includes('冷冻') || workshopName.includes('速冻')) workshopType = 'freezing';
+
+            workshopMap.set(workshopId, {
+              id: workshopId,
+              name: workshopName,
+              type: workshopType,
+              status: 'idle',
+              supervisor: '-',
+              tasks: { completed: 0, inProgress: 0, pending: 0 },
+              progress: 0,
+              taskGroups: [],
+              workers: [],
+              capacity: 0,
+              temporaryCount: 0,
+              equipment: [],
+              themeColors: workshopType === 'slicing' ? [DISPATCHER_THEME.primary, DISPATCHER_THEME.accent] :
+                          workshopType === 'packaging' ? [DISPATCHER_THEME.success, '#95de64'] :
+                          workshopType === 'freezing' ? [DISPATCHER_THEME.info, '#69c0ff'] :
+                          ['#666', '#999'],
+            });
+          }
+
+          const workshop = workshopMap.get(workshopId)!;
+          // 更新车间状态（如果有运行中的产线，车间状态为running）
+          if (line.status === 'active' || line.status === 'running') {
+            workshop.status = 'running';
+          } else if (line.status === 'maintenance' && workshop.status !== 'running') {
+            workshop.status = 'maintenance';
+          }
+          workshop.capacity += line.capacity || 4;
+
+          // 添加设备信息
+          workshop.equipment.push({
+            id: line.id || String(workshop.equipment.length + 1),
+            name: line.name || `产线${workshop.equipment.length + 1}`,
+            status: line.status === 'active' ? 'running' : line.status === 'maintenance' ? 'maintenance' : 'idle',
+          });
+        });
+
+        setWorkshops(Array.from(workshopMap.values()));
+      }
+    } catch (error) {
+      console.error('加载车间状态失败:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Alert.alert('登录已过期', '请重新登录');
+        } else {
+          Alert.alert('加载失败', error.response?.data?.message || '网络错误');
+        }
+      }
+    }
+  }, []);
+
+  // 初始加载
+  useEffect(() => {
+    const initLoad = async () => {
+      setLoading(true);
+      await loadData();
+      setLoading(false);
+    };
+    initLoad();
+  }, [loadData]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: 调用 API 刷新数据
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadData();
     setRefreshing(false);
-  }, []);
+  }, [loadData]);
 
   const handleGoBack = () => {
     navigation.goBack();

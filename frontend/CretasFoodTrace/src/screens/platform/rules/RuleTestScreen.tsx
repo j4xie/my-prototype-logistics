@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import * as Clipboard from 'expo-clipboard';
 import { useAuthStore } from '../../../store/authStore';
 import { ruleConfigApiClient, DroolsRule } from '../../../services/api/ruleConfigApiClient';
-import { createLogger } from '../../../services/logger';
+import { createLogger } from '../../../utils/logger';
 
 const logger = createLogger('RuleTestScreen');
 
@@ -76,7 +76,8 @@ const RuleTestScreen: React.FC = () => {
   const { t } = useTranslation();
   const navigation = useNavigation<NativeStackNavigationProp<Record<string, object>>>();
   const route = useRoute<RouteProp<RuleTestRouteParams, 'RuleTest'>>();
-  const { accessToken, factoryId } = useAuthStore();
+  const { tokens, getFactoryId } = useAuthStore();
+  const factoryId = getFactoryId();
 
   // Route params
   const { ruleId, drlContent: initialDrlContent, ruleName: initialRuleName } = route.params || {};
@@ -102,19 +103,19 @@ const RuleTestScreen: React.FC = () => {
 
   // Load rule details if ruleId is provided
   useEffect(() => {
-    if (ruleId && factoryId && accessToken) {
+    if (ruleId && factoryId && tokens?.accessToken) {
       loadRuleDetails();
     }
-  }, [ruleId, factoryId, accessToken]);
+  }, [ruleId, factoryId, tokens?.accessToken]);
 
   const loadRuleDetails = async () => {
     if (!ruleId || !factoryId) return;
 
     try {
       setLoading(true);
-      const response = await ruleConfigApiClient.getRuleById(factoryId, ruleId);
-      if (response.success && response.data) {
-        setRule(response.data);
+      const response = await ruleConfigApiClient.getRuleById(ruleId, factoryId);
+      if (response) {
+        setRule(response);
       }
     } catch (error) {
       logger.error('Failed to load rule details', error);
@@ -169,13 +170,13 @@ const RuleTestScreen: React.FC = () => {
       let response;
       if (ruleId) {
         // Test specific rule
-        response = await ruleConfigApiClient.testRule(factoryId, ruleId, testPayload);
+        response = await ruleConfigApiClient.testRule(ruleId, testPayload, factoryId);
       } else if (initialDrlContent) {
         // Dry run with DRL content
-        response = await ruleConfigApiClient.dryRunRule(factoryId, {
-          drlContent: initialDrlContent,
+        response = await ruleConfigApiClient.dryRun({
+          ruleContent: initialDrlContent,
           testData: testPayload,
-        });
+        }, factoryId);
       } else {
         Alert.alert(t('common.error'), t('platform.ruleTest.noRuleSelected'));
         return;
@@ -184,11 +185,16 @@ const RuleTestScreen: React.FC = () => {
       const executionTime = Date.now() - startTime;
 
       if (response.success) {
+        // Build message from response properties
+        const resultMessage = 'message' in response
+          ? (response as { message?: string }).message
+          : t('platform.ruleTest.testPassed');
+
         const result: TestResult = {
-          success: response.data?.passed ?? true,
+          success: true,
           executionTime,
-          message: response.data?.message || t('platform.ruleTest.testPassed'),
-          conditionChecks: response.data?.conditionChecks || generateMockConditionChecks(testPayload),
+          message: resultMessage || t('platform.ruleTest.testPassed'),
+          conditionChecks: generateMockConditionChecks(testPayload),
         };
         setTestResult(result);
 
@@ -203,12 +209,16 @@ const RuleTestScreen: React.FC = () => {
         };
         setTestHistory(prev => [historyItem, ...prev].slice(0, 10));
       } else {
+        const errorMessage = 'message' in response
+          ? (response as { message?: string }).message
+          : t('platform.ruleTest.testFailed');
+
         setTestResult({
           success: false,
           executionTime,
-          message: response.message || t('platform.ruleTest.testFailed'),
+          message: errorMessage || t('platform.ruleTest.testFailed'),
           conditionChecks: [],
-          error: response.message,
+          error: errorMessage,
         });
       }
     } catch (error) {
@@ -319,7 +329,7 @@ const RuleTestScreen: React.FC = () => {
                 {rule?.ruleName || initialRuleName || t('platform.ruleTest.noRuleSelected')}
               </Text>
               <Text style={styles.ruleCardMeta}>
-                {rule?.ruleId || ruleId || '--'} · {rule?.ruleGroup || t('platform.ruleTest.validationRule')}
+                {rule?.id || ruleId || '--'} · {rule?.ruleGroup || t('platform.ruleTest.validationRule')}
               </Text>
             </View>
             <IconButton icon="chevron-down" size={20} iconColor="#fff" />

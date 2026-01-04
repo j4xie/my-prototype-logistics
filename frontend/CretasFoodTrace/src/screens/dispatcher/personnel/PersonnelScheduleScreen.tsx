@@ -14,7 +14,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,12 +23,15 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 
 // 主题色
 const DISPATCHER_THEME = {
@@ -62,104 +65,158 @@ interface ShiftDetail {
   workers: { id: string; name: string; avatar: string }[];
 }
 
-// Mock 数据
+// Static data for week display
 const weekDayKeys = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
 const weekDates = [23, 24, 25, 26, 27, 28, 29];
 const todayIndex = 5; // 周六
 
-const mockScheduleStats = {
-  total: 42,
-  confirmed: 38,
-  pending: 4,
-  conflicts: 0,
+// Schedule stats interface
+interface ScheduleStats {
+  total: number;
+  confirmed: number;
+  pending: number;
+  conflicts: number;
+}
+
+// Transform API schedule stats to local interface
+const transformScheduleStats = (apiData: any): ScheduleStats => ({
+  total: apiData.total || apiData.totalShifts || 0,
+  confirmed: apiData.confirmed || apiData.confirmedShifts || 0,
+  pending: apiData.pending || apiData.pendingShifts || 0,
+  conflicts: apiData.conflicts || apiData.conflictCount || 0,
+});
+
+// Transform API weekly shifts to local interface
+const transformWeeklyShifts = (apiData: any[]): { type: ShiftType; time: string; data: ShiftData }[] => {
+  if (!apiData || !Array.isArray(apiData)) return [];
+  return apiData.map((shift) => {
+    const shiftType = (shift.type || shift.shiftType || 'morning').toLowerCase() as ShiftType;
+    const shiftData: ShiftData = {};
+
+    // Transform daily data
+    const dailyData = shift.data || shift.dailySchedule || shift.days || {};
+    for (let i = 0; i < 7; i++) {
+      const dayKey = dailyData[i] || dailyData[weekDayKeys[i]] || {};
+      shiftData[i] = {
+        count: dayKey.count || dayKey.workerCount || 0,
+        status: dayKey.status as any || undefined,
+      };
+    }
+
+    return {
+      type: shiftType,
+      time: shift.time || shift.timeRange || getDefaultShiftTime(shiftType),
+      data: shiftData,
+    };
+  });
 };
 
-const mockShifts: { type: ShiftType; time: string; data: ShiftData }[] = [
-  {
-    type: 'morning',
-    time: '08-12',
-    data: {
-      0: { count: 8 },
-      1: { count: 8 },
-      2: { count: 7 },
-      3: { count: 8 },
-      4: { count: 8 },
-      5: { count: 6 },
-      6: { count: 4, status: 'warning' },
-    },
-  },
-  {
-    type: 'afternoon',
-    time: '12-18',
-    data: {
-      0: { count: 7 },
-      1: { count: 6 },
-      2: { count: 7 },
-      3: { count: 7 },
-      4: { count: 7 },
-      5: { count: 5 },
-      6: { count: 3, status: 'warning' },
-    },
-  },
-  {
-    type: 'evening',
-    time: '18-22',
-    data: {
-      0: { count: 0 },
-      1: { count: 0 },
-      2: { count: 2, status: 'overtime' },
-      3: { count: 0 },
-      4: { count: 2, status: 'pending' },
-      5: { count: 0 },
-      6: { count: 0 },
-    },
-  },
-];
+// Get default time range for shift type
+const getDefaultShiftTime = (type: ShiftType): string => {
+  switch (type) {
+    case 'morning': return '08-12';
+    case 'afternoon': return '12-18';
+    case 'evening': return '18-22';
+    default: return '';
+  }
+};
 
-const mockTodayShifts: ShiftDetail[] = [
-  {
-    type: 'morning',
-    name: 'morning',
-    timeRange: '08:00-12:00',
-    workers: [
-      { id: '1', name: '张三丰', avatar: '张' },
-      { id: '2', name: '李四海', avatar: '李' },
-      { id: '3', name: '王五行', avatar: '王' },
-      { id: '4', name: '赵六顺', avatar: '赵' },
-      { id: '5', name: '陈七星', avatar: '陈' },
-      { id: '6', name: '刘八斗', avatar: '刘' },
-    ],
-  },
-  {
-    type: 'afternoon',
-    name: 'afternoon',
-    timeRange: '12:00-18:00',
-    workers: [
-      { id: '7', name: '钱九龙', avatar: '钱' },
-      { id: '8', name: '吴十全', avatar: '吴' },
-      { id: '9', name: '郑一鸣', avatar: '郑' },
-      { id: '10', name: '冯二虎', avatar: '冯' },
-      { id: '11', name: '褚三思', avatar: '褚' },
-    ],
-  },
-];
+// Transform API today shifts to local interface
+const transformTodayShifts = (apiData: any[]): ShiftDetail[] => {
+  if (!apiData || !Array.isArray(apiData)) return [];
+  return apiData.map((shift) => {
+    const workers = (shift.workers || shift.assignedWorkers || []).map((w: any) => ({
+      id: String(w.id || w.workerId || w.userId),
+      name: w.name || w.workerName || w.realName || '',
+      avatar: (w.name || w.realName || '员').charAt(0),
+    }));
+
+    return {
+      type: (shift.type || shift.shiftType || 'morning').toLowerCase() as ShiftType,
+      name: shift.name || shift.shiftName || shift.type || 'morning',
+      timeRange: shift.timeRange || shift.time || '08:00-12:00',
+      workers,
+    };
+  });
+};
 
 const workshopFilterKeys = ['all', 'slicing', 'packaging', 'freezing', 'storage'];
 
 export default function PersonnelScheduleScreen() {
   const { t } = useTranslation('dispatcher');
   const navigation = useNavigation<any>();
+
+  // Loading and data state
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [scheduleStats, setScheduleStats] = useState<ScheduleStats>({
+    total: 0, confirmed: 0, pending: 0, conflicts: 0
+  });
+  const [weeklyShifts, setWeeklyShifts] = useState<{ type: ShiftType; time: string; data: ShiftData }[]>([]);
+  const [todayShifts, setTodayShifts] = useState<ShiftDetail[]>([]);
+
+  // UI state
   const [viewMode, setViewMode] = useState<'week' | 'month' | 'list'>('week');
   const [selectedWorkshopKey, setSelectedWorkshopKey] = useState('slicing');
   const [weekOffset, setWeekOffset] = useState(0);
 
+  /**
+   * Load schedule data from API
+   */
+  const loadScheduleData = useCallback(async () => {
+    try {
+      // Load schedule stats
+      const statsResponse = await schedulingApiClient.getScheduleStats();
+      if (statsResponse.success && statsResponse.data) {
+        setScheduleStats(transformScheduleStats(statsResponse.data));
+      }
+
+      // Load weekly shifts
+      const shiftsResponse = await schedulingApiClient.getWeeklyShifts(weekOffset);
+      if (shiftsResponse.success && shiftsResponse.data) {
+        const shiftsData = Array.isArray(shiftsResponse.data)
+          ? shiftsResponse.data
+          : shiftsResponse.data.shifts || shiftsResponse.data.content || [];
+        setWeeklyShifts(transformWeeklyShifts(shiftsData));
+      }
+
+      // Load today's shifts
+      const todayResponse = await schedulingApiClient.getTodayShifts();
+      if (todayResponse.success && todayResponse.data) {
+        const todayData = Array.isArray(todayResponse.data)
+          ? todayResponse.data
+          : todayResponse.data.shifts || todayResponse.data.content || [];
+        setTodayShifts(transformTodayShifts(todayData));
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert(t('common.error'), t('common.sessionExpired'));
+          navigation.goBack();
+          return;
+        }
+        console.error('Failed to load schedule data:', error.response?.data?.message || error.message);
+      } else {
+        console.error('Unexpected error loading schedule data:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation, t, weekOffset]);
+
+  // Load data on mount and when weekOffset changes
+  useEffect(() => {
+    loadScheduleData();
+  }, [loadScheduleData]);
+
   // 下拉刷新
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadScheduleData();
     setRefreshing(false);
-  };
+  }, [loadScheduleData]);
 
   // 获取班次格子样式
   const getCellStyle = (count: number, status?: string) => {
@@ -199,6 +256,33 @@ export default function PersonnelScheduleScreen() {
   const handleAISchedule = () => {
     navigation.navigate('AIWorkerOptimize');
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <LinearGradient
+          colors={[DISPATCHER_THEME.primary, DISPATCHER_THEME.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('personnelScheduleScreen.title')}</Text>
+          <View style={styles.addButton} />
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -287,25 +371,25 @@ export default function PersonnelScheduleScreen() {
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.primary }]}>
-              {mockScheduleStats.total}
+              {scheduleStats.total}
             </Text>
             <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.thisWeek')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.success }]}>
-              {mockScheduleStats.confirmed}
+              {scheduleStats.confirmed}
             </Text>
             <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.confirmed')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.warning }]}>
-              {mockScheduleStats.pending}
+              {scheduleStats.pending}
             </Text>
             <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.pending')}</Text>
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: DISPATCHER_THEME.danger }]}>
-              {mockScheduleStats.conflicts}
+              {scheduleStats.conflicts}
             </Text>
             <Text style={styles.statLabel}>{t('personnelScheduleScreen.stats.conflicts')}</Text>
           </View>
@@ -369,10 +453,10 @@ export default function PersonnelScheduleScreen() {
           </View>
 
           {/* 班次行 */}
-          {mockShifts.map((shift) => (
+          {weeklyShifts.map((shift) => (
             <View key={shift.type} style={styles.calendarRow}>
               <View style={styles.shiftLabel}>
-                <Text style={styles.shiftName}>{shift.name}</Text>
+                <Text style={styles.shiftName}>{t(`personnelScheduleScreen.shifts.${shift.type}`)}</Text>
                 <Text style={styles.shiftTime}>{shift.time}</Text>
               </View>
               {Array.from({ length: 7 }).map((_, dayIndex) => {
@@ -406,10 +490,10 @@ export default function PersonnelScheduleScreen() {
         {/* 今日班次详情 */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>今日排班 (12.28 周六)</Text>
-          <Text style={styles.sectionSubtitle}>{selectedWorkshop}车间</Text>
+          <Text style={styles.sectionSubtitle}>{t(`personnelScheduleScreen.workshops.${selectedWorkshopKey}`)}车间</Text>
         </View>
 
-        {mockTodayShifts.map((shift) => (
+        {todayShifts.map((shift) => (
           <View key={shift.type} style={styles.shiftDetailCard}>
             <View style={styles.shiftDetailHeader}>
               <View style={styles.shiftDetailTitle}>
@@ -504,6 +588,16 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
   content: {
     flex: 1,

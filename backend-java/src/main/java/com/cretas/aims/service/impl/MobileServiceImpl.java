@@ -1093,8 +1093,12 @@ public class MobileServiceImpl implements MobileService {
                 ? totalWorkHours / totalEmployees
                 : 0.0;
 
-        log.info("人员统计完成: 总人数={}, 出勤={}, 缺勤={}, 总工时={}小时",
-                totalEmployees, totalPresent, totalAbsent, String.format("%.1f", totalWorkHours));
+        // 查询合同即将到期人数 (30天内)
+        LocalDate warningDate = LocalDate.now().plusDays(30);
+        long expiringContracts = userRepository.countExpiringContracts(factoryId, warningDate);
+
+        log.info("人员统计完成: 总人数={}, 出勤={}, 缺勤={}, 总工时={}小时, 合同即将到期={}",
+                totalEmployees, totalPresent, totalAbsent, String.format("%.1f", totalWorkHours), expiringContracts);
 
         return MobileDTO.PersonnelStatistics.builder()
                 .totalEmployees(totalEmployees)
@@ -1104,6 +1108,7 @@ public class MobileServiceImpl implements MobileService {
                 .activeDepartments((int) activeDepartments)
                 .totalWorkHours(totalWorkHours)
                 .avgWorkHoursPerEmployee(avgWorkHoursPerEmployee)
+                .expiringContractsCount((int) expiringContracts)
                 .build();
     }
 

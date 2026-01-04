@@ -351,7 +351,7 @@ export function WHIOStatisticsScreen() {
             </View>
             <View style={styles.aiSummaryItem}>
               <Text style={styles.aiSummaryValue}>
-                {aiPrediction.fishStockDays} {t('inventoryStats.batchNumber').split('/')[0]}
+                {aiPrediction.fishStockDays} {String(t('inventoryStats.batchNumber')).split('/')[0]}
               </Text>
               <Text style={styles.aiSummaryLabel}>{t('inventoryDetail.availableStock')}</Text>
             </View>

@@ -19,6 +19,7 @@ import type {
   ProductionPlanDTO,
   ConfirmUrgentInsertRequest,
   UrgentInsertImpactAnalysis,
+  UrgentInsertStatistics,
 } from '../../types/dispatcher';
 
 /**
@@ -533,6 +534,26 @@ class SchedulingApiClient {
     return await apiClient.get(`${this.getPath(factoryId)}/realtime/${planId}`);
   }
 
+  /**
+   * 32. 获取紧急插单统计数据
+   * GET /api/mobile/{factoryId}/scheduling/urgent-insert/statistics
+   *
+   * @param params 查询参数（可选）
+   * @param factoryId 工厂ID（可选）
+   * @returns 紧急插单统计数据
+   */
+  async getUrgentInsertStatistics(params?: {
+    startDate?: string;
+    endDate?: string;
+    factoryId?: string;
+  }): Promise<ApiResponse<UrgentInsertStatistics>> {
+    const { factoryId, ...query } = params || {};
+    return await apiClient.get(
+      `${this.getPath(factoryId)}/urgent-insert/statistics`,
+      { params: query }
+    );
+  }
+
   // ==================== 待排产批次 (AI 排产) ====================
 
   /**
@@ -886,6 +907,60 @@ class SchedulingApiClient {
   async getMixedBatchRules(factoryId?: string): Promise<ApiResponse<MixedBatchRule[]>> {
     const currentFactoryId = requireFactoryId(factoryId);
     return await apiClient.get(`/api/mobile/${currentFactoryId}/mixed-batch/rules`);
+  }
+
+  // ==================== 排产设置 ====================
+
+  /**
+   * 排产设置类型定义
+   */
+  /** 自动化模式 */
+  static readonly AutomationModes = {
+    FULL_AUTO: 'full_auto' as const,
+    HUMAN_CONFIRM: 'human_confirm' as const,
+    DISABLED: 'disabled' as const,
+  };
+
+  /**
+   * 33. 获取排产设置
+   * GET /api/mobile/{factoryId}/scheduling/settings
+   *
+   * @param factoryId 工厂ID（可选）
+   * @returns 排产设置
+   */
+  async getSchedulingSettings(factoryId?: string): Promise<ApiResponse<{
+    automationMode: 'full_auto' | 'human_confirm' | 'disabled';
+    lowRiskThreshold: number;
+    mediumRiskThreshold: number;
+    notificationsEnabled: boolean;
+  }>> {
+    return await apiClient.get(`${this.getPath(factoryId)}/settings`);
+  }
+
+  /**
+   * 34. 更新排产设置
+   * PUT /api/mobile/{factoryId}/scheduling/settings
+   *
+   * @param settings 排产设置
+   * @param factoryId 工厂ID（可选）
+   * @returns 更新后的排产设置
+   */
+  async updateSchedulingSettings(
+    settings: {
+      automationMode?: 'full_auto' | 'human_confirm' | 'disabled';
+      lowRiskThreshold?: number;
+      mediumRiskThreshold?: number;
+      notificationsEnabled?: boolean;
+    },
+    factoryId?: string
+  ): Promise<ApiResponse<{
+    automationMode: 'full_auto' | 'human_confirm' | 'disabled';
+    lowRiskThreshold: number;
+    mediumRiskThreshold: number;
+    notificationsEnabled: boolean;
+    updatedAt: string;
+  }>> {
+    return await apiClient.put(`${this.getPath(factoryId)}/settings`, settings);
   }
 
   /**

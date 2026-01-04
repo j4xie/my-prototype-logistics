@@ -12,6 +12,7 @@ import WSProfileScreen from "../../screens/workshop-supervisor/profile/WSProfile
 
 // 复用现有Profile页面
 import FeedbackScreen from "../../screens/profile/FeedbackScreen";
+import MembershipScreen from "../../screens/profile/MembershipScreen";
 
 const Stack = createNativeStackNavigator<WSProfileStackParamList>();
 
@@ -58,6 +59,20 @@ export function WSProfileStackNavigator() {
         name="About"
         component={WSProfileScreen}
         options={{ title: "关于" }}
+      />
+
+      {/* 意见反馈 */}
+      <Stack.Screen
+        name="Feedback"
+        component={FeedbackScreen}
+        options={{ title: "意见反馈" }}
+      />
+
+      {/* 会员中心 */}
+      <Stack.Screen
+        name="Membership"
+        component={MembershipScreen}
+        options={{ title: "会员中心" }}
       />
     </Stack.Navigator>
   );

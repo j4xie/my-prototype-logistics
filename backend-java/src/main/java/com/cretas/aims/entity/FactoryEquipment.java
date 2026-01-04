@@ -2,10 +2,12 @@ package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.cretas.aims.entity.enums.DeviceCategory;
 import lombok.*;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 /**
@@ -90,6 +92,64 @@ public class FactoryEquipment extends BaseEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    // ========== IoT 相关字段 ==========
+
+    /**
+     * IoT设备编码
+     */
+    @Column(name = "iot_device_code", length = 100)
+    private String iotDeviceCode;
+
+    /**
+     * 设备类别: TRADITIONAL / IOT_SCALE / IOT_CAMERA / IOT_SENSOR
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "device_category", length = 20)
+    private DeviceCategory deviceCategory;
+
+    /**
+     * 关联秤协议配置 scale_protocol_configs.id
+     */
+    @Column(name = "scale_protocol_id", length = 50)
+    private String scaleProtocolId;
+
+    /**
+     * 关联秤品牌型号 scale_brand_models.id
+     */
+    @Column(name = "scale_brand_model_id", length = 50)
+    private String scaleBrandModelId;
+
+    /**
+     * MQTT订阅主题
+     */
+    @Column(name = "mqtt_topic", length = 255)
+    private String mqttTopic;
+
+    /**
+     * 秤连接参数 (JSON格式)
+     * 示例: {"comPort":"COM3", "baudRate":9600}
+     */
+    @Column(name = "scale_connection_params", columnDefinition = "TEXT")
+    private String scaleConnectionParams;
+
+    /**
+     * 最后一次称重值
+     */
+    @Column(name = "last_weight_reading", precision = 12, scale = 4)
+    private BigDecimal lastWeightReading;
+
+    /**
+     * 最后称重时间
+     */
+    @Column(name = "last_weight_time")
+    private LocalDateTime lastWeightTime;
+
+    /**
+     * 最后数据接收时间
+     */
+    @Column(name = "last_data_received")
+    private LocalDateTime lastDataReceived;
 
     // ========== 单位转换方法 ==========
 

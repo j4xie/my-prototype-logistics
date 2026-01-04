@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -45,13 +46,13 @@ public class EncodingRuleServiceImpl implements EncodingRuleService {
     private static final Pattern SEQ_PATTERN = Pattern.compile("SEQ:(\\d+)");
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateCode(String factoryId, String entityType) {
         return generateCode(factoryId, entityType, Collections.emptyMap());
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public String generateCode(String factoryId, String entityType, Map<String, String> context) {
         log.debug("生成编码 - factoryId={}, entityType={}", factoryId, entityType);
 

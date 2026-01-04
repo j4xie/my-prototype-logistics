@@ -47,11 +47,15 @@ import EquipmentDetailScreen from '../screens/processing/EquipmentDetailScreen';
 // Phase 3 P2 - 质检统计分析 (已迁移至 QualityInspectorNavigator)
 // import QualityAnalyticsScreen from '../screens/processing/QualityAnalyticsScreen';
 
-// Phase 3 P2 - 库存盘点 (Legacy - 已移至 legacy/warehouse)
-import InventoryCheckScreen from '../screens/legacy/warehouse/InventoryCheckScreen';
+// Phase 3 P2 - 库存盘点 (使用仓库模块的实现)
+import WHInventoryCheckScreen from '../screens/warehouse/inventory/WHInventoryCheckScreen';
 
 // Phase 3 P2 - 异常预警
 import ExceptionAlertScreen from '../screens/alerts/ExceptionAlertScreen';
+import CreateExceptionScreen from '../screens/alerts/CreateExceptionScreen';
+
+// 包装管理
+import CreatePackagingScreen from '../screens/processing/CreatePackagingScreen';
 
 // 原材料消耗记录
 import MaterialConsumptionHistoryScreen from '../screens/processing/MaterialConsumptionHistoryScreen';
@@ -203,13 +207,23 @@ export function ProcessingStackNavigator() {
       {/* Phase 3 P2 - 库存盘点 */}
       <Stack.Screen
         name="InventoryCheck"
-        component={InventoryCheckScreen}
+        component={WHInventoryCheckScreen}
       />
 
       {/* Phase 3 P2 - 异常预警系统 */}
       <Stack.Screen
         name="ExceptionAlert"
         component={ExceptionAlertScreen}
+      />
+      <Stack.Screen
+        name="CreateException"
+        component={CreateExceptionScreen}
+      />
+
+      {/* 包装管理 */}
+      <Stack.Screen
+        name="CreatePackaging"
+        component={CreatePackagingScreen}
       />
 
       {/* 原材料消耗记录 */}
