@@ -19,6 +19,9 @@ import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { WSHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { dashboardAPI } from '../../../services/api/dashboardApiClient';
+import { processingApiClient } from '../../../services/api/processingApiClient';
+import { isAxiosError } from 'axios';
 
 type NavigationProp = NativeStackNavigationProp<WSHomeStackParamList, 'WSHome'>;
 
@@ -79,60 +82,25 @@ export function WSHomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 模拟数据 (TODO: 接入真实API)
-  const [nextTask, setNextTask] = useState<NextTask | null>({
-    batchId: '1',
-    batchNumber: 'PB-20251227-004',
-    productName: '银鲳鱼片',
-    targetQuantity: 70,
-    plannedStartTime: '13:00',
-    workshopLocation: 'A区-3号线',
-    assignedWorkers: 3,
-    equipment: '切片机A',
-    isUrgent: false,
-  });
-
+  // 状态数据 - 从API加载
+  const [nextTask, setNextTask] = useState<NextTask | null>(null);
   const [taskStats, setTaskStats] = useState<TaskStats>({
-    assigned: 6,
-    inProgress: 3,
-    completed: 2,
+    assigned: 0,
+    inProgress: 0,
+    completed: 0,
   });
-
-  const [inProgressBatches, setInProgressBatches] = useState<InProgressBatch[]>([
-    {
-      batchId: '1',
-      batchNumber: 'PB-20251227-001',
-      productName: '带鱼片',
-      stage: '切片中',
-      progress: 65,
-      currentOutput: 52,
-      targetOutput: 80,
-      estimatedTime: '11:30',
-    },
-    {
-      batchId: '2',
-      batchNumber: 'PB-20251227-002',
-      productName: '鲈鱼片',
-      stage: '解冻中',
-      progress: 30,
-      currentOutput: 15,
-      targetOutput: 50,
-      estimatedTime: '14:00',
-    },
-  ]);
-
+  const [inProgressBatches, setInProgressBatches] = useState<InProgressBatch[]>([]);
   const [personnelStatus, setPersonnelStatus] = useState<PersonnelStatus>({
-    onDuty: 8,
-    onLeave: 1,
-    absent: 1,
-    total: 10,
+    onDuty: 0,
+    onLeave: 0,
+    absent: 0,
+    total: 0,
   });
-
   const [equipmentStatus, setEquipmentStatus] = useState<EquipmentStatus>({
-    running: 3,
-    idle: 1,
-    needMaintenance: 1,
-    total: 5,
+    running: 0,
+    idle: 0,
+    needMaintenance: 0,
+    total: 0,
   });
 
   // 获取问候语
@@ -150,15 +118,88 @@ export function WSHomeScreen() {
   // 加载数据
   const loadData = useCallback(async () => {
     try {
-      // TODO: 调用真实API
-      await new Promise(resolve => setTimeout(resolve, 500));
-    } catch (err) {
-      console.error(t('common.loading'), err);
+      // 获取Dashboard概览数据
+      const overviewRes = await dashboardAPI.getDashboardOverview('today');
+      if (overviewRes.success && overviewRes.data) {
+        const { summary, todayStats } = overviewRes.data;
+
+        // 更新任务统计
+        setTaskStats({
+          assigned: summary?.totalBatches || 0,
+          inProgress: summary?.activeBatches || 0,
+          completed: summary?.completedBatches || 0,
+        });
+
+        // 更新人员状态
+        setPersonnelStatus({
+          onDuty: summary?.onDutyWorkers || todayStats?.activeWorkers || 0,
+          onLeave: 0, // TODO: P2 - Backend needs to provide leave count
+          absent: (summary?.totalWorkers || 0) - (summary?.onDutyWorkers || 0),
+          total: summary?.totalWorkers || todayStats?.totalWorkers || 0,
+        });
+
+        // 更新设备状态
+        setEquipmentStatus({
+          running: todayStats?.activeEquipment || 0,
+          idle: (todayStats?.totalEquipment || 0) - (todayStats?.activeEquipment || 0),
+          needMaintenance: 0, // TODO: P2 - Backend needs to provide maintenance count
+          total: todayStats?.totalEquipment || 0,
+        });
+      }
+
+      // 获取进行中批次
+      const inProgressRes = await processingApiClient.getBatches({ status: 'IN_PROGRESS', page: 1, size: 5 });
+      if (inProgressRes.success && inProgressRes.data?.content) {
+        const batches = inProgressRes.data.content.map(batch => {
+          const progress = batch.actualQuantity && batch.targetQuantity
+            ? Math.round((batch.actualQuantity / batch.targetQuantity) * 100)
+            : 0;
+          return {
+            batchId: String(batch.id),
+            batchNumber: batch.batchNumber,
+            productName: batch.productType,
+            stage: batch.status === 'IN_PROGRESS' ? '加工中' : batch.status,
+            progress,
+            currentOutput: batch.actualQuantity || 0,
+            targetOutput: batch.targetQuantity,
+            estimatedTime: batch.endTime ? new Date(batch.endTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+          };
+        });
+        setInProgressBatches(batches);
+      }
+
+      // 获取下一批任务（待开始的批次）
+      const pendingRes = await processingApiClient.getBatches({ status: 'PENDING', page: 1, size: 1 });
+      if (pendingRes.success && pendingRes.data?.content?.length > 0) {
+        const batch = pendingRes.data.content[0];
+        setNextTask({
+          batchId: String(batch.id),
+          batchNumber: batch.batchNumber,
+          productName: batch.productType,
+          targetQuantity: batch.targetQuantity,
+          plannedStartTime: batch.startTime ? new Date(batch.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+          workshopLocation: 'A区', // Note: Workshop location not in ProcessingBatch, using default
+          assignedWorkers: 0, // Note: Assigned workers not in ProcessingBatch
+          equipment: '', // Note: Equipment not in ProcessingBatch
+          isUrgent: false, // Note: Urgency not in ProcessingBatch
+        });
+      } else {
+        // 无待处理任务
+        setNextTask(null);
+      }
+    } catch (error) {
+      console.error('加载车间主管首页数据失败:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          // TODO: Handle auth expired
+          console.error('认证过期，请重新登录');
+        }
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     loadData();

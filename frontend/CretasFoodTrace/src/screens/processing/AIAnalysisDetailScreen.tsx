@@ -211,7 +211,7 @@ ${report.expiresAt ? t('aiAnalysisDetail.shareTemplate.expiresAt', { time: new D
       custom: { labelKey: 'aiAnalysisDetail.reportType.custom', icon: 'tune', color: '#9C27B0' },
     };
 
-    const config = typeConfig[type] || typeConfig.custom;
+    const config = typeConfig[type] ?? typeConfig.custom!;
 
     return (
       <Chip

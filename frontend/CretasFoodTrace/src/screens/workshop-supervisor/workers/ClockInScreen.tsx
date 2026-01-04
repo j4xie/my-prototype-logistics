@@ -1,7 +1,7 @@
 /**
  * 打卡管理页面
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,31 +9,125 @@ import {
   SafeAreaView,
   TouchableOpacity,
   ScrollView,
+  Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { Icon } from 'react-native-paper';
+import { Icon, ActivityIndicator } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { timeclockApiClient, DepartmentAttendance, ClockRecord } from '../../../services/api/timeclockApiClient';
+
+// UI record format
+interface AttendanceRecord {
+  id: number;
+  name: string;
+  time: string;
+  status: 'normal' | 'late' | 'absent';
+}
+
+interface AttendanceData {
+  total: number;
+  clockedIn: number;
+  late: number;
+  absent: number;
+  records: AttendanceRecord[];
+}
+
+// Transform API clock record to UI format
+function transformClockRecord(record: ClockRecord, index: number): AttendanceRecord {
+  const clockInTime = record.clockInTime;
+  let time = '-';
+  let status: 'normal' | 'late' | 'absent' = 'absent';
+
+  if (clockInTime) {
+    const date = new Date(clockInTime);
+    time = date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    // Determine if late (after 8:00 AM)
+    const clockHour = date.getHours();
+    const clockMinute = date.getMinutes();
+    if (clockHour > 8 || (clockHour === 8 && clockMinute > 0)) {
+      status = 'late';
+    } else {
+      status = 'normal';
+    }
+  }
+
+  return {
+    id: record.id || index + 1,
+    name: `员工${record.userId}`, // TODO: Backend should return user name with record
+    time,
+    status,
+  };
+}
 
 export function ClockInScreen() {
   const navigation = useNavigation();
   const { t } = useTranslation('workshop');
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [attendance, setAttendance] = useState<AttendanceData>({
+    total: 0,
+    clockedIn: 0,
+    late: 0,
+    absent: 0,
+    records: [],
+  });
 
-  // 模拟今日考勤数据
-  const todayAttendance = {
-    total: 10,
-    clockedIn: 8,
-    late: 1,
-    absent: 1,
-    records: [
-      { id: 1, name: '王建国', time: '08:02', status: 'normal' },
-      { id: 2, name: '李明辉', time: '07:58', status: 'normal' },
-      { id: 3, name: '张伟', time: '08:15', status: 'late' },
-      { id: 4, name: '赵丽华', time: '08:00', status: 'normal' },
-      { id: 5, name: '陈志强', time: '-', status: 'absent' },
-      { id: 6, name: '周婷', time: '07:55', status: 'normal' },
-    ],
-  };
+  const loadAttendance = useCallback(async () => {
+    try {
+      const response = await timeclockApiClient.getTodayRecords({
+        department: 'all',
+      });
+
+      if (response.success && response.data) {
+        const data = response.data;
+        const records = (data.records || []).map(transformClockRecord);
+
+        // Calculate late count from records
+        const lateCount = records.filter(r => r.status === 'late').length;
+
+        setAttendance({
+          total: data.totalEmployees || 0,
+          clockedIn: data.clockedIn || 0,
+          late: lateCount,
+          absent: data.absent || 0,
+          records,
+        });
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert('会话过期', '请重新登录');
+        } else {
+          console.error('加载考勤数据失败:', error.response?.data?.message || error.message);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadAttendance();
+  }, [loadAttendance]);
+
+  // Update current time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadAttendance();
+    setRefreshing(false);
+  }, [loadAttendance]);
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
@@ -52,6 +146,23 @@ export function ClockInScreen() {
     }
   };
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon source="arrow-left" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('workers.clockIn.title')}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#667eea" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* 头部 */}
@@ -63,7 +174,12 @@ export function ClockInScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#667eea']} />
+        }
+      >
         {/* 时间显示 */}
         <View style={styles.timeCard}>
           <Text style={styles.currentTime}>{formatTime(currentTime)}</Text>
@@ -81,25 +197,25 @@ export function ClockInScreen() {
         <View style={styles.statsRow}>
           <View style={[styles.statCard, { backgroundColor: '#f6ffed' }]}>
             <Text style={[styles.statValue, { color: '#52c41a' }]}>
-              {todayAttendance.clockedIn}
+              {attendance.clockedIn}
             </Text>
             <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.clockedIn')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#fff7e6' }]}>
             <Text style={[styles.statValue, { color: '#faad14' }]}>
-              {todayAttendance.late}
+              {attendance.late}
             </Text>
             <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.late')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#fff1f0' }]}>
             <Text style={[styles.statValue, { color: '#ff4d4f' }]}>
-              {todayAttendance.absent}
+              {attendance.absent}
             </Text>
             <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.absent')}</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#f5f5f5' }]}>
             <Text style={[styles.statValue, { color: '#666' }]}>
-              {todayAttendance.total}
+              {attendance.total}
             </Text>
             <Text style={styles.statLabel}>{t('workers.clockIn.todayStats.expected')}</Text>
           </View>
@@ -109,27 +225,34 @@ export function ClockInScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('workers.clockIn.todayRecords')}</Text>
           <View style={styles.recordsList}>
-            {todayAttendance.records.map((record) => {
-              const statusStyle = getStatusStyle(record.status);
-              return (
-                <View key={record.id} style={styles.recordItem}>
-                  <View style={styles.recordAvatar}>
-                    <Text style={styles.recordAvatarText}>{record.name.charAt(0)}</Text>
+            {attendance.records.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Icon source="clock-outline" size={40} color="#ccc" />
+                <Text style={styles.emptyText}>暂无打卡记录</Text>
+              </View>
+            ) : (
+              attendance.records.map((record) => {
+                const statusStyle = getStatusStyle(record.status);
+                return (
+                  <View key={record.id} style={styles.recordItem}>
+                    <View style={styles.recordAvatar}>
+                      <Text style={styles.recordAvatarText}>{record.name.charAt(0)}</Text>
+                    </View>
+                    <View style={styles.recordInfo}>
+                      <Text style={styles.recordName}>{record.name}</Text>
+                      <Text style={styles.recordTime}>
+                        {record.time === '-' ? t('workers.clockIn.notClockedIn') : t('workers.clockIn.clockTime', { time: record.time })}
+                      </Text>
+                    </View>
+                    <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+                      <Text style={[styles.statusText, { color: statusStyle.color }]}>
+                        {statusStyle.text}
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.recordInfo}>
-                    <Text style={styles.recordName}>{record.name}</Text>
-                    <Text style={styles.recordTime}>
-                      {record.time === '-' ? t('workers.clockIn.notClockedIn') : t('workers.clockIn.clockTime', { time: record.time })}
-                    </Text>
-                  </View>
-                  <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-                    <Text style={[styles.statusText, { color: statusStyle.color }]}>
-                      {statusStyle.text}
-                    </Text>
-                  </View>
-                </View>
-              );
-            })}
+                );
+              })
+            )}
           </View>
         </View>
 
@@ -143,6 +266,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
+    marginTop: 12,
   },
   header: {
     flexDirection: 'row',

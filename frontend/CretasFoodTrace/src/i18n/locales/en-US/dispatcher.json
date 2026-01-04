@@ -527,6 +527,43 @@
       "enterCustomReason": "Please enter a specific reason"
     }
   },
+  "schedulingSettings": {
+    "title": "Scheduling Settings",
+    "loading": "Loading...",
+    "save": "Save Settings",
+    "automationMode": {
+      "title": "Automation Mode",
+      "description": "Choose the level of AI automation for scheduling",
+      "fullAuto": "Full Auto",
+      "fullAutoDesc": "AI automatically generates and executes scheduling plans without manual intervention",
+      "humanConfirm": "Human Confirm",
+      "humanConfirmDesc": "AI generates scheduling suggestions that require human review before execution",
+      "disabled": "Disabled",
+      "disabledDesc": "Full manual scheduling without AI assistance",
+      "recommended": "Recommended"
+    },
+    "riskThreshold": {
+      "title": "Risk Threshold Settings",
+      "description": "Set the completion probability thresholds for risk level classification",
+      "lowRisk": "Low Risk Threshold",
+      "lowRiskHint": "Completion probability above this value is considered low risk",
+      "lowRiskLabel": "Low Risk: >{{lowRisk}}%",
+      "mediumRisk": "Medium Risk Threshold",
+      "mediumRiskHint": "Completion probability above this value is medium risk, below is high risk",
+      "mediumRiskLabel": "Medium Risk: {{mediumRisk}}%-{{lowRisk}}%",
+      "highRiskLabel": "High Risk: <{{mediumRisk}}%"
+    },
+    "notifications": {
+      "title": "Notification Settings",
+      "enable": "Enable Notifications",
+      "enableDesc": "Receive push notifications and alerts related to scheduling"
+    },
+    "messages": {
+      "loadFailed": "Failed to load settings",
+      "saveSuccess": "Settings saved successfully",
+      "saveFailed": "Failed to save settings"
+    }
+  },
   "personnelListScreen": {
     "dispatch": "Dispatch",
     "intern": "Intern",

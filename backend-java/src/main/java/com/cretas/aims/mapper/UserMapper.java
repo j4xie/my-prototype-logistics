@@ -71,10 +71,12 @@ public class UserMapper {
         if (request.getDepartment() != null) {
             user.setDepartment(request.getDepartment().name());
         }
-        // position字段用于存储角色信息（roleCode已删除）
+        // 设置 roleCode 和 position
         if (request.getRoleCode() != null) {
+            user.setRoleCode(request.getRoleCode().name());
             user.setPosition(request.getRoleCode().name());
         } else if (request.getPosition() != null) {
+            user.setRoleCode(request.getPosition());
             user.setPosition(request.getPosition());
         }
         user.setMonthlySalary(request.getMonthlySalary());

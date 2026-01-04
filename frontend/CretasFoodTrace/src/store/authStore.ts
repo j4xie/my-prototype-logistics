@@ -26,6 +26,7 @@ interface AuthState {
   getUserId: () => number | null;
   getUserRole: () => string | null;
   getUserType: () => 'platform' | 'factory' | null;
+  getFactoryId: () => string | null;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -105,6 +106,19 @@ export const useAuthStore = create<AuthState>()(
       getUserType: () => {
         const { user } = get();
         return user?.userType || null;
+      },
+
+      getFactoryId: () => {
+        const { user } = get();
+        if (!user) return null;
+
+        // 工厂用户 - 返回 factoryId
+        if (user.userType === 'factory' && 'factoryUser' in user) {
+          return user.factoryUser.factoryId;
+        }
+
+        // 平台用户没有 factoryId
+        return null;
       },
     }),
     {

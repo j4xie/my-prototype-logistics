@@ -91,25 +91,28 @@ export default function FactoryListScreen() {
       const response = await platformAPI.getFactories();
 
       if (response.success && response.data) {
-        const mappedFactories: Factory[] = response.data.map((factory: FactoryDTO, index: number) => ({
-          id: factory.id,
-          name: factory.name || factory.factoryName || t('factory.unknown'),
-          code: factory.id || `F${String(index + 1).padStart(3, '0')}`,
-          status: factory.isActive !== false ? 'active' : 'inactive',
-          industry: getIndustryFromFactory(factory),
-          employeeCount: factory.totalUsers || 0,
-          departmentCount: factory.departmentCount || 12,
-          productTypeCount: factory.productTypeCount || 8,
-          contactName: factory.contactName || '',
-          contactPhone: factory.contactPhone || '',
-          address: factory.address || '',
-          createdAt: factory.createdAt || new Date().toISOString().split('T')[0],
-          blueprintName: factory.blueprintName,
-          blueprintVersion: factory.blueprintVersion,
-          blueprintSynced: factory.blueprintSynced ?? true,
-          aiQuotaUsed: factory.aiQuotaUsed || 286,
-          aiQuotaTotal: factory.aiQuotaTotal || 500,
-        }));
+        const mappedFactories: Factory[] = response.data.map((factory: FactoryDTO, index: number) => {
+          const createdAtStr = factory.createdAt ?? new Date().toISOString().split('T')[0]!;
+          return {
+            id: factory.id,
+            name: factory.name || factory.factoryName || t('factory.unknown'),
+            code: factory.id || `F${String(index + 1).padStart(3, '0')}`,
+            status: factory.isActive !== false ? 'active' : 'inactive',
+            industry: getIndustryFromFactory(factory),
+            employeeCount: factory.totalUsers || 0,
+            departmentCount: factory.departmentCount || 12,
+            productTypeCount: factory.productTypeCount || 8,
+            contactName: factory.contactName || '',
+            contactPhone: factory.contactPhone || '',
+            address: factory.address || '',
+            createdAt: createdAtStr,
+            blueprintName: factory.blueprintName,
+            blueprintVersion: factory.blueprintVersion,
+            blueprintSynced: factory.blueprintSynced ?? true,
+            aiQuotaUsed: factory.aiQuotaUsed || 286,
+            aiQuotaTotal: factory.aiQuotaTotal || 500,
+          };
+        });
 
         setFactories(mappedFactories);
         factoryListLogger.info('Factory list loaded', { count: mappedFactories.length });

@@ -27,7 +27,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { MixedBatchGroup, MixedBatchOrder, MixedBatchType } from '../../../types/dispatcher';
-// import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { isAxiosError } from 'axios';
 
 // 主题色
 const DISPATCHER_THEME = {
@@ -38,106 +39,13 @@ const DISPATCHER_THEME = {
   gradientEnd: '#a18cd1',
 };
 
-// 模拟混批分组数据
-const mockMixedBatchGroups: MixedBatchGroup[] = [
-  {
-    id: 'group1',
-    groupType: 'same_material',
-    materialBatchId: 'MB-001',
-    materialBatchNumber: 'MB-2025-0001',
-    orders: [
-      {
-        orderId: 'SO-2025-0001',
-        customerName: '青岛海鲜批发',
-        productName: '带鱼片',
-        quantity: 50,
-        unit: 'kg',
-        deadline: '2025-12-30 18:00',
-      },
-      {
-        orderId: 'SO-2025-0002',
-        customerName: '济南水产市场',
-        productName: '带鱼片',
-        quantity: 80,
-        unit: 'kg',
-        deadline: '2025-12-30 20:00',
-      },
-      {
-        orderId: 'SO-2025-0003',
-        customerName: '烟台冷链物流',
-        productName: '带鱼段',
-        quantity: 30,
-        unit: 'kg',
-        deadline: '2025-12-31 10:00',
-      },
-    ],
-    totalQuantity: 160,
-    estimatedSwitchSaving: 45,
-    status: 'pending',
-  },
-  {
-    id: 'group2',
-    groupType: 'same_process',
-    processType: '切片加工',
-    orders: [
-      {
-        orderId: 'SO-2025-0004',
-        customerName: '威海海鲜城',
-        productName: '鲅鱼片',
-        quantity: 100,
-        unit: 'kg',
-        deadline: '2025-12-30 16:00',
-      },
-      {
-        orderId: 'SO-2025-0005',
-        customerName: '日照水产公司',
-        productName: '带鱼片',
-        quantity: 60,
-        unit: 'kg',
-        deadline: '2025-12-30 17:00',
-      },
-    ],
-    totalQuantity: 160,
-    estimatedSwitchSaving: 30,
-    status: 'pending',
-  },
-  {
-    id: 'group3',
-    groupType: 'same_material',
-    materialBatchId: 'MB-002',
-    materialBatchNumber: 'MB-2025-0002',
-    orders: [
-      {
-        orderId: 'SO-2025-0006',
-        customerName: '潍坊海鲜批发',
-        productName: '黄花鱼',
-        quantity: 40,
-        unit: 'kg',
-        deadline: '2025-12-31 12:00',
-      },
-      {
-        orderId: 'SO-2025-0007',
-        customerName: '淄博水产市场',
-        productName: '黄花鱼',
-        quantity: 50,
-        unit: 'kg',
-        deadline: '2025-12-31 14:00',
-      },
-    ],
-    totalQuantity: 90,
-    estimatedSwitchSaving: 25,
-    status: 'confirmed',
-    confirmedBy: 1,
-    confirmedAt: '2025-12-29 10:00',
-    productionPlanId: 'PP-2025-001',
-  },
-];
+// Mock数据已移除，改为从API获取
 
 export default function MixedBatchScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [groups, setGroups] = useState<MixedBatchGroup[]>(mockMixedBatchGroups);
+  const [groups, setGroups] = useState<MixedBatchGroup[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<MixedBatchGroup | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [detectLoading, setDetectLoading] = useState(false);
@@ -147,16 +55,24 @@ export default function MixedBatchScreen() {
   const loadData = async () => {
     try {
       setLoading(true);
-      // TODO: 调用API获取混批分组
-      // const response = await schedulingApiClient.getMixedBatchGroups();
-      // if (response.success && response.data) {
-      //   setGroups(response.data);
-      // }
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setGroups(mockMixedBatchGroups);
+      const response = await schedulingApiClient.getMixedBatchGroups();
+      if (response.success && response.data) {
+        setGroups(response.data);
+      } else {
+        console.error('API error:', response.message);
+        Alert.alert('加载失败', response.message || '无法获取混批数据');
+      }
     } catch (error) {
       console.error('加载混批数据失败:', error);
-      Alert.alert('错误', '加载混批数据失败，请重试');
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          Alert.alert('登录已过期', '请重新登录');
+        } else {
+          Alert.alert('请求失败', error.response?.data?.message || '网络错误，请检查连接');
+        }
+      } else if (error instanceof Error) {
+        Alert.alert('错误', error.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -173,16 +89,27 @@ export default function MixedBatchScreen() {
   const detectMixedBatch = async () => {
     try {
       setDetectLoading(true);
-      // TODO: 调用API检测混批机会
-      // const response = await schedulingApiClient.detectMixedBatch({
-      //   dateRange: { start: new Date().toISOString(), end: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() },
-      //   includeConfirmed: false,
-      // });
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      Alert.alert('检测完成', `发现 ${groups.filter(g => g.status === 'pending').length} 个可优化的混批机会`);
+      const startDate = new Date().toISOString().split('T')[0];
+      const endDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const response = await schedulingApiClient.detectMixedBatch({
+        startDate,
+        endDate,
+      });
+      if (response.success && response.data) {
+        setGroups(response.data);
+        const pendingCount = response.data.filter(g => g.status === 'pending').length;
+        Alert.alert('检测完成', `发现 ${pendingCount} 个可优化的混批机会`);
+      } else {
+        console.error('API error:', response.message);
+        Alert.alert('检测失败', response.message || '无法检测混批机会');
+      }
     } catch (error) {
       console.error('检测混批失败:', error);
-      Alert.alert('错误', '检测混批失败，请重试');
+      if (isAxiosError(error)) {
+        Alert.alert('请求失败', error.response?.data?.message || '网络错误');
+      } else if (error instanceof Error) {
+        Alert.alert('错误', error.message);
+      }
     } finally {
       setDetectLoading(false);
     }
@@ -200,21 +127,24 @@ export default function MixedBatchScreen() {
           onPress: async () => {
             try {
               setLoading(true);
-              // TODO: 调用API确认混批
-              // await schedulingApiClient.confirmMixedBatch(group.id);
-              await new Promise(resolve => setTimeout(resolve, 500));
-
-              // 更新本地状态
-              setGroups(prev => prev.map(g =>
-                g.id === group.id
-                  ? { ...g, status: 'confirmed', confirmedAt: new Date().toISOString() }
-                  : g
-              ));
-              setDetailModalVisible(false);
-              Alert.alert('成功', '混批确认成功，已生成生产计划');
+              const response = await schedulingApiClient.confirmMixedBatch(group.id);
+              if (response.success && response.data) {
+                // 使用API返回的数据更新本地状态
+                setGroups(prev => prev.map(g =>
+                  g.id === group.id ? response.data : g
+                ));
+                setDetailModalVisible(false);
+                Alert.alert('成功', '混批确认成功，已生成生产计划');
+              } else {
+                Alert.alert('确认失败', response.message || '无法确认混批');
+              }
             } catch (error) {
               console.error('确认混批失败:', error);
-              Alert.alert('错误', '确认混批失败，请重试');
+              if (isAxiosError(error)) {
+                Alert.alert('请求失败', error.response?.data?.message || '网络错误');
+              } else if (error instanceof Error) {
+                Alert.alert('错误', error.message);
+              }
             } finally {
               setLoading(false);
             }
@@ -237,19 +167,24 @@ export default function MixedBatchScreen() {
           onPress: async () => {
             try {
               setLoading(true);
-              // TODO: 调用API拒绝混批
-              await new Promise(resolve => setTimeout(resolve, 500));
-
-              setGroups(prev => prev.map(g =>
-                g.id === group.id
-                  ? { ...g, status: 'rejected' }
-                  : g
-              ));
-              setDetailModalVisible(false);
-              Alert.alert('已拒绝', '混批建议已拒绝');
+              const response = await schedulingApiClient.rejectMixedBatch(group.id, '用户手动拒绝');
+              if (response.success && response.data) {
+                // 使用API返回的数据更新本地状态
+                setGroups(prev => prev.map(g =>
+                  g.id === group.id ? response.data : g
+                ));
+                setDetailModalVisible(false);
+                Alert.alert('已拒绝', '混批建议已拒绝');
+              } else {
+                Alert.alert('拒绝失败', response.message || '无法拒绝混批');
+              }
             } catch (error) {
               console.error('拒绝混批失败:', error);
-              Alert.alert('错误', '拒绝混批失败，请重试');
+              if (isAxiosError(error)) {
+                Alert.alert('请求失败', error.response?.data?.message || '网络错误');
+              } else if (error instanceof Error) {
+                Alert.alert('错误', error.message);
+              }
             } finally {
               setLoading(false);
             }

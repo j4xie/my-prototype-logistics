@@ -32,6 +32,15 @@ import PersonnelDetailScreen from '../screens/dispatcher/personnel/PersonnelDeta
 import PersonnelScheduleScreen from '../screens/dispatcher/personnel/PersonnelScheduleScreen';
 import PersonnelTransferScreen from '../screens/dispatcher/personnel/PersonnelTransferScreen';
 
+// Alert 模块
+import { AlertListScreen } from '../screens/dispatcher/alert';
+
+// Line 模块
+import { ProductionLineScreen } from '../screens/dispatcher/line';
+
+// Stats 模块
+import { UrgentInsertStatsScreen } from '../screens/dispatcher/stats';
+
 /**
  * 调度员导航参数类型 (仅已实现的屏幕)
  */
@@ -50,6 +59,12 @@ export type DispatcherStackParamList = {
   PersonnelDetail: { employeeId: string };
   PersonnelSchedule: undefined;
   PersonnelTransfer: undefined;
+  // Alert 模块
+  AlertList: undefined;
+  // Line 模块
+  ProductionLine: undefined;
+  // Stats 模块
+  UrgentInsertStats: undefined;
 };
 
 const Stack = createStackNavigator<DispatcherStackParamList>();
@@ -80,6 +95,15 @@ export function DispatcherNavigator() {
       <Stack.Screen name="PersonnelDetail" component={PersonnelDetailScreen} />
       <Stack.Screen name="PersonnelSchedule" component={PersonnelScheduleScreen} />
       <Stack.Screen name="PersonnelTransfer" component={PersonnelTransferScreen} />
+
+      {/* Alert 模块 */}
+      <Stack.Screen name="AlertList" component={AlertListScreen} />
+
+      {/* Line 模块 */}
+      <Stack.Screen name="ProductionLine" component={ProductionLineScreen} />
+
+      {/* Stats 模块 */}
+      <Stack.Screen name="UrgentInsertStats" component={UrgentInsertStatsScreen} />
     </Stack.Navigator>
   );
 }

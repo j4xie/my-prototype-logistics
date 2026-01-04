@@ -13,7 +13,7 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -23,12 +23,15 @@ import {
   TextInput,
   Alert,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
+import { isAxiosError } from 'axios';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
 
 // 主题色
 const DISPATCHER_THEME = {
@@ -85,21 +88,34 @@ interface TransferImpact {
   warnings: string[];
 }
 
-// Mock 数据
-const mockWorkshops: Workshop[] = [
-  { id: 'W001', name: '切片车间', type: 'slicing', currentWorkers: 8, maxCapacity: 12, capacityPercent: 67 },
-  { id: 'W002', name: '包装车间', type: 'packaging', currentWorkers: 6, maxCapacity: 10, capacityPercent: 60 },
-  { id: 'W003', name: '冷冻车间', type: 'freezing', currentWorkers: 4, maxCapacity: 8, capacityPercent: 50 },
-  { id: 'W004', name: '仓储车间', type: 'storage', currentWorkers: 3, maxCapacity: 6, capacityPercent: 50 },
-];
+/**
+ * Transform API workshop data to local Workshop interface
+ */
+const transformWorkshop = (apiWorkshop: any): Workshop => ({
+  id: apiWorkshop.id || apiWorkshop.workshopId || '',
+  name: apiWorkshop.name || apiWorkshop.workshopName || '',
+  type: apiWorkshop.type || apiWorkshop.workshopType || 'general',
+  currentWorkers: apiWorkshop.currentWorkers || apiWorkshop.workerCount || 0,
+  maxCapacity: apiWorkshop.maxCapacity || apiWorkshop.capacity || 10,
+  capacityPercent: apiWorkshop.capacityPercent ||
+    Math.round(((apiWorkshop.currentWorkers || 0) / (apiWorkshop.maxCapacity || 10)) * 100),
+});
 
-const mockTransferableWorkers: TransferableWorker[] = [
-  { id: 'E001', name: '张三丰', avatar: '张', employeeCode: '001', status: 'idle', skill: '切片', efficiency: 95 },
-  { id: 'E002', name: '李四海', avatar: '李', employeeCode: '002', status: 'idle', skill: '切片', efficiency: 88 },
-  { id: 'E003', name: '王五行', avatar: '王', employeeCode: '003', status: 'working', currentTask: 'PB20241227001', skill: '切片', efficiency: 92 },
-  { id: 'E004', name: '赵六顺', avatar: '赵', employeeCode: '004', status: 'idle', skill: '质检', efficiency: 90 },
-  { id: 'E005', name: '刘临时', avatar: '刘', employeeCode: '088', status: 'idle', skill: '包装', efficiency: 85, isTemporary: true },
-];
+/**
+ * Transform API worker data to local TransferableWorker interface
+ */
+const transformWorker = (apiWorker: any): TransferableWorker => ({
+  id: apiWorker.id || apiWorker.workerId || apiWorker.userId || '',
+  name: apiWorker.name || apiWorker.workerName || apiWorker.realName || '',
+  avatar: (apiWorker.name || apiWorker.realName || '员').charAt(0),
+  employeeCode: apiWorker.employeeCode || apiWorker.code || apiWorker.employeeId || '',
+  status: (apiWorker.status || 'idle').toLowerCase() === 'working' ||
+    (apiWorker.status || '').toLowerCase() === 'busy' ? 'working' : 'idle',
+  currentTask: apiWorker.currentTask || apiWorker.currentBatchNumber || undefined,
+  skill: apiWorker.skill || apiWorker.skillName || apiWorker.primarySkill || '',
+  efficiency: apiWorker.efficiency || apiWorker.efficiencyRate || 85,
+  isTemporary: apiWorker.isTemporary || apiWorker.employeeType === 'temporary' || false,
+});
 
 const transferReasonKeys = [
   'urgentStaffing',
@@ -113,7 +129,12 @@ const transferReasonKeys = [
 export default function PersonnelTransferScreen() {
   const { t } = useTranslation('dispatcher');
   const navigation = useNavigation();
+
+  // Loading and data states
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [workshops, setWorkshops] = useState<Workshop[]>([]);
+  const [workers, setWorkers] = useState<TransferableWorker[]>([]);
 
   // 表单状态
   const [sourceWorkshop, setSourceWorkshop] = useState<Workshop | null>(null);
@@ -129,12 +150,56 @@ export default function PersonnelTransferScreen() {
   const [showTargetDropdown, setShowTargetDropdown] = useState(false);
   const [showReasonDropdown, setShowReasonDropdown] = useState(false);
 
+  /**
+   * Load workshops and available workers from API
+   */
+  const loadData = useCallback(async () => {
+    try {
+      // Load workshops
+      const workshopResponse = await schedulingApiClient.getWorkshopList();
+      if (workshopResponse.success && workshopResponse.data) {
+        const workshopList = Array.isArray(workshopResponse.data)
+          ? workshopResponse.data
+          : workshopResponse.data.workshops || workshopResponse.data.content || [];
+        setWorkshops(workshopList.map(transformWorkshop));
+      }
+
+      // Load available workers
+      const workersResponse = await schedulingApiClient.getAvailableWorkers();
+      if (workersResponse.success && workersResponse.data) {
+        const workerList = Array.isArray(workersResponse.data)
+          ? workersResponse.data
+          : workersResponse.data.workers || workersResponse.data.content || [];
+        setWorkers(workerList.map(transformWorker));
+      }
+    } catch (error) {
+      if (isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 401) {
+          Alert.alert(t('common.error'), t('common.sessionExpired'));
+          navigation.goBack();
+          return;
+        }
+        console.error('Failed to load transfer data:', error.response?.data?.message || error.message);
+      } else {
+        console.error('Unexpected error loading transfer data:', error);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [navigation, t]);
+
+  // Load data on mount
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   // 下拉刷新
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadData();
     setRefreshing(false);
-  };
+  }, [loadData]);
 
   // 切换员工选择
   const toggleWorkerSelection = (workerId: string) => {
@@ -237,6 +302,33 @@ export default function PersonnelTransferScreen() {
 
   const impact = calculateImpact();
 
+  // Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <LinearGradient
+          colors={[DISPATCHER_THEME.primary, DISPATCHER_THEME.secondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.header}
+        >
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{t('personnelTransferScreen.title')}</Text>
+          <View style={styles.headerRight} />
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={DISPATCHER_THEME.primary} />
+          <Text style={styles.loadingText}>{t('common.loading')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // 渲染下拉选项
   const renderWorkshopDropdown = (
     workshops: Workshop[],
@@ -321,7 +413,7 @@ export default function PersonnelTransferScreen() {
               />
             </TouchableOpacity>
             {showSourceDropdown && renderWorkshopDropdown(
-              mockWorkshops,
+              workshops,
               setSourceWorkshop,
               () => setShowSourceDropdown(false),
               targetWorkshop?.id
@@ -352,7 +444,7 @@ export default function PersonnelTransferScreen() {
               />
             </TouchableOpacity>
             {showTargetDropdown && renderWorkshopDropdown(
-              mockWorkshops,
+              workshops,
               setTargetWorkshop,
               () => setShowTargetDropdown(false),
               sourceWorkshop?.id
@@ -398,7 +490,7 @@ export default function PersonnelTransferScreen() {
               </Text>
             </View>
 
-            {mockTransferableWorkers.map((worker) => (
+            {workers.map((worker) => (
               <TouchableOpacity
                 key={worker.id}
                 style={[
@@ -656,6 +748,16 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     width: 40,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#666',
   },
   content: {
     flex: 1,

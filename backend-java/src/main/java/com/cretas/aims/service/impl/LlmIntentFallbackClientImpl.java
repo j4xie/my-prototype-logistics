@@ -236,9 +236,12 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             return IntentMatchResult.empty(userInput);
         }
 
+        // Python 服务直接返回字段，不包装在 data 中
+        // 支持两种格式：有 data 包装 和 直接返回
         Map<String, Object> data = (Map<String, Object>) response.get("data");
         if (data == null) {
-            return IntentMatchResult.empty(userInput);
+            // 使用响应本身作为数据（Python 直接返回格式）
+            data = response;
         }
 
         // 提取匹配的意图代码
@@ -273,8 +276,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                 .description(matchedConfig.getDescription())
                 .build());
 
-        // 提取其他候选（如果有）
+        // 提取其他候选（如果有）- 支持 other_candidates 和 candidates 两种字段名
         List<Map<String, Object>> otherCandidates = (List<Map<String, Object>>) data.get("other_candidates");
+        if (otherCandidates == null) {
+            otherCandidates = (List<Map<String, Object>>) data.get("candidates");
+        }
         if (otherCandidates != null) {
             for (Map<String, Object> candidate : otherCandidates) {
                 String code = (String) candidate.get("intent_code");

@@ -91,6 +91,10 @@ export type ProcessingStackParamList = {
 
   // Phase 3 P2: 异常预警
   ExceptionAlert: undefined;
+  CreateException: undefined;
+
+  // 包装管理
+  CreatePackaging: undefined;
 
   // 原材料消耗记录
   MaterialConsumptionHistory: { productionBatchId?: string };
@@ -227,6 +231,7 @@ export type AdminStackParamList = {
 export type FactoryAdminTabParamList = {
   FAHomeTab: NavigatorScreenParams<FAHomeStackParamList>;
   FAAITab: NavigatorScreenParams<FAAIStackParamList>;
+  FAReportsTab: NavigatorScreenParams<ReportStackParamList>;
   FAManagementTab: NavigatorScreenParams<FAManagementStackParamList>;
   FAProfileTab: NavigatorScreenParams<FAProfileStackParamList>;
 };
@@ -298,6 +303,7 @@ export type FAProfileStackParamList = {
   HelpCenter: undefined;
   About: undefined;
   Feedback: undefined;
+  Membership: undefined;
   DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
 };
 
@@ -372,6 +378,8 @@ export type WSProfileStackParamList = {
   NotificationSettings: undefined;
   Settings: undefined;
   About: undefined;
+  Feedback: undefined;
+  Membership: undefined;
 };
 
 // Workshop Supervisor 屏幕Props
@@ -453,6 +461,8 @@ export type WHProfileStackParamList = {
   WHAlertHandle: { alertId: string };
   WHRecallManage: undefined;
   WHConversionAnalysis: undefined;
+  Feedback: undefined;
+  Membership: undefined;
 };
 
 // Warehouse Manager 屏幕Props

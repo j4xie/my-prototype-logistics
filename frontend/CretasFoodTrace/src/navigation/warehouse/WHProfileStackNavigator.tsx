@@ -17,6 +17,10 @@ import WHAlertHandleScreen from "../../screens/warehouse/shared/WHAlertHandleScr
 import WHRecallManageScreen from "../../screens/warehouse/shared/WHRecallManageScreen";
 import WHConversionAnalysisScreen from "../../screens/warehouse/shared/WHConversionAnalysisScreen";
 
+// 复用现有Profile页面
+import FeedbackScreen from "../../screens/profile/FeedbackScreen";
+import MembershipScreen from "../../screens/profile/MembershipScreen";
+
 const Stack = createNativeStackNavigator<WHProfileStackParamList>();
 
 export function WHProfileStackNavigator() {
@@ -76,6 +80,20 @@ export function WHProfileStackNavigator() {
         name="WHConversionAnalysis"
         component={WHConversionAnalysisScreen}
         options={{ title: "转化分析" }}
+      />
+
+      {/* 意见反馈 */}
+      <Stack.Screen
+        name="Feedback"
+        component={FeedbackScreen}
+        options={{ title: "意见反馈" }}
+      />
+
+      {/* 会员中心 */}
+      <Stack.Screen
+        name="Membership"
+        component={MembershipScreen}
+        options={{ title: "会员中心" }}
       />
     </Stack.Navigator>
   );
