@@ -106,6 +106,125 @@ public class AIIntentServiceImpl implements AIIntentService {
             "看看", "查", "查一下", "查看", "能", "可以", "吗", "呢", "啊", "吧"
     );
 
+    // ==================== 交叉关键词权重机制 ====================
+
+    /**
+     * 查询指示词 - 表示用户想要查询/查看数据
+     */
+    private static final Set<String> QUERY_INDICATORS = Set.of(
+            "查询", "查看", "多少", "还剩", "有几", "列表", "统计", "查",
+            "显示", "获取", "看看", "有多少", "剩多少", "剩余", "库存",
+            "情况", "状态", "有什么", "有哪些", "是多少", "数量"
+    );
+
+    /**
+     * 更新指示词 - 表示用户想要修改/更新数据
+     */
+    private static final Set<String> UPDATE_INDICATORS = Set.of(
+            "修改", "更新", "改成", "改为", "设置", "调整", "编辑", "变更", "改",
+            "把", "设成", "设为", "更改", "修订", "调为", "换成"
+    );
+
+    /**
+     * 操作类型枚举
+     */
+    private enum OperationType {
+        QUERY,      // 明确的查询操作
+        UPDATE,     // 明确的更新操作
+        AMBIGUOUS,  // 查询和更新指示词都存在
+        UNKNOWN     // 无法判断
+    }
+
+    /**
+     * 检测用户输入的操作类型
+     *
+     * @param input 用户输入（已转小写）
+     * @return 操作类型
+     */
+    private OperationType detectOperationType(String input) {
+        if (input == null || input.isEmpty()) {
+            return OperationType.UNKNOWN;
+        }
+
+        boolean hasQuery = QUERY_INDICATORS.stream().anyMatch(input::contains);
+        boolean hasUpdate = UPDATE_INDICATORS.stream().anyMatch(input::contains);
+
+        if (hasQuery && !hasUpdate) {
+            return OperationType.QUERY;
+        }
+        if (hasUpdate && !hasQuery) {
+            return OperationType.UPDATE;
+        }
+        if (hasQuery && hasUpdate) {
+            return OperationType.AMBIGUOUS;
+        }
+        return OperationType.UNKNOWN;
+    }
+
+    /**
+     * 判断意图是否为查询类意图
+     */
+    private boolean isQueryIntent(String intentCode) {
+        if (intentCode == null) return false;
+        return intentCode.contains("QUERY") ||
+               intentCode.contains("LIST") ||
+               intentCode.contains("STATS") ||
+               intentCode.contains("GET") ||
+               intentCode.contains("SEARCH") ||
+               intentCode.contains("VIEW") ||
+               intentCode.contains("STATUS") ||
+               intentCode.contains("OVERVIEW");
+    }
+
+    /**
+     * 判断意图是否为更新类意图
+     */
+    private boolean isUpdateIntent(String intentCode) {
+        if (intentCode == null) return false;
+        return intentCode.contains("UPDATE") ||
+               intentCode.contains("CREATE") ||
+               intentCode.contains("DELETE") ||
+               intentCode.contains("MODIFY") ||
+               intentCode.contains("SET") ||
+               intentCode.contains("CHANGE") ||
+               intentCode.contains("EDIT");
+    }
+
+    /**
+     * 计算操作类型权重调整
+     *
+     * @param intentCode 意图代码
+     * @param opType 检测到的操作类型
+     * @return 权重调整值（正数加分，负数减分）
+     */
+    private int calculateOperationTypeAdjustment(String intentCode, OperationType opType) {
+        if (opType == OperationType.UNKNOWN || opType == OperationType.AMBIGUOUS) {
+            return 0;  // 无法判断时不调整
+        }
+
+        boolean isQuery = isQueryIntent(intentCode);
+        boolean isUpdate = isUpdateIntent(intentCode);
+
+        // 查询输入 + 查询意图 = 加分
+        if (opType == OperationType.QUERY && isQuery) {
+            return 25;  // 大幅加分
+        }
+        // 更新输入 + 更新意图 = 加分
+        if (opType == OperationType.UPDATE && isUpdate) {
+            return 25;  // 大幅加分
+        }
+        // 查询输入 + 更新意图 = 减分
+        if (opType == OperationType.QUERY && isUpdate) {
+            return -20;  // 减分以降低优先级
+        }
+        // 更新输入 + 查询意图 = 减分
+        if (opType == OperationType.UPDATE && isQuery) {
+            return -20;  // 减分以降低优先级
+        }
+
+        return 0;
+    }
+
     // ==================== 意图识别 ====================
 
     @Override
@@ -184,6 +303,10 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 收集所有匹配结果及其分数
         List<IntentScoreEntry> scoredIntents = new ArrayList<>();
 
+        // === BUG-001/002 修复：检测操作类型（查询 or 更新）===
+        OperationType opType = detectOperationType(normalizedInput);
+        log.debug("检测到操作类型: {} for input: {}", opType, normalizedInput);
+
         for (AIIntentConfig intent : allIntents) {
             IntentScoreEntry entry = new IntentScoreEntry();
             entry.config = intent;
@@ -197,11 +320,20 @@ public class AIIntentServiceImpl implements AIIntentService {
                 continue;
             }
 
-            // 关键词匹配
-            List<String> matchedKeywords = getMatchedKeywords(intent, normalizedInput);
+            // 关键词匹配 - 使用合并后的关键词（基础 + 工厂级 + 全局）
+            List<String> matchedKeywords = getMatchedKeywords(intent, normalizedInput, factoryId);
             if (!matchedKeywords.isEmpty()) {
                 entry.matchMethod = MatchMethod.KEYWORD;
-                entry.matchScore = matchedKeywords.size() * 10 + intent.getPriority();
+                // === BUG-001/002 修复：应用操作类型权重调整 ===
+                int baseScore = matchedKeywords.size() * 10 + intent.getPriority();
+                int opTypeAdjustment = calculateOperationTypeAdjustment(intent.getIntentCode(), opType);
+                entry.matchScore = baseScore + opTypeAdjustment;
+
+                if (opTypeAdjustment != 0) {
+                    log.debug("操作类型调整: intent={}, opType={}, baseScore={}, adjustment={}, finalScore={}",
+                            intent.getIntentCode(), opType, baseScore, opTypeAdjustment, entry.matchScore);
+                }
+
                 entry.matchedKeywords = matchedKeywords;
                 scoredIntents.add(entry);
             }
@@ -246,7 +378,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         boolean isStrongSignal = isStrongSignal(bestEntry, candidates, bestConfidence);
 
         // 判断是否需要确认
-        boolean requiresConfirmation = determineRequiresConfirmation(bestEntry.config, isStrongSignal, candidates);
+        boolean requiresConfirmation = determineRequiresConfirmation(userInput, bestEntry.config, isStrongSignal, candidates);
 
         // 生成澄清问题（如果需要）
         String clarificationQuestion = requiresConfirmation ?
@@ -292,6 +424,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     private IntentMatchResult tryLlmFallback(String userInput, String factoryId,
                                               List<AIIntentConfig> allIntents,
                                               IntentMatchResult ruleResult) {
+        log.info(">>> Entering tryLlmFallback: userInput='{}', llmFallbackEnabled={}",
+                userInput, llmFallbackEnabled);
+
         // 检查是否启用 LLM Fallback
         if (!llmFallbackEnabled) {
             log.debug("LLM fallback is disabled");
@@ -301,7 +436,9 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         // 检查 LLM 服务健康状态
-        if (!llmFallbackClient.isHealthy()) {
+        boolean isHealthy = llmFallbackClient.isHealthy();
+        log.info(">>> LLM service health check: isHealthy={}", isHealthy);
+        if (!isHealthy) {
             log.warn("LLM service is not healthy, skipping fallback");
             IntentMatchResult fallbackResult = ruleResult != null ? ruleResult : IntentMatchResult.empty(userInput);
             saveIntentMatchRecord(fallbackResult, factoryId, null, null, false);
@@ -364,9 +501,27 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     /**
      * 判断是否需要用户确认
+     *
+     * @param userInput 用户输入文本
+     * @param config 匹配的意图配置
+     * @param isStrongSignal 是否为强信号
+     * @param candidates 候选意图列表
+     * @return 是否需要用户确认
      */
-    private boolean determineRequiresConfirmation(AIIntentConfig config, boolean isStrongSignal,
+    private boolean determineRequiresConfirmation(String userInput, AIIntentConfig config, boolean isStrongSignal,
                                                    List<CandidateIntent> candidates) {
+        // 短输入总是需要确认（单字符或仅2-3个字符的输入可能是误触发）
+        if (userInput != null && userInput.trim().length() <= 3) {
+            log.debug("短输入需要确认: length={}", userInput.trim().length());
+            return true;
+        }
+
+        // 常见停用词/无意义输入需要确认
+        if (isAmbiguousInput(userInput)) {
+            log.debug("模糊输入需要确认: input={}", userInput);
+            return true;
+        }
+
         // 高敏感度意图总是需要确认
         String sensitivity = config.getSensitivityLevel();
         if ("HIGH".equals(sensitivity) || "CRITICAL".equals(sensitivity)) {
@@ -387,6 +542,85 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return false;
+    }
+
+    /**
+     * 判断输入是否模糊/无意义
+     */
+    private boolean isAmbiguousInput(String userInput) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return true;
+        }
+
+        String input = userInput.trim().toLowerCase();
+
+        // 常见停用词（单独使用时需要确认）
+        Set<String> stopWords = Set.of(
+                "查", "看", "找", "要", "帮", "给", "说", "做",
+                "啥", "嘛", "吗", "呢", "吧", "了", "的", "是",
+                "what", "how", "why", "help", "show", "get"
+        );
+        if (stopWords.contains(input)) {
+            return true;
+        }
+
+        // 纯数字或特殊字符
+        if (input.matches("^[\\d\\s\\p{Punct}]+$")) {
+            return true;
+        }
+
+        // 无意义字符串（连续相同字符或键盘乱按）
+        if (input.matches("^(.)\\1{2,}$") ||  // 如 "aaaa"
+            input.matches("^[a-z]{4,}$") && !containsChineseOrMeaningful(input)) {  // 如 "asdfgh"
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 检查是否包含中文或有意义的英文单词
+     */
+    private boolean containsChineseOrMeaningful(String input) {
+        // 包含中文字符
+        if (input.matches(".*[\\u4e00-\\u9fa5]+.*")) {
+            return true;
+        }
+
+        // 常见有意义的英文单词
+        Set<String> meaningfulWords = Set.of(
+                "query", "list", "get", "show", "create", "update", "delete",
+                "material", "batch", "quality", "shipment", "report", "alert",
+                "inventory", "stock", "order", "production", "check"
+        );
+
+        for (String word : meaningfulWords) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 判断输入是否需要确认（用于LLM结果的二次检查）
+     * 短输入或模糊输入应该触发确认，无论匹配方法
+     */
+    private boolean shouldRequireConfirmationForInput(String userInput) {
+        if (userInput == null) {
+            return false;
+        }
+
+        String trimmed = userInput.trim();
+
+        // 短输入（<=3个字符）总是需要确认
+        if (trimmed.length() <= 3) {
+            return true;
+        }
+
+        // 模糊输入需要确认
+        return isAmbiguousInput(userInput);
     }
 
     /**
@@ -536,25 +770,77 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
-     * 获取匹配的关键词列表
+     * 获取用于匹配的所有关键词（合并基础关键词 + 工厂级 + 全局）
+     *
+     * @param factoryId 工厂ID（可为null，表示只使用基础和全局关键词）
+     * @param intent 意图配置
+     * @return 合并后的关键词列表
+     */
+    private List<String> getAllKeywordsForMatching(String factoryId, AIIntentConfig intent) {
+        Set<String> allKeywords = new HashSet<>();
+        String intentCode = intent.getIntentCode();
+
+        // 1. 基础关键词 (from JSON field)
+        String keywordsJson = intent.getKeywords();
+        if (keywordsJson != null && !keywordsJson.isEmpty()) {
+            try {
+                List<String> baseKeywords = objectMapper.readValue(keywordsJson,
+                        new TypeReference<List<String>>() {});
+                allKeywords.addAll(baseKeywords);
+            } catch (Exception e) {
+                log.warn("Failed to parse base keywords for intent {}: {}", intentCode, e.getMessage());
+            }
+        }
+
+        // 2. 工厂级关键词 (from keyword_effectiveness table, effectiveness >= 0.5)
+        if (factoryId != null && !factoryId.isEmpty()) {
+            try {
+                var factoryKeywords = keywordEffectivenessService.getEffectiveKeywords(
+                        factoryId, intentCode, new BigDecimal("0.5"));
+                factoryKeywords.forEach(k -> allKeywords.add(k.getKeyword()));
+                if (!factoryKeywords.isEmpty()) {
+                    log.debug("Added {} factory-level keywords for intent {} in factory {}",
+                            factoryKeywords.size(), intentCode, factoryId);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to get factory keywords for intent {}: {}", intentCode, e.getMessage());
+            }
+        }
+
+        // 3. 全局关键词 (GLOBAL, from keyword_effectiveness table)
+        try {
+            var globalKeywords = keywordEffectivenessService.getEffectiveKeywords(
+                    "GLOBAL", intentCode, new BigDecimal("0.5"));
+            globalKeywords.forEach(k -> allKeywords.add(k.getKeyword()));
+            if (!globalKeywords.isEmpty()) {
+                log.debug("Added {} global keywords for intent {}", globalKeywords.size(), intentCode);
+            }
+        } catch (Exception e) {
+            log.warn("Failed to get global keywords for intent {}: {}", intentCode, e.getMessage());
+        }
+
+        return new ArrayList<>(allKeywords);
+    }
+
+    /**
+     * 获取匹配的关键词列表（带工厂ID）
+     */
+    private List<String> getMatchedKeywords(AIIntentConfig intent, String input, String factoryId) {
+        List<String> keywords = getAllKeywordsForMatching(factoryId, intent);
+        if (keywords.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return keywords.stream()
+                .filter(keyword -> input.contains(keyword.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取匹配的关键词列表（向后兼容，无工厂ID）
      */
     private List<String> getMatchedKeywords(AIIntentConfig intent, String input) {
-        String keywordsJson = intent.getKeywords();
-        if (keywordsJson == null || keywordsJson.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        try {
-            List<String> keywords = objectMapper.readValue(keywordsJson,
-                    new TypeReference<List<String>>() {});
-
-            return keywords.stream()
-                    .filter(keyword -> input.contains(keyword.toLowerCase()))
-                    .collect(Collectors.toList());
-        } catch (Exception e) {
-            log.warn("Failed to parse keywords for intent {}: {}", intent.getIntentCode(), e.getMessage());
-            return Collections.emptyList();
-        }
+        return getMatchedKeywords(intent, input, null);
     }
 
     /**
@@ -756,30 +1042,30 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
-     * 计算关键词匹配分数
+     * 计算关键词匹配分数（带工厂ID）
+     * 返回匹配的关键词数量
+     */
+    private int calculateKeywordMatchScore(AIIntentConfig intent, String input, String factoryId) {
+        List<String> keywords = getAllKeywordsForMatching(factoryId, intent);
+        if (keywords.isEmpty()) {
+            return 0;
+        }
+
+        int score = 0;
+        for (String keyword : keywords) {
+            if (input.contains(keyword.toLowerCase())) {
+                score++;
+            }
+        }
+        return score;
+    }
+
+    /**
+     * 计算关键词匹配分数（向后兼容，无工厂ID）
      * 返回匹配的关键词数量
      */
     private int calculateKeywordMatchScore(AIIntentConfig intent, String input) {
-        String keywordsJson = intent.getKeywords();
-        if (keywordsJson == null || keywordsJson.isEmpty()) {
-            return 0;
-        }
-
-        try {
-            List<String> keywords = objectMapper.readValue(keywordsJson,
-                    new TypeReference<List<String>>() {});
-
-            int score = 0;
-            for (String keyword : keywords) {
-                if (input.contains(keyword.toLowerCase())) {
-                    score++;
-                }
-            }
-            return score;
-        } catch (Exception e) {
-            log.warn("Failed to parse keywords for intent {}: {}", intent.getIntentCode(), e.getMessage());
-            return 0;
-        }
+        return calculateKeywordMatchScore(intent, input, null);
     }
 
     // ==================== 自动学习关键词 ====================

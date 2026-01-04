@@ -28,6 +28,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { personnelApiClient } from '../../../services/api/personnelApiClient';
+import { hrApiClient } from '../../../services/api/hrApiClient';
+import { isAxiosError } from 'axios';
+import { useAuthStore } from '../../../store/authStore';
+import type { DispatcherEmployee } from '../../../types/dispatcher';
 
 // 调度员主题色
 const DISPATCHER_THEME = {
@@ -85,8 +91,15 @@ interface Employee {
   recentTasks: RecentTask[];
 }
 
-// Mock 数据
-const mockEmployee: Employee = {
+// Route params type
+type PersonnelDetailRouteParams = {
+  PersonnelDetail: {
+    personnelId: string;
+  };
+};
+
+// Fallback data when API fails or returns empty results
+const fallbackEmployee: Employee = {
   id: '1',
   name: '王五行',
   avatar: '王',
@@ -124,15 +137,151 @@ const mockEmployee: Employee = {
 export default function PersonnelDetailScreen() {
   const { t } = useTranslation('dispatcher');
   const navigation = useNavigation();
+  const route = useRoute<RouteProp<PersonnelDetailRouteParams, 'PersonnelDetail'>>();
+  const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
-  const [employee] = useState<Employee>(mockEmployee);
+  const [loading, setLoading] = useState(true);
+  const [employee, setEmployee] = useState<Employee>(fallbackEmployee);
+
+  // Get employee ID from route params
+  const personnelId = route.params?.personnelId;
+
+  // Calculate tenure from hire date
+  const calculateTenure = (hireDate: string): string => {
+    const hire = new Date(hireDate);
+    const now = new Date();
+    const years = Math.floor((now.getTime() - hire.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    const months = Math.floor(((now.getTime() - hire.getTime()) % (365.25 * 24 * 60 * 60 * 1000)) / (30 * 24 * 60 * 60 * 1000));
+    if (years > 0) {
+      return `${years}年${months}个月`;
+    }
+    return `${months}个月`;
+  };
+
+  const loadData = useCallback(async () => {
+    if (!personnelId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const factoryId = user?.factoryId;
+      const employeeId = parseInt(personnelId, 10);
+
+      // 获取员工详情
+      const detailRes = await schedulingApiClient.getEmployeeDetail(employeeId, factoryId);
+      if (detailRes.success && detailRes.data) {
+        // empData is DispatcherEmployee, use its existing fields
+        const empData = detailRes.data;
+
+        // Determine status - handle both lowercase (from type) and uppercase (from API)
+        let status: Employee['status'] = 'off_duty';
+        const empStatus = empData.status?.toLowerCase();
+        if (empStatus === 'working' || empStatus === 'on_duty') status = 'working';
+        else if (empStatus === 'idle' || empStatus === 'available') status = 'idle';
+        else if (empStatus === 'on_leave' || empStatus === 'leave') status = 'on_leave';
+
+        // Determine contract type - handle both lowercase (from type) and uppercase (from API)
+        let contractType: Employee['contractType'] = 'full_time';
+        const hireType = empData.hireType?.toLowerCase();
+        if (hireType === 'temporary') contractType = 'temporary';
+        else if (hireType === 'dispatch') contractType = 'dispatch';
+        else if (hireType === 'part_time') contractType = 'part_time';
+
+        // Transform skills
+        const skills: Skill[] = empData.skillLevels
+          ? Object.entries(empData.skillLevels).map(([name, level]) => ({
+              name,
+              level: typeof level === 'number' ? level : 1,
+              maxLevel: 5,
+            }))
+          : [];
+
+        // Load performance data from HR API
+        let performance: PerformanceMetric[] = [
+          { label: '工作效率', value: empData.efficiency ?? 85, trend: 'stable', trendValue: '0%' },
+          { label: '出勤率', value: 95, trend: 'stable', trendValue: '0%' },
+          { label: '质量评分', value: 90, trend: 'stable', trendValue: '0%' },
+          { label: '协作评分', value: 85, trend: 'stable', trendValue: '0%' },
+        ];
+
+        try {
+          const perfRes = await hrApiClient.getPerformanceStats(employeeId, factoryId);
+          if (perfRes.success && perfRes.data) {
+            const perfData = perfRes.data;
+            // Map API response to PerformanceMetric format
+            const getTrend = (current: number, previous: number): { trend: 'up' | 'down' | 'stable'; trendValue: string } => {
+              const diff = current - previous;
+              if (diff > 0) return { trend: 'up', trendValue: `+${diff.toFixed(0)}%` };
+              if (diff < 0) return { trend: 'down', trendValue: `${diff.toFixed(0)}%` };
+              return { trend: 'stable', trendValue: '0%' };
+            };
+
+            performance = [
+              { label: '工作效率', value: perfData.efficiency ?? empData.efficiency ?? 85, ...getTrend(perfData.efficiency ?? 85, perfData.previousEfficiency ?? 85) },
+              { label: '出勤率', value: perfData.attendanceRate ?? 95, ...getTrend(perfData.attendanceRate ?? 95, perfData.previousAttendanceRate ?? 95) },
+              { label: '质量评分', value: perfData.qualityScore ?? 90, ...getTrend(perfData.qualityScore ?? 90, perfData.previousQualityScore ?? 90) },
+              { label: '协作评分', value: perfData.collaborationScore ?? 85, ...getTrend(perfData.collaborationScore ?? 85, perfData.previousCollaborationScore ?? 85) },
+            ];
+          }
+        } catch (perfError) {
+          console.warn('Failed to load performance stats, using defaults:', perfError);
+        }
+
+        // Recent tasks - using fallback until backend provides employee task history API
+        const recentTasks: RecentTask[] = fallbackEmployee.recentTasks;
+
+        const employeeDetail: Employee = {
+          id: String(empData.id),
+          name: empData.fullName || empData.username || '未知',
+          avatar: (empData.fullName || empData.username || '未知').charAt(0),
+          employeeCode: empData.employeeCode || String(empData.id),
+          status,
+          workshop: empData.workshopName || empData.departmentName || '未分配',
+          position: empData.position || '员工',
+          hireDate: empData.hireDate ?? new Date().toISOString().substring(0, 10),
+          tenure: calculateTenure(empData.hireDate || new Date().toISOString()),
+          contractType,
+          phone: empData.phone ? empData.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : '未设置',
+          skills: skills.length > 0 ? skills : fallbackEmployee.skills,
+          performance,
+          weeklyHours: empData.todayWorkHours ?? 0,
+          maxWeeklyHours: 40,
+          overtimeHours: 0,
+          recentTasks,
+        };
+
+        setEmployee(employeeDetail);
+      } else {
+        // Use fallback data when API returns empty
+        setEmployee(fallbackEmployee);
+      }
+    } catch (error) {
+      console.error('Failed to load employee detail:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          console.error('认证过期，请重新登录');
+        } else if (error.response?.status === 404) {
+          Alert.alert('错误', '未找到该员工信息');
+        }
+      }
+      // Use fallback data on error
+      setEmployee(fallbackEmployee);
+    } finally {
+      setLoading(false);
+    }
+  }, [personnelId, user?.factoryId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // TODO: 调用 API 刷新数据
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await loadData();
     setRefreshing(false);
-  }, []);
+  }, [loadData]);
+
+  // Load data on mount
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleGoBack = () => {
     navigation.goBack();

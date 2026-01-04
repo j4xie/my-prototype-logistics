@@ -2,6 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentExecutorService;
@@ -64,30 +65,73 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                         request.getUserInput().substring(0, 50) + "..." : request.getUserInput(),
                 userId, userRole);
 
-        // 1. 识别意图
-        Optional<AIIntentConfig> intentOpt = aiIntentService.recognizeIntent(request.getUserInput());
+        // 1. 识别意图 (使用带 LLM Fallback 的方法)
+        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
+                request.getUserInput(), factoryId, 3);
 
-        if (intentOpt.isEmpty()) {
-            log.info("未识别到意图: userInput={}", request.getUserInput());
+        // 2. 检查是否需要二次确认（低置信度或有歧义）
+        if (matchResult.hasMatch() && Boolean.TRUE.equals(matchResult.getRequiresConfirmation())
+                && !Boolean.TRUE.equals(request.getForceExecute())) {
+            AIIntentConfig matchedIntent = matchResult.getBestMatch();
+            log.info("需要二次确认: intentCode={}, confidence={}, isStrongSignal={}",
+                    matchedIntent.getIntentCode(), matchResult.getConfidence(), matchResult.getIsStrongSignal());
+
+            // 构建候选意图列表供用户选择
+            List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
+
+            String clarificationMessage = matchResult.getClarificationQuestion();
+            if (clarificationMessage == null || clarificationMessage.isEmpty()) {
+                clarificationMessage = "您的请求可能匹配多个操作，请确认您想要执行的操作：";
+            }
+
             return IntentExecuteResponse.builder()
-                    .intentRecognized(false)
-                    .status("NOT_RECOGNIZED")
-                    .message("未能识别您的意图，请尝试更具体的描述。例如：'给原材料表单添加一个温度字段'")
+                    .intentRecognized(true)
+                    .intentCode(matchedIntent.getIntentCode())
+                    .intentName(matchedIntent.getIntentName())
+                    .intentCategory(matchedIntent.getIntentCategory())
+                    .status("NEED_CLARIFICATION")
+                    .message(clarificationMessage)
+                    .confidence(matchResult.getConfidence())
+                    .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
+                    .suggestedActions(candidateActions)
                     .executedAt(LocalDateTime.now())
-                    .suggestedActions(List.of(
-                            IntentExecuteResponse.SuggestedAction.builder()
-                                    .actionCode("SHOW_INTENTS")
-                                    .actionName("查看支持的意图")
-                                    .description("查看系统支持的所有意图类型")
-                                    .endpoint("/api/mobile/" + factoryId + "/ai-intents")
-                                    .build()
-                    ))
                     .build();
         }
 
-        AIIntentConfig intent = intentOpt.get();
-        log.info("识别到意图: code={}, category={}, sensitivity={}",
-                intent.getIntentCode(), intent.getIntentCategory(), intent.getSensitivityLevel());
+        // 3. 处理无匹配但有候选意图的情况（弱信号）
+        if (!matchResult.hasMatch()) {
+            // 检查是否有候选意图可供选择
+            if (matchResult.getTopCandidates() != null && !matchResult.getTopCandidates().isEmpty()) {
+                log.info("弱信号匹配，提供候选选择: userInput={}, candidateCount={}",
+                        request.getUserInput(), matchResult.getTopCandidates().size());
+
+                List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
+
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(false)
+                        .status("NEED_CLARIFICATION")
+                        .message("我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：")
+                        .suggestedActions(candidateActions)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            log.info("未识别到意图 (规则+LLM均未匹配): userInput={}", request.getUserInput());
+            // 即使没有候选意图，也返回 NEED_CLARIFICATION 状态，提供常用操作建议
+            List<IntentExecuteResponse.SuggestedAction> defaultSuggestions = buildDefaultSuggestions(factoryId);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("NEED_CLARIFICATION")
+                    .message("我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：")
+                    .executedAt(LocalDateTime.now())
+                    .suggestedActions(defaultSuggestions)
+                    .build();
+        }
+
+        AIIntentConfig intent = matchResult.getBestMatch();
+        log.info("识别到意图: code={}, category={}, sensitivity={}, matchMethod={}, confidence={}",
+                intent.getIntentCode(), intent.getIntentCategory(), intent.getSensitivityLevel(),
+                matchResult.getMatchMethod(), matchResult.getConfidence());
 
         // 2. 权限检查
         if (!aiIntentService.hasPermission(intent.getIntentCode(), userRole)) {
@@ -167,5 +211,99 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 .message("确认功能暂未实现，请直接执行")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * 构建候选意图的建议操作列表
+     */
+    private List<IntentExecuteResponse.SuggestedAction> buildCandidateActions(
+            IntentMatchResult matchResult, String factoryId) {
+
+        List<IntentExecuteResponse.SuggestedAction> actions = new java.util.ArrayList<>();
+
+        // 添加候选意图作为可选操作
+        if (matchResult.getTopCandidates() != null) {
+            for (IntentMatchResult.CandidateIntent candidate : matchResult.getTopCandidates()) {
+                // 最多显示3个候选
+                if (actions.size() >= 3) break;
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("intentCode", candidate.getIntentCode());
+                params.put("forceExecute", true);
+
+                actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                        .actionCode("SELECT_INTENT")
+                        .actionName(candidate.getIntentName())
+                        .description(candidate.getDescription() != null ? candidate.getDescription() :
+                                String.format("置信度: %.0f%%", candidate.getConfidence() * 100))
+                        .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute")
+                        .parameters(params)
+                        .build());
+            }
+        }
+
+        // 添加重新描述选项
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("REPHRASE")
+                .actionName("重新描述")
+                .description("请更详细地描述您想要执行的操作")
+                .build());
+
+        // 添加查看所有意图选项
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("SHOW_INTENTS")
+                .actionName("查看所有可用操作")
+                .description("查看系统支持的所有意图类型")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents")
+                .build());
+
+        return actions;
+    }
+
+    /**
+     * 构建默认的常用操作建议列表
+     * 当规则和LLM都无法识别意图时，提供常用操作供用户选择
+     */
+    private List<IntentExecuteResponse.SuggestedAction> buildDefaultSuggestions(String factoryId) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new java.util.ArrayList<>();
+
+        // 常用查询操作
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("MATERIAL_BATCH_QUERY")
+                .actionName("查询原料库存")
+                .description("查看原材料批次的库存情况")
+                .endpoint("/api/mobile/" + factoryId + "/material-batches")
+                .build());
+
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("PROCESSING_BATCH_LIST")
+                .actionName("查询生产批次")
+                .description("查看当前的生产批次列表")
+                .endpoint("/api/mobile/" + factoryId + "/processing/batches")
+                .build());
+
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("QUALITY_CHECK_LIST")
+                .actionName("质检任务")
+                .description("查看待处理的质检任务")
+                .endpoint("/api/mobile/" + factoryId + "/quality-checks")
+                .build());
+
+        // 添加重新描述选项
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("REPHRASE")
+                .actionName("重新描述")
+                .description("请更详细地描述您想要执行的操作")
+                .build());
+
+        // 添加查看所有意图选项
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("SHOW_INTENTS")
+                .actionName("查看所有可用操作")
+                .description("查看系统支持的所有意图类型")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents")
+                .build());
+
+        return actions;
     }
 }

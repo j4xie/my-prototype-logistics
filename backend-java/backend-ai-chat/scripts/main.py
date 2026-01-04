@@ -2591,7 +2591,7 @@ class IntentClarifyResponse(BaseModel):
 def build_intent_classify_prompt(user_input: str, available_intents: List[Dict]) -> str:
     """构建意图分类提示词"""
     intent_list = "\n".join([
-        f"- {intent['code']}: {intent['name']} ({intent.get('description', '')})"
+        f"- {intent.get('intent_code', intent.get('code', ''))}: {intent.get('intent_name', intent.get('name', ''))} ({intent.get('description', '')})"
         for intent in available_intents
     ])
 
@@ -2825,6 +2825,124 @@ async def generate_clarification(request: IntentClarifyRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"生成澄清问题失败: {str(e)}")
+
+
+# ==================== 数据操作解析服务 (BUG-003 修复) ====================
+
+class DataOperationParseRequest(BaseModel):
+    """数据操作解析请求"""
+    user_input: str                          # 用户原始输入
+    factory_id: str                          # 工厂ID
+    supported_entities: List[str]            # 支持的实体类型列表
+    context: Optional[Dict] = None           # 上下文信息
+
+class DataOperationParseResponse(BaseModel):
+    """数据操作解析响应"""
+    success: bool
+    entity_type: Optional[str] = None        # 实体类型
+    entity_identifier: Optional[str] = None  # 实体标识符
+    updates: Optional[Dict[str, Any]] = None # 更新字段
+    operation: Optional[str] = None          # 操作类型: UPDATE, DELETE, CREATE
+    message: Optional[str] = None            # 消息
+
+@app.post("/api/ai/intent/parse-data-operation", response_model=DataOperationParseResponse)
+async def parse_data_operation(request: DataOperationParseRequest):
+    """
+    解析数据操作意图，提取实体类型、标识符和更新字段
+
+    BUG-003 修复: 添加此端点支持 DataOperationIntentHandler 的 AI 解析
+    """
+    try:
+        user_input = request.user_input.strip()
+
+        if not user_input:
+            return DataOperationParseResponse(
+                success=False,
+                message="用户输入为空"
+            )
+
+        if not client:
+            return DataOperationParseResponse(
+                success=False,
+                message="AI服务未配置"
+            )
+
+        # 构建解析提示词
+        entities_desc = ", ".join(request.supported_entities)
+        prompt = f"""你是一个数据操作解析助手。请分析用户输入，提取以下信息:
+1. 实体类型 (entity_type): 用户想操作哪种实体？选择: {entities_desc}
+2. 实体标识 (entity_identifier): 实体的ID或名称（如果用户提到）
+3. 操作类型 (operation): UPDATE（修改）、CREATE（创建）、DELETE（删除）
+4. 更新字段 (updates): 如果是UPDATE操作，提取要更新的字段和新值
+
+用户输入: "{user_input}"
+
+请以JSON格式返回:
+{{
+    "entity_type": "实体类型（英文）",
+    "entity_identifier": "实体标识（可以为null）",
+    "operation": "UPDATE|CREATE|DELETE",
+    "updates": {{"字段名": "新值"}}
+}}
+
+注意:
+- entity_type 必须是: {entities_desc} 之一
+- 常见字段映射: 单价/价格→unitPrice, 名称→name, 数量→quantity, 状态→status
+- 如果用户提到"产品"但没有指定ID，entity_identifier可以为null"""
+
+        # 调用 LLM
+        response = client.chat.completions.create(
+            model=DASHSCOPE_MODEL,
+            messages=[
+                {"role": "system", "content": "你是一个精确的数据操作解析器，只返回JSON格式的结果。"},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.1,  # 低温度确保一致性
+            response_format={"type": "json_object"}
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        try:
+            result = json.loads(result_text)
+
+            entity_type = result.get("entity_type")
+            entity_identifier = result.get("entity_identifier")
+            operation = result.get("operation", "UPDATE")
+            updates = result.get("updates", {})
+
+            # 验证实体类型
+            if entity_type and entity_type not in request.supported_entities:
+                # 尝试映射
+                entity_map = {
+                    "产品": "ProductType",
+                    "产品类型": "ProductType",
+                    "生产计划": "ProductionPlan",
+                    "生产批次": "ProcessingBatch",
+                    "原料批次": "MaterialBatch",
+                    "原料": "MaterialBatch"
+                }
+                entity_type = entity_map.get(entity_type, entity_type)
+
+            return DataOperationParseResponse(
+                success=True,
+                entity_type=entity_type,
+                entity_identifier=entity_identifier,
+                operation=operation,
+                updates=updates
+            )
+
+        except json.JSONDecodeError:
+            return DataOperationParseResponse(
+                success=False,
+                message=f"AI响应解析失败: {result_text[:100]}"
+            )
+
+    except Exception as e:
+        return DataOperationParseResponse(
+            success=False,
+            message=f"解析失败: {str(e)}"
+        )
 
 
 @app.get("/api/ai/intent/health")

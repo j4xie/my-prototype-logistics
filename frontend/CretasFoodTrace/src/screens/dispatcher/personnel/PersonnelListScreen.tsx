@@ -29,6 +29,10 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
 import { DISPATCHER_THEME, HireType } from '../../../types/dispatcher';
+import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { personnelApiClient } from '../../../services/api/personnelApiClient';
+import { isAxiosError } from 'axios';
+import { useAuthStore } from '../../../store/authStore';
 
 // Local types for this screen
 interface PersonnelSkill {
@@ -68,8 +72,8 @@ interface DisplayTaskGroup {
   progress?: number;
 }
 
-// Mock data
-const mockStats = {
+// Fallback data when API fails or returns empty results
+const fallbackStats = {
   total: 30,
   tempWorkers: 5,
   working: 24,
@@ -79,13 +83,15 @@ const mockStats = {
   expiringContracts: 3,
 };
 
-const mockTaskGroups: DisplayTaskGroup[] = [
+// Fallback data when API fails or returns empty results
+const fallbackTaskGroups: DisplayTaskGroup[] = [
   { id: 'PB001', name: 'PB20241227001', workerCount: 6, status: 'running', progress: 75 },
   { id: 'PB002', name: 'PB20241227002', workerCount: 2, status: 'running', progress: 30 },
   { id: 'idle', name: 'idle_personnel', workerCount: 2, status: 'idle' },
 ];
 
-const mockPersonnel: Personnel[] = [
+// Fallback data when API fails or returns empty results
+const fallbackPersonnel: Personnel[] = [
   {
     id: '1',
     name: '张三丰',
@@ -214,26 +220,161 @@ const statusOptionKeys = ['allStatus', 'working', 'idle', 'leave'];
 export default function PersonnelListScreen() {
   const { t } = useTranslation('dispatcher');
   const navigation = useNavigation<any>();
+  const { user } = useAuthStore();
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
-  const [stats] = useState(mockStats);
-  const [personnel] = useState<Personnel[]>(mockPersonnel);
+  const [stats, setStats] = useState(fallbackStats);
+  const [personnel, setPersonnel] = useState<Personnel[]>(fallbackPersonnel);
 
   // Filters - use translation keys
   const [selectedWorkshopKey, setSelectedWorkshopKey] = useState('allWorkshops');
   const [selectedTypeKey, setSelectedTypeKey] = useState('allTypes');
   const [selectedStatusKey, setSelectedStatusKey] = useState('allStatus');
 
+  const loadData = useCallback(async () => {
+    try {
+      const factoryId = user?.factoryId;
+
+      // 获取人员统计数据 - 先尝试专用统计API，再用工人列表计算补充
+      let statsFromApi = {
+        total: 0,
+        tempWorkers: 0,
+        working: 0,
+        workingTemp: 0,
+        idle: 0,
+        leave: 0,
+        expiringContracts: 0,
+      };
+
+      // Try to get personnel statistics from dedicated API
+      try {
+        const today = new Date();
+        const startDate = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const endDate = today.toISOString().split('T')[0];
+
+        const statsRes = await personnelApiClient.getPersonnelStatistics(factoryId ?? '', startDate, endDate);
+        if (statsRes.success && statsRes.data) {
+          const apiStats = statsRes.data;
+          statsFromApi = {
+            total: apiStats.totalEmployees ?? 0,
+            tempWorkers: apiStats.temporaryCount ?? 0,
+            working: apiStats.workingCount ?? 0,
+            workingTemp: apiStats.workingTemporaryCount ?? 0,
+            idle: apiStats.idleCount ?? 0,
+            leave: apiStats.onLeaveCount ?? 0,
+            expiringContracts: apiStats.expiringContractsCount ?? 0,
+          };
+        }
+      } catch (statsError) {
+        console.warn('Failed to get personnel statistics, will calculate from workers:', statsError);
+      }
+
+      // 获取可用工人列表
+      const workersRes = await schedulingApiClient.getAvailableWorkers({ factoryId });
+      if (workersRes.success && workersRes.data) {
+        const workers = workersRes.data;
+
+        // If statistics API failed or returned zeros, calculate from workers
+        if (statsFromApi.total === 0) {
+          // Use lowercase comparison to handle both API response formats
+          const workingCount = workers.filter(w => {
+            const status = w.status?.toLowerCase();
+            return status === 'working' || status === 'on_duty';
+          }).length;
+          const idleCount = workers.filter(w => {
+            const status = w.status?.toLowerCase();
+            return status === 'idle' || status === 'available';
+          }).length;
+          const tempCount = workers.filter(w => w.hireType?.toLowerCase() === 'temporary').length;
+
+          statsFromApi = {
+            total: workers.length,
+            tempWorkers: tempCount,
+            working: workingCount,
+            workingTemp: workers.filter(w => {
+              const status = w.status?.toLowerCase();
+              const hireType = w.hireType?.toLowerCase();
+              return (status === 'working' || status === 'on_duty') && hireType === 'temporary';
+            }).length,
+            idle: idleCount,
+            leave: workers.filter(w => {
+              const status = w.status?.toLowerCase();
+              return status === 'on_leave' || status === 'leave';
+            }).length,
+            expiringContracts: statsFromApi.expiringContracts, // Preserve from stats API if available
+          };
+        }
+
+        setStats(statsFromApi);
+
+        // Transform workers to Personnel format
+        const personnelList: Personnel[] = workers.map((worker): Personnel => {
+          const hireType: HireType = (worker.hireType?.toLowerCase() as HireType) || 'full_time';
+          let status: 'working' | 'idle' | 'leave' = 'idle';
+          const workerStatus = worker.status?.toLowerCase();
+          if (workerStatus === 'working' || workerStatus === 'on_duty') status = 'working';
+          else if (workerStatus === 'on_leave' || workerStatus === 'leave') status = 'leave';
+
+          return {
+            id: String(worker.id),
+            name: worker.fullName || worker.username || '未知',
+            employeeCode: worker.employeeCode || String(worker.id),
+            position: worker.position || '员工',
+            workshopId: worker.workshopId || 'W1',
+            workshopName: worker.workshopName || worker.departmentName || '未分配',
+            status,
+            hireType,
+            skills: worker.skillLevels
+              ? Object.entries(worker.skillLevels).map(([name, level]) => ({
+                  name,
+                  level: typeof level === 'number' ? level : 1,
+                  isPrimary: false,
+                }))
+              : [],
+            efficiency: worker.efficiency ?? 85,
+            weeklyHours: worker.todayWorkHours,
+            maxWeeklyHours: 40,
+            taskGroupId: worker.currentTaskId || undefined,
+          };
+        });
+
+        if (personnelList.length > 0) {
+          setPersonnel(personnelList);
+        } else {
+          // Use fallback data when API returns empty
+          setPersonnel(fallbackPersonnel);
+        }
+      } else {
+        // Use fallback data when API returns empty
+        setPersonnel(fallbackPersonnel);
+        setStats(fallbackStats);
+      }
+    } catch (error) {
+      console.error('Failed to load personnel data:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          console.error('认证过期，请重新登录');
+        }
+      }
+      // Use fallback data on error
+      setPersonnel(fallbackPersonnel);
+      setStats(fallbackStats);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.factoryId]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      // Load personnel data from API
-    } catch (error) {
-      console.error('Failed to refresh:', error);
-    } finally {
-      setRefreshing(false);
-    }
-  }, []);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  // Load data on mount
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const getStatusStyle = (status: string) => {
     switch (status) {

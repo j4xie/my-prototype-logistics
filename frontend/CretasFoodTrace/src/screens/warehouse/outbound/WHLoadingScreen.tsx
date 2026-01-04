@@ -26,6 +26,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHOutboundStackParamList } from "../../../types/navigation";
 import { shipmentApiClient, ShipmentRecord } from "../../../services/api/shipmentApiClient";
+import { vehicleApiClient, Vehicle as VehicleData } from "../../../services/api/vehicleApiClient";
 import { handleError } from "../../../utils/errorHandler";
 
 type NavigationProp = NativeStackNavigationProp<WHOutboundStackParamList>;
@@ -57,52 +58,41 @@ export function WHLoadingScreen() {
   const [loading, setLoading] = useState(true);
   const [dispatching, setDispatching] = useState<string | null>(null); // 正在发车的车辆ID
   const [waitingOrders, setWaitingOrders] = useState<LoadingOrder[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
-  // TODO: 车辆管理需要后端 API，当前使用模拟数据
-  // 后续需要接入车辆管理和装车分配 API
-  const [vehicles, setVehicles] = useState<Vehicle[]>([
-    {
-      id: "1",
-      plateNumber: "浙B12345",
-      driver: "李师傅",
-      phone: "139****5678",
-      capacity: 500,
-      currentLoad: 280,
-      orders: [
-        {
-          id: "1",
-          orderNumber: "SH-20251226-004",
-          customer: "美食广场",
-          quantity: 200,
-          status: "loaded",
-        },
-        {
-          id: "2",
-          orderNumber: "SH-20251226-005",
-          customer: "鲜味餐厅",
-          quantity: 80,
-          status: "loaded",
-        },
-      ],
-    },
-    {
-      id: "2",
-      plateNumber: "浙B67890",
-      driver: "王师傅",
-      phone: "138****1234",
-      capacity: 400,
-      currentLoad: 120,
-      orders: [
-        {
-          id: "3",
-          orderNumber: "SH-20251226-006",
-          customer: "城市生鲜店",
-          quantity: 120,
-          status: "loading",
-        },
-      ],
-    },
-  ]);
+  // 加载装载中的车辆
+  const loadVehicles = useCallback(async () => {
+    try {
+      // 获取装载中或可用的车辆
+      const [loadingVehicles, availableVehicles] = await Promise.all([
+        vehicleApiClient.getVehiclesByStatus('loading'),
+        vehicleApiClient.getVehicles(), // 获取所有车辆作为备选
+      ]);
+
+      // 合并列表，优先显示装载中的车辆
+      const allVehicles = [...loadingVehicles];
+      availableVehicles.forEach(v => {
+        if (!allVehicles.find(lv => lv.id === v.id) && v.status !== 'dispatched') {
+          allVehicles.push(v);
+        }
+      });
+
+      // 转换为页面需要的格式（车辆暂无关联订单，需要后续扩展）
+      const vehicleList: Vehicle[] = allVehicles.map(v => ({
+        id: v.id,
+        plateNumber: v.plateNumber,
+        driver: v.driver || '未分配',
+        phone: v.phone || '-',
+        capacity: v.capacity || 0,
+        currentLoad: v.currentLoad || 0,
+        orders: [], // TODO: 后续需要关联订单API
+      }));
+
+      setVehicles(vehicleList);
+    } catch (error) {
+      handleError(error, { title: t('messages.loadListFailed') });
+    }
+  }, [t]);
 
   // 加载待装车订单（从出货记录中获取 pending 状态的订单）
   const loadWaitingOrders = useCallback(async () => {
@@ -126,8 +116,13 @@ export function WHLoadingScreen() {
   }, []);
 
   useEffect(() => {
-    loadWaitingOrders();
-  }, [loadWaitingOrders]);
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([loadVehicles(), loadWaitingOrders()]);
+      setLoading(false);
+    };
+    loadData();
+  }, [loadVehicles, loadWaitingOrders]);
 
   // 发车操作
   const dispatchVehicle = async (vehicleId: string) => {
@@ -137,11 +132,14 @@ export function WHLoadingScreen() {
     setDispatching(vehicleId);
     try {
       // 批量更新车辆上所有订单的状态为 'shipped'
-      const updatePromises = vehicle.orders
+      const orderUpdatePromises = vehicle.orders
         .filter(order => order.status === 'loaded')
         .map(order => shipmentApiClient.updateStatus(order.id, 'shipped'));
 
-      await Promise.all(updatePromises);
+      await Promise.all(orderUpdatePromises);
+
+      // 更新车辆状态为已发车
+      await vehicleApiClient.updateVehicleStatus(vehicleId, 'dispatched');
 
       // 从车辆列表中移除已发车的车辆
       setVehicles(prev => prev.filter(v => v.id !== vehicleId));

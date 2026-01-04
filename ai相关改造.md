@@ -348,7 +348,7 @@ cretas.ai.intent.recording.enabled=true
 
 | 任务 | 状态 | 完成内容 |
 |------|------|----------|
-| C1 错误归因统计表 | ✅ 已完成 | `ErrorAttributionStatistics` Entity + Repository, `V2026_01_02_2__error_attribution_statistics.sql` |
+| C1 错误归因统计表 | ✅ 已完成 | `ErrorAttributionStatistics` Entity + Repository, `V2026_01_02_3__error_attribution_statistics.sql` |
 | C2 定期分析任务 | ✅ 已完成 | `ErrorAttributionAnalysisScheduler` - 定时聚合/分析/清理/建议生成 |
 | C3 优化建议报告API | ✅ 已完成 | `IntentAnalysisController` - 完整的统计/趋势/模式识别/建议管理API |
 
@@ -412,7 +412,7 @@ cretas.ai.intent.suggestion.analysis-days=7
 - `backend-java/src/main/java/com/cretas/aims/service/impl/ErrorAttributionAnalysisServiceImpl.java`
 - `backend-java/src/main/java/com/cretas/aims/scheduler/ErrorAttributionAnalysisScheduler.java`
 - `backend-java/src/main/java/com/cretas/aims/controller/IntentAnalysisController.java`
-- `backend-java/src/main/resources/db/migration/V2026_01_02_2__error_attribution_statistics.sql`
+- `backend-java/src/main/resources/db/migration/V2026_01_02_3__error_attribution_statistics.sql`
 
 ---
 
@@ -422,3 +422,125 @@ cretas.ai.intent.suggestion.analysis-days=7
 - 需要工具调用 (查数据库、API)
 - 需要多步骤推理链
 - 需要 Agent 自主决策
+
+---
+
+## 十、AI 全面管理能力 ✅ 已完成 (2026-01-03)
+
+### 10.1 概述
+
+在意图识别增强的基础上，扩展实现了**AI 全面管理能力**，让工厂超管可以通过自然语言对话管理所有工厂配置，包括排产设置、用户管理、设备配置等。
+
+### 10.2 实现阶段
+
+| Phase | 内容 | 状态 | 完成日期 |
+|-------|------|------|----------|
+| **Phase 1** | SYSTEM 类意图 (排产设置、工厂配置、功能开关) | ✅ 已完成 | 2026-01-03 |
+| **Phase 2** | USER 类意图 (用户创建/禁用、角色分配) + CONFIG 类意图 (设备/转换率/规则) | ✅ 已完成 | 2026-01-03 |
+| **Phase 3** | META 类意图 (自我扩展能力: 创建/更新/分析意图) | ✅ 已完成 | 2026-01-03 |
+
+### 10.3 新增 Handler
+
+| Handler | Category | 功能 | 文件路径 |
+|---------|----------|------|----------|
+| SystemIntentHandler | SYSTEM | 排产设置、工厂配置、功能开关 | `service/handler/SystemIntentHandler.java` |
+| UserIntentHandler | USER | 用户创建/禁用、角色分配 | `service/handler/UserIntentHandler.java` |
+| ConfigIntentHandler | CONFIG | 设备维护、转换率、规则配置 | `service/handler/ConfigIntentHandler.java` |
+| MetaIntentHandler | META | 意图创建/更新/分析 | `service/handler/MetaIntentHandler.java` |
+| MaterialIntentHandler | MATERIAL | 原料批次查询/库存统计 | `service/handler/MaterialIntentHandler.java` |
+| QualityIntentHandler | QUALITY | 质检记录查询/质量统计 | `service/handler/QualityIntentHandler.java` |
+| ShipmentIntentHandler | SHIPMENT | 出货记录查询/物流统计 | `service/handler/ShipmentIntentHandler.java` |
+
+### 10.4 新增意图配置（14个）
+
+**SYSTEM 类** (5个):
+- `SCHEDULING_SET_AUTO` - 排产全自动
+- `SCHEDULING_SET_MANUAL` - 排产人工确认
+- `SCHEDULING_SET_DISABLED` - 禁用自动排产
+- `FACTORY_FEATURE_TOGGLE` - 功能开关
+- `FACTORY_NOTIFICATION_CONFIG` - 通知设置
+
+**USER 类** (3个):
+- `USER_CREATE` - 创建用户
+- `USER_DISABLE` - 禁用用户
+- `USER_ROLE_ASSIGN` - 角色分配 (CRITICAL，需审批)
+
+**CONFIG 类** (3个):
+- `EQUIPMENT_MAINTENANCE` - 设备维护
+- `CONVERSION_RATE_UPDATE` - 转换率配置
+- `RULE_CONFIG` - 规则配置
+
+**META 类** (3个):
+- `INTENT_CREATE` - 创建AI意图 (CRITICAL，需审批)
+- `INTENT_UPDATE` - 更新AI意图
+- `INTENT_ANALYZE` - 分析意图使用
+
+### 10.5 权限控制
+
+| 意图类别 | 敏感度 | 允许角色 | 需要审批 |
+|----------|--------|----------|----------|
+| SYSTEM | HIGH | factory_super_admin | 否 |
+| USER | HIGH/CRITICAL | factory_super_admin | 角色分配需要 |
+| CONFIG | MEDIUM | factory_super_admin, department_admin | 否 |
+| META | CRITICAL | factory_super_admin | 是 |
+
+### 10.6 示例用法
+
+```bash
+# 排产设置
+POST /api/mobile/F001/ai-intents/execute
+{ "userInput": "把排产设置改成全自动" }
+
+# 用户管理
+POST /api/mobile/F001/ai-intents/execute
+{ "userInput": "创建新用户张三，角色为操作员",
+  "context": {"username": "zhangsan", "fullName": "张三", "role": "operator"} }
+
+# 设备维护
+POST /api/mobile/F001/ai-intents/execute
+{ "userInput": "记录设备EQ001维护",
+  "context": {"equipmentId": "EQ-F001-001", "description": "更换滤芯", "cost": 500} }
+
+# 自我扩展
+POST /api/mobile/F001/ai-intents/execute
+{ "userInput": "我想用AI管理库存预警" }
+```
+
+### 10.7 与意图识别增强的关系
+
+AI 全面管理能力建立在意图识别增强 (Phase A-C) 的基础上：
+- ✅ 使用 `IntentMatchResult` 返回置信度和候选列表
+- ✅ 所有操作记录到 `intent_match_records` 表
+- ✅ 弱信号场景触发 LLM Fallback
+- ✅ 高敏感度操作强制确认
+- ✅ 自动学习新关键词
+
+### 10.8 新增文件清单
+
+```
+backend-java/src/main/java/com/cretas/aims/service/handler/
+├── IntentHandler.java            # Handler 接口定义
+├── SystemIntentHandler.java      # SYSTEM 类意图
+├── UserIntentHandler.java        # USER 类意图
+├── ConfigIntentHandler.java      # CONFIG 类意图
+├── MetaIntentHandler.java        # META 类意图
+├── MaterialIntentHandler.java    # MATERIAL 类意图
+├── QualityIntentHandler.java     # QUALITY 类意图
+└── ShipmentIntentHandler.java    # SHIPMENT 类意图
+
+backend-java/src/main/resources/db/migration/
+└── V2026_01_04_1__ai_management_intents.sql
+```
+
+---
+
+## 十一、总体完成度
+
+| 模块 | 状态 | 完成度 |
+|------|------|--------|
+| 意图识别增强 (Phase A-C) | ✅ 已完成 | 100% |
+| 关键词学习机制 | ✅ 已完成 | 100% |
+| AI 全面管理能力 (Phase 1-3) | ✅ 已完成 | 100% |
+| LangChain 集成 (Phase D) | ⏳ 未开始 | 0% |
+
+**整体评估**: 核心 AI 功能已全部完成，LangChain 集成为可选的长期目标。

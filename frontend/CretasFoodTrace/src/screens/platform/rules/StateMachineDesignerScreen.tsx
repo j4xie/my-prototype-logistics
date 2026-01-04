@@ -68,8 +68,9 @@ interface StateMachine {
   triggers: TriggerAction[];
 }
 
-// Mock data
-const mockStateMachine: StateMachine = {
+// TODO: 需要 API - ruleConfigApiClient.getStateMachine() 可用于获取已有状态机
+// 设计器初始数据 - 用于创建新状态机时的默认值
+const initialStateMachine: StateMachine = {
   id: 'SM001',
   name: '原材料批次状态机',
   entityType: '原材料批次',
@@ -107,7 +108,7 @@ const StateMachineDesignerScreen: React.FC = () => {
   const { t } = useTranslation();
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('states');
-  const [stateMachine, setStateMachine] = useState<StateMachine>(mockStateMachine);
+  const [stateMachine, setStateMachine] = useState<StateMachine>(initialStateMachine);
   const [testModalVisible, setTestModalVisible] = useState(false);
   const [selectedFromState, setSelectedFromState] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');

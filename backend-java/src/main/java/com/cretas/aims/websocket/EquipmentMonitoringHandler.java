@@ -326,6 +326,39 @@ public class EquipmentMonitoringHandler extends TextWebSocketHandler {
     }
 
     /**
+     * 通用广播方法：向指定工厂的所有订阅者发送消息
+     * 用于 MQTT 数据转发等场景
+     *
+     * @param factoryId 工厂ID
+     * @param eventType 事件类型 (如 IOT_DEVICE_DATA, IOT_DEVICE_STATUS)
+     * @param payload   消息内容 (JSON字符串)
+     */
+    public void broadcastToFactory(String factoryId, String eventType, String payload) {
+        Set<String> subscriberIds = factorySessions.get(factoryId);
+        if (subscriberIds == null || subscriberIds.isEmpty()) {
+            return;
+        }
+
+        Map<String, Object> message = createMessage(eventType, Map.of(
+                "factoryId", factoryId,
+                "payload", payload,
+                "timestamp", LocalDateTime.now().toString()
+        ));
+
+        int sentCount = 0;
+        for (String sessionId : subscriberIds) {
+            WebSocketSession session = sessions.get(sessionId);
+            if (session != null && session.isOpen()) {
+                sendMessage(session, message);
+                sentCount++;
+            }
+        }
+
+        log.debug("广播IoT数据: factoryId={}, eventType={}, subscriberCount={}",
+                factoryId, eventType, sentCount);
+    }
+
+    /**
      * 定时心跳检测（每30秒执行一次）
      */
     @Scheduled(fixedRate = HEARTBEAT_CHECK_INTERVAL_MS)

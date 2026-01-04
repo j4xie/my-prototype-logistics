@@ -80,7 +80,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional  // 移除 readOnly=true, 因为 generateTraceCode() 会调用 incrementSequence() 写操作
     public TraceabilityDTO.FullTraceResponse getFullTrace(String factoryId, String batchNumber) {
         log.info("获取完整溯源链路: factoryId={}, batchNumber={}", factoryId, batchNumber);
 
@@ -128,7 +128,7 @@ public class TraceabilityServiceImpl implements TraceabilityService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional  // 移除 readOnly=true, 因为 generateTraceCode() 会调用 incrementSequence() 写操作
     public TraceabilityDTO.PublicTraceResponse getPublicTrace(String batchNumber) {
         log.info("公开溯源查询: batchNumber={}", batchNumber);
 
