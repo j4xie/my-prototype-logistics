@@ -1,6 +1,6 @@
 /**
  * Factory Admin Tab 导航器
- * 4个主Tab: 首页、AI分析、管理、我的
+ * 5个主Tab: 首页、AI分析、报表、管理、我的
  */
 
 import React from "react";
@@ -8,9 +8,10 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "react-native-paper";
 import { FactoryAdminTabParamList } from "../types/navigation";
 
-// 导入4个Stack导航器
+// 导入5个Stack导航器
 import FAHomeStackNavigator from "./factory-admin/FAHomeStackNavigator";
 import FAAIStackNavigator from "./factory-admin/FAAIStackNavigator";
+import FAReportsStackNavigator from "./factory-admin/FAReportsStackNavigator";
 import FAManagementStackNavigator from "./factory-admin/FAManagementStackNavigator";
 import FAProfileStackNavigator from "./factory-admin/FAProfileStackNavigator";
 
@@ -63,6 +64,18 @@ export function FactoryAdminTabNavigator() {
           title: "AI分析",
           tabBarIcon: ({ color, size }) => (
             <Icon source="chart-line" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* 报表Tab */}
+      <Tab.Screen
+        name="FAReportsTab"
+        component={FAReportsStackNavigator}
+        options={{
+          title: "报表",
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="file-chart" size={size} color={color} />
           ),
         }}
       />

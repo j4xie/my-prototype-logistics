@@ -41,14 +41,17 @@ import { createLogger } from '../../../utils/logger';
 
 const ruleLogger = createLogger('RuleListScreen');
 
-// Rule category configuration with colors
-const RULE_CATEGORIES: {
+// Rule category configuration type
+type CategoryConfig = {
   key: RuleGroup | 'all';
   label: string;
   labelEn: string;
   color: string;
   icon: string;
-}[] = [
+};
+
+// Rule category configuration with colors
+const RULE_CATEGORIES: CategoryConfig[] = [
   { key: 'all', label: '全部规则', labelEn: 'All Rules', color: '#666', icon: 'format-list-bulleted' },
   { key: 'validation', label: '验证规则', labelEn: 'Validation', color: '#1890ff', icon: 'check-circle' },
   { key: 'workflow', label: '工作流', labelEn: 'Workflow', color: '#52c41a', icon: 'sitemap' },
@@ -57,8 +60,11 @@ const RULE_CATEGORIES: {
   { key: 'alert', label: '告警', labelEn: 'Alert', color: '#f5222d', icon: 'alert' },
 ];
 
-const getCategoryConfig = (group: RuleGroup) => {
-  return RULE_CATEGORIES.find(c => c.key === group) || RULE_CATEGORIES[0];
+// Default category for fallback
+const DEFAULT_CATEGORY: CategoryConfig = RULE_CATEGORIES[0]!;
+
+const getCategoryConfig = (group: RuleGroup | 'all'): CategoryConfig => {
+  return RULE_CATEGORIES.find(c => c.key === group) ?? DEFAULT_CATEGORY;
 };
 
 export default function RuleListScreen() {
@@ -82,14 +88,14 @@ export default function RuleListScreen() {
     try {
       ruleLogger.info('Loading rules data');
 
-      const [rulesData, statsData] = await Promise.all([
-        ruleConfigApiClient.getRules(factoryId),
+      const [rulesResponse, statsData] = await Promise.all([
+        ruleConfigApiClient.getRules({}, factoryId),
         ruleConfigApiClient.getStatistics(factoryId),
       ]);
 
-      if (rulesData) {
-        setRules(rulesData);
-        ruleLogger.info(`Loaded ${rulesData.length} rules`);
+      if (rulesResponse && rulesResponse.content) {
+        setRules(rulesResponse.content);
+        ruleLogger.info(`Loaded ${rulesResponse.content.length} rules`);
       }
 
       if (statsData) {
@@ -139,8 +145,8 @@ export default function RuleListScreen() {
   const handleToggleRule = async (rule: DroolsRule) => {
     setTogglingRule(rule.id);
     try {
-      const success = await ruleConfigApiClient.toggleRuleEnabled(factoryId, rule.id, !rule.enabled);
-      if (success) {
+      const result = await ruleConfigApiClient.toggleRuleEnabled(rule.id, !rule.enabled, factoryId);
+      if (result) {
         setRules(prev => prev.map(r =>
           r.id === rule.id ? { ...r, enabled: !r.enabled } : r
         ));
@@ -177,22 +183,20 @@ export default function RuleListScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const success = await ruleConfigApiClient.deleteRule(factoryId, rule.id);
-              if (success) {
-                setRules(prev => prev.filter(r => r.id !== rule.id));
-                if (statistics) {
-                  setStatistics({
-                    ...statistics,
-                    totalRules: statistics.totalRules - 1,
-                    enabledRules: rule.enabled
-                      ? statistics.enabledRules - 1
-                      : statistics.enabledRules,
-                    rulesByGroup: {
-                      ...statistics.rulesByGroup,
-                      [rule.ruleGroup]: (statistics.rulesByGroup[rule.ruleGroup] || 1) - 1,
-                    },
-                  });
-                }
+              await ruleConfigApiClient.deleteRule(rule.id, factoryId);
+              setRules(prev => prev.filter(r => r.id !== rule.id));
+              if (statistics) {
+                setStatistics({
+                  ...statistics,
+                  totalRules: statistics.totalRules - 1,
+                  enabledRules: rule.enabled
+                    ? statistics.enabledRules - 1
+                    : statistics.enabledRules,
+                  rulesByGroup: {
+                    ...statistics.rulesByGroup,
+                    [rule.ruleGroup]: (statistics.rulesByGroup[rule.ruleGroup] || 1) - 1,
+                  },
+                });
               }
             } catch (error) {
               ruleLogger.error('Failed to delete rule', error as Error);

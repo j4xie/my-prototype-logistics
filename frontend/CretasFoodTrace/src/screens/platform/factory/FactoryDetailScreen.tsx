@@ -169,7 +169,7 @@ export default function FactoryDetailScreen() {
   };
 
   const handleManageQuota = () => {
-    navigation.navigate('FactoryQuota' as never, { factoryId } as never);
+    (navigation as any).navigate('FactoryQuota', { factoryId });
   };
 
   const handleChangeBlueprint = () => {

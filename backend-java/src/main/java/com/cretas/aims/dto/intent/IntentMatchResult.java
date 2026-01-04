@@ -22,7 +22,7 @@ import java.util.List;
  * @since 2026-01-02
  */
 @Data
-@Builder
+@Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class IntentMatchResult {

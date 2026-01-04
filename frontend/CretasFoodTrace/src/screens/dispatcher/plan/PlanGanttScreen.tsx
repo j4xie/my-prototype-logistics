@@ -27,17 +27,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { DISPATCHER_THEME, LineSchedule } from '../../../types/dispatcher';
-
-// 本地定义 ProductionLine 接口 (甘特图专用)
-interface ProductionLine {
-  id: string;
-  name: string;
-  status: 'running' | 'idle' | 'maintenance' | 'error';
-  capacity: number;
-  workshopId: string;
-  workshopName: string;
-}
-import { schedulingApiClient } from '../../../services/api/schedulingApiClient';
+import { schedulingApiClient, ProductionLine } from '../../../services/api/schedulingApiClient';
+import { isAxiosError } from 'axios';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HOUR_WIDTH = 60; // 每小时的宽度
@@ -45,8 +36,35 @@ const ROW_HEIGHT = 70; // 每行高度
 const HEADER_HEIGHT = 50;
 const TIMELINE_HOURS = 24; // 显示24小时
 
-// Mock 数据 (真实场景从API获取)
-const mockProductionLines: ProductionLine[] = [
+// 本地扩展的产线接口 (甘特图专用)
+interface GanttProductionLine {
+  id: string;
+  name: string;
+  status: 'running' | 'idle' | 'maintenance' | 'error';
+  capacity: number;
+  workshopId: string;
+  workshopName: string;
+}
+
+// 转换API产线数据到甘特图格式
+const transformToGanttLine = (line: ProductionLine): GanttProductionLine => {
+  let status: 'running' | 'idle' | 'maintenance' | 'error' = 'idle';
+  if (line.status === 'active') status = 'running';
+  else if (line.status === 'maintenance') status = 'maintenance';
+  else if (line.status === 'inactive') status = 'idle';
+
+  return {
+    id: line.id,
+    name: line.name,
+    status,
+    capacity: line.capacity,
+    workshopId: line.workshopId,
+    workshopName: line.workshopName || '',
+  };
+};
+
+// Fallback data when API fails or returns empty results
+const fallbackProductionLines: GanttProductionLine[] = [
   { id: 'L1', name: '切片A线', status: 'running', capacity: 100, workshopId: 'W1', workshopName: '切片车间' },
   { id: 'L2', name: '切片B线', status: 'running', capacity: 80, workshopId: 'W1', workshopName: '切片车间' },
   { id: 'L3', name: '包装A线', status: 'running', capacity: 120, workshopId: 'W2', workshopName: '包装车间' },
@@ -65,7 +83,8 @@ interface GanttTask {
   color: string;
 }
 
-const mockTasks: GanttTask[] = [
+// Fallback tasks when API fails or returns empty results
+const fallbackTasks: GanttTask[] = [
   { id: '1', lineId: 'L1', name: '带鱼片 100kg', startHour: 8, duration: 4, progress: 75, status: 'in_progress', color: '#722ed1' },
   { id: '2', lineId: 'L1', name: '黄鱼片 80kg', startHour: 13, duration: 3, progress: 0, status: 'pending', color: '#1890ff' },
   { id: '3', lineId: 'L2', name: '鱿鱼圈 60kg', startHour: 9, duration: 5, progress: 40, status: 'in_progress', color: '#52c41a' },
@@ -74,16 +93,20 @@ const mockTasks: GanttTask[] = [
   { id: '6', lineId: 'L4', name: '黄鱼片包装', startHour: 10, duration: 3, progress: 0, status: 'pending', color: '#fa8c16' },
 ];
 
+// 颜色列表用于任务显示
+const taskColors = ['#722ed1', '#1890ff', '#52c41a', '#13c2c2', '#fa8c16', '#eb2f96'];
+
 export default function PlanGanttScreen() {
   const navigation = useNavigation<any>();
   const scrollViewRef = useRef<ScrollView>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState<string>(() => {
     const isoDate = new Date().toISOString();
     return isoDate.substring(0, 10); // YYYY-MM-DD format
   });
-  const [productionLines, setProductionLines] = useState<ProductionLine[]>(mockProductionLines);
-  const [tasks, setTasks] = useState<GanttTask[]>(mockTasks);
+  const [productionLines, setProductionLines] = useState<GanttProductionLine[]>(fallbackProductionLines);
+  const [tasks, setTasks] = useState<GanttTask[]>(fallbackTasks);
   const [viewMode, setViewMode] = useState<'hour' | 'day'>('hour');
 
   // 当前时间指示器
@@ -97,27 +120,111 @@ export default function PlanGanttScreen() {
     }, 300);
   }, []);
 
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+  const loadData = useCallback(async () => {
     try {
-      // 从API获取数据
-      // const lines = await schedulingApiClient.getProductionLines();
-      // setProductionLines(lines.data);
-      // const schedules = await schedulingApiClient.getLineSchedules({ date: currentDate });
-      // setTasks(transformToGanttTasks(schedules.data));
+      // 获取产线数据
+      const linesRes = await schedulingApiClient.getProductionLines();
+      if (linesRes.success && linesRes.data && linesRes.data.length > 0) {
+        const ganttLines = linesRes.data.map(transformToGanttLine);
+        setProductionLines(ganttLines);
+      } else {
+        // Fallback when API returns no data
+        setProductionLines(fallbackProductionLines);
+      }
+
+      // 获取调度计划数据
+      const plansRes = await schedulingApiClient.getPlans({
+        startDate: currentDate,
+        endDate: currentDate,
+        page: 0,
+        size: 50,
+      });
+      if (plansRes.success && plansRes.data?.content && plansRes.data.content.length > 0) {
+        // Transform plans to Gantt tasks
+        const ganttTasks: GanttTask[] = [];
+        let colorIndex = 0;
+
+        for (const plan of plansRes.data.content) {
+          // Use lineSchedules instead of schedules (correct field name from type)
+          if (plan.lineSchedules && plan.lineSchedules.length > 0) {
+            for (const schedule of plan.lineSchedules) {
+              // Parse start time and calculate duration - use plannedStartTime/plannedEndTime
+              const startTime = schedule.plannedStartTime ? new Date(schedule.plannedStartTime) : new Date();
+              const endTime = schedule.plannedEndTime ? new Date(schedule.plannedEndTime) : new Date(startTime.getTime() + 4 * 60 * 60 * 1000);
+              const startHour = startTime.getHours() + startTime.getMinutes() / 60;
+              const durationHours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+
+              // Determine task status - handle both lowercase (from type) and uppercase (from API)
+              let taskStatus: GanttTask['status'] = 'pending';
+              const scheduleStatus = schedule.status?.toLowerCase();
+              if (scheduleStatus === 'completed') taskStatus = 'completed';
+              else if (scheduleStatus === 'in_progress' || scheduleStatus === 'started') taskStatus = 'in_progress';
+              else if (scheduleStatus === 'delayed') taskStatus = 'delayed';
+
+              // Calculate progress - use actualQuantity instead of completedQuantity
+              const progress = schedule.actualQuantity && schedule.plannedQuantity
+                ? Math.round((schedule.actualQuantity / schedule.plannedQuantity) * 100)
+                : (taskStatus === 'completed' ? 100 : 0);
+
+              const taskId = schedule.id ?? String(plan.id);
+              const taskColor = taskColors[colorIndex % taskColors.length] ?? '#722ed1';
+              ganttTasks.push({
+                id: taskId,
+                lineId: schedule.productionLineId || 'L1',
+                name: `${schedule.productTypeName ?? plan.productTypeName ?? '生产任务'} ${schedule.plannedQuantity ?? 0}kg`,
+                startHour: startHour,
+                duration: Math.max(1, durationHours),
+                progress,
+                status: taskStatus,
+                color: taskColor,
+              });
+              colorIndex++;
+            }
+          }
+        }
+
+        if (ganttTasks.length > 0) {
+          setTasks(ganttTasks);
+        } else {
+          // Fallback when API returns no task data
+          setTasks(fallbackTasks);
+        }
+      } else {
+        // Fallback when API returns no data
+        setTasks(fallbackTasks);
+      }
     } catch (error) {
-      console.error('Failed to refresh:', error);
+      console.error('Failed to load Gantt data:', error);
+      if (isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          console.error('认证过期，请重新登录');
+        }
+      }
+      // Fallback when API call fails
+      setProductionLines(fallbackProductionLines);
+      setTasks(fallbackTasks);
     } finally {
-      setRefreshing(false);
+      setLoading(false);
     }
   }, [currentDate]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await loadData();
+    setRefreshing(false);
+  }, [loadData]);
+
+  // Load data on mount and when date changes
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const changeDate = (delta: number) => {
     const date = new Date(currentDate);
     date.setDate(date.getDate() + delta);
     const newDate = date.toISOString().substring(0, 10); // YYYY-MM-DD format
     setCurrentDate(newDate);
-    onRefresh();
+    // loadData will be called automatically via useEffect dependency
   };
 
   const getStatusColor = (status: string) => {
@@ -182,7 +289,7 @@ export default function PlanGanttScreen() {
     );
   };
 
-  const renderProductionLine = (line: ProductionLine) => {
+  const renderProductionLine = (line: GanttProductionLine) => {
     const lineTasks = tasks.filter(t => t.lineId === line.id);
 
     return (

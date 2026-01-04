@@ -83,8 +83,9 @@ interface MenuItem {
   screen?: string;
 }
 
-// Mock 数据
-const mockProfile: UserProfile = {
+// Default data for initial display
+// TODO: P1 - Replace with API call: userApiClient.getDispatcherProfile()
+const defaultProfile: UserProfile = {
   name: '赵调度',
   code: '099',
   role: '调度员',
@@ -94,14 +95,16 @@ const mockProfile: UserProfile = {
   avatar: '赵',
 };
 
-const mockTodayStats: TodayStats = {
+// TODO: P1 - Replace with API call: schedulingApiClient.getDispatcherTodayStats()
+const defaultTodayStats: TodayStats = {
   pendingApprovals: 8,
   processed: 5,
   transfers: 3,
   plans: 12,
 };
 
-const mockPerformanceMetrics: PerformanceMetric[] = [
+// TODO: P1 - Replace with API call: schedulingApiClient.getDispatcherPerformance()
+const defaultPerformanceMetrics: PerformanceMetric[] = [
   {
     label: '计划完成率',
     value: '87%',
@@ -195,6 +198,13 @@ const accountMenuItems: MenuItem[] = [
 
 const systemMenuItems: MenuItem[] = [
   {
+    id: 'schedulingSettings',
+    title: '排产设置',
+    icon: 'settings-outline',
+    iconType: 'ionicons',
+    screen: 'SchedulingSettings',
+  },
+  {
     id: 'notifications',
     title: '消息通知',
     icon: 'notifications-outline',
@@ -217,9 +227,9 @@ const systemMenuItems: MenuItem[] = [
 export default function DSProfileScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
-  const [profile] = useState<UserProfile>(mockProfile);
-  const [todayStats] = useState<TodayStats>(mockTodayStats);
-  const [metrics] = useState<PerformanceMetric[]>(mockPerformanceMetrics);
+  const [profile] = useState<UserProfile>(defaultProfile);
+  const [todayStats] = useState<TodayStats>(defaultTodayStats);
+  const [metrics] = useState<PerformanceMetric[]>(defaultPerformanceMetrics);
 
   // 下拉刷新
   const onRefresh = useCallback(async () => {
@@ -260,6 +270,13 @@ export default function DSProfileScreen() {
         PersonnelSchedule: { tab: 'PersonnelTab', screen: 'PersonnelSchedule' },
         Attendance: { tab: 'HomeTab', screen: 'Attendance' },
       };
+
+      // 当前 Stack 内的页面，直接导航
+      const localScreens = ['SchedulingSettings', 'DSStatistics'];
+      if (localScreens.includes(item.screen)) {
+        (navigation as { navigate: (screen: string) => void }).navigate(item.screen);
+        return;
+      }
 
       const navConfig = crossTabNavigation[item.screen];
       if (navConfig) {

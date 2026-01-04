@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.entity.*;
+import com.cretas.aims.entity.enums.HireType;
 import com.cretas.aims.entity.enums.ProductionPlanStatus;
 import com.cretas.aims.entity.rules.DroolsRule;
 import com.cretas.aims.exception.EntityNotFoundException;
@@ -52,6 +53,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final ProductionBatchRepository batchRepository;
     private final ProductionPlanRepository productionPlanRepository;
     private final DroolsRuleRepository droolsRuleRepository;
+    private final TimeClockRecordRepository timeClockRecordRepository;
     private final RestTemplate restTemplate;
     private final FeatureEngineeringService featureEngineeringService;
     private final LinUCBService linUCBService;
@@ -63,6 +65,16 @@ public class SchedulingServiceImpl implements SchedulingService {
 
     @Value("${ml.hybrid-predict.enabled:true}")
     private boolean hybridPredictEnabled;
+
+    // 自动触发排产配置
+    @Value("${cretas.scheduling.auto-trigger.enabled:true}")
+    private boolean autoSchedulingEnabled;
+
+    @Value("${cretas.scheduling.auto-trigger.low-risk-threshold:0.85}")
+    private double lowRiskThreshold;
+
+    @Value("${cretas.scheduling.auto-trigger.medium-risk-threshold:0.70}")
+    private double mediumRiskThreshold;
 
     // ==================== 调度计划 CRUD ====================
 
@@ -1159,6 +1171,92 @@ public class SchedulingServiceImpl implements SchedulingService {
             .collect(Collectors.toList());
     }
 
+    @Override
+    public List<TaskHistoryDTO> getEmployeeTaskHistory(String factoryId, Long userId, Integer limit) {
+        log.info("获取员工任务历史: factoryId={}, userId={}, limit={}", factoryId, userId, limit);
+
+        // 查询员工的任务分配记录（包含排程和计划信息）
+        List<WorkerAssignment> assignments = assignmentRepository
+                .findRecentByFactoryIdAndUserId(factoryId, userId);
+
+        // 限制返回数量
+        int actualLimit = (limit != null && limit > 0) ? limit : 10;
+        List<WorkerAssignment> limitedAssignments = assignments.stream()
+                .limit(actualLimit)
+                .collect(Collectors.toList());
+
+        // 转换为 TaskHistoryDTO
+        return limitedAssignments.stream().map(wa -> {
+            LineSchedule schedule = wa.getSchedule();
+            SchedulingPlan plan = schedule != null ? schedule.getPlan() : null;
+
+            // 构建任务名称：批次号 + 产品名称
+            String taskName = "任务";
+            if (schedule != null && schedule.getBatchId() != null) {
+                try {
+                    ProductionBatch batch = batchRepository.findById(schedule.getBatchId()).orElse(null);
+                    if (batch != null) {
+                        taskName = batch.getBatchNumber();
+                        // getProductType() 返回的是 productName (String)
+                        String productName = batch.getProductType();
+                        if (productName != null && !productName.isEmpty()) {
+                            taskName += " - " + productName;
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("获取批次信息失败: batchId={}", schedule.getBatchId());
+                }
+            }
+
+            // 格式化日期 (MM-dd)
+            String dateStr = "";
+            if (plan != null && plan.getPlanDate() != null) {
+                dateStr = plan.getPlanDate().format(java.time.format.DateTimeFormatter.ofPattern("MM-dd"));
+            } else if (wa.getAssignedAt() != null) {
+                dateStr = wa.getAssignedAt().format(java.time.format.DateTimeFormatter.ofPattern("MM-dd"));
+            }
+
+            // 计算工作时长（小时）
+            Double hours = null;
+            if (wa.getActualStartTime() != null && wa.getActualEndTime() != null) {
+                long minutes = java.time.Duration.between(wa.getActualStartTime(), wa.getActualEndTime()).toMinutes();
+                hours = Math.round(minutes / 6.0) / 10.0; // 保留1位小数
+            }
+
+            // 映射状态
+            String status = mapAssignmentStatus(wa.getStatus());
+
+            return TaskHistoryDTO.builder()
+                    .id(wa.getId())
+                    .name(taskName)
+                    .date(dateStr)
+                    .status(status)
+                    .hours(hours)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 映射 WorkerAssignment 状态到前端期望的状态值
+     */
+    private String mapAssignmentStatus(WorkerAssignment.AssignmentStatus status) {
+        if (status == null) {
+            return "pending";
+        }
+        switch (status) {
+            case checked_out:
+                return "completed";
+            case checked_in:
+            case working:
+                return "in_progress";
+            case absent:
+                return "cancelled";
+            case assigned:
+            default:
+                return "pending";
+        }
+    }
+
     // ==================== AI 功能 ====================
 
     @Override
@@ -2033,6 +2131,35 @@ public class SchedulingServiceImpl implements SchedulingService {
             dashboard.setCurrentSchedules(enrichScheduleDTOs(inProgressSchedules));
         }
 
+        // 人员统计
+        try {
+            Long totalActiveWorkers = userRepository.countActiveUsersByFactory(factoryId);
+            dashboard.setTotalWorkers(totalActiveWorkers != null ? totalActiveWorkers.intValue() : 0);
+
+            // 临时工人数 (兼职、派遣、实习、临时工)
+            List<HireType> temporaryTypes = Arrays.asList(
+                    HireType.PART_TIME, HireType.DISPATCH, HireType.INTERN, HireType.TEMPORARY);
+            long tempWorkers = userRepository.countTemporaryWorkers(factoryId, temporaryTypes);
+            dashboard.setTemporaryWorkers((int) tempWorkers);
+
+            // 今日打卡人数
+            LocalDateTime startOfDay = date.atStartOfDay();
+            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
+            long checkedIn = timeClockRecordRepository.countDistinctUsersByFactoryIdAndClockDateBetween(
+                    factoryId, startOfDay, endOfDay);
+            dashboard.setCheckedInWorkers((int) checkedIn);
+
+            // TODO: 请假人数 - 需要实现 LeaveRequest 实体后补充
+            // 目前暂设为0，等请假管理功能完成后从 LeaveRequestRepository 查询
+            dashboard.setOnLeaveWorkers(0);
+        } catch (Exception e) {
+            log.warn("获取人员统计失败: {}", e.getMessage());
+            dashboard.setTotalWorkers(0);
+            dashboard.setCheckedInWorkers(0);
+            dashboard.setTemporaryWorkers(0);
+            dashboard.setOnLeaveWorkers(0);
+        }
+
         // 产线状态
         dashboard.setProductionLines(getProductionLines(factoryId, null));
 
@@ -2297,5 +2424,561 @@ public class SchedulingServiceImpl implements SchedulingService {
 
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    // ==================== 自动触发排产 ====================
+
+    /**
+     * 检查是否启用自动排产
+     * 支持三级回退：工厂级配置 > 系统级配置 > 默认值
+     */
+    @Override
+    public boolean isAutoSchedulingEnabled(String factoryId) {
+        // 1. 尝试工厂级配置
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_trigger_enabled");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Boolean.parseBoolean(factoryRule.get().getRuleContent());
+            } catch (Exception e) {
+                log.warn("工厂 {} 的自动排产配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
+            }
+        }
+
+        // 2. 尝试系统级配置
+        Optional<DroolsRule> systemRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName("SYSTEM", "scheduling", "auto_trigger_enabled");
+
+        if (systemRule.isPresent() && systemRule.get().getEnabled()) {
+            try {
+                return Boolean.parseBoolean(systemRule.get().getRuleContent());
+            } catch (Exception e) {
+                log.warn("系统级自动排产配置格式错误: {}", systemRule.get().getRuleContent());
+            }
+        }
+
+        // 3. 使用配置文件默认值
+        return autoSchedulingEnabled;
+    }
+
+    /**
+     * 获取低风险阈值（三级回退）
+     */
+    private double getLowRiskThreshold(String factoryId) {
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_trigger_low_risk_threshold");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(factoryRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("工厂 {} 的低风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
+            }
+        }
+
+        return lowRiskThreshold;
+    }
+
+    /**
+     * 获取中风险阈值（三级回退）
+     */
+    private double getMediumRiskThreshold(String factoryId) {
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_trigger_medium_risk_threshold");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Double.parseDouble(factoryRule.get().getRuleContent());
+            } catch (NumberFormatException e) {
+                log.warn("工厂 {} 的中风险阈值配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
+            }
+        }
+
+        return mediumRiskThreshold;
+    }
+
+    /**
+     * 获取自动排产模式
+     * 支持三种模式：
+     * - FULLY_AUTO: 全自动模式，低风险计划自动生成并激活
+     * - MANUAL_CONFIRM: 人工确认模式，生成草稿等待确认（默认）
+     * - DISABLED: 禁用模式，不进行自动排产
+     */
+    private String getAutoSchedulingMode(String factoryId) {
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_scheduling_mode");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            String mode = factoryRule.get().getRuleContent();
+            // 验证模式有效性
+            if ("FULLY_AUTO".equals(mode) || "MANUAL_CONFIRM".equals(mode) || "DISABLED".equals(mode)) {
+                return mode;
+            }
+            log.warn("工厂 {} 的自动排产模式配置无效: {}, 使用默认值 MANUAL_CONFIRM", factoryId, mode);
+        }
+
+        // 默认为人工确认模式
+        return "MANUAL_CONFIRM";
+    }
+
+    /**
+     * 生产计划创建后自动触发排产建议
+     * 异步执行，不阻塞主流程
+     */
+    @Override
+    @Async
+    public void onProductionPlanCreated(String factoryId, String planId, String planNumber, Long userId) {
+        log.info("生产计划创建事件触发: factoryId={}, planId={}, planNumber={}", factoryId, planId, planNumber);
+
+        // 1. 检查是否启用自动排产
+        if (!isAutoSchedulingEnabled(factoryId)) {
+            log.info("工厂 {} 未启用自动排产，跳过", factoryId);
+            return;
+        }
+
+        // 1.1 检查自动排产模式
+        String mode = getAutoSchedulingMode(factoryId);
+        if ("DISABLED".equals(mode)) {
+            log.info("工厂 {} 排产自动化已禁用，跳过", factoryId);
+            return;
+        }
+
+        // 2. 查询生产计划
+        Optional<ProductionPlan> planOpt = productionPlanRepository.findById(planId);
+        if (!planOpt.isPresent()) {
+            log.warn("生产计划不存在: planId={}", planId);
+            return;
+        }
+
+        ProductionPlan plan = planOpt.get();
+
+        // 3. 检查计划状态，只处理 PENDING 状态的计划
+        if (plan.getStatus() != ProductionPlanStatus.PENDING) {
+            log.info("生产计划 {} 状态为 {}，跳过自动排产", planNumber, plan.getStatus());
+            return;
+        }
+
+        // 4. 计算完成概率
+        try {
+            // 异步计算概率
+            CompletableFuture<BigDecimal> probabilityFuture = calculatePlanProbability(plan);
+            BigDecimal probability = probabilityFuture.get(30, java.util.concurrent.TimeUnit.SECONDS);
+
+            if (probability == null) {
+                probability = new BigDecimal("0.5"); // 默认中性值
+            }
+
+            double prob = probability.doubleValue();
+            double lowThreshold = getLowRiskThreshold(factoryId);
+            double mediumThreshold = getMediumRiskThreshold(factoryId);
+
+            log.info("生产计划 {} 完成概率计算完成: probability={}, lowThreshold={}, mediumThreshold={}",
+                planNumber, prob, lowThreshold, mediumThreshold);
+
+            // 5. 根据完成概率决定处理方式
+            if (prob >= lowThreshold) {
+                // 低风险：根据模式决定是否自动激活
+                handleLowRiskPlan(factoryId, planId, planNumber, prob, mode);
+            } else if (prob >= mediumThreshold) {
+                // 中风险：生成草稿等待确认
+                handleMediumRiskPlan(factoryId, planId, planNumber, prob, mode);
+            } else {
+                // 高风险：创建告警
+                handleHighRiskPlan(factoryId, planId, planNumber, prob, mediumThreshold);
+            }
+
+        } catch (java.util.concurrent.TimeoutException e) {
+            log.error("自动排产概率计算超时: planId={}", planId);
+        } catch (Exception e) {
+            log.error("自动排产失败: planId={}, error={}", planId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 处理低风险计划（完成概率 >= 85%）
+     * 根据模式决定是否自动激活：
+     * - FULLY_AUTO: 生成并激活（调用 confirmPlan）
+     * - MANUAL_CONFIRM: 只生成草稿（不调用 confirmPlan）
+     */
+    private void handleLowRiskPlan(String factoryId, String planId, String planNumber, double probability, String mode) {
+        log.info("低风险计划处理: planNumber={}, probability={}%, mode={}", planNumber, (int)(probability * 100), mode);
+
+        boolean isFullyAuto = "FULLY_AUTO".equals(mode);
+        boolean autoActivated = false;
+
+        // 1. 自动生成排产计划
+        SchedulingPlanDTO schedulingPlan = null;
+        try {
+            // 查询生产计划获取计划日期
+            Optional<ProductionPlan> planOpt = productionPlanRepository.findById(planId);
+            if (planOpt.isPresent()) {
+                ProductionPlan plan = planOpt.get();
+
+                // 构建排产请求
+                GenerateScheduleRequest scheduleRequest = new GenerateScheduleRequest();
+                // 使用生产计划的预期完成日期或开始时间
+                LocalDate planDate = plan.getExpectedCompletionDate() != null
+                    ? plan.getExpectedCompletionDate()
+                    : (plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : LocalDate.now());
+                scheduleRequest.setPlanDate(planDate);
+                // 不指定 batchIds，让系统自动选择待排产批次
+
+                // 生成排产计划
+                schedulingPlan = generateSchedule(factoryId, scheduleRequest, plan.getCreatedBy());
+
+                // 只有 FULLY_AUTO 模式才自动确认排产计划
+                if (isFullyAuto && schedulingPlan != null && schedulingPlan.getId() != null) {
+                    confirmPlan(factoryId, schedulingPlan.getId(), plan.getCreatedBy());
+                    autoActivated = true;
+                    log.info("低风险计划已自动生成并确认排产: planNumber={}, schedulingPlanId={}",
+                        planNumber, schedulingPlan.getId());
+                } else if (schedulingPlan != null) {
+                    log.info("低风险计划已生成草稿排产（等待人工确认）: planNumber={}, schedulingPlanId={}",
+                        planNumber, schedulingPlan.getId());
+                }
+            }
+        } catch (Exception e) {
+            log.error("自动生成排产计划失败: planNumber={}, error={}", planNumber, e.getMessage(), e);
+            // 继续发送通知，即使排产失败
+        }
+
+        // 2. 发送通知（根据模式和结果调整消息）
+        String title;
+        String content;
+        if (schedulingPlan != null && autoActivated) {
+            title = "AI排产已自动完成";
+            content = String.format("计划 %s 完成概率 %d%%，已自动生成并激活排产计划", planNumber, (int)(probability * 100));
+        } else if (schedulingPlan != null) {
+            title = "排产计划已生成，请确认后激活";
+            content = String.format("计划 %s 完成概率 %d%%，排产草稿已生成，请审核后激活", planNumber, (int)(probability * 100));
+        } else {
+            title = "AI排产建议已生成";
+            content = String.format("计划 %s 完成概率 %d%%，点击查看排产建议", planNumber, (int)(probability * 100));
+        }
+
+        try {
+            notificationService.sendToAllUsers(
+                factoryId,
+                title,
+                content,
+                com.cretas.aims.entity.enums.NotificationType.INFO,
+                "AUTO_SCHEDULING",
+                planId
+            );
+            log.info("低风险计划通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送低风险计划通知失败: planNumber={}", planNumber, e);
+        }
+
+        // 3. 发送推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "auto_scheduling_completed");
+            pushData.put("planId", planId);
+            pushData.put("schedulingPlanId", schedulingPlan != null ? schedulingPlan.getId() : null);
+            pushData.put("probability", probability);
+            pushData.put("riskLevel", "low");
+            pushData.put("autoActivated", autoActivated);
+            pushData.put("mode", mode);
+            pushData.put("screen", autoActivated ? "SchedulingPlanDetail" : (schedulingPlan != null ? "SchedulingPlanDetail" : "ProductionPlanDetail"));
+
+            pushNotificationService.sendToFactory(
+                factoryId,
+                title,
+                content,
+                pushData
+            );
+            log.info("低风险计划推送通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送低风险计划推送通知失败: planNumber={}", planNumber, e);
+        }
+    }
+
+    /**
+     * 处理中风险计划（完成概率在 70%-85% 之间）
+     * 生成草稿排产计划，等待人工确认
+     * 注：无论 FULLY_AUTO 还是 MANUAL_CONFIRM 模式，中风险计划都只生成草稿
+     */
+    private void handleMediumRiskPlan(String factoryId, String planId, String planNumber, double probability, String mode) {
+        log.info("中风险计划处理: planNumber={}, probability={}%, mode={}", planNumber, (int)(probability * 100), mode);
+
+        // 1. 生成草稿排产计划（不激活，等待人工确认）
+        // 中风险计划无论什么模式都需要人工确认
+        SchedulingPlanDTO schedulingPlan = null;
+        try {
+            Optional<ProductionPlan> planOpt = productionPlanRepository.findById(planId);
+            if (planOpt.isPresent()) {
+                ProductionPlan plan = planOpt.get();
+
+                GenerateScheduleRequest scheduleRequest = new GenerateScheduleRequest();
+                // 使用生产计划的预期完成日期或开始时间
+                LocalDate planDate = plan.getExpectedCompletionDate() != null
+                    ? plan.getExpectedCompletionDate()
+                    : (plan.getStartTime() != null ? plan.getStartTime().toLocalDate() : LocalDate.now());
+                scheduleRequest.setPlanDate(planDate);
+
+                // 生成排产计划（保持 draft 状态，不激活）
+                schedulingPlan = generateSchedule(factoryId, scheduleRequest, plan.getCreatedBy());
+
+                if (schedulingPlan != null) {
+                    log.info("中风险计划已生成草稿排产: planNumber={}, schedulingPlanId={}",
+                        planNumber, schedulingPlan.getId());
+                }
+            }
+        } catch (Exception e) {
+            log.error("生成草稿排产计划失败: planNumber={}, error={}", planNumber, e.getMessage(), e);
+        }
+
+        // 2. 发送警告通知
+        String title = schedulingPlan != null ? "排产草稿已生成，需确认" : "排产需要关注";
+        String content = schedulingPlan != null
+            ? String.format("计划 %s 完成概率 %d%%，已生成排产草稿，请审核后激活", planNumber, (int)(probability * 100))
+            : String.format("计划 %s 完成概率较低 %d%%，建议检查资源配置", planNumber, (int)(probability * 100));
+
+        try {
+            notificationService.sendToAllUsers(
+                factoryId,
+                title,
+                content,
+                com.cretas.aims.entity.enums.NotificationType.WARNING,
+                "AUTO_SCHEDULING",
+                planId
+            );
+            log.info("中风险计划通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送中风险计划通知失败: planNumber={}", planNumber, e);
+        }
+
+        // 3. 发送推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "auto_scheduling_draft_ready");
+            pushData.put("planId", planId);
+            pushData.put("schedulingPlanId", schedulingPlan != null ? schedulingPlan.getId() : null);
+            pushData.put("probability", probability);
+            pushData.put("riskLevel", "medium");
+            pushData.put("requiresConfirmation", true);
+            pushData.put("mode", mode);
+            pushData.put("screen", schedulingPlan != null ? "SchedulingPlanDetail" : "ProductionPlanDetail");
+
+            pushNotificationService.sendToFactory(
+                factoryId,
+                title,
+                content,
+                pushData
+            );
+            log.info("中风险计划推送通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送中风险计划推送通知失败: planNumber={}", planNumber, e);
+        }
+    }
+
+    /**
+     * 处理高风险计划（完成概率 < 70%）
+     */
+    private void handleHighRiskPlan(String factoryId, String planId, String planNumber,
+                                     double probability, double threshold) {
+        log.warn("高风险计划处理: planNumber={}, probability={}%", planNumber, (int)(probability * 100));
+
+        // 1. 创建告警
+        SchedulingAlert alert = new SchedulingAlert();
+        alert.setFactoryId(factoryId);
+        alert.setPlanId(planId);
+        alert.setAlertType(SchedulingAlert.AlertType.low_probability);
+        alert.setSeverity(SchedulingAlert.Severity.critical);
+        alert.setMessage(String.format(
+            "生产计划 %s 完成概率过低，仅 %d%%（阈值 %d%%）",
+            planNumber, (int)(probability * 100), (int)(threshold * 100)
+        ));
+        alert.setSuggestedAction("建议调整资源配置、增加人员或延期交付日期");
+        alert.setIsResolved(false);
+
+        try {
+            alertRepository.save(alert);
+            log.info("高风险计划告警已创建: planNumber={}, alertId={}", planNumber, alert.getId());
+        } catch (Exception e) {
+            log.error("创建高风险计划告警失败: planNumber={}", planNumber, e);
+        }
+
+        // 2. 发送告警通知
+        String title = "紧急告警 - 完成概率过低";
+        String content = String.format(
+            "计划 %s 完成概率仅 %d%%，建议调整资源或延期",
+            planNumber, (int)(probability * 100)
+        );
+
+        try {
+            notificationService.sendToAllUsers(
+                factoryId,
+                title,
+                content,
+                com.cretas.aims.entity.enums.NotificationType.ALERT,
+                "AUTO_SCHEDULING",
+                planId
+            );
+            log.info("高风险计划告警通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送高风险计划告警通知失败: planNumber={}", planNumber, e);
+        }
+
+        // 3. 发送推送通知
+        try {
+            Map<String, Object> pushData = new HashMap<>();
+            pushData.put("type", "auto_scheduling_critical");
+            pushData.put("planId", planId);
+            pushData.put("alertId", alert.getId());
+            pushData.put("probability", probability);
+            pushData.put("riskLevel", "high");
+            pushData.put("screen", "SchedulingAlertScreen");
+
+            pushNotificationService.sendToFactory(
+                factoryId,
+                title,
+                content,
+                pushData
+            );
+            log.info("高风险计划紧急推送通知已发送: planNumber={}", planNumber);
+        } catch (Exception e) {
+            log.error("发送高风险计划紧急推送通知失败: planNumber={}", planNumber, e);
+        }
+    }
+
+    // ==================== 排产自动化配置 ====================
+
+    /**
+     * 获取排产自动化设置
+     * 从 DroolsRule 表读取配置，支持三级回退
+     */
+    @Override
+    public SchedulingSettingsDTO getSchedulingSettings(String factoryId) {
+        log.info("获取排产自动化设置: factoryId={}", factoryId);
+
+        SchedulingSettingsDTO settings = new SchedulingSettingsDTO();
+
+        // 1. 获取自动排产模式
+        settings.setAutoSchedulingMode(getAutoSchedulingMode(factoryId));
+
+        // 2. 获取低风险阈值
+        settings.setLowRiskThreshold(getLowRiskThreshold(factoryId));
+
+        // 3. 获取中风险阈值
+        settings.setMediumRiskThreshold(getMediumRiskThreshold(factoryId));
+
+        // 4. 获取通知开关
+        settings.setEnableNotifications(getNotificationsEnabled(factoryId));
+
+        log.info("排产自动化设置: mode={}, lowRisk={}, mediumRisk={}, notifications={}",
+            settings.getAutoSchedulingMode(),
+            settings.getLowRiskThreshold(),
+            settings.getMediumRiskThreshold(),
+            settings.getEnableNotifications());
+
+        return settings;
+    }
+
+    /**
+     * 更新排产自动化设置
+     * 更新或创建 DroolsRule 记录
+     */
+    @Override
+    @Transactional
+    public SchedulingSettingsDTO updateSchedulingSettings(String factoryId, SchedulingSettingsDTO settings, Long userId) {
+        log.info("更新排产自动化设置: factoryId={}, settings={}, userId={}", factoryId, settings, userId);
+
+        // 1. 更新自动排产模式
+        if (settings.getAutoSchedulingMode() != null) {
+            saveOrUpdateRule(factoryId, "auto_scheduling_mode", settings.getAutoSchedulingMode(),
+                "自动排产模式配置", userId);
+        }
+
+        // 2. 更新低风险阈值
+        if (settings.getLowRiskThreshold() != null) {
+            if (settings.getLowRiskThreshold() < 0 || settings.getLowRiskThreshold() > 1) {
+                throw new IllegalArgumentException("低风险阈值必须在 0-1 之间");
+            }
+            saveOrUpdateRule(factoryId, "auto_trigger_low_risk_threshold",
+                String.valueOf(settings.getLowRiskThreshold()),
+                "自动排产低风险阈值配置", userId);
+        }
+
+        // 3. 更新中风险阈值
+        if (settings.getMediumRiskThreshold() != null) {
+            if (settings.getMediumRiskThreshold() < 0 || settings.getMediumRiskThreshold() > 1) {
+                throw new IllegalArgumentException("中风险阈值必须在 0-1 之间");
+            }
+            saveOrUpdateRule(factoryId, "auto_trigger_medium_risk_threshold",
+                String.valueOf(settings.getMediumRiskThreshold()),
+                "自动排产中风险阈值配置", userId);
+        }
+
+        // 4. 更新通知开关
+        if (settings.getEnableNotifications() != null) {
+            saveOrUpdateRule(factoryId, "auto_scheduling_notifications_enabled",
+                String.valueOf(settings.getEnableNotifications()),
+                "自动排产通知开关配置", userId);
+        }
+
+        log.info("排产自动化设置更新完成: factoryId={}", factoryId);
+
+        // 返回更新后的设置
+        return getSchedulingSettings(factoryId);
+    }
+
+    /**
+     * 保存或更新 DroolsRule 配置
+     */
+    private void saveOrUpdateRule(String factoryId, String ruleName, String ruleContent,
+                                   String description, Long userId) {
+        Optional<DroolsRule> existingRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", ruleName);
+
+        DroolsRule rule;
+        if (existingRule.isPresent()) {
+            // 更新现有规则
+            rule = existingRule.get();
+            rule.setRuleContent(ruleContent);
+            rule.setVersion(rule.getVersion() + 1);
+            rule.setUpdatedBy(userId);
+            rule.setUpdatedAt(LocalDateTime.now());
+        } else {
+            // 创建新规则
+            rule = new DroolsRule();
+            rule.setId(UUID.randomUUID().toString());
+            rule.setFactoryId(factoryId);
+            rule.setRuleGroup("scheduling");
+            rule.setRuleName(ruleName);
+            rule.setRuleDescription(description);
+            rule.setRuleContent(ruleContent);
+            rule.setEnabled(true);
+            rule.setPriority(0);
+            rule.setVersion(1);
+            rule.setCreatedBy(userId);
+            rule.setCreatedAt(LocalDateTime.now());
+            rule.setUpdatedAt(LocalDateTime.now());
+        }
+
+        droolsRuleRepository.save(rule);
+        log.debug("规则已保存/更新: factoryId={}, ruleName={}, content={}", factoryId, ruleName, ruleContent);
+    }
+
+    /**
+     * 获取通知开关配置
+     * 支持三级回退
+     */
+    private boolean getNotificationsEnabled(String factoryId) {
+        Optional<DroolsRule> factoryRule = droolsRuleRepository
+            .findByFactoryIdAndRuleGroupAndRuleName(factoryId, "scheduling", "auto_scheduling_notifications_enabled");
+
+        if (factoryRule.isPresent() && factoryRule.get().getEnabled()) {
+            try {
+                return Boolean.parseBoolean(factoryRule.get().getRuleContent());
+            } catch (Exception e) {
+                log.warn("工厂 {} 的通知开关配置格式错误: {}", factoryId, factoryRule.get().getRuleContent());
+            }
+        }
+
+        // 默认启用通知
+        return true;
     }
 }

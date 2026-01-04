@@ -55,6 +55,16 @@ public class IntentExecuteResponse {
      */
     private String sensitivityLevel;
 
+    /**
+     * 匹配置信度 (0.0 - 1.0)
+     */
+    private Double confidence;
+
+    /**
+     * 匹配方法 (KEYWORD / LLM / REGEX)
+     */
+    private String matchMethod;
+
     // ==================== 执行状态 ====================
 
     /**

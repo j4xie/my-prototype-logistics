@@ -340,6 +340,18 @@ class ContextLogger {
 // 导出单例实例
 export const logger = new Logger();
 
+/**
+ * 创建带上下文的 Logger
+ * @param context - 上下文名称（如组件名、模块名）
+ * @returns ContextLogger 实例
+ * @example
+ * const log = createLogger('MyScreen');
+ * log.info('Screen loaded');
+ */
+export function createLogger(context: string): ContextLogger {
+  return logger.createContextLogger(context);
+}
+
 // 导出类型
 export type { LoggerConfig };
 export { Logger, ContextLogger };

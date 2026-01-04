@@ -209,6 +209,23 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("warningDate") LocalDate warningDate);
 
     /**
+     * 统计合同即将到期的员工数量 (30天内)
+     *
+     * @param factoryId 工厂ID
+     * @param warningDate 预警日期 (当前日期 + 30天)
+     * @return 即将到期的合同数量
+     * @since 2026-01-03
+     */
+    @Query("SELECT COUNT(u) FROM User u WHERE u.factoryId = :factoryId " +
+           "AND u.contractEndDate IS NOT NULL " +
+           "AND u.contractEndDate >= CURRENT_DATE " +
+           "AND u.contractEndDate <= :warningDate " +
+           "AND u.isActive = true")
+    long countExpiringContracts(
+            @Param("factoryId") String factoryId,
+            @Param("warningDate") LocalDate warningDate);
+
+    /**
      * 根据雇用类型查找用户
      *
      * @param factoryId 工厂ID

@@ -59,7 +59,17 @@ export default function StaffAddScreen() {
   const [deptMenuVisible, setDeptMenuVisible] = useState(false);
   const [roleMenuVisible, setRoleMenuVisible] = useState(false);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    username: string;
+    fullName: string;
+    phone: string;
+    email: string;
+    departmentId: string;
+    departmentName: string;
+    roleCode: string;
+    roleName: string;
+    position: string;
+  }>({
     username: '',
     fullName: '',
     phone: '',

@@ -192,6 +192,7 @@
     .api-method.put { background: #feebc8; color: #744210; }
     .api-method.delete { background: #fed7d7; color: #742a2a; }
     .api-method.patch { background: #e9d8fd; color: #44337a; }
+    .api-method.mqtt { background: #fef3c7; color: #92400e; }
     .api-path {
       color: var(--gray-700);
       font-family: 'Monaco', 'Menlo', monospace;
@@ -229,6 +230,23 @@
       background: var(--gray-100);
       border-radius: 0.5rem;
       text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+    }
+    .role-card:hover {
+      background: var(--gray-200);
+      border-color: var(--blue-500);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .role-card:active {
+      transform: translateY(0);
+    }
+    .role-desc {
+      font-size: 0.75rem;
+      color: var(--gray-500);
+      margin-top: 0.25rem;
     }
     .role-icon { font-size: 2rem; margin-bottom: 0.5rem; }
     .role-name { font-weight: 600; color: var(--gray-800); }
@@ -536,19 +554,19 @@
   <!-- Stats Bar -->
   <div class="stats-bar">
     <div class="stat-item">
-      <div class="stat-value" id="totalModules">28</div>
+      <div class="stat-value" id="totalModules">29</div>
       <div class="stat-label">功能模块</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalApis">831</div>
+      <div class="stat-value" id="totalApis">874</div>
       <div class="stat-label">API 端点</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalScreens">228</div>
+      <div class="stat-value" id="totalScreens">288</div>
       <div class="stat-label">前端页面</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalControllers">57</div>
+      <div class="stat-value" id="totalControllers">65</div>
       <div class="stat-label">Controller</div>
     </div>
     <div class="stat-item">
@@ -602,8 +620,8 @@
 
   <!-- Footer -->
   <div class="footer">
-    <p>白垩纪食品溯源系统 | 数据来源: 54个Controller + 228个Screen</p>
-    <p>最后更新: 2026-01-02 | 代码行数: 173K+</p>
+    <p>白垩纪食品溯源系统 | 数据来源: 63个Controller + 291个Screen</p>
+    <p>最后更新: 2026-01-03 | 代码行数: 185K+</p>
   </div>
 
   <!-- Toast -->
@@ -756,12 +774,27 @@
         icon: '📅',
         category: 'core',
         controllers: ['SchedulingController', 'UrgentInsertController'],
-        apiCount: 58,
+        apiCount: 63,
+        screenList: [
+          // 调度首页
+          'DSHomeScreen', 'WorkshopStatusScreen',
+          // 计划管理
+          'PlanGanttScreen', 'PlanDetailScreen', 'TaskAssignmentScreen', 'ResourceOverviewScreen',
+          'MixedBatchScreen', 'BatchWorkersScreen', 'ApprovalListScreen',
+          // 人员管理
+          'PersonnelListScreen', 'PersonnelDetailScreen', 'PersonnelScheduleScreen', 'PersonnelTransferScreen',
+          // 告警与产线
+          'AlertListScreen', 'ProductionLineScreen',
+          // 紧急插单
+          'UrgentInsertStatsScreen',
+          // 个人设置
+          'DSProfileScreen', 'SchedulingSettingsScreen'
+        ],
         usageGuide: {
-          description: '【解决痛点】多产品共用产线时排产复杂，人工排程难以兼顾交期、产能、换线损耗；紧急订单插入时不知道影响范围。本模块提供AI辅助的智能排产和可视化甘特图。【核心能力】甘特图可视化（产线×时间维度展示生产任务）、资源冲突自动检测（设备/人员/物料三重校验）、紧急插单影响评估（显示受影响的订单及延期天数）、AI排产优化（减少换线次数、优先保障交期紧的订单）、混批优化建议（相近规格产品连续排产）。【紧急插单流程】选择时段→评估影响→审批确认→自动调整后续计划。【模块协同】排产结果推送至【生产管理】执行，与【设备管理】联动检查可用性，与【物料管理】联动校验库存。',
-          useCase: ['生产计划排程', '资源冲突检测', '紧急订单插入', '产能优化分析'],
-          workflow: ['需求录入', '智能排产', '冲突检测', '人工调整', '计划发布', '执行监控'],
-          effects: ['排产效率提升 50%', '资源利用率优化', '紧急订单响应 <1小时', 'AI 优化建议']
+          description: '【解决痛点】多产品共用产线时排产复杂，人工排程难以兼顾交期、产能、换线损耗；紧急订单插入时不知道影响范围。本模块提供AI辅助的智能排产和可视化甘特图。【核心能力】甘特图可视化（产线×时间维度展示生产任务）、资源冲突自动检测（设备/人员/物料三重校验）、紧急插单影响评估（显示受影响的订单及延期天数）、AI排产优化（减少换线次数、优先保障交期紧的订单）、混批优化建议（相近规格产品连续排产）、告警管理（风险预警和处置）、产线管理（产线配置和状态）、自动触发排产（新计划创建时自动生成排产建议）。【紧急插单流程】选择时段→评估影响→审批确认→自动调整后续计划。【模块协同】排产结果推送至【生产管理】执行，与【设备管理】联动检查可用性，与【物料管理】联动校验库存。【新增页面】告警管理页面（AlertListScreen）、产线管理页面（ProductionLineScreen）、插单统计页面（UrgentInsertStatsScreen）。',
+          useCase: ['生产计划排程', '资源冲突检测', '紧急订单插入', '产能优化分析', '告警预警处置', '产线配置管理', '自动触发排产'],
+          workflow: ['需求录入', '自动排产建议', '智能排产', '冲突检测', '人工调整', '计划发布', '执行监控', '告警处置'],
+          effects: ['排产效率提升 50%', '资源利用率优化', '紧急订单响应 <1小时', 'AI 优化建议', '风险预警实时推送', '自动排产建议']
         },
         apis: [
           { method: 'GET', path: '/scheduling/plans', desc: '排产计划列表' },
@@ -770,14 +803,55 @@
           { method: 'PUT', path: '/scheduling/plans/{id}', desc: '更新计划' },
           { method: 'DELETE', path: '/scheduling/plans/{id}', desc: '删除计划' },
           { method: 'POST', path: '/scheduling/plans/{id}/publish', desc: '发布计划' },
-          { method: 'GET', path: '/scheduling/calendar', desc: '排产日历' },
-          { method: 'GET', path: '/scheduling/gantt', desc: '甘特图数据' },
-          { method: 'POST', path: '/scheduling/optimize', desc: 'AI优化排产' },
-          { method: 'GET', path: '/scheduling/conflicts', desc: '冲突检测' },
-          { method: 'GET', path: '/urgent-insert/slots', desc: '可用时段' },
-          { method: 'POST', path: '/urgent-insert/request', desc: '紧急插单请求' },
-          { method: 'POST', path: '/urgent-insert/{id}/approve', desc: '审批插单' },
-          { method: 'GET', path: '/urgent-insert/history', desc: '插单历史' }
+          { method: 'POST', path: '/scheduling/generate', desc: 'AI生成排产计划' },
+          { method: 'POST', path: '/scheduling/reschedule', desc: '重新排程' },
+          { method: 'POST', path: '/scheduling/optimize-workers', desc: 'AI优化人员分配' },
+          { method: 'GET', path: '/scheduling/production-lines', desc: '产线列表' },
+          { method: 'POST', path: '/scheduling/production-lines', desc: '创建产线' },
+          { method: 'PUT', path: '/scheduling/production-lines/{id}', desc: '更新产线' },
+          { method: 'PUT', path: '/scheduling/production-lines/{id}/status', desc: '更新产线状态' },
+          { method: 'GET', path: '/scheduling/alerts', desc: '告警列表' },
+          { method: 'GET', path: '/scheduling/alerts/unresolved', desc: '未解决告警' },
+          { method: 'POST', path: '/scheduling/alerts/{id}/acknowledge', desc: '确认告警' },
+          { method: 'POST', path: '/scheduling/alerts/{id}/resolve', desc: '解决告警' },
+          { method: 'GET', path: '/urgent-insert/slots', desc: '可用插单时段' },
+          { method: 'POST', path: '/urgent-insert/confirm', desc: '确认紧急插单' },
+          { method: 'POST', path: '/urgent-insert/force', desc: '强制插单（需审批）' },
+          { method: 'GET', path: '/urgent-insert/statistics', desc: '插单统计' },
+          { method: 'GET', path: '/urgent-insert/slots/{id}/impact', desc: '插单影响分析' },
+          { method: 'GET', path: '/scheduling/workers/{id}/task-history', desc: '员工任务历史' }
+        ]
+      },
+      {
+        id: 'vehicle',
+        name: '车辆管理',
+        icon: '🚚',
+        category: 'core',
+        controllers: ['VehicleController'],
+        apiCount: 8,
+        usageGuide: {
+          description: '【解决痛点】仓库装车管理依赖人工调度，车辆状态、装载情况不透明，容易导致发车延误或超载问题。本模块实现车辆信息数字化管理、装载状态实时追踪。【核心能力】车辆信息管理（车牌、司机、载重容量）、车辆状态管理（可用/装载中/已发车/维护中）、装载量实时更新、按状态筛选车辆。【业务场景】仓库管理员可实时查看可用车辆，将待发货订单分配到车辆，跟踪装载进度，确认发车。【模块协同】与【出货管理】联动，车辆发车后自动更新出货记录状态。',
+          useCase: ['车辆信息维护', '装车调度', '车辆状态监控', '发车确认'],
+          workflow: ['录入车辆', '设置可用', '分配订单', '装车', '确认发车'],
+          effects: ['装车效率提升', '车辆利用率优化', '超载预警', '发车准时率提升']
+        },
+        apis: [
+          { method: 'GET', path: '/vehicles', desc: '车辆列表（支持状态筛选）' },
+          { method: 'GET', path: '/vehicles/available', desc: '获取可用车辆' },
+          { method: 'GET', path: '/vehicles/{id}', desc: '车辆详情' },
+          { method: 'POST', path: '/vehicles', desc: '创建车辆' },
+          { method: 'PUT', path: '/vehicles/{id}', desc: '更新车辆信息' },
+          { method: 'PATCH', path: '/vehicles/{id}/status', desc: '更新车辆状态' },
+          { method: 'PATCH', path: '/vehicles/{id}/load', desc: '更新装载量' },
+          { method: 'DELETE', path: '/vehicles/{id}', desc: '删除车辆' }
+        ],
+        screenList: [
+          'WHLoadingScreen'
+        ],
+        components: [
+          { name: 'VehicleApiClient', file: 'frontend/src/services/api/vehicleApiClient.ts', status: 'done' },
+          { name: 'VehicleService', file: 'backend-java/service/VehicleService.java', status: 'done' },
+          { name: 'VehicleDTO', file: 'backend-java/dto/warehouse/VehicleDTO.java', status: 'done' }
         ]
       },
       {
@@ -804,6 +878,9 @@
           { method: 'PUT', path: '/shipments/{id}/status', desc: '更新状态' },
           { method: 'GET', path: '/shipments/by-customer/{customerId}', desc: '按客户查询' },
           { method: 'GET', path: '/shipments/by-date-range', desc: '按日期范围查询' }
+        ],
+        screenList: [
+          'TraceabilityScreen', 'TraceabilityDetailScreen', 'PublicTraceScreen'
         ]
       },
       {
@@ -913,6 +990,9 @@
           { method: 'GET', path: '/work-types', desc: '工作类型列表' },
           { method: 'POST', path: '/work-types', desc: '创建工作类型' },
           { method: 'PUT', path: '/work-types/{id}', desc: '更新类型' }
+        ],
+        screenList: [
+          'ClockInScreen', 'WorkTypeListScreen', 'AttendanceHistoryScreen'
         ]
       },
       {
@@ -939,6 +1019,16 @@
           { method: 'GET', path: '/reports/quality/trend', desc: '质量趋势' },
           { method: 'GET', path: '/reports/efficiency', desc: '效率报表' },
           { method: 'POST', path: '/reports/export', desc: '导出报表' }
+        ],
+        screenList: [
+          // FAReportsStackNavigator 注册的12个报表页面
+          'ReportDashboardScreen', 'ProductionReportScreen', 'QualityReportScreen',
+          'CostReportScreen', 'EfficiencyReportScreen', 'TrendReportScreen',
+          'PersonnelReportScreen', 'KPIReportScreen', 'ForecastReportScreen',
+          'AnomalyReportScreen', 'RealtimeReportScreen', 'DataExportScreen'
+        ],
+        components: [
+          { name: 'FAReportsStackNavigator', file: 'frontend/src/navigation/factory-admin/FAReportsStackNavigator.tsx', status: 'done' }
         ]
       },
 
@@ -978,10 +1068,10 @@
         controllers: ['AIIntentConfigController', 'AIRuleController'],
         apiCount: 22,
         usageGuide: {
-          description: '【解决痛点】AI对话系统需要理解用户意图才能准确响应，但每个工厂的业务术语和场景不同，通用模型可能无法精准识别。本模块提供AI意图和规则的可视化配置能力，并支持意图的直接执行。【核心能力】意图模板管理（预定义意图如"查询产量"、"分析成本"，每个意图包含示例句式和响应模板）、规则引擎配置（当满足条件X时执行动作Y，如"当合格率低于95%时发送告警"）、意图识别测试（输入测试语句，查看AI识别结果和置信度）、意图执行引擎（识别意图后直接调用对应业务模块执行操作，如"给原材料表单添加温度字段"会自动更新FormTemplate）、自定义响应模板（控制AI输出的格式和内容）。【增强识别机制】（1）多级匹配策略：优先正则匹配(REGEX)→关键词匹配(KEYWORD)→LLM语义理解(LLM)，三级策略确保高召回率；（2）Top-N候选返回：每次识别返回置信度最高的N个候选意图，前端展示候选列表供用户选择，避免单一结果误判；（3）置信度评估：对每个候选计算0.0-1.0的置信度分数，基于匹配关键词数量、正则匹配度、语义相似度综合打分；（4）强/弱信号判断：置信度≥0.8且Top1与Top2差距≥0.2为强信号（自动执行），否则为弱信号（需用户确认选择）；（5）LLM Fallback：当规则匹配置信度<0.3时，自动调用DeepSeek API进行语义理解，返回意图代码和置信度；（6）匹配记录追踪：每次意图识别结果记录到intent_match_records表，包含用户输入、匹配方法、置信度、是否命中、用户反馈，用于后续分析优化。【候选意图选择UI】前端IntentCandidateSelector组件以Modal弹窗展示候选列表，每个候选显示意图名称、分类、置信度(进度条)、匹配关键词(Tag)、匹配方法(Badge)，用户点击选择后调用confirm接口确认。【典型场景】用户可通过自然语言直接修改业务配置，AI自动识别意图、检查权限、执行操作并返回结果；当识别不确定时，弹出候选列表让用户选择正确意图。【模块协同】意图执行可直接修改【表单模板】【编码规则】【调度配置】等业务模块数据，匹配记录供【AI意图分析】模块进行误匹配归因和优化建议。',
-          useCase: ['意图模板配置', '规则引擎设置', '意图识别测试', '自然语言执行操作', '自定义AI行为', '候选意图选择确认', 'LLM语义兜底'],
-          workflow: ['定义意图', '配置规则', '用户输入', '多级匹配(正则→关键词→LLM)', '计算置信度', '强弱信号判断', '弱信号→候选选择UI', '用户确认', '执行操作', '记录匹配结果'],
-          effects: ['AI理解更精准', '业务场景覆盖全', '自然语言操控业务', '运营效率优化', '误识别大幅降低', '持续学习优化']
+          description: '【解决痛点】AI对话系统需要理解用户意图才能准确响应，但每个工厂的业务术语和场景不同，通用模型可能无法精准识别。本模块提供AI意图和规则的可视化配置能力，并支持意图的直接执行。【核心能力】意图模板管理（预定义意图如"查询产量"、"分析成本"，每个意图包含示例句式和响应模板）、规则引擎配置（当满足条件X时执行动作Y，如"当合格率低于95%时发送告警"）、意图识别测试（输入测试语句，查看AI识别结果和置信度）、意图执行引擎（识别意图后直接调用对应业务模块执行操作，如"给原材料表单添加温度字段"会自动更新FormTemplate）、自定义响应模板（控制AI输出的格式和内容）。【增强识别机制】（1）多级匹配策略：优先正则匹配(REGEX)→关键词匹配(KEYWORD)→LLM语义理解(LLM)，三级策略确保高召回率；（2）Top-N候选返回：每次识别返回置信度最高的N个候选意图，前端展示候选列表供用户选择，避免单一结果误判；（3）置信度评估：对每个候选计算0.0-1.0的置信度分数，基于匹配关键词数量、正则匹配度、语义相似度综合打分；（4）强/弱信号判断：置信度≥0.8且Top1与Top2差距≥0.2为强信号（自动执行），否则为弱信号（需用户确认选择）；（5）LLM Fallback：当规则匹配置信度<0.3时，自动调用DeepSeek API进行语义理解，返回意图代码和置信度；（6）匹配记录追踪：每次意图识别结果记录到intent_match_records表，包含用户输入、匹配方法、置信度、是否命中、用户反馈，用于后续分析优化；（7）Specificity权重：当用户输入匹配多个意图的关键词时，基于TF-IDF原理计算交叉匹配权重，specificity=关键词在本意图出现次数/关键词在所有意图总出现次数，优先选择更具特异性的意图。【自动学习机制】（1）LLM Fallback成功后（置信度≥0.9），自动从用户输入中提取关键词添加到命中意图，实现关键词自动积累；（2）关键词分两级来源：GLOBAL（平台级，全工厂通用）和FACTORY（工厂级，特定工厂使用），工厂级关键词优先匹配；（3）LLM自动学习的关键词默认为FACTORY级别，经过效果验证后可晋升为GLOBAL级别。【候选意图选择UI】前端IntentCandidateSelector组件以Modal弹窗展示候选列表，每个候选显示意图名称、分类、置信度(进度条)、匹配关键词(Tag)、匹配方法(Badge)，用户点击选择后调用confirm接口确认。【典型场景】用户可通过自然语言直接修改业务配置，AI自动识别意图、检查权限、执行操作并返回结果；当识别不确定时，弹出候选列表让用户选择正确意图。【模块协同】意图执行可直接修改【表单模板】【编码规则】【调度配置】等业务模块数据，匹配记录供【AI意图分析】模块进行误匹配归因和优化建议，关键词效果数据供【AI关键词学习】模块进行效果追踪和晋升管理。',
+          useCase: ['意图模板配置', '规则引擎设置', '意图识别测试', '自然语言执行操作', '自定义AI行为', '候选意图选择确认', 'LLM语义兜底', '关键词自动学习', '用户反馈收集'],
+          workflow: ['定义意图', '配置规则', '用户输入', '多级匹配(正则→关键词→LLM)', '计算Specificity权重', '强弱信号判断', '弱信号→候选选择UI', '用户确认', '执行操作', '记录匹配结果', 'LLM成功→自动学习关键词'],
+          effects: ['AI理解更精准', '业务场景覆盖全', '自然语言操控业务', '运营效率优化', '误识别大幅降低', '持续学习优化', '关键词自动积累']
         },
         apis: [
           { method: 'GET', path: '/ai/intent-configs', desc: '意图配置列表' },
@@ -995,6 +1085,8 @@
           { method: 'POST', path: '/ai-intents/confirm/{token}', desc: '确认执行预览操作' },
           { method: 'POST', path: '/ai-intents/recognize', desc: '意图识别（返回置信度+候选列表）' },
           { method: 'POST', path: '/ai-intents/confirm', desc: '确认用户选择的候选意图' },
+          { method: 'POST', path: '/ai-intents/feedback/positive', desc: '记录正向反馈（意图识别正确）' },
+          { method: 'POST', path: '/ai-intents/feedback/negative', desc: '记录负向反馈（意图识别错误）' },
           { method: 'GET', path: '/ai/rules', desc: 'AI规则列表' },
           { method: 'POST', path: '/ai/rules', desc: '创建规则' },
           { method: 'PUT', path: '/ai/rules/{id}', desc: '更新规则' }
@@ -1082,6 +1174,101 @@
           { name: '分析控制器', file: 'backend-java/controller/IntentAnalysisController.java', status: 'done' }
         ]
       },
+      {
+        id: 'ai-keyword-learning',
+        name: 'AI 关键词学习',
+        icon: '📈',
+        category: 'ai',
+        controllers: ['AIIntentConfigController', 'FactoryConfigController'],
+        apiCount: 8,
+        usageGuide: {
+          description: '【解决痛点】意图识别的关键词需要人工维护，无法自动适应业务变化，不同工厂的术语差异无法自动处理。本模块实现关键词的全生命周期自动管理。【核心能力】（1）关键词效果追踪：基于Wilson Score算法评估关键词效果，计算公式考虑正向匹配、负向匹配和样本量，确保小样本时不会过度惩罚；（2）用户反馈收集：每次意图执行后收集正向/负向反馈，自动更新关键词效果数据；（3）关键词晋升机制：当工厂级关键词被3个以上工厂采用且效果分数≥0.8时，自动晋升为全局关键词；（4）低效关键词清理：每日定时检查效果分数<0.3的关键词，自动移除或降级；（5）工厂AI学习配置：支持工厂级别的学习参数配置，包括学习阈值、自动清理开关、学习阶段（LEARNING/MATURE）。【关键词生命周期】诞生（LLM自动学习或人工添加）→成长（积累匹配数据）→验证（效果评估）→晋升（工厂级→全局）或淘汰（效果差则清理）。【工厂学习阶段】LEARNING（学习期，自动学习阈值低）→MATURE（成熟期，学习更审慎），基于累计成功匹配数自动升级。【定时任务】KeywordMaintenanceScheduler每日凌晨执行：清理低效词、检查晋升条件、更新效果统计。【模块协同】依赖【AI意图配置】的匹配记录和反馈数据，优化结果反哺意图识别准确率。',
+          useCase: ['关键词效果分析', '用户反馈收集', '工厂→全局晋升', '低效关键词清理', '工厂学习配置', '学习阶段管理'],
+          workflow: ['意图执行', '用户反馈', 'Wilson Score计算', '效果评估', '晋升检查(3+工厂+80%效果)', '自动清理(<0.3)', '阶段升级'],
+          effects: ['关键词质量持续优化', '跨工厂知识共享', '降低维护成本', '自动适应业务变化', '识别准确率提升']
+        },
+        apis: [
+          { method: 'POST', path: '/ai-intents/feedback/positive', desc: '记录正向反馈' },
+          { method: 'POST', path: '/ai-intents/feedback/negative', desc: '记录负向反馈' },
+          { method: 'GET', path: '/ai-intents/keywords/stats', desc: '关键词效果统计' },
+          { method: 'GET', path: '/ai-intents/keywords/effectiveness', desc: '关键词效果排名' },
+          { method: 'GET', path: '/factory-config/ai-learning', desc: '获取工厂AI学习配置' },
+          { method: 'PUT', path: '/factory-config/ai-learning', desc: '更新工厂AI学习配置' },
+          { method: 'POST', path: '/ai-intents/keywords/promote/{keyword}', desc: '手动晋升关键词' },
+          { method: 'DELETE', path: '/ai-intents/keywords/{keyword}', desc: '删除关键词' }
+        ],
+        components: [
+          { name: '关键词效果Entity', file: 'backend-java/entity/intent/KeywordEffectiveness.java', status: 'done' },
+          { name: '工厂采用记录Entity', file: 'backend-java/entity/intent/KeywordFactoryAdoption.java', status: 'done' },
+          { name: '工厂AI学习配置Entity', file: 'backend-java/entity/FactoryAILearningConfig.java', status: 'done' },
+          { name: '效果追踪服务', file: 'backend-java/service/impl/KeywordEffectivenessServiceImpl.java', status: 'done' },
+          { name: '晋升服务', file: 'backend-java/service/impl/KeywordPromotionServiceImpl.java', status: 'done' },
+          { name: '工厂配置服务', file: 'backend-java/service/impl/FactoryConfigServiceImpl.java', status: 'done' },
+          { name: '维护调度器', file: 'backend-java/scheduler/KeywordMaintenanceScheduler.java', status: 'done' }
+        ],
+        keyMetrics: [
+          { name: 'Wilson Score', formula: '(p + z²/2n - z*sqrt((p*(1-p)+z²/4n)/n)) / (1 + z²/n)', desc: '置信下界评估' },
+          { name: '晋升阈值', value: '3+工厂采用 且 效果≥0.8', desc: '工厂→全局晋升条件' },
+          { name: '清理阈值', value: '效果分数<0.3', desc: '低效关键词清理条件' },
+          { name: '学习阈值', value: 'LLM置信度≥0.9', desc: '自动学习新词条件' }
+        ]
+      },
+      {
+        id: 'ai-management',
+        name: 'AI 全面管理',
+        icon: '🎛️',
+        category: 'ai',
+        controllers: ['SystemIntentHandler', 'UserIntentHandler', 'ConfigIntentHandler', 'MetaIntentHandler', 'DataOperationIntentHandler', 'MaterialIntentHandler', 'QualityIntentHandler', 'ShipmentIntentHandler', 'AlertIntentHandler', 'ReportIntentHandler', 'HRIntentHandler', 'CRMIntentHandler', 'FormIntentHandler'],
+        apiCount: 14,
+        usageGuide: {
+          description: '【解决痛点】工厂配置分散在多个页面，管理员需要频繁切换界面操作，学习成本高。本模块让管理员通过自然语言对话管理所有配置。【核心能力】排产设置（全自动/人工确认/禁用）、功能开关（AI分析、质量告警等）、通知配置（邮件/短信/推送）、用户管理（创建/禁用/角色分配）、设备维护（记录维护信息）、转换率配置、规则配置、元意图（自我扩展AI能力）。【权限控制】敏感操作需审批确认。【自我扩展】META类意图支持动态创建新意图配置。',
+          useCase: ['自然语言调整排产模式', '对话创建用户账户', '语音记录设备维护', 'AI自动扩展管理能力', '配置功能开关'],
+          workflow: ['用户输入自然语言', '意图识别(SYSTEM/USER/CONFIG/META)', 'Handler路由', '权限校验', '敏感操作确认', '执行操作', '记录变更'],
+          effects: ['管理效率提升10倍', '零学习成本', '配置集中管控', 'AI自主扩展能力', '全程审计可追溯']
+        },
+        apis: [
+          { method: 'POST', path: '/ai-intents/execute', desc: '执行管理意图' },
+          { method: 'POST', path: '/ai-intents/preview', desc: '预览管理操作' }
+        ],
+        components: [
+          { name: 'SystemIntentHandler', file: 'backend-java/service/handler/SystemIntentHandler.java', status: 'done' },
+          { name: 'UserIntentHandler', file: 'backend-java/service/handler/UserIntentHandler.java', status: 'done' },
+          { name: 'ConfigIntentHandler', file: 'backend-java/service/handler/ConfigIntentHandler.java', status: 'done' },
+          { name: 'MetaIntentHandler', file: 'backend-java/service/handler/MetaIntentHandler.java', status: 'done' },
+          { name: 'DataOperationIntentHandler', file: 'backend-java/service/handler/DataOperationIntentHandler.java', status: 'done' },
+          { name: 'MaterialIntentHandler', file: 'backend-java/service/handler/MaterialIntentHandler.java', status: 'done' },
+          { name: 'QualityIntentHandler', file: 'backend-java/service/handler/QualityIntentHandler.java', status: 'done' },
+          { name: 'ShipmentIntentHandler', file: 'backend-java/service/handler/ShipmentIntentHandler.java', status: 'done' },
+          { name: 'AlertIntentHandler', file: 'backend-java/service/handler/AlertIntentHandler.java', status: 'done' },
+          { name: 'ReportIntentHandler', file: 'backend-java/service/handler/ReportIntentHandler.java', status: 'done' },
+          { name: 'HRIntentHandler', file: 'backend-java/service/handler/HRIntentHandler.java', status: 'done' },
+          { name: 'CRMIntentHandler', file: 'backend-java/service/handler/CRMIntentHandler.java', status: 'done' },
+          { name: 'FormIntentHandler', file: 'backend-java/service/handler/FormIntentHandler.java', status: 'done' },
+          { name: '意图配置SQL', file: 'V2026_01_04_1__ai_management_intents.sql', status: 'done' },
+          { name: 'P0意图配置SQL', file: 'V2026_01_04_2__p0_intent_configs.sql', status: 'done' }
+        ],
+        supportedIntents: [
+          { category: 'SYSTEM', intents: ['SCHEDULING_SET_AUTO', 'SCHEDULING_SET_MANUAL', 'SCHEDULING_SET_DISABLED', 'FACTORY_FEATURE_TOGGLE', 'FACTORY_NOTIFICATION_CONFIG'], desc: '排产设置、功能开关、通知配置' },
+          { category: 'USER', intents: ['USER_CREATE', 'USER_DISABLE', 'USER_ROLE_ASSIGN'], desc: '用户创建、禁用、角色分配' },
+          { category: 'CONFIG', intents: ['EQUIPMENT_MAINTENANCE', 'CONVERSION_RATE_UPDATE', 'RULE_CONFIG'], desc: '设备维护、转换率、规则配置' },
+          { category: 'META', intents: ['INTENT_CREATE', 'INTENT_UPDATE', 'INTENT_ANALYZE'], desc: '意图创建、更新、分析' },
+          { category: 'DATA_OPERATION', intents: ['DATA_QUERY', 'DATA_CREATE', 'DATA_UPDATE', 'DATA_DELETE'], desc: '数据增删改查操作' },
+          { category: 'MATERIAL', intents: ['MATERIAL_BATCH_QUERY', 'MATERIAL_BATCH_CREATE', 'MATERIAL_INVENTORY_CHECK'], desc: '原材料批次查询、创建、库存检查' },
+          { category: 'QUALITY', intents: ['QUALITY_CHECK_QUERY', 'QUALITY_REPORT_GENERATE', 'QUALITY_ALERT_HANDLE'], desc: '质检查询、报告生成、告警处理' },
+          { category: 'SHIPMENT', intents: ['SHIPMENT_QUERY', 'SHIPMENT_CREATE', 'SHIPMENT_STATUS_UPDATE'], desc: '出货查询、创建、状态更新' },
+          { category: 'ALERT', intents: ['ALERT_QUERY', 'ALERT_ACKNOWLEDGE', 'ALERT_CONFIG'], desc: '告警查询、确认、配置' },
+          { category: 'REPORT', intents: ['REPORT_GENERATE', 'REPORT_QUERY', 'REPORT_EXPORT'], desc: '报表生成、查询、导出' },
+          { category: 'HR', intents: ['EMPLOYEE_QUERY', 'ATTENDANCE_QUERY', 'PERFORMANCE_QUERY'], desc: '员工查询、考勤查询、绩效查询' },
+          { category: 'CRM', intents: ['CUSTOMER_QUERY', 'ORDER_QUERY', 'TRACE_QUERY'], desc: '客户查询、订单查询、溯源查询' },
+          { category: 'FORM', intents: ['FORM_FIELD_ADD', 'FORM_FIELD_MODIFY', 'FORM_SCHEMA_GENERATE'], desc: '表单字段添加、修改、Schema生成' }
+        ],
+        sensitivityLevels: [
+          { level: 'LOW', desc: '低敏感度，直接执行', example: 'INTENT_ANALYZE' },
+          { level: 'MEDIUM', desc: '中敏感度，记录审计', example: 'EQUIPMENT_MAINTENANCE' },
+          { level: 'HIGH', desc: '高敏感度，需确认', example: 'USER_CREATE' },
+          { level: 'CRITICAL', desc: '关键操作，需审批', example: 'USER_ROLE_ASSIGN, INTENT_CREATE' }
+        ]
+      },
 
       // ===== 系统管理模块 =====
       {
@@ -1122,13 +1309,40 @@
         name: '平台管理',
         icon: '🌐',
         category: 'system',
-        controllers: ['PlatformController', 'FactoryBlueprintController', 'BlueprintVersionController'],
-        apiCount: 47,
+        controllers: ['PlatformController', 'FactoryBlueprintController', 'BlueprintVersionController', 'RuleConfigController', 'AIQuotaController', 'ConfigChangesetController', 'AnnouncementController', 'SupplierController', 'SystemMonitoringController'],
+        apiCount: 78,
+        screens: 59,
+        screenList: [
+          // 工厂管理
+          'FactoryListScreen', 'FactoryDetailScreen', 'FactoryCreateScreen', 'FactoryEditScreen',
+          // 蓝图管理
+          'BlueprintListScreen', 'BlueprintDetailScreen', 'BlueprintCreateScreen', 'BlueprintEditScreen',
+          'BlueprintVersionsScreen', 'BlueprintBindingsScreen', 'BlueprintPreviewScreen', 'BlueprintApplyScreen',
+          // 规则引擎
+          'RuleListScreen', 'RuleEditScreen', 'RuleTestScreen', 'DrlCodeEditorScreen', 'DrlPreviewScreen',
+          'StateMachineListScreen', 'StateMachineDetailScreen', 'StateMachineDesignerScreen', 'RulePackDetailScreen',
+          // AI配额管理
+          'QuotaOverviewScreen', 'QuotaRulesScreen', 'QuotaRuleEditScreen', 'QuotaUsageStatsScreen',
+          // 配置变更
+          'ConfigChangesetListScreen', 'ConfigChangesetDetailScreen',
+          // 公告管理
+          'AnnouncementCenterScreen', 'AnnouncementCreateScreen',
+          // 供应商管理
+          'SupplierAdmissionScreen', 'SupplierBlacklistScreen',
+          // 系统监控
+          'SystemHealthScreen', 'SystemLogsScreen', 'SystemMetricsScreen', 'SystemAlertsScreen',
+          // 用户管理
+          'UserListScreen', 'UserDetailScreen', 'UserCreateScreen', 'UserAssignFactoryScreen',
+          // 角色管理
+          'RoleListScreen', 'RoleEditScreen', 'RolePermissionsScreen',
+          // AI审计
+          'AIAuditLogsScreen', 'AIBusinessInitScreen', 'IntentAnalysisScreen'
+        ],
         usageGuide: {
-          description: '【解决痛点】集团化企业有多个工厂，各工厂独立运行导致标准不统一、最佳实践无法复制。本模块提供"总部-工厂"的多级管理架构和配置模板化能力。【核心能力】多工厂管理（创建/编辑/删除工厂，查看各工厂运营指标）、蓝图模板（将成熟工厂的配置导出为蓝图，快速应用到新工厂）、版本管理（蓝图支持版本迭代，可对比不同版本差异）、升级推送（总部发布新版蓝图后，各工厂可选择升级）、平台大盘（汇总所有工厂的产量、质量、设备状态）。【典型场景】新建工厂时，选择"标准海鲜加工厂蓝图"一键初始化，包含产品类型、质检项目、编码规则等配置。【模块协同】蓝图包含【系统配置】【质检管理】【编码规则】等模块的配置数据。',
-          useCase: ['多工厂管理', '蓝图模板设计', '版本对比升级', '平台统计监控'],
-          workflow: ['创建工厂', '应用蓝图', '版本迭代', '统一升级', '监控运营'],
-          effects: ['规模化管理', '标准化部署', '版本可控', '平台化运营']
+          description: '【解决痛点】集团化企业有多个工厂，各工厂独立运行导致标准不统一、最佳实践无法复制。本模块提供"总部-工厂"的多级管理架构和配置模板化能力。【核心能力】多工厂管理（创建/编辑/删除工厂，查看各工厂运营指标）、蓝图模板（将成熟工厂的配置导出为蓝图，快速应用到新工厂）、版本管理（蓝图支持版本迭代，可对比不同版本差异）、升级推送（总部发布新版蓝图后，各工厂可选择升级）、规则引擎（Drools规则配置、状态机设计、规则包管理）、AI配额（工厂AI调用配额分配与监控）、配置变更（配置变更审计与审批）、公告管理（平台公告发布与管理）、供应商管理（供应商准入与黑名单）、系统监控（系统健康、日志、指标、告警）。【典型场景】新建工厂时，选择"标准海鲜加工厂蓝图"一键初始化，包含产品类型、质检项目、编码规则等配置。【模块协同】蓝图包含【系统配置】【质检管理】【编码规则】等模块的配置数据。',
+          useCase: ['多工厂管理', '蓝图模板设计', '规则引擎配置', 'AI配额管理', '配置变更审计', '公告发布', '供应商管理', '系统监控'],
+          workflow: ['创建工厂', '应用蓝图', '配置规则', '分配配额', '发布公告', '监控运营'],
+          effects: ['规模化管理', '标准化部署', '版本可控', '平台化运营', '规则可视化', '配额精细化']
         },
         apis: [
           { method: 'GET', path: '/platform/factories', desc: '工厂列表' },
@@ -1142,7 +1356,35 @@
           { method: 'GET', path: '/blueprints/{id}/versions', desc: '版本列表' },
           { method: 'POST', path: '/blueprints/{id}/versions/publish', desc: '发布版本' },
           { method: 'GET', path: '/blueprints/versions/compare', desc: '版本对比' },
-          { method: 'POST', path: '/factory/{factoryId}/upgrade', desc: '升级工厂蓝图' }
+          { method: 'POST', path: '/factory/{factoryId}/upgrade', desc: '升级工厂蓝图' },
+          { method: 'GET', path: '/rules', desc: '规则列表' },
+          { method: 'POST', path: '/rules', desc: '创建规则' },
+          { method: 'PUT', path: '/rules/{id}', desc: '更新规则' },
+          { method: 'POST', path: '/rules/{id}/test', desc: '测试规则' },
+          { method: 'GET', path: '/state-machines', desc: '状态机列表' },
+          { method: 'POST', path: '/state-machines', desc: '创建状态机' },
+          { method: 'GET', path: '/rule-packs', desc: '规则包列表' },
+          { method: 'POST', path: '/rule-packs/{id}/apply', desc: '应用规则包' },
+          { method: 'GET', path: '/ai-quota/overview', desc: 'AI配额概览' },
+          { method: 'GET', path: '/ai-quota/rules', desc: '配额规则' },
+          { method: 'PUT', path: '/ai-quota/rules/{id}', desc: '更新配额规则' },
+          { method: 'GET', path: '/ai-quota/usage-stats', desc: '使用统计' },
+          { method: 'GET', path: '/config-changesets', desc: '配置变更列表' },
+          { method: 'GET', path: '/config-changesets/{id}', desc: '变更详情' },
+          { method: 'POST', path: '/config-changesets/{id}/approve', desc: '审批变更' },
+          { method: 'GET', path: '/announcements', desc: '公告列表' },
+          { method: 'POST', path: '/announcements', desc: '创建公告' },
+          { method: 'PUT', path: '/announcements/{id}', desc: '更新公告' },
+          { method: 'GET', path: '/suppliers/admission', desc: '供应商准入' },
+          { method: 'GET', path: '/suppliers/blacklist', desc: '供应商黑名单' },
+          { method: 'GET', path: '/system/health', desc: '系统健康' },
+          { method: 'GET', path: '/system/logs', desc: '系统日志' },
+          { method: 'GET', path: '/system/metrics', desc: '系统指标' },
+          { method: 'GET', path: '/system/alerts', desc: '系统告警' },
+          { method: 'GET', path: '/users', desc: '用户列表' },
+          { method: 'POST', path: '/users', desc: '创建用户' },
+          { method: 'GET', path: '/roles', desc: '角色列表' },
+          { method: 'POST', path: '/roles/{id}/permissions', desc: '角色权限' }
         ]
       },
       {
@@ -1150,8 +1392,8 @@
         name: '通知管理',
         icon: '🔔',
         category: 'system',
-        controllers: ['NotificationController'],
-        apiCount: 8,
+        controllers: ['NotificationController', 'DeviceController'],
+        apiCount: 11,
         usageGuide: {
           description: '【解决痛点】生产现场信息传递依赖口头或微信，重要告警可能被遗漏，事后追溯困难。本模块提供企业级消息推送和通知管理能力。【核心能力】实时推送（设备告警、质检异常、审批待办等事件触发APP推送）、多设备同步（用户多台设备同时收到通知）、消息分级（紧急/重要/普通，紧急消息强制弹窗）、已读跟踪（发送方可查看消息是否被查阅）、通知订阅（用户可配置接收哪些类型的通知）。【推送机制】支持FCM/极光推送/自有推送通道，保证消息可达性。【审计要求】所有通知记录保留6个月，支持按时间/类型/接收人查询。【模块协同】接收【设备管理】告警、【质检管理】异常、【审批流程】待办等模块的消息触发。',
           useCase: ['系统消息通知', '推送设备管理', '未读消息提醒', '批量通知操作'],
@@ -1167,6 +1409,8 @@
           { method: 'POST', path: '/devices/register', desc: '注册设备' },
           { method: 'DELETE', path: '/devices/unregister', desc: '注销设备' },
           { method: 'PUT', path: '/devices/token', desc: '更新Token' },
+          { method: 'GET', path: '/devices/list', desc: '获取用户设备列表' },
+          { method: 'PUT', path: '/devices/{deviceId}/toggle', desc: '切换设备启用状态' },
           { method: 'POST', path: '/devices/test-notification', desc: '测试推送' }
         ]
       },
@@ -1513,17 +1757,294 @@
           { method: 'POST', path: '/work-orders/{id}/assign', desc: '分配工单 - Path: id。Body: {assignedTo(用户ID)}。将工单分配给指定用户，记录分配人和分配时间。已分配的工单可重新分配' },
           { method: 'DELETE', path: '/work-orders/{id}', desc: '删除工单 - Path: id。删除指定工单。注意：仅PENDING和CANCELLED状态的工单可删除，进行中或已完成的工单需先取消' }
         ]
+      },
+      {
+        id: 'scale-protocol',
+        name: '秤协议管理',
+        icon: '⚖️',
+        category: 'iot',
+        controllers: ['ScaleProtocolController'],
+        apiCount: 13,
+        status: 'completed',
+        completedDate: '2026-01-04',
+        usageGuide: {
+          description: '【解决痛点】不同品牌/型号的电子秤使用不同的通信协议和接口，传统方式需要为每种秤单独开发驱动程序，维护成本高。本模块实现"配置驱动的协议适配"，一套代码适配所有秤。【核心能力】协议配置管理（RS232/RS485/HTTP/MQTT/Modbus RTU/TCP Socket）、品牌型号库维护（柯力/耀华/矽策/托利多）、帧格式动态解析、AI辅助协议识别、测试用例验证。【技术特点】支持4种帧类型：ASCII_FIXED（柯力D2008）、ASCII_VARIABLE、HEX_FIXED、MODBUS_RTU；校验和计算：XOR/SUM/CRC16；集成Drools规则引擎处理复杂解析逻辑；使用Formily动态表单配置协议参数。【内置协议】柯力D2008（ASCII 12字节定长帧）、耀华XK3190、矽策XC709S（HTTP API）、托利多IND系列。【模块协同】与【虚拟秤模拟器】联动无硬件开发测试，与【设备管理】联动秤设备配置，与【AI意图】联动自然语言协议识别（ScaleIntentHandler支持SCALE_ADD_MODEL/SCALE_PROTOCOL_DETECT/SCALE_CONFIG_GENERATE/SCALE_TROUBLESHOOT四种意图）。',
+          useCase: ['添加新秤型号协议配置', '解析不同品牌秤的原始数据', 'AI自动识别未知协议格式', '批量测试协议兼容性', '配置柯力/耀华/矽策等主流品牌'],
+          workflow: ['选择品牌型号（从内置库或新增）', '配置连接参数（串口波特率/API地址）', '定义帧格式（字段偏移/长度/类型）', '创建测试用例验证解析', '运行测试确保通过', '关联到工厂设备'],
+          effects: ['一套代码适配所有秤', '新秤型号即插即用', '协议文档化可维护', '开发效率提升80%', '支持AI语音配置秤']
+        },
+        implementationFiles: [
+          'ScaleProtocolConfig.java - 协议配置实体',
+          'ScaleBrandModel.java - 品牌型号实体',
+          'ScaleProtocolTestCase.java - 测试用例实体',
+          'ScaleProtocolAdapterService.java - 核心适配服务',
+          'ScaleIntentHandler.java - AI意图处理器',
+          'V2026_01_04_10__scale_protocol_tables.sql - 数据库迁移',
+          'V2026_01_04_11__scale_initial_data.sql - 内置协议数据'
+        ],
+        apis: [
+          { method: 'GET', path: '/scale-protocols', desc: '协议配置列表（分页）- Query: page, size, connectionType?, isActive?。返回工厂可用的秤协议配置列表，包含协议编码、名称、连接类型、帧格式摘要' },
+          { method: 'GET', path: '/scale-protocols/{id}', desc: '协议配置详情 - Path: id(协议ID)。返回完整协议配置，包含连接参数、帧格式定义、Drools规则组、校验方式等' },
+          { method: 'POST', path: '/scale-protocols', desc: '创建协议配置 - Body: {protocolCode, protocolName, connectionType, serialConfig?, apiConfig?, frameFormat, checksumType?}。创建新的秤协议配置' },
+          { method: 'PUT', path: '/scale-protocols/{id}', desc: '更新协议配置 - Path: id。Body: 同创建。修改协议配置参数，修改后需重新验证' },
+          { method: 'DELETE', path: '/scale-protocols/{id}', desc: '删除协议配置 - Path: id。删除未被使用的协议配置。已关联设备的协议需先解除关联' },
+          { method: 'GET', path: '/scale-protocols/brand-models', desc: '品牌型号库列表 - Query: brandCode?, hasWifi?。返回支持的秤品牌和型号列表，包含默认协议、接口能力、量程精度等' },
+          { method: 'GET', path: '/scale-protocols/brand-models/{id}', desc: '品牌型号详情 - Path: id。返回品牌型号完整信息，包含支持的协议列表、产品文档链接' },
+          { method: 'POST', path: '/scale-protocols/brand-models', desc: '添加品牌型号 - Body: {brandCode, brandName, modelCode, modelName, supportedProtocolIds, defaultProtocolId, weightRange?, accuracy?}' },
+          { method: 'POST', path: '/scale-protocols/parse', desc: '解析秤数据 - Body: {protocolId, rawDataHex}。使用指定协议配置解析原始十六进制数据，返回重量、单位、稳定状态等' },
+          { method: 'POST', path: '/scale-protocols/auto-detect', desc: 'AI协议自动识别 - Body: {sampleDataHex}。输入样本数据，AI分析并返回可能匹配的协议列表及置信度' },
+          { method: 'GET', path: '/scale-protocols/{id}/test-cases', desc: '测试用例列表 - Path: id(协议ID)。返回该协议的测试用例列表' },
+          { method: 'POST', path: '/scale-protocols/{id}/test-cases', desc: '创建测试用例 - Path: id。Body: {name, inputHex, expectedWeight, expectedUnit, expectedStable}' },
+          { method: 'POST', path: '/scale-protocols/{id}/run-tests', desc: '运行测试 - Path: id。执行该协议所有测试用例，返回通过/失败统计和详细结果' }
+        ]
+      },
+      {
+        id: 'scale-simulator',
+        name: '虚拟秤模拟器',
+        icon: '🎮',
+        category: 'iot',
+        controllers: ['ScaleSimulatorController'],
+        apiCount: 14,
+        status: 'completed',
+        completedDate: '2026-01-04',
+        usageGuide: {
+          description: '【解决痛点】硬件开发依赖实物设备，采购周期长、调试不便。本模块提供虚拟秤模拟器，可在没有真实硬件的情况下完成全部开发和测试。【核心能力】创建多种类型的虚拟秤（柯力D2008、微型秤、地磅）、模拟真实称重过程（波动→稳定）、发送指定重量数据、批量模拟测试、生成协议帧用于调试。【技术特点】使用ConcurrentHashMap实现线程安全的多实例管理；ScheduledExecutorService驱动定时称重模拟；支持4种帧类型：ASCII_FIXED/ASCII_VARIABLE/HEX_FIXED/MODBUS_RTU；校验和计算：XOR/SUM/Modbus CRC16；@PreDestroy自动清理资源。【预设配置】柯力D2008（150kg量程/0.02kg分度）、微型秤（30kg/0.01kg）、地磅（2000kg/0.5kg）。【模块协同】与【秤协议管理】联动验证协议解析，与【边缘网关】联动模拟设备上报，与【入库管理】联动测试自动入库流程。',
+          useCase: ['无硬件开发称重功能', '模拟柯力D2008等常见秤型号', '测试不同重量场景', '验证协议解析正确性', '批量压力测试', '模拟称重波动过程'],
+          workflow: ['选择秤类型（或使用快速启动）', '配置模拟参数（量程/分度/波动）', '启动模拟器获取ID', '发送称重数据或模拟完整过程', '获取接收数据验证解析', '停止模拟器释放资源'],
+          effects: ['开发不依赖硬件', '调试效率提升10倍', '可重复自动化测试', '边缘情况全覆盖', '支持并发多实例']
+        },
+        implementationFiles: [
+          'VirtualScaleSimulator.java - 模拟器接口定义',
+          'VirtualScaleSimulatorImpl.java - 核心实现（ConcurrentHashMap多实例）',
+          'VirtualScaleConfig.java - 配置DTO（量程/分度/波动参数）',
+          'SimulatorStatus.java - 状态DTO（RUNNING/STOPPED/PAUSED/ERROR）',
+          'ScaleSimulatorController.java - REST API控制器'
+        ],
+        apis: [
+          { method: 'POST', path: '/scale-simulator/start', desc: '创建并启动模拟器 - Body: {protocolId?, scaleName?, minWeight?, maxWeight?, division?, intervalMs?, fluctuationCount?}。返回模拟器ID和配置' },
+          { method: 'POST', path: '/scale-simulator/start/keli-d2008', desc: '快速启动柯力D2008模拟器 - 使用柯力D2008默认配置（150kg量程，0.02kg分度），返回模拟器ID' },
+          { method: 'POST', path: '/scale-simulator/start/micro-scale', desc: '快速启动微型秤模拟器 - 使用微型秤默认配置（30kg量程，0.001kg分度），返回模拟器ID' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/stop', desc: '停止模拟器 - Path: simulatorId。停止指定模拟器实例并释放资源' },
+          { method: 'POST', path: '/scale-simulator/stop-all', desc: '停止所有模拟器 - 停止当前工厂所有活跃的模拟器实例' },
+          { method: 'GET', path: '/scale-simulator/list', desc: '活跃模拟器列表 - 返回当前工厂所有运行中的模拟器实例列表' },
+          { method: 'GET', path: '/scale-simulator/{simulatorId}/status', desc: '模拟器状态 - Path: simulatorId。返回模拟器当前状态：当前重量、是否稳定、待处理队列等' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/send', desc: '发送单次称重 - Path: simulatorId。Query: weight(重量), stable(是否稳定,默认true)。直接发送指定重量数据' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/simulate-weighing', desc: '模拟完整称重过程 - Path: simulatorId。Query: targetWeight。模拟波动→稳定的真实称重过程' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/queue', desc: '批量添加待称重 - Path: simulatorId。Body: [weights数组]。将多个重量值加入队列，依次模拟称重' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/random', desc: '发送随机重量 - Path: simulatorId。在配置的量程范围内生成随机重量并发送' },
+          { method: 'GET', path: '/scale-simulator/{simulatorId}/data', desc: '获取接收数据 - Path: simulatorId。Query: limit(数量,默认10)。返回最近接收的模拟数据列表' },
+          { method: 'GET', path: '/scale-simulator/{simulatorId}/data/latest', desc: '获取最新数据 - Path: simulatorId。返回最后一条模拟数据的解析结果' },
+          { method: 'GET', path: '/scale-simulator/generate-frame', desc: '生成测试帧 - Query: protocolId?, weight, stable, unit。生成指定协议的测试数据帧（十六进制），用于调试' }
+        ]
+      },
+      {
+        id: 'mqtt-iot',
+        name: 'MQTT IoT 设备服务',
+        icon: '📡',
+        category: 'iot',
+        controllers: ['MqttSubscriber', 'IotDataService'],
+        apiCount: 8,
+        status: 'completed',
+        completedDate: '2026-01-04',
+        usageGuide: {
+          description: '【解决痛点】IoT设备数据采集分散，各类传感器（秤/温度/湿度/摄像头）协议不一，数据格式混乱。本模块提供统一的MQTT消息接收与处理服务，自动存储、阈值监控、告警推送。【核心能力】接收EMQX Broker的MQTT消息、自动解析主题和数据类型、存储到iot_device_data表、更新设备状态和心跳、温度/湿度阈值告警、摄像头异常事件检测、WebSocket实时推送。【技术特点】Spring Integration MQTT实现消息订阅；主题格式cretas/{factoryId}/device/{deviceId}/{messageType}支持data/status/heartbeat三种消息；@ConditionalOnProperty按需启用；Jackson解析JSON数据；阈值告警：冷链-18°C、常温0-25°C、湿度40%-70%。【设备类型】SCALE(电子秤)、SENSOR(温湿度传感器)、CAMERA(摄像头)、GATEWAY(边缘网关)。【模块协同】与【秤协议管理】联动解析称重数据，与【虚拟秤模拟器】联动测试，与【设备告警】联动推送告警，与【WebSocket】联动实时推送前端。',
+          useCase: ['接收多工厂IoT设备数据', '电子秤称重数据自动存储', '温度超限自动告警', '摄像头异常事件检测', '设备离线心跳监控', '数据实时推送前端'],
+          workflow: ['启用MQTT配置', '部署EMQX Broker', '配置设备上报主题', '设备发送MQTT消息', 'MqttSubscriber自动接收', '按类型分发处理', '存储数据+触发告警', 'WebSocket推送前端'],
+          effects: ['统一设备接入', '数据自动存储', '实时阈值监控', '异常及时告警', '前端实时更新']
+        },
+        implementationFiles: [
+          'config/MqttConfig.java - MQTT连接配置（Broker/ClientFactory/Channel）',
+          'service/mqtt/MqttSubscriber.java - 消息处理核心（6个handler方法）',
+          'entity/iot/IotDevice.java - IoT设备实体',
+          'entity/iot/IotDeviceData.java - 设备数据记录实体',
+          'entity/iot/DeviceType.java - 设备类型枚举（SCALE/SENSOR/CAMERA/GATEWAY）',
+          'entity/iot/DeviceStatus.java - 设备状态枚举（ONLINE/OFFLINE/ERROR/MAINTENANCE）',
+          'entity/iot/DataType.java - 数据类型枚举（WEIGHT/TEMPERATURE/HUMIDITY/IMAGE）',
+          'repository/IotDeviceRepository.java - 设备Repository',
+          'repository/IotDeviceDataRepository.java - 数据Repository',
+          'service/IotDataService.java - IoT数据服务接口',
+          'service/impl/IotDataServiceImpl.java - IoT数据服务实现'
+        ],
+        apis: [
+          { method: 'MQTT', path: 'cretas/{factoryId}/device/{deviceId}/data', desc: '设备数据主题 - Payload: {type:"WEIGHT|TEMPERATURE|HUMIDITY|IMAGE", data:{...}}。自动解析存储并触发业务逻辑' },
+          { method: 'MQTT', path: 'cretas/{factoryId}/device/{deviceId}/status', desc: '设备状态主题 - Payload: {status:"ONLINE|OFFLINE|ERROR", message?:string}。更新设备状态，ERROR时创建告警' },
+          { method: 'MQTT', path: 'cretas/{factoryId}/device/{deviceId}/heartbeat', desc: '设备心跳主题 - Payload: {}。更新last_heartbeat和在线状态' },
+          { method: 'GET', path: '/iot/devices', desc: '设备列表 - 获取工厂IoT设备列表' },
+          { method: 'GET', path: '/iot/devices/{deviceCode}', desc: '设备详情 - 获取单个设备信息和最近状态' },
+          { method: 'GET', path: '/iot/devices/{deviceCode}/data', desc: '设备数据 - Query: limit。获取设备最近的数据记录' },
+          { method: 'PUT', path: '/iot/devices/{deviceCode}/status', desc: '更新状态 - 手动更新设备状态' },
+          { method: 'POST', path: '/iot/devices/{deviceCode}/alert', desc: '创建告警 - 手动为设备创建告警记录' }
+        ]
       }
     ];
 
     const ROLES = [
-      { id: 'platform_admin', name: '平台管理员', icon: '👑', screens: 35, desc: '平台级别全局管理' },
-      { id: 'factory_super_admin', name: '工厂超级管理员', icon: '🏭', screens: 45, desc: '工厂内全权限管理' },
-      { id: 'department_admin', name: '部门主管', icon: '👔', screens: 28, desc: '部门级别管理权限' },
-      { id: 'operator', name: '生产操作员', icon: '👷', screens: 22, desc: '生产线日常操作' },
-      { id: 'quality_inspector', name: '质检员', icon: '🔬', screens: 18, desc: '质量检验相关功能' },
-      { id: 'warehouse_keeper', name: '仓库管理员', icon: '📦', screens: 20, desc: '物料与出入库管理' },
-      { id: 'dispatcher', name: '调度员', icon: '📋', screens: 25, desc: '生产调度与排产' }
+      {
+        id: 'platform_admin',
+        name: '平台管理员',
+        icon: '👑',
+        screens: 60,
+        desc: '平台级别全局管理',
+        usageGuide: {
+          description: '【解决痛点】集团化企业需要统一管控多个工厂，但各工厂独立运行导致标准不一、最佳实践无法复制。平台管理员负责顶层设计和全局管控。【核心职责】多工厂创建与管理、蓝图模板设计与下发、规则引擎配置（Drools）、AI配额分配与监控、系统健康监控与告警处理、用户与角色权限管理、供应商准入与黑名单、配置变更审计。',
+          modules: [
+            { name: '平台仪表板', screens: ['PlatformDashboard'] },
+            { name: '工厂管理', screens: ['FactoryList', 'FactoryCreate', 'FactoryDetail', 'FactoryEdit', 'FactorySetup', 'FactoryQuota'] },
+            { name: 'AI工厂初始化', screens: ['FactoryAIQuick', 'FactoryAIWizard', 'FactoryAIPreview'] },
+            { name: '蓝图管理', screens: ['BlueprintList', 'BlueprintCreate', 'BlueprintDetail', 'BlueprintVersions', 'BlueprintApply'] },
+            { name: '用户管理', screens: ['UserList', 'UserCreate', 'UserDetail', 'UserAssignFactory'] },
+            { name: '角色权限', screens: ['RoleList', 'RoleEdit', 'RolePermissions'] },
+            { name: 'AI配额', screens: ['QuotaOverview', 'QuotaRules', 'QuotaUsageStats'] },
+            { name: '规则引擎', screens: ['RuleList', 'RuleEdit', 'RuleTest', 'DrlCodeEditor', 'StateMachineList', 'StateMachineDesigner'] },
+            { name: '系统监控', screens: ['SystemHealth', 'SystemMetrics', 'SystemLogs', 'SystemAlerts'] },
+            { name: '供应商管理', screens: ['SupplierAdmission', 'SupplierBlacklist'] },
+            { name: '配置变更', screens: ['ConfigChangesetList', 'ConfigChangesetDetail'] },
+            { name: '公告管理', screens: ['AnnouncementCenter', 'AnnouncementCreate'] },
+            { name: 'AI审计', screens: ['AIAuditLogs', 'IntentAnalysis'] }
+          ],
+          useCase: ['新工厂AI一键初始化', '蓝图模板设计与下发', 'Drools规则配置', 'AI配额分配与监控', '系统健康状态监控'],
+          workflow: ['创建工厂', '应用蓝图', '配置规则', '分配配额', '发布公告', '监控运营'],
+          effects: ['规模化管理', '标准化部署', '版本可控', '平台化运营', '规则可视化']
+        }
+      },
+      {
+        id: 'factory_super_admin',
+        name: '工厂超级管理员',
+        icon: '🏭',
+        screens: 46,
+        desc: '工厂内全权限管理',
+        usageGuide: {
+          description: '【解决痛点】工厂日常运营涉及生产、质量、设备、人员等多个维度，需要一个角色能够全面掌控工厂状态，快速决策。工厂超级管理员是工厂的"总指挥"。【核心职责】工厂日常运营监控、AI驱动的数据分析、基础数据维护（产品/原材料/部门/供应商/客户）、配置管理（转换率/编码规则/质检项/SOP）、与AI系统对话交互获取洞察。',
+          modules: [
+            { name: '工厂首页', screens: ['FAHome', 'TodayProduction', 'TodayBatches'] },
+            { name: '批次管理', screens: ['MaterialBatch', 'BatchDetail', 'EditBatch'] },
+            { name: 'AI分析', screens: ['AIAnalysisCenter', 'AICostAnalysis', 'AIChat', 'AIReport'] },
+            { name: '员工管理', screens: ['EmployeeList', 'EmployeeDetail'] },
+            { name: '设备管理', screens: ['EquipmentList', 'EquipmentDetail'] },
+            { name: '产品类型', screens: ['ProductTypeManagement'] },
+            { name: '原材料类型', screens: ['MaterialTypeManagement'] },
+            { name: '部门管理', screens: ['DepartmentManagement'] },
+            { name: '供应商/客户', screens: ['SupplierManagement', 'CustomerManagement'] },
+            { name: '出货管理', screens: ['ShipmentManagement'] },
+            { name: '配置管理', screens: ['ConversionRate', 'EncodingRuleConfig', 'QualityCheckItemConfig', 'SopConfig'] },
+            { name: '个人中心', screens: ['FAProfile', 'PersonalInfo', 'SystemSettings'] }
+          ],
+          useCase: ['查看今日生产进度和成本', 'AI辅助生产计划制定', '企业资源数据维护', '基础配置和规则设置', '与AI对话获取运营建议'],
+          workflow: ['查看仪表板', '分析AI报告', '调整配置', '维护数据', '导出报表'],
+          effects: ['运营可视化', 'AI辅助决策', '数据集中管理', '配置灵活调整']
+        }
+      },
+      {
+        id: 'department_admin',
+        name: '部门主管',
+        icon: '👔',
+        screens: 31,
+        desc: '部门级别管理权限',
+        usageGuide: {
+          description: '【解决痛点】车间/部门层级需要有人负责日常生产执行，包括批次开工、工艺环节记录、人员设备调度。部门主管是生产一线的"现场指挥官"。【核心职责】管理本部门的生产批次、记录生产工艺环节、分配人员到工位、监控设备状态、处理生产异常。',
+          modules: [
+            { name: '车间工作台', screens: ['WSHome'] },
+            { name: '批次管理', screens: ['WSBatches', 'BatchDetail', 'BatchStart', 'BatchStage', 'BatchComplete'] },
+            { name: '原料消耗', screens: ['MaterialConsumption'] },
+            { name: '人员管理', screens: ['人员列表', '人员详情', '人员调动'] },
+            { name: '设备管理', screens: ['设备列表', '设备详情', '维保记录'] },
+            { name: '任务引导', screens: ['TaskGuide', 'TaskGuideStep2', 'TaskGuideStep3'] },
+            { name: '个人中心', screens: ['设置', '通知'] }
+          ],
+          useCase: ['开始批次生产', '记录工艺环节和原料消耗', '人员工作分配', '设备状态检查', '处理生产异常'],
+          workflow: ['查看待处理批次', '分配人员设备', '开始生产', '记录各环节', '完成批次'],
+          effects: ['生产流程可控', '工艺数据可追溯', '人员调度灵活', '设备状态透明']
+        }
+      },
+      {
+        id: 'operator',
+        name: '生产操作员',
+        icon: '👷',
+        screens: 6,
+        desc: '考勤打卡与工时查询',
+        usageGuide: {
+          description: '【解决痛点】一线操作员需要简单易用的工具完成日常考勤，减少繁琐操作，专注生产。操作员界面追求简洁高效，功能精简。【核心职责】上下班考勤打卡、查看个人打卡历史和工时统计、查看部门考勤情况。',
+          modules: [
+            { name: '考勤打卡', screens: ['TimeClockScreen', 'ClockHistory'] },
+            { name: '工时统计', screens: ['TimeStatistics', 'AttendanceHistory'] },
+            { name: '工作记录', screens: ['WorkRecords'] },
+            { name: '部门考勤', screens: ['DepartmentAttendance'] }
+          ],
+          useCase: ['班次开始和结束打卡', '查看个人打卡历史', '查看工时统计', '了解部门出勤情况'],
+          workflow: ['上班打卡', '执行生产任务', '下班打卡', '查看工时'],
+          effects: ['考勤自动化', '工时透明化', '操作简便', '界面直观']
+        }
+      },
+      {
+        id: 'quality_inspector',
+        name: '质检员',
+        icon: '🔬',
+        screens: 17,
+        desc: '质量检验相关功能',
+        usageGuide: {
+          description: '【解决痛点】质检数据录入繁琐、纸质记录难追溯、质量趋势分析困难。质检员需要便捷的多方式录入（表单/语音/拍照）和智能分析工具。【核心职责】逐批次进行质量检验、多方式录入检验数据、管理检验记录、分析质量趋势、生成质检报告。',
+          modules: [
+            { name: '质检工作台', screens: ['QIHome'] },
+            { name: '检验操作', screens: ['QIInspectList', 'QIBatchSelect', 'QIScan', 'QIForm', 'QIVoice', 'QICamera', 'QIResult'] },
+            { name: '检验记录', screens: ['QIRecords', 'QIRecordDetail'] },
+            { name: '质量分析', screens: ['QIAnalysis', 'QITrend', 'QIReport'] },
+            { name: '个人中心', screens: ['QIProfile', 'QISettings', 'QIClockIn'] }
+          ],
+          useCase: ['扫码选择批次进行质检', '语音录入检验数据（解放双手）', '拍照留存质检证据', '查看质量趋势分析', '生成质检报告'],
+          workflow: ['接收待检批次', '扫码定位', '执行检验', '录入数据', '提交结果'],
+          effects: ['多方式录入', '数据可追溯', '趋势可分析', '报告自动化']
+        }
+      },
+      {
+        id: 'warehouse_keeper',
+        name: '仓库管理员',
+        icon: '📦',
+        screens: 36,
+        desc: '物料与出入库管理',
+        usageGuide: {
+          description: '【解决痛点】仓库管理涉及入库验收、库存盘点、出货发运等环节，传统纸质单据易丢失、库存数据不实时、温控产品难监测。仓库管理员需要全流程数字化工具。【核心职责】收货验收入库、库存实时监控与盘点、打包装车出货、温控产品监测、过期产品处理、批次溯源查询、召回管理。',
+          modules: [
+            { name: '仓库工作台', screens: ['WHHome', 'WHAlertHandle', 'WHAlertList', 'WHTempMonitor'] },
+            { name: '入库管理', screens: ['WHInboundList', 'WHInboundCreate', 'WHInboundDetail', 'WHInspect', 'WHPutaway'] },
+            { name: '出货管理', screens: ['WHOutboundList', 'WHOutboundDetail', 'WHOrderDetail', 'WHPacking', 'WHLoading', 'WHShippingConfirm', 'WHTrackingDetail'] },
+            { name: '车辆管理', screens: ['WHLoading'] },
+            { name: '库存管理', screens: ['WHInventoryList', 'WHInventoryDetail', 'WHInventoryCheck', 'WHInventoryTransfer', 'WHConversionAnalysis'] },
+            { name: '库位管理', screens: ['WHLocationManage', 'WHScanOperation'] },
+            { name: '过期/召回', screens: ['WHExpireHandle', 'WHRecallManage'] },
+            { name: '批次溯源', screens: ['WHBatchTrace', 'WHBatchDetail'] },
+            { name: '统计/日志', screens: ['WHIOStatistics', 'WHOperationLog'] },
+            { name: '个人中心', screens: ['WHProfile', 'WHProfileEdit', 'WHSettings'] }
+          ],
+          useCase: ['接收货物并验收入库', '实时查看库存状态', '处理出货订单', '进行库存盘点', '监测冷链温度', '处理过期/召回产品', '查看操作日志'],
+          workflow: ['收货验收', '质检', '上架入库', '库存管理', '拣货打包', '装车发货', '跟踪物流'],
+          effects: ['库存实时可见', '出入库全追溯', '温控自动监测', '过期预警及时', '召回可追踪']
+        }
+      },
+      {
+        id: 'dispatcher',
+        name: '调度员',
+        icon: '📋',
+        screens: 24,
+        desc: '生产调度与排产',
+        usageGuide: {
+          description: '【解决痛点】生产计划制定复杂、人工排程效率低、紧急插单难处理、资源冲突难协调。调度员需要AI辅助的智能排程工具。【核心职责】制定生产计划、AI辅助排程优化、处理紧急插单、分配任务和资源、管理人员排班、监控计划执行进度。',
+          modules: [
+            { name: '调度工作台', screens: ['DSHome', 'WorkshopStatus'] },
+            { name: '计划管理', screens: ['PlanList', 'PlanDetail', 'PlanCreate', 'PlanGantt'] },
+            { name: '任务分配', screens: ['TaskAssignment', 'BatchWorkers'] },
+            { name: '紧急插单', screens: ['UrgentInsert', 'UrgentInsertStats'] },
+            { name: '混批排产', screens: ['MixedBatch'] },
+            { name: '资源总览', screens: ['ResourceOverview'] },
+            { name: 'AI调度', screens: ['AISchedule', 'AIScheduleGenerate', 'AICompletionProb', 'AIWorkerOptimize'] },
+            { name: '人员管理', screens: ['PersonnelList', 'PersonnelDetail', 'PersonnelTransfer', 'PersonnelSchedule'] },
+            { name: '审批', screens: ['ApprovalList'] },
+            { name: '个人中心', screens: ['DSProfile', 'DSStatistics'] }
+          ],
+          useCase: ['根据订单制定周期生产计划', 'AI推荐最优排程方案', '处理紧急订单插单', '优化人员分配', '监控生产进度'],
+          workflow: ['接收订单', '制定计划', 'AI优化', '分配资源', '监控执行', '处理异常'],
+          effects: ['排程智能化', '资源利用最大化', '插单响应快', '进度可视化']
+        }
+      }
     ];
 
     // ==================== UTILITIES ====================
@@ -1663,6 +2184,60 @@
       }
     }
 
+    // Show role usage guide modal
+    function showRoleGuide(roleId) {
+      const role = ROLES.find(r => r.id === roleId);
+      if (!role || !role.usageGuide) return;
+
+      const guide = role.usageGuide;
+      document.getElementById('guideModalIcon').textContent = role.icon;
+      document.getElementById('guideModalTitle').textContent = role.name + ' 使用指南';
+
+      // Build modules table
+      const modulesHtml = guide.modules ? `
+        <div class="guide-section">
+          <h4>📦 功能模块与关键页面</h4>
+          <table class="guide-table">
+            <thead><tr><th style="width:30%">模块</th><th>关键页面</th></tr></thead>
+            <tbody>
+              ${guide.modules.map(m => `<tr>
+                <td><strong>${m.name}</strong></td>
+                <td><code>${m.screens.join('</code>, <code>')}</code></td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : '';
+
+      document.getElementById('guideModalBody').innerHTML = `
+        <div class="guide-section">
+          <h4>📌 角色职责</h4>
+          <p>${guide.description}</p>
+        </div>
+        ${modulesHtml}
+        <div class="guide-section">
+          <h4>🎯 典型使用场景</h4>
+          <ul class="guide-list">
+            ${guide.useCase.map(item => `<li>${item}</li>`).join('')}
+          </ul>
+        </div>
+        <div class="guide-section">
+          <h4>📋 工作流程</h4>
+          <ol class="workflow-list">
+            ${guide.workflow.map(step => `<li>${step}</li>`).join('')}
+          </ol>
+        </div>
+        <div class="guide-section">
+          <h4>✨ 使用效果</h4>
+          <ul class="effects-list">
+            ${guide.effects.map(effect => `<li>${effect}</li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      document.getElementById('guideModal').classList.add('show');
+    }
+
     // ==================== RENDER ====================
     function renderModules(filter = 'all', keyword = '', methodFilter = 'all') {
       const grid = document.getElementById('modulesGrid');
@@ -1732,10 +2307,11 @@
     function renderRoles() {
       const grid = document.getElementById('rolesGrid');
       grid.innerHTML = ROLES.map(role => `
-        <div class="role-card">
+        <div class="role-card" onclick="showRoleGuide('${role.id}')" title="点击查看使用指南">
           <div class="role-icon">${role.icon}</div>
           <div class="role-name">${role.name}</div>
           <div class="role-screens">${role.screens} 页面</div>
+          <div class="role-desc">${role.desc}</div>
         </div>
       `).join('');
     }
