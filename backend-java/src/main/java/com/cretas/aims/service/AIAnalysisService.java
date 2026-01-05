@@ -1,5 +1,8 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.AIResponseDTO;
 import com.cretas.aims.entity.TimeClockRecord;
 import com.cretas.aims.entity.User;
@@ -66,6 +69,12 @@ public class AIAnalysisService {
     @Autowired
     private QualityInspectionRepository qualityInspectionRepository;
 
+    @Autowired
+    private DashScopeClient dashScopeClient;
+
+    @Autowired
+    private DashScopeConfig dashScopeConfig;
+
     public AIAnalysisService() {
         // 使用默认超时初始化（120秒读取超时，支持思考模式AI分析）
         this.restTemplate = createRestTemplate(10000, 120000);
@@ -76,6 +85,15 @@ public class AIAnalysisService {
         // @Value 注入后重新配置超时
         this.restTemplate = createRestTemplate(connectTimeout, timeout);
         log.info("AI服务RestTemplate已配置: 连接超时={}ms, 读取超时={}ms", connectTimeout, timeout);
+    }
+
+    /**
+     * 判断是否使用 DashScope 直接调用
+     */
+    private boolean shouldUseDashScopeDirect() {
+        return dashScopeConfig != null
+                && dashScopeConfig.isAvailable()
+                && dashScopeConfig.getMigration().isCostAnalysis();
     }
 
     private RestTemplate createRestTemplate(int connectTimeout, int readTimeout) {
@@ -121,6 +139,115 @@ public class AIAnalysisService {
                                            String customMessage,
                                            Boolean enableThinking,
                                            Integer thinkingBudget) {
+        // 路由：优先使用 DashScope 直接调用
+        if (shouldUseDashScopeDirect()) {
+            log.info("[DashScope Direct] 使用 DashScope 直接调用进行成本分析: factoryId={}, batchId={}", factoryId, batchId);
+            try {
+                return analyzeCostDirect(factoryId, batchId, costData, customMessage, enableThinking, thinkingBudget);
+            } catch (Exception e) {
+                log.warn("[DashScope Direct] 直接调用失败，回退到 Python 服务: {}", e.getMessage());
+                // 回退到 Python 服务
+            }
+        }
+
+        return analyzeCostViaPython(factoryId, batchId, costData, sessionId, customMessage, enableThinking, thinkingBudget);
+    }
+
+    /**
+     * 通过 DashScope 直接调用进行成本分析
+     */
+    private Map<String, Object> analyzeCostDirect(String factoryId, String batchId,
+                                                   Map<String, Object> costData,
+                                                   String customMessage,
+                                                   Boolean enableThinking,
+                                                   Integer thinkingBudget) {
+        // 1. 格式化成本数据为 AI 提示词
+        String userMessage = customMessage != null && !customMessage.trim().isEmpty()
+                ? customMessage
+                : formatCostDataForAI(factoryId, batchId, costData);
+
+        // 2. 构建系统提示词
+        String systemPrompt = buildCostAnalysisSystemPrompt();
+
+        // 3. 调用 DashScope
+        boolean useThinking = enableThinking != null ? enableThinking : true;
+        int budget = thinkingBudget != null ? thinkingBudget : dashScopeConfig.getDefaultThinkingBudget();
+
+        ChatCompletionResponse response;
+        if (useThinking && dashScopeConfig.isThinkingEnabled()) {
+            log.info("[DashScope Direct] 使用思考模式分析: budget={}", budget);
+            response = dashScopeClient.chatWithThinking(systemPrompt, userMessage, budget);
+        } else {
+            log.info("[DashScope Direct] 使用普通模式分析");
+            String content = dashScopeClient.chat(systemPrompt, userMessage);
+            response = new ChatCompletionResponse();
+            ChatCompletionResponse.Message message = new ChatCompletionResponse.Message();
+            message.setRole("assistant");
+            message.setContent(content);
+            ChatCompletionResponse.Choice choice = new ChatCompletionResponse.Choice();
+            choice.setMessage(message);
+            response.setChoices(List.of(choice));
+        }
+
+        // 4. 处理响应
+        if (response.hasError()) {
+            throw new RuntimeException("DashScope API 错误: " + response.getErrorMessage());
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("success", true);
+        result.put("aiAnalysis", response.getContent());
+
+        // 如果有思考过程
+        if (response.getChoices() != null && !response.getChoices().isEmpty()) {
+            ChatCompletionResponse.Message msg = response.getChoices().get(0).getMessage();
+            if (msg != null && msg.getReasoningContent() != null) {
+                result.put("reasoningContent", msg.getReasoningContent());
+                result.put("thinkingEnabled", true);
+            }
+        }
+
+        result.put("sessionId", factoryId + "_batch_" + batchId + "_" + System.currentTimeMillis());
+        result.put("directCall", true);  // 标记为直接调用
+
+        log.info("[DashScope Direct] 成本分析完成: factoryId={}, batchId={}", factoryId, batchId);
+        return result;
+    }
+
+    /**
+     * 构建成本分析系统提示词
+     */
+    private String buildCostAnalysisSystemPrompt() {
+        return """
+            你是一位专业的食品加工行业成本分析师，擅长分析生产批次的成本结构和效率问题。
+
+            分析要求：
+            1. 仔细分析提供的成本数据，识别成本异常点
+            2. 对比行业基准，评估各项指标是否达标
+            3. 从原材料、人工、设备、质量、时间五个维度进行分析
+            4. 给出具体可行的优化建议，包括预估节省金额
+            5. 识别潜在风险并提出预警
+
+            输出格式：
+            1. 成本概览 - 总成本、结构占比
+            2. 异常分析 - 偏离基准的指标
+            3. 问题诊断 - 根本原因分析
+            4. 优化建议 - 具体措施和预期效果
+            5. 风险预警 - 需要关注的问题
+
+            请用简洁专业的中文回复，重点突出关键发现和可执行建议。
+            """;
+    }
+
+    /**
+     * 通过 Python 服务调用进行成本分析（原有逻辑）
+     */
+    private Map<String, Object> analyzeCostViaPython(String factoryId, String batchId,
+                                                      Map<String, Object> costData,
+                                                      String sessionId,
+                                                      String customMessage,
+                                                      Boolean enableThinking,
+                                                      Integer thinkingBudget) {
         try {
             // 1. 格式化成本数据为AI提示词
             String message = customMessage != null && !customMessage.trim().isEmpty()
@@ -146,7 +273,7 @@ public class AIAnalysisService {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-            log.info("调用AI服务: url={}, batchId={}, factoryId={}, enableThinking={}",
+            log.info("调用AI服务 (Python): url={}, batchId={}, factoryId={}, enableThinking={}",
                     url, batchId, factoryId, enableThinking);
             ResponseEntity<Map> response = restTemplate.exchange(
                 url, HttpMethod.POST, entity, Map.class);
@@ -163,7 +290,7 @@ public class AIAnalysisService {
                 result.put("sessionId", body.get("sessionId"));     // 驼峰命名
                 result.put("messageCount", body.get("messageCount")); // 驼峰命名
 
-                log.info("AI分析成功: batchId={}, sessionId={}, thinkingEnabled={}",
+                log.info("AI分析成功 (Python): batchId={}, sessionId={}, thinkingEnabled={}",
                         batchId, body.get("sessionId"), body.get("thinkingEnabled"));
                 return result;
             } else {
@@ -171,7 +298,7 @@ public class AIAnalysisService {
             }
 
         } catch (Exception e) {
-            log.error("AI分析失败: factoryId={}, batchId={}, error={}",
+            log.error("AI分析失败 (Python): factoryId={}, batchId={}, error={}",
                      factoryId, batchId, e.getMessage(), e);
 
             // 返回友好的错误信息

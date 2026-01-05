@@ -17,9 +17,10 @@ import java.time.LocalDateTime;
  * - 调整意图优先级
  * - 添加正则表达式
  * - 合并/拆分意图
+ * - **创建新意图 (自学习核心功能)**
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-01-02
  */
 @Entity
@@ -127,10 +128,61 @@ public class IntentOptimizationSuggestion extends BaseEntity {
     private String rejectReason;
 
     /**
+     * 审批备注 (平台晋升审批时使用)
+     */
+    @Column(name = "approval_notes", columnDefinition = "TEXT")
+    private String approvalNotes;
+
+    /**
      * 过期时间（建议有效期30天）
      */
     @Column(name = "expired_at")
     private LocalDateTime expiredAt;
+
+    // ==================== CREATE_INTENT 专用字段 ====================
+
+    /**
+     * LLM建议的意图代码 (CREATE_INTENT 类型专用)
+     */
+    @Column(name = "suggested_intent_code", length = 100)
+    private String suggestedIntentCode;
+
+    /**
+     * LLM建议的意图名称 (CREATE_INTENT 类型专用)
+     */
+    @Column(name = "suggested_intent_name", length = 200)
+    private String suggestedIntentName;
+
+    /**
+     * LLM建议的关键词 (JSON数组, CREATE_INTENT 类型专用)
+     */
+    @Column(name = "suggested_keywords", columnDefinition = "JSON")
+    private String suggestedKeywords;
+
+    /**
+     * LLM建议的意图分类 (CREATE_INTENT 类型专用)
+     * 如: ANALYSIS, DATA_OP, FORM, SCHEDULE, SYSTEM
+     */
+    @Column(name = "suggested_category", length = 50)
+    private String suggestedCategory;
+
+    /**
+     * LLM 置信度
+     */
+    @Column(name = "llm_confidence", precision = 5, scale = 4)
+    private BigDecimal llmConfidence;
+
+    /**
+     * LLM 推理说明
+     */
+    @Column(name = "llm_reasoning", columnDefinition = "TEXT")
+    private String llmReasoning;
+
+    /**
+     * 创建后的意图ID (应用后填写)
+     */
+    @Column(name = "created_intent_id", length = 36)
+    private String createdIntentId;
 
     // ==================== 枚举类型 ====================
 
@@ -138,11 +190,13 @@ public class IntentOptimizationSuggestion extends BaseEntity {
      * 建议类型枚举
      */
     public enum SuggestionType {
-        ADD_KEYWORD,     // 添加关键词
-        ADJUST_PRIORITY, // 调整优先级
-        ADD_REGEX,       // 添加正则表达式
-        MERGE_INTENT,    // 合并意图
-        SPLIT_INTENT     // 拆分意图
+        ADD_KEYWORD,          // 添加关键词
+        ADJUST_PRIORITY,      // 调整优先级
+        ADD_REGEX,            // 添加正则表达式
+        MERGE_INTENT,         // 合并意图
+        SPLIT_INTENT,         // 拆分意图
+        CREATE_INTENT,        // 创建新意图 (自学习核心功能)
+        PROMOTE_TO_PLATFORM   // 晋升为平台级意图 (需平台管理员审批)
     }
 
     /**
@@ -190,5 +244,127 @@ public class IntentOptimizationSuggestion extends BaseEntity {
         if (expiredAt == null) {
             expiredAt = LocalDateTime.now().plusDays(30);
         }
+    }
+
+    // ==================== 静态工厂方法 ====================
+
+    /**
+     * 创建「新建意图」建议 (自学习核心)
+     *
+     * 当LLM识别到不属于现有意图的新模式时，生成此建议
+     *
+     * @param factoryId         工厂ID
+     * @param userInput         触发的用户输入
+     * @param suggestedCode     LLM建议的意图代码
+     * @param suggestedName     LLM建议的意图名称
+     * @param suggestedKeywords LLM建议的关键词列表 (JSON数组)
+     * @param suggestedCategory LLM建议的分类
+     * @param confidence        LLM置信度
+     * @param reasoning         LLM推理说明
+     * @return 新建意图的优化建议
+     */
+    public static IntentOptimizationSuggestion createNewIntentSuggestion(
+            String factoryId,
+            String userInput,
+            String suggestedCode,
+            String suggestedName,
+            String suggestedKeywords,
+            String suggestedCategory,
+            double confidence,
+            String reasoning) {
+
+        return IntentOptimizationSuggestion.builder()
+                .factoryId(factoryId)
+                .intentCode(suggestedCode) // 建议的意图代码
+                .suggestionType(SuggestionType.CREATE_INTENT)
+                .suggestionTitle("LLM建议创建新意图: " + suggestedName)
+                .suggestionDetail(String.format(
+                        "LLM识别到新的意图模式，建议创建意图 [%s]。\n触发输入: %s\n推理说明: %s",
+                        suggestedCode, userInput, reasoning))
+                .supportingExamples("[\"" + userInput.replace("\"", "\\\"") + "\"]")
+                .frequency(1)
+                .impactScore(BigDecimal.valueOf(confidence * 100))
+                .suggestedIntentCode(suggestedCode)
+                .suggestedIntentName(suggestedName)
+                .suggestedKeywords(suggestedKeywords)
+                .suggestedCategory(suggestedCategory)
+                .llmConfidence(BigDecimal.valueOf(confidence))
+                .llmReasoning(reasoning)
+                .status(SuggestionStatus.PENDING)
+                .build();
+    }
+
+    /**
+     * 累加相同意图建议的触发次数
+     *
+     * @param newUserInput 新的触发输入
+     */
+    public void incrementFrequency(String newUserInput) {
+        this.frequency = (this.frequency == null ? 0 : this.frequency) + 1;
+
+        // 添加到样例列表
+        if (this.supportingExamples == null || this.supportingExamples.isEmpty()) {
+            this.supportingExamples = "[\"" + escapeJson(newUserInput) + "\"]";
+        } else {
+            String trimmed = this.supportingExamples.trim();
+            if (trimmed.endsWith("]")) {
+                this.supportingExamples = trimmed.substring(0, trimmed.length() - 1)
+                        + ", \"" + escapeJson(newUserInput) + "\"]";
+            }
+        }
+    }
+
+    private static String escapeJson(String input) {
+        if (input == null) return "";
+        return input.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    /**
+     * 判断是否为创建新意图的建议
+     */
+    public boolean isCreateIntent() {
+        return SuggestionType.CREATE_INTENT.equals(this.suggestionType);
+    }
+
+    /**
+     * 判断是否为平台晋升的建议
+     */
+    public boolean isPromoteToPlatform() {
+        return SuggestionType.PROMOTE_TO_PLATFORM.equals(this.suggestionType);
+    }
+
+    /**
+     * 创建平台晋升建议
+     *
+     * @param factoryId      工厂ID
+     * @param intentCode     意图代码
+     * @param intentName     意图名称
+     * @param reason         晋升原因
+     * @param requestedBy    申请人
+     * @return 晋升建议
+     */
+    public static IntentOptimizationSuggestion createPromotionSuggestion(
+            String factoryId,
+            String intentCode,
+            String intentName,
+            String reason,
+            String requestedBy) {
+
+        return IntentOptimizationSuggestion.builder()
+                .factoryId(factoryId)
+                .intentCode(intentCode)
+                .suggestionType(SuggestionType.PROMOTE_TO_PLATFORM)
+                .suggestionTitle("申请晋升为平台级意图: " + intentName)
+                .suggestionDetail(String.format(
+                        "工厂 [%s] 申请将意图 [%s] 晋升为平台级共享意图。\n" +
+                        "申请原因: %s\n申请人: %s",
+                        factoryId, intentCode, reason, requestedBy))
+                .supportingExamples(null)
+                .frequency(1)
+                .impactScore(BigDecimal.valueOf(80)) // 晋升请求默认影响分数
+                .suggestedIntentCode(intentCode)
+                .suggestedIntentName(intentName)
+                .status(SuggestionStatus.PENDING)
+                .build();
     }
 }

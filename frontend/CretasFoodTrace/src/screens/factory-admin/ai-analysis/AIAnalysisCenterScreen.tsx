@@ -214,6 +214,13 @@ export function AIAnalysisCenterScreen() {
               color="#eb2f96"
               onPress={() => navigation.navigate('CreatePlan')}
             />
+            <MenuItem
+              icon="lightbulb-on-outline"
+              title={t('aiAnalysis.intentSuggestions') || '意图优化建议'}
+              subtitle={t('aiAnalysis.intentSuggestionsDesc') || '审批AI学习的新意图和关键词'}
+              color="#13c2c2"
+              onPress={() => navigation.navigate('IntentSuggestionsList')}
+            />
           </View>
         </View>
 

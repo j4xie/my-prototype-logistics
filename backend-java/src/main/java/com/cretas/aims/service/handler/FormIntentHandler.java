@@ -1,5 +1,7 @@
 package com.cretas.aims.service.handler;
 
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.entity.config.AIIntentConfig;
@@ -7,8 +9,8 @@ import com.cretas.aims.entity.config.FormTemplate;
 import com.cretas.aims.repository.FormTemplateRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 表单意图处理器
@@ -25,21 +28,39 @@ import java.util.*;
  * - FORM_MODIFICATION: 修改现有字段
  * - FORM_VALIDATION: 添加验证规则
  *
+ * 支持两种AI后端：
+ * - Python AI服务 (legacy)
+ * - DashScope 直接调用 (推荐)
+ *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-01-02
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class FormIntentHandler implements IntentHandler {
 
     private final FormTemplateRepository formTemplateRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
+    private final DashScopeConfig dashScopeConfig;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
+
+    @Autowired
+    public FormIntentHandler(FormTemplateRepository formTemplateRepository,
+                             RestTemplate restTemplate,
+                             ObjectMapper objectMapper,
+                             @Autowired(required = false) DashScopeClient dashScopeClient,
+                             @Autowired(required = false) DashScopeConfig dashScopeConfig) {
+        this.formTemplateRepository = formTemplateRepository;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+        this.dashScopeClient = dashScopeClient;
+        this.dashScopeConfig = dashScopeConfig;
+    }
 
     @Override
     public String getSupportedCategory() {
@@ -186,7 +207,7 @@ public class FormIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("FORM")
                     .status("FAILED")
-                    .message("执行失败: " + e.getMessage())
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -243,10 +264,16 @@ public class FormIntentHandler implements IntentHandler {
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .status("FAILED")
-                    .message("预览失败: " + e.getMessage())
+                    .message("预览失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 
     // ==================== 辅助方法 ====================
@@ -300,8 +327,108 @@ public class FormIntentHandler implements IntentHandler {
 
     /**
      * 调用AI服务生成Schema
+     * 优先使用DashScope直接调用，fallback到Python服务
      */
     private Map<String, Object> callAIGenerateSchema(String factoryId, IntentExecuteRequest request) {
+        // 检查是否启用DashScope直接调用
+        if (shouldUseDashScope()) {
+            return callDashScopeGenerateSchema(factoryId, request);
+        }
+        return callPythonAIGenerateSchema(factoryId, request);
+    }
+
+    /**
+     * 检查是否应该使用DashScope直接调用
+     */
+    private boolean shouldUseDashScope() {
+        return dashScopeConfig != null
+            && dashScopeClient != null
+            && dashScopeConfig.shouldUseDirect("form-parse");
+    }
+
+    /**
+     * 使用DashScope直接生成表单Schema
+     */
+    private Map<String, Object> callDashScopeGenerateSchema(String factoryId, IntentExecuteRequest request) {
+        try {
+            log.info("使用DashScope直接生成表单Schema: factoryId={}", factoryId);
+
+            String systemPrompt = buildFormSchemaPrompt(request.getEntityType());
+            String userInput = request.getUserInput();
+
+            // 调用DashScope
+            String response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            log.debug("DashScope表单生成响应: {}", response);
+
+            // 解析JSON响应
+            return parseFormSchemaResponse(response);
+
+        } catch (Exception e) {
+            log.error("DashScope表单生成失败: {}", e.getMessage());
+            // Fallback to Python service
+            log.info("Fallback到Python AI服务");
+            return callPythonAIGenerateSchema(factoryId, request);
+        }
+    }
+
+    /**
+     * 构建表单Schema生成提示词
+     */
+    private String buildFormSchemaPrompt(String entityType) {
+        return """
+            你是一个表单字段生成专家。根据用户描述生成表单字段定义。
+
+            输出格式为JSON:
+            {
+              "success": true,
+              "fields": [
+                {
+                  "name": "fieldName",
+                  "type": "text|number|date|select|checkbox",
+                  "label": "字段中文名",
+                  "required": true/false,
+                  "description": "字段说明"
+                }
+              ],
+              "suggestions": ["建议1", "建议2"],
+              "message": "成功生成N个字段定义"
+            }
+
+            实体类型: """ + (entityType != null ? entityType : "CUSTOM") + """
+
+            只返回JSON，不要其他内容。
+            """;
+    }
+
+    /**
+     * 解析DashScope表单Schema响应
+     */
+    private Map<String, Object> parseFormSchemaResponse(String response) {
+        try {
+            // 清理可能的markdown代码块
+            String jsonStr = response.trim();
+            if (jsonStr.startsWith("```json")) {
+                jsonStr = jsonStr.substring(7);
+            }
+            if (jsonStr.startsWith("```")) {
+                jsonStr = jsonStr.substring(3);
+            }
+            if (jsonStr.endsWith("```")) {
+                jsonStr = jsonStr.substring(0, jsonStr.length() - 3);
+            }
+            jsonStr = jsonStr.trim();
+
+            return objectMapper.readValue(jsonStr, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.error("解析DashScope响应失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 调用Python AI服务生成Schema (Legacy)
+     */
+    private Map<String, Object> callPythonAIGenerateSchema(String factoryId, IntentExecuteRequest request) {
         try {
             String url = aiServiceUrl + "/api/ai/form/generate-schema";
 
@@ -329,7 +456,7 @@ public class FormIntentHandler implements IntentHandler {
             return null;
 
         } catch (Exception e) {
-            log.error("调用AI服务失败: {}", e.getMessage());
+            log.error("调用Python AI服务失败: {}", e.getMessage());
             return null;
         }
     }

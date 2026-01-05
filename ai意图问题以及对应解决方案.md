@@ -1,7 +1,7 @@
 # AI 意图系统问题及解决方案
 
 > 文档创建时间: 2026-01-04
-> 最后更新: 2026-01-04 15:35
+> 最后更新: 2026-01-04 15:50
 > 状态: 持续更新中
 
 ---
@@ -16,6 +16,7 @@
 | BUG-004 | 无意义输入直接拒绝而非二次询问 | 中 | ✅ 已修复 | 用户体验 |
 | BUG-005 | 单字符输入未触发二次确认 | 中 | ✅ 已修复 | 用户体验 |
 | BUG-006 | LLM Fallback 响应过慢 (4-6秒) | 中 | ⏳ 优化中 | 性能 |
+| BUG-007 | 全局晋升关键词无法被匹配 | 高 | ✅ 已修复 | 功能阻断 |
 
 ### 修复记录
 
@@ -52,6 +53,20 @@
 - **修复文件**: `IntentExecutorServiceImpl.java` (与 BUG-004 同一修复)
 - **修复内容**: 单字符输入走 LLM fallback 后无法识别，触发 NEED_CLARIFICATION
 - **验证结果**: 输入 "查" → 返回 status=NEED_CLARIFICATION + 默认建议列表
+
+#### BUG-007 修复 (2026-01-04)
+- **问题**: 从多工厂晋升到全局(GLOBAL)的关键词，存储成功但匹配时无法使用
+- **根因**: `AIIntentServiceImpl.java` 的 `getMatchedKeywords()` 和 `calculateKeywordMatchScore()` 方法只读取 `AIIntentConfig.keywords` JSON 字段，完全忽略了 `keyword_effectiveness` 表中存储的工厂级和全局关键词
+- **修复文件**: `AIIntentServiceImpl.java`
+- **修复内容**:
+  1. 新增 `getAllKeywordsForMatching(factoryId, intent)` 方法，合并三层关键词：
+     - 基础关键词（来自 `AIIntentConfig.keywords` JSON 字段）
+     - 工厂级关键词（来自 `keyword_effectiveness` 表，effectiveness >= 0.5）
+     - 全局关键词（来自 `keyword_effectiveness` 表，factoryId = "GLOBAL"）
+  2. 修改 `getMatchedKeywords()` 方法，接受 factoryId 参数并调用 `getAllKeywordsForMatching()`
+  3. 修改 `calculateKeywordMatchScore()` 方法，接受 factoryId 参数并调用 `getAllKeywordsForMatching()`
+  4. 更新 `recognizeIntentWithConfidence()` 中的调用，传递 factoryId
+- **验证结果**: 输入 "测试晋升专用词"（GLOBAL 关键词）→ 成功匹配 BATCH_UPDATE 意图 ✅
 
 ---
 
@@ -199,151 +214,123 @@
 
 ---
 
-## 四、LLM 优化方案（行业调研）
+## 四、LLM 优化方案
 
-基于对 2024-2025 年 LLM 意图识别系统最佳实践的调研，以下是可行的优化方案。
+> **背景**: 当前系统中 85% 请求通过关键词匹配处理（80-150ms），仅 15% 走 LLM Fallback（4-6秒）。LLM 不是主路径，优化应聚焦于 Fallback 路径的效率和成本。
 
-### 4.1 混合意图分类架构（推荐）
+### 4.1 语义缓存（P1 推荐 ✅）
 
-**原理**: 采用双阶段架构，第一阶段使用 Embedding 向量检索找出 Top 10 候选意图，第二阶段仅把这些候选传给 LLM 进行精确分类。
-
-**预期效果**:
-- LLM 调用量减少 70-80%
-- 响应延迟降低 50%
-- 成本降低 60%+
-
-**实现难度**: 中等（2-3周）
-
-**开源工具**: Rasa（原生支持 LLM + RAG 意图分类）、LangChain（提供完整 RAG 管道）
-
----
-
-### 4.2 语义缓存（Semantic Caching）
-
-**原理**: 使用 Redis 等工具对 LLM 查询结果进行语义级别的缓存。当新查询与缓存查询的语义相似度超过阈值（如 0.85）时，直接返回缓存结果。
+**原理**: 使用 Redis 对 LLM 查询结果进行语义级别缓存。当新查询与缓存查询的语义相似度超过阈值（如 0.85）时，直接返回缓存结果。
 
 **预期效果**:
-- API 成本节省 90%（Redis 官方数据）
-- 相同/相似查询响应时间 < 10ms
-- 减少 LLM 负载
+- API 成本节省 90%
+- 相似查询响应时间 < 10ms
+- "查库存" 和 "库存多少" 可复用同一缓存
+
+**实现方式**:
+```python
+# Redis + Sentence-BERT 实现
+from sentence_transformers import SentenceTransformer
+import redis
+
+model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+
+def semantic_cache_lookup(query: str, threshold: float = 0.85):
+    query_embedding = model.encode(query)
+    # 从 Redis 检索相似查询
+    cached = redis_client.ft_search(query_embedding, k=1)
+    if cached and cached.similarity > threshold:
+        return cached.result
+    return None
+```
+
+**开源工具**: Redis LangCache、RedisVL SemanticCache
 
 **实现难度**: 简单（1周）
 
-**开源工具**: Redis LangCache、RedisVL SemanticCache、LiteLLM Caching
-
 ---
 
-### 4.3 Prompt 压缩（LLMLingua）
+### 4.2 Embedding 预筛选（P2）
 
-**原理**: 使用小型语言模型（如 GPT2-small 或 LLaMA-7B）识别并移除 Prompt 中不重要的 token，压缩后再发送给主 LLM。
+**原理**: 在调用 LLM 前，先使用 Embedding 向量检索找出 Top 10 候选意图，仅把这些候选传给 LLM 分类，减少 context 长度。
 
-**关键技术**:
-- LLMLingua-2: 比原版快 3-6 倍，支持跨域数据
-- LongLLMLingua: 解决"lost in the middle"问题，RAG 性能提升 21.4%
+**适用场景**: 当前 LLM 请求包含全部 84 个意图配置（约45KB），预筛选可将 context 缩小到 10 个意图（约5KB）。
 
 **预期效果**:
-- 压缩率高达 20 倍
-- 性能损失最小
-- LinkedIn 实测：30% prompt 压缩，推理速度显著提升
+- LLM context 缩小 90%
+- 响应延迟降低 30-50%
 
-**实现难度**: 中等（1-2周）
-
-**开源工具**: Microsoft LLMLingua（GitHub 5k+ stars）
-
----
-
-### 4.4 置信度阈值 + 澄清问题生成
-
-**置信度分级策略**:
-- 置信度 > 0.8: 直接执行意图
-- 置信度 0.6-0.8: 二次确认
-- 置信度 < 0.6: 生成澄清问题
-
-**澄清问题生成方法**:
-- **AT-CoT（推荐）**: 先预测歧义类型，再生成对应澄清问题，BERTScore 达 82
-- Chain-of-Thought: 标准推理链，BERTScore 80
-- Direct Prompting: 直接生成，BERTScore 78.8
-
-**实测效果**: AmbiSQL 数据集上，模糊查询准确率从 42.5% 提升至 92.5%（+117%）
+**实现方式**:
+- 向量数据库: ChromaDB（84 意图规模足够）
+- Embedding 模型: Sentence-BERT (paraphrase-multilingual-MiniLM-L12-v2)
 
 **实现难度**: 中等（2周）
 
 ---
 
-### 4.5 异步批处理 + 连接池优化
+### 4.3 HTTP 连接池优化（P1）
 
-**连接池配置建议**:
-- 数据库连接池: pool_size=20, max_overflow=10, pool_timeout=30
-- LLM API 配置: timeout=60秒（默认5秒太短）, max_retries=3, batch_size=5
+**当前问题**: `LlmIntentFallbackClientImpl` 每次请求创建新的 `HttpURLConnection`，无连接复用。
 
-**批处理策略**:
-- 实时查询: 单次调用，超时 30s
-- 批量处理: Together AI Batch API 提供 50% 折扣
-- 异步库: AsyncOpenAI, AsyncAnthropic
+**优化方案**:
+```java
+// OkHttp 连接池配置
+OkHttpClient client = new OkHttpClient.Builder()
+    .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
+    .connectTimeout(10, TimeUnit.SECONDS)
+    .readTimeout(30, TimeUnit.SECONDS)
+    .build();
+```
 
 **预期效果**:
 - 延迟降低 50-200ms/连接
-- 吞吐量提升 3-5 倍
-- 批处理成本降低 50%
+- TCP 握手复用
 
-**实现难度**: 简单-中等（1-2周）
-
----
-
-### 4.6 RAG 切片策略优化
-
-**NVIDIA 2024 基准测试结果**:
-- Page-level chunking 准确率最高（0.648）
-- Factoid 查询: 256-512 tokens 最佳
-- 分析型查询: 1024+ tokens 最佳
-
-**意图识别场景推荐**:
-- 意图描述: 固定大小（256-512 tokens）
-- 关键词库: 语义切片（按意图分组）
-- 对话历史: 滑动窗口 + 10-20% overlap
-- 知识库: Agentic chunking（基于用户行为动态调整）
+**实现难度**: 简单（1天）
 
 ---
 
-### 4.7 向量数据库选型
+### 4.4 置信度分级（✅ 已实现）
 
-| 场景 | 推荐方案 | 理由 |
-|------|----------|------|
-| 原型开发（<1M 向量） | ChromaDB | 简单 API，零运维 |
-| 生产环境（1-50M） | Qdrant 或 Milvus | 高性能，开源，成本低 |
-| 企业级（50M+） | Pinecone | 全托管，零运维 |
+**当前状态**: 已通过 BUG-004/005 修复实现。
 
-**成本对比（10M 向量）**: Milvus ~$500/月，Pinecone ~$1,200/月
+**实现内容**:
+- 置信度 > 0.8: 直接执行意图
+- 置信度 0.6-0.8: 触发二次确认
+- 置信度 < 0.6: 返回 NEED_CLARIFICATION + 建议操作列表
 
----
-
-### 4.8 Embedding 模型选择
-
-| 模型 | 维度 | 特点 | 适用场景 |
-|------|------|------|----------|
-| OpenAI text-embedding-3-large | 256/1024/3072 | 性能最佳，可调维度 | 商业项目，高精度需求 |
-| Cohere Embed v3 | 1024 | 100+ 语言支持 | 多语言场景 |
-| Jina Embeddings v3 | 可变 | 8192 token，89 语言，开源 | 长文本，开源项目 |
-| Sentence-BERT | 768 | 开源，速度快 | 成本敏感型项目 |
+**相关代码**: `IntentExecutorServiceImpl.java`, `AIIntentServiceImpl.java`
 
 ---
 
-## 五、实施优先级矩阵
+## 五、不推荐方案（及理由）
 
-| 优先级 | 方案 | 预期 ROI | 实现周期 | 依赖 |
-|--------|------|----------|----------|------|
-| **P0** | 修复二次确认机制 | 用户体验质变 | 1天 | 无 |
-| **P0** | 添加 parse-data-operation 端点 | 修复 DATA_OP 功能 | 2小时 | Python 服务 |
-| **P0** | 调整查询/更新意图优先级 | 修复误识别 | 1小时 | 数据库 |
-| **P1** | 语义缓存 | 90% API 成本节省 | 1周 | Redis |
-| **P1** | 混合意图分类（Embedding 预筛选） | 70% 调用量减少 | 2-3周 | 向量数据库 |
-| **P2** | Prompt 压缩 | 30% 进一步成本优化 | 1-2周 | LLMLingua |
-| **P2** | 异步批处理优化 | 吞吐量提升 3-5x | 1-2周 | 无 |
-| **P3** | RAG 完整改造 | 整体提升 50%+ | 2-4周 | 向量数据库 |
+以下方案经评估后不适用于当前系统：
+
+| 方案 | 不推荐理由 |
+|------|-----------|
+| **LangChain** | 过度工程。系统仅需单轮意图分类，无需复杂 Agent、Chain、Tool 编排 |
+| **Prompt 压缩 (LLMLingua)** | 需部署额外 LLM (GPT-2/LLaMA)，增加复杂度；Embedding 预筛选更简单有效 |
+| **RAG 切片策略** | 针对大型知识库 RAG；本系统仅 84 个意图，无需复杂切片 |
+| **批处理 (Batch API)** | 意图识别是实时场景，无法批量等待 |
 
 ---
 
-## 六、测试验证要点
+## 六、实施优先级矩阵
+
+| 优先级 | 方案 | 预期 ROI | 实现周期 | 依赖 | 状态 |
+|--------|------|----------|----------|------|------|
+| **P0** | 修复二次确认机制 | 用户体验质变 | 1天 | 无 | ✅ 已完成 |
+| **P0** | 添加 parse-data-operation 端点 | 修复 DATA_OP 功能 | 2小时 | Python 服务 | ✅ 已完成 |
+| **P0** | 调整查询/更新意图优先级 | 修复误识别 | 1小时 | 数据库 | ✅ 已完成 |
+| **P0** | 全局关键词匹配修复 | 修复功能阻断 | 2小时 | 无 | ✅ 已完成 |
+| **P1** | 语义缓存 | 90% API 成本节省 | 1周 | Redis | ⏳ 待实现 |
+| **P1** | HTTP 连接池优化 | 延迟降低 50-200ms | 1天 | OkHttp | ⏳ 待实现 |
+| **P2** | Embedding 预筛选 | context 缩小 90% | 2周 | ChromaDB | ⏳ 待实现 |
+
+---
+
+## 七、测试验证要点
 
 ### 修复后验证用例
 
@@ -359,9 +346,9 @@
 
 ---
 
-## 七、已完成功能模块
+## 八、已完成功能模块
 
-### 7.1 MQTT IoT 设备数据服务 (2026-01-04 完成)
+### 8.1 MQTT IoT 设备数据服务 (2026-01-04 完成)
 
 **功能概述**: 基于 EMQX Broker 的完整 IoT 设备数据接收与处理服务，支持电子秤、温度传感器、湿度传感器、摄像头等多种设备类型。
 
@@ -425,7 +412,7 @@ mosquitto_pub -t "cretas/F001/device/TEMP-001/data" \
 
 ---
 
-## 八、参考资料
+## 九、参考资料
 
 ### RAG 和意图识别
 - RAGFlow - Rise and Evolution 2024

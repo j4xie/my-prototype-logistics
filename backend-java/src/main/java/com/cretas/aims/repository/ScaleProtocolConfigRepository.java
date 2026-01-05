@@ -58,4 +58,26 @@ public interface ScaleProtocolConfigRepository extends JpaRepository<ScaleProtoc
      * 按规则组名称查找协议
      */
     List<ScaleProtocolConfig> findByParsingRuleGroup(String ruleGroup);
+
+    /**
+     * 按品牌代码模糊匹配协议 (协议编码格式: BRAND_MODEL_TYPE)
+     * 优先返回已验证的协议
+     */
+    @Query("SELECT p FROM ScaleProtocolConfig p WHERE p.isActive = true " +
+           "AND p.protocolCode LIKE CONCAT(:brandCode, '_%') " +
+           "AND (p.factoryId IS NULL OR p.factoryId = :factoryId) " +
+           "ORDER BY p.isVerified DESC, p.isBuiltin DESC, p.protocolName")
+    List<ScaleProtocolConfig> findByBrandCodePattern(@Param("brandCode") String brandCode,
+                                                      @Param("factoryId") String factoryId);
+
+    /**
+     * 按品牌+型号精确匹配协议 (协议编码格式: BRAND_MODEL_TYPE)
+     */
+    @Query("SELECT p FROM ScaleProtocolConfig p WHERE p.isActive = true " +
+           "AND p.protocolCode LIKE CONCAT(:brandCode, '_', :modelCode, '_%') " +
+           "AND (p.factoryId IS NULL OR p.factoryId = :factoryId) " +
+           "ORDER BY p.isVerified DESC, p.isBuiltin DESC")
+    List<ScaleProtocolConfig> findByBrandModelPattern(@Param("brandCode") String brandCode,
+                                                       @Param("modelCode") String modelCode,
+                                                       @Param("factoryId") String factoryId);
 }

@@ -176,6 +176,13 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
 
+        <!-- OkHttp for AI Service HTTP Client -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
         <!-- Drools Rule Engine -->
         <dependency>
             <groupId>org.drools</groupId>
@@ -222,6 +229,35 @@
             <artifactId>jSerialComm</artifactId>
             <version>2.10.4</version>
         </dependency>
+
+        <!-- OkHttp for AI Service HTTP Client with Connection Pool -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
+        <!-- DJL (Deep Java Library) for Sentence Embedding -->
+        <dependency>
+            <groupId>ai.djl</groupId>
+            <artifactId>api</artifactId>
+            <version>0.30.0</version>
+        </dependency>
+
+        <!-- ONNX Runtime Engine for DJL -->
+        <dependency>
+            <groupId>ai.djl.onnxruntime</groupId>
+            <artifactId>onnxruntime-engine</artifactId>
+            <version>0.30.0</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- HuggingFace Tokenizer (JNI binding) for DJL -->
+        <dependency>
+            <groupId>ai.djl.huggingface</groupId>
+            <artifactId>tokenizers</artifactId>
+            <version>0.30.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -265,14 +301,25 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <mainClass>com.cretas.aims.CretasBackendApplication</mainClass>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
+                        </exclude>
+                        <exclude>
+                            <groupId>org.springframework.boot</groupId>
+                            <artifactId>spring-boot-devtools</artifactId>
                         </exclude>
                     </excludes>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
+    <!-- ========================================== -->
+    <!-- Maven Profiles for Platform-Specific Builds -->
+    <!-- ========================================== -->
+    <profiles>
+    </profiles>
 </project>

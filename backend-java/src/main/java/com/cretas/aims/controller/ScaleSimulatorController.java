@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.scale.SimulatorStatus;
 import com.cretas.aims.dto.scale.VirtualScaleConfig;
 import com.cretas.aims.service.simulator.VirtualScaleSimulator;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -73,7 +74,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 启动失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "启动失败: " + e.getMessage());
+            response.put("message", "启动失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -117,7 +118,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] Keli D2008 启动失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "启动失败: " + e.getMessage());
+            response.put("message", "启动失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -146,7 +147,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 停止失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "停止失败: " + e.getMessage());
+            response.put("message", "停止失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -194,7 +195,7 @@ public class ScaleSimulatorController {
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "暂停失败: " + e.getMessage());
+            response.put("message", "暂停失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -222,7 +223,7 @@ public class ScaleSimulatorController {
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "恢复失败: " + e.getMessage());
+            response.put("message", "恢复失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -301,7 +302,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 发送失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "发送失败: " + e.getMessage());
+            response.put("message", "发送失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -347,7 +348,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 模拟称重失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "模拟失败: " + e.getMessage());
+            response.put("message", "模拟失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -386,7 +387,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 生成帧失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "生成失败: " + e.getMessage());
+            response.put("message", "生成失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -428,7 +429,7 @@ public class ScaleSimulatorController {
             log.error("[虚拟秤] 批量生成失败: {}", e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", "生成失败: " + e.getMessage());
+            response.put("message", "生成失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }

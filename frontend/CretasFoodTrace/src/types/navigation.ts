@@ -262,6 +262,9 @@ export type FAAIStackParamList = {
   CreatePlan: undefined;
   // 详情页
   AIReportDetail: { reportId: number; reportType: string; title: string };
+  // 意图审批
+  IntentSuggestionsList: undefined;
+  IntentSuggestionDetail: { suggestionId: string };
 };
 
 export type FAManagementStackParamList = {
@@ -292,6 +295,16 @@ export type FAManagementStackParamList = {
   QualityCheckItemConfig: undefined;
   // SOP 流程配置
   SopConfig: undefined;
+  // IoT 电子秤设备管理
+  IotDeviceList: undefined;
+  IotDeviceDetail: { deviceId: number };
+  IotDeviceCreate: undefined;
+  ScaleTest: { equipmentId?: number; protocolId?: string };
+  // ISAPI 海康威视摄像头设备管理
+  IsapiDeviceList: undefined;
+  IsapiDeviceDetail: { deviceId: string };
+  IsapiDeviceCreate: undefined;
+  IsapiSmartConfig: { deviceId: string; channelId?: number };
 };
 
 export type FAProfileStackParamList = {

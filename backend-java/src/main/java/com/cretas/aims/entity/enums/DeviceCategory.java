@@ -1,5 +1,6 @@
 package com.cretas.aims.entity.enums;
 
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
@@ -10,7 +11,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-04
+ * @deprecated 使用 {@link UnifiedDeviceType} 代替此枚举
  */
+@Deprecated
 public enum DeviceCategory {
     TRADITIONAL("传统设备", "traditional"),
     IOT_SCALE("IoT电子秤", "iot_scale"),
@@ -58,5 +61,14 @@ public enum DeviceCategory {
             }
         }
         throw new IllegalArgumentException("Unknown device category: " + value);
+    }
+
+    /**
+     * 转换为统一设备类型
+     *
+     * @return 对应的 UnifiedDeviceType
+     */
+    public UnifiedDeviceType toUnifiedDeviceType() {
+        return UnifiedDeviceType.fromDeviceCategory(this);
     }
 }

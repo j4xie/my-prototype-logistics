@@ -1,6 +1,7 @@
 package com.cretas.aims.entity.iot;
 
 import com.cretas.aims.entity.BaseEntity;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
@@ -38,9 +39,35 @@ public class IotDevice extends BaseEntity {
     @Column(name = "device_code", nullable = false, length = 100)
     private String deviceCode;
 
+    /**
+     * 设备类型
+     * @deprecated 使用 {@link #getUnifiedDeviceType()} 获取统一设备类型
+     */
+    @Deprecated
     @Enumerated(EnumType.STRING)
     @Column(name = "device_type", nullable = false, length = 20)
     private DeviceType deviceType;
+
+    /**
+     * 获取统一设备类型
+     * 将旧的 deviceType 映射到新的 UnifiedDeviceType
+     *
+     * @return 统一设备类型
+     */
+    @Transient
+    public UnifiedDeviceType getUnifiedDeviceType() {
+        return UnifiedDeviceType.fromIotDeviceType(this.deviceType);
+    }
+
+    /**
+     * 设置统一设备类型
+     * 自动转换为旧的 deviceType 以保持兼容
+     *
+     * @param unifiedType 统一设备类型
+     */
+    public void setUnifiedDeviceType(UnifiedDeviceType unifiedType) {
+        this.deviceType = unifiedType != null ? unifiedType.toIotDeviceType() : null;
+    }
 
     @Column(name = "factory_id", nullable = false, length = 50)
     private String factoryId;
