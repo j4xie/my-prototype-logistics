@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 /**
  * 设备管理控制器
  * 处理设备注册、注销和推送通知管理
@@ -112,7 +114,7 @@ public class DeviceController {
 
         } catch (Exception e) {
             log.error("设备注册失败", e);
-            return ApiResponse.error("设备注册失败: " + e.getMessage());
+            return ApiResponse.error("设备注册失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -133,7 +135,7 @@ public class DeviceController {
             return ApiResponse.successMessage("设备注销成功");
         } catch (Exception e) {
             log.error("设备注销失败", e);
-            return ApiResponse.error("设备注销失败: " + e.getMessage());
+            return ApiResponse.error("设备注销失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -163,7 +165,7 @@ public class DeviceController {
             return ApiResponse.successMessage("Token 更新成功");
         } catch (Exception e) {
             log.error("Token 更新失败", e);
-            return ApiResponse.error("Token 更新失败: " + e.getMessage());
+            return ApiResponse.error("Token 更新失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -188,7 +190,7 @@ public class DeviceController {
             return ApiResponse.success(devices);
         } catch (Exception e) {
             log.error("获取设备列表失败", e);
-            return ApiResponse.error("获取设备列表失败: " + e.getMessage());
+            return ApiResponse.error("获取设备列表失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -221,7 +223,7 @@ public class DeviceController {
             return ApiResponse.successMessage("测试推送已发送");
         } catch (Exception e) {
             log.error("发送测试推送失败", e);
-            return ApiResponse.error("发送测试推送失败: " + e.getMessage());
+            return ApiResponse.error("发送测试推送失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -254,7 +256,7 @@ public class DeviceController {
             return ApiResponse.successMessage(enabled ? "设备已启用" : "设备已禁用");
         } catch (Exception e) {
             log.error("切换设备状态失败", e);
-            return ApiResponse.error("操作失败: " + e.getMessage());
+            return ApiResponse.error("操作失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

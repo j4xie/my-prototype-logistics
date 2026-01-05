@@ -27,6 +27,8 @@ import javax.validation.Valid;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 /**
  * AI 规则解析控制器
  *
@@ -113,10 +115,10 @@ public class AIRuleController {
 
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + e.getMessage());
+            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
         } catch (Exception e) {
             log.error("规则解析失败", e);
-            return ApiResponse.error("规则解析失败: " + e.getMessage());
+            return ApiResponse.error("规则解析失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -273,10 +275,10 @@ public class AIRuleController {
 
         } catch (RestClientException e) {
             log.error("调用AI服务失败", e);
-            return ApiResponse.error("AI服务不可用: " + e.getMessage());
+            return ApiResponse.error("AI服务不可用: " + ErrorSanitizer.sanitize(e));
         } catch (Exception e) {
             log.error("状态机解析失败", e);
-            return ApiResponse.error("状态机解析失败: " + e.getMessage());
+            return ApiResponse.error("状态机解析失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -370,7 +372,7 @@ public class AIRuleController {
             }
         } catch (Exception e) {
             health.put("aiServiceAvailable", false);
-            health.put("error", e.getMessage());
+            health.put("error", ErrorSanitizer.sanitize(e));
         }
 
         // 添加规则引擎状态

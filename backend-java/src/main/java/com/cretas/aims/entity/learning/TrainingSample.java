@@ -1,0 +1,243 @@
+package com.cretas.aims.entity.learning;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import javax.persistence.*;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+/**
+ * 训练样本实体
+ *
+ * 收集所有意图识别样本，用于：
+ * 1. 分析识别效果
+ * 2. 收集用户反馈
+ * 3. 未来模型微调数据
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2026-01-05
+ */
+@Entity
+@Table(name = "ai_training_samples", indexes = {
+    @Index(name = "idx_ats_factory", columnList = "factory_id"),
+    @Index(name = "idx_ats_intent", columnList = "matched_intent_code"),
+    @Index(name = "idx_ats_correct", columnList = "is_correct"),
+    @Index(name = "idx_ats_method", columnList = "match_method"),
+    @Index(name = "idx_ats_created", columnList = "created_at")
+})
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class TrainingSample {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    /**
+     * 工厂ID
+     */
+    @Column(name = "factory_id", length = 50)
+    private String factoryId;
+
+    /**
+     * 原始用户输入
+     */
+    @Column(name = "user_input", columnDefinition = "TEXT", nullable = false)
+    private String userInput;
+
+    /**
+     * 匹配的意图代码
+     */
+    @Column(name = "matched_intent_code", length = 100)
+    private String matchedIntentCode;
+
+    /**
+     * 匹配方法
+     */
+    @Column(name = "match_method", length = 20)
+    @Enumerated(EnumType.STRING)
+    private MatchMethod matchMethod;
+
+    /**
+     * 匹配置信度
+     */
+    @Column(name = "confidence", precision = 5, scale = 4)
+    private BigDecimal confidence;
+
+    /**
+     * LLM 返回的意图 (用于对比)
+     */
+    @Column(name = "llm_response_intent", length = 100)
+    private String llmResponseIntent;
+
+    /**
+     * 用户反馈: 匹配正确?
+     * null = 未反馈
+     * true = 正确
+     * false = 错误
+     */
+    @Column(name = "is_correct")
+    private Boolean isCorrect;
+
+    /**
+     * 正确的意图 (若 isCorrect=false)
+     */
+    @Column(name = "correct_intent_code", length = 100)
+    private String correctIntentCode;
+
+    /**
+     * 反馈时间
+     */
+    @Column(name = "feedback_at")
+    private LocalDateTime feedbackAt;
+
+    /**
+     * Embedding 向量 (可选，用于微调)
+     * 768维 * 4字节 = 3072字节
+     */
+    @Column(name = "embedding_blob", columnDefinition = "BLOB")
+    private byte[] embeddingBlob;
+
+    /**
+     * 会话ID (用于上下文追踪)
+     */
+    @Column(name = "session_id", length = 100)
+    private String sessionId;
+
+    /**
+     * 创建时间
+     */
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+    }
+
+    /**
+     * 匹配方法枚举
+     */
+    public enum MatchMethod {
+        /** 精确表达匹配 */
+        EXACT,
+        /** 正则匹配 */
+        REGEX,
+        /** 关键词匹配 */
+        KEYWORD,
+        /** 语义匹配 */
+        SEMANTIC,
+        /** 融合匹配 */
+        FUSION,
+        /** LLM Fallback */
+        LLM,
+        /** 相似表达匹配 */
+        SIMILAR_EXPRESSION,
+        /** 未知 */
+        UNKNOWN
+    }
+
+    /**
+     * 记录用户反馈
+     */
+    public void recordFeedback(boolean correct, String correctIntent) {
+        this.isCorrect = correct;
+        this.correctIntentCode = correct ? null : correctIntent;
+        this.feedbackAt = LocalDateTime.now();
+    }
+
+    /**
+     * 设置 embedding (从 float[] 转换)
+     */
+    public void setEmbeddingFromFloats(float[] embedding) {
+        if (embedding == null) {
+            this.embeddingBlob = null;
+            return;
+        }
+        java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate(embedding.length * 4);
+        for (float f : embedding) {
+            buffer.putFloat(f);
+        }
+        this.embeddingBlob = buffer.array();
+    }
+
+    /**
+     * 获取 embedding (转换为 float[])
+     */
+    public float[] getEmbeddingAsFloats() {
+        if (embeddingBlob == null || embeddingBlob.length == 0) {
+            return null;
+        }
+        java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(embeddingBlob);
+        float[] result = new float[embeddingBlob.length / 4];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = buffer.getFloat();
+        }
+        return result;
+    }
+
+    /**
+     * 是否适合用于训练
+     * 条件: 有反馈 + 置信度 >= 0.7
+     */
+    public boolean isTrainingReady() {
+        return isCorrect != null &&
+               confidence != null &&
+               confidence.doubleValue() >= 0.7;
+    }
+
+    /**
+     * 获取训练标签
+     */
+    public String getTrainingLabel() {
+        if (isCorrect == null) {
+            return null;
+        }
+        if (isCorrect) {
+            return matchedIntentCode;
+        } else {
+            return correctIntentCode;
+        }
+    }
+
+    /**
+     * 创建 LLM fallback 样本
+     */
+    public static TrainingSample createFromLlm(String factoryId, String userInput,
+                                                String intentCode, double confidence,
+                                                String sessionId) {
+        return TrainingSample.builder()
+            .factoryId(factoryId)
+            .userInput(userInput)
+            .matchedIntentCode(intentCode)
+            .matchMethod(MatchMethod.LLM)
+            .confidence(BigDecimal.valueOf(confidence))
+            .llmResponseIntent(intentCode)
+            .sessionId(sessionId)
+            .build();
+    }
+
+    /**
+     * 创建匹配样本
+     */
+    public static TrainingSample create(String factoryId, String userInput,
+                                         String intentCode, MatchMethod method,
+                                         double confidence, String sessionId) {
+        return TrainingSample.builder()
+            .factoryId(factoryId)
+            .userInput(userInput)
+            .matchedIntentCode(intentCode)
+            .matchMethod(method)
+            .confidence(BigDecimal.valueOf(confidence))
+            .sessionId(sessionId)
+            .build();
+    }
+}

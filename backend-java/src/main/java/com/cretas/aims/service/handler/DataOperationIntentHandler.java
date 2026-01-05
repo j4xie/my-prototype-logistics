@@ -1,5 +1,7 @@
 package com.cretas.aims.service.handler;
 
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.entity.MaterialBatch;
@@ -11,9 +13,10 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import com.cretas.aims.util.ErrorSanitizer;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -42,7 +45,6 @@ import java.util.*;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class DataOperationIntentHandler implements IntentHandler {
 
     private final ProductTypeRepository productTypeRepository;
@@ -51,9 +53,30 @@ public class DataOperationIntentHandler implements IntentHandler {
     private final MaterialBatchRepository materialBatchRepository;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
+    private final DashScopeConfig dashScopeConfig;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
+
+    @Autowired
+    public DataOperationIntentHandler(ProductTypeRepository productTypeRepository,
+                                       ProductionPlanRepository productionPlanRepository,
+                                       ProductionBatchRepository productionBatchRepository,
+                                       MaterialBatchRepository materialBatchRepository,
+                                       RestTemplate restTemplate,
+                                       ObjectMapper objectMapper,
+                                       @Autowired(required = false) DashScopeClient dashScopeClient,
+                                       @Autowired(required = false) DashScopeConfig dashScopeConfig) {
+        this.productTypeRepository = productTypeRepository;
+        this.productionPlanRepository = productionPlanRepository;
+        this.productionBatchRepository = productionBatchRepository;
+        this.materialBatchRepository = materialBatchRepository;
+        this.restTemplate = restTemplate;
+        this.objectMapper = objectMapper;
+        this.dashScopeClient = dashScopeClient;
+        this.dashScopeConfig = dashScopeConfig;
+    }
 
     // 支持的实体类型映射
     private static final Map<String, String> ENTITY_ALIASES = Map.ofEntries(
@@ -72,6 +95,7 @@ public class DataOperationIntentHandler implements IntentHandler {
             Map.entry("ProductType", "PRODUCT_TYPE"),
             Map.entry("ProductionPlan", "PRODUCTION_PLAN"),
             Map.entry("ProcessingBatch", "PRODUCTION_BATCH"),
+            Map.entry("ProductionBatch", "PRODUCTION_BATCH"),
             Map.entry("MaterialBatch", "MATERIAL_BATCH"),
             // SCREAMING_SNAKE_CASE 形式
             Map.entry("PROCESSING_BATCH", "PRODUCTION_BATCH")
@@ -80,6 +104,13 @@ public class DataOperationIntentHandler implements IntentHandler {
     @Override
     public String getSupportedCategory() {
         return "DATA_OP";
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式，让框架自动解析语义
+        // 当前使用默认的向后兼容实现，后续可逐步迁移到纯语义处理
+        return true;
     }
 
     @Override
@@ -92,6 +123,12 @@ public class DataOperationIntentHandler implements IntentHandler {
                     request.getUserInput().substring(0, 50) + "..." : request.getUserInput());
 
         try {
+            // 根据意图代码分派处理
+            String intentCode = intentConfig.getIntentCode();
+            if ("PRODUCT_TYPE_QUERY".equals(intentCode)) {
+                return handleProductTypeQuery(factoryId, request, intentConfig);
+            }
+
             // 1. 优先使用 context 中的结构化数据（无需AI解析）
             Map<String, Object> parsedIntent = parseFromContext(request);
 
@@ -167,7 +204,7 @@ public class DataOperationIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("DataOperationIntentHandler执行失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
-            return buildFailedResponse(intentConfig, "执行失败: " + e.getMessage());
+            return buildFailedResponse(intentConfig, "执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -259,10 +296,11 @@ public class DataOperationIntentHandler implements IntentHandler {
 
         Optional<ProductType> optEntity;
         if (entityId != null) {
-            optEntity = productTypeRepository.findById(entityId);
+            // 使用工厂隔离查询
+            optEntity = productTypeRepository.findByIdAndFactoryId(entityId, factoryId);
         } else if (identifier != null) {
-            // 先尝试按 id 查找（identifier可能就是id）
-            optEntity = productTypeRepository.findById(identifier);
+            // 先尝试按 id 查找（identifier可能就是id，带工厂隔离）
+            optEntity = productTypeRepository.findByIdAndFactoryId(identifier, factoryId);
             // 如果按id找不到，再按code查找
             if (optEntity.isEmpty()) {
                 optEntity = productTypeRepository.findByFactoryIdAndCode(factoryId, identifier);
@@ -308,10 +346,17 @@ public class DataOperationIntentHandler implements IntentHandler {
 
         Optional<ProductionPlan> optEntity;
         if (entityId != null) {
-            optEntity = productionPlanRepository.findById(entityId);
+            // 使用工厂隔离查询
+            optEntity = productionPlanRepository.findByIdAndFactoryId(entityId, factoryId);
+        } else if (identifier != null) {
+            // 先尝试按 id 查找（identifier可能就是id，带工厂隔离）
+            optEntity = productionPlanRepository.findByIdAndFactoryId(identifier, factoryId);
+            // 如果按id找不到，再按计划编号查找
+            if (optEntity.isEmpty()) {
+                optEntity = productionPlanRepository.findByFactoryIdAndPlanNumber(factoryId, identifier);
+            }
         } else {
-            // 按计划编号查找
-            optEntity = productionPlanRepository.findByPlanNumber(identifier);
+            optEntity = Optional.empty();
         }
 
         if (optEntity.isEmpty()) {
@@ -348,12 +393,28 @@ public class DataOperationIntentHandler implements IntentHandler {
     private IntentExecuteResponse.AffectedEntity updateProductionBatch(
             String factoryId, String entityId, String identifier, Map<String, Object> updates) {
 
-        Optional<ProductionBatch> optEntity;
+        Optional<ProductionBatch> optEntity = Optional.empty();
+
+        // 1. 先尝试按 entityId 查找
         if (entityId != null) {
-            optEntity = productionBatchRepository.findById(Long.valueOf(entityId));
-        } else {
-            // 按批次号查找
-            optEntity = productionBatchRepository.findByBatchNumber(identifier);
+            try {
+                optEntity = productionBatchRepository.findByIdAndFactoryId(Long.valueOf(entityId), factoryId);
+            } catch (NumberFormatException e) {
+                // entityId 不是数字，尝试按批次号查找
+                optEntity = productionBatchRepository.findByFactoryIdAndBatchNumber(factoryId, entityId);
+            }
+        }
+
+        // 2. 如果还没找到，尝试用 identifier 查找
+        if (optEntity.isEmpty() && identifier != null) {
+            try {
+                optEntity = productionBatchRepository.findByIdAndFactoryId(Long.valueOf(identifier), factoryId);
+            } catch (NumberFormatException e) {
+                optEntity = Optional.empty();
+            }
+            if (optEntity.isEmpty()) {
+                optEntity = productionBatchRepository.findByFactoryIdAndBatchNumber(factoryId, identifier);
+            }
         }
 
         if (optEntity.isEmpty()) {
@@ -390,12 +451,23 @@ public class DataOperationIntentHandler implements IntentHandler {
     private IntentExecuteResponse.AffectedEntity updateMaterialBatch(
             String factoryId, String entityId, String identifier, Map<String, Object> updates) {
 
-        Optional<MaterialBatch> optEntity;
+        Optional<MaterialBatch> optEntity = Optional.empty();
+
+        // 1. 先尝试按 entityId 查找
         if (entityId != null) {
-            optEntity = materialBatchRepository.findById(entityId);
-        } else {
-            // 按批次号查找
-            optEntity = materialBatchRepository.findByBatchNumber(identifier);
+            optEntity = materialBatchRepository.findByIdAndFactoryId(entityId, factoryId);
+            // 如果 entityId 查不到，尝试按批次号查找（entityId 可能被错误地设为批次号）
+            if (optEntity.isEmpty()) {
+                optEntity = materialBatchRepository.findByFactoryIdAndBatchNumber(factoryId, entityId);
+            }
+        }
+
+        // 2. 如果还没找到，尝试用 identifier 查找
+        if (optEntity.isEmpty() && identifier != null) {
+            optEntity = materialBatchRepository.findByIdAndFactoryId(identifier, factoryId);
+            if (optEntity.isEmpty()) {
+                optEntity = materialBatchRepository.findByFactoryIdAndBatchNumber(factoryId, identifier);
+            }
         }
 
         if (optEntity.isEmpty()) {
@@ -495,9 +567,134 @@ public class DataOperationIntentHandler implements IntentHandler {
     }
 
     /**
+     * 检查是否应该使用DashScope直接调用
+     */
+    private boolean shouldUseDashScope() {
+        return dashScopeConfig != null
+            && dashScopeClient != null
+            && dashScopeConfig.shouldUseDirect("intent-classify");
+    }
+
+    /**
      * 调用AI服务解析用户意图
      */
     private Map<String, Object> callAIParseIntent(String factoryId, IntentExecuteRequest request) {
+        // 优先使用DashScope直接调用
+        if (shouldUseDashScope()) {
+            Map<String, Object> result = callDashScopeParseIntent(factoryId, request);
+            if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+                return result;
+            }
+            log.info("DashScope解析失败，fallback到Python AI服务");
+        }
+
+        return callPythonAIParseIntent(factoryId, request);
+    }
+
+    /**
+     * 使用DashScope直接解析数据操作意图
+     */
+    private Map<String, Object> callDashScopeParseIntent(String factoryId, IntentExecuteRequest request) {
+        try {
+            log.info("使用DashScope解析数据操作意图: factoryId={}", factoryId);
+
+            String systemPrompt = buildDataOperationPrompt();
+            String userInput = request.getUserInput();
+
+            // 如果有context，附加到用户输入
+            if (request.getContext() != null && !request.getContext().isEmpty()) {
+                userInput += "\n\n上下文信息: " + objectMapper.writeValueAsString(request.getContext());
+            }
+
+            String response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            return parseDataOperationResponse(response);
+
+        } catch (Exception e) {
+            log.error("DashScope数据操作解析失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 构建数据操作解析的系统提示词
+     */
+    private String buildDataOperationPrompt() {
+        return """
+            你是一个数据操作解析专家。分析用户输入，识别要操作的实体和更新内容。
+
+            支持的实体类型（注意区分）:
+            - ProductType: 产品类型/成品类型 (字段: name, code, category, unit, shelfLifeDays)
+              标识符通常以 PT- 开头，如 PT-F001-001
+
+            - ProductionPlan: 生产计划 (字段: planNumber, status, plannedQuantity, startDate, endDate)
+              标识符通常以 PLAN- 开头，如 PLAN-2026-001
+
+            - ProductionBatch: 生产批次/加工批次 (字段: batchNumber, status, actualQuantity, notes)
+              标识符通常以 BATCH- 或 PB- 开头，如 BATCH-2026-0105-001
+              这是加工后的成品批次
+
+            - MaterialBatch: 原材料批次/原料批次 (字段: batchNumber, status, quantity, storageLocation, notes)
+              标识符通常以 MB- 开头，如 MB-F001-001、MB-TEST-20260102-001
+              这是原材料入库批次，关键词：原料、原材料、材料批次
+
+            【重要】判断规则：
+            - 如果批次号以 "MB-" 开头 → MaterialBatch
+            - 如果批次号以 "BATCH-" 或 "PB-" 开头 → ProductionBatch
+            - 如果用户提到"原料"、"原材料"、"材料" → MaterialBatch
+            - 如果用户提到"生产批次"、"加工批次"、"成品批次" → ProductionBatch
+
+            输出格式为JSON:
+            {
+              "success": true,
+              "entityType": "ProductType|ProductionPlan|ProductionBatch|MaterialBatch",
+              "entityId": "实体ID(如果用户提供)",
+              "entityIdentifier": "实体标识符(如批次号、产品编码)",
+              "updates": {"字段名": "新值"},
+              "operation": "UPDATE|CREATE|DELETE",
+              "message": "解析说明"
+            }
+
+            如果无法识别，返回:
+            {
+              "success": false,
+              "message": "无法识别的操作或缺少必要信息"
+            }
+
+            只返回JSON，不要其他内容。
+            """;
+    }
+
+    /**
+     * 解析DashScope返回的数据操作响应
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseDataOperationResponse(String response) {
+        try {
+            // 提取JSON部分
+            String jsonStr = response.trim();
+            if (jsonStr.contains("```json")) {
+                jsonStr = jsonStr.substring(jsonStr.indexOf("```json") + 7);
+                jsonStr = jsonStr.substring(0, jsonStr.indexOf("```")).trim();
+            } else if (jsonStr.contains("```")) {
+                jsonStr = jsonStr.substring(jsonStr.indexOf("```") + 3);
+                jsonStr = jsonStr.substring(0, jsonStr.indexOf("```")).trim();
+            }
+
+            Map<String, Object> result = objectMapper.readValue(jsonStr, Map.class);
+            log.info("DashScope数据操作解析结果: success={}, entityType={}",
+                    result.get("success"), result.get("entityType"));
+            return result;
+
+        } catch (Exception e) {
+            log.error("解析DashScope响应失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 调用Python AI服务解析用户意图 (Fallback)
+     */
+    private Map<String, Object> callPythonAIParseIntent(String factoryId, IntentExecuteRequest request) {
         try {
             String url = aiServiceUrl + "/api/ai/intent/parse-data-operation";
 
@@ -533,7 +730,7 @@ public class DataOperationIntentHandler implements IntentHandler {
             return null;
 
         } catch (Exception e) {
-            log.error("调用AI服务失败: {}", e.getMessage());
+            log.error("调用Python AI服务失败: {}", e.getMessage());
             return null;
         }
     }
@@ -657,6 +854,116 @@ public class DataOperationIntentHandler implements IntentHandler {
         }
 
         return value;
+    }
+
+    /**
+     * 处理产品类型查询
+     */
+    private IntentExecuteResponse handleProductTypeQuery(String factoryId, IntentExecuteRequest request,
+                                                          AIIntentConfig intentConfig) {
+        Map<String, Object> context = request.getContext();
+        String productTypeId = null;
+        String productName = null;
+
+        // 从context提取参数
+        if (context != null) {
+            productTypeId = (String) context.get("productTypeId");
+            if (productTypeId == null) {
+                productTypeId = (String) context.get("productId");
+            }
+            productName = (String) context.get("productName");
+        }
+
+        try {
+            // 如果有产品类型ID，查询单个产品
+            if (productTypeId != null && !productTypeId.isEmpty()) {
+                Optional<ProductType> productOpt = productTypeRepository.findByIdAndFactoryId(
+                        productTypeId, factoryId);
+
+                if (productOpt.isPresent()) {
+                    ProductType product = productOpt.get();
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .intentName("产品类型查询")
+                            .intentCategory("DATA_OP")
+                            .status("COMPLETED")
+                            .message("产品 " + product.getName() + " 查询成功")
+                            .resultData(Map.of(
+                                    "product", Map.of(
+                                            "id", product.getId(),
+                                            "name", product.getName(),
+                                            "code", product.getCode() != null ? product.getCode() : "",
+                                            "category", product.getCategory() != null ? product.getCategory() : "",
+                                            "unit", product.getUnit() != null ? product.getUnit() : "",
+                                            "shelfLifeDays", product.getShelfLifeDays() != null ? product.getShelfLifeDays() : 0
+                                    )
+                            ))
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                } else {
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .intentName("产品类型查询")
+                            .intentCategory("DATA_OP")
+                            .status("FAILED")
+                            .message("未找到产品: " + productTypeId)
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
+            }
+
+            // 如果有产品名称，按名称模糊搜索
+            if (productName != null && !productName.isEmpty()) {
+                Page<ProductType> productsPage = productTypeRepository.searchProductTypes(
+                        factoryId, productName, org.springframework.data.domain.PageRequest.of(0, 20));
+                List<ProductType> products = productsPage.getContent();
+
+                if (!products.isEmpty()) {
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .intentName("产品类型查询")
+                            .intentCategory("DATA_OP")
+                            .status("COMPLETED")
+                            .message("找到 " + products.size() + " 个匹配的产品")
+                            .resultData(Map.of(
+                                    "products", products.stream().map(p -> Map.of(
+                                            "id", p.getId(),
+                                            "name", p.getName(),
+                                            "category", p.getCategory() != null ? p.getCategory() : ""
+                                    )).toList(),
+                                    "total", products.size()
+                            ))
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
+            }
+
+            // 没有指定条件，返回提示
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName("产品类型查询")
+                    .intentCategory("DATA_OP")
+                    .status("NEED_MORE_INFO")
+                    .message("请提供产品类型ID (productTypeId) 或产品名称 (productName)")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("产品类型查询失败", e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName("产品类型查询")
+                    .intentCategory("DATA_OP")
+                    .status("FAILED")
+                    .message("查询失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     /**

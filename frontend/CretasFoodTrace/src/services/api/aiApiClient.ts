@@ -78,6 +78,58 @@ export interface SSECallbacks {
 }
 
 /**
+ * 意图执行 SSE 事件类型
+ */
+export type IntentSSEEventType =
+  | 'start'
+  | 'cache_hit'
+  | 'cache_miss'
+  | 'intent_recognized'
+  | 'executing'
+  | 'result'
+  | 'complete'
+  | 'error';
+
+/**
+ * 意图执行 SSE 事件数据
+ */
+export interface IntentSSEEventData {
+  type: IntentSSEEventType;
+  message?: string;
+  latencyMs?: number;
+  intentCode?: string;
+  intentName?: string;
+  confidence?: number;
+  cacheType?: 'EXACT' | 'SEMANTIC';
+  status?: string;
+  /** 执行结果 (JSON 对象) */
+  result?: Record<string, unknown>;
+  cacheHit?: boolean;
+}
+
+/**
+ * 意图执行 SSE 回调函数
+ */
+export interface IntentSSECallbacks {
+  /** 开始处理 */
+  onStart?: (message: string) => void;
+  /** 缓存命中 (可跳过意图识别) */
+  onCacheHit?: (data: { latencyMs: number; cacheType: 'EXACT' | 'SEMANTIC' }) => void;
+  /** 缓存未命中 */
+  onCacheMiss?: (latencyMs: number) => void;
+  /** 意图识别完成 */
+  onIntentRecognized?: (data: { intentCode: string; intentName: string; confidence: number }) => void;
+  /** 开始执行意图 */
+  onExecuting?: (intentName: string) => void;
+  /** 执行结果 */
+  onResult?: (result: Record<string, unknown>) => void;
+  /** 完成 */
+  onComplete?: (data: { status: string; cacheHit: boolean }) => void;
+  /** 错误 */
+  onError?: (message: string) => void;
+}
+
+/**
  * AI批次对比分析请求
  */
 export interface ComparativeCostAnalysisRequest {
@@ -771,6 +823,136 @@ class AIApiClient {
       { intentCode, parameters }
     );
     return response;
+  }
+
+  /**
+   * 流式执行用户意图 (SSE)
+   *
+   * 通过 Server-Sent Events 实时返回执行进度:
+   * 1. start - 开始处理
+   * 2. cache_hit / cache_miss - 缓存查询结果
+   * 3. intent_recognized - 意图识别完成
+   * 4. executing - 开始执行
+   * 5. result - 执行结果
+   * 6. complete - 完成
+   * 7. error - 发生错误
+   *
+   * @param userInput 用户输入文本
+   * @param callbacks SSE事件回调函数
+   * @param factoryId 工厂ID（可选）
+   * @returns Promise<void> - 流式处理完成后resolve
+   */
+  async executeIntentStream(
+    userInput: string,
+    callbacks: IntentSSECallbacks,
+    factoryId?: string
+  ): Promise<void> {
+    const url = `${this.getBasePath(factoryId)}/ai-intents/execute/stream`;
+
+    // 获取 token
+    const token = await this.getAuthToken();
+
+    // 获取完整的 API 基础 URL
+    const baseUrl = await this.getBaseUrl();
+    const fullUrl = `${baseUrl}${url}`;
+
+    console.log('=== 意图执行 SSE 流式请求开始 ===');
+    console.log('URL:', fullUrl);
+    console.log('UserInput:', userInput);
+
+    try {
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userInput }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error('无法获取响应流');
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // 保留不完整的行
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const eventData: IntentSSEEventData = JSON.parse(line.substring(6));
+              console.log('Intent SSE Event:', eventData.type, eventData.message || eventData.intentCode);
+
+              switch (eventData.type) {
+                case 'start':
+                  callbacks.onStart?.(eventData.message || '开始处理...');
+                  break;
+
+                case 'cache_hit':
+                  callbacks.onCacheHit?.({
+                    latencyMs: eventData.latencyMs || 0,
+                    cacheType: eventData.cacheType || 'EXACT',
+                  });
+                  break;
+
+                case 'cache_miss':
+                  callbacks.onCacheMiss?.(eventData.latencyMs || 0);
+                  break;
+
+                case 'intent_recognized':
+                  callbacks.onIntentRecognized?.({
+                    intentCode: eventData.intentCode || '',
+                    intentName: eventData.intentName || '',
+                    confidence: eventData.confidence || 0,
+                  });
+                  break;
+
+                case 'executing':
+                  callbacks.onExecuting?.(eventData.intentName || '');
+                  break;
+
+                case 'result':
+                  if (eventData.result) {
+                    callbacks.onResult?.(eventData.result);
+                  }
+                  break;
+
+                case 'complete':
+                  callbacks.onComplete?.({
+                    status: eventData.status || 'SUCCESS',
+                    cacheHit: eventData.cacheHit || false,
+                  });
+                  break;
+
+                case 'error':
+                  callbacks.onError?.(eventData.message || '执行失败');
+                  break;
+              }
+            } catch (parseError) {
+              console.warn('Intent SSE 事件解析失败:', line, parseError);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Intent SSE 流式请求失败:', error);
+      callbacks.onError?.(error instanceof Error ? error.message : '流式请求失败');
+      throw error;
+    }
   }
 
   // ========== 健康检查接口 ==========

@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.intent;
 
+import com.cretas.aims.config.IntentKnowledgeBase.ActionType;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -78,11 +79,28 @@ public class IntentMatchResult {
     private String userInput;
 
     /**
+     * 检测到的操作类型
+     * 用于区分用户意图是查询、创建、更新还是删除
+     */
+    private ActionType actionType;
+
+    /**
+     * 目标实体标识
+     * 例如: MB-F001-001 (物料批次), WO-F001-001 (工单)
+     * 从用户输入中提取的实体标识符
+     */
+    private String targetEntity;
+
+    /**
      * 匹配方法枚举
      */
     public enum MatchMethod {
+        EXACT,      // 精确表达匹配 (hash查表)
         REGEX,      // 正则表达式匹配
         KEYWORD,    // 关键词匹配
+        SEMANTIC,   // 语义向量匹配（高置信度直接采用）
+        FUSION,     // 融合匹配（语义+关键词加权）
+        SIMILAR,    // 相似表达匹配 (编辑距离)
         LLM,        // LLM fallback 匹配
         NONE        // 未匹配
     }
@@ -167,6 +185,44 @@ public class IntentMatchResult {
                 .isStrongSignal(false)
                 .requiresConfirmation(false)
                 .userInput(userInput)
+                .actionType(ActionType.UNKNOWN)
+                .targetEntity(null)
+                .build();
+    }
+
+    /**
+     * 创建空结果（无匹配，带操作类型）
+     */
+    public static IntentMatchResult empty(String userInput, ActionType actionType) {
+        return IntentMatchResult.builder()
+                .bestMatch(null)
+                .topCandidates(List.of())
+                .confidence(0.0)
+                .matchMethod(MatchMethod.NONE)
+                .matchedKeywords(List.of())
+                .isStrongSignal(false)
+                .requiresConfirmation(false)
+                .userInput(userInput)
+                .actionType(actionType != null ? actionType : ActionType.UNKNOWN)
+                .targetEntity(null)
+                .build();
+    }
+
+    /**
+     * 创建空结果（无匹配，带操作类型和目标实体）
+     */
+    public static IntentMatchResult empty(String userInput, ActionType actionType, String targetEntity) {
+        return IntentMatchResult.builder()
+                .bestMatch(null)
+                .topCandidates(List.of())
+                .confidence(0.0)
+                .matchMethod(MatchMethod.NONE)
+                .matchedKeywords(List.of())
+                .isStrongSignal(false)
+                .requiresConfirmation(false)
+                .userInput(userInput)
+                .actionType(actionType != null ? actionType : ActionType.UNKNOWN)
+                .targetEntity(targetEntity)
                 .build();
     }
 

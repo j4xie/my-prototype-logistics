@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 报表意图处理器
@@ -84,7 +85,7 @@ public class ReportIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("REPORT")
                     .status("FAILED")
-                    .message("报表操作失败: " + e.getMessage())
+                    .message("报表操作失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -347,5 +348,11 @@ public class ReportIntentHandler implements IntentHandler {
                 .message("报表意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

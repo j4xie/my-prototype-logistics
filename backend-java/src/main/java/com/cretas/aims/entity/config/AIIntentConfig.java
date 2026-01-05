@@ -24,7 +24,8 @@ import javax.persistence.*;
        indexes = {
            @Index(name = "idx_intent_category", columnList = "intent_category"),
            @Index(name = "idx_intent_sensitivity", columnList = "sensitivity_level"),
-           @Index(name = "idx_intent_is_active", columnList = "is_active")
+           @Index(name = "idx_intent_is_active", columnList = "is_active"),
+           @Index(name = "idx_intent_factory_id", columnList = "factory_id")
        })
 @Getter
 @Setter
@@ -38,6 +39,14 @@ public class AIIntentConfig extends BaseEntity {
     @org.hibernate.annotations.GenericGenerator(name = "uuid2", strategy = "uuid2")
     @Column(length = 36)
     private String id;
+
+    /**
+     * 工厂ID（用于工厂级意图隔离）
+     * - null: 平台级意图（所有工厂共享）
+     * - 具体工厂ID: 工厂级意图（仅该工厂可见）
+     */
+    @Column(name = "factory_id", length = 50)
+    private String factoryId;
 
     /**
      * 意图代码 (唯一标识)
@@ -176,6 +185,54 @@ public class AIIntentConfig extends BaseEntity {
     @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
 
+    // ==================== 版本控制字段 ====================
+
+    /**
+     * 配置版本号
+     * 每次修改自动递增
+     */
+    @Column(name = "config_version")
+    @Builder.Default
+    private Integer configVersion = 1;
+
+    /**
+     * 上个版本的完整配置快照 (JSON)
+     * 用于一键回滚
+     */
+    @Column(name = "previous_snapshot", columnDefinition = "JSON")
+    private String previousSnapshot;
+
+    // ==================== 语义层字段 ====================
+
+    /**
+     * L1 语义域
+     * 业务领域分类: DATA, QUALITY, SCHEDULE, SCALE, SHIPMENT, FORM, META, SYSTEM
+     */
+    @Column(name = "semantic_domain", length = 30)
+    private String semanticDomain;
+
+    /**
+     * L2 语义动作
+     * 操作类型: QUERY, UPDATE, CREATE, DELETE, ANALYZE, EXECUTE, CONFIGURE, DETECT
+     */
+    @Column(name = "semantic_action", length = 30)
+    private String semanticAction;
+
+    /**
+     * L3 语义对象
+     * 操作目标: BATCH, PRODUCT, PLAN, MATERIAL, EQUIPMENT, USER, INTENT, etc.
+     */
+    @Column(name = "semantic_object", length = 50)
+    private String semanticObject;
+
+    /**
+     * 语义路径 (计算字段)
+     * 格式: {domain}.{action}.{object}
+     * 例如: DATA.UPDATE.BATCH, QUALITY.EXECUTE.CHECK
+     */
+    @Column(name = "semantic_path", insertable = false, updatable = false, length = 100)
+    private String semanticPath;
+
     /**
      * 判断是否需要管理员权限
      */
@@ -195,5 +252,41 @@ public class AIIntentConfig extends BaseEntity {
      */
     public boolean needsApproval() {
         return Boolean.TRUE.equals(requiresApproval) && "CRITICAL".equals(sensitivityLevel);
+    }
+
+    /**
+     * 获取关键词列表
+     * 从 JSON 数组字符串解析为 List
+     */
+    public java.util.List<String> getKeywordsList() {
+        if (keywords == null || keywords.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            // 解析 JSON 数组 ["关键词1", "关键词2"]
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(keywords,
+                mapper.getTypeFactory().constructCollectionType(java.util.List.class, String.class));
+        } catch (Exception e) {
+            // 如果解析失败，尝试按逗号分割
+            return java.util.Arrays.asList(keywords.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
+        }
+    }
+
+    /**
+     * 设置关键词列表
+     * 将 List 转换为 JSON 数组字符串
+     */
+    public void setKeywordsList(java.util.List<String> keywordList) {
+        if (keywordList == null || keywordList.isEmpty()) {
+            this.keywords = "[]";
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            this.keywords = mapper.writeValueAsString(keywordList);
+        } catch (Exception e) {
+            this.keywords = "[\"" + String.join("\", \"", keywordList) + "\"]";
+        }
     }
 }

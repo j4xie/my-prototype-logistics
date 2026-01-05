@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.springframework.format.annotation.DateTimeFormat;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 用户管理控制器
@@ -306,7 +307,7 @@ public class UserController {
             }
         } catch (Exception e) {
             log.error("用户批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + e.getMessage());
+            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

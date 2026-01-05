@@ -10,13 +10,17 @@ import com.cretas.aims.utils.JwtUtil;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentExecutorService;
 import com.cretas.aims.service.KeywordEffectivenessService;
+import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.entity.config.AIIntentConfigHistory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +47,7 @@ public class AIIntentConfigController {
     private final AIIntentService aiIntentService;
     private final IntentExecutorService intentExecutorService;
     private final KeywordEffectivenessService keywordEffectivenessService;
+    private final IntentConfigRollbackService rollbackService;
     private final JwtUtil jwtUtil;
 
     // ==================== 意图查询 ====================
@@ -195,6 +200,27 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping(value = "/execute/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "流式执行AI意图 (SSE)", description = "通过 Server-Sent Events 实时返回执行进度")
+    public SseEmitter executeIntentStream(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("流式执行AI意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        return intentExecutorService.executeStream(factoryId, request, userId, userRole);
+    }
+
     @PostMapping("/preview")
     @Operation(summary = "预览AI意图执行结果", description = "识别意图并预览执行结果，不实际执行")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> previewIntent(
@@ -300,6 +326,62 @@ public class AIIntentConfigController {
         aiIntentService.deleteIntent(intentCode);
         log.info("Deleted AI intent: {}", intentCode);
         return ResponseEntity.ok(ApiResponse.successMessage("意图配置删除成功"));
+    }
+
+    // ==================== 版本回滚 ====================
+
+    @PostMapping("/{intentCode}/rollback")
+    @Operation(summary = "回滚意图配置", description = "回滚单个意图配置到上个版本")
+    public ResponseEntity<ApiResponse<AIIntentConfig>> rollbackIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode,
+            @RequestBody RollbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String username = jwtUtil.getUsernameFromToken(token);
+
+        // 先获取配置ID
+        AIIntentConfig config = aiIntentService.getIntentByCode(intentCode)
+                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
+
+        AIIntentConfig rolled = rollbackService.rollbackToLastVersion(
+                config.getId(), userId, username, request.getReason());
+
+        log.info("Rolled back AI intent: {} to version {}", intentCode, rolled.getConfigVersion());
+        return ResponseEntity.ok(ApiResponse.success("意图配置回滚成功", rolled));
+    }
+
+    @GetMapping("/{intentCode}/history")
+    @Operation(summary = "获取版本历史", description = "获取意图配置的版本历史记录")
+    public ResponseEntity<ApiResponse<java.util.List<AIIntentConfigHistory>>> getVersionHistory(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        AIIntentConfig config = aiIntentService.getIntentByCode(intentCode)
+                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
+
+        java.util.List<AIIntentConfigHistory> history = rollbackService.getVersionHistory(config.getId());
+        return ResponseEntity.ok(ApiResponse.success(history));
+    }
+
+    @PostMapping("/rollback-all")
+    @Operation(summary = "批量回滚工厂意图", description = "回滚工厂的所有意图配置到上个版本")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> rollbackAllIntents(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody RollbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String username = jwtUtil.getUsernameFromToken(token);
+
+        java.util.Map<String, Object> result = rollbackService.rollbackFactoryToLastVersion(
+                factoryId, userId, username, request.getReason());
+
+        log.info("Batch rollback for factory {}: {}", factoryId, result);
+        return ResponseEntity.ok(ApiResponse.success("批量回滚完成", result));
     }
 
     // ==================== 反馈记录 ====================
@@ -429,5 +511,14 @@ public class AIIntentConfigController {
         private String selectedIntentCode;
         /** 原匹配到的关键词列表 */
         private java.util.List<String> matchedKeywords;
+    }
+
+    /**
+     * 回滚请求
+     */
+    @lombok.Data
+    public static class RollbackRequest {
+        /** 回滚原因 */
+        private String reason;
     }
 }

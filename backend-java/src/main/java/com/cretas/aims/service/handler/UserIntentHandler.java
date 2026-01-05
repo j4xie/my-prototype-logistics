@@ -4,9 +4,12 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.user.CreateUserRequest;
 import com.cretas.aims.dto.user.UserDTO;
+import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.enums.FactoryUserRole;
+import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.UserService;
+import com.cretas.aims.util.ErrorSanitizer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +40,7 @@ import java.util.regex.Pattern;
 public class UserIntentHandler implements IntentHandler {
 
     private final UserService userService;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -62,7 +66,7 @@ public class UserIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("UserIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
-            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + e.getMessage());
+            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -170,7 +174,13 @@ public class UserIntentHandler implements IntentHandler {
         if (request.getContext() != null) {
             Object userIdObj = request.getContext().get("userId");
             if (userIdObj != null) {
-                targetUserId = Long.valueOf(userIdObj.toString());
+                try {
+                    targetUserId = Long.valueOf(userIdObj.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("无效的用户ID格式: {}", userIdObj);
+                    return buildNeedMoreInfoResponse(intentConfig,
+                            "用户ID格式无效，请提供有效的数字ID。例如: context: {userId: 123}");
+                }
             }
             Object usernameObj = request.getContext().get("username");
             if (usernameObj != null) {
@@ -189,10 +199,16 @@ public class UserIntentHandler implements IntentHandler {
                     "例如：'禁用用户zhangsan' 或提供 context: {userId: 123} 或 {username: 'zhangsan'}");
         }
 
-        // TODO: 如果只有 username，需要先查询获取 userId
-        if (targetUserId == null) {
-            return buildNeedMoreInfoResponse(intentConfig,
-                    "用户名查询功能待实现。请直接提供用户ID: context: {userId: 123}");
+        // 如果只有 username，查询获取 userId
+        if (targetUserId == null && targetUsername != null) {
+            User user = userRepository.findByFactoryIdAndUsername(factoryId, targetUsername)
+                    .orElse(null);
+            if (user == null) {
+                return buildNeedMoreInfoResponse(intentConfig,
+                        "未找到用户名为 '" + targetUsername + "' 的用户，请检查用户名是否正确。");
+            }
+            targetUserId = user.getId();
+            log.info("通过用户名查询到用户ID: username={}, userId={}", targetUsername, targetUserId);
         }
 
         // 执行禁用
@@ -232,7 +248,13 @@ public class UserIntentHandler implements IntentHandler {
         if (request.getContext() != null) {
             Object userIdObj = request.getContext().get("userId");
             if (userIdObj != null) {
-                targetUserId = Long.valueOf(userIdObj.toString());
+                try {
+                    targetUserId = Long.valueOf(userIdObj.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("无效的用户ID格式: {}", userIdObj);
+                    return buildNeedMoreInfoResponse(intentConfig,
+                            "用户ID格式无效，请提供有效的数字ID。例如: context: {userId: 123, role: 'operator'}");
+                }
             }
             Object roleObj = request.getContext().get("role");
             if (roleObj != null) {
@@ -358,5 +380,11 @@ public class UserIntentHandler implements IntentHandler {
                                 .build()
                 ))
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }
