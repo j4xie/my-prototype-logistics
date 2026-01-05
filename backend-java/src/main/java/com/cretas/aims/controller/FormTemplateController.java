@@ -7,6 +7,7 @@ import com.cretas.aims.repository.FormTemplateVersionRepository;
 import com.cretas.aims.service.FormTemplateService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -318,7 +319,7 @@ public class FormTemplateController {
             return ApiResponse.success(dtos);
         } catch (Exception e) {
             log.error("获取版本历史失败: templateId={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取版本历史失败: " + e.getMessage());
+            return ApiResponse.error("获取版本历史失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -345,7 +346,7 @@ public class FormTemplateController {
             return ApiResponse.success(optVersion.get());
         } catch (Exception e) {
             log.error("获取版本详情失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("获取版本详情失败: " + e.getMessage());
+            return ApiResponse.error("获取版本详情失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -371,7 +372,7 @@ public class FormTemplateController {
             return ApiResponse.success("回滚成功", result);
         } catch (Exception e) {
             log.error("回滚版本失败: templateId={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("回滚版本失败: " + e.getMessage());
+            return ApiResponse.error("回滚版本失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -412,7 +413,7 @@ public class FormTemplateController {
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("比较版本失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("比较版本失败: " + e.getMessage());
+            return ApiResponse.error("比较版本失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

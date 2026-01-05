@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.DisposalRecord;
 import com.cretas.aims.service.DisposalRecordService;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -63,7 +64,7 @@ public class DisposalController {
             log.error("获取报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -87,7 +88,7 @@ public class DisposalController {
             log.error("获取报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -112,7 +113,7 @@ public class DisposalController {
             log.error("创建报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -137,13 +138,13 @@ public class DisposalController {
             log.warn("更新报废记录被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("更新报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -171,7 +172,7 @@ public class DisposalController {
             log.error("审批报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -194,13 +195,13 @@ public class DisposalController {
             log.warn("删除报废记录被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("删除报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -222,7 +223,7 @@ public class DisposalController {
             log.error("获取待审批报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -246,7 +247,7 @@ public class DisposalController {
             log.error("按日期范围查询报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -270,7 +271,7 @@ public class DisposalController {
             log.error("获取报废统计失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -294,7 +295,7 @@ public class DisposalController {
             log.error("按类型统计报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -316,7 +317,7 @@ public class DisposalController {
             log.error("获取可回收报废记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

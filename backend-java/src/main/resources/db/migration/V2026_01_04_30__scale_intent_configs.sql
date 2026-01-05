@@ -138,3 +138,103 @@ INSERT INTO ai_intent_configs (
     keywords = VALUES(keywords),
     description = VALUES(description),
     updated_at = NOW();
+
+-- ============================================
+-- 秤设备管理意图
+-- ============================================
+
+-- 添加秤设备
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_ADD_DEVICE', '添加秤设备', 'SCALE',
+    'MEDIUM', 2,
+    '["添加设备", "新增电子秤", "配置新秤", "添加一个秤", "新秤", "添加称重设备", "注册设备", "接入秤", "安装秤", "接入电子秤", "添加一台秤", "新增称重", "添加一个柯力", "添加一个耀华", "接入设备"]',
+    '["factory_super_admin", "department_admin"]', 92, '通过自然语言描述添加新的秤设备，自动匹配协议',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();
+
+-- 图片识别添加秤设备
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_ADD_DEVICE_VISION', '图片识别添加秤', 'SCALE',
+    'MEDIUM', 5,
+    '["拍照添加", "扫描添加", "识别设备", "拍照识别", "扫描铭牌", "识别铭牌", "上传图片添加", "拍个照", "扫一下", "识别一下"]',
+    '["factory_super_admin", "department_admin"]', 88, '通过上传设备图片或铭牌照片，AI自动识别并配置秤设备',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();
+
+-- 列出秤设备
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_LIST_DEVICES', '列出秤设备', 'SCALE',
+    'LOW', 1,
+    '["秤设备列表", "有哪些秤", "查看设备", "所有秤", "设备清单", "秤清单", "列出设备", "设备列表", "查看秤"]',
+    '["factory_super_admin", "department_admin", "workshop_supervisor"]', 80, '列出工厂中的所有秤设备及其状态',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();
+
+-- 查看秤设备详情
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_DEVICE_DETAIL', '查看秤设备详情', 'SCALE',
+    'LOW', 1,
+    '["设备详情", "秤的信息", "设备参数", "秤配置", "查看配置"]',
+    '["factory_super_admin", "department_admin", "workshop_supervisor"]', 75, '查看指定秤设备的详细配置和状态信息',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();
+
+-- 更新秤设备
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_UPDATE_DEVICE', '更新秤设备', 'SCALE',
+    'MEDIUM', 2,
+    '["修改设备", "更新配置", "修改秤", "调整参数", "更改设置"]',
+    '["factory_super_admin", "department_admin"]', 78, '更新秤设备的配置参数',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();
+
+-- 删除秤设备
+INSERT INTO ai_intent_configs (
+    id, intent_code, intent_name, intent_category,
+    sensitivity_level, quota_cost, keywords, required_roles, priority, description,
+    is_active, created_at, updated_at
+) VALUES (
+    UUID(), 'SCALE_DELETE_DEVICE', '删除秤设备', 'SCALE',
+    'HIGH', 3,
+    '["删除设备", "移除秤", "删除秤", "下线设备", "禁用秤"]',
+    '["factory_super_admin"]', 70, '删除或禁用秤设备',
+    TRUE, NOW(), NOW()
+) ON DUPLICATE KEY UPDATE
+    keywords = VALUES(keywords),
+    description = VALUES(description),
+    updated_at = NOW();

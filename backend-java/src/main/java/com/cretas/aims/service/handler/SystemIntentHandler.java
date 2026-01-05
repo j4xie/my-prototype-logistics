@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 系统配置意图处理器
@@ -73,7 +74,7 @@ public class SystemIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + e.getMessage())
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -430,5 +431,11 @@ public class SystemIntentHandler implements IntentHandler {
             case "DISABLED" -> "禁用";
             default -> mode;
         };
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

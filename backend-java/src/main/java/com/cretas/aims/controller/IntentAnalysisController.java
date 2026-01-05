@@ -1,16 +1,22 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.intent.ErrorAttributionStatistics;
+import com.cretas.aims.util.ErrorSanitizer;
 import com.cretas.aims.entity.intent.IntentOptimizationSuggestion;
 import com.cretas.aims.repository.ErrorAttributionStatisticsRepository;
 import com.cretas.aims.repository.IntentMatchRecordRepository;
 import com.cretas.aims.repository.IntentOptimizationSuggestionRepository;
+import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.scheduler.ErrorAttributionAnalysisScheduler;
 import com.cretas.aims.service.ErrorAttributionAnalysisService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -26,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 意图识别分析 Controller
@@ -48,6 +55,7 @@ public class IntentAnalysisController {
     private final ErrorAttributionStatisticsRepository statisticsRepository;
     private final IntentMatchRecordRepository matchRecordRepository;
     private final IntentOptimizationSuggestionRepository suggestionRepository;
+    private final AIIntentConfigRepository intentConfigRepository;
 
     // ==================== 统计数据 ====================
 
@@ -73,7 +81,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("获取统计数据失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计数据失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取统计数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -98,7 +106,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(stats));
         } catch (Exception e) {
             log.error("获取统计详情失败: factoryId={}, date={}", factoryId, date, e);
-            return ResponseEntity.ok(ApiResponse.error("获取统计详情失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取统计详情失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -118,7 +126,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(trend));
         } catch (Exception e) {
             log.error("获取匹配率趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -136,7 +144,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(trend));
         } catch (Exception e) {
             log.error("获取LLM Fallback趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -155,7 +163,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(trend));
         } catch (Exception e) {
             log.error("获取错误归因趋势失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取趋势数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -177,7 +185,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(patterns));
         } catch (Exception e) {
             log.error("获取失败模式失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取失败模式失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取失败模式失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -196,7 +204,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(intents));
         } catch (Exception e) {
             log.error("获取歧义意图失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取歧义意图失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取歧义意图失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -216,7 +224,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(patterns));
         } catch (Exception e) {
             log.error("获取缺失规则模式失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取缺失规则模式失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取缺失规则模式失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -256,7 +264,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("获取优化建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取优化建议失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取优化建议失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -277,7 +285,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(suggestions));
         } catch (Exception e) {
             log.error("获取高影响力建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取高影响力建议失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取高影响力建议失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -301,7 +309,7 @@ public class IntentAnalysisController {
             }
         } catch (Exception e) {
             log.error("采纳建议失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("采纳建议失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("采纳建议失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -325,7 +333,162 @@ public class IntentAnalysisController {
             }
         } catch (Exception e) {
             log.error("拒绝建议失败: suggestionId={}", suggestionId, e);
-            return ResponseEntity.ok(ApiResponse.error("拒绝建议失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("拒绝建议失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    // ==================== 创建新意图建议 (自学习核心功能) ====================
+
+    /**
+     * 获取创建新意图建议列表
+     */
+    @Operation(summary = "获取创建新意图建议列表",
+            description = "分页获取 LLM 识别的需要创建新意图的建议，支持按状态筛选。这是自学习机制的核心功能。")
+    @GetMapping("/suggestions/create-intent")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getCreateIntentSuggestions(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "建议状态: PENDING/APPLIED/REJECTED", example = "PENDING")
+            @RequestParam(defaultValue = "PENDING") String status,
+            @Parameter(description = "页码，从0开始", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size) {
+
+        try {
+            IntentOptimizationSuggestion.SuggestionStatus suggestionStatus =
+                    IntentOptimizationSuggestion.SuggestionStatus.valueOf(status.toUpperCase());
+            PageRequest pageRequest = PageRequest.of(page, size);
+
+            Page<IntentOptimizationSuggestion> suggestions =
+                    suggestionRepository.findCreateIntentSuggestions(factoryId, suggestionStatus, pageRequest);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("content", suggestions.getContent());
+            result.put("totalElements", suggestions.getTotalElements());
+            result.put("totalPages", suggestions.getTotalPages());
+            result.put("page", page);
+            result.put("size", size);
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取创建新意图建议失败: factoryId={}", factoryId, e);
+            return ResponseEntity.ok(ApiResponse.error("获取建议列表失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 获取创建新意图建议详情
+     */
+    @Operation(summary = "获取创建新意图建议详情",
+            description = "获取单个创建新意图建议的详细信息，包括 LLM 建议的意图代码、名称、关键词等")
+    @GetMapping("/suggestions/create-intent/{suggestionId}")
+    public ResponseEntity<ApiResponse<IntentOptimizationSuggestion>> getCreateIntentSuggestionDetail(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "建议ID", example = "sug-001") @PathVariable String suggestionId) {
+
+        try {
+            IntentOptimizationSuggestion suggestion = suggestionRepository.findById(suggestionId).orElse(null);
+
+            if (suggestion == null) {
+                return ResponseEntity.ok(ApiResponse.error("建议不存在"));
+            }
+
+            if (!suggestion.getFactoryId().equals(factoryId)) {
+                return ResponseEntity.ok(ApiResponse.error("无权访问该建议"));
+            }
+
+            if (!suggestion.isCreateIntent()) {
+                return ResponseEntity.ok(ApiResponse.error("该建议不是创建新意图类型"));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(suggestion));
+        } catch (Exception e) {
+            log.error("获取建议详情失败: suggestionId={}", suggestionId, e);
+            return ResponseEntity.ok(ApiResponse.error("获取建议详情失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 审批并创建新意图
+     */
+    @Operation(summary = "审批并创建新意图",
+            description = "审批通过创建新意图建议，系统将自动创建对应的 AIIntentConfig。这是自学习机制的核心功能。")
+    @PostMapping("/suggestions/{suggestionId}/approve-create-intent")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> approveCreateIntent(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "建议ID", example = "sug-001") @PathVariable String suggestionId,
+            @Parameter(description = "操作人ID", example = "22") @RequestParam Long operatorId,
+            @Parameter(description = "自定义意图代码 (可选，默认使用建议值)")
+            @RequestParam(required = false) String customIntentCode,
+            @Parameter(description = "自定义意图名称 (可选，默认使用建议值)")
+            @RequestParam(required = false) String customIntentName,
+            @Parameter(description = "自定义关键词JSON数组 (可选，默认使用建议值)")
+            @RequestParam(required = false) String customKeywords) {
+
+        try {
+            // 1. 加载建议
+            IntentOptimizationSuggestion suggestion = suggestionRepository.findById(suggestionId).orElse(null);
+
+            if (suggestion == null) {
+                return ResponseEntity.ok(ApiResponse.error("建议不存在"));
+            }
+
+            if (!suggestion.getFactoryId().equals(factoryId)) {
+                return ResponseEntity.ok(ApiResponse.error("无权访问该建议"));
+            }
+
+            if (!suggestion.isCreateIntent()) {
+                return ResponseEntity.ok(ApiResponse.error("该建议不是创建新意图类型"));
+            }
+
+            if (suggestion.getStatus() != IntentOptimizationSuggestion.SuggestionStatus.PENDING) {
+                return ResponseEntity.ok(ApiResponse.error("建议状态已变更，无法审批"));
+            }
+
+            // 2. 确定最终使用的意图代码和名称
+            String finalIntentCode = customIntentCode != null && !customIntentCode.isEmpty()
+                    ? customIntentCode : suggestion.getSuggestedIntentCode();
+            String finalIntentName = customIntentName != null && !customIntentName.isEmpty()
+                    ? customIntentName : suggestion.getSuggestedIntentName();
+            String finalKeywords = customKeywords != null && !customKeywords.isEmpty()
+                    ? customKeywords : suggestion.getSuggestedKeywords();
+
+            // 3. 检查意图代码是否已存在
+            boolean exists = intentConfigRepository.findByFactoryIdAndIntentCode(factoryId, finalIntentCode).isPresent();
+            if (exists) {
+                return ResponseEntity.ok(ApiResponse.error("意图代码已存在: " + finalIntentCode));
+            }
+
+            // 4. 创建新的 AIIntentConfig
+            AIIntentConfig newIntent = AIIntentConfig.builder()
+                    .factoryId(factoryId)
+                    .intentCode(finalIntentCode)
+                    .intentName(finalIntentName)
+                    .keywords(finalKeywords)
+                    .intentCategory(suggestion.getSuggestedCategory())
+                    .priority(50) // 默认中等优先级
+                    .isActive(true)
+                    .description("由自学习机制自动创建，基于 LLM 识别。原因: " + suggestion.getLlmReasoning())
+                    .build();
+
+            AIIntentConfig savedIntent = intentConfigRepository.save(newIntent);
+
+            // 5. 更新建议状态
+            suggestion.apply(operatorId);
+            suggestion.setCreatedIntentId(savedIntent.getId());
+            suggestionRepository.save(suggestion);
+
+            log.info("创建新意图成功: factoryId={}, intentCode={}, suggestionId={}, operatorId={}",
+                    factoryId, finalIntentCode, suggestionId, operatorId);
+
+            // 6. 返回结果
+            Map<String, Object> result = new HashMap<>();
+            result.put("intent", savedIntent);
+            result.put("suggestion", suggestion);
+            result.put("message", "新意图创建成功: " + finalIntentCode);
+
+            return ResponseEntity.ok(ApiResponse.success("新意图创建成功", result));
+        } catch (Exception e) {
+            log.error("审批创建新意图失败: suggestionId={}", suggestionId, e);
+            return ResponseEntity.ok(ApiResponse.error("审批失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -344,7 +507,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(report));
         } catch (Exception e) {
             log.error("生成周报失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("生成周报失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("生成周报失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -403,7 +566,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(dashboard));
         } catch (Exception e) {
             log.error("获取仪表盘数据失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("获取仪表盘数据失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取仪表盘数据失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -423,7 +586,7 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success("统计聚合完成", stats));
         } catch (Exception e) {
             log.error("手动触发聚合失败: factoryId={}, date={}", factoryId, date, e);
-            return ResponseEntity.ok(ApiResponse.error("触发聚合失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("触发聚合失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -443,7 +606,7 @@ public class IntentAnalysisController {
                     "生成 " + suggestions.size() + " 条优化建议", suggestions));
         } catch (Exception e) {
             log.error("手动生成建议失败: factoryId={}", factoryId, e);
-            return ResponseEntity.ok(ApiResponse.error("生成建议失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("生成建议失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -459,7 +622,201 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(analysisScheduler.getSchedulerStatus()));
         } catch (Exception e) {
             log.error("获取调度器状态失败", e);
-            return ResponseEntity.ok(ApiResponse.error("获取调度器状态失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("获取调度器状态失败: " + ErrorSanitizer.sanitize(e)));
         }
+    }
+
+    // ==================== 平台级意图晋升 ====================
+
+    /**
+     * 请求将工厂级意图晋升为平台级
+     */
+    @Operation(summary = "请求晋升为平台级意图",
+            description = "工厂管理员申请将工厂级意图晋升为平台级共享意图，需要平台管理员审批")
+    @PostMapping("/intents/{intentCode}/request-promotion")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> requestPromotion(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "意图代码", example = "CUSTOM_INTENT_001") @PathVariable String intentCode,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "晋升请求",
+                    content = @Content(schema = @Schema(implementation = PromotionRequest.class)))
+            @RequestBody PromotionRequest request) {
+
+        try {
+            // 1. 验证意图存在且属于当前工厂
+            Optional<AIIntentConfig> intentOpt = intentConfigRepository
+                    .findByFactoryIdAndIntentCode(factoryId, intentCode);
+
+            if (intentOpt.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.error("意图不存在或不属于当前工厂"));
+            }
+
+            AIIntentConfig intent = intentOpt.get();
+
+            // 2. 检查是否已经是平台级
+            if (intent.getFactoryId() == null || "PLATFORM".equalsIgnoreCase(intent.getFactoryId())) {
+                return ResponseEntity.ok(ApiResponse.error("该意图已经是平台级意图"));
+            }
+
+            // 3. 检查是否已有待审批的晋升请求
+            List<IntentOptimizationSuggestion> existingRequests = suggestionRepository
+                    .findByFactoryIdAndIntentCodeAndSuggestionTypeAndStatus(
+                            factoryId, intentCode,
+                            IntentOptimizationSuggestion.SuggestionType.PROMOTE_TO_PLATFORM,
+                            IntentOptimizationSuggestion.SuggestionStatus.PENDING);
+
+            if (!existingRequests.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.error("该意图已有待审批的晋升请求"));
+            }
+
+            // 4. 创建晋升建议
+            IntentOptimizationSuggestion suggestion = IntentOptimizationSuggestion.createPromotionSuggestion(
+                    factoryId,
+                    intentCode,
+                    intent.getIntentName(),
+                    request.getReason(),
+                    request.getRequestedBy()
+            );
+            suggestionRepository.save(suggestion);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("suggestionId", suggestion.getId());
+            result.put("status", "PENDING");
+            result.put("message", "晋升请求已提交，等待平台管理员审批");
+
+            log.info("工厂 [{}] 申请将意图 [{}] 晋升为平台级", factoryId, intentCode);
+            return ResponseEntity.ok(ApiResponse.success("晋升请求已提交", result));
+
+        } catch (Exception e) {
+            log.error("请求晋升失败: factoryId={}, intentCode={}", factoryId, intentCode, e);
+            return ResponseEntity.ok(ApiResponse.error("请求晋升失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 获取待审批的晋升请求列表 (平台管理员)
+     */
+    @Operation(summary = "获取待审批的晋升请求",
+            description = "平台管理员查看所有待审批的意图晋升请求")
+    @GetMapping("/platform/pending-promotions")
+    public ResponseEntity<ApiResponse<List<IntentOptimizationSuggestion>>> getPendingPromotions(
+            @Parameter(description = "工厂ID (用于路由，平台管理员可传PLATFORM)", example = "PLATFORM")
+            @PathVariable String factoryId) {
+
+        try {
+            List<IntentOptimizationSuggestion> pendingPromotions = suggestionRepository
+                    .findBySuggestionTypeAndStatus(
+                            IntentOptimizationSuggestion.SuggestionType.PROMOTE_TO_PLATFORM,
+                            IntentOptimizationSuggestion.SuggestionStatus.PENDING);
+
+            return ResponseEntity.ok(ApiResponse.success(pendingPromotions));
+        } catch (Exception e) {
+            log.error("获取待审批晋升请求失败", e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 审批意图晋升请求 (平台管理员)
+     */
+    @Operation(summary = "审批意图晋升请求",
+            description = "平台管理员审批工厂级意图晋升为平台级的请求")
+    @PostMapping("/platform/promotions/{suggestionId}/approve")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> approvePromotion(
+            @Parameter(description = "工厂ID (用于路由，平台管理员可传PLATFORM)", example = "PLATFORM")
+            @PathVariable String factoryId,
+            @Parameter(description = "建议ID") @PathVariable String suggestionId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "审批信息",
+                    content = @Content(schema = @Schema(implementation = ApprovalRequest.class)))
+            @RequestBody ApprovalRequest request) {
+
+        try {
+            // 1. 查找建议
+            Optional<IntentOptimizationSuggestion> suggestionOpt = suggestionRepository.findById(suggestionId);
+            if (suggestionOpt.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.error("晋升请求不存在"));
+            }
+
+            IntentOptimizationSuggestion suggestion = suggestionOpt.get();
+
+            // 2. 验证类型和状态
+            if (!suggestion.isPromoteToPlatform()) {
+                return ResponseEntity.ok(ApiResponse.error("该建议不是晋升请求"));
+            }
+            if (suggestion.getStatus() != IntentOptimizationSuggestion.SuggestionStatus.PENDING) {
+                return ResponseEntity.ok(ApiResponse.error("该请求已被处理"));
+            }
+
+            Map<String, Object> result = new HashMap<>();
+
+            if (request.isApproved()) {
+                // 3a. 审批通过 - 将意图晋升为平台级
+                Optional<AIIntentConfig> intentOpt = intentConfigRepository
+                        .findByFactoryIdAndIntentCode(suggestion.getFactoryId(), suggestion.getIntentCode());
+
+                if (intentOpt.isEmpty()) {
+                    return ResponseEntity.ok(ApiResponse.error("原意图已不存在"));
+                }
+
+                AIIntentConfig intent = intentOpt.get();
+
+                // 备份原工厂ID，然后设为平台级
+                String originalFactoryId = intent.getFactoryId();
+                intent.setFactoryId(null); // null 表示平台级
+                intent.setDescription(intent.getDescription() + " [由工厂 " + originalFactoryId + " 晋升]");
+                intentConfigRepository.save(intent);
+
+                // 更新建议状态
+                suggestion.setStatus(IntentOptimizationSuggestion.SuggestionStatus.APPLIED);
+                suggestion.setApprovalNotes("平台管理员审批通过: " + request.getNotes());
+                suggestionRepository.save(suggestion);
+
+                result.put("status", "APPROVED");
+                result.put("intent", intent);
+                result.put("message", "意图已晋升为平台级");
+
+                log.info("意图 [{}] 从工厂 [{}] 晋升为平台级", suggestion.getIntentCode(), originalFactoryId);
+
+            } else {
+                // 3b. 审批拒绝
+                suggestion.setStatus(IntentOptimizationSuggestion.SuggestionStatus.REJECTED);
+                suggestion.setApprovalNotes("平台管理员拒绝: " + request.getNotes());
+                suggestionRepository.save(suggestion);
+
+                result.put("status", "REJECTED");
+                result.put("message", "晋升请求已拒绝");
+
+                log.info("意图 [{}] 晋升请求被拒绝", suggestion.getIntentCode());
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+
+        } catch (Exception e) {
+            log.error("审批晋升请求失败: suggestionId={}", suggestionId, e);
+            return ResponseEntity.ok(ApiResponse.error("审批失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    // ==================== 内部 DTO ====================
+
+    @Data
+    @Schema(description = "晋升请求")
+    public static class PromotionRequest {
+        @Schema(description = "晋升原因", example = "该意图具有通用性，其他工厂也可能需要")
+        private String reason;
+
+        @Schema(description = "申请人", example = "factory_admin1")
+        private String requestedBy;
+    }
+
+    @Data
+    @Schema(description = "审批请求")
+    public static class ApprovalRequest {
+        @Schema(description = "是否批准", example = "true")
+        private boolean approved;
+
+        @Schema(description = "审批备注", example = "同意晋升，该意图具有通用价值")
+        private String notes;
     }
 }

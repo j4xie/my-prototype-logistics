@@ -27,49 +27,27 @@ public class KeywordEffectivenessServiceImpl implements KeywordEffectivenessServ
     @Override
     @Transactional
     public void recordFeedback(String factoryId, String intentCode, String keyword, boolean isPositive) {
-        Optional<KeywordEffectiveness> existing = keywordEffectivenessRepository
-            .findByFactoryIdAndIntentCodeAndKeyword(factoryId, intentCode, keyword);
+        // 使用统一的获取或创建方法
+        KeywordEffectiveness record = getOrCreateKeyword(
+                factoryId, intentCode, keyword, false,
+                KeywordEffectiveness.Source.MANUAL, BigDecimal.ONE);
 
-        if (existing.isPresent()) {
-            KeywordEffectiveness record = existing.get();
-            if (isPositive) {
-                record.recordPositiveFeedback();
-                log.info("记录正向反馈: factory={}, intent={}, keyword={}, " +
-                         "positive={}, negative={}, score={}",
-                    factoryId, intentCode, keyword,
-                    record.getPositiveCount(), record.getNegativeCount(),
-                    record.getEffectivenessScore());
-            } else {
-                record.recordNegativeFeedback();
-                log.info("记录负向反馈: factory={}, intent={}, keyword={}, " +
-                         "positive={}, negative={}, score={}",
-                    factoryId, intentCode, keyword,
-                    record.getPositiveCount(), record.getNegativeCount(),
-                    record.getEffectivenessScore());
-            }
-            keywordEffectivenessRepository.save(record);
+        if (isPositive) {
+            record.recordPositiveFeedback();
+            log.info("记录正向反馈: factory={}, intent={}, keyword={}, " +
+                     "positive={}, negative={}, score={}",
+                factoryId, intentCode, keyword,
+                record.getPositiveCount(), record.getNegativeCount(),
+                record.getEffectivenessScore());
         } else {
-            // 如果记录不存在，创建新记录
-            KeywordEffectiveness newRecord = KeywordEffectiveness.builder()
-                .factoryId(factoryId)
-                .intentCode(intentCode)
-                .keyword(keyword)
-                .positiveCount(isPositive ? 1 : 0)
-                .negativeCount(isPositive ? 0 : 1)
-                .effectivenessScore(BigDecimal.ONE)
-                .weight(BigDecimal.ONE)
-                .specificity(BigDecimal.ONE)
-                .source(KeywordEffectiveness.Source.MANUAL)
-                .isAutoLearned(false)
-                .lastMatchedAt(LocalDateTime.now())
-                .build();
-
-            // 计算初始效果评分
-            newRecord.setEffectivenessScore(newRecord.calculateWilsonScore());
-            keywordEffectivenessRepository.save(newRecord);
-            log.info("创建新关键词效果记录: factory={}, intent={}, keyword={}",
-                factoryId, intentCode, keyword);
+            record.recordNegativeFeedback();
+            log.info("记录负向反馈: factory={}, intent={}, keyword={}, " +
+                     "positive={}, negative={}, score={}",
+                factoryId, intentCode, keyword,
+                record.getPositiveCount(), record.getNegativeCount(),
+                record.getEffectivenessScore());
         }
+        keywordEffectivenessRepository.save(record);
     }
 
     @Override
@@ -107,25 +85,16 @@ public class KeywordEffectivenessServiceImpl implements KeywordEffectivenessServ
             return keywordEffectivenessRepository.save(record);
         }
 
-        // 创建新记录
-        KeywordEffectiveness newRecord = KeywordEffectiveness.builder()
-            .factoryId(factoryId)
-            .intentCode(intentCode)
-            .keyword(keyword)
-            .positiveCount(0)
-            .negativeCount(0)
-            .effectivenessScore(initialWeight)
-            .weight(initialWeight)
-            .specificity(BigDecimal.ONE) // 默认值，稍后批量计算
-            .source(source)
-            .isAutoLearned(KeywordEffectiveness.Source.AUTO_LEARNED.equals(source))
-            .build();
+        // 使用统一的创建方法
+        boolean isAutoLearned = KeywordEffectiveness.Source.AUTO_LEARNED.equals(source) ||
+                                KeywordEffectiveness.Source.FEEDBACK_LEARNED.equals(source);
+        KeywordEffectiveness newRecord = getOrCreateKeyword(
+                factoryId, intentCode, keyword, isAutoLearned, source, initialWeight);
 
-        KeywordEffectiveness saved = keywordEffectivenessRepository.save(newRecord);
         log.info("创建关键词效果记录: factory={}, intent={}, keyword={}, source={}, weight={}",
             factoryId, intentCode, keyword, source, initialWeight);
 
-        return saved;
+        return newRecord;
     }
 
     @Override
@@ -190,5 +159,54 @@ public class KeywordEffectivenessServiceImpl implements KeywordEffectivenessServ
     @Override
     public long countKeywords(String factoryId, String intentCode) {
         return keywordEffectivenessRepository.countByFactoryIdAndIntentCode(factoryId, intentCode);
+    }
+
+    // ==================== 私有方法 ====================
+
+    /**
+     * 统一的关键词获取或创建方法
+     *
+     * 该方法统一了 recordFeedback() 和 createOrUpdateKeyword() 中的创建逻辑，
+     * 避免代码重复。
+     *
+     * @param factoryId 工厂ID
+     * @param intentCode 意图代码
+     * @param keyword 关键词
+     * @param isAutoLearned 是否自动学习
+     * @param source 来源
+     * @param initialWeight 初始权重
+     * @return 关键词效果记录（已存在则返回已有记录，不存在则创建新记录）
+     */
+    private KeywordEffectiveness getOrCreateKeyword(
+            String factoryId, String intentCode, String keyword,
+            boolean isAutoLearned, String source, BigDecimal initialWeight) {
+
+        Optional<KeywordEffectiveness> existing = keywordEffectivenessRepository
+                .findByFactoryIdAndIntentCodeAndKeyword(factoryId, intentCode, keyword);
+
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        // 创建新记录
+        KeywordEffectiveness newRecord = KeywordEffectiveness.builder()
+                .factoryId(factoryId)
+                .intentCode(intentCode)
+                .keyword(keyword)
+                .positiveCount(0)
+                .negativeCount(0)
+                .effectivenessScore(initialWeight != null ? initialWeight : BigDecimal.ONE)
+                .weight(initialWeight != null ? initialWeight : BigDecimal.ONE)
+                .specificity(BigDecimal.ONE)
+                .source(source != null ? source : KeywordEffectiveness.Source.MANUAL)
+                .isAutoLearned(isAutoLearned)
+                .lastMatchedAt(LocalDateTime.now())
+                .build();
+
+        KeywordEffectiveness saved = keywordEffectivenessRepository.save(newRecord);
+        log.debug("创建新关键词效果记录: factory={}, intent={}, keyword={}, source={}",
+                factoryId, intentCode, keyword, source);
+
+        return saved;
     }
 }

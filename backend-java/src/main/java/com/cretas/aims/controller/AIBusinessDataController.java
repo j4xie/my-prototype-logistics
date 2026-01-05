@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * AI 业务数据初始化控制器
@@ -212,7 +213,7 @@ public class AIBusinessDataController {
             log.error("AI 业务数据初始化失败 - 工厂: {}", factoryId, e);
             return ResponseEntity.ok(AIBusinessDataResponse.builder()
                     .success(false)
-                    .message("初始化失败: " + e.getMessage())
+                    .message("初始化失败: " + ErrorSanitizer.sanitize(e))
                     .build());
         }
     }

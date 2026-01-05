@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 平台管理控制器
@@ -415,10 +416,10 @@ public class PlatformController {
 
             AIFactoryInitResponse errorResponse = AIFactoryInitResponse.builder()
                     .success(false)
-                    .message("AI配置生成失败: " + e.getMessage())
+                    .message("AI配置生成失败: " + ErrorSanitizer.sanitize(e))
                     .build();
 
-            return ApiResponse.error("AI配置生成失败: " + e.getMessage());
+            return ApiResponse.error("AI配置生成失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

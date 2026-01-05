@@ -13,6 +13,8 @@ import AICostAnalysisScreen from "../../screens/factory-admin/ai-analysis/AICost
 import AIReportScreen from "../../screens/factory-admin/ai-analysis/AIReportScreen";
 import QualityAnalysisScreen from "../../screens/factory-admin/ai-analysis/QualityAnalysisScreen";
 import CreatePlanScreen from "../../screens/factory-admin/ai-analysis/CreatePlanScreen";
+import IntentSuggestionsListScreen from "../../screens/factory-admin/ai-analysis/IntentSuggestionsListScreen";
+import IntentSuggestionDetailScreen from "../../screens/factory-admin/ai-analysis/IntentSuggestionDetailScreen";
 
 // 复用现有AI相关页面
 import AIAnalysisDetailScreen from "../../screens/processing/AIAnalysisDetailScreen";
@@ -71,6 +73,20 @@ export function FAAIStackNavigator() {
         name="AIReportDetail"
         component={AIAnalysisDetailScreen}
         options={{ title: "报告详情" }}
+      />
+
+      {/* 意图建议列表 */}
+      <Stack.Screen
+        name="IntentSuggestionsList"
+        component={IntentSuggestionsListScreen}
+        options={{ title: "意图优化建议" }}
+      />
+
+      {/* 意图建议详情 */}
+      <Stack.Screen
+        name="IntentSuggestionDetail"
+        component={IntentSuggestionDetailScreen}
+        options={{ title: "建议详情" }}
       />
     </Stack.Navigator>
   );

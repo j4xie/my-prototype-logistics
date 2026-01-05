@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.ml.LinUCBModel;
 import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.LinUCBService.*;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -95,7 +96,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("获取工人推荐失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取推荐失败: " + e.getMessage());
+            response.put("message", "获取推荐失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -143,7 +144,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("计算UCB分数失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "计算失败: " + e.getMessage());
+            response.put("message", "计算失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -203,7 +204,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("记录分配失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "记录失败: " + e.getMessage());
+            response.put("message", "记录失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -243,7 +244,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("完成反馈失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "操作失败: " + e.getMessage());
+            response.put("message", "操作失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -283,7 +284,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("获取模型失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -323,7 +324,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("获取模型列表失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -352,7 +353,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("重置模型失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "重置失败: " + e.getMessage());
+            response.put("message", "重置失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -380,7 +381,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("重置所有模型失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "重置失败: " + e.getMessage());
+            response.put("message", "重置失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -411,7 +412,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("模型训练失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "训练失败: " + e.getMessage());
+            response.put("message", "训练失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -443,7 +444,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("获取排行榜失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -471,7 +472,7 @@ public class LinUCBController {
         } catch (Exception e) {
             log.error("获取训练统计失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }

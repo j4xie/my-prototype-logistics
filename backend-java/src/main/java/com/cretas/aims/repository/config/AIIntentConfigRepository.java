@@ -118,4 +118,125 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
            "WHERE c.isActive = true AND c.deletedAt IS NULL " +
            "GROUP BY c.sensitivityLevel")
     List<Object[]> countBySensitivityLevel();
+
+    // ==================== 工厂级隔离查询方法 ====================
+
+    /**
+     * 查询工厂可见的意图配置（工厂级 + 平台级）
+     * 工厂用户可以看到：
+     * - 自己工厂的意图 (factoryId = 指定工厂)
+     * - 平台级共享意图 (factoryId IS NULL)
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "AND (c.factoryId = :factoryId OR c.factoryId IS NULL) " +
+           "ORDER BY c.priority DESC")
+    List<AIIntentConfig> findByFactoryIdOrPlatformLevel(@Param("factoryId") String factoryId);
+
+    /**
+     * 根据意图代码查询（工厂级隔离）
+     * 优先查找工厂级配置，如果没有则查找平台级
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.intentCode = :intentCode " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "AND (c.factoryId = :factoryId OR c.factoryId IS NULL) " +
+           "ORDER BY CASE WHEN c.factoryId = :factoryId THEN 0 ELSE 1 END")
+    List<AIIntentConfig> findByIntentCodeAndFactoryIdOrPlatform(
+            @Param("intentCode") String intentCode,
+            @Param("factoryId") String factoryId);
+
+    /**
+     * 检查意图代码是否在工厂范围内已存在
+     */
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM AIIntentConfig c " +
+           "WHERE c.intentCode = :intentCode " +
+           "AND c.deletedAt IS NULL " +
+           "AND (c.factoryId = :factoryId OR c.factoryId IS NULL)")
+    boolean existsByIntentCodeInFactoryScope(
+            @Param("intentCode") String intentCode,
+            @Param("factoryId") String factoryId);
+
+    /**
+     * 根据ID和工厂ID查询（工厂级隔离）
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.id = :id " +
+           "AND c.deletedAt IS NULL " +
+           "AND (c.factoryId = :factoryId OR c.factoryId IS NULL)")
+    Optional<AIIntentConfig> findByIdAndFactoryIdOrPlatform(
+            @Param("id") String id,
+            @Param("factoryId") String factoryId);
+
+    // ==================== Embedding 缓存相关方法 ====================
+
+    /**
+     * 查询所有启用的意图（用于 embedding 缓存预热）
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.isActive = true " +
+           "AND c.deletedAt IS NULL")
+    List<AIIntentConfig> findAllEnabled();
+
+    /**
+     * 根据工厂ID和启用状态查询
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.factoryId = :factoryId " +
+           "AND c.isActive = :enabled " +
+           "AND c.deletedAt IS NULL")
+    List<AIIntentConfig> findByFactoryIdAndEnabled(
+            @Param("factoryId") String factoryId,
+            @Param("enabled") boolean enabled);
+
+    /**
+     * 根据工厂ID和意图代码查询
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.factoryId = :factoryId " +
+           "AND c.intentCode = :intentCode " +
+           "AND c.deletedAt IS NULL")
+    Optional<AIIntentConfig> findByFactoryIdAndIntentCode(
+            @Param("factoryId") String factoryId,
+            @Param("intentCode") String intentCode);
+
+    /**
+     * 检查工厂级意图代码是否已存在
+     * 用于自动创建意图时防止重复
+     */
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM AIIntentConfig c " +
+           "WHERE c.factoryId = :factoryId " +
+           "AND c.intentCode = :intentCode " +
+           "AND c.deletedAt IS NULL")
+    boolean existsByFactoryIdAndIntentCode(
+            @Param("factoryId") String factoryId,
+            @Param("intentCode") String intentCode);
+
+    /**
+     * 统计启用的意图数量
+     */
+    @Query("SELECT COUNT(c) FROM AIIntentConfig c " +
+           "WHERE c.isActive = true " +
+           "AND c.deletedAt IS NULL")
+    long countEnabled();
+
+    // ==================== 多轮对话相关方法 ====================
+
+    /**
+     * 根据意图代码查询 (简单版本)
+     */
+    Optional<AIIntentConfig> findByIntentCode(String intentCode);
+
+    /**
+     * 查询工厂可见的活跃意图（按优先级排序）
+     * 用于多轮对话时提供候选意图列表
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "AND (c.factoryId = :factoryId OR c.factoryId IS NULL) " +
+           "ORDER BY c.priority DESC, c.intentName ASC")
+    List<AIIntentConfig> findActiveByFactoryIdWithPriority(@Param("factoryId") String factoryId);
 }

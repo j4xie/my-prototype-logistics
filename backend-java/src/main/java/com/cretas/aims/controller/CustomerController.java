@@ -8,6 +8,7 @@ import com.cretas.aims.dto.customer.CustomerDTO;
 import com.cretas.aims.service.CustomerService;
 import com.cretas.aims.service.MobileService;
 import com.cretas.aims.utils.TokenUtils;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -417,7 +418,7 @@ public class CustomerController {
             }
         } catch (Exception e) {
             log.error("客户批量导入失败: factoryId={}", factoryId, e);
-            return ApiResponse.error("导入失败: " + e.getMessage());
+            return ApiResponse.error("导入失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

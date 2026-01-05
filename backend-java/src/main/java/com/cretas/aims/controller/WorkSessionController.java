@@ -12,6 +12,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +65,7 @@ public class WorkSessionController {
             log.error("获取工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -87,7 +89,7 @@ public class WorkSessionController {
             log.error("获取工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -112,13 +114,13 @@ public class WorkSessionController {
             log.warn("开始工作会话被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("开始工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -146,13 +148,13 @@ public class WorkSessionController {
             log.warn("结束工作会话被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("结束工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -176,13 +178,13 @@ public class WorkSessionController {
             log.warn("取消工作会话被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("取消工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -207,13 +209,13 @@ public class WorkSessionController {
             log.warn("更新工作会话被拒绝: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         } catch (Exception e) {
             log.error("更新工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -245,7 +247,7 @@ public class WorkSessionController {
             log.error("获取用户活跃会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -268,7 +270,7 @@ public class WorkSessionController {
             log.error("获取用户工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -292,7 +294,7 @@ public class WorkSessionController {
             log.error("按时间范围查询工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -315,7 +317,7 @@ public class WorkSessionController {
             log.error("按工作类型查询工作会话失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -339,7 +341,7 @@ public class WorkSessionController {
             log.error("获取工作会话统计失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -364,7 +366,7 @@ public class WorkSessionController {
             log.error("获取用户工时统计失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

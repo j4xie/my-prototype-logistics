@@ -554,23 +554,23 @@
   <!-- Stats Bar -->
   <div class="stats-bar">
     <div class="stat-item">
-      <div class="stat-value" id="totalModules">29</div>
+      <div class="stat-value" id="totalModules">-</div>
       <div class="stat-label">功能模块</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalApis">874</div>
+      <div class="stat-value" id="totalApis">-</div>
       <div class="stat-label">API 端点</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalScreens">288</div>
+      <div class="stat-value" id="totalScreens">-</div>
       <div class="stat-label">前端页面</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalControllers">65</div>
+      <div class="stat-value" id="totalControllers">-</div>
       <div class="stat-label">Controller</div>
     </div>
     <div class="stat-item">
-      <div class="stat-value" id="totalRoles">7</div>
+      <div class="stat-value" id="totalRoles">-</div>
       <div class="stat-label">用户角色</div>
     </div>
   </div>
@@ -620,8 +620,8 @@
 
   <!-- Footer -->
   <div class="footer">
-    <p>白垩纪食品溯源系统 | 数据来源: 63个Controller + 291个Screen</p>
-    <p>最后更新: 2026-01-03 | 代码行数: 185K+</p>
+    <p>白垩纪食品溯源系统 | 数据来源: <span id="footerControllers">-</span>个Controller/Handler + <span id="footerScreens">-</span>个Screen</p>
+    <p>最后更新: 2026-01-04 | 代码行数: 185K+</p>
   </div>
 
   <!-- Toast -->
@@ -1041,7 +1041,7 @@
         controllers: ['AIController', 'AIBusinessDataController', 'AIQuotaConfigController', 'FormAssistantController', 'LinUCBController'],
         apiCount: 38,
         usageGuide: {
-          description: '【解决痛点】成本核算需要汇总原料、人工、能耗等多项数据，人工计算耗时且易出错；业务人员需要编写表单但缺乏技术背景。本模块通过大语言模型（DeepSeek）提供智能分析能力。【核心能力】批次成本分析（输入批次号，AI自动汇总原料成本、人工成本、设备折旧，输出成本明细和优化建议）、智能对话问答（自然语言查询业务数据，如"上周产量最高的产品是什么"）、AI分析报告（自动生成周/月度运营分析报告，包含趋势解读和改进建议）、表单Schema生成（用自然语言描述需求，AI自动生成表单配置）、LinUCB智能推荐（根据用户行为习惯推荐常用功能）。【配额管理】每个工厂可配置AI调用配额，超额需审批。【模块协同】AI分析可调用【生产管理】【物料管理】【质检管理】等模块数据。',
+          description: '【解决痛点】成本核算需要汇总原料、人工、能耗等多项数据，人工计算耗时且易出错；业务人员需要编写表单但缺乏技术背景。本模块通过阿里云通义千问大模型（DashScope API）提供智能分析能力。【架构说明】2026年1月已迁移至纯Java架构，Java后端通过DashScopeClient直接调用阿里云DashScope API，支持普通对话和思考模式(Thinking Mode)，无需Python中间服务。【核心能力】批次成本分析（输入批次号，AI自动汇总原料成本、人工成本、设备折旧，输出成本明细和优化建议，支持thinking_budget配置思考深度）、智能对话问答（自然语言查询业务数据，如"上周产量最高的产品是什么"）、AI分析报告（自动生成周/月度运营分析报告，包含趋势解读和改进建议）、表单Schema生成（用自然语言描述需求，AI自动生成表单配置）、LinUCB智能推荐（根据用户行为习惯推荐常用功能）。【配额管理】每个工厂可配置AI调用配额，超额需审批。【模块协同】AI分析可调用【生产管理】【物料管理】【质检管理】等模块数据。',
           useCase: ['批次成本分析', '智能对话问答', 'AI分析报告', '表单Schema生成', '个性化推荐'],
           workflow: ['选择分析类型', 'AI处理', '结果展示', '反馈优化', '持续学习'],
           effects: ['分析效率提升10倍', '降低决策门槛', '智能化运营', 'AI辅助日常工作']
@@ -1058,7 +1058,23 @@
           { method: 'POST', path: '/form-assistant/validate', desc: '验证表单' },
           { method: 'GET', path: '/linucb/recommendations', desc: '智能推荐' },
           { method: 'POST', path: '/linucb/feedback', desc: '反馈学习' }
-        ]
+        ],
+        components: [
+          { name: 'DashScope核心客户端', file: 'backend-java/ai/client/DashScopeClient.java', status: 'done' },
+          { name: 'DashScope流式客户端', file: 'backend-java/ai/client/DashScopeStreamClient.java', status: 'done' },
+          { name: 'DashScope视觉客户端', file: 'backend-java/ai/client/DashScopeVisionClient.java', status: 'done' },
+          { name: 'ChatMessage DTO', file: 'backend-java/ai/dto/ChatMessage.java', status: 'done' },
+          { name: 'ChatCompletionRequest', file: 'backend-java/ai/dto/ChatCompletionRequest.java', status: 'done' },
+          { name: 'ChatCompletionResponse', file: 'backend-java/ai/dto/ChatCompletionResponse.java', status: 'done' },
+          { name: 'DashScope配置类', file: 'backend-java/config/DashScopeConfig.java', status: 'done' },
+          { name: 'AI HTTP连接池', file: 'backend-java/config/AiHttpClientConfig.java', status: 'done' }
+        ],
+        architectureMigration: {
+          from: 'Java后端 → Python AI服务 → DashScope API',
+          to: 'Java后端 → DashScope API (直连)',
+          completedDate: '2026-01-04',
+          benefits: ['部署简化', '延迟降低', '维护成本降低', '单一日志系统']
+        }
       },
       {
         id: 'ai-intent',
@@ -1066,12 +1082,12 @@
         icon: '🧠',
         category: 'ai',
         controllers: ['AIIntentConfigController', 'AIRuleController'],
-        apiCount: 22,
+        apiCount: 26,
         usageGuide: {
-          description: '【解决痛点】AI对话系统需要理解用户意图才能准确响应，但每个工厂的业务术语和场景不同，通用模型可能无法精准识别。本模块提供AI意图和规则的可视化配置能力，并支持意图的直接执行。【核心能力】意图模板管理（预定义意图如"查询产量"、"分析成本"，每个意图包含示例句式和响应模板）、规则引擎配置（当满足条件X时执行动作Y，如"当合格率低于95%时发送告警"）、意图识别测试（输入测试语句，查看AI识别结果和置信度）、意图执行引擎（识别意图后直接调用对应业务模块执行操作，如"给原材料表单添加温度字段"会自动更新FormTemplate）、自定义响应模板（控制AI输出的格式和内容）。【增强识别机制】（1）多级匹配策略：优先正则匹配(REGEX)→关键词匹配(KEYWORD)→LLM语义理解(LLM)，三级策略确保高召回率；（2）Top-N候选返回：每次识别返回置信度最高的N个候选意图，前端展示候选列表供用户选择，避免单一结果误判；（3）置信度评估：对每个候选计算0.0-1.0的置信度分数，基于匹配关键词数量、正则匹配度、语义相似度综合打分；（4）强/弱信号判断：置信度≥0.8且Top1与Top2差距≥0.2为强信号（自动执行），否则为弱信号（需用户确认选择）；（5）LLM Fallback：当规则匹配置信度<0.3时，自动调用DeepSeek API进行语义理解，返回意图代码和置信度；（6）匹配记录追踪：每次意图识别结果记录到intent_match_records表，包含用户输入、匹配方法、置信度、是否命中、用户反馈，用于后续分析优化；（7）Specificity权重：当用户输入匹配多个意图的关键词时，基于TF-IDF原理计算交叉匹配权重，specificity=关键词在本意图出现次数/关键词在所有意图总出现次数，优先选择更具特异性的意图。【自动学习机制】（1）LLM Fallback成功后（置信度≥0.9），自动从用户输入中提取关键词添加到命中意图，实现关键词自动积累；（2）关键词分两级来源：GLOBAL（平台级，全工厂通用）和FACTORY（工厂级，特定工厂使用），工厂级关键词优先匹配；（3）LLM自动学习的关键词默认为FACTORY级别，经过效果验证后可晋升为GLOBAL级别。【候选意图选择UI】前端IntentCandidateSelector组件以Modal弹窗展示候选列表，每个候选显示意图名称、分类、置信度(进度条)、匹配关键词(Tag)、匹配方法(Badge)，用户点击选择后调用confirm接口确认。【典型场景】用户可通过自然语言直接修改业务配置，AI自动识别意图、检查权限、执行操作并返回结果；当识别不确定时，弹出候选列表让用户选择正确意图。【模块协同】意图执行可直接修改【表单模板】【编码规则】【调度配置】等业务模块数据，匹配记录供【AI意图分析】模块进行误匹配归因和优化建议，关键词效果数据供【AI关键词学习】模块进行效果追踪和晋升管理。',
-          useCase: ['意图模板配置', '规则引擎设置', '意图识别测试', '自然语言执行操作', '自定义AI行为', '候选意图选择确认', 'LLM语义兜底', '关键词自动学习', '用户反馈收集'],
-          workflow: ['定义意图', '配置规则', '用户输入', '多级匹配(正则→关键词→LLM)', '计算Specificity权重', '强弱信号判断', '弱信号→候选选择UI', '用户确认', '执行操作', '记录匹配结果', 'LLM成功→自动学习关键词'],
-          effects: ['AI理解更精准', '业务场景覆盖全', '自然语言操控业务', '运营效率优化', '误识别大幅降低', '持续学习优化', '关键词自动积累']
+          description: '【解决痛点】AI对话系统需要理解用户意图才能准确响应，但每个工厂的业务术语和场景不同，通用模型可能无法精准识别。本模块提供AI意图和规则的可视化配置能力，并支持意图的直接执行。【核心能力】意图模板管理（预定义意图如"查询产量"、"分析成本"，每个意图包含示例句式和响应模板）、规则引擎配置（当满足条件X时执行动作Y，如"当合格率低于95%时发送告警"）、意图识别测试（输入测试语句，查看AI识别结果和置信度）、意图执行引擎（识别意图后直接调用对应业务模块执行操作，如"给原材料表单添加温度字段"会自动更新FormTemplate）、自定义响应模板（控制AI输出的格式和内容）。【增强识别机制】（1）多级匹配策略：优先正则匹配(REGEX)→关键词匹配(KEYWORD)→LLM语义理解(LLM)，三级策略确保高召回率；（2）Top-N候选返回：每次识别返回置信度最高的N个候选意图，前端展示候选列表供用户选择，避免单一结果误判；（3）置信度评估：对每个候选计算0.0-1.0的置信度分数，基于匹配关键词数量、正则匹配度、语义相似度综合打分；（4）强/弱信号判断：置信度≥0.8且Top1与Top2差距≥0.2为强信号（自动执行），否则为弱信号（需用户确认选择）；（5）LLM Fallback：当规则匹配置信度<0.3时，自动调用阿里云DashScope API（通义千问qwen-plus模型）进行语义理解，返回意图代码和置信度；（6）匹配记录追踪：每次意图识别结果记录到intent_match_records表，包含用户输入、匹配方法、置信度、是否命中、用户反馈，用于后续分析优化；（7）Specificity权重：当用户输入匹配多个意图的关键词时，基于TF-IDF原理计算交叉匹配权重，specificity=关键词在本意图出现次数/关键词在所有意图总出现次数，优先选择更具特异性的意图。【自动学习机制】（1）LLM Fallback成功后（置信度≥0.9），自动从用户输入中提取关键词添加到命中意图，实现关键词自动积累；（2）三层关键词来源：基础关键词(AIIntentConfig.keywords JSON字段) + 工厂级关键词(keyword_effectiveness表中factoryId=当前工厂) + 全局关键词(keyword_effectiveness表中factoryId=GLOBAL)，匹配时自动合并三层关键词，工厂级关键词优先匹配；（3）LLM自动学习的关键词默认为FACTORY级别，经过效果验证后可晋升为GLOBAL级别。【候选意图选择UI】前端IntentCandidateSelector组件以Modal弹窗展示候选列表，每个候选显示意图名称、分类、置信度(进度条)、匹配关键词(Tag)、匹配方法(Badge)，用户点击选择后调用confirm接口确认。【版本控制与回滚】（2026-01-04新增）每次意图配置更新前自动保存当前状态为快照(previousSnapshot)并递增版本号(configVersion)，支持一键回滚到上个版本，回滚后立即清除缓存确保查询结果一致，支持工厂级批量回滚和指定版本回滚。【LLM输出验证】（2026-01-04新增）软Schema验证机制：验证matched_intent_code格式、confidence值域(0-1)、意图代码存在性，校验失败不执行并返回澄清问题让用户确认。【HTTP连接池优化】使用OkHttp连接池(10连接/5分钟)减少LLM调用延迟100-200ms。【典型场景】用户可通过自然语言直接修改业务配置，AI自动识别意图、检查权限、执行操作并返回结果；当识别不确定时，弹出候选列表让用户选择正确意图；配置修改出问题时可一键回滚到上个版本。【模块协同】意图执行可直接修改【表单模板】【编码规则】【调度配置】等业务模块数据，匹配记录供【AI意图分析】模块进行误匹配归因和优化建议，关键词效果数据供【AI关键词学习】模块进行效果追踪和晋升管理。',
+          useCase: ['意图模板配置', '规则引擎设置', '意图识别测试', '自然语言执行操作', '自定义AI行为', '候选意图选择确认', 'LLM语义兜底', '关键词自动学习', '用户反馈收集', '版本快照回滚', 'LLM输出验证'],
+          workflow: ['定义意图', '配置规则', '用户输入', '多级匹配(正则→关键词→LLM)', 'Schema验证', '计算Specificity权重', '强弱信号判断', '弱信号→候选选择UI', '用户确认', '执行操作', '记录匹配结果', 'LLM成功→自动学习关键词', '配置更新→自动保存快照'],
+          effects: ['AI理解更精准', '业务场景覆盖全', '自然语言操控业务', '运营效率优化', '误识别大幅降低', '持续学习优化', '关键词自动积累', '配置可回滚', 'LLM调用更快速']
         },
         apis: [
           { method: 'GET', path: '/ai/intent-configs', desc: '意图配置列表' },
@@ -1089,7 +1105,11 @@
           { method: 'POST', path: '/ai-intents/feedback/negative', desc: '记录负向反馈（意图识别错误）' },
           { method: 'GET', path: '/ai/rules', desc: 'AI规则列表' },
           { method: 'POST', path: '/ai/rules', desc: '创建规则' },
-          { method: 'PUT', path: '/ai/rules/{id}', desc: '更新规则' }
+          { method: 'PUT', path: '/ai/rules/{id}', desc: '更新规则' },
+          { method: 'POST', path: '/ai-intents/{intentCode}/rollback', desc: '回滚意图配置到上个版本' },
+          { method: 'POST', path: '/ai-intents/rollback-all', desc: '批量回滚工厂所有配置' },
+          { method: 'POST', path: '/ai-intents/{intentCode}/rollback-to-version', desc: '回滚到指定版本' },
+          { method: 'GET', path: '/ai-intents/{intentCode}/history', desc: '获取意图配置版本历史' }
         ],
         components: [
           { name: '意图类型定义', file: 'frontend/src/types/intent.ts', status: 'done' },
@@ -1097,7 +1117,11 @@
           { name: 'AI组件导出', file: 'frontend/src/components/ai/index.ts', status: 'done' },
           { name: '意图匹配结果DTO', file: 'backend-java/dto/intent/IntentMatchResult.java', status: 'done' },
           { name: '意图匹配记录Entity', file: 'backend-java/entity/intent/IntentMatchRecord.java', status: 'done' },
-          { name: 'LLM Fallback客户端', file: 'backend-java/service/impl/LlmIntentFallbackClientImpl.java', status: 'done' }
+          { name: 'LLM Fallback客户端', file: 'backend-java/service/impl/LlmIntentFallbackClientImpl.java', status: 'done' },
+          { name: '版本回滚服务', file: 'backend-java/service/impl/IntentConfigRollbackService.java', status: 'done' },
+          { name: 'LLM响应验证DTO', file: 'backend-java/dto/intent/LlmIntentClassifyResponse.java', status: 'done' },
+          { name: 'OkHttp连接池配置', file: 'backend-java/config/AiHttpClientConfig.java', status: 'done' },
+          { name: '版本历史Entity', file: 'backend-java/entity/config/AIIntentConfigHistory.java', status: 'done' }
         ]
       },
       {
@@ -1108,20 +1132,20 @@
         controllers: ['DataOperationIntentHandler'],
         apiCount: 4,
         usageGuide: {
-          description: '【解决痛点】业务人员需要修改数据时，必须进入特定管理界面查找、编辑，效率低且易出错。本模块支持通过自然语言直接修改业务数据，如"把批次BATCH-001的计划产量改成200"。【核心能力】自然语言数据修改（支持产品、生产计划、生产批次、原材料批次等实体的字段更新）、AI语义解析（调用DeepSeek API识别实体类型、目标记录、要修改的字段和值）、JPA反射更新（通过Repository查询记录，反射机制更新字段并持久化）、操作审计（记录修改人、修改时间、修改前后值）。【支持实体】PRODUCT_TYPE(产品类型)、PRODUCTION_PLAN(生产计划)、PRODUCTION_BATCH(加工批次)、MATERIAL_BATCH(原料批次)。【典型场景】用户说"把产品PT-F001-001的名称改成优质带鱼段"，系统自动识别为产品名称修改操作，执行更新并返回结果。【模块协同】依赖【AI意图配置】进行意图识别，操作影响【生产管理】【物料管理】等业务数据。',
+          description: '【解决痛点】业务人员需要修改数据时，必须进入特定管理界面查找、编辑，效率低且易出错。本模块支持通过自然语言直接修改业务数据，如"把批次BATCH-001的计划产量改成200"。【核心能力】自然语言数据修改（支持产品、生产计划、生产批次、原材料批次等实体的字段更新）、AI语义解析（通过DashScope直连阿里云通义千问API识别实体类型、目标记录、要修改的字段和值）、JPA反射更新（通过Repository查询记录，反射机制更新字段并持久化）、操作审计（记录修改人、修改时间、修改前后值）。【支持实体】PRODUCT_TYPE(产品类型)、PRODUCTION_PLAN(生产计划)、PRODUCTION_BATCH(加工批次)、MATERIAL_BATCH(原料批次)。【典型场景】用户说"把产品PT-F001-001的名称改成优质带鱼段"，系统自动识别为产品名称修改操作，执行更新并返回结果。【模块协同】依赖【AI意图配置】进行意图识别，操作影响【生产管理】【物料管理】等业务数据。【架构更新】2026年1月已迁移至纯Java架构，直接调用阿里云DashScope API，无需Python中间服务。',
           useCase: ['自然语言修改产品信息', '自然语言调整计划产量', '批次数据快速更新', '原料批次信息修正'],
-          workflow: ['用户输入自然语言', 'AI意图识别(DATA_OP)', '调用AI解析端点', '解析实体/字段/值', 'JPA查询记录', '反射更新字段', '持久化保存'],
+          workflow: ['用户输入自然语言', 'AI意图识别(DATA_OP)', 'DashScope API解析语义', '解析实体/字段/值', 'JPA查询记录', '反射更新字段', '持久化保存'],
           effects: ['数据修改效率提升10倍', '降低操作错误率', '无需学习复杂界面', '支持批量语音操作']
         },
         apis: [
           { method: 'POST', path: '/ai-intents/execute', desc: '执行数据操作意图' },
-          { method: 'POST', path: '/api/ai/intent/parse-data-operation', desc: 'AI解析数据操作(Python)', host: 'AI服务' },
+          { method: 'POST', path: '/ai-intents/execute', desc: 'AI解析数据操作(DashScope直连)', host: 'Java后端' },
           { method: 'POST', path: '/ai-intents/preview', desc: '预览数据操作结果' },
           { method: 'POST', path: '/ai-intents/confirm/{token}', desc: '确认执行数据操作' }
         ],
         components: [
           { name: 'Java Handler', file: 'DataOperationIntentHandler.java', status: 'done' },
-          { name: 'AI 解析端点', file: 'main.py /api/ai/intent/parse-data-operation', status: 'done' },
+          { name: 'AI 客户端', file: 'DashScopeClient.java (直连阿里云DashScope)', status: 'done' },
           { name: '意图配置', file: 'V2026_01_02_1__data_operation_intents.sql', status: 'done' }
         ],
         supportedEntities: [
@@ -1182,7 +1206,7 @@
         controllers: ['AIIntentConfigController', 'FactoryConfigController'],
         apiCount: 8,
         usageGuide: {
-          description: '【解决痛点】意图识别的关键词需要人工维护，无法自动适应业务变化，不同工厂的术语差异无法自动处理。本模块实现关键词的全生命周期自动管理。【核心能力】（1）关键词效果追踪：基于Wilson Score算法评估关键词效果，计算公式考虑正向匹配、负向匹配和样本量，确保小样本时不会过度惩罚；（2）用户反馈收集：每次意图执行后收集正向/负向反馈，自动更新关键词效果数据；（3）关键词晋升机制：当工厂级关键词被3个以上工厂采用且效果分数≥0.8时，自动晋升为全局关键词；（4）低效关键词清理：每日定时检查效果分数<0.3的关键词，自动移除或降级；（5）工厂AI学习配置：支持工厂级别的学习参数配置，包括学习阈值、自动清理开关、学习阶段（LEARNING/MATURE）。【关键词生命周期】诞生（LLM自动学习或人工添加）→成长（积累匹配数据）→验证（效果评估）→晋升（工厂级→全局）或淘汰（效果差则清理）。【工厂学习阶段】LEARNING（学习期，自动学习阈值低）→MATURE（成熟期，学习更审慎），基于累计成功匹配数自动升级。【定时任务】KeywordMaintenanceScheduler每日凌晨执行：清理低效词、检查晋升条件、更新效果统计。【模块协同】依赖【AI意图配置】的匹配记录和反馈数据，优化结果反哺意图识别准确率。',
+          description: '【解决痛点】意图识别的关键词需要人工维护，无法自动适应业务变化，不同工厂的术语差异无法自动处理。本模块实现关键词的全生命周期自动管理。【核心能力】（1）三层关键词匹配：意图匹配时自动合并三层关键词——基础关键词(JSON配置)+工厂级关键词(keyword_effectiveness表)+全局关键词(GLOBAL)，确保晋升后的关键词立即生效；（2）关键词效果追踪：基于Wilson Score算法评估关键词效果，计算公式考虑正向匹配、负向匹配和样本量，确保小样本时不会过度惩罚；（3）用户反馈收集：每次意图执行后收集正向/负向反馈，自动更新关键词效果数据；（4）关键词晋升机制：当工厂级关键词被3个以上工厂采用且效果分数≥0.8时，自动晋升为全局关键词，晋升后自动参与所有工厂的匹配；（5）低效关键词清理：每日定时检查效果分数<0.3的关键词，自动移除或降级；（6）工厂AI学习配置：支持工厂级别的学习参数配置，包括学习阈值、自动清理开关、学习阶段（LEARNING/MATURE）。【关键词生命周期】诞生（LLM自动学习或人工添加）→成长（积累匹配数据）→验证（效果评估）→晋升（工厂级→全局）或淘汰（效果差则清理）。【工厂学习阶段】LEARNING（学习期，自动学习阈值低）→MATURE（成熟期，学习更审慎），基于累计成功匹配数自动升级。【定时任务】KeywordMaintenanceScheduler每日凌晨执行：清理低效词、检查晋升条件、更新效果统计。【模块协同】依赖【AI意图配置】的匹配记录和反馈数据，优化结果反哺意图识别准确率。【BUG-007修复】2026-01-04修复了全局关键词匹配问题：晋升为GLOBAL的关键词现在会被正确读取并参与所有工厂的意图匹配。',
           useCase: ['关键词效果分析', '用户反馈收集', '工厂→全局晋升', '低效关键词清理', '工厂学习配置', '学习阶段管理'],
           workflow: ['意图执行', '用户反馈', 'Wilson Score计算', '效果评估', '晋升检查(3+工厂+80%效果)', '自动清理(<0.3)', '阶段升级'],
           effects: ['关键词质量持续优化', '跨工厂知识共享', '降低维护成本', '自动适应业务变化', '识别准确率提升']
@@ -1267,6 +1291,56 @@
           { level: 'MEDIUM', desc: '中敏感度，记录审计', example: 'EQUIPMENT_MAINTENANCE' },
           { level: 'HIGH', desc: '高敏感度，需确认', example: 'USER_CREATE' },
           { level: 'CRITICAL', desc: '关键操作，需审批', example: 'USER_ROLE_ASSIGN, INTENT_CREATE' }
+        ]
+      },
+      {
+        id: 'ai-factory-isolation',
+        name: 'AI 意图工厂隔离',
+        icon: '🔒',
+        category: 'ai',
+        controllers: ['MetaIntentHandler', 'DataOperationIntentHandler', 'QualityIntentHandler', 'ShipmentIntentHandler', 'AIIntentConfigController'],
+        apiCount: 6,
+        usageGuide: {
+          description: '【解决痛点】多工厂环境下，AI意图执行可能跨越工厂边界访问数据，造成数据泄露和权限混乱。本模块实现完整的AI意图工厂级隔离机制。【核心能力】（1）工厂级数据隔离：所有Handler执行时自动注入factoryId过滤条件，确保工厂用户只能访问本工厂数据；（2）平台级/工厂级意图区分：意图配置支持factoryId字段，null表示平台级（所有工厂可见），非null表示工厂级（仅该工厂可见）；（3）平台管理员特权：super_admin和platform_admin可以创建平台级意图（scope=PLATFORM）或为任意工厂创建工厂级意图（scope=FACTORY+targetFactoryId）；（4）权限校验：工厂用户不能修改平台级意图，不能访问其他工厂的意图配置；（5）数据查询隔离：DataOperationIntentHandler使用findByIdAndFactoryId方法，QualityIntentHandler按factoryId过滤质检记录，ShipmentIntentHandler校验出货记录所属工厂。【典型场景】平台管理员创建"库存告警"平台级意图，所有工厂共享使用；工厂A管理员创建"特殊产品查询"工厂级意图，仅工厂A可用。【安全机制】工厂用户尝试修改平台级意图时返回"无权修改平台级意图，请联系平台管理员"错误提示。【模块协同】依赖【AI意图配置】的意图存储，影响所有Handler的数据访问逻辑。',
+          useCase: ['工厂数据隔离', '平台级意图创建', '工厂级意图管理', '跨工厂权限控制', '意图可见性管理'],
+          workflow: ['用户发起AI意图', '校验用户角色', '注入factoryId过滤', '执行意图Handler', '返回工厂隔离数据'],
+          effects: ['数据安全合规', '多租户隔离', '权限精细化', '平台标准化推广', '工厂定制化支持']
+        },
+        apis: [
+          { method: 'POST', path: '/ai-intents/execute', desc: '执行意图（自动注入factoryId）' },
+          { method: 'GET', path: '/ai-intents', desc: '获取意图列表（工厂级+平台级）' },
+          { method: 'POST', path: '/ai-intents', desc: '创建意图（支持scope参数）' },
+          { method: 'PUT', path: '/ai-intents/{code}', desc: '更新意图（权限校验）' },
+          { method: 'DELETE', path: '/ai-intents/{code}', desc: '删除意图（权限校验）' },
+          { method: 'GET', path: '/ai-intents/platform', desc: '获取平台级意图列表' }
+        ],
+        components: [
+          { name: 'MetaIntentHandler（平台管理员选项）', file: 'backend-java/service/handler/MetaIntentHandler.java', status: 'done' },
+          { name: 'DataOperationIntentHandler（工厂隔离）', file: 'backend-java/service/handler/DataOperationIntentHandler.java', status: 'done' },
+          { name: 'QualityIntentHandler（工厂隔离）', file: 'backend-java/service/handler/QualityIntentHandler.java', status: 'done' },
+          { name: 'ShipmentIntentHandler（工厂隔离）', file: 'backend-java/service/handler/ShipmentIntentHandler.java', status: 'done' },
+          { name: 'AIIntentConfig Entity（factoryId字段）', file: 'backend-java/entity/config/AIIntentConfig.java', status: 'done' },
+          { name: 'AIIntentConfigRepository（工厂级查询）', file: 'backend-java/repository/config/AIIntentConfigRepository.java', status: 'done' },
+          { name: '工厂隔离迁移脚本', file: 'V2026_01_04_40__ai_intent_config_factory_id.sql', status: 'done' },
+          { name: '平台管理员权限迁移', file: 'V2026_01_04_41__update_intent_create_roles.sql', status: 'done' }
+        ],
+        platformAdminFeatures: [
+          { feature: '创建平台级意图', params: 'scope=PLATFORM', desc: '所有工厂共享可见' },
+          { feature: '创建工厂级意图', params: 'scope=FACTORY, targetFactoryId=F001', desc: '指定工厂可见' },
+          { feature: '修改任意意图', params: '无限制', desc: '平台管理员可修改所有意图' },
+          { feature: '删除任意意图', params: '无限制', desc: '平台管理员可删除所有意图' }
+        ],
+        factoryUserRestrictions: [
+          { restriction: '只能创建本工厂意图', error: '无', desc: '自动绑定当前工厂' },
+          { restriction: '不能修改平台级意图', error: '无权修改平台级意图，请联系平台管理员', desc: 'factoryId=null的意图' },
+          { restriction: '不能修改其他工厂意图', error: '无权修改其他工厂的意图', desc: 'factoryId≠当前工厂' },
+          { restriction: '只能查看本工厂+平台级意图', error: '无', desc: '自动过滤其他工厂意图' }
+        ],
+        verificationResults: [
+          { test: '平台管理员创建平台级意图', result: 'factoryId=null, status=COMPLETED', passed: true },
+          { test: '工厂用户修改平台级意图', result: 'status=FAILED, 无权修改平台级意图', passed: true },
+          { test: '平台管理员修改平台级意图', result: 'status=COMPLETED', passed: true },
+          { test: 'Handler数据隔离', result: '所有Handler正确过滤factoryId', passed: true }
         ]
       },
 
@@ -1763,24 +1837,27 @@
         name: '秤协议管理',
         icon: '⚖️',
         category: 'iot',
-        controllers: ['ScaleProtocolController'],
-        apiCount: 13,
+        controllers: ['ScaleProtocolController', 'ScaleDeviceController'],
+        apiCount: 14,
         status: 'completed',
         completedDate: '2026-01-04',
         usageGuide: {
-          description: '【解决痛点】不同品牌/型号的电子秤使用不同的通信协议和接口，传统方式需要为每种秤单独开发驱动程序，维护成本高。本模块实现"配置驱动的协议适配"，一套代码适配所有秤。【核心能力】协议配置管理（RS232/RS485/HTTP/MQTT/Modbus RTU/TCP Socket）、品牌型号库维护（柯力/耀华/矽策/托利多）、帧格式动态解析、AI辅助协议识别、测试用例验证。【技术特点】支持4种帧类型：ASCII_FIXED（柯力D2008）、ASCII_VARIABLE、HEX_FIXED、MODBUS_RTU；校验和计算：XOR/SUM/CRC16；集成Drools规则引擎处理复杂解析逻辑；使用Formily动态表单配置协议参数。【内置协议】柯力D2008（ASCII 12字节定长帧）、耀华XK3190、矽策XC709S（HTTP API）、托利多IND系列。【模块协同】与【虚拟秤模拟器】联动无硬件开发测试，与【设备管理】联动秤设备配置，与【AI意图】联动自然语言协议识别（ScaleIntentHandler支持SCALE_ADD_MODEL/SCALE_PROTOCOL_DETECT/SCALE_CONFIG_GENERATE/SCALE_TROUBLESHOOT四种意图）。',
-          useCase: ['添加新秤型号协议配置', '解析不同品牌秤的原始数据', 'AI自动识别未知协议格式', '批量测试协议兼容性', '配置柯力/耀华/矽策等主流品牌'],
-          workflow: ['选择品牌型号（从内置库或新增）', '配置连接参数（串口波特率/API地址）', '定义帧格式（字段偏移/长度/类型）', '创建测试用例验证解析', '运行测试确保通过', '关联到工厂设备'],
-          effects: ['一套代码适配所有秤', '新秤型号即插即用', '协议文档化可维护', '开发效率提升80%', '支持AI语音配置秤']
+          description: '【解决痛点】不同品牌/型号的电子秤使用不同的通信协议和接口，传统方式需要为每种秤单独开发驱动程序，维护成本高。本模块实现"配置驱动的协议适配"，一套代码适配所有秤。【核心能力】协议配置管理（RS232/RS485/HTTP/MQTT/Modbus RTU/TCP Socket）、品牌型号库维护（柯力/耀华/矽策/托利多）、帧格式动态解析、AI辅助协议识别、测试用例验证。【技术特点】支持4种帧类型：ASCII_FIXED（柯力D2008）、ASCII_VARIABLE、HEX_FIXED、MODBUS_RTU；校验和计算：XOR/SUM/CRC16；集成Drools规则引擎处理复杂解析逻辑；使用Formily动态表单配置协议参数。【内置协议】柯力D2008（ASCII 12字节定长帧）、耀华XK3190、矽策XC709S（HTTP API）、托利多IND系列。【AI视觉识别】支持通过SCALE_ADD_DEVICE_VISION意图拍照识别设备铭牌，使用DashScope视觉模型(qwen2.5-vl-3b-instruct)自动提取品牌、型号、序列号、量程、精度等信息，内置品牌别名映射（柯力→KELI、耀华→YAOHUA、矽策→XICE、托利多→METTLER），连接类型自动标准化（RS232/RS485/TCP_IP/MODBUS等），无需人工填写表单。【模块协同】与【虚拟秤模拟器】联动无硬件开发测试，与【设备管理】联动秤设备配置，与【AI意图】联动自然语言协议识别（ScaleIntentHandler支持SCALE_ADD_MODEL/SCALE_PROTOCOL_DETECT/SCALE_CONFIG_GENERATE/SCALE_TROUBLESHOOT/SCALE_ADD_DEVICE_VISION五种意图）。',
+          useCase: ['添加新秤型号协议配置', '解析不同品牌秤的原始数据', 'AI自动识别未知协议格式', '批量测试协议兼容性', '配置柯力/耀华/矽策等主流品牌', '拍照识别设备铭牌自动配置'],
+          workflow: ['选择品牌型号（从内置库或新增）', '配置连接参数（串口波特率/API地址）', '定义帧格式（字段偏移/长度/类型）', '创建测试用例验证解析', '运行测试确保通过', '关联到工厂设备', '或：拍摄铭牌照片→AI视觉识别→自动填充配置'],
+          effects: ['一套代码适配所有秤', '新秤型号即插即用', '协议文档化可维护', '开发效率提升80%', '支持AI语音配置秤', '拍照即配置零门槛']
         },
         implementationFiles: [
           'ScaleProtocolConfig.java - 协议配置实体',
           'ScaleBrandModel.java - 品牌型号实体',
           'ScaleProtocolTestCase.java - 测试用例实体',
           'ScaleProtocolAdapterService.java - 核心适配服务',
-          'ScaleIntentHandler.java - AI意图处理器',
+          'ScaleIntentHandler.java - AI意图处理器(含SCALE_ADD_DEVICE_VISION)',
+          'ScaleDeviceController.java - 设备管理REST API',
+          'DashScopeVisionClient.java - 视觉识别客户端(qwen2.5-vl)',
           'V2026_01_04_10__scale_protocol_tables.sql - 数据库迁移',
-          'V2026_01_04_11__scale_initial_data.sql - 内置协议数据'
+          'V2026_01_04_11__scale_initial_data.sql - 内置协议数据',
+          'V2026_01_04_31__scale_add_device_intents.sql - 视觉识别意图配置'
         ],
         apis: [
           { method: 'GET', path: '/scale-protocols', desc: '协议配置列表（分页）- Query: page, size, connectionType?, isActive?。返回工厂可用的秤协议配置列表，包含协议编码、名称、连接类型、帧格式摘要' },
@@ -1795,7 +1872,8 @@
           { method: 'POST', path: '/scale-protocols/auto-detect', desc: 'AI协议自动识别 - Body: {sampleDataHex}。输入样本数据，AI分析并返回可能匹配的协议列表及置信度' },
           { method: 'GET', path: '/scale-protocols/{id}/test-cases', desc: '测试用例列表 - Path: id(协议ID)。返回该协议的测试用例列表' },
           { method: 'POST', path: '/scale-protocols/{id}/test-cases', desc: '创建测试用例 - Path: id。Body: {name, inputHex, expectedWeight, expectedUnit, expectedStable}' },
-          { method: 'POST', path: '/scale-protocols/{id}/run-tests', desc: '运行测试 - Path: id。执行该协议所有测试用例，返回通过/失败统计和详细结果' }
+          { method: 'POST', path: '/scale-protocols/{id}/run-tests', desc: '运行测试 - Path: id。执行该协议所有测试用例，返回通过/失败统计和详细结果' },
+          { method: 'POST', path: '/scale-devices/recognize-nameplate', desc: 'AI铭牌识别 - Body: {imageBase64}。上传设备铭牌照片，DashScope视觉模型(qwen2.5-vl)自动识别品牌、型号、序列号、量程、精度、连接类型等信息，返回结构化配置建议' }
         ]
       },
       {
@@ -2336,10 +2414,48 @@
       });
     }
 
+    // ==================== STATS CALCULATION ====================
+    function calculateAndUpdateStats() {
+      // 计算功能模块数量
+      const totalModules = MODULES.length;
+
+      // 计算 API 总数
+      const totalApis = MODULES.reduce((sum, m) => sum + (m.apiCount || 0), 0);
+
+      // 计算前端页面数量 (从 ROLES 中的 screens 字段)
+      const totalScreens = ROLES.reduce((sum, r) => sum + (r.screens || 0), 0);
+
+      // 计算 Controller 数量 (去重)
+      const allControllers = new Set();
+      MODULES.forEach(m => {
+        if (m.controllers) {
+          m.controllers.forEach(c => allControllers.add(c));
+        }
+      });
+      const totalControllers = allControllers.size;
+
+      // 用户角色数量
+      const totalRoles = ROLES.length;
+
+      // 更新 DOM - 顶部统计栏
+      document.getElementById('totalModules').textContent = totalModules;
+      document.getElementById('totalApis').textContent = totalApis;
+      document.getElementById('totalScreens').textContent = totalScreens;
+      document.getElementById('totalControllers').textContent = totalControllers;
+      document.getElementById('totalRoles').textContent = totalRoles;
+
+      // 更新 Footer
+      document.getElementById('footerControllers').textContent = totalControllers;
+      document.getElementById('footerScreens').textContent = totalScreens;
+
+      console.log('Stats calculated:', { totalModules, totalApis, totalScreens, totalControllers, totalRoles });
+    }
+
     // ==================== INIT ====================
     document.addEventListener('DOMContentLoaded', () => {
       renderModules();
       renderRoles();
+      calculateAndUpdateStats(); // 动态计算统计数据
 
       // Helper to get current filter values
       function getFilters() {

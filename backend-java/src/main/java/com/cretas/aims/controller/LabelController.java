@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.Label;
 import com.cretas.aims.service.LabelService;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -69,7 +70,7 @@ public class LabelController {
             log.error("获取标签列表失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -99,7 +100,7 @@ public class LabelController {
             log.error("获取标签统计失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -122,7 +123,7 @@ public class LabelController {
             log.error("获取即将过期标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -144,7 +145,7 @@ public class LabelController {
             log.error("获取已过期标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -168,7 +169,7 @@ public class LabelController {
             log.error("根据追溯码查询失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -192,7 +193,7 @@ public class LabelController {
             log.error("根据标签编码查询失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -215,7 +216,7 @@ public class LabelController {
             log.error("根据批次查询标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -239,7 +240,7 @@ public class LabelController {
             log.error("获取标签详情失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -266,7 +267,7 @@ public class LabelController {
             log.error("创建标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -295,7 +296,7 @@ public class LabelController {
             log.error("批量创建标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -320,7 +321,7 @@ public class LabelController {
             log.error("更新标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -345,7 +346,7 @@ public class LabelController {
             log.error("打印标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -370,7 +371,7 @@ public class LabelController {
             log.error("贴标操作失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -395,7 +396,7 @@ public class LabelController {
             log.error("作废标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -418,7 +419,7 @@ public class LabelController {
             log.error("删除标签失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -441,7 +442,7 @@ public class LabelController {
             log.error("生成标签编码失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -464,7 +465,7 @@ public class LabelController {
             log.error("生成追溯码失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

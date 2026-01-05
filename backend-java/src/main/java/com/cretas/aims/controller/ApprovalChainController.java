@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.config.ApprovalChainConfig;
 import com.cretas.aims.entity.config.ApprovalChainConfig.DecisionType;
 import com.cretas.aims.service.ApprovalChainService;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -143,7 +144,7 @@ public class ApprovalChainController {
             log.warn("创建审批链配置失败 - {}", e.getMessage());
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", e.getMessage());
+            response.put("message", ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -179,7 +180,7 @@ public class ApprovalChainController {
         } catch (IllegalArgumentException e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", e.getMessage());
+            response.put("message", ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }
@@ -213,7 +214,7 @@ public class ApprovalChainController {
         } catch (IllegalArgumentException e) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
-            response.put("message", e.getMessage());
+            response.put("message", ErrorSanitizer.sanitize(e));
             return ResponseEntity.badRequest().body(response);
         }
     }

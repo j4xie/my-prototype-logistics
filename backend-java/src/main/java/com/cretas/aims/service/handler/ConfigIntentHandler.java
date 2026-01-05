@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -63,7 +65,7 @@ public class ConfigIntentHandler implements IntentHandler {
 
         } catch (Exception e) {
             log.error("ConfigIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
-            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + e.getMessage());
+            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -455,5 +457,11 @@ public class ConfigIntentHandler implements IntentHandler {
                                 .build()
                 ))
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

@@ -33,6 +33,13 @@ public class IntentExecuteRequest {
     private String userInput;
 
     /**
+     * 显式指定的意图代码 (可选)
+     * 如果提供，跳过意图识别，直接执行指定意图
+     * 例如: SCALE_ADD_DEVICE, MATERIAL_BATCH_QUERY
+     */
+    private String intentCode;
+
+    /**
      * 目标实体类型 (可选，用于限定操作范围)
      * 例如: MATERIAL_BATCH, PRODUCT_TYPE, FACTORY, ENCODING_RULE
      */

@@ -101,6 +101,17 @@ import {
   QuotaUsageStatsScreen,
 } from '../screens/platform/quota';
 
+// Scale Protocol Management Screens
+import { ScaleProtocolListScreen } from '../screens/platform/scale/ScaleProtocolListScreen';
+import ScaleProtocolDetailScreen from '../screens/platform/scale/ScaleProtocolDetailScreen';
+import ScaleBrandModelListScreen from '../screens/platform/scale/ScaleBrandModelListScreen';
+
+// ISAPI Device Management Screens (shared from factory-admin)
+import { IsapiDeviceListScreen } from '../screens/factory-admin/isapi/IsapiDeviceListScreen';
+import { IsapiDeviceDetailScreen } from '../screens/factory-admin/isapi/IsapiDeviceDetailScreen';
+import { IsapiDeviceCreateScreen } from '../screens/factory-admin/isapi/IsapiDeviceCreateScreen';
+import { IsapiSmartConfigScreen } from '../screens/factory-admin/isapi/IsapiSmartConfigScreen';
+
 export type PlatformStackParamList = {
   // Dashboard
   PlatformDashboard: undefined;
@@ -187,6 +198,17 @@ export type PlatformStackParamList = {
   StateMachineList: undefined;
   StateMachineDesigner: { machineId?: string };
   StateMachineDetail: { machineId: string };
+
+  // Scale Protocol Management
+  ScaleProtocolList: undefined;
+  ScaleProtocolDetail: { protocolId: string };
+  ScaleBrandModelList: undefined;
+
+  // ISAPI Device Management (Platform Admin can manage all factories)
+  IsapiDeviceList: { factoryId?: string };
+  IsapiDeviceDetail: { deviceId: string; factoryId?: string };
+  IsapiDeviceCreate: { factoryId?: string };
+  IsapiSmartConfig: { deviceId: string; channelId?: number; factoryId?: string };
 };
 
 const Stack = createNativeStackNavigator<PlatformStackParamList>();
@@ -337,6 +359,17 @@ export function PlatformStackNavigator() {
       <Stack.Screen name="QuotaRules" component={QuotaRulesScreen} />
       <Stack.Screen name="QuotaRuleEdit" component={QuotaRuleEditScreen} />
       <Stack.Screen name="QuotaUsageStats" component={QuotaUsageStatsScreen} />
+
+      {/* ===== 电子秤协议管理 ===== */}
+      <Stack.Screen name="ScaleProtocolList" component={ScaleProtocolListScreen} options={{ title: '协议管理' }} />
+      <Stack.Screen name="ScaleProtocolDetail" component={ScaleProtocolDetailScreen} options={{ title: '协议详情' }} />
+      <Stack.Screen name="ScaleBrandModelList" component={ScaleBrandModelListScreen} options={{ title: '品牌型号' }} />
+
+      {/* ===== ISAPI 摄像头设备管理 ===== */}
+      <Stack.Screen name="IsapiDeviceList" component={IsapiDeviceListScreen} options={{ title: '摄像头管理' }} />
+      <Stack.Screen name="IsapiDeviceDetail" component={IsapiDeviceDetailScreen} options={{ title: '摄像头详情' }} />
+      <Stack.Screen name="IsapiDeviceCreate" component={IsapiDeviceCreateScreen} options={{ title: '添加摄像头' }} />
+      <Stack.Screen name="IsapiSmartConfig" component={IsapiSmartConfigScreen} options={{ title: '智能分析配置' }} />
     </Stack.Navigator>
   );
 }
