@@ -165,15 +165,15 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     }
 
     @Override
-    public IntentMatchResult classifyIntent(String userInput, List<AIIntentConfig> availableIntents, String factoryId) {
-        log.info("Calling LLM fallback for intent classification: factoryId={}, input='{}'",
-                 factoryId, truncate(userInput, 50));
+    public IntentMatchResult classifyIntent(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole) {
+        log.info("Calling LLM fallback for intent classification: factoryId={}, userId={}, role={}, input='{}'",
+                 factoryId, userId, userRole, truncate(userInput, 50));
 
         // 根据配置选择调用方式
         if (shouldUseDashScopeDirect()) {
-            return classifyIntentDirect(userInput, availableIntents, factoryId);
+            return classifyIntentDirect(userInput, availableIntents, factoryId, userId, userRole);
         } else {
-            return classifyIntentViaPython(userInput, availableIntents, factoryId);
+            return classifyIntentViaPython(userInput, availableIntents, factoryId, userId, userRole);
         }
     }
 
@@ -203,7 +203,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                 factoryId, userId, truncate(userInput, 50));
 
         // 先尝试单次分类
-        IntentMatchResult singleResult = classifyIntent(userInput, availableIntents, factoryId);
+        IntentMatchResult singleResult = classifyIntent(userInput, availableIntents, factoryId, userId, null);
 
         // 检查是否需要多轮对话
         if (!needsMultiTurnConversation(singleResult)) {
@@ -312,7 +312,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     /**
      * 使用 DashScope 直接进行意图分类 (新方式)
      */
-    private IntentMatchResult classifyIntentDirect(String userInput, List<AIIntentConfig> availableIntents, String factoryId) {
+    private IntentMatchResult classifyIntentDirect(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole) {
         log.debug("Using DashScope direct intent classification");
 
         try {
@@ -323,7 +323,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             String responseJson = dashScopeClient.classifyIntent(systemPrompt, userInput);
 
             // 解析响应
-            return parseDirectClassifyResponse(responseJson, userInput, availableIntents, factoryId);
+            return parseDirectClassifyResponse(responseJson, userInput, availableIntents, factoryId, userId, userRole);
 
         } catch (Exception e) {
             log.error("DashScope direct intent classification failed: {}", e.getMessage(), e);
@@ -331,7 +331,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             // 降级到 Python 服务
             if (isPythonServiceHealthy()) {
                 log.info("Falling back to Python service due to DashScope error");
-                return classifyIntentViaPython(userInput, availableIntents, factoryId);
+                return classifyIntentViaPython(userInput, availableIntents, factoryId, userId, userRole);
             }
 
             return IntentMatchResult.empty(userInput);
@@ -341,7 +341,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     /**
      * 使用 Python 服务进行意图分类 (旧方式)
      */
-    private IntentMatchResult classifyIntentViaPython(String userInput, List<AIIntentConfig> availableIntents, String factoryId) {
+    private IntentMatchResult classifyIntentViaPython(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole) {
         log.debug("Using Python service for intent classification");
 
         try {
@@ -352,7 +352,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             String responseJson = callPythonEndpoint("/api/ai/intent/classify", requestBody);
 
             // 解析响应
-            return parseClassifyResponse(responseJson, userInput, availableIntents, factoryId);
+            return parseClassifyResponse(responseJson, userInput, availableIntents, factoryId, userId, userRole);
 
         } catch (Exception e) {
             log.error("LLM intent classification failed: {}", e.getMessage(), e);
@@ -402,7 +402,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     private IntentMatchResult parseDirectClassifyResponse(String responseJson,
                                                            String userInput,
                                                            List<AIIntentConfig> availableIntents,
-                                                           String factoryId) {
+                                                           String factoryId,
+                                                           Long userId,
+                                                           String userRole) {
         try {
             // 提取 JSON 部分
             Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
@@ -439,7 +441,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                 if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
                     log.info("[Tool Calling] Intent not matched, asking LLM whether to create new intent");
                     return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
-                            intentCode, reasoning, confidence);
+                            intentCode, reasoning, confidence, userId, userRole);
                 } else if (autoCreateIntentEnabled && factoryId != null) {
                     // 降级：Tool Calling 不可用时使用旧逻辑
                     log.warn("[Legacy Mode] Tool Calling unavailable, using hardcoded logic");
@@ -960,7 +962,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     private IntentMatchResult parseClassifyResponse(String responseJson,
                                                      String userInput,
                                                      List<AIIntentConfig> availableIntents,
-                                                     String factoryId) throws IOException {
+                                                     String factoryId,
+                                                     Long userId,
+                                                     String userRole) throws IOException {
         // Step 1: 使用 DTO 反序列化（软 Schema 验证）
         LlmIntentClassifyResponse response;
         try {
@@ -1003,7 +1007,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
                 log.info("[Tool Calling] Intent not matched (Python path), asking LLM whether to create new intent");
                 return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
-                        matchedIntentCode, reasoning, confidence);
+                        matchedIntentCode, reasoning, confidence, userId, userRole);
             } else if (autoCreateIntentEnabled) {
                 // 降级：Tool Calling 不可用时使用旧逻辑
                 log.warn("[Legacy Mode] Tool Calling unavailable (Python path), using hardcoded logic");
@@ -1515,7 +1519,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             String factoryId,
             String suggestedIntentCode,
             String reasoning,
-            double confidence) {
+            double confidence,
+            Long userId,
+            String userRole) {
 
         try {
             log.debug("[Tool Calling] Starting tool calling workflow for intent creation");
@@ -1578,8 +1584,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
                 ToolExecutor executor = executorOpt.get();
 
-                // 构建执行上下文
-                Map<String, Object> context = buildToolExecutionContext(factoryId);
+                // 构建执行上下文（包含 userId 和 userRole 用于权限验证）
+                Map<String, Object> context = buildToolExecutionContext(factoryId, userId, userRole);
 
                 // 执行工具
                 String result = executor.execute(toolCall, context);
@@ -1671,10 +1677,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     /**
      * 构建工具执行上下文
      */
-    private Map<String, Object> buildToolExecutionContext(String factoryId) {
+    private Map<String, Object> buildToolExecutionContext(String factoryId, Long userId, String userRole) {
         Map<String, Object> context = new HashMap<>();
         context.put("factoryId", factoryId);
-        // 可以添加更多上下文信息，如 userId, userRole 等
+        context.put("userId", userId);
+        context.put("userRole", userRole);
         return context;
     }
 }

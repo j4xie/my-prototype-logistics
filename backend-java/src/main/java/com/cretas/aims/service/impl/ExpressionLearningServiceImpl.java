@@ -10,6 +10,8 @@ import com.cretas.aims.service.IntentEmbeddingCacheService;
 import com.cretas.aims.service.RequestScopedEmbeddingCache;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +38,11 @@ public class ExpressionLearningServiceImpl implements ExpressionLearningService 
     private final EmbeddingClient embeddingClient;
     private final RequestScopedEmbeddingCache requestScopedCache;
     private final IntentEmbeddingCacheService embeddingCacheService;
+
+    // 自引用代理 - 用于解决 Spring @Transactional 自调用不走代理的问题
+    @Autowired
+    @Lazy
+    private ExpressionLearningService self;
 
     // ========== 表达学习 ==========
 
@@ -323,19 +330,19 @@ public class ExpressionLearningServiceImpl implements ExpressionLearningService 
     }
 
     @Override
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void recordHit(String expressionId) {
         expressionRepository.incrementHitCount(expressionId, LocalDateTime.now());
     }
 
     /**
      * 异步记录命中（避免阻塞匹配流程）
+     * 注意：使用 self 代理调用以确保 @Transactional(REQUIRES_NEW) 生效
      */
     private void recordHitAsync(String expressionId) {
-        // 简单实现：同步更新
-        // TODO: 生产环境可考虑使用异步队列或定期批量更新
+        // 使用自引用代理调用，确保事务注解生效（解决 Spring 自调用问题）
         try {
-            recordHit(expressionId);
+            self.recordHit(expressionId);
         } catch (Exception e) {
             log.warn("记录表达命中失败: id={}, error={}", expressionId, e.getMessage());
         }

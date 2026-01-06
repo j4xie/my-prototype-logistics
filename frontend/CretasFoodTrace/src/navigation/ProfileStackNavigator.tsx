@@ -12,6 +12,9 @@ import DataExportScreen from '../screens/reports/DataExportScreen';
 // 开发者工具 - 服务器连接测试
 import ServerConnectivityTestScreen from '../screens/test/ServerConnectivityTestScreen';
 
+// 开发者工具 - 意图执行测试
+import IntentExecutionTestScreen from '../screens/test/IntentExecutionTestScreen';
+
 // S4-4 通知中心 - 所有角色可访问
 import NotificationCenterScreen from '../screens/common/NotificationCenterScreen';
 
@@ -53,6 +56,13 @@ export function ProfileStackNavigator() {
         name="ServerConnectivityTest"
         component={ServerConnectivityTestScreen}
         options={{ title: '服务器连接测试' }}
+      />
+
+      {/* 开发者工具 - 意图执行测试 */}
+      <Stack.Screen
+        name="IntentExecutionTest"
+        component={IntentExecutionTestScreen}
+        options={{ title: '意图执行测试' }}
       />
 
       {/* S4-4 通知中心 - 所有角色可访问 */}

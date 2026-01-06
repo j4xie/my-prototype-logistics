@@ -66,9 +66,11 @@ public interface AIIntentService {
      * @param userInput 用户输入文本
      * @param factoryId 工厂ID（用于LLM上下文）
      * @param topN 返回的候选意图数量
+     * @param userId 用户ID（用于Tool Calling权限验证）
+     * @param userRole 用户角色（用于Tool Calling权限验证）
      * @return 完整的匹配结果
      */
-    IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN);
+    IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN, Long userId, String userRole);
 
     /**
      * 识别所有可能的意图（租户隔离）

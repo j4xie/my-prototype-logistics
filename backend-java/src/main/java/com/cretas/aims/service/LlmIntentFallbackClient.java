@@ -29,9 +29,11 @@ public interface LlmIntentFallbackClient {
      * @param userInput 用户输入
      * @param availableIntents 可用的意图配置列表
      * @param factoryId 工厂ID
+     * @param userId 用户ID（用于Tool Calling权限验证）
+     * @param userRole 用户角色（用于Tool Calling权限验证）
      * @return 意图匹配结果
      */
-    IntentMatchResult classifyIntent(String userInput, List<AIIntentConfig> availableIntents, String factoryId);
+    IntentMatchResult classifyIntent(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole);
 
     /**
      * 调用 LLM 进行意图分类 (带多轮对话支持)
@@ -49,8 +51,8 @@ public interface LlmIntentFallbackClient {
             List<AIIntentConfig> availableIntents,
             String factoryId,
             Long userId) {
-        // 默认实现: 直接调用单次分类
-        IntentMatchResult result = classifyIntent(userInput, availableIntents, factoryId);
+        // 默认实现: 直接调用单次分类（使用null作为userRole，因为没有该参数）
+        IntentMatchResult result = classifyIntent(userInput, availableIntents, factoryId, userId, null);
         return EnhancedIntentResult.fromMatchResult(result);
     }
 
