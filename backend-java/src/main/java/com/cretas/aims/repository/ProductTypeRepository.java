@@ -58,6 +58,11 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * 检查产品代码是否存在
       */
     boolean existsByFactoryIdAndCode(String factoryId, String code);
+
+    /**
+     * 检查产品类型是否存在（工厂隔离）
+     */
+    boolean existsByIdAndFactoryId(String id, String factoryId);
      /**
      * 统计产品类型数量
       */

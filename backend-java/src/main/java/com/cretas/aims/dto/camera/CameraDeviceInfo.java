@@ -57,5 +57,24 @@ public class CameraDeviceInfo {
      * 是否可访问
      */
     private Boolean accessible;
+
+    /**
+     * 厂商名称
+     */
+    private String vendorName;
+
+    /**
+     * IP地址（获取器，兼容 currentIp）
+     */
+    public String getIpAddress() {
+        return this.currentIp;
+    }
+
+    /**
+     * 接口类型（使用 transportLayerType）
+     */
+    public String getInterfaceType() {
+        return this.transportLayerType;
+    }
 }
 

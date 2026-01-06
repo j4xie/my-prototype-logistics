@@ -100,6 +100,13 @@ public class ChatCompletionResponse {
          */
         @JsonProperty("reasoning_content")
         private String reasoningContent;
+
+        /**
+         * 工具调用列表 (OpenAI Function Calling)
+         * 当 LLM 决定调用工具时返回
+         */
+        @JsonProperty("tool_calls")
+        private List<ToolCall> toolCalls;
     }
 
     @Data

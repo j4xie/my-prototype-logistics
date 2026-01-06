@@ -612,8 +612,8 @@ class ProtocolMatcherTest {
         @DisplayName("所有匹配失败时返回 null")
         void testNoMatchReturnsNull() {
             // Given - no brand, no raw data
-            when(protocolRepository.findByIsActiveTrue())
-                    .thenReturn(Collections.emptyList());
+            // 注意：当 rawData=null 且 brand=null 时，getBestMatch 方法会直接返回 null
+            // 不会调用 protocolRepository.findByIsActiveTrue()，因此不需要设置 stub
 
             // When
             ProtocolMatcher.ProtocolMatchResult result = protocolMatcher.getBestMatch(

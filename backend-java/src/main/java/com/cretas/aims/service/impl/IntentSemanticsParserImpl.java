@@ -7,6 +7,9 @@ import com.cretas.aims.service.IntentSemanticsParser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -60,6 +63,48 @@ public class IntentSemanticsParserImpl implements IntentSemanticsParser {
         SEMANTIC_MAPPINGS.put("META_INTENT_QUERY", new SemanticMapping(DomainType.META, ActionType.QUERY, ObjectType.INTENT));
         SEMANTIC_MAPPINGS.put("META_INTENT_UPDATE", new SemanticMapping(DomainType.META, ActionType.UPDATE, ObjectType.INTENT));
     }
+
+    // 状态值映射表：中文到英文常量的映射
+    private static final Map<String, String> SHIPMENT_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry("已发货", "SHIPPED"),
+            Map.entry("待发货", "PENDING"),
+            Map.entry("已送达", "DELIVERED"),
+            Map.entry("运输中", "IN_TRANSIT"),
+            Map.entry("已取消", "CANCELLED"),
+            Map.entry("待确认", "PENDING_CONFIRMATION"),
+            Map.entry("配送中", "IN_DELIVERY")
+    );
+
+    private static final Map<String, String> QUALITY_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry("合格", "PASSED"),
+            Map.entry("不合格", "FAILED"),
+            Map.entry("待检", "PENDING"),
+            Map.entry("检验中", "IN_PROGRESS"),
+            Map.entry("待复检", "PENDING_RECHECK"),
+            Map.entry("已复检", "RECHECKED")
+    );
+
+    private static final Map<String, String> BATCH_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry("进行中", "IN_PROGRESS"),
+            Map.entry("已完成", "COMPLETED"),
+            Map.entry("待开始", "PENDING"),
+            Map.entry("已暂停", "PAUSED"),
+            Map.entry("已取消", "CANCELLED"),
+            Map.entry("待质检", "PENDING_QC"),
+            Map.entry("待入库", "PENDING_STORAGE")
+    );
+
+    private static final Map<String, String> GENERAL_STATUS_MAPPINGS = Map.ofEntries(
+            Map.entry("待处理", "PENDING"),
+            Map.entry("处理中", "IN_PROGRESS"),
+            Map.entry("已完成", "COMPLETED"),
+            Map.entry("已取消", "CANCELLED"),
+            Map.entry("暂停", "PAUSED"),
+            Map.entry("正常", "NORMAL"),
+            Map.entry("异常", "ABNORMAL"),
+            Map.entry("已确认", "CONFIRMED"),
+            Map.entry("未确认", "UNCONFIRMED")
+    );
 
     @Override
     public IntentSemantics parse(IntentExecuteRequest request, AIIntentConfig intentConfig, String factoryId) {
@@ -322,8 +367,18 @@ public class IntentSemanticsParserImpl implements IntentSemanticsParser {
         java.util.regex.Matcher dateMatcher = datePattern.matcher(userInput);
         if (dateMatcher.find()) {
             String dateStr = dateMatcher.group(1);
-            constraints.add(Constraint.set("date", dateStr));
-            log.debug("从用户输入提取日期: {}", dateStr);
+            // 解析为LocalDate对象
+            LocalDate parsedDate = parseRelativeDate(dateStr);
+            if (parsedDate != null) {
+                // 同时存储原始字符串和解析后的LocalDate
+                constraints.add(Constraint.set("date", dateStr));
+                constraints.add(Constraint.set("parsedDate", parsedDate.toString()));
+                log.debug("从用户输入提取并解析日期: {} → {}", dateStr, parsedDate);
+            } else {
+                // 解析失败时仅存储原始字符串
+                constraints.add(Constraint.set("date", dateStr));
+                log.debug("从用户输入提取日期（未解析）: {}", dateStr);
+            }
         }
 
         // 生产计划号提取: PLAN-xxx 格式
@@ -352,14 +407,109 @@ public class IntentSemanticsParserImpl implements IntentSemanticsParser {
 
         // 状态提取: "状态xxx" 或 "待处理/已完成/进行中"
         java.util.regex.Pattern statusPattern = java.util.regex.Pattern.compile(
-            "(?:状态[：:]?\\s*)?(待处理|已完成|进行中|暂停|取消|已确认|未确认|正常|异常|PENDING|COMPLETED|IN_PROGRESS|CANCELLED)",
+            "(?:状态[：:]?\\s*)?(已发货|待发货|已送达|运输中|已取消|配送中|合格|不合格|待检|检验中|待复检|已复检|进行中|已完成|待开始|已暂停|待质检|待入库|待处理|处理中|暂停|正常|异常|已确认|未确认|PENDING|COMPLETED|IN_PROGRESS|CANCELLED|SHIPPED|DELIVERED)",
             java.util.regex.Pattern.CASE_INSENSITIVE
         );
         java.util.regex.Matcher statusMatcher = statusPattern.matcher(userInput);
         if (statusMatcher.find()) {
             String status = statusMatcher.group(1);
-            constraints.add(Constraint.set("status", status));
-            log.debug("从用户输入提取状态: {}", status);
+            // 尝试将中文状态映射为英文常量
+            String mappedStatus = mapStatusValue(status);
+            constraints.add(Constraint.set("status", mappedStatus));
+            log.debug("从用户输入提取状态: {} → {}", status, mappedStatus);
+        }
+    }
+
+    /**
+     * 将中文状态值映射为英文常量
+     * 按优先级尝试：出货状态 → 质量状态 → 批次状态 → 通用状态
+     *
+     * @param chineseStatus 中文状态或英文状态
+     * @return 映射后的英文状态常量（如果无法映射，返回原值）
+     */
+    private String mapStatusValue(String chineseStatus) {
+        if (chineseStatus == null) {
+            return null;
+        }
+
+        String trimmed = chineseStatus.trim();
+
+        // 如果已经是英文大写，直接返回
+        if (trimmed.matches("^[A-Z_]+$")) {
+            return trimmed;
+        }
+
+        // 依次尝试各类状态映射
+        String mapped = SHIPMENT_STATUS_MAPPINGS.get(trimmed);
+        if (mapped != null) {
+            return mapped;
+        }
+
+        mapped = QUALITY_STATUS_MAPPINGS.get(trimmed);
+        if (mapped != null) {
+            return mapped;
+        }
+
+        mapped = BATCH_STATUS_MAPPINGS.get(trimmed);
+        if (mapped != null) {
+            return mapped;
+        }
+
+        mapped = GENERAL_STATUS_MAPPINGS.get(trimmed);
+        if (mapped != null) {
+            return mapped;
+        }
+
+        // 如果无法映射，返回原值（可能是自定义状态）
+        log.debug("无法映射状态值: {}，返回原值", chineseStatus);
+        return trimmed;
+    }
+
+    /**
+     * 将相对日期描述转换为LocalDate对象
+     * 支持：今天、昨天、前天、本周、本月、上周、上月、以及标准日期格式
+     *
+     * @param dateStr 日期字符串（相对或绝对）
+     * @return LocalDate对象，如果解析失败返回null
+     */
+    private LocalDate parseRelativeDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+
+        String trimmed = dateStr.trim();
+        LocalDate today = LocalDate.now();
+
+        // 相对日期处理
+        switch (trimmed) {
+            case "今天":
+            case "今日":
+                return today;
+            case "昨天":
+            case "昨日":
+                return today.minusDays(1);
+            case "前天":
+                return today.minusDays(2);
+            case "本周":
+                // 返回本周一
+                return today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case "上周":
+                // 返回上周一
+                return today.minusWeeks(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            case "本月":
+                // 返回本月1号
+                return today.with(TemporalAdjusters.firstDayOfMonth());
+            case "上月":
+                // 返回上月1号
+                return today.minusMonths(1).with(TemporalAdjusters.firstDayOfMonth());
+        }
+
+        // 尝试解析标准日期格式 yyyy-MM-dd
+        try {
+            return LocalDate.parse(trimmed);
+        } catch (Exception e) {
+            log.warn("无法解析日期: {}", dateStr);
+            return null;
         }
     }
 

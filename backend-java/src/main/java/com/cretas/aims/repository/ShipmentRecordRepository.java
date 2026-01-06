@@ -118,4 +118,19 @@ public interface ShipmentRecordRepository extends JpaRepository<ShipmentRecord, 
            "AND s.shipmentDate = :date AND s.status IN ('shipped', 'delivered')")
     java.math.BigDecimal calculateDailyRevenue(@Param("factoryId") String factoryId,
                                                 @Param("date") LocalDate date);
+
+    /**
+     * 根据ID和工厂ID查询（工厂隔离）
+     */
+    Optional<ShipmentRecord> findByIdAndFactoryId(String id, String factoryId);
+
+    /**
+     * 根据出货单号和工厂ID查询（工厂隔离）
+     */
+    Optional<ShipmentRecord> findByShipmentNumberAndFactoryId(String shipmentNumber, String factoryId);
+
+    /**
+     * 根据物流单号和工厂ID查询（工厂隔离）
+     */
+    Optional<ShipmentRecord> findByTrackingNumberAndFactoryId(String trackingNumber, String factoryId);
 }

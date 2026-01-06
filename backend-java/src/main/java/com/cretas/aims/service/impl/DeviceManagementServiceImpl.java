@@ -6,7 +6,7 @@ import com.cretas.aims.dto.device.ConnectionTestResult;
 import com.cretas.aims.dto.device.DeviceInfo;
 import com.cretas.aims.dto.device.DeviceStatus;
 import com.cretas.aims.entity.FactoryEquipment;
-import com.cretas.aims.entity.enums.DeviceCategory;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.isapi.IsapiDevice;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.repository.isapi.IsapiDeviceRepository;
@@ -301,7 +301,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
             if (equipmentRepository.existsById(equipmentId)) {
                 var equipment = equipmentRepository.findById(equipmentId);
                 if (equipment.isPresent()) {
-                    if (equipment.get().getDeviceCategory() == DeviceCategory.IOT_SCALE) {
+                    if (equipment.get().getUnifiedDeviceType() == UnifiedDeviceType.SCALE) {
                         return DEVICE_TYPE_SCALE;
                     }
                     return DEVICE_TYPE_EQUIPMENT;
@@ -345,7 +345,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
                 .deviceName(device.getDeviceName())
                 .factoryId(device.getFactoryId())
                 .model(device.getDeviceModel())
-                .manufacturer(device.getDeviceType() != null ? device.getDeviceType().name() : null)
+                .manufacturer(device.getUnifiedDeviceType() != null ? device.getUnifiedDeviceType().name() : null)
                 .serialNumber(device.getSerialNumber())
                 .firmwareVersion(device.getFirmwareVersion())
                 .ipAddress(device.getIpAddress())
@@ -423,13 +423,13 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
         try {
             Long id = Long.parseLong(deviceId);
             return equipmentRepository.findById(id)
-                    .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                    .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                     .map(this::convertScaleToDeviceInfo)
                     .orElse(null);
         } catch (NumberFormatException e) {
             // Try by equipment code
             return equipmentRepository.findAll().stream()
-                    .filter(eq -> eq.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                    .filter(eq -> eq.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                     .filter(eq -> deviceId.equalsIgnoreCase(eq.getEquipmentCode()) ||
                                   deviceId.equalsIgnoreCase(eq.getIotDeviceCode()))
                     .findFirst()
@@ -440,7 +440,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
 
     private List<DeviceInfo> listScaleDevices(String factoryId) {
         return equipmentRepository.findByFactoryId(factoryId).stream()
-                .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                 .map(this::convertScaleToDeviceInfo)
                 .collect(Collectors.toList());
     }
@@ -517,7 +517,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
         try {
             Long id = Long.parseLong(deviceId);
             return equipmentRepository.findById(id)
-                    .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                    .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                     .map(equipment -> DeviceStatus.builder()
                             .deviceId(deviceId)
                             .deviceType(DEVICE_TYPE_SCALE)
@@ -541,7 +541,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
         try {
             Long id = Long.parseLong(deviceId);
             return equipmentRepository.findById(id)
-                    .filter(e -> e.getDeviceCategory() != DeviceCategory.IOT_SCALE) // Exclude scales
+                    .filter(e -> e.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) // Exclude scales
                     .map(this::convertEquipmentToDeviceInfo)
                     .orElse(null);
         } catch (NumberFormatException e) {
@@ -551,7 +551,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
 
     private List<DeviceInfo> listEquipmentDevices(String factoryId) {
         return equipmentRepository.findByFactoryId(factoryId).stream()
-                .filter(e -> e.getDeviceCategory() != DeviceCategory.IOT_SCALE) // Exclude scales
+                .filter(e -> e.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) // Exclude scales
                 .map(this::convertEquipmentToDeviceInfo)
                 .collect(Collectors.toList());
     }
@@ -607,7 +607,7 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
         try {
             Long id = Long.parseLong(deviceId);
             return equipmentRepository.findById(id)
-                    .filter(e -> e.getDeviceCategory() != DeviceCategory.IOT_SCALE)
+                    .filter(e -> e.getUnifiedDeviceType() != UnifiedDeviceType.SCALE)
                     .map(equipment -> DeviceStatus.builder()
                             .deviceId(deviceId)
                             .deviceType(DEVICE_TYPE_EQUIPMENT)

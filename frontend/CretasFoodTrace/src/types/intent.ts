@@ -104,10 +104,36 @@ export interface IntentSelectionCallbacks {
 }
 
 /**
+ * 缺失参数定义
+ */
+export interface MissingParameter {
+  /** 参数名称 */
+  parameterName: string;
+  /** 显示名称（用户友好） */
+  displayName: string;
+  /** 参数类型 */
+  parameterType: 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'ENUM';
+  /** 是否必需 */
+  required: boolean;
+  /** 参数描述 */
+  description: string;
+  /** 可选值列表（当 parameterType 为 ENUM 时） */
+  possibleValues?: string[];
+  /** 验证提示 */
+  validationHint?: string;
+}
+
+/**
  * 意图执行响应
  */
 export interface IntentExecuteResponse {
   success: boolean;
+  /** 执行状态 */
+  status?: 'SUCCESS' | 'NEED_MORE_INFO' | 'ERROR';
+  /** 澄清问题列表（当状态为 NEED_MORE_INFO 时） */
+  clarificationQuestions?: string[];
+  /** 缺失参数列表（当状态为 NEED_MORE_INFO 时） */
+  missingParameters?: MissingParameter[];
   /** 执行结果数据 */
   data?: {
     /** 执行的意图代码 */

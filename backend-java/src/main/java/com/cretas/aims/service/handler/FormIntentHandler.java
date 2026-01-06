@@ -4,9 +4,12 @@ import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.intent.FieldUpdateFact;
+import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.config.FormTemplate;
 import com.cretas.aims.repository.FormTemplateRepository;
+import com.cretas.aims.service.RuleEngineService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +48,7 @@ public class FormIntentHandler implements IntentHandler {
     private final ObjectMapper objectMapper;
     private final DashScopeClient dashScopeClient;
     private final DashScopeConfig dashScopeConfig;
+    private final RuleEngineService ruleEngineService;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -53,11 +57,13 @@ public class FormIntentHandler implements IntentHandler {
     public FormIntentHandler(FormTemplateRepository formTemplateRepository,
                              RestTemplate restTemplate,
                              ObjectMapper objectMapper,
+                             RuleEngineService ruleEngineService,
                              @Autowired(required = false) DashScopeClient dashScopeClient,
                              @Autowired(required = false) DashScopeConfig dashScopeConfig) {
         this.formTemplateRepository = formTemplateRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.ruleEngineService = ruleEngineService;
         this.dashScopeClient = dashScopeClient;
         this.dashScopeConfig = dashScopeConfig;
     }
@@ -108,6 +114,26 @@ public class FormIntentHandler implements IntentHandler {
                     .orElse(null);
 
             List<Map<String, Object>> newFields = (List<Map<String, Object>>) generatedSchema.get("fields");
+
+            // ====== DROOLS GATEWAY: 字段级规则验证 ======
+            ValidationResult fieldValidation = validateFieldsWithDrools(
+                    factoryId, entityType, newFields, userId, userRole);
+            if (!fieldValidation.isValid()) {
+                log.warn("字段规则验证失败: entityType={}, violations={}",
+                        entityType, fieldValidation.getViolations().size());
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName())
+                        .intentCategory("FORM")
+                        .status("VALIDATION_FAILED")
+                        .message("字段定义不符合业务规则: " + fieldValidation.getViolationsSummary())
+                        .validationViolations(fieldValidation.getViolations())
+                        .recommendations(fieldValidation.getRecommendations())
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+            log.debug("字段规则验证通过: entityType={}, fieldCount={}", entityType, newFields.size());
 
             List<IntentExecuteResponse.AffectedEntity> affected = new ArrayList<>();
 
@@ -516,5 +542,86 @@ public class FormIntentHandler implements IntentHandler {
 
         schema.put("properties", properties);
         return schema;
+    }
+
+    /**
+     * 使用 Drools 验证字段定义
+     *
+     * @param factoryId 工厂ID
+     * @param entityType 实体类型
+     * @param newFields 新字段列表
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return 验证结果
+     */
+    private ValidationResult validateFieldsWithDrools(String factoryId, String entityType,
+                                                       List<Map<String, Object>> newFields,
+                                                       Long userId, String userRole) {
+        try {
+            // 聚合所有字段的验证结果
+            ValidationResult aggregatedResult = ValidationResult.builder()
+                    .valid(true)
+                    .build();
+
+            // 遍历每个字段进行验证
+            for (Map<String, Object> field : newFields) {
+                String fieldName = (String) field.get("name");
+                String fieldType = (String) field.get("type");
+                Object defaultValue = field.get("defaultValue");
+                Boolean required = (Boolean) field.getOrDefault("required", false);
+
+                // 构建字段更新事实对象
+                FieldUpdateFact fact = FieldUpdateFact.builder()
+                        .entityType(entityType)
+                        .entityId(null)  // 新建字段，暂无实体ID
+                        .fieldName(fieldName)
+                        .oldValue(null)  // 新建字段，无旧值
+                        .newValue(defaultValue)
+                        .factoryId(factoryId)
+                        .hasRelatedBatches(false)
+                        .relatedBatchCount(0)
+                        .operation("CREATE")
+                        .userId(userId)
+                        .username("system")
+                        .userRole(userRole)
+                        .build();
+
+                // 调用 RuleEngineService 执行字段验证规则
+                ValidationResult fieldResult = ruleEngineService.executeRulesWithAudit(
+                        factoryId,
+                        "fieldValidation",   // 规则组
+                        entityType,          // 实体类型
+                        fieldName,           // 实体ID (使用字段名)
+                        userId,              // 执行者ID
+                        "system",            // 执行者名称
+                        userRole,            // 执行者角色
+                        fact                 // Drools 事实对象
+                );
+
+                // 聚合验证结果
+                if (!fieldResult.isValid()) {
+                    aggregatedResult.setValid(false);
+                }
+                aggregatedResult.getViolations().addAll(fieldResult.getViolations());
+                aggregatedResult.getRecommendations().addAll(fieldResult.getRecommendations());
+                aggregatedResult.getFiredRules().addAll(fieldResult.getFiredRules());
+
+                log.debug("字段验证完成: fieldName={}, valid={}, violations={}",
+                        fieldName, fieldResult.isValid(), fieldResult.getViolations().size());
+            }
+
+            log.debug("所有字段验证完成: entityType={}, totalFields={}, valid={}, totalViolations={}",
+                    entityType, newFields.size(), aggregatedResult.isValid(),
+                    aggregatedResult.getViolations().size());
+
+            return aggregatedResult;
+
+        } catch (Exception e) {
+            log.error("字段规则验证异常: entityType={}, error={}", entityType, e.getMessage(), e);
+            // 验证异常时返回通过，避免阻塞业务（可根据需求调整为验证失败）
+            return ValidationResult.builder()
+                    .valid(true)
+                    .build();
+        }
     }
 }

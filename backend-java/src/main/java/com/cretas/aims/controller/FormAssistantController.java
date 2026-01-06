@@ -442,10 +442,9 @@ public class FormAssistantController {
         String userRole = jwtUtil.getRoleFromToken(token);
         if (userRole == null ||
             (!userRole.equals("factory_super_admin") &&
-             !userRole.equals("department_admin") &&
              !userRole.equals("super_admin"))) {
             log.warn("AI生成Schema权限不足: factoryId={}, role={}", factoryId, userRole);
-            return ApiResponse.error("权限不足：仅工厂超级管理员或部门管理员可使用此功能");
+            return ApiResponse.error("权限不足：仅工厂超级管理员可使用此功能");
         }
 
         log.info("AI生成Schema: factoryId={}, entityType={}, userInput={}",
