@@ -102,7 +102,7 @@ public class AIEnterpriseService {
                                                          MobileDTO.AICostAnalysisRequest request,
                                                          HttpServletRequest httpRequest) {
         long startTime = System.currentTimeMillis();
-        String questionType = determineQuestionType(factoryId, request, httpRequest);
+        String questionType = determineQuestionType(factoryId, userId, request, httpRequest);
         boolean cacheHit = false;
         boolean success = false;
         String errorMessage = null;
@@ -1126,11 +1126,12 @@ public class AIEnterpriseService {
      * 4. 根据敏感度决定是否需要审批
      *
      * @param factoryId 工厂ID (用于多租户隔离)
+     * @param userId 用户ID (用于Tool Calling权限验证)
      * @param request 请求参数
      * @param httpRequest HTTP请求 (用于提取用户角色)
      * @return 问题类型/意图代码
      */
-    private String determineQuestionType(String factoryId, MobileDTO.AICostAnalysisRequest request, HttpServletRequest httpRequest) {
+    private String determineQuestionType(String factoryId, Long userId, MobileDTO.AICostAnalysisRequest request, HttpServletRequest httpRequest) {
         // 1. 优先使用显式指定的reportType (向后兼容)
         if (request.getReportType() != null && !request.getReportType().isEmpty()) {
             return request.getReportType();
@@ -1143,8 +1144,10 @@ public class AIEnterpriseService {
         }
 
         // 3. 使用AI意图识别服务匹配意图 (带操作类型检测，BUG-001/002 修复)
+        // 提取用户角色用于Tool Calling权限验证
+        String userRole = extractUserRoleFromRequest(httpRequest);
         IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
-                question, factoryId, 1);
+                question, factoryId, 1, userId, userRole);
         if (!matchResult.hasMatch()) {
             log.debug("No intent matched for question: {}, falling back to 'followup'", question);
             return "followup";
@@ -1153,8 +1156,7 @@ public class AIEnterpriseService {
         AIIntentConfig intent = matchResult.getBestMatch();
         String intentCode = intent.getIntentCode();
 
-        // 4. 验证用户角色权限
-        String userRole = extractUserRoleFromRequest(httpRequest);
+        // 4. 验证用户角色权限 (userRole已在上面提取)
         if (userRole != null && !aiIntentService.hasPermission(intentCode, userRole)) {
             log.warn("User role '{}' does not have permission for intent: {}", userRole, intentCode);
             throw new BusinessException("您没有权限执行此类AI操作: " + intent.getIntentName());
