@@ -343,6 +343,21 @@ export default function ProfileScreen() {
                 </View>
                 <Chip mode="flat" style={{ backgroundColor: '#FFF3E0' }} textStyle={{ fontSize: 10, color: '#FF9800' }}>开发</Chip>
             </TouchableOpacity>
+
+            {/* 开发者工具 - 意图执行测试 */}
+            <TouchableOpacity
+              style={styles.settingItem}
+              onPress={() => {
+                profileLogger.info('打开意图执行测试');
+                (navigation as any).navigate('IntentExecutionTest');
+              }}
+            >
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="brain" color="#9C27B0" />
+                    <Text style={styles.settingText}>意图执行测试</Text>
+                </View>
+                <Chip mode="flat" style={{ backgroundColor: '#F3E5F5' }} textStyle={{ fontSize: 10, color: '#9C27B0' }}>AI</Chip>
+            </TouchableOpacity>
         </NeoCard>
 
         <NeoButton variant="danger" onPress={handleLogout} style={styles.logoutButton} icon="logout">退出登录</NeoButton>

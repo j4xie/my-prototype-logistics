@@ -653,7 +653,7 @@
         icon: '🏭',
         category: 'core',
         controllers: ['ProductionPlanController', 'ProcessingController', 'MixedBatchController'],
-        apiCount: 73,
+        apiCount: 76,
         usageGuide: {
           description: '【解决痛点】传统生产依赖Excel排程，计划与执行脱节，批次数据分散难追溯。本模块实现生产计划→资源调度→批次执行→质检关联的闭环管理。【核心能力】支持混批生产优化（多产品共用产线时智能组合减少换线时间）、原材料自动匹配（创建批次时根据转换率自动计算所需原料）、生产时间线记录（每个批次的完整操作轨迹）。【模块协同】与【物料管理】联动消耗库存，与【排产调度】联动执行计划，与【质检管理】联动质检记录，与【溯源追踪】联动生成溯源码。',
           useCase: ['制定每日/周生产计划', '创建和跟踪加工批次', '记录生产过程数据', '混批生产优化'],
@@ -684,7 +684,7 @@
         icon: '📦',
         category: 'core',
         controllers: ['MaterialBatchController', 'MaterialConsumptionController', 'RawMaterialTypeController', 'MaterialSpecConfigController'],
-        apiCount: 51,
+        apiCount: 55,
         usageGuide: {
           description: '【解决痛点】食品行业对原料来源、效期、存储条件有严格要求，传统台账管理容易遗漏过期原料或供应商信息丢失。本模块实现原料"进-存-耗"全程追踪。【核心能力】批次二维码绑定（每批原料唯一标识）、FIFO先进先出自动提醒（防止老料积压）、效期预警（提前N天警告）、转换率管理（原料→成品的转换比例配置，如1000kg带鱼→300kg带鱼段）、供应商追溯（每批原料可追溯至供应商资质和采购单）。【模块协同】入库时与【供应商管理】关联采购来源，消耗时与【生产管理】联动扣减库存，异常时与【质检管理】联动处置流程。',
           useCase: ['原料入库登记', '库存盘点管理', '生产消耗记录', '效期预警监控'],
@@ -719,7 +719,7 @@
         icon: '⚙️',
         category: 'core',
         controllers: ['EquipmentController', 'EquipmentAlertsController'],
-        apiCount: 39,
+        apiCount: 35,
         usageGuide: {
           description: '【解决痛点】设备故障往往导致停产损失，传统维护靠人工记忆，缺少预防性维护机制。本模块实现设备从采购→运行→维护→报废的全生命周期数字化管理。【核心能力】设备台账（型号、购买日期、维护周期、责任人）、状态实时监控（运行/待机/故障/维护中）、告警分级推送（紧急告警→车间主管APP，普通告警→维护人员）、预防性维护提醒（根据运行时长或日期触发保养提醒）、维护记录档案（维护时间、操作人员、更换配件、费用）。【模块协同】与【排产调度】联动检查设备可用性，与【报表分析】联动统计设备故障率和OEE，与【通知管理】联动推送告警。',
           useCase: ['设备台账管理', '维护计划制定', '实时状态监控', '故障告警响应'],
@@ -748,7 +748,7 @@
         icon: '✅',
         category: 'core',
         controllers: ['QualityCheckItemController', 'QualityDispositionController'],
-        apiCount: 31,
+        apiCount: 33,
         usageGuide: {
           description: '【解决痛点】食品安全法规要求质检记录完整可追溯，传统纸质记录易丢失、难查询、无法关联批次。本模块实现质检项目配置→检验执行→结果记录→不合格处置的标准化流程。【核心能力】质检项灵活配置（按产品/工序配置不同检验项，如温度、水分、色泽等）、检验结果自动关联批次、不合格品多级审批处置（报废/返工/降级/让步接收）、质检报告自动生成。【特殊处理】不合格品处置需车间主管审批，重大质量问题需工厂管理员审批，处置结果自动同步至溯源系统。【模块协同】检验结果与【生产管理】批次关联，处置流程与【审批流程】联动，处置记录与【废弃物管理】联动。',
           useCase: ['入库质检', '过程抽检', '成品检验', '不合格品处置'],
@@ -860,7 +860,7 @@
         icon: '🔍',
         category: 'core',
         controllers: ['TraceabilityController', 'ShipmentController'],
-        apiCount: 16,
+        apiCount: 17,
         usageGuide: {
           description: '【解决痛点】食品召回事件发生时需要快速定位问题批次的流向，传统方式依赖人工翻阅记录，耗时数天甚至无法完成。本模块实现"一码追全程"：扫描产品溯源码即可查看原料来源、生产过程、质检记录、出货去向。【核心能力】多维度溯源查询（正向：原料→成品→客户；反向：客户→成品→原料）、溯源时间线可视化（时间轴展示各环节操作记录和操作人）、溯源码生成（支持二维码/条形码，可打印或电子分享）、消费者端验真（扫码显示产品信息，防伪验证）。【召回支持】发现问题批次后，可一键查询该批次的所有出货客户，快速启动召回流程。【模块协同】自动汇聚【物料管理】【生产管理】【质检管理】【出货管理】的数据形成完整溯源链。',
           useCase: ['批次溯源查询', '溯源码生成', '出货记录管理', '消费者扫码查询'],
@@ -889,7 +889,7 @@
         icon: '👥',
         category: 'core',
         controllers: ['UserController', 'WorkSessionController', 'DepartmentController'],
-        apiCount: 48,
+        apiCount: 51,
         usageGuide: {
           description: '【解决痛点】多角色权限管理混乱，操作责任难以追溯，离职员工账号清理不及时存在安全隐患。本模块实现员工-部门-角色-权限的层级管控。【核心能力】7种预设角色（平台管理员/工厂超管/部门主管/生产操作员/质检员/仓库管理员/调度员），每个角色对应不同的页面和功能权限；员工档案管理（基础信息、所属部门、联系方式）；工作会话追踪（记录用户登录时间、操作设备、在线时长）；账号安全（密码策略、登录失败锁定、强制登出）。【权限模型】采用RBAC模型，角色可叠加，权限可细化到按钮级别。【模块协同】与【工时考勤】关联打卡记录，与【审批流程】关联审批人配置。',
           useCase: ['员工入职建档', '角色权限分配', '部门组织管理', '工作会话监控'],
@@ -970,7 +970,7 @@
         icon: '⏰',
         category: 'core',
         controllers: ['TimeClockController', 'TimeStatsController', 'WorkTypeController'],
-        apiCount: 41,
+        apiCount: 44,
         usageGuide: {
           description: '【解决痛点】生产型企业人员众多，传统指纹/刷卡考勤需要固定设备，且无法区分不同工种的工时价值。本模块实现手机定位打卡+多工种工时分类统计。【核心能力】移动端GPS打卡（可配置打卡范围，如工厂100米内）、多工种工时分类（如普通工时/加班工时/夜班工时，不同工种可配置不同计价）、自动工时计算（根据班次配置自动计算正常工时、加班时长）、考勤异常处理（迟到/早退/缺卡/请假审批）、部门考勤看板（实时显示部门人员出勤状态）。【月度汇总】自动生成月度考勤报表，可导出至HR/财务系统用于薪酬计算。【模块协同】与【用户管理】联动获取员工信息，考勤数据可用于【报表分析】人工成本核算。',
           useCase: ['上下班打卡', '工时汇总统计', '加班记录管理', '部门出勤分析'],
@@ -1001,7 +1001,7 @@
         icon: '📊',
         category: 'core',
         controllers: ['ReportController'],
-        apiCount: 19,
+        apiCount: 20,
         usageGuide: {
           description: '【解决痛点】管理层需要快速了解工厂运营状况，但数据分散在各系统，汇总分析耗时费力。本模块提供一站式数据看板和多维度分析报表。【核心能力】首页仪表板（今日产量/合格率/设备状态/待办事项一目了然）、生产报表（日报/周报/月报，产量、产能利用率、换线次数）、质量趋势分析（合格率曲线、不合格品分布、TOP问题分析）、设备报表（OEE综合效率、故障次数、维护成本）、人工报表（人均产出、加班时长、部门对比）。【导出能力】支持PDF/Excel导出，可定时自动发送至管理层邮箱。【模块协同】自动汇聚【生产管理】【质检管理】【设备管理】【工时考勤】等模块数据生成报表。',
           useCase: ['生产数据看板', '质量趋势分析', '效率报表生成', '管理层决策支撑'],
@@ -1039,7 +1039,7 @@
         icon: '🤖',
         category: 'ai',
         controllers: ['AIController', 'AIBusinessDataController', 'AIQuotaConfigController', 'FormAssistantController', 'LinUCBController'],
-        apiCount: 38,
+        apiCount: 43,
         usageGuide: {
           description: '【解决痛点】成本核算需要汇总原料、人工、能耗等多项数据，人工计算耗时且易出错；业务人员需要编写表单但缺乏技术背景。本模块通过阿里云通义千问大模型（DashScope API）提供智能分析能力。【架构说明】2026年1月已迁移至纯Java架构，Java后端通过DashScopeClient直接调用阿里云DashScope API，支持普通对话和思考模式(Thinking Mode)，无需Python中间服务。【核心能力】批次成本分析（输入批次号，AI自动汇总原料成本、人工成本、设备折旧，输出成本明细和优化建议，支持thinking_budget配置思考深度）、智能对话问答（自然语言查询业务数据，如"上周产量最高的产品是什么"）、AI分析报告（自动生成周/月度运营分析报告，包含趋势解读和改进建议）、表单Schema生成（用自然语言描述需求，AI自动生成表单配置）、LinUCB智能推荐（根据用户行为习惯推荐常用功能）。【配额管理】每个工厂可配置AI调用配额，超额需审批。【模块协同】AI分析可调用【生产管理】【物料管理】【质检管理】等模块数据。',
           useCase: ['批次成本分析', '智能对话问答', 'AI分析报告', '表单Schema生成', '个性化推荐'],
@@ -1129,9 +1129,6 @@
         name: 'AI 数据操作',
         icon: '🔧',
         category: 'ai',
-        controllers: ['DataOperationIntentHandler'],
-        apiCount: 4,
-        usageGuide: {
           description: '【解决痛点】业务人员需要修改数据时，必须进入特定管理界面查找、编辑，效率低且易出错。本模块支持通过自然语言直接修改业务数据，如"把批次BATCH-001的计划产量改成200"。【核心能力】自然语言数据修改（支持产品、生产计划、生产批次、原材料批次等实体的字段更新）、AI语义解析（通过DashScope直连阿里云通义千问API识别实体类型、目标记录、要修改的字段和值）、JPA反射更新（通过Repository查询记录，反射机制更新字段并持久化）、操作审计（记录修改人、修改时间、修改前后值）。【支持实体】PRODUCT_TYPE(产品类型)、PRODUCTION_PLAN(生产计划)、PRODUCTION_BATCH(加工批次)、MATERIAL_BATCH(原料批次)。【典型场景】用户说"把产品PT-F001-001的名称改成优质带鱼段"，系统自动识别为产品名称修改操作，执行更新并返回结果。【模块协同】依赖【AI意图配置】进行意图识别，操作影响【生产管理】【物料管理】等业务数据。【架构更新】2026年1月已迁移至纯Java架构，直接调用阿里云DashScope API，无需Python中间服务。',
           useCase: ['自然语言修改产品信息', '自然语言调整计划产量', '批次数据快速更新', '原料批次信息修正'],
           workflow: ['用户输入自然语言', 'AI意图识别(DATA_OP)', 'DashScope API解析语义', '解析实体/字段/值', 'JPA查询记录', '反射更新字段', '持久化保存'],
@@ -1203,7 +1200,7 @@
         name: 'AI 关键词学习',
         icon: '📈',
         category: 'ai',
-        controllers: ['AIIntentConfigController', 'FactoryConfigController'],
+        controllers: ['AIIntentConfigController'],
         apiCount: 8,
         usageGuide: {
           description: '【解决痛点】意图识别的关键词需要人工维护，无法自动适应业务变化，不同工厂的术语差异无法自动处理。本模块实现关键词的全生命周期自动管理。【核心能力】（1）三层关键词匹配：意图匹配时自动合并三层关键词——基础关键词(JSON配置)+工厂级关键词(keyword_effectiveness表)+全局关键词(GLOBAL)，确保晋升后的关键词立即生效；（2）关键词效果追踪：基于Wilson Score算法评估关键词效果，计算公式考虑正向匹配、负向匹配和样本量，确保小样本时不会过度惩罚；（3）用户反馈收集：每次意图执行后收集正向/负向反馈，自动更新关键词效果数据；（4）关键词晋升机制：当工厂级关键词被3个以上工厂采用且效果分数≥0.8时，自动晋升为全局关键词，晋升后自动参与所有工厂的匹配；（5）低效关键词清理：每日定时检查效果分数<0.3的关键词，自动移除或降级；（6）工厂AI学习配置：支持工厂级别的学习参数配置，包括学习阈值、自动清理开关、学习阶段（LEARNING/MATURE）。【关键词生命周期】诞生（LLM自动学习或人工添加）→成长（积累匹配数据）→验证（效果评估）→晋升（工厂级→全局）或淘汰（效果差则清理）。【工厂学习阶段】LEARNING（学习期，自动学习阈值低）→MATURE（成熟期，学习更审慎），基于累计成功匹配数自动升级。【定时任务】KeywordMaintenanceScheduler每日凌晨执行：清理低效词、检查晋升条件、更新效果统计。【模块协同】依赖【AI意图配置】的匹配记录和反馈数据，优化结果反哺意图识别准确率。【BUG-007修复】2026-01-04修复了全局关键词匹配问题：晋升为GLOBAL的关键词现在会被正确读取并参与所有工厂的意图匹配。',
@@ -1242,9 +1239,7 @@
         name: 'AI 全面管理',
         icon: '🎛️',
         category: 'ai',
-        controllers: ['SystemIntentHandler', 'UserIntentHandler', 'ConfigIntentHandler', 'MetaIntentHandler', 'DataOperationIntentHandler', 'MaterialIntentHandler', 'QualityIntentHandler', 'ShipmentIntentHandler', 'AlertIntentHandler', 'ReportIntentHandler', 'HRIntentHandler', 'CRMIntentHandler', 'FormIntentHandler'],
         apiCount: 14,
-        usageGuide: {
           description: '【解决痛点】工厂配置分散在多个页面，管理员需要频繁切换界面操作，学习成本高。本模块让管理员通过自然语言对话管理所有配置。【核心能力】排产设置（全自动/人工确认/禁用）、功能开关（AI分析、质量告警等）、通知配置（邮件/短信/推送）、用户管理（创建/禁用/角色分配）、设备维护（记录维护信息）、转换率配置、规则配置、元意图（自我扩展AI能力）。【权限控制】敏感操作需审批确认。【自我扩展】META类意图支持动态创建新意图配置。',
           useCase: ['自然语言调整排产模式', '对话创建用户账户', '语音记录设备维护', 'AI自动扩展管理能力', '配置功能开关'],
           workflow: ['用户输入自然语言', '意图识别(SYSTEM/USER/CONFIG/META)', 'Handler路由', '权限校验', '敏感操作确认', '执行操作', '记录变更'],
@@ -1298,7 +1293,7 @@
         name: 'AI 意图工厂隔离',
         icon: '🔒',
         category: 'ai',
-        controllers: ['MetaIntentHandler', 'DataOperationIntentHandler', 'QualityIntentHandler', 'ShipmentIntentHandler', 'AIIntentConfigController'],
+        controllers: ['AIIntentConfigController'],
         apiCount: 6,
         usageGuide: {
           description: '【解决痛点】多工厂环境下，AI意图执行可能跨越工厂边界访问数据，造成数据泄露和权限混乱。本模块实现完整的AI意图工厂级隔离机制。【核心能力】（1）工厂级数据隔离：所有Handler执行时自动注入factoryId过滤条件，确保工厂用户只能访问本工厂数据；（2）平台级/工厂级意图区分：意图配置支持factoryId字段，null表示平台级（所有工厂可见），非null表示工厂级（仅该工厂可见）；（3）平台管理员特权：super_admin和platform_admin可以创建平台级意图（scope=PLATFORM）或为任意工厂创建工厂级意图（scope=FACTORY+targetFactoryId）；（4）权限校验：工厂用户不能修改平台级意图，不能访问其他工厂的意图配置；（5）数据查询隔离：DataOperationIntentHandler使用findByIdAndFactoryId方法，QualityIntentHandler按factoryId过滤质检记录，ShipmentIntentHandler校验出货记录所属工厂。【典型场景】平台管理员创建"库存告警"平台级意图，所有工厂共享使用；工厂A管理员创建"特殊产品查询"工厂级意图，仅工厂A可用。【安全机制】工厂用户尝试修改平台级意图时返回"无权修改平台级意图，请联系平台管理员"错误提示。【模块协同】依赖【AI意图配置】的意图存储，影响所有Handler的数据访问逻辑。',
@@ -1383,7 +1378,7 @@
         name: '平台管理',
         icon: '🌐',
         category: 'system',
-        controllers: ['PlatformController', 'FactoryBlueprintController', 'BlueprintVersionController', 'RuleConfigController', 'AIQuotaController', 'ConfigChangesetController', 'AnnouncementController', 'SupplierController', 'SystemMonitoringController'],
+        controllers: ['PlatformController', 'FactoryBlueprintController', 'BlueprintVersionController', 'ConfigChangeSetController', 'SupplierController'],
         apiCount: 78,
         screens: 59,
         screenList: [
@@ -1398,7 +1393,7 @@
           // AI配额管理
           'QuotaOverviewScreen', 'QuotaRulesScreen', 'QuotaRuleEditScreen', 'QuotaUsageStatsScreen',
           // 配置变更
-          'ConfigChangesetListScreen', 'ConfigChangesetDetailScreen',
+          'ConfigChangeSetListScreen', 'ConfigChangeSetDetailScreen',
           // 公告管理
           'AnnouncementCenterScreen', 'AnnouncementCreateScreen',
           // 供应商管理
@@ -1750,7 +1745,7 @@
         icon: '🏷️',
         category: 'core',
         controllers: ['LabelController'],
-        apiCount: 17,
+        apiCount: 18,
         usageGuide: {
           description: '【解决痛点】产品追溯需要唯一标识，传统手工贴标易出错、难统计。本模块实现标签从生成→打印→贴标→追溯的全生命周期管理。【核心能力】支持多种标签类型（二维码/条形码）、批量生成和打印、追溯码唯一绑定批次、标签状态追踪（激活/已打印/已贴标/作废）、效期预警提醒。【典型场景】①生产完成→生成批次追溯码→打印标签→贴附产品→消费者扫码验真；②标签打印错误→作废原标签→重新生成新标签。【模块协同】与【生产管理】联动批次关联，与【溯源追踪】联动消费者验真，与【质检管理】联动质检信息展示。',
           useCase: ['追溯码生成', '标签批量打印', '贴标操作记录', '效期预警监控'],
@@ -1838,7 +1833,7 @@
         icon: '⚖️',
         category: 'iot',
         controllers: ['ScaleProtocolController', 'ScaleDeviceController'],
-        apiCount: 14,
+        apiCount: 10,
         status: 'completed',
         completedDate: '2026-01-04',
         usageGuide: {
@@ -1868,12 +1863,8 @@
           { method: 'GET', path: '/scale-protocols/brand-models', desc: '品牌型号库列表 - Query: brandCode?, hasWifi?。返回支持的秤品牌和型号列表，包含默认协议、接口能力、量程精度等' },
           { method: 'GET', path: '/scale-protocols/brand-models/{id}', desc: '品牌型号详情 - Path: id。返回品牌型号完整信息，包含支持的协议列表、产品文档链接' },
           { method: 'POST', path: '/scale-protocols/brand-models', desc: '添加品牌型号 - Body: {brandCode, brandName, modelCode, modelName, supportedProtocolIds, defaultProtocolId, weightRange?, accuracy?}' },
-          { method: 'POST', path: '/scale-protocols/parse', desc: '解析秤数据 - Body: {protocolId, rawDataHex}。使用指定协议配置解析原始十六进制数据，返回重量、单位、稳定状态等' },
-          { method: 'POST', path: '/scale-protocols/auto-detect', desc: 'AI协议自动识别 - Body: {sampleDataHex}。输入样本数据，AI分析并返回可能匹配的协议列表及置信度' },
-          { method: 'GET', path: '/scale-protocols/{id}/test-cases', desc: '测试用例列表 - Path: id(协议ID)。返回该协议的测试用例列表' },
-          { method: 'POST', path: '/scale-protocols/{id}/test-cases', desc: '创建测试用例 - Path: id。Body: {name, inputHex, expectedWeight, expectedUnit, expectedStable}' },
-          { method: 'POST', path: '/scale-protocols/{id}/run-tests', desc: '运行测试 - Path: id。执行该协议所有测试用例，返回通过/失败统计和详细结果' },
-          { method: 'POST', path: '/scale-devices/recognize-nameplate', desc: 'AI铭牌识别 - Body: {imageBase64}。上传设备铭牌照片，DashScope视觉模型(qwen2.5-vl)自动识别品牌、型号、序列号、量程、精度、连接类型等信息，返回结构化配置建议' }
+          { method: 'PUT', path: '/scale-protocols/brand-models/{modelId}', desc: '更新品牌型号 - Path: modelId(品牌型号ID)。Body: 同添加品牌型号。修改品牌型号配置信息' },
+          { method: 'GET', path: '/scale-protocols/brands', desc: '获取所有品牌名称列表（去重）- 返回系统中所有唯一的品牌代码和名称列表，用于前端下拉选择' },
         ]
       },
       {
@@ -1882,7 +1873,7 @@
         icon: '🎮',
         category: 'iot',
         controllers: ['ScaleSimulatorController'],
-        apiCount: 14,
+        apiCount: 13,
         status: 'completed',
         completedDate: '2026-01-04',
         usageGuide: {
@@ -1901,18 +1892,17 @@
         apis: [
           { method: 'POST', path: '/scale-simulator/start', desc: '创建并启动模拟器 - Body: {protocolId?, scaleName?, minWeight?, maxWeight?, division?, intervalMs?, fluctuationCount?}。返回模拟器ID和配置' },
           { method: 'POST', path: '/scale-simulator/start/keli-d2008', desc: '快速启动柯力D2008模拟器 - 使用柯力D2008默认配置（150kg量程，0.02kg分度），返回模拟器ID' },
-          { method: 'POST', path: '/scale-simulator/start/micro-scale', desc: '快速启动微型秤模拟器 - 使用微型秤默认配置（30kg量程，0.001kg分度），返回模拟器ID' },
           { method: 'POST', path: '/scale-simulator/{simulatorId}/stop', desc: '停止模拟器 - Path: simulatorId。停止指定模拟器实例并释放资源' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/pause', desc: '暂停模拟器 - Path: simulatorId。暂停模拟器的自动称重过程，保留状态可恢复' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/resume', desc: '恢复模拟器 - Path: simulatorId。恢复之前暂停的模拟器，继续自动称重过程' },
+          { method: 'POST', path: '/scale-simulator/{simulatorId}/generate-test-dataset', desc: '生成测试数据集 - Path: simulatorId。Body: {count: number, minWeight?, maxWeight?}。批量生成指定数量的测试称重数据' },
+          { method: 'GET', path: '/scale-simulator/{simulatorId}/stats', desc: '获取模拟器统计信息 - Path: simulatorId。返回模拟器运行时长、总称重次数、平均重量等统计数据' },
           { method: 'POST', path: '/scale-simulator/stop-all', desc: '停止所有模拟器 - 停止当前工厂所有活跃的模拟器实例' },
           { method: 'GET', path: '/scale-simulator/list', desc: '活跃模拟器列表 - 返回当前工厂所有运行中的模拟器实例列表' },
           { method: 'GET', path: '/scale-simulator/{simulatorId}/status', desc: '模拟器状态 - Path: simulatorId。返回模拟器当前状态：当前重量、是否稳定、待处理队列等' },
           { method: 'POST', path: '/scale-simulator/{simulatorId}/send', desc: '发送单次称重 - Path: simulatorId。Query: weight(重量), stable(是否稳定,默认true)。直接发送指定重量数据' },
           { method: 'POST', path: '/scale-simulator/{simulatorId}/simulate-weighing', desc: '模拟完整称重过程 - Path: simulatorId。Query: targetWeight。模拟波动→稳定的真实称重过程' },
-          { method: 'POST', path: '/scale-simulator/{simulatorId}/queue', desc: '批量添加待称重 - Path: simulatorId。Body: [weights数组]。将多个重量值加入队列，依次模拟称重' },
-          { method: 'POST', path: '/scale-simulator/{simulatorId}/random', desc: '发送随机重量 - Path: simulatorId。在配置的量程范围内生成随机重量并发送' },
-          { method: 'GET', path: '/scale-simulator/{simulatorId}/data', desc: '获取接收数据 - Path: simulatorId。Query: limit(数量,默认10)。返回最近接收的模拟数据列表' },
-          { method: 'GET', path: '/scale-simulator/{simulatorId}/data/latest', desc: '获取最新数据 - Path: simulatorId。返回最后一条模拟数据的解析结果' },
-          { method: 'GET', path: '/scale-simulator/generate-frame', desc: '生成测试帧 - Query: protocolId?, weight, stable, unit。生成指定协议的测试数据帧（十六进制），用于调试' }
+          { method: 'POST', path: '/scale-simulator/generate-frame', desc: '生成测试帧 - Body: {protocolId?, weight, stable?, unit?}。生成指定协议的测试数据帧（十六进制），用于调试和验证协议解析' }
         ]
       },
       {
@@ -1920,7 +1910,6 @@
         name: 'MQTT IoT 设备服务',
         icon: '📡',
         category: 'iot',
-        controllers: ['MqttSubscriber', 'IotDataService'],
         apiCount: 8,
         status: 'completed',
         completedDate: '2026-01-04',
@@ -1954,6 +1943,138 @@
           { method: 'POST', path: '/iot/devices/{deviceCode}/alert', desc: '创建告警 - 手动为设备创建告警记录' }
         ]
       }
+      ,
+      {
+        id: 'ai-conversation',
+        name: 'AI多轮会话管理',
+        icon: '💬',
+        category: 'ai',
+        controllers: ['ConversationController'],
+        apiCount: 7,
+        status: 'completed',
+        completedDate: '2026-01-06',
+        usageGuide: {
+          description: '【解决痛点】AI意图识别置信度低时（<30%），直接拒绝或执行错误操作会降低用户体验。本模块实现多轮对话澄清机制，通过追问引导用户明确意图。【核心能力】低置信度自动触发对话、会话上下文维护（保存历史轮次）、澄清问题生成（基于候选意图）、用户确认反馈学习（Self-Learning增强关键词库）、会话超时管理（30分钟无响应自动取消）。【技术特点】ConversationSession实体存储会话状态（ACTIVE/COMPLETED/CANCELLED）、Redis缓存会话上下文、异步学习任务（用户确认后触发）、WebSocket实时推送澄清问题。【典型场景】用户输入"查库存"→系统识别置信度18%→触发对话"您是要查询原料库存、成品库存还是设备库存？"→用户回复"原料"→确认为MATERIAL_BATCH_QUERY意图→执行查询+学习"查库存"关键词。【模块协同】与【AI意图识别】联动触发对话，与【Self-Learning】联动增强关键词，与【WebSocket】联动实时推送。',
+          useCase: ['低置信度意图澄清', '多轮对话引导', '用户反馈学习', '会话历史记录', '澄清问题生成'],
+          workflow: ['意图识别置信度<30%', '创建会话并生成澄清问题', '用户回复', '继续对话或确认意图', '触发Self-Learning', '执行实际操作'],
+          effects: ['提升AI识别准确率', '改善用户交互体验', '持续学习优化', '减少误操作']
+        },
+        implementationFiles: [
+          'controller/ConversationController.java - 多轮对话REST API（7个端点）',
+          'service/ConversationService.java - 会话管理服务接口',
+          'service/impl/ConversationServiceImpl.java - 会话管理实现',
+          'entity/conversation/ConversationSession.java - 会话实体',
+          'entity/conversation/ConversationTurn.java - 对话轮次实体',
+          'repository/ConversationSessionRepository.java - 会话Repository',
+          'repository/ConversationTurnRepository.java - 轮次Repository'
+        ],
+        apis: [
+          { method: 'POST', path: '/conversation/start', desc: '开始多轮对话 - Body: {userInput, userId?}。置信度<30%时触发，返回sessionId和澄清问题' },
+          { method: 'POST', path: '/conversation/{sessionId}/reply', desc: '继续对话 - Path: sessionId。Body: {userReply}。用户回复后继续澄清或确认意图' },
+          { method: 'POST', path: '/conversation/{sessionId}/confirm', desc: '确认意图 - Path: sessionId。Body: {intentCode}。用户确认意图，触发Self-Learning并结束会话' },
+          { method: 'POST', path: '/conversation/{sessionId}/cancel', desc: '取消对话 - Path: sessionId。用户取消当前对话' },
+          { method: 'GET', path: '/conversation/{sessionId}', desc: '获取会话详情 - Path: sessionId。返回会话状态和历史轮次' },
+          { method: 'GET', path: '/conversation/active', desc: '获取活跃会话列表 - Query: userId?。返回用户当前活跃的对话会话' },
+          { method: 'GET', path: '/conversation/stats', desc: '会话统计 - Query: factoryId。返回会话总数、完成率、平均轮次等统计信息' }
+        ]
+      },
+      {
+        id: 'isapi-integration',
+        name: '海康ISAPI设备集成',
+        icon: '📹',
+        category: 'iot',
+        controllers: ['IsapiDeviceController', 'IsapiSmartAnalysisController'],
+        apiCount: 34,
+        status: 'completed',
+        completedDate: '2026-01-06',
+        usageGuide: {
+          description: '【解决痛点】食品工厂监控需求（车间入口人员违规、冷链温度异常、卫生区域污染、异物混入）传统监控需人工24小时盯屏，事后溯源困难。本模块集成海康威视ISAPI协议摄像头，实现智能分析和事件自动处理。【核心能力】ISAPI协议设备管理（添加/配置/测试连接/同步状态）、视频流获取（RTSP/HLS多种格式）、实时抓拍（手动/定时/事件触发）、事件订阅（越线检测/区域入侵/人脸识别）、智能分析配置（越线检测/区域检测/人脸检测通道级配置）、威胁级别分级（HIGH/MEDIUM/LOW）、AI事件分析（卫生问题/安全隐患自动识别）、批量事件处理（一键处理多个事件）。【技术特点】RestTemplate封装ISAPI协议请求、Digest认证、XML/JSON数据解析、异步事件推送、Redis缓存设备状态、设备离线自动告警、事件自动归档。【典型场景】配置车间入口越线检测→摄像头检测到人员未穿工作服进入→触发HIGH级别事件→系统自动抓拍存证→推送告警给车间主管→主管处理事件并记录整改措施。【模块协同】与【设备管理】联动设备台账，与【告警管理】联动推送告警，与【报表分析】联动统计事件趋势，与【AI分析】联动事件智能分类。',
+          useCase: ['摄像头设备管理', '视频流实时监控', '智能分析配置', '事件订阅处理', '越线区域检测', '人脸识别记录', '安全隐患识别'],
+          workflow: ['添加海康设备', '配置智能分析规则', '订阅事件通道', '摄像头检测触发', '事件推送到系统', '自动分类和告警', '人工处理确认'],
+          effects: ['7x24小时智能监控', '事件响应时间<1分钟', '减少人工巡检80%', '食品安全追溯完整']
+        },
+        implementationFiles: [
+          'controller/IsapiDeviceController.java - ISAPI设备管理REST API（27个端点）',
+          'controller/IsapiSmartAnalysisController.java - 智能分析配置REST API（7个端点）',
+          'service/IsapiDeviceService.java - ISAPI设备服务接口',
+          'service/impl/IsapiDeviceServiceImpl.java - ISAPI设备服务实现',
+          'entity/isapi/IsapiDevice.java - ISAPI设备实体',
+          'entity/isapi/IsapiEvent.java - ISAPI事件实体',
+          'entity/isapi/ThreatLevel.java - 威胁级别枚举（HIGH/MEDIUM/LOW）',
+          'repository/IsapiDeviceRepository.java - 设备Repository',
+          'repository/IsapiEventRepository.java - 事件Repository',
+          'config/IsapiRestTemplateConfig.java - ISAPI RestTemplate配置'
+        ],
+        apis: [
+          { method: 'POST', path: '/isapi/devices', desc: '添加设备 - Body: {name, ip, port, username, password, deviceType}。添加海康ISAPI设备' },
+          { method: 'PUT', path: '/isapi/devices/{deviceId}', desc: '更新设备 - Path: deviceId。Body: 设备配置。更新设备信息和凭证' },
+          { method: 'DELETE', path: '/isapi/devices/{deviceId}', desc: '删除设备 - Path: deviceId。删除设备及相关事件记录' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}', desc: '设备详情 - Path: deviceId。获取设备完整信息和状态' },
+          { method: 'GET', path: '/isapi/devices', desc: '设备列表 - Query: page, size, status?。分页获取设备列表' },
+          { method: 'POST', path: '/isapi/devices/{deviceId}/test-connection', desc: '测试连接 - Path: deviceId。测试设备网络连接和ISAPI认证' },
+          { method: 'POST', path: '/isapi/devices/{deviceId}/sync', desc: '同步设备 - Path: deviceId。同步设备状态、通道信息、能力集' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/streams', desc: '视频流 - Path: deviceId。Query: channelId?。获取RTSP/HLS流地址' },
+          { method: 'POST', path: '/isapi/devices/{deviceId}/capture', desc: '抓拍图像 - Path: deviceId。Query: channelId?。触发抓拍并返回图片ID' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/capture/image', desc: '获取抓拍图像 - Path: deviceId。Query: imageId。获取抓拍图片Base64数据' },
+          { method: 'POST', path: '/isapi/devices/{deviceId}/subscribe', desc: '订阅事件 - Path: deviceId。订阅设备智能分析事件' },
+          { method: 'POST', path: '/isapi/devices/{deviceId}/unsubscribe', desc: '取消订阅 - Path: deviceId。取消设备事件订阅' },
+          { method: 'POST', path: '/isapi/devices/subscribe-all', desc: '全局订阅 - 订阅工厂所有ISAPI设备事件' },
+          { method: 'GET', path: '/isapi/devices/subscription-status', desc: '订阅状态 - 获取所有设备的订阅状态列表' },
+          { method: 'GET', path: '/isapi/devices/events', desc: '事件列表 - Query: page, size, deviceId?, threatLevel?, startDate?, endDate?。分页查询事件' },
+          { method: 'GET', path: '/isapi/devices/events/recent', desc: '最近事件 - Query: limit(默认20), deviceId?。获取最近事件' },
+          { method: 'GET', path: '/isapi/devices/events/statistics', desc: '事件统计 - Query: startDate?, endDate?, deviceId?。统计事件数量、类型分布、威胁级别分布' },
+          { method: 'POST', path: '/isapi/devices/events/{eventId}/process', desc: '处理事件 - Path: eventId。Body: {handler, resolution, notes}。标记事件已处理' },
+          { method: 'GET', path: '/isapi/devices/events/high-risk', desc: '高风险事件 - Query: limit?。获取HIGH级别未处理事件' },
+          { method: 'GET', path: '/isapi/devices/events/by-threat-level/{threatLevel}', desc: '按威胁级别查询 - Path: threatLevel(HIGH/MEDIUM/LOW)。Query: page, size' },
+          { method: 'GET', path: '/isapi/devices/events/hygiene-concerns', desc: '卫生问题事件 - 筛选AI识别的卫生相关事件（未穿工作服/污染区域）' },
+          { method: 'GET', path: '/isapi/devices/events/safety-concerns', desc: '安全隐患事件 - 筛选AI识别的安全相关事件（危险区域/异物混入）' },
+          { method: 'GET', path: '/isapi/devices/events/{eventId}', desc: '事件详情 - Path: eventId。获取事件完整信息、抓拍图像、AI分析结果' },
+          { method: 'POST', path: '/isapi/devices/events/{eventId}/reanalyze', desc: '重新分析 - Path: eventId。重新调用AI分析事件图像和数据' },
+          { method: 'GET', path: '/isapi/devices/events/ai-statistics', desc: 'AI统计 - Query: startDate?, endDate?。统计AI识别准确率、事件类型分布' },
+          { method: 'POST', path: '/isapi/devices/events/batch-process', desc: '批量处理 - Body: {eventIds: [], handler, resolution}。批量处理多个事件' },
+          { method: 'GET', path: '/isapi/devices/status-summary', desc: '状态摘要 - 获取所有设备在线状态、事件数量、订阅状态摘要' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/smart/capabilities', desc: '智能分析能力 - Path: deviceId。获取设备支持的智能分析功能列表' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/line-detection', desc: '越线检测配置 - Path: deviceId, channelId。获取越线检测规则配置' },
+          { method: 'PUT', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/line-detection', desc: '更新越线检测 - Path: deviceId, channelId。Body: {enabled, direction, sensitivity, regions}。配置越线检测规则' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/field-detection', desc: '区域检测配置 - Path: deviceId, channelId。获取区域入侵检测规则' },
+          { method: 'PUT', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/field-detection', desc: '更新区域检测 - Path: deviceId, channelId。Body: {enabled, sensitivity, regions}。配置区域入侵检测' },
+          { method: 'GET', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/face-detection', desc: '人脸检测配置 - Path: deviceId, channelId。获取人脸检测规则' },
+          { method: 'PUT', path: '/isapi/devices/{deviceId}/smart/channels/{channelId}/face-detection', desc: '更新人脸检测 - Path: deviceId, channelId。Body: {enabled, sensitivity, saveImage}。配置人脸检测' }
+        ]
+      },
+      {
+        id: 'workstation-counting',
+        name: '视觉计数工位',
+        icon: '🔢',
+        category: 'iot',
+        controllers: ['WorkstationCountingController'],
+        apiCount: 6,
+        status: 'completed',
+        completedDate: '2026-01-06',
+        usageGuide: {
+          description: '【解决痛点】食品加工环节（去骨、切片、包装）传统人工计数易出错（疲劳、速度快、遗漏），导致成品数量不准确、库存偏差、成本核算误差。本模块基于计算机视觉实现工位实时自动计数。【核心能力】工位初始化（绑定摄像头、产品类型、目标数量）、视频帧实时分析（YOLO目标检测）、增量计数（检测到新产品+1）、手动校正（人工调整计数误差）、标签验证（扫码核对计数结果）、计数状态实时推送。【技术特点】AI视觉模型（YOLOv8/Faster R-CNN）、帧差法去重（防止同一产品重复计数）、置信度过滤（>0.85才计数）、WebSocket实时推送前端、计数历史存储、异常报警（实际数量与目标偏差>5%）。【典型场景】包装工位开始计数→摄像头每秒分析30帧→检测到带鱼段产品→计数+1→达到目标100个→自动停止并推送完成通知→工人扫描标签验证→系统确认并更新库存。【模块协同】与【生产管理】联动绑定批次，与【摄像头管理】联动获取视频流，与【库存管理】联动更新成品数量，与【报表分析】联动统计计数准确率。',
+          useCase: ['生产线实时计数', '包装工位计数', '质检工位计数', '分拣工位计数', '计数准确率统计'],
+          workflow: ['初始化工位', '绑定产品和目标', '开始视频分析', '实时增量计数', '达到目标自动停止', '扫码验证', '确认入库'],
+          effects: ['计数准确率>99%', '计数速度提升5倍', '减少人工计数岗位', '库存数据精准']
+        },
+        implementationFiles: [
+          'controller/WorkstationCountingController.java - 视觉计数REST API（6个端点）',
+          'service/WorkstationCountingService.java - 计数服务接口',
+          'service/impl/WorkstationCountingServiceImpl.java - 计数服务实现',
+          'entity/counting/WorkstationCountingSession.java - 计数会话实体',
+          'entity/counting/CountingStatus.java - 计数状态枚举（IDLE/COUNTING/PAUSED/COMPLETED）',
+          'repository/WorkstationCountingSessionRepository.java - 会话Repository',
+          'ai/vision/ObjectDetectionService.java - AI目标检测服务（YOLO集成）'
+        ],
+        apis: [
+          { method: 'POST', path: '/workstation-counting/init', desc: '初始化工位 - Body: {workstationId, cameraId, productTypeId, targetQuantity, batchNumber?}。初始化计数工位并绑定摄像头' },
+          { method: 'POST', path: '/workstation-counting/{workstationId}/stop', desc: '停止计数 - Path: workstationId。停止当前计数会话并保存结果' },
+          { method: 'POST', path: '/workstation-counting/{workstationId}/frame', desc: '上传帧分析 - Path: workstationId。Body: {frameBase64, timestamp}。上传视频帧进行AI目标检测和计数' },
+          { method: 'POST', path: '/workstation-counting/{workstationId}/manual-count', desc: '手动计数 - Path: workstationId。Body: {adjustment: number}。手动调整计数（正数增加，负数减少）' },
+          { method: 'POST', path: '/workstation-counting/{workstationId}/verify-label', desc: '验证标签 - Path: workstationId。Body: {labelCode, scannedQuantity}。扫码验证计数结果并确认' },
+          { method: 'GET', path: '/workstation-counting/{workstationId}/status', desc: '获取状态 - Path: workstationId。返回当前计数状态、已计数量、目标数量、准确率等' }
+        ]
+      }
     ];
 
     const ROLES = [
@@ -1976,7 +2097,7 @@
             { name: '规则引擎', screens: ['RuleList', 'RuleEdit', 'RuleTest', 'DrlCodeEditor', 'StateMachineList', 'StateMachineDesigner'] },
             { name: '系统监控', screens: ['SystemHealth', 'SystemMetrics', 'SystemLogs', 'SystemAlerts'] },
             { name: '供应商管理', screens: ['SupplierAdmission', 'SupplierBlacklist'] },
-            { name: '配置变更', screens: ['ConfigChangesetList', 'ConfigChangesetDetail'] },
+            { name: '配置变更', screens: ['ConfigChangeSetList', 'ConfigChangeSetDetail'] },
             { name: '公告管理', screens: ['AnnouncementCenter', 'AnnouncementCreate'] },
             { name: 'AI审计', screens: ['AIAuditLogs', 'IntentAnalysis'] }
           ],

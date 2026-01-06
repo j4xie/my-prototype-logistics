@@ -92,6 +92,18 @@ public class IntentMatchResult {
     private String targetEntity;
 
     /**
+     * 会话ID (多轮对话)
+     * 当置信度低于30%时，启动多轮对话，客户端使用此sessionId继续对话
+     */
+    private String sessionId;
+
+    /**
+     * 多轮对话消息
+     * 当启动多轮对话时，包含澄清问题
+     */
+    private String conversationMessage;
+
+    /**
      * 匹配方法枚举
      */
     public enum MatchMethod {

@@ -575,12 +575,113 @@ public class ToolCallMonitoringAspect {
 
 ---
 
+## User Context Propagation (userId Chain)
+
+> **补充完成时间**: 2026-01-06
+> **状态**: ✅ 已完成并部署到生产环境
+
+### Problem Background
+
+After Tool Calling implementation, we discovered that `userId` and `userRole` parameters were not properly propagated through the entire call chain, leading to:
+
+1. **Incomplete audit trail** - Cannot track which user triggered operations
+2. **Missing user context in Tool Calling** - Permission validation not possible
+3. **Multi-turn conversations not linked to users** - Session management lacks user identity
+4. **LLM fallback calls lack user identification** - Cannot trace who triggered LLM calls
+
+### Complete userId Propagation Chain
+
+```
+HTTP Request (Authorization: Bearer JWT_TOKEN)
+    ↓
+JwtAuthInterceptor
+    ↓ Extract userId=1, userRole=factory_super_admin
+    ↓
+AIIntentConfigController (Controller Layer)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+IntentExecutorServiceImpl (Executor Layer)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+AIIntentServiceImpl (Intent Recognition Layer)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+tryLlmFallback (LLM Fallback Method)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+LlmIntentFallbackClientImpl.classifyIntent (LLM Client)
+    ↓ userId=1, userRole=null
+    ↓
+DashScopeClient.chatCompletionWithTools() (Tool Calling)
+    ↓ Complete user context available
+    ↓
+ToolRegistry.getExecutor() → ToolExecutor.execute()
+    ↓ userId available for permission checks and audit
+    ↓
+ConversationServiceImpl (Multi-turn Conversation Service)
+    ↓ user=1 (session linked to specific user)
+```
+
+### Fixed Files
+
+**Files Modified**:
+1. **AIIntentServiceImpl.java**:
+   - Line 27: Fixed IntentConfigRollbackService import path
+   - Line 220: Fixed 2-param overload call (changed to 5-param version)
+   - Lines 503-508: Updated tryLlmFallback method signature (added userId, userRole params)
+   - Lines 388, 479: Updated all tryLlmFallback call sites
+
+2. **LlmIntentFallbackClientImpl.java**:
+   - Line 206: Fixed classifyIntent call (pass userId, userRole)
+
+3. **AIIntentConfigController.java**:
+   - Lines 152-153: Fixed recognizeIntentWithConfidence call
+
+### Core Value
+
+- ✅ **Audit Completeness**: All intent recognition and tool execution operations traceable to specific users
+- ✅ **Tool Calling Support**: Tool invocations have complete user context for permission validation
+- ✅ **Multi-turn Conversation Tracking**: Sessions can be linked to specific users
+- ✅ **Permission Validation Foundation**: Provides userId foundation for future fine-grained permission control
+- ✅ **Security Compliance**: Meets audit and traceability requirements
+
+### Verification Results
+
+**Test Scenario 1**: Regular intent recognition + userId propagation
+```
+✅ JwtAuthInterceptor: Extract userId: 1 from JWT
+✅ AIIntentConfigController: Execute AI intent - userId=1, role=factory_super_admin
+✅ IntentExecutorServiceImpl: Execute intent - userId=1, role=factory_super_admin
+✅ AIIntentServiceImpl: Intent recognition success - MATERIAL_BATCH_QUERY (confidence=1.0)
+```
+
+**Test Scenario 2**: LLM Fallback triggered + Tool Calling
+```
+✅ AIIntentServiceImpl: No match, trigger LLM Fallback - userId=1
+✅ LlmIntentFallbackClientImpl: classifyIntent call - userId=1
+✅ DashScopeClient: Tool Calling executed - complete user context
+✅ ToolExecutor: Tool execution - userId=1 available for permission checks
+✅ ConversationServiceImpl: Multi-turn conversation - user=1
+```
+
+**Deployment Verification**:
+- Server: 139.196.165.140:10010
+- Build: BUILD SUCCESS in 01:28 min
+- Service Status: Running (PID: 371208)
+- Tool Registry: 6 tools registered
+- Logging: userId logged at all critical points
+
+**Detailed Documentation**: `/USERID-PROPAGATION-FIX.md`
+
+---
+
 ## References
 
 - [OpenAI Function Calling Documentation](https://platform.openai.com/docs/guides/function-calling)
 - [Qwen API Documentation](https://help.aliyun.com/document_detail/2712576.html)
 - [JSON Schema](https://json-schema.org/)
 - Project Rules: `.claude/rules/api-response-handling.md`
+- **userId Propagation**: `/USERID-PROPAGATION-FIX.md` (NEW)
 
 ---
 
@@ -588,3 +689,4 @@ public class ToolCallMonitoringAspect {
 **Status**: ✅ Complete
 **Backward Compatible**: ✅ Yes
 **Tested**: ✅ Unit tests created (require DashScope API key to run)
+**userId Propagation**: ✅ Fixed and deployed (2026-01-06)

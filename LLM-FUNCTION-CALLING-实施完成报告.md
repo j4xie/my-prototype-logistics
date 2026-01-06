@@ -518,6 +518,103 @@ if (response.hasToolCalls()) {
 - ✅ **审核机制**: 新意图默认inactive，需管理员激活
 - ✅ **日志记录**: 所有Tool执行都有详细日志
 
+### 7.3 用户上下文传递（userId链）
+
+> **补充完成时间**: 2026-01-06
+> **状态**: ✅ 已完成并部署到生产环境
+
+#### 问题背景
+
+Tool Calling功能实现后，发现userId和userRole参数未能正确传递到整个调用链，导致：
+1. **审计追踪不完整** - 无法记录操作用户
+2. **Tool Calling缺少用户上下文** - 权限验证缺失
+3. **多轮对话无法关联用户** - 会话管理缺少用户标识
+4. **LLM降级调用缺少用户标识** - 无法追踪谁触发了LLM调用
+
+#### 完整的userId传递链
+
+```
+HTTP请求 (Authorization: Bearer JWT_TOKEN)
+    ↓
+JwtAuthInterceptor
+    ↓ 提取 userId=1, userRole=factory_super_admin
+    ↓
+AIIntentConfigController (Controller层)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+IntentExecutorServiceImpl (执行器层)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+AIIntentServiceImpl (意图识别层)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+tryLlmFallback (LLM降级方法)
+    ↓ userId=1, userRole=factory_super_admin
+    ↓
+LlmIntentFallbackClientImpl.classifyIntent (LLM客户端)
+    ↓ userId=1, userRole=null
+    ↓
+DashScopeClient.chatCompletionWithTools() (Tool Calling)
+    ↓ 完整用户上下文
+    ↓
+ToolRegistry.getExecutor() → ToolExecutor.execute()
+    ↓ userId可用于权限验证和审计
+    ↓
+ConversationServiceImpl (多轮对话服务)
+    ↓ user=1 (会话关联到具体用户)
+```
+
+#### 修复内容
+
+**修复的文件**:
+1. **AIIntentServiceImpl.java**:
+   - Line 27: 修复 IntentConfigRollbackService 导入路径
+   - Line 220: 修复2参数重载方法调用（改为5参数版本）
+   - Lines 503-508: 更新 tryLlmFallback 方法签名（添加 userId, userRole）
+   - Lines 388, 479: 更新所有 tryLlmFallback 调用点
+
+2. **LlmIntentFallbackClientImpl.java**:
+   - Line 206: 修复 classifyIntent 调用（传递 userId, userRole）
+
+3. **AIIntentConfigController.java**:
+   - Lines 152-153: 修复 recognizeIntentWithConfidence 调用
+
+#### 核心价值
+
+- ✅ **审计完整性**: 所有意图识别和Tool执行操作均可追踪到具体用户
+- ✅ **Tool Calling支持**: 工具调用时拥有完整的用户上下文，可进行权限验证
+- ✅ **多轮对话追踪**: 会话管理可关联到具体用户
+- ✅ **权限验证基础**: 为后续的细粒度权限控制提供了userId基础
+- ✅ **安全合规**: 符合审计和溯源要求
+
+#### 验证结果
+
+**测试场景1**: 常规意图识别 + userId传递
+```
+✅ JwtAuthInterceptor: 从JWT提取userId: 1
+✅ AIIntentConfigController: 执行AI意图 - userId=1, role=factory_super_admin
+✅ IntentExecutorServiceImpl: 执行意图 - userId=1, role=factory_super_admin
+✅ AIIntentServiceImpl: 意图识别成功 - MATERIAL_BATCH_QUERY (confidence=1.0)
+```
+
+**测试场景2**: LLM Fallback触发 + Tool Calling
+```
+✅ AIIntentServiceImpl: 无匹配结果，触发LLM Fallback - userId=1
+✅ LlmIntentFallbackClientImpl: classifyIntent调用 - userId=1
+✅ DashScopeClient: Tool Calling执行 - 完整用户上下文
+✅ ToolExecutor: 工具执行 - userId=1可用于权限验证
+✅ ConversationServiceImpl: 多轮对话 - user=1
+```
+
+**部署验证**:
+- 服务器: 139.196.165.140:10010
+- 编译: BUILD SUCCESS in 01:28 min
+- 服务状态: 运行正常 (PID: 371208)
+- Tool Registry: 注册6个工具
+- 日志记录: 所有关键节点均记录userId
+
+**详细文档**: `/USERID-PROPAGATION-FIX.md`
+
 ---
 
 ## 八、部署建议

@@ -185,6 +185,9 @@ export type ProfileStackParamList = {
 
   // 开发者工具: 服务器连接测试
   ServerConnectivityTest: undefined;
+
+  // 开发者工具: 意图执行测试
+  IntentExecutionTest: undefined;
 };
 
 // ==================== 报表中心模块导航参数 ====================

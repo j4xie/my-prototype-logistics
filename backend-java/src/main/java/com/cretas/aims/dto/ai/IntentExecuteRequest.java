@@ -68,4 +68,11 @@ public class IntentExecuteRequest {
      */
     @Builder.Default
     private Boolean forceExecute = false;
+
+    /**
+     * 会话ID (可选，用于多轮对话延续)
+     * 当意图识别置信度低于30%时，系统会启动多轮对话
+     * 后续回复需携带此sessionId以延续对话
+     */
+    private String sessionId;
 }

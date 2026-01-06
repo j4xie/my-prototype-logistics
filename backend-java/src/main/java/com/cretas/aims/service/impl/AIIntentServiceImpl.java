@@ -16,6 +16,7 @@ import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.entity.learning.LearnedExpression;
 import com.cretas.aims.entity.learning.TrainingSample;
 import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.ExpressionLearningService;
 import com.cretas.aims.service.FactoryConfigService;
 import com.cretas.aims.service.IntentEmbeddingCacheService;
@@ -23,6 +24,7 @@ import com.cretas.aims.service.KeywordEffectivenessService;
 import com.cretas.aims.service.KeywordLearningService;
 import com.cretas.aims.service.KeywordPromotionService;
 import com.cretas.aims.service.LlmIntentFallbackClient;
+import com.cretas.aims.service.impl.IntentConfigRollbackService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -67,6 +69,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final IntentEmbeddingCacheService embeddingCacheService;
     private final ExpressionLearningService expressionLearningService;
     private final SemanticCacheConfigRepository semanticCacheConfigRepository;
+    private final ConversationService conversationService;
 
     /**
      * 意图匹配统一配置
@@ -214,11 +217,11 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, int topN) {
-        return recognizeIntentWithConfidence(userInput, null, topN);
+        return recognizeIntentWithConfidence(userInput, null, topN, null, null);
     }
 
     @Override
-    public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN) {
+    public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN, Long userId, String userRole) {
         if (userInput == null || userInput.trim().isEmpty()) {
             return IntentMatchResult.empty(userInput);
         }
@@ -339,9 +342,50 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         if (scoredIntents.isEmpty()) {
             log.debug("No intent matched by rules or semantics for input: {}", userInput);
+
+            // ========== Layer 5: 多轮对话 (无匹配时自动触发) ==========
+            if (userId != null) {
+                log.info("无匹配结果，自动触发多轮对话: factoryId={}, userId={}, input='{}'",
+                        factoryId, userId, userInput);
+
+                try {
+                    ConversationService.ConversationResponse conversationResp =
+                            conversationService.startConversation(factoryId, userId, userInput);
+
+                    if (conversationResp != null && conversationResp.getSessionId() != null) {
+                        log.info("多轮对话已启动: sessionId={}, round={}/{}",
+                                conversationResp.getSessionId(),
+                                conversationResp.getCurrentRound(),
+                                conversationResp.getMaxRounds());
+
+                        // 返回带会话信息的空结果
+                        IntentMatchResult conversationResult = IntentMatchResult.builder()
+                                .bestMatch(null)
+                                .topCandidates(List.of())
+                                .confidence(0.0)
+                                .matchMethod(MatchMethod.NONE)
+                                .matchedKeywords(List.of())
+                                .isStrongSignal(false)
+                                .requiresConfirmation(true)
+                                .userInput(userInput)
+                                .actionType(opType)
+                                .sessionId(conversationResp.getSessionId())
+                                .conversationMessage(conversationResp.getMessage())
+                                .build();
+
+                        saveIntentMatchRecord(conversationResult, factoryId, userId,
+                                conversationResp.getSessionId(), false);
+                        return conversationResult;
+                    }
+                } catch (Exception e) {
+                    log.warn("启动多轮对话失败: {}", e.getMessage());
+                    // 失败时继续走 LLM fallback 流程
+                }
+            }
+
             // Layer 5 (编辑距离匹配) 已移除，直接进入 LLM Fallback
             // 理由: 语义匹配 (Layer 4) 已合并意图配置+学习表达，编辑距离效果有限
-            return tryLlmFallback(userInput, factoryId, allIntents, null, opType);
+            return tryLlmFallback(userInput, factoryId, allIntents, null, opType, userId, userRole);
         }
 
         // 按分数排序
@@ -396,11 +440,43 @@ public class AIIntentServiceImpl implements AIIntentService {
                 .actionType(opType)  // Layer 2/3: 设置检测到的操作类型
                 .build();
 
+        // ========== Layer 5: 多轮对话 (置信度 < 30% 时自动触发) ==========
+        if (bestConfidence < 0.30 && userId != null) {
+            log.info("低置信度 ({}) 自动触发多轮对话: intent={}, factoryId={}, userId={}",
+                    bestConfidence, bestEntry.config.getIntentCode(), factoryId, userId);
+
+            try {
+                ConversationService.ConversationResponse conversationResp =
+                        conversationService.startConversation(factoryId, userId, userInput);
+
+                if (conversationResp != null && conversationResp.getSessionId() != null) {
+                    log.info("多轮对话已启动: sessionId={}, round={}/{}",
+                            conversationResp.getSessionId(),
+                            conversationResp.getCurrentRound(),
+                            conversationResp.getMaxRounds());
+
+                    // 返回带会话信息的结果
+                    IntentMatchResult conversationResult = result.toBuilder()
+                            .sessionId(conversationResp.getSessionId())
+                            .conversationMessage(conversationResp.getMessage())
+                            .requiresConfirmation(true)
+                            .build();
+
+                    saveIntentMatchRecord(conversationResult, factoryId, userId,
+                            conversationResp.getSessionId(), false);
+                    return conversationResult;
+                }
+            } catch (Exception e) {
+                log.warn("启动多轮对话失败: {}", e.getMessage());
+                // 失败时继续走 LLM fallback 流程
+            }
+        }
+
         // 如果置信度过低，尝试 LLM Fallback 提升
         if (bestConfidence < matchingConfig.getLlmFallbackConfidenceThreshold()) {
             log.debug("Low confidence ({}) for intent {}, trying LLM fallback",
                     bestConfidence, bestEntry.config.getIntentCode());
-            return tryLlmFallback(userInput, factoryId, allIntents, result, opType);
+            return tryLlmFallback(userInput, factoryId, allIntents, result, opType, userId, userRole);
         }
 
         log.debug("Intent recognized: {} with confidence {} for input: {}",
@@ -420,12 +496,16 @@ public class AIIntentServiceImpl implements AIIntentService {
      * @param allIntents 所有可用意图
      * @param ruleResult 规则匹配结果（可能为 null）
      * @param actionType 检测到的操作类型
+     * @param userId 用户ID（用于Tool Calling）
+     * @param userRole 用户角色（用于Tool Calling）
      * @return LLM 匹配结果，或原始规则结果
      */
     private IntentMatchResult tryLlmFallback(String userInput, String factoryId,
                                               List<AIIntentConfig> allIntents,
                                               IntentMatchResult ruleResult,
-                                              ActionType actionType) {
+                                              ActionType actionType,
+                                              Long userId,
+                                              String userRole) {
         log.info(">>> Entering tryLlmFallback: userInput='{}', llmFallbackEnabled={}",
                 userInput, matchingConfig.isLlmFallbackEnabled());
 
@@ -458,9 +538,9 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         try {
-            // 调用 LLM 进行意图分类
+            // 调用 LLM 进行意图分类（传递userId和userRole用于Tool Calling）
             IntentMatchResult llmResult = llmFallbackClient.classifyIntent(
-                    userInput, allIntents, factoryId);
+                    userInput, allIntents, factoryId, userId, userRole);
 
             // 如果 LLM 成功匹配，使用 LLM 结果
             if (llmResult.hasMatch()) {

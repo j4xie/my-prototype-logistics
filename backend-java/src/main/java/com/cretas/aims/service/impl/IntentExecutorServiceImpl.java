@@ -10,6 +10,7 @@ import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.exception.LlmSchemaValidationException;
 import com.cretas.aims.service.AIIntentService;
+import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.IntentExecutorService;
 import com.cretas.aims.service.IntentSemanticsParser;
 import com.cretas.aims.service.LlmIntentFallbackClient;
@@ -58,6 +59,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private final SemanticCacheService semanticCacheService;
     private final RuleEngineService ruleEngineService;
     private final LlmIntentFallbackClient llmFallbackClient;
+    private final ConversationService conversationService;
     private final ObjectMapper objectMapper;
 
     // 处理器映射表: category -> handler
@@ -76,6 +78,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      SemanticCacheService semanticCacheService,
                                      RuleEngineService ruleEngineService,
                                      @Lazy LlmIntentFallbackClient llmFallbackClient,
+                                     ConversationService conversationService,
                                      ObjectMapper objectMapper) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
@@ -83,6 +86,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.semanticCacheService = semanticCacheService;
         this.ruleEngineService = ruleEngineService;
         this.llmFallbackClient = llmFallbackClient;
+        this.conversationService = conversationService;
         this.objectMapper = objectMapper;
     }
 
@@ -117,6 +121,90 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         // 0. 检查是否显式指定了意图代码 (跳过识别)
         if (request.getIntentCode() != null && !request.getIntentCode().isEmpty()) {
             return executeWithExplicitIntent(factoryId, request, userId, userRole);
+        }
+
+        // 0.3. 检查是否为多轮对话延续
+        if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
+            log.info("检测到会话延续: sessionId={}, userInput='{}'",
+                    request.getSessionId(),
+                    request.getUserInput() != null && request.getUserInput().length() > 30 ?
+                            request.getUserInput().substring(0, 30) + "..." : request.getUserInput());
+
+            try {
+                ConversationService.ConversationResponse conversationResp =
+                        conversationService.continueConversation(request.getSessionId(), request.getUserInput());
+
+                if (conversationResp == null) {
+                    log.warn("会话不存在或已失效: sessionId={}", request.getSessionId());
+                    // 会话失效,继续正常的意图识别流程
+                } else if (conversationResp.isCompleted() && conversationResp.getIntentCode() != null) {
+                    // 会话成功完成,识别出意图
+                    log.info("会话完成,识别到意图: sessionId={}, intentCode={}, confidence={}",
+                            request.getSessionId(), conversationResp.getIntentCode(), conversationResp.getConfidence());
+
+                    // 调用 endConversation 触发学习
+                    conversationService.endConversation(request.getSessionId(), conversationResp.getIntentCode());
+
+                    // 设置识别到的意图代码,继续正常执行流程
+                    request.setIntentCode(conversationResp.getIntentCode());
+                    request.setForceExecute(true); // 跳过二次确认
+
+                    // 继续执行 (使用识别到的意图)
+                    return executeWithExplicitIntent(factoryId, request, userId, userRole);
+
+                } else {
+                    // 会话未完成,返回新的澄清问题
+                    log.info("会话继续: sessionId={}, round={}/{}, status={}",
+                            conversationResp.getSessionId(),
+                            conversationResp.getCurrentRound(),
+                            conversationResp.getMaxRounds(),
+                            conversationResp.getStatus());
+
+                    // 构建响应 (包含会话信息)
+                    IntentExecuteResponse.IntentExecuteResponseBuilder responseBuilder = IntentExecuteResponse.builder()
+                            .intentRecognized(false)
+                            .status("CONVERSATION_CONTINUE")
+                            .message(conversationResp.getMessage())
+                            .executedAt(LocalDateTime.now());
+
+                    // 添加会话信息到元数据
+                    Map<String, Object> metadata = new HashMap<>();
+                    metadata.put("sessionId", conversationResp.getSessionId());
+                    metadata.put("currentRound", conversationResp.getCurrentRound());
+                    metadata.put("maxRounds", conversationResp.getMaxRounds());
+                    metadata.put("status", conversationResp.getStatus() != null ? conversationResp.getStatus().name() : null);
+
+                    // 如果有候选意图,构建建议操作
+                    if (conversationResp.getCandidates() != null && !conversationResp.getCandidates().isEmpty()) {
+                        List<IntentExecuteResponse.SuggestedAction> candidateActions = new ArrayList<>();
+                        for (ConversationService.CandidateInfo candidate : conversationResp.getCandidates()) {
+                            Map<String, Object> params = new HashMap<>();
+                            params.put("intentCode", candidate.getIntentCode());
+                            params.put("sessionId", conversationResp.getSessionId());
+                            params.put("forceExecute", true);
+
+                            candidateActions.add(IntentExecuteResponse.SuggestedAction.builder()
+                                    .actionCode("SELECT_INTENT")
+                                    .actionName(candidate.getIntentName())
+                                    .description(candidate.getDescription() != null ? candidate.getDescription() :
+                                            String.format("置信度: %.0f%%", candidate.getConfidence() * 100))
+                                    .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute")
+                                    .parameters(params)
+                                    .build());
+                        }
+                        metadata.put("candidates", conversationResp.getCandidates());
+                        responseBuilder.suggestedActions(candidateActions);
+                    }
+
+                    responseBuilder.metadata(metadata);
+
+                    return responseBuilder.build();
+                }
+            } catch (Exception e) {
+                log.error("会话延续失败: sessionId={}, error={}",
+                        request.getSessionId(), e.getMessage(), e);
+                // 会话延续失败,继续正常的意图识别流程
+            }
         }
 
         // 0.5. 查询语义缓存 (提升响应速度)
@@ -156,12 +244,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         }
 
-        // 1. 识别意图 (使用带 LLM Fallback 的方法)
+        // 1. 识别意图 (使用带 LLM Fallback 的方法，传递userId和userRole用于Tool Calling)
         // 包含 LLM Schema 验证异常处理 (R3: 校验失败不执行，反问用户)
         IntentMatchResult matchResult;
         try {
             matchResult = aiIntentService.recognizeIntentWithConfidence(
-                    request.getUserInput(), factoryId, 3);
+                    request.getUserInput(), factoryId, 3, userId, userRole);
         } catch (LlmSchemaValidationException e) {
             // LLM Schema 校验失败 → 不执行，反问用户确认
             log.warn("LLM Schema 验证失败: type={}, message={}, userInput='{}'",
@@ -187,7 +275,18 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 clarificationMessage = "您的请求可能匹配多个操作，请确认您想要执行的操作：";
             }
 
-            return IntentExecuteResponse.builder()
+            // 准备会话元数据（如果存在sessionId）
+            Map<String, Object> metadata = new java.util.HashMap<>();
+            if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+                log.info("✅ [同步路径-模糊匹配] 添加sessionId到响应metadata: {}", matchResult.getSessionId());
+                metadata.put("sessionId", matchResult.getSessionId());
+                metadata.put("needMoreInfo", true);
+                if (matchResult.getConversationMessage() != null) {
+                    metadata.put("conversationMessage", matchResult.getConversationMessage());
+                }
+            }
+
+            IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(matchedIntent.getIntentCode())
                     .intentName(matchedIntent.getIntentName())
@@ -197,8 +296,13 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .confidence(matchResult.getConfidence())
                     .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
                     .suggestedActions(candidateActions)
-                    .executedAt(LocalDateTime.now())
-                    .build();
+                    .executedAt(LocalDateTime.now());
+
+            if (!metadata.isEmpty()) {
+                builder.metadata(metadata);
+            }
+
+            return builder.build();
         }
 
         // 3. 处理无匹配但有候选意图的情况（弱信号）
@@ -210,25 +314,63 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
                 List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
 
-                return IntentExecuteResponse.builder()
+                // 准备会话元数据（如果存在sessionId）
+                Map<String, Object> metadata = new java.util.HashMap<>();
+                if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+                    log.info("✅ [同步路径-候选] 添加sessionId到响应metadata: {}", matchResult.getSessionId());
+                    metadata.put("sessionId", matchResult.getSessionId());
+                    metadata.put("needMoreInfo", true);
+                    if (matchResult.getConversationMessage() != null) {
+                        metadata.put("conversationMessage", matchResult.getConversationMessage());
+                    }
+                }
+
+                IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                         .intentRecognized(false)
                         .status("NEED_CLARIFICATION")
                         .message("我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：")
                         .suggestedActions(candidateActions)
-                        .executedAt(LocalDateTime.now())
-                        .build();
+                        .executedAt(LocalDateTime.now());
+
+                if (!metadata.isEmpty()) {
+                    builder.metadata(metadata);
+                }
+
+                return builder.build();
             }
 
             log.info("未识别到意图 (规则+LLM均未匹配): userInput={}", request.getUserInput());
             // 即使没有候选意图，也返回 NEED_CLARIFICATION 状态，提供常用操作建议
             List<IntentExecuteResponse.SuggestedAction> defaultSuggestions = buildDefaultSuggestions(factoryId);
-            return IntentExecuteResponse.builder()
+
+            // 准备会话元数据（如果存在sessionId）
+            Map<String, Object> metadata = new java.util.HashMap<>();
+            if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+                log.info("✅ [同步路径] 添加sessionId到响应metadata: {}", matchResult.getSessionId());
+                metadata.put("sessionId", matchResult.getSessionId());
+                metadata.put("needMoreInfo", true);
+                if (matchResult.getConversationMessage() != null) {
+                    metadata.put("conversationMessage", matchResult.getConversationMessage());
+                }
+            }
+
+            // 使用会话消息（如果有），否则使用默认消息
+            String message = matchResult.getConversationMessage() != null && !matchResult.getConversationMessage().isEmpty()
+                    ? matchResult.getConversationMessage()
+                    : "我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：";
+
+            IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                     .intentRecognized(false)
                     .status("NEED_CLARIFICATION")
-                    .message("我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：")
+                    .message(message)
                     .executedAt(LocalDateTime.now())
-                    .suggestedActions(defaultSuggestions)
-                    .build();
+                    .suggestedActions(defaultSuggestions);
+
+            if (!metadata.isEmpty()) {
+                builder.metadata(metadata);
+            }
+
+            return builder.build();
         }
 
         AIIntentConfig intent = matchResult.getBestMatch();
@@ -480,7 +622,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
             IntentMatchResult matchResult;
             try {
-                matchResult = aiIntentService.recognizeIntentWithConfidence(userInput, factoryId, 3);
+                matchResult = aiIntentService.recognizeIntentWithConfidence(userInput, factoryId, 3, userId, userRole);
             } catch (LlmSchemaValidationException e) {
                 // 验证失败
                 IntentExecuteResponse validationFailureResponse = buildValidationFailureResponse(
@@ -690,25 +832,55 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      * 构建无匹配响应
      */
     private IntentExecuteResponse buildNoMatchResponse(IntentMatchResult matchResult, String factoryId) {
+        log.info("🔍 buildNoMatchResponse调用: sessionId={}, conversationMessage={}, hasMatch={}",
+                matchResult.getSessionId(), matchResult.getConversationMessage(), matchResult.hasMatch());
+
+        // 准备会话元数据（如果存在）
+        Map<String, Object> metadata = new java.util.HashMap<>();
+        if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+            log.info("✅ sessionId不为空，添加到metadata: {}", matchResult.getSessionId());
+            metadata.put("sessionId", matchResult.getSessionId());
+            metadata.put("needMoreInfo", true);  // 标记需要更多信息
+            if (matchResult.getConversationMessage() != null) {
+                metadata.put("conversationMessage", matchResult.getConversationMessage());
+            }
+        } else {
+            log.warn("⚠️ sessionId为空或null，无法添加到metadata");
+        }
+
         if (matchResult.getTopCandidates() != null && !matchResult.getTopCandidates().isEmpty()) {
             List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
-            return IntentExecuteResponse.builder()
+            IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                     .intentRecognized(false)
                     .status("NEED_CLARIFICATION")
                     .message("我不太确定您想执行什么操作，请从以下选项中选择或更详细地描述您的需求：")
                     .suggestedActions(candidateActions)
-                    .executedAt(LocalDateTime.now())
-                    .build();
+                    .executedAt(LocalDateTime.now());
+
+            if (!metadata.isEmpty()) {
+                builder.metadata(metadata);
+            }
+            return builder.build();
         }
 
         List<IntentExecuteResponse.SuggestedAction> defaultSuggestions = buildDefaultSuggestions(factoryId);
-        return IntentExecuteResponse.builder()
+
+        // 使用会话消息（如果有），否则使用默认消息
+        String message = matchResult.getConversationMessage() != null && !matchResult.getConversationMessage().isEmpty()
+                ? matchResult.getConversationMessage()
+                : "我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：";
+
+        IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                 .intentRecognized(false)
                 .status("NEED_CLARIFICATION")
-                .message("我没有理解您的意图，请从以下常用操作中选择，或更详细地描述您的需求：")
+                .message(message)
                 .suggestedActions(defaultSuggestions)
-                .executedAt(LocalDateTime.now())
-                .build();
+                .executedAt(LocalDateTime.now());
+
+        if (!metadata.isEmpty()) {
+            builder.metadata(metadata);
+        }
+        return builder.build();
     }
 
     /**
@@ -723,7 +895,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             clarificationMessage = "您的请求可能匹配多个操作，请确认您想要执行的操作：";
         }
 
-        return IntentExecuteResponse.builder()
+        // 准备会话元数据（如果存在）
+        Map<String, Object> metadata = new java.util.HashMap<>();
+        if (matchResult.getSessionId() != null && !matchResult.getSessionId().isEmpty()) {
+            metadata.put("sessionId", matchResult.getSessionId());
+            metadata.put("needMoreInfo", true);
+            if (matchResult.getConversationMessage() != null) {
+                metadata.put("conversationMessage", matchResult.getConversationMessage());
+            }
+        }
+
+        IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
                 .intentRecognized(true)
                 .intentCode(matchedIntent.getIntentCode())
                 .intentName(matchedIntent.getIntentName())
@@ -733,8 +915,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 .confidence(matchResult.getConfidence())
                 .matchMethod(matchResult.getMatchMethod() != null ? matchResult.getMatchMethod().name() : null)
                 .suggestedActions(candidateActions)
-                .executedAt(LocalDateTime.now())
-                .build();
+                .executedAt(LocalDateTime.now());
+
+        if (!metadata.isEmpty()) {
+            builder.metadata(metadata);
+        }
+        return builder.build();
     }
 
     /**

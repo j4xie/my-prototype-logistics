@@ -150,7 +150,7 @@ public class AIIntentConfigController {
 
         // 使用带操作类型检测的增强版识别方法 (BUG-001/002 修复)
         IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
-                request.getUserInput(), factoryId, 1);
+                request.getUserInput(), factoryId, 1, null, null);
 
         IntentRecognitionResult result = new IntentRecognitionResult();
         result.setUserInput(request.getUserInput());

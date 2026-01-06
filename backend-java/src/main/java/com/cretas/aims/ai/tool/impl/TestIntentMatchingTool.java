@@ -164,8 +164,8 @@ public class TestIntentMatchingTool extends AbstractTool {
      * 测试所有意图
      */
     private String testAllIntents(String userInput, String factoryId, int topN) throws Exception {
-        // 使用AIIntentService的增强识别方法
-        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(userInput, factoryId, topN);
+        // 使用AIIntentService的增强识别方法 (传递null作为userId和userRole，因为这是测试工具)
+        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(userInput, factoryId, topN, null, null);
 
         // 构建返回结果
         Map<String, Object> resultData = new HashMap<>();
