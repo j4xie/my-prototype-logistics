@@ -209,6 +209,7 @@ public class HexFixedFrameParser extends AbstractFrameParser {
                     float floatValue = buffer.getFloat();
                     return BigDecimal.valueOf(floatValue);
                 }
+                rawValue = parseIntegerValue(fieldBytes, byteOrder);
                 break;
 
             case "DOUBLE":
@@ -217,6 +218,7 @@ public class HexFixedFrameParser extends AbstractFrameParser {
                     double doubleValue = buffer.getDouble();
                     return BigDecimal.valueOf(doubleValue);
                 }
+                rawValue = parseIntegerValue(fieldBytes, byteOrder);
                 break;
 
             case "BCD":
@@ -230,8 +232,6 @@ public class HexFixedFrameParser extends AbstractFrameParser {
                 rawValue = parseIntegerValue(fieldBytes, byteOrder);
                 break;
         }
-
-        rawValue = parseIntegerValue(fieldBytes, byteOrder);
 
         // Handle signed values
         boolean isSigned = field.path("signed").asBoolean(false);

@@ -1,0 +1,116 @@
+# Node.js 依赖（最大消耗项：2.65GB）
+node_modules/
+**/node_modules/
+package-lock.json
+yarn.lock
+
+# 日志文件（~50MB）
+*.log
+logs/
+**/*.log
+
+# 构建输出
+target/
+build/
+dist/
+out/
+*.jar
+*.war
+*.zip
+*.class
+BOOT-INF/
+
+# iOS 依赖
+ios/Pods/
+Pods/
+ios/build/
+
+# Android
+android/build/
+android/.gradle/
+android/app/build/
+*.apk
+
+# Git 相关
+.git/
+.gitignore
+
+# 临时文件
+tmp/
+temp/
+.tmp/
+*.tmp
+*.temp
+*.backup
+*.bak
+*.old
+
+# 操作系统文件
+.DS_Store
+**/.DS_Store
+Thumbs.db
+desktop.ini
+
+# 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 归档
+_archived/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+
+# 大型资源文件
+MallCenter/product image/
+MallCenter/mall_admin_ui/
+MallCenter/mall_admin_center/target/
+
+# PDF 文档
+*.pdf
+
+# .next 构建产物（Next.js）
+.next/
+**/.next/
+
+# Gradle 缓存
+.gradle/
+**/.gradle/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 环境变量（可能包含敏感信息）
+.env
+.env.local
+.env.*.local
+
+# 数据库备份
+*.sql
+*.dump
+
+# 大型文档文件（避免消耗 context）
+README.md
+硬件选品开发文件.md
+ai意图架构.md
+ARCHITECTURE-FUSION-DECISION.md
+intent-recognition-enhancement-plan-v2.md
+N+1问题完整解决方案.md
+E2E-BUSINESS-SCENARIO-DOCUMENT.md
+ai相关改造.md
+分布式智能体编排系统计划.md
+ai意图问题以及对应解决方案.md
+工作总结_*.md
+完整测试文档/
+backend/rn-update-tableandlogic.md
+docs/PRODUCT_DOCUMENT.md
+docs/白垩纪系统架构审计-完整分析报告.md
+MallCenter/BACKEND_MODIFICATION_PLAN.md

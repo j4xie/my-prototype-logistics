@@ -63,7 +63,7 @@ public class ScaleDeviceDTO {
                 .location(entity.getLocation())
                 .serialNumber(entity.getSerialNumber())
                 .iotDeviceCode(entity.getIotDeviceCode())
-                .deviceCategory(entity.getDeviceCategory() != null ? entity.getDeviceCategory().getFrontendValue() : null)
+                .deviceCategory(entity.getUnifiedDeviceType() != null ? entity.getUnifiedDeviceType().getFrontendValue() : null)
                 .scaleProtocolId(entity.getScaleProtocolId())
                 .scaleBrandModelId(entity.getScaleBrandModelId())
                 .mqttTopic(entity.getMqttTopic())

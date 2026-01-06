@@ -11,6 +11,7 @@ import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.repository.SemanticCacheConfigRepository;
 import com.cretas.aims.repository.SemanticCacheRepository;
 import com.cretas.aims.service.EmbeddingClient;
+import com.cretas.aims.service.RequestScopedEmbeddingCache;
 import com.cretas.aims.service.SemanticCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,9 @@ class SemanticCacheServiceTest {
 
     @Mock
     private EmbeddingClient embeddingClient;
+
+    @Mock
+    private RequestScopedEmbeddingCache requestScopedCache;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -170,7 +174,7 @@ class SemanticCacheServiceTest {
                 eq(FACTORY_ID), anyString(), any(LocalDateTime.class)))
                 .thenReturn(Optional.empty()); // 精确匹配未命中
         when(embeddingClient.isAvailable()).thenReturn(true);
-        when(embeddingClient.encode(anyString())).thenReturn(queryEmbedding);
+        when(requestScopedCache.getOrCompute(anyString())).thenReturn(queryEmbedding);
         when(cacheRepository.findValidCachesByFactoryId(eq(FACTORY_ID), any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonList(testCache));
 
@@ -198,7 +202,7 @@ class SemanticCacheServiceTest {
                 eq(FACTORY_ID), anyString(), any(LocalDateTime.class)))
                 .thenReturn(Optional.empty());
         when(embeddingClient.isAvailable()).thenReturn(true);
-        when(embeddingClient.encode(anyString())).thenReturn(queryEmbedding);
+        when(requestScopedCache.getOrCompute(anyString())).thenReturn(queryEmbedding);
         when(cacheRepository.findValidCachesByFactoryId(eq(FACTORY_ID), any(LocalDateTime.class)))
                 .thenReturn(Collections.singletonList(testCache));
 
@@ -225,7 +229,7 @@ class SemanticCacheServiceTest {
 
         // Then
         assertThat(result.isHit()).isFalse();
-        verify(embeddingClient, never()).encode(anyString());
+        verify(requestScopedCache, never()).getOrCompute(anyString());
     }
 
     // ========== 缓存存储测试 ==========
@@ -242,7 +246,7 @@ class SemanticCacheServiceTest {
         when(cacheRepository.findByFactoryIdAndInputHash(eq(FACTORY_ID), anyString()))
                 .thenReturn(Optional.empty());
         when(embeddingClient.isAvailable()).thenReturn(true);
-        when(embeddingClient.encode(anyString()))
+        when(requestScopedCache.getOrCompute(anyString()))
                 .thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(objectMapper.writeValueAsString(any()))
                 .thenReturn("{\"mock\":\"json\"}");

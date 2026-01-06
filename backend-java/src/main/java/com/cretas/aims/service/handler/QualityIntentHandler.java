@@ -20,6 +20,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 质检意图处理器
@@ -183,6 +185,14 @@ public class QualityIntentHandler implements IntentHandler {
             }
         }
 
+        // 降级：从userInput提取productionBatchId
+        if (productionBatchId == null && request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            productionBatchId = extractProductionBatchId(request.getUserInput());
+            if (productionBatchId != null) {
+                log.debug("从userInput提取productionBatchId: {}", productionBatchId);
+            }
+        }
+
         if (productionBatchId == null) {
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
@@ -259,6 +269,14 @@ public class QualityIntentHandler implements IntentHandler {
                             .executedAt(LocalDateTime.now())
                             .build();
                 }
+            }
+        }
+
+        // 降级：从userInput提取productionBatchId
+        if (productionBatchId == null && request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            productionBatchId = extractProductionBatchId(request.getUserInput());
+            if (productionBatchId != null) {
+                log.debug("从userInput提取productionBatchId: {}", productionBatchId);
             }
         }
 
@@ -356,6 +374,22 @@ public class QualityIntentHandler implements IntentHandler {
             }
             if (actionObj != null) actionCode = actionObj.toString().toUpperCase();
             if (reasonObj != null) reason = reasonObj.toString();
+        }
+
+        // 降级：从userInput提取productionBatchId和actionCode
+        if (request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            if (productionBatchId == null) {
+                productionBatchId = extractProductionBatchId(request.getUserInput());
+                if (productionBatchId != null) {
+                    log.debug("从userInput提取productionBatchId: {}", productionBatchId);
+                }
+            }
+            if (actionCode == null) {
+                actionCode = extractDispositionAction(request.getUserInput());
+                if (actionCode != null) {
+                    log.debug("从userInput提取actionCode: {}", actionCode);
+                }
+            }
         }
 
         if (productionBatchId == null || actionCode == null) {
@@ -528,5 +562,84 @@ public class QualityIntentHandler implements IntentHandler {
         return action != null && List.of(
                 "RELEASE", "CONDITIONAL_RELEASE", "REWORK", "SCRAP", "SPECIAL_APPROVAL", "HOLD"
         ).contains(action.toUpperCase());
+    }
+
+    /**
+     * 从userInput中提取生产批次ID
+     * 支持格式: "批次号123", "生产批次ID:456", "BATCH-001", "PB-XXX"
+     */
+    private Long extractProductionBatchId(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        // 尝试匹配纯数字ID: "批次123", "生产批次456"
+        Pattern numericPattern = Pattern.compile("(?:批次号?|生产批次|批次ID)[：:]?\\s*(\\d+)", Pattern.CASE_INSENSITIVE);
+        Matcher numericMatcher = numericPattern.matcher(userInput);
+        if (numericMatcher.find()) {
+            try {
+                return Long.valueOf(numericMatcher.group(1));
+            } catch (NumberFormatException e) {
+                log.debug("无法解析批次ID数字: {}", numericMatcher.group(1));
+            }
+        }
+
+        // 尝试匹配批次编号格式: BATCH-001, PB-XXX (但这些是批次编号，不是ID)
+        // 注意：批次编号需要通过数据库查询转换为ID，这里仅提取数字ID
+        Pattern idOnlyPattern = Pattern.compile("\\b(\\d{1,10})\\b");
+        Matcher idMatcher = idOnlyPattern.matcher(userInput);
+        if (idMatcher.find()) {
+            // 只有当用户输入包含"批次"或"质检"等关键词时才提取数字
+            if (userInput.contains("批次") || userInput.contains("质检") || userInput.contains("处置")) {
+                try {
+                    return Long.valueOf(idMatcher.group(1));
+                } catch (NumberFormatException e) {
+                    log.debug("无法解析批次ID: {}", idMatcher.group(1));
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 从userInput中提取处置动作
+     * 支持中文关键词映射和英文代码
+     */
+    private String extractDispositionAction(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        String input = userInput.toLowerCase();
+
+        // 映射中文关键词到处置动作
+        if (input.contains("放行") && !input.contains("条件")) {
+            return "RELEASE";
+        }
+        if (input.contains("条件放行") || (input.contains("条件") && input.contains("放行"))) {
+            return "CONDITIONAL_RELEASE";
+        }
+        if (input.contains("返工") || input.contains("重新加工")) {
+            return "REWORK";
+        }
+        if (input.contains("报废") || input.contains("销毁")) {
+            return "SCRAP";
+        }
+        if (input.contains("特批") || input.contains("特殊批准")) {
+            return "SPECIAL_APPROVAL";
+        }
+        if (input.contains("待定") || input.contains("暂缓")) {
+            return "HOLD";
+        }
+
+        // 尝试匹配英文动作代码
+        Pattern englishPattern = Pattern.compile("\\b(RELEASE|CONDITIONAL_RELEASE|REWORK|SCRAP|SPECIAL_APPROVAL|HOLD)\\b", Pattern.CASE_INSENSITIVE);
+        Matcher englishMatcher = englishPattern.matcher(userInput);
+        if (englishMatcher.find()) {
+            return englishMatcher.group(1).toUpperCase();
+        }
+
+        return null;
     }
 }

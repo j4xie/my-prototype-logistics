@@ -5,11 +5,15 @@ import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.cache.SemanticCacheHit;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.IntentSemantics;
+import com.cretas.aims.dto.intent.IntentValidationFact;
+import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.exception.LlmSchemaValidationException;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentExecutorService;
 import com.cretas.aims.service.IntentSemanticsParser;
+import com.cretas.aims.service.LlmIntentFallbackClient;
+import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.SemanticCacheService;
 import com.cretas.aims.service.handler.IntentHandler;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -17,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -24,12 +29,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * AI意图执行服务实现
@@ -48,6 +56,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private final List<IntentHandler> handlers;
     private final IntentSemanticsParser semanticsParser;
     private final SemanticCacheService semanticCacheService;
+    private final RuleEngineService ruleEngineService;
+    private final LlmIntentFallbackClient llmFallbackClient;
     private final ObjectMapper objectMapper;
 
     // 处理器映射表: category -> handler
@@ -64,11 +74,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      List<IntentHandler> handlers,
                                      IntentSemanticsParser semanticsParser,
                                      SemanticCacheService semanticCacheService,
+                                     RuleEngineService ruleEngineService,
+                                     @Lazy LlmIntentFallbackClient llmFallbackClient,
                                      ObjectMapper objectMapper) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
         this.semanticsParser = semanticsParser;
         this.semanticCacheService = semanticCacheService;
+        this.ruleEngineService = ruleEngineService;
+        this.llmFallbackClient = llmFallbackClient;
         this.objectMapper = objectMapper;
     }
 
@@ -255,6 +269,25 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .build();
         }
 
+        // ====== DROOLS GATEWAY: 意图级业务规则验证 ======
+        ValidationResult validationResult = validateWithDrools(factoryId, intent, request, userId, userRole);
+        if (!validationResult.isValid()) {
+            log.warn("Drools规则验证失败: intentCode={}, violations={}",
+                    intent.getIntentCode(), validationResult.getViolations().size());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("VALIDATION_FAILED")
+                    .message("业务规则验证未通过: " + validationResult.getViolationsSummary())
+                    .validationViolations(validationResult.getViolations())
+                    .recommendations(validationResult.getRecommendations())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+        log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
+
         // 4. 路由到处理器
         String category = intent.getIntentCategory();
         IntentHandler handler = handlerMap.get(category);
@@ -279,6 +312,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         // 6. 执行 - 优先使用语义模式
         IntentExecuteResponse response = executeWithHandler(handler, factoryId, request, intent, userId, userRole);
+
+        // 6.5. 检查是否需要更多信息，生成澄清问题
+        if ("NEED_MORE_INFO".equals(response.getStatus())) {
+            response = enrichWithClarificationQuestions(response, request, intent, factoryId);
+        }
 
         // 7. 处理缓存：标记缓存命中和写入新结果
         processResponseCaching(factoryId, request, matchResult, response);
@@ -802,7 +840,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         log.info("使用显式意图代码执行: intentCode={}, factoryId={}", intentCode, factoryId);
 
         // 1. 根据意图代码查找配置
-        Optional<AIIntentConfig> intentOpt = aiIntentService.getIntentByCode(intentCode);
+        Optional<AIIntentConfig> intentOpt = aiIntentService.getIntentByCode(factoryId, intentCode);
         if (intentOpt.isEmpty()) {
             log.warn("未找到意图配置: intentCode={}", intentCode);
             return IntentExecuteResponse.builder()
@@ -940,6 +978,122 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     }
 
     /**
+     * Drools Gateway: 意图级业务规则验证
+     *
+     * @param factoryId 工厂ID
+     * @param intent    意图配置
+     * @param request   执行请求
+     * @param userId    用户ID
+     * @param userRole  用户角色
+     * @return 验证结果
+     */
+    private ValidationResult validateWithDrools(String factoryId, AIIntentConfig intent,
+                                                 IntentExecuteRequest request,
+                                                 Long userId, String userRole) {
+        try {
+            // 构建意图验证事实对象
+            IntentValidationFact fact = IntentValidationFact.builder()
+                    .intentCategory(intent.getIntentCategory())
+                    .operation(extractOperationType(intent))
+                    .timestamp(LocalDateTime.now())
+                    .recentOperationCount(0) // TODO: 从操作频率统计获取
+                    .targetFactoryId(factoryId)
+                    .currentFactoryId(factoryId)
+                    .userRole(userRole)
+                    .forceExecute(Boolean.TRUE.equals(request.getForceExecute()))
+                    .batchSize(extractBatchSize(request))
+                    .userId(userId)
+                    .username(extractUsername(request))
+                    .intentCode(intent.getIntentCode())
+                    .entityType(extractEntityType(request))
+                    .entityId(extractEntityId(request))
+                    .build();
+
+            // 调用 RuleEngineService 执行规则验证
+            ValidationResult result = ruleEngineService.executeRulesWithAudit(
+                    factoryId,
+                    "intentValidation",  // 规则组
+                    "INTENT",            // 实体类型
+                    intent.getIntentCode(), // 实体ID (使用意图代码)
+                    userId,              // 执行者ID
+                    extractUsername(request), // 执行者名称
+                    userRole,            // 执行者角色
+                    fact                 // Drools 事实对象
+            );
+
+            log.debug("Drools规则验证完成: intentCode={}, valid={}, violations={}, firedRules={}",
+                    intent.getIntentCode(), result.isValid(), result.getViolations().size(),
+                    result.getFiredRules());
+
+            return result;
+        } catch (Exception e) {
+            log.error("Drools规则验证异常: intentCode={}, error={}",
+                    intent.getIntentCode(), e.getMessage(), e);
+            // 验证异常时返回通过，避免阻塞业务（可根据需求调整为验证失败）
+            return ValidationResult.builder()
+                    .valid(true)
+                    .build();
+        }
+    }
+
+    /**
+     * 从意图配置中提取操作类型
+     */
+    private String extractOperationType(AIIntentConfig intent) {
+        String code = intent.getIntentCode();
+        if (code.contains("CREATE") || code.contains("ADD")) return "CREATE";
+        if (code.contains("UPDATE") || code.contains("MODIFY")) return "UPDATE";
+        if (code.contains("DELETE") || code.contains("REMOVE")) return "DELETE";
+        if (code.contains("QUERY") || code.contains("LIST") || code.contains("VIEW")) return "QUERY";
+        if (code.contains("BATCH")) return "BATCH_UPDATE";
+        return "QUERY"; // 默认为查询类型
+    }
+
+    /**
+     * 从请求中提取批量操作的记录数
+     */
+    private int extractBatchSize(IntentExecuteRequest request) {
+        if (request.getContext() == null) return 1;
+        Object batchSize = request.getContext().get("batchSize");
+        if (batchSize instanceof Integer) return (Integer) batchSize;
+        if (batchSize instanceof String) {
+            try {
+                return Integer.parseInt((String) batchSize);
+            } catch (NumberFormatException e) {
+                return 1;
+            }
+        }
+        return 1;
+    }
+
+    /**
+     * 从请求中提取用户名
+     */
+    private String extractUsername(IntentExecuteRequest request) {
+        if (request.getContext() == null) return "unknown";
+        Object username = request.getContext().get("username");
+        return username != null ? username.toString() : "unknown";
+    }
+
+    /**
+     * 从请求中提取实体类型
+     */
+    private String extractEntityType(IntentExecuteRequest request) {
+        if (request.getContext() == null) return null;
+        Object entityType = request.getContext().get("entityType");
+        return entityType != null ? entityType.toString() : null;
+    }
+
+    /**
+     * 从请求中提取实体ID
+     */
+    private String extractEntityId(IntentExecuteRequest request) {
+        if (request.getContext() == null) return null;
+        Object entityId = request.getContext().get("entityId");
+        return entityId != null ? entityId.toString() : null;
+    }
+
+    /**
      * 处理响应缓存：设置缓存命中标记 + 写入新缓存
      */
     private void processResponseCaching(String factoryId, IntentExecuteRequest request,
@@ -998,5 +1152,229 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             default:
                 return String.format("AI 无法准确理解您的意图「%s」，请重新描述或从常用操作中选择。", truncatedInput);
         }
+    }
+
+    /**
+     * 为 NEED_MORE_INFO 响应添加澄清问题
+     *
+     * 当 Handler 返回 NEED_MORE_INFO 状态时，此方法会：
+     * 1. 从硬编码的消息中提取缺失参数名称（括号内的内容）
+     * 2. 调用 LLM 生成更友好、更具体的澄清问题
+     * 3. 将生成的问题列表添加到响应中
+     *
+     * @param response 原始响应（包含硬编码的缺失参数消息）
+     * @param request 原始请求
+     * @param intent 意图配置
+     * @param factoryId 工厂ID
+     * @return 增强后的响应（包含 clarificationQuestions 字段）
+     */
+    private IntentExecuteResponse enrichWithClarificationQuestions(
+            IntentExecuteResponse response,
+            IntentExecuteRequest request,
+            AIIntentConfig intent,
+            String factoryId) {
+
+        try {
+            // 1. 从消息中提取缺失参数
+            List<String> missingParams = parseMissingParameters(response.getMessage());
+
+            if (missingParams.isEmpty()) {
+                log.debug("No parameters found in NEED_MORE_INFO message, skipping clarification enrichment");
+                return response;
+            }
+
+            log.info("Generating clarification questions for {} missing parameters: {}",
+                    missingParams.size(), missingParams);
+
+            // 2. 生成澄清问题
+            List<String> clarificationQuestions = generateClarificationQuestionsForMissingParams(
+                    missingParams,
+                    request.getUserInput(),
+                    intent,
+                    factoryId
+            );
+
+            // 3. 构建增强的响应
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(response.getIntentRecognized())
+                    .intentCode(response.getIntentCode())
+                    .intentName(response.getIntentName())
+                    .intentCategory(response.getIntentCategory())
+                    .status(response.getStatus())
+                    .message("需要更多信息来完成此操作")
+                    .clarificationQuestions(clarificationQuestions)
+                    .executedAt(response.getExecutedAt())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Failed to enrich clarification questions: intentCode={}, error={}",
+                    intent.getIntentCode(), e.getMessage(), e);
+            // 异常情况下返回原始响应（保留硬编码消息）
+            return response;
+        }
+    }
+
+    /**
+     * 从硬编码消息中提取缺失参数名称
+     *
+     * 解析格式如 "请提供批次ID (batchId) 和使用数量 (quantity)" 的消息，
+     * 提取括号中的参数名称。
+     *
+     * 示例：
+     * - 输入: "请提供批次ID (batchId) 和使用数量 (quantity)"
+     * - 输出: ["batchId", "quantity"]
+     *
+     * @param message 包含参数名称的消息
+     * @return 提取的参数名称列表
+     */
+    private List<String> parseMissingParameters(String message) {
+        List<String> params = new ArrayList<>();
+
+        if (message == null || message.isEmpty()) {
+            return params;
+        }
+
+        // 使用正则表达式提取所有括号中的内容
+        Pattern pattern = Pattern.compile("\\(([^)]+)\\)");
+        Matcher matcher = pattern.matcher(message);
+
+        while (matcher.find()) {
+            String param = matcher.group(1).trim();
+            if (!param.isEmpty()) {
+                params.add(param);
+            }
+        }
+
+        log.debug("Extracted {} parameters from message: {}", params.size(), params);
+        return params;
+    }
+
+    /**
+     * 为缺失参数生成澄清问题
+     *
+     * 当前实现为简化版本，使用规则生成问题。
+     * 未来可以集成 LLM 生成更自然的问题。
+     *
+     * @param missingParams 缺失的参数名称列表
+     * @param userInput 用户原始输入
+     * @param intent 意图配置
+     * @param factoryId 工厂ID
+     * @return 澄清问题列表
+     */
+    private List<String> generateClarificationQuestionsForMissingParams(
+            List<String> missingParams,
+            String userInput,
+            AIIntentConfig intent,
+            String factoryId) {
+
+        List<String> questions = new ArrayList<>();
+
+        // 为每个缺失参数生成一个问题
+        for (String param : missingParams) {
+            String question = generateQuestionForParameter(param, intent);
+            questions.add(question);
+        }
+
+        // 如果有多个参数，添加一个总结性问题
+        if (missingParams.size() > 1) {
+            questions.add("请提供以上所有必需信息，以便我能够帮您完成操作。");
+        }
+
+        return questions;
+    }
+
+    /**
+     * 为单个参数生成澄清问题
+     *
+     * 根据参数名称和意图上下文，生成用户友好的问题。
+     *
+     * @param paramName 参数名称
+     * @param intent 意图配置
+     * @return 生成的问题
+     */
+    private String generateQuestionForParameter(String paramName, AIIntentConfig intent) {
+        // 参数名称到友好问题的映射
+        String lowerParam = paramName.toLowerCase();
+
+        // 批次相关
+        if (lowerParam.contains("batchid")) {
+            return "请问您要操作哪个批次？请提供批次ID或批次号。";
+        } else if (lowerParam.contains("batchnumber")) {
+            return "请问批次号是多少？";
+        }
+
+        // 数量相关
+        else if (lowerParam.contains("quantity")) {
+            return "请问数量是多少？";
+        } else if (lowerParam.contains("newquantity")) {
+            return "请问要调整到多少数量？";
+        }
+
+        // ID相关
+        else if (lowerParam.contains("materialtypeid")) {
+            return "请问是哪种原材料？请提供原材料类型ID。";
+        } else if (lowerParam.contains("productid")) {
+            return "请问是哪个产品？请提供产品ID。";
+        } else if (lowerParam.contains("customerid")) {
+            return "请问是哪个客户？请提供客户ID或客户名称。";
+        } else if (lowerParam.contains("shipmentid")) {
+            return "请问是哪个出货记录？请提供出货记录ID。";
+        }
+
+        // 日期相关
+        else if (lowerParam.contains("startdate")) {
+            return "请问查询的起始日期是？格式：yyyy-MM-dd";
+        } else if (lowerParam.contains("enddate")) {
+            return "请问查询的结束日期是？格式：yyyy-MM-dd";
+        } else if (lowerParam.contains("date")) {
+            return "请问日期是？格式：yyyy-MM-dd";
+        }
+
+        // 原因/备注
+        else if (lowerParam.contains("reason")) {
+            return "请说明操作原因。";
+        } else if (lowerParam.contains("note") || lowerParam.contains("remark")) {
+            return "请提供备注信息。";
+        }
+
+        // 状态
+        else if (lowerParam.contains("status")) {
+            return "请问要设置为什么状态？";
+        }
+
+        // 通用处理
+        else {
+            // 将驼峰命名转换为更友好的显示
+            String friendlyName = convertCamelCaseToFriendly(paramName);
+            return String.format("请提供 %s。", friendlyName);
+        }
+    }
+
+    /**
+     * 将驼峰命名转换为友好的显示名称
+     *
+     * 例如：
+     * - batchId -> 批次ID
+     * - materialTypeId -> 原材料类型ID
+     *
+     * @param camelCase 驼峰命名的参数名
+     * @return 友好的显示名称
+     */
+    private String convertCamelCaseToFriendly(String camelCase) {
+        if (camelCase == null || camelCase.isEmpty()) {
+            return "参数";
+        }
+
+        // 简单实现：在大写字母前添加空格
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < camelCase.length(); i++) {
+            char c = camelCase.charAt(i);
+            if (i > 0 && Character.isUpperCase(c)) {
+                result.append(' ');
+            }
+            result.append(c);
+        }
+
+        return result.toString();
     }
 }

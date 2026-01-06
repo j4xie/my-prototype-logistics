@@ -14,6 +14,9 @@ import org.springframework.stereotype.Component;
 
 import com.cretas.aims.util.ErrorSanitizer;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -236,22 +239,18 @@ public class ShipmentIntentHandler implements IntentHandler {
             if (pageSize != null) size = pageSize;
         }
 
+        // 降级：从userInput提取shipmentNumber
+        if (shipmentNumber == null && request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            shipmentNumber = extractShipmentNumber(request.getUserInput());
+            if (shipmentNumber != null) {
+                log.debug("从userInput提取shipmentNumber: {}", shipmentNumber);
+            }
+        }
+
         // 按ID查询
         if (shipmentId != null) {
-            Optional<ShipmentRecord> record = shipmentRecordService.getById(shipmentId);
+            Optional<ShipmentRecord> record = shipmentRecordService.getByIdAndFactoryId(shipmentId, factoryId);
             if (record.isEmpty()) {
-                return IntentExecuteResponse.builder()
-                        .intentRecognized(true)
-                        .intentCode(intentConfig.getIntentCode())
-                        .status("FAILED")
-                        .message("未找到出货记录: " + shipmentId)
-                        .executedAt(LocalDateTime.now())
-                        .build();
-            }
-
-            // 工厂隔离验证
-            if (!factoryId.equals(record.get().getFactoryId())) {
-                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
@@ -275,20 +274,8 @@ public class ShipmentIntentHandler implements IntentHandler {
 
         // 按出货单号查询
         if (shipmentNumber != null) {
-            Optional<ShipmentRecord> record = shipmentRecordService.getByShipmentNumber(shipmentNumber);
+            Optional<ShipmentRecord> record = shipmentRecordService.getByShipmentNumberAndFactoryId(shipmentNumber, factoryId);
             if (record.isEmpty()) {
-                return IntentExecuteResponse.builder()
-                        .intentRecognized(true)
-                        .intentCode(intentConfig.getIntentCode())
-                        .status("FAILED")
-                        .message("未找到出货单: " + shipmentNumber)
-                        .executedAt(LocalDateTime.now())
-                        .build();
-            }
-
-            // 工厂隔离验证
-            if (!factoryId.equals(record.get().getFactoryId())) {
-                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
@@ -310,20 +297,8 @@ public class ShipmentIntentHandler implements IntentHandler {
 
         // 按物流单号查询
         if (trackingNumber != null) {
-            Optional<ShipmentRecord> record = shipmentRecordService.getByTrackingNumber(trackingNumber);
+            Optional<ShipmentRecord> record = shipmentRecordService.getByTrackingNumberAndFactoryId(trackingNumber, factoryId);
             if (record.isEmpty()) {
-                return IntentExecuteResponse.builder()
-                        .intentRecognized(true)
-                        .intentCode(intentConfig.getIntentCode())
-                        .status("FAILED")
-                        .message("未找到物流单号: " + trackingNumber)
-                        .executedAt(LocalDateTime.now())
-                        .build();
-            }
-
-            // 工厂隔离验证
-            if (!factoryId.equals(record.get().getFactoryId())) {
-                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
@@ -448,26 +423,48 @@ public class ShipmentIntentHandler implements IntentHandler {
      */
     private IntentExecuteResponse handleStatusUpdate(String factoryId, IntentExecuteRequest request,
                                                      AIIntentConfig intentConfig, Long userId) {
-        if (request.getContext() == null) {
-            return IntentExecuteResponse.builder()
-                    .intentRecognized(true)
-                    .intentCode(intentConfig.getIntentCode())
-                    .status("NEED_MORE_INFO")
-                    .message("请提供出货记录ID和新状态。\n有效状态: pending(待发货), shipped(已发货), delivered(已送达), returned(已退回)")
-                    .executedAt(LocalDateTime.now())
-                    .build();
+        String shipmentId = null;
+        String shipmentNumber = null;
+        String newStatus = null;
+
+        if (request.getContext() != null) {
+            Map<String, Object> ctx = request.getContext();
+            shipmentId = getStringFromContext(ctx, "shipmentId");
+            shipmentNumber = getStringFromContext(ctx, "shipmentNumber");
+            newStatus = getStringFromContext(ctx, "status");
         }
 
-        Map<String, Object> ctx = request.getContext();
-        String shipmentId = getStringFromContext(ctx, "shipmentId");
-        String newStatus = getStringFromContext(ctx, "status");
+        // 降级：从userInput提取shipmentNumber和status
+        if (request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            if (shipmentNumber == null) {
+                shipmentNumber = extractShipmentNumber(request.getUserInput());
+                if (shipmentNumber != null) {
+                    log.debug("从userInput提取shipmentNumber: {}", shipmentNumber);
+                }
+            }
+            if (newStatus == null) {
+                newStatus = extractStatusFromInput(request.getUserInput());
+                if (newStatus != null) {
+                    log.debug("从userInput提取status: {}", newStatus);
+                }
+            }
+        }
+
+        // 如果有shipmentNumber但没有shipmentId，通过shipmentNumber查询
+        if (shipmentId == null && shipmentNumber != null) {
+            Optional<ShipmentRecord> record = shipmentRecordService.getByShipmentNumber(shipmentNumber);
+            if (record.isPresent() && factoryId.equals(record.get().getFactoryId())) {
+                shipmentId = record.get().getId().toString();
+                log.debug("通过shipmentNumber查询到shipmentId: {}", shipmentId);
+            }
+        }
 
         if (shipmentId == null || newStatus == null) {
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("NEED_MORE_INFO")
-                    .message("请提供 shipmentId 和 status")
+                    .message("请提供出货单号和新状态。\n有效状态: pending(待发货), shipped(已发货), delivered(已送达), returned(已退回)")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -546,12 +543,20 @@ public class ShipmentIntentHandler implements IntentHandler {
             customerId = getStringFromContext(request.getContext(), "customerId");
         }
 
+        // 降级：从userInput提取customerId
+        if (customerId == null && request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            customerId = extractCustomerId(request.getUserInput());
+            if (customerId != null) {
+                log.debug("从userInput提取customerId: {}", customerId);
+            }
+        }
+
         if (customerId == null) {
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("NEED_MORE_INFO")
-                    .message("请提供客户ID (customerId)")
+                    .message("请提供客户ID或客户名称")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -865,5 +870,77 @@ public class ShipmentIntentHandler implements IntentHandler {
             case "returned" -> "已退回";
             default -> status;
         };
+    }
+
+    /**
+     * 从用户输入提取出货单号
+     * 支持格式: SH-XXX, SHIP-XXX, 出货单SH-001等
+     */
+    private String extractShipmentNumber(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        // 匹配出货单号格式: SH-XXX 或 SHIP-XXX
+        Pattern pattern = Pattern.compile("(?:出货单号?[：:]?\\s*)?(SH-\\w+|SHIP-\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(userInput);
+        if (matcher.find()) {
+            return matcher.group(1).toUpperCase();
+        }
+
+        return null;
+    }
+
+    /**
+     * 从用户输入提取状态值
+     * 支持中文状态描述，映射为英文常量
+     */
+    private String extractStatusFromInput(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        // 匹配状态关键词
+        Pattern pattern = Pattern.compile("(?:状态[为是]?|改[为成]|设置为|更新为)[：:]?\\s*(待发货|已发货|已送达|已退回|pending|shipped|delivered|returned)", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(userInput);
+        if (matcher.find()) {
+            String status = matcher.group(1);
+            // 映射中文状态到英文
+            return switch (status) {
+                case "待发货" -> "pending";
+                case "已发货" -> "shipped";
+                case "已送达" -> "delivered";
+                case "已退回" -> "returned";
+                default -> status.toLowerCase();
+            };
+        }
+
+        return null;
+    }
+
+    /**
+     * 从用户输入提取客户ID或客户名称
+     * 支持格式: C-XXX, CUST-XXX, 客户XXX
+     */
+    private String extractCustomerId(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        // 优先匹配客户ID格式: C-XXX 或 CUST-XXX
+        Pattern idPattern = Pattern.compile("(?:客户[ID编]?号?[：:]?\\s*)?(C-\\w+|CUST-\\w+)", Pattern.CASE_INSENSITIVE);
+        Matcher idMatcher = idPattern.matcher(userInput);
+        if (idMatcher.find()) {
+            return idMatcher.group(1).toUpperCase();
+        }
+
+        // 尝试匹配客户名称格式: "客户XXX"
+        Pattern namePattern = Pattern.compile("客户[：:]?\\s*([\\u4e00-\\u9fa5a-zA-Z0-9]+)");
+        Matcher nameMatcher = namePattern.matcher(userInput);
+        if (nameMatcher.find()) {
+            return nameMatcher.group(1);
+        }
+
+        return null;
     }
 }

@@ -34,6 +34,16 @@ yarn-error.log*
 dist/
 build/
 out/
+target/
+*.jar
+*.war
+*.zip
+*.msi
+*.exe
+
+# iOS依赖
+ios/Pods/
+Pods/
 
 # 临时文件
 tmp/

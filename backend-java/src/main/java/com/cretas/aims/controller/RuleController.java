@@ -56,7 +56,7 @@ public class RuleController {
      */
     @GetMapping
     @Operation(summary = "获取规则列表", description = "分页获取工厂的规则列表")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Map<String, Object>> getRules(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(defaultValue = "1") @Parameter(description = "页码（1-based）", example = "1") int page,
@@ -90,7 +90,7 @@ public class RuleController {
      */
     @PostMapping
     @Operation(summary = "创建规则", description = "创建新的 DRL 规则")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<DroolsRule> createRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "规则创建请求，包含规则组、规则名、DRL内容等") CreateRuleRequest request,
@@ -138,7 +138,7 @@ public class RuleController {
      */
     @PutMapping("/{ruleId}")
     @Operation(summary = "更新规则", description = "更新规则内容")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<DroolsRule> updateRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "规则ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId,
@@ -192,7 +192,7 @@ public class RuleController {
      */
     @DeleteMapping("/{ruleId}")
     @Operation(summary = "删除规则", description = "软删除规则")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<String> deleteRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "规则ID（UUID格式）", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890") String ruleId
@@ -224,7 +224,7 @@ public class RuleController {
      */
     @PostMapping("/validate")
     @Operation(summary = "验证规则语法", description = "验证 DRL 规则语法是否正确")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Map<String, Object>> validateRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Parameter(description = "规则验证请求，包含 ruleContent 字段存放DRL规则内容") Map<String, String> request
@@ -246,7 +246,7 @@ public class RuleController {
      */
     @PostMapping("/dry-run")
     @Operation(summary = "Dry-Run 规则执行", description = "在沙箱环境中测试未保存的规则，预览执行效果")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Map<String, Object>> dryRunRule(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @Valid @RequestBody @Parameter(description = "Dry-Run请求，包含DRL规则内容、实体类型、触发点和测试数据") DryRunRequest request
@@ -403,7 +403,7 @@ public class RuleController {
      */
     @PostMapping("/decision-table")
     @Operation(summary = "上传决策表", description = "上传 Excel 决策表并生成 DRL 规则")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Map<String, Object>> uploadDecisionTable(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam("file") @Parameter(description = "Excel决策表文件（.xls或.xlsx格式）") MultipartFile file,
@@ -462,7 +462,7 @@ public class RuleController {
      */
     @GetMapping("/statistics")
     @Operation(summary = "获取规则统计", description = "获取规则引擎统计信息")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Map<String, Object>> getStatistics(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
@@ -482,7 +482,7 @@ public class RuleController {
      */
     @GetMapping("/state-machines")
     @Operation(summary = "获取状态机列表", description = "获取工厂所有状态机配置")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<List<StateMachineConfig>> getStateMachines(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId
     ) {
@@ -495,7 +495,7 @@ public class RuleController {
      */
     @GetMapping("/state-machines/{entityType}")
     @Operation(summary = "获取状态机详情", description = "获取指定实体类型的状态机配置")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<StateMachineConfig> getStateMachine(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType
@@ -512,7 +512,7 @@ public class RuleController {
      */
     @PostMapping("/state-machines/{entityType}")
     @Operation(summary = "保存状态机配置", description = "创建或更新状态机配置")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<StateMachineConfig> saveStateMachine(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType,
@@ -532,7 +532,7 @@ public class RuleController {
      */
     @DeleteMapping("/state-machines/{entityType}")
     @Operation(summary = "删除状态机配置", description = "删除指定实体类型的状态机配置")
-    @PreAuthorize("hasAnyAuthority('factory_super_admin', 'department_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<String> deleteStateMachine(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "实体类型", example = "PROCESSING_BATCH") String entityType

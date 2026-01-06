@@ -8,6 +8,11 @@
 export { IntentCandidateSelector } from './IntentCandidateSelector';
 export type { IntentCandidateSelectorProps } from './IntentCandidateSelector';
 
+export { ClarificationDialog } from './ClarificationDialog';
+export type { ClarificationDialogProps } from './ClarificationDialog';
+
+export { ClarificationDialogIntegrationExample } from './ClarificationDialogIntegrationExample';
+
 // Re-export intent types for convenience
 export type {
   IntentMatchMethod,
@@ -18,6 +23,7 @@ export type {
   IntentRecognizeResponse,
   IntentSelectionCallbacks,
   IntentExecuteResponse,
+  MissingParameter,
 } from '../../types/intent';
 
 export {
