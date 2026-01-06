@@ -5,6 +5,7 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.enums.DeviceCategory;
 import com.cretas.aims.entity.scale.ScaleBrandModel;
 import com.cretas.aims.repository.EquipmentRepository;
@@ -596,7 +597,7 @@ public class ScaleDeviceIntentHandler {
 
         // 过滤 IoT 秤设备
         List<FactoryEquipment> scaleDevices = devices.stream()
-                .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                 .filter(e -> statusFilter == null || e.getStatus().equalsIgnoreCase(statusFilter))
                 .filter(e -> keywordFilter == null ||
                         e.getEquipmentName().toLowerCase().contains(keywordFilter.toLowerCase()) ||
@@ -726,7 +727,7 @@ public class ScaleDeviceIntentHandler {
             String finalDeviceCode = deviceCode;
             List<FactoryEquipment> devices = equipmentRepository.findByFactoryId(factoryId);
             deviceOpt = devices.stream()
-                    .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                    .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                     .filter(e -> e.getEquipmentCode().equalsIgnoreCase(finalDeviceCode))
                     .findFirst();
         }
@@ -840,7 +841,7 @@ public class ScaleDeviceIntentHandler {
         }
 
         FactoryEquipment device = deviceOpt.get();
-        if (device.getDeviceCategory() != DeviceCategory.IOT_SCALE) {
+        if (device.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) {
             return buildFailedResponse(intentConfig, "该设备不是 IoT 电子秤");
         }
 
@@ -944,7 +945,7 @@ public class ScaleDeviceIntentHandler {
         }
 
         FactoryEquipment device = deviceOpt.get();
-        if (device.getDeviceCategory() != DeviceCategory.IOT_SCALE) {
+        if (device.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) {
             return buildFailedResponse(intentConfig, "该设备不是 IoT 电子秤");
         }
 

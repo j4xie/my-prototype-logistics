@@ -4,6 +4,7 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.intent.CleanupRequest;
+import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.intent.KeywordEffectiveness;
 import com.cretas.aims.utils.JwtUtil;
@@ -53,42 +54,42 @@ public class AIIntentConfigController {
     // ==================== 意图查询 ====================
 
     @GetMapping
-    @Operation(summary = "获取所有意图配置", description = "获取所有启用的AI意图配置列表")
+    @Operation(summary = "获取所有意图配置", description = "获取所有启用的AI意图配置列表（租户隔离）")
     public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getAllIntents(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 
-        List<AIIntentConfig> intents = aiIntentService.getAllIntents();
+        List<AIIntentConfig> intents = aiIntentService.getAllIntents(factoryId);
         return ResponseEntity.ok(ApiResponse.success(intents));
     }
 
     @GetMapping("/category/{category}")
-    @Operation(summary = "按分类获取意图", description = "根据分类获取意图配置列表")
+    @Operation(summary = "按分类获取意图", description = "根据分类获取意图配置列表（租户隔离）")
     public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getIntentsByCategory(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图分类 (ANALYSIS, DATA_OP, FORM, SCHEDULE, SYSTEM)")
             @PathVariable String category) {
 
-        List<AIIntentConfig> intents = aiIntentService.getIntentsByCategory(category);
+        List<AIIntentConfig> intents = aiIntentService.getIntentsByCategory(factoryId, category);
         return ResponseEntity.ok(ApiResponse.success(intents));
     }
 
     @GetMapping("/categories")
-    @Operation(summary = "获取所有分类", description = "获取所有可用的意图分类列表")
+    @Operation(summary = "获取所有分类", description = "获取所有可用的意图分类列表（租户隔离）")
     public ResponseEntity<ApiResponse<List<String>>> getAllCategories(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 
-        List<String> categories = aiIntentService.getAllCategories();
+        List<String> categories = aiIntentService.getAllCategories(factoryId);
         return ResponseEntity.ok(ApiResponse.success(categories));
     }
 
     @GetMapping("/sensitivity/{level}")
-    @Operation(summary = "按敏感度获取意图", description = "根据敏感度级别获取意图配置")
+    @Operation(summary = "按敏感度获取意图", description = "根据敏感度级别获取意图配置（租户隔离）")
     public ResponseEntity<ApiResponse<List<AIIntentConfig>>> getIntentsBySensitivity(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "敏感度级别 (LOW, MEDIUM, HIGH, CRITICAL)")
             @PathVariable String level) {
 
-        List<AIIntentConfig> intents = aiIntentService.getIntentsBySensitivity(level);
+        List<AIIntentConfig> intents = aiIntentService.getIntentsBySensitivity(factoryId, level);
         return ResponseEntity.ok(ApiResponse.success(intents));
     }
 
@@ -132,7 +133,7 @@ public class AIIntentConfigController {
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode) {
 
-        return aiIntentService.getIntentByCode(intentCode)
+        return aiIntentService.getIntentByCode(factoryId, intentCode)
                 .map(i -> ResponseEntity.ok(ApiResponse.success(i)))
                 .orElse(ResponseEntity.ok(ApiResponse.error("意图配置不存在: " + intentCode)));
     }
@@ -140,27 +141,33 @@ public class AIIntentConfigController {
     // ==================== 意图识别 ====================
 
     @PostMapping("/recognize")
-    @Operation(summary = "测试意图识别", description = "输入文本测试意图识别结果")
+    @Operation(summary = "测试意图识别", description = "输入文本测试意图识别结果（支持操作类型检测）")
     public ResponseEntity<ApiResponse<IntentRecognitionResult>> recognizeIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody IntentRecognitionRequest request) {
 
         log.debug("Recognizing intent for input: {}", request.getUserInput());
 
-        Optional<AIIntentConfig> matchedIntent = aiIntentService.recognizeIntent(request.getUserInput());
+        // 使用带操作类型检测的增强版识别方法 (BUG-001/002 修复)
+        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
+                request.getUserInput(), factoryId, 1);
 
         IntentRecognitionResult result = new IntentRecognitionResult();
         result.setUserInput(request.getUserInput());
-        result.setMatched(matchedIntent.isPresent());
+        result.setMatched(matchResult.hasMatch());
 
-        if (matchedIntent.isPresent()) {
-            AIIntentConfig intent = matchedIntent.get();
+        if (matchResult.hasMatch()) {
+            AIIntentConfig intent = matchResult.getBestMatch();
             result.setIntentCode(intent.getIntentCode());
             result.setIntentName(intent.getIntentName());
             result.setCategory(intent.getIntentCategory());
             result.setSensitivityLevel(intent.getSensitivityLevel());
             result.setQuotaCost(intent.getQuotaCost());
             result.setRequiresApproval(intent.needsApproval());
+            // 额外添加置信度和匹配方法信息
+            result.setConfidence(matchResult.getConfidence());
+            result.setMatchMethod(matchResult.getMatchMethod() != null ?
+                    matchResult.getMatchMethod().name() : null);
         }
 
         return ResponseEntity.ok(ApiResponse.success(result));
@@ -172,7 +179,7 @@ public class AIIntentConfigController {
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody IntentRecognitionRequest request) {
 
-        List<AIIntentConfig> matchedIntents = aiIntentService.recognizeAllIntents(request.getUserInput());
+        List<AIIntentConfig> matchedIntents = aiIntentService.recognizeAllIntents(factoryId, request.getUserInput());
         return ResponseEntity.ok(ApiResponse.success(matchedIntents));
     }
 
@@ -343,7 +350,7 @@ public class AIIntentConfigController {
         String username = jwtUtil.getUsernameFromToken(token);
 
         // 先获取配置ID
-        AIIntentConfig config = aiIntentService.getIntentByCode(intentCode)
+        AIIntentConfig config = aiIntentService.getIntentByCode(factoryId, intentCode)
                 .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
 
         AIIntentConfig rolled = rollbackService.rollbackToLastVersion(
@@ -359,7 +366,7 @@ public class AIIntentConfigController {
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode) {
 
-        AIIntentConfig config = aiIntentService.getIntentByCode(intentCode)
+        AIIntentConfig config = aiIntentService.getIntentByCode(factoryId, intentCode)
                 .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
 
         java.util.List<AIIntentConfigHistory> history = rollbackService.getVersionHistory(config.getId());
@@ -467,6 +474,8 @@ public class AIIntentConfigController {
         private String sensitivityLevel;
         private Integer quotaCost;
         private Boolean requiresApproval;
+        private Double confidence;      // 匹配置信度 (BUG-001/002 修复新增)
+        private String matchMethod;     // 匹配方法 (REGEX/KEYWORD/SEMANTIC/LLM)
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.cretas.aims.dto.ai;
 
+import com.cretas.aims.dto.intent.ValidationResult;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -76,6 +77,7 @@ public class IntentExecuteResponse {
      * PREVIEW - 预览模式
      * NO_PERMISSION - 无权限
      * NOT_RECOGNIZED - 未识别到意图
+     * NEED_MORE_INFO - 需要更多信息
      */
     private String status;
 
@@ -85,9 +87,36 @@ public class IntentExecuteResponse {
     private String message;
 
     /**
+     * 澄清问题列表 (当 status=NEED_MORE_INFO 时返回)
+     * 用于引导用户提供缺失的必需参数
+     * LLM生成的自然语言问题，比硬编码消息更友好
+     */
+    private List<String> clarificationQuestions;
+
+    /**
+     * 缺失的参数列表 (技术元数据)
+     * 提供结构化的参数信息，供前端生成表单或进一步处理
+     */
+    private List<MissingParameter> missingParameters;
+
+    /**
      * 配额消耗
      */
     private Integer quotaCost;
+
+    // ==================== Drools 规则验证 ====================
+
+    /**
+     * 规则验证违规列表
+     * 仅在 status=VALIDATION_FAILED 时返回
+     */
+    private List<ValidationResult.Violation> validationViolations;
+
+    /**
+     * 规则验证建议列表
+     * 来自 Drools 规则引擎的操作建议
+     */
+    private List<String> recommendations;
 
     // ==================== 执行结果 ====================
 
@@ -203,5 +232,50 @@ public class IntentExecuteResponse {
         private String description;
         private Integer expiresInSeconds;
         private Map<String, Object> previewData;
+    }
+
+    /**
+     * 缺失参数信息
+     * 当需要更多信息时，描述具体缺失了哪些参数及其详细信息
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MissingParameter {
+        /**
+         * 参数名称（技术名称，如 batchId）
+         */
+        private String parameterName;
+
+        /**
+         * 显示名称（用户友好，如 "批次编号"）
+         */
+        private String displayName;
+
+        /**
+         * 参数类型
+         */
+        private String parameterType; // STRING, NUMBER, BOOLEAN, DATE, ENUM
+
+        /**
+         * 是否必需
+         */
+        private Boolean required;
+
+        /**
+         * 参数说明
+         */
+        private String description;
+
+        /**
+         * 可能的值（用于枚举类型）
+         */
+        private List<String> possibleValues;
+
+        /**
+         * 验证规则提示（如：必须大于0，长度不超过20）
+         */
+        private String validationHint;
     }
 }

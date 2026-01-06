@@ -9,6 +9,7 @@ import com.cretas.aims.dto.intent.IntentMatchResult.MatchMethod;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentSemanticsParser;
+import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.SemanticCacheService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,6 +52,9 @@ class IntentExecutorStreamIT {
     private IntentSemanticsParser semanticsParser;
 
     @Mock
+    private RuleEngineService ruleEngineService;
+
+    @Mock
     private ObjectMapper objectMapper;
 
     private IntentExecutorServiceImpl intentExecutorService;
@@ -68,6 +72,7 @@ class IntentExecutorStreamIT {
                 Collections.emptyList(), // handlers
                 semanticsParser,
                 semanticCacheService,
+                ruleEngineService,
                 objectMapper
         );
     }

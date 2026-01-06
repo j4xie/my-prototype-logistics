@@ -480,7 +480,7 @@ class ScaleIntentHandlerTest {
         AIIntentConfig config = new AIIntentConfig();
         config.setIntentCode(intentCode);
         config.setIntentName(intentName);
-        config.setCategory("SCALE");
+        config.setIntentCategory("SCALE");
         return config;
     }
 

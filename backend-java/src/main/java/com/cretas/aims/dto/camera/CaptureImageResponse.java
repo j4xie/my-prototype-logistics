@@ -46,5 +46,10 @@ public class CaptureImageResponse {
      * 图像文件大小（字节）
      */
     private Long fileSize;
+
+    /**
+     * 图像数据（字节数组）
+     */
+    private byte[] imageData;
 }
 

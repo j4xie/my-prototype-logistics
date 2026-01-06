@@ -124,6 +124,55 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     @Override
+    public Optional<AIIntentConfig> recognizeIntent(String factoryId, String userInput) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("recognizeIntent called without factoryId, returning empty");
+            return Optional.empty();
+        }
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return Optional.empty();
+        }
+
+        List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+        String normalizedInput = userInput.toLowerCase().trim();
+
+        // 优先使用正则匹配
+        for (AIIntentConfig intent : allIntents) {
+            if (matchesByRegex(intent, normalizedInput)) {
+                log.debug("Intent matched by regex: {} for input: {} (factoryId: {})",
+                         intent.getIntentCode(), userInput, factoryId);
+                return Optional.of(intent);
+            }
+        }
+
+        // 然后使用关键词匹配
+        List<AIIntentConfig> keywordMatches = new ArrayList<>();
+        for (AIIntentConfig intent : allIntents) {
+            int matchScore = calculateKeywordMatchScore(intent, normalizedInput);
+            if (matchScore > 0) {
+                keywordMatches.add(intent);
+            }
+        }
+
+        // 按优先级和匹配分数排序，返回最佳匹配
+        if (!keywordMatches.isEmpty()) {
+            keywordMatches.sort((a, b) -> {
+                int priorityCompare = b.getPriority().compareTo(a.getPriority());
+                if (priorityCompare != 0) return priorityCompare;
+                return calculateKeywordMatchScore(b, normalizedInput) -
+                       calculateKeywordMatchScore(a, normalizedInput);
+            });
+            AIIntentConfig bestMatch = keywordMatches.get(0);
+            log.debug("Intent matched by keywords: {} for input: {} (factoryId: {})",
+                     bestMatch.getIntentCode(), userInput, factoryId);
+            return Optional.of(bestMatch);
+        }
+
+        log.debug("No intent matched for input: {} (factoryId: {})", userInput, factoryId);
+        return Optional.empty();
+    }
+
+    @Override
     public List<AIIntentConfig> recognizeAllIntents(String userInput) {
         if (userInput == null || userInput.trim().isEmpty()) {
             return Collections.emptyList();
@@ -137,6 +186,30 @@ public class AIIntentServiceImpl implements AIIntentService {
                                   calculateKeywordMatchScore(intent, normalizedInput) > 0)
                 .sorted(Comparator.comparing(AIIntentConfig::getPriority).reversed())
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<AIIntentConfig> recognizeAllIntents(String factoryId, String userInput) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("recognizeAllIntents called without factoryId, returning empty list");
+            return Collections.emptyList();
+        }
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+        String normalizedInput = userInput.toLowerCase().trim();
+
+        List<AIIntentConfig> matches = allIntents.stream()
+                .filter(intent -> matchesByRegex(intent, normalizedInput) ||
+                                  calculateKeywordMatchScore(intent, normalizedInput) > 0)
+                .sorted(Comparator.comparing(AIIntentConfig::getPriority).reversed())
+                .collect(Collectors.toList());
+
+        log.debug("Found {} matching intents for input: {} (factoryId: {})",
+                 matches.size(), userInput, factoryId);
+        return matches;
     }
 
     @Override
@@ -159,8 +232,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                 log.info("精确表达匹配成功: intent={}, expr={}",
                         match.getIntentCode(), truncate(match.getExpression(), 50));
 
-                // 查找对应的意图配置
-                Optional<AIIntentConfig> intentOpt = getAllIntents().stream()
+                // 查找对应的意图配置（使用租户隔离）
+                Optional<AIIntentConfig> intentOpt = getAllIntents(factoryId).stream()
                         .filter(i -> i.getIntentCode().equals(match.getIntentCode()))
                         .findFirst();
 
@@ -196,7 +269,8 @@ public class AIIntentServiceImpl implements AIIntentService {
             log.warn("精确表达匹配异常: {}", e.getMessage());
         }
 
-        List<AIIntentConfig> allIntents = getAllIntents();
+        // 使用租户隔离获取意图配置
+        List<AIIntentConfig> allIntents = getAllIntents(factoryId);
         String normalizedInput = userInput.toLowerCase().trim();
 
         // 收集所有匹配结果及其分数
@@ -811,13 +885,56 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     @Override
+    @Deprecated
     public Optional<AIIntentConfig> getIntentByCode(String intentCode) {
         return intentRepository.findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(intentCode);
+    }
+
+    @Override
+    public Optional<AIIntentConfig> getIntentByCode(String factoryId, String intentCode) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("getIntentByCode called without factoryId, returning empty");
+            return Optional.empty();
+        }
+        if (intentCode == null || intentCode.isBlank()) {
+            return Optional.empty();
+        }
+
+        // 使用租户隔离：从工厂级+平台级意图中查找
+        return getAllIntents(factoryId).stream()
+                .filter(intent -> intentCode.equals(intent.getIntentCode()))
+                .findFirst();
     }
 
     // ==================== 权限校验 ====================
 
     @Override
+    public boolean hasPermission(String factoryId, String intentCode, String userRole) {
+        Optional<AIIntentConfig> intentOpt = getIntentByCode(factoryId, intentCode);
+        if (intentOpt.isEmpty()) {
+            return false;
+        }
+
+        AIIntentConfig intent = intentOpt.get();
+        String requiredRolesJson = intent.getRequiredRoles();
+
+        // 如果没有配置角色限制，则所有角色都可以访问
+        if (requiredRolesJson == null || requiredRolesJson.isEmpty()) {
+            return true;
+        }
+
+        try {
+            List<String> requiredRoles = objectMapper.readValue(requiredRolesJson,
+                    new TypeReference<List<String>>() {});
+            return requiredRoles.isEmpty() || requiredRoles.contains(userRole);
+        } catch (Exception e) {
+            log.warn("Failed to parse required roles for intent {}: {}", intentCode, e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    @Deprecated
     public boolean hasPermission(String intentCode, String userRole) {
         Optional<AIIntentConfig> intentOpt = getIntentByCode(intentCode);
         if (intentOpt.isEmpty()) {
@@ -843,6 +960,14 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     @Override
+    public boolean requiresApproval(String factoryId, String intentCode) {
+        return getIntentByCode(factoryId, intentCode)
+                .map(AIIntentConfig::needsApproval)
+                .orElse(false);
+    }
+
+    @Override
+    @Deprecated
     public boolean requiresApproval(String intentCode) {
         return getIntentByCode(intentCode)
                 .map(AIIntentConfig::needsApproval)
@@ -850,6 +975,14 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     @Override
+    public Optional<String> getApprovalChainId(String factoryId, String intentCode) {
+        return getIntentByCode(factoryId, intentCode)
+                .filter(AIIntentConfig::needsApproval)
+                .map(AIIntentConfig::getApprovalChainId);
+    }
+
+    @Override
+    @Deprecated
     public Optional<String> getApprovalChainId(String intentCode) {
         return getIntentByCode(intentCode)
                 .filter(AIIntentConfig::needsApproval)
@@ -859,6 +992,14 @@ public class AIIntentServiceImpl implements AIIntentService {
     // ==================== 配额管理 ====================
 
     @Override
+    public int getQuotaCost(String factoryId, String intentCode) {
+        return getIntentByCode(factoryId, intentCode)
+                .map(AIIntentConfig::getQuotaCost)
+                .orElse(1);
+    }
+
+    @Override
+    @Deprecated
     public int getQuotaCost(String intentCode) {
         return getIntentByCode(intentCode)
                 .map(AIIntentConfig::getQuotaCost)
@@ -866,34 +1007,101 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     @Override
+    public int getCacheTtl(String factoryId, String intentCode) {
+        return getIntentByCode(factoryId, intentCode)
+                .map(AIIntentConfig::getCacheTtlMinutes)
+                .orElse(0);
+    }
+
+    @Override
+    @Deprecated
     public int getCacheTtl(String intentCode) {
         return getIntentByCode(intentCode)
                 .map(AIIntentConfig::getCacheTtlMinutes)
                 .orElse(0);
     }
 
-    // ==================== 意图查询 ====================
+    // ==================== 意图查询 (租户隔离) ====================
 
     @Override
-    @Cacheable(value = "allIntents")
+    @Cacheable(value = "allIntents", key = "#factoryId")
+    public List<AIIntentConfig> getAllIntents(String factoryId) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("getAllIntents called without factoryId, returning empty list");
+            return List.of();
+        }
+        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId);
+    }
+
+    @Override
+    @Cacheable(value = "intentsByCategory", key = "#factoryId + ':' + #category")
+    public List<AIIntentConfig> getIntentsByCategory(String factoryId, String category) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("getIntentsByCategory called without factoryId");
+            return List.of();
+        }
+        // 查询工厂级和平台级意图，按分类过滤
+        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId).stream()
+                .filter(c -> category.equals(c.getIntentCategory()))
+                .toList();
+    }
+
+    @Override
+    @Cacheable(value = "intentsBySensitivity", key = "#factoryId + ':' + #sensitivityLevel")
+    public List<AIIntentConfig> getIntentsBySensitivity(String factoryId, String sensitivityLevel) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("getIntentsBySensitivity called without factoryId");
+            return List.of();
+        }
+        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId).stream()
+                .filter(c -> sensitivityLevel.equals(c.getSensitivityLevel()))
+                .toList();
+    }
+
+    @Override
+    @Cacheable(value = "intentCategories", key = "#factoryId")
+    public List<String> getAllCategories(String factoryId) {
+        if (factoryId == null || factoryId.isBlank()) {
+            log.warn("getAllCategories called without factoryId");
+            return List.of();
+        }
+        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId).stream()
+                .map(AIIntentConfig::getIntentCategory)
+                .distinct()
+                .sorted()
+                .toList();
+    }
+
+    // ==================== 意图查询 (无租户隔离, 向后兼容) ====================
+
+    @Override
+    @Deprecated
+    @Cacheable(value = "allIntents_legacy")
     public List<AIIntentConfig> getAllIntents() {
+        log.warn("Deprecated getAllIntents() called without factoryId - consider using getAllIntents(factoryId)");
         return intentRepository.findByIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc();
     }
 
     @Override
-    @Cacheable(value = "intentsByCategory", key = "#category")
+    @Deprecated
+    @Cacheable(value = "intentsByCategory_legacy", key = "#category")
     public List<AIIntentConfig> getIntentsByCategory(String category) {
+        log.warn("Deprecated getIntentsByCategory() called without factoryId");
         return intentRepository.findByIntentCategoryAndIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc(category);
     }
 
     @Override
+    @Deprecated
     public List<AIIntentConfig> getIntentsBySensitivity(String sensitivityLevel) {
+        log.warn("Deprecated getIntentsBySensitivity() called without factoryId");
         return intentRepository.findBySensitivityLevelAndIsActiveTrueAndDeletedAtIsNull(sensitivityLevel);
     }
 
     @Override
-    @Cacheable(value = "intentCategories")
+    @Deprecated
+    @Cacheable(value = "intentCategories_legacy")
     public List<String> getAllCategories() {
+        log.warn("Deprecated getAllCategories() called without factoryId");
         return intentRepository.findAllCategories();
     }
 
@@ -901,7 +1109,8 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public AIIntentConfig createIntent(AIIntentConfig intentConfig) {
         if (intentRepository.existsByIntentCodeAndDeletedAtIsNull(intentConfig.getIntentCode())) {
             throw new IllegalArgumentException("意图代码已存在: " + intentConfig.getIntentCode());
@@ -912,7 +1121,8 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public AIIntentConfig updateIntent(AIIntentConfig intentConfig) {
         AIIntentConfig existing = intentRepository
                 .findByIntentCodeAndDeletedAtIsNull(intentConfig.getIntentCode())
@@ -978,7 +1188,8 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public void deleteIntent(String intentCode) {
         AIIntentConfig existing = intentRepository
                 .findByIntentCodeAndDeletedAtIsNull(intentCode)
@@ -990,7 +1201,8 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory"}, allEntries = true)
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public void setIntentActive(String intentCode, boolean active) {
         AIIntentConfig existing = intentRepository
                 .findByIntentCodeAndDeletedAtIsNull(intentCode)
@@ -1003,7 +1215,8 @@ public class AIIntentServiceImpl implements AIIntentService {
     // ==================== 缓存管理 ====================
 
     @Override
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
+            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public void clearCache() {
         log.info("Cleared AI intent config cache");
     }

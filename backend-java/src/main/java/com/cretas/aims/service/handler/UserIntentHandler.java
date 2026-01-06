@@ -188,9 +188,12 @@ public class UserIntentHandler implements IntentHandler {
             }
         }
 
-        // 尝试从用户输入中解析用户名
-        if (targetUserId == null && targetUsername == null) {
-            targetUsername = extractUsernameFromInput(userInput);
+        // 降级：从userInput提取username
+        if (targetUsername == null && request.getUserInput() != null && !request.getUserInput().isEmpty()) {
+            targetUsername = extractUsername(request.getUserInput());
+            if (targetUsername != null) {
+                log.debug("从userInput提取username: {}", targetUsername);
+            }
         }
 
         if (targetUserId == null && targetUsername == null) {
@@ -380,6 +383,39 @@ public class UserIntentHandler implements IntentHandler {
                                 .build()
                 ))
                 .build();
+    }
+
+    /**
+     * 从userInput中提取用户名
+     * 支持格式: "用户admin", "username:john", "用户名张三", "@admin"
+     */
+    private String extractUsername(String userInput) {
+        if (userInput == null || userInput.isEmpty()) {
+            return null;
+        }
+
+        // 匹配中文格式: "用户admin", "用户名admin"
+        Pattern chinesePattern = Pattern.compile("(?:用户名?)[：:]?\\s*([a-zA-Z0-9_\\u4e00-\\u9fa5]+)");
+        Matcher chineseMatcher = chinesePattern.matcher(userInput);
+        if (chineseMatcher.find()) {
+            return chineseMatcher.group(1);
+        }
+
+        // 匹配英文格式: "username:admin", "user:admin"
+        Pattern englishPattern = Pattern.compile("(?:username|user)[：:]?\\s*([a-zA-Z0-9_]+)", Pattern.CASE_INSENSITIVE);
+        Matcher englishMatcher = englishPattern.matcher(userInput);
+        if (englishMatcher.find()) {
+            return englishMatcher.group(1);
+        }
+
+        // 匹配@用户名格式: "@admin"
+        Pattern atPattern = Pattern.compile("@([a-zA-Z0-9_]+)");
+        Matcher atMatcher = atPattern.matcher(userInput);
+        if (atMatcher.find()) {
+            return atMatcher.group(1);
+        }
+
+        return null;
     }
 
     @Override

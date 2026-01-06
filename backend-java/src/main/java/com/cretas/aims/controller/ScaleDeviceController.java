@@ -4,6 +4,7 @@ import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.common.PageResponse;
 import com.cretas.aims.dto.scale.*;
 import com.cretas.aims.entity.FactoryEquipment;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.enums.DeviceCategory;
 import com.cretas.aims.entity.scale.ScaleBrandModel;
 import com.cretas.aims.entity.scale.ScaleProtocolConfig;
@@ -72,7 +73,7 @@ public class ScaleDeviceController {
             equipmentPage = equipmentRepository.findByFactoryId(factoryId, pageRequest);
             // 进一步过滤
             List<FactoryEquipment> filtered = equipmentPage.getContent().stream()
-                    .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                    .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                     .filter(e -> keyword == null ||
                             e.getEquipmentName().toLowerCase().contains(keyword.toLowerCase()) ||
                             e.getEquipmentCode().toLowerCase().contains(keyword.toLowerCase()))
@@ -90,7 +91,7 @@ public class ScaleDeviceController {
 
         // 过滤 IoT 秤设备
         List<ScaleDeviceDTO> dtos = equipmentPage.getContent().stream()
-                .filter(e -> e.getDeviceCategory() == DeviceCategory.IOT_SCALE)
+                .filter(e -> e.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
                 .filter(e -> status == null || e.getStatus().equals(status))
                 .map(this::enrichDeviceDTO)
                 .collect(Collectors.toList());
@@ -111,7 +112,7 @@ public class ScaleDeviceController {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "设备不存在"));
 
-        if (equipment.getDeviceCategory() != DeviceCategory.IOT_SCALE) {
+        if (equipment.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该设备不是 IoT 电子秤");
         }
 
@@ -204,7 +205,7 @@ public class ScaleDeviceController {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "设备不存在"));
 
-        if (equipment.getDeviceCategory() != DeviceCategory.IOT_SCALE) {
+        if (equipment.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该设备不是 IoT 电子秤");
         }
 
@@ -260,7 +261,7 @@ public class ScaleDeviceController {
         FactoryEquipment equipment = equipmentRepository.findByIdAndFactoryId(equipmentId, factoryId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "设备不存在"));
 
-        if (equipment.getDeviceCategory() != DeviceCategory.IOT_SCALE) {
+        if (equipment.getUnifiedDeviceType() != UnifiedDeviceType.SCALE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "该设备不是 IoT 电子秤");
         }
 

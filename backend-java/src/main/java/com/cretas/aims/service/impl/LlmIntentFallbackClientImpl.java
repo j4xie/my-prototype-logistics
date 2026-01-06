@@ -1,6 +1,13 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionRequest;
+import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.ai.dto.Tool;
+import com.cretas.aims.ai.dto.ToolCall;
+import com.cretas.aims.ai.tool.ToolExecutor;
+import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.IntentMatchResult.CandidateIntent;
@@ -87,6 +94,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     private final ConversationService conversationService;
 
+    private final ToolRegistry toolRegistry;
+
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
     @Value("${cretas.ai.conversation.threshold:0.3}")
@@ -99,7 +108,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             @Autowired(required = false) DashScopeConfig dashScopeConfig,
             @Autowired(required = false) IntentOptimizationSuggestionRepository suggestionRepository,
             @Autowired(required = false) AIIntentConfigRepository intentConfigRepository,
-            @Autowired(required = false) ConversationService conversationService) {
+            @Autowired(required = false) ConversationService conversationService,
+            @Autowired(required = false) ToolRegistry toolRegistry) {
         // OkHttp 客户端
         if (aiServiceHttpClient != null) {
             this.httpClient = aiServiceHttpClient;
@@ -126,6 +136,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         // 多轮对话服务
         this.conversationService = conversationService;
 
+        // Tool Registry (用于 Tool Calling)
+        this.toolRegistry = toolRegistry;
+
         if (dashScopeConfig != null && dashScopeConfig.shouldUseDirect("intent-classify")) {
             log.info("DashScope direct intent classification ENABLED");
         } else {
@@ -138,6 +151,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                 log.info("Factory-level intent AUTO-APPROVE ENABLED - factory intents will be created directly without review");
             } else {
                 log.info("Factory-level intent auto-approve DISABLED - all intents require manual review");
+            }
+            if (toolRegistry != null && toolRegistry.hasExecutor("create_new_intent")) {
+                log.info("Tool Calling mode ENABLED - will use create_new_intent tool instead of hardcoded logic");
+            } else {
+                log.info("Tool Calling mode DISABLED - fallback to legacy auto-create logic");
             }
         }
 
@@ -417,15 +435,19 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             if (matchedConfig == null) {
                 log.warn("DashScope returned unknown intent code: '{}'", intentCode);
 
-                // 尝试生成「创建新意图」建议 (自学习核心功能)
-                if (autoCreateIntentEnabled && factoryId != null) {
+                // 使用 Tool Calling 让 LLM 决定是否创建新意图 (替代硬编码逻辑)
+                if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
+                    log.info("[Tool Calling] Intent not matched, asking LLM whether to create new intent");
+                    return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
+                            intentCode, reasoning, confidence);
+                } else if (autoCreateIntentEnabled && factoryId != null) {
+                    // 降级：Tool Calling 不可用时使用旧逻辑
+                    log.warn("[Legacy Mode] Tool Calling unavailable, using hardcoded logic");
                     if (!"UNKNOWN".equalsIgnoreCase(intentCode)) {
-                        // 情况1: LLM返回了一个具体的新意图代码 (不在已知列表中)
                         log.info("[CREATE_INTENT] LLM suggested new intent code: {} for input: {}",
                                 intentCode, truncate(userInput, 50));
                         tryCreateIntentSuggestion(factoryId, userInput, intentCode, null, reasoning, confidence);
                     } else if (reasoning != null && !reasoning.isEmpty()) {
-                        // 情况2: LLM返回UNKNOWN，但提供了有价值的推理说明
                         String generatedCode = generateIntentCodeFromInput(userInput);
                         String generatedName = generateIntentNameFromInput(userInput);
                         log.info("[CREATE_INTENT] LLM returned UNKNOWN with reasoning, generating suggestion: {} ({})",
@@ -535,6 +557,289 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             log.error("Clarification question generation failed: {}", e.getMessage(), e);
             // 返回默认问题
             return generateDefaultClarificationQuestion(candidateIntents);
+        }
+    }
+
+    /**
+     * 为缺失参数生成澄清问题
+     *
+     * 工作流程：
+     * 1. 构建提示词，说明用户意图和缺失的参数
+     * 2. 调用 LLM 生成自然友好的澄清问题
+     * 3. 解析返回的问题列表（最多3个）
+     * 4. 如果 LLM 调用失败，使用模板生成降级问题
+     *
+     * @param userInput 用户原始输入
+     * @param intent 已匹配的意图配置
+     * @param missingParameters 缺失的参数名列表
+     * @param factoryId 工厂ID
+     * @return 澄清问题列表（1-3个）
+     */
+    @Override
+    public List<String> generateClarificationQuestionsForMissingParams(
+            String userInput,
+            AIIntentConfig intent,
+            List<String> missingParameters,
+            String factoryId) {
+
+        log.info("Generating clarification questions for missing params: intent={}, missing={}",
+                intent.getIntentCode(), missingParameters);
+
+        // 参数校验
+        if (missingParameters == null || missingParameters.isEmpty()) {
+            log.warn("No missing parameters provided, returning empty list");
+            return Collections.emptyList();
+        }
+
+        try {
+            // 1. 构建提示词
+            String prompt = buildClarificationPrompt(userInput, intent, missingParameters);
+
+            // 2. 调用 LLM（优先使用 DashScope 直接调用）
+            String responseText;
+            if (shouldUseDashScopeDirect()) {
+                log.debug("Using DashScope direct for clarification questions");
+                responseText = dashScopeClient.chat(prompt, userInput);
+            } else {
+                log.debug("Using Python service for clarification questions");
+                // 使用 Python 服务的通用接口
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("system_prompt", prompt);
+                requestBody.put("user_input", userInput);
+                requestBody.put("factory_id", factoryId);
+
+                String responseJson = callPythonEndpoint("/api/ai/chat", requestBody);
+                responseText = extractResponseText(responseJson);
+            }
+
+            // 3. 解析 LLM 返回的问题列表
+            List<String> questions = parseClarificationQuestions(responseText);
+
+            if (questions.isEmpty()) {
+                log.warn("LLM returned empty questions, falling back to template");
+                return generateTemplateClarificationQuestions(intent, missingParameters);
+            }
+
+            log.info("Successfully generated {} clarification questions via LLM", questions.size());
+            return questions;
+
+        } catch (Exception e) {
+            log.error("Failed to generate clarification questions via LLM: {}", e.getMessage(), e);
+            // 降级到模板生成
+            return generateTemplateClarificationQuestions(intent, missingParameters);
+        }
+    }
+
+    /**
+     * 构建澄清问题的提示词
+     *
+     * 提示词要求：
+     * - 口语化、自然友好
+     * - 无技术术语
+     * - 问题简洁明了
+     * - 最多3个问题
+     *
+     * @param userInput 用户输入
+     * @param intent 意图配置
+     * @param missingParameters 缺失的参数列表
+     * @return 提示词
+     */
+    private String buildClarificationPrompt(
+            String userInput,
+            AIIntentConfig intent,
+            List<String> missingParameters) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个友好的助手。用户想要「").append(intent.getIntentName()).append("」，");
+        sb.append("但缺少一些必要信息。\n\n");
+
+        sb.append("用户输入：\"").append(userInput).append("\"\n\n");
+
+        sb.append("缺失的信息：\n");
+        for (String param : missingParameters) {
+            String friendlyName = getParameterFriendlyName(param);
+            sb.append("- ").append(friendlyName).append(" (").append(param).append(")\n");
+        }
+
+        sb.append("\n请生成1-3个自然友好的问题，引导用户补充这些信息。\n");
+        sb.append("\n要求：\n");
+        sb.append("1. 问题要口语化，避免技术术语\n");
+        sb.append("2. 每个问题独立一行\n");
+        sb.append("3. 最多3个问题\n");
+        sb.append("4. 如果缺失多个参数，可以合并成一个问题\n");
+        sb.append("5. 不要编号，直接输出问题\n");
+        sb.append("\n示例输出：\n");
+        sb.append("请问是哪个批次的材料？\n");
+        sb.append("需要更新多少数量？\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析 LLM 返回的澄清问题列表
+     *
+     * 支持的格式：
+     * - 每行一个问题
+     * - 可能包含编号（会自动去除）
+     * - 最多返回3个问题
+     *
+     * @param responseText LLM 返回的文本
+     * @return 问题列表
+     */
+    private List<String> parseClarificationQuestions(String responseText) {
+        if (responseText == null || responseText.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> questions = new ArrayList<>();
+        String[] lines = responseText.split("\\n");
+
+        for (String line : lines) {
+            String cleaned = line.trim();
+
+            // 跳过空行
+            if (cleaned.isEmpty()) {
+                continue;
+            }
+
+            // 移除常见的编号格式
+            cleaned = cleaned.replaceFirst("^[0-9]+[\\.、]\\s*", "");
+            cleaned = cleaned.replaceFirst("^[一二三四五][\\.、]\\s*", "");
+            cleaned = cleaned.replaceFirst("^[\\-\\*•]\\s*", "");
+
+            // 确保是问句或有意义的语句
+            if (cleaned.length() > 3) {
+                questions.add(cleaned);
+
+                // 最多3个问题
+                if (questions.size() >= 3) {
+                    break;
+                }
+            }
+        }
+
+        return questions;
+    }
+
+    /**
+     * 生成模板澄清问题（降级方案）
+     *
+     * 当 LLM 调用失败时使用简单模板生成问题。
+     * 使用参数友好名称，生成标准化的问题。
+     *
+     * @param intent 意图配置
+     * @param missingParameters 缺失的参数列表
+     * @return 问题列表
+     */
+    private List<String> generateTemplateClarificationQuestions(
+            AIIntentConfig intent,
+            List<String> missingParameters) {
+
+        log.info("Using template to generate clarification questions (fallback mode)");
+
+        List<String> questions = new ArrayList<>();
+
+        // 如果只有1个参数，生成简单问题
+        if (missingParameters.size() == 1) {
+            String param = missingParameters.get(0);
+            String friendlyName = getParameterFriendlyName(param);
+            questions.add(String.format("请问%s是什么？", friendlyName));
+            return questions;
+        }
+
+        // 多个参数：生成一个汇总问题 + 最多2个单独问题
+        StringBuilder summary = new StringBuilder("请提供以下信息：");
+        for (int i = 0; i < missingParameters.size(); i++) {
+            String param = missingParameters.get(i);
+            String friendlyName = getParameterFriendlyName(param);
+            summary.append(friendlyName);
+            if (i < missingParameters.size() - 1) {
+                summary.append("、");
+            }
+        }
+        questions.add(summary.toString());
+
+        // 为前两个参数生成单独的问题
+        for (int i = 0; i < Math.min(2, missingParameters.size()); i++) {
+            String param = missingParameters.get(i);
+            String friendlyName = getParameterFriendlyName(param);
+            questions.add(String.format("具体来说，%s是多少？", friendlyName));
+        }
+
+        // 最多返回3个问题
+        return questions.subList(0, Math.min(3, questions.size()));
+    }
+
+    /**
+     * 获取参数的友好名称
+     *
+     * 将技术参数名映射为用户友好的中文名称。
+     *
+     * @param parameterName 参数名
+     * @return 友好名称
+     */
+    private String getParameterFriendlyName(String parameterName) {
+        if (parameterName == null) {
+            return "信息";
+        }
+
+        // 参数名映射表
+        Map<String, String> nameMapping = new HashMap<>();
+        nameMapping.put("batchId", "批次编号");
+        nameMapping.put("batchNumber", "批次编号");
+        nameMapping.put("quantity", "数量");
+        nameMapping.put("materialTypeId", "材料类型");
+        nameMapping.put("materialType", "材料类型");
+        nameMapping.put("supplierId", "供应商");
+        nameMapping.put("supplier", "供应商");
+        nameMapping.put("productionDate", "生产日期");
+        nameMapping.put("expiryDate", "到期日期");
+        nameMapping.put("warehouseId", "仓库");
+        nameMapping.put("location", "位置");
+        nameMapping.put("operator", "操作人");
+        nameMapping.put("operatorId", "操作人");
+        nameMapping.put("reason", "原因");
+        nameMapping.put("remark", "备注");
+        nameMapping.put("status", "状态");
+        nameMapping.put("priority", "优先级");
+        nameMapping.put("startDate", "开始日期");
+        nameMapping.put("endDate", "结束日期");
+        nameMapping.put("category", "类别");
+        nameMapping.put("type", "类型");
+        nameMapping.put("name", "名称");
+        nameMapping.put("description", "描述");
+        nameMapping.put("price", "价格");
+        nameMapping.put("cost", "成本");
+        nameMapping.put("weight", "重量");
+        nameMapping.put("unit", "单位");
+        nameMapping.put("deviceId", "设备");
+        nameMapping.put("deviceCode", "设备编号");
+
+        return nameMapping.getOrDefault(parameterName, parameterName);
+    }
+
+    /**
+     * 从 Python 服务的响应中提取文本内容
+     *
+     * @param responseJson JSON 响应
+     * @return 提取的文本
+     */
+    private String extractResponseText(String responseJson) {
+        try {
+            JsonNode json = objectMapper.readTree(responseJson);
+            if (json.has("data")) {
+                JsonNode data = json.get("data");
+                if (data.has("response")) {
+                    return data.get("response").asText();
+                }
+                if (data.has("text")) {
+                    return data.get("text").asText();
+                }
+            }
+            return responseJson;
+        } catch (Exception e) {
+            log.warn("Failed to parse response JSON, returning raw text: {}", e.getMessage());
+            return responseJson;
         }
     }
 
@@ -694,22 +999,24 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             log.warn("LLM returned unknown/invalid intent code: '{}' (soft validation: returning empty result)",
                     matchedIntentCode);
 
-            // 尝试生成「创建新意图」建议 (自学习核心功能)
-            if (autoCreateIntentEnabled) {
+            // 使用 Tool Calling 让 LLM 决定是否创建新意图 (替代硬编码逻辑)
+            if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
+                log.info("[Tool Calling] Intent not matched (Python path), asking LLM whether to create new intent");
+                return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
+                        matchedIntentCode, reasoning, confidence);
+            } else if (autoCreateIntentEnabled) {
+                // 降级：Tool Calling 不可用时使用旧逻辑
+                log.warn("[Legacy Mode] Tool Calling unavailable (Python path), using hardcoded logic");
                 if (!"UNKNOWN".equalsIgnoreCase(matchedIntentCode) && confidence >= autoCreateMinConfidence) {
-                    // 情况1: LLM返回了一个具体的新意图代码 (不在已知列表中)
-                    // 使用LLM建议的意图代码创建建议
                     tryCreateIntentSuggestion(factoryId, userInput, matchedIntentCode,
                             null, reasoning, confidence);
                 } else if ("UNKNOWN".equalsIgnoreCase(matchedIntentCode) && reasoning != null && !reasoning.isEmpty()) {
-                    // 情况2: LLM返回UNKNOWN，但提供了有价值的推理说明
-                    // 从用户输入生成建议的意图代码，捕获新的意图模式
                     String generatedCode = generateIntentCodeFromInput(userInput);
                     String generatedName = generateIntentNameFromInput(userInput);
                     log.info("LLM returned UNKNOWN with reasoning, generating intent suggestion: {} ({})",
                             generatedCode, generatedName);
                     tryCreateIntentSuggestion(factoryId, userInput, generatedCode,
-                            generatedName, reasoning, 0.5); // 使用中等置信度
+                            generatedName, reasoning, 0.5);
                 }
             }
 
@@ -956,7 +1263,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                     .factoryId(factoryId)
                     .intentCode(intentCode)
                     .intentName(intentName)
-                    .keywords(parseKeywordsList(keywords))
+                    .keywords(keywords)  // keywords is already a JSON string
                     .intentCategory(category)
                     .priority(50)  // 默认中等优先级
                     .isActive(true)
@@ -979,7 +1286,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                     confidence,
                     reasoning != null ? reasoning : "LLM 自动识别的新意图模式"
             );
-            suggestion.setStatus(SuggestionStatus.APPROVED);
+            suggestion.setStatus(SuggestionStatus.APPLIED);
             suggestion.setApprovalNotes("工厂级意图自动审批 - 由系统自动创建");
             suggestionRepository.save(suggestion);
 
@@ -1162,5 +1469,212 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         baseName = baseName.replaceAll("[\\[\\]{}\"'\\\\]", "").trim();
 
         return "新功能: " + baseName;
+    }
+
+    // ==================== Tool Calling 流程 (新架构) ====================
+
+    /**
+     * 检查是否应该使用 Tool Calling 模式
+     *
+     * 条件：
+     * 1. ToolRegistry 可用
+     * 2. DashScopeClient 可用
+     * 3. create_new_intent 工具已注册
+     *
+     * @return true 表示可以使用 Tool Calling
+     */
+    private boolean shouldUseToolCalling() {
+        return toolRegistry != null
+                && dashScopeClient != null
+                && dashScopeClient.isAvailable()
+                && toolRegistry.hasExecutor("create_new_intent");
+    }
+
+    /**
+     * 通过 Tool Calling 创建新意图（新架构）
+     *
+     * 工作流程：
+     * 1. 构建系统提示词，说明当前情况（意图不匹配）
+     * 2. 从 ToolRegistry 获取工具定义列表
+     * 3. 调用 DashScopeClient.chatCompletion() 带上 tools 参数
+     * 4. 检查响应中的 tool_calls
+     * 5. 如果有 tool_calls，执行对应的 ToolExecutor
+     * 6. 返回执行结果
+     *
+     * @param userInput 用户输入
+     * @param availableIntents 当前可用意图列表
+     * @param factoryId 工厂ID
+     * @param suggestedIntentCode LLM 首次建议的意图代码
+     * @param reasoning LLM 推理说明
+     * @param confidence 置信度
+     * @return 意图匹配结果
+     */
+    private IntentMatchResult tryCreateIntentViaToolCalling(
+            String userInput,
+            List<AIIntentConfig> availableIntents,
+            String factoryId,
+            String suggestedIntentCode,
+            String reasoning,
+            double confidence) {
+
+        try {
+            log.debug("[Tool Calling] Starting tool calling workflow for intent creation");
+
+            // 1. 构建系统提示词
+            String systemPrompt = buildToolCallingSystemPrompt(
+                    userInput,
+                    availableIntents,
+                    suggestedIntentCode,
+                    reasoning
+            );
+
+            // 2. 获取可用工具列表
+            List<Tool> tools = toolRegistry.getAllToolDefinitions();
+            log.debug("[Tool Calling] Available tools: {}",
+                    tools.stream().map(t -> t.getFunction().getName()).collect(Collectors.toList()));
+
+            // 3. 构建请求
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model(dashScopeConfig.getModel())
+                    .messages(List.of(
+                            ChatMessage.system(systemPrompt),
+                            ChatMessage.user(userInput)
+                    ))
+                    .tools(tools)
+                    .toolChoice("auto")  // 让 LLM 自主决定是否调用工具
+                    .maxTokens(dashScopeConfig.getMaxTokens())
+                    .temperature(dashScopeConfig.getLowTemperature())  // 使用低温度确保输出稳定
+                    .build();
+
+            // 4. 调用 LLM
+            log.info("[Tool Calling] Calling DashScope with {} tools", tools.size());
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+
+            if (response.hasError()) {
+                log.error("[Tool Calling] DashScope API error: {}", response.getErrorMessage());
+                return IntentMatchResult.empty(userInput);
+            }
+
+            // 5. 检查 tool_calls
+            List<ToolCall> toolCalls = extractToolCalls(response);
+            if (toolCalls == null || toolCalls.isEmpty()) {
+                log.info("[Tool Calling] LLM decided NOT to create new intent");
+                // LLM 认为不需要创建新意图，返回空结果
+                return IntentMatchResult.empty(userInput);
+            }
+
+            // 6. 执行工具调用
+            log.info("[Tool Calling] LLM requested {} tool calls", toolCalls.size());
+            for (ToolCall toolCall : toolCalls) {
+                String toolName = toolCall.getFunction().getName();
+                log.info("[Tool Calling] Executing tool: {}", toolName);
+
+                // 获取工具执行器
+                Optional<ToolExecutor> executorOpt = toolRegistry.getExecutor(toolName);
+                if (!executorOpt.isPresent()) {
+                    log.warn("[Tool Calling] Tool executor not found: {}", toolName);
+                    continue;
+                }
+
+                ToolExecutor executor = executorOpt.get();
+
+                // 构建执行上下文
+                Map<String, Object> context = buildToolExecutionContext(factoryId);
+
+                // 执行工具
+                String result = executor.execute(toolCall, context);
+                log.info("[Tool Calling] Tool execution result: {}", truncate(result, 200));
+
+                // 解析结果（可选：可以将结果返回给 LLM 进行 ReAct loop）
+                // 当前版本：直接返回空结果，因为意图已通过 tool 创建
+                return IntentMatchResult.builder()
+                        .userInput(userInput)
+                        .confidence(0.0)
+                        .matchMethod(MatchMethod.LLM)
+                        .isStrongSignal(false)
+                        .requiresConfirmation(true)
+                        .clarificationQuestion("已创建新的意图配置，等待管理员审核激活后即可使用。")
+                        .build();
+            }
+
+            return IntentMatchResult.empty(userInput);
+
+        } catch (Exception e) {
+            log.error("[Tool Calling] Failed to execute tool calling workflow: {}", e.getMessage(), e);
+            // 降级：返回空结果，不阻断主流程
+            return IntentMatchResult.empty(userInput);
+        }
+    }
+
+    /**
+     * 构建 Tool Calling 系统提示词
+     */
+    private String buildToolCallingSystemPrompt(
+            String userInput,
+            List<AIIntentConfig> availableIntents,
+            String suggestedIntentCode,
+            String reasoning) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个智能意图识别助手。用户的输入无法匹配现有的意图配置。\n\n");
+        sb.append("## 当前情况\n\n");
+        sb.append(String.format("- 用户输入: \"%s\"\n", userInput));
+        sb.append(String.format("- 首次分类结果: %s (不在已知列表中)\n", suggestedIntentCode));
+        if (reasoning != null && !reasoning.isEmpty()) {
+            sb.append(String.format("- 推理说明: %s\n", reasoning));
+        }
+        sb.append("\n");
+
+        sb.append("## 已有意图列表\n\n");
+        for (AIIntentConfig intent : availableIntents) {
+            sb.append(String.format("- %s (%s): %s\n",
+                    intent.getIntentCode(),
+                    intent.getIntentName(),
+                    intent.getDescription() != null ? intent.getDescription() : ""));
+        }
+        sb.append("\n");
+
+        sb.append("## 你的任务\n\n");
+        sb.append("请判断是否需要创建新的意图配置。如果用户的需求确实是一个新的功能模式，调用 `create_new_intent` 工具。\n");
+        sb.append("如果用户的需求可能是错误输入、或不应该作为独立意图，则不要调用任何工具。\n\n");
+
+        sb.append("## 决策标准\n\n");
+        sb.append("创建新意图的条件：\n");
+        sb.append("- 用户描述了明确的功能需求\n");
+        sb.append("- 该需求在现有意图列表中找不到相似项\n");
+        sb.append("- 该需求具有可重复性（不是一次性的特殊请求）\n\n");
+
+        sb.append("不创建新意图的情况：\n");
+        sb.append("- 用户输入过于模糊或无意义\n");
+        sb.append("- 用户可能是在测试系统\n");
+        sb.append("- 用户的需求可以通过现有意图满足（只是表达方式不同）\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * 从响应中提取 tool_calls
+     */
+    private List<ToolCall> extractToolCalls(ChatCompletionResponse response) {
+        if (response.getChoices() == null || response.getChoices().isEmpty()) {
+            return null;
+        }
+
+        ChatCompletionResponse.Choice choice = response.getChoices().get(0);
+        if (choice.getMessage() != null) {
+            return choice.getMessage().getToolCalls();
+        }
+
+        return null;
+    }
+
+    /**
+     * 构建工具执行上下文
+     */
+    private Map<String, Object> buildToolExecutionContext(String factoryId) {
+        Map<String, Object> context = new HashMap<>();
+        context.put("factoryId", factoryId);
+        // 可以添加更多上下文信息，如 userId, userRole 等
+        return context;
     }
 }

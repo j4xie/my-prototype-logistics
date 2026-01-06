@@ -24,11 +24,21 @@ public interface AIIntentService {
     // ==================== 意图识别 ====================
 
     /**
-     * 识别用户输入的意图
+     * 识别用户输入的意图（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
      * @param userInput 用户输入文本
      * @return 匹配的意图配置 (按优先级排序，返回最高优先级)
      */
+    Optional<AIIntentConfig> recognizeIntent(String factoryId, String userInput);
+
+    /**
+     * 识别用户输入的意图（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #recognizeIntent(String, String)} 代替
+     * @param userInput 用户输入文本
+     * @return 匹配的意图配置
+     */
+    @Deprecated
     Optional<AIIntentConfig> recognizeIntent(String userInput);
 
     /**
@@ -61,96 +71,205 @@ public interface AIIntentService {
     IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN);
 
     /**
-     * 识别所有可能的意图
+     * 识别所有可能的意图（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
      * @param userInput 用户输入文本
      * @return 所有匹配的意图配置列表
      */
+    List<AIIntentConfig> recognizeAllIntents(String factoryId, String userInput);
+
+    /**
+     * 识别所有可能的意图（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #recognizeAllIntents(String, String)} 代替
+     * @param userInput 用户输入文本
+     * @return 所有匹配的意图配置列表
+     */
+    @Deprecated
     List<AIIntentConfig> recognizeAllIntents(String userInput);
 
     /**
-     * 根据意图代码获取配置
+     * 根据意图代码获取配置（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
+     * @param intentCode 意图代码
+     * @return 意图配置（工厂级优先，平台级兜底）
+     */
+    Optional<AIIntentConfig> getIntentByCode(String factoryId, String intentCode);
+
+    /**
+     * 根据意图代码获取配置（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #getIntentByCode(String, String)} 代替
      * @param intentCode 意图代码
      * @return 意图配置
      */
+    @Deprecated
     Optional<AIIntentConfig> getIntentByCode(String intentCode);
 
     // ==================== 权限校验 ====================
 
     /**
-     * 检查用户角色是否有权限执行意图
+     * 检查用户角色是否有权限执行意图 (工厂感知)
      *
+     * @param factoryId 工厂ID
      * @param intentCode 意图代码
      * @param userRole 用户角色
      * @return 是否有权限
      */
+    boolean hasPermission(String factoryId, String intentCode, String userRole);
+
+    /**
+     * 检查用户角色是否有权限执行意图
+     *
+     * @deprecated 使用 {@link #hasPermission(String, String, String)} 代替，需要提供factoryId
+     * @param intentCode 意图代码
+     * @param userRole 用户角色
+     * @return 是否有权限
+     */
+    @Deprecated
     boolean hasPermission(String intentCode, String userRole);
+
+    /**
+     * 检查意图是否需要审批 (工厂感知)
+     *
+     * @param factoryId 工厂ID
+     * @param intentCode 意图代码
+     * @return 是否需要审批
+     */
+    boolean requiresApproval(String factoryId, String intentCode);
 
     /**
      * 检查意图是否需要审批
      *
+     * @deprecated 使用 {@link #requiresApproval(String, String)} 代替，需要提供factoryId
      * @param intentCode 意图代码
      * @return 是否需要审批
      */
+    @Deprecated
     boolean requiresApproval(String intentCode);
+
+    /**
+     * 获取意图的审批链ID (工厂感知)
+     *
+     * @param factoryId 工厂ID
+     * @param intentCode 意图代码
+     * @return 审批链ID (如果需要审批)
+     */
+    Optional<String> getApprovalChainId(String factoryId, String intentCode);
 
     /**
      * 获取意图的审批链ID
      *
+     * @deprecated 使用 {@link #getApprovalChainId(String, String)} 代替，需要提供factoryId
      * @param intentCode 意图代码
      * @return 审批链ID (如果需要审批)
      */
+    @Deprecated
     Optional<String> getApprovalChainId(String intentCode);
 
     // ==================== 配额管理 ====================
 
     /**
-     * 获取意图的配额消耗
+     * 获取意图的配额消耗 (工厂感知)
      *
+     * @param factoryId 工厂ID
      * @param intentCode 意图代码
      * @return 配额消耗值
      */
+    int getQuotaCost(String factoryId, String intentCode);
+
+    /**
+     * 获取意图的配额消耗
+     *
+     * @deprecated 使用 {@link #getQuotaCost(String, String)} 代替，需要提供factoryId
+     * @param intentCode 意图代码
+     * @return 配额消耗值
+     */
+    @Deprecated
     int getQuotaCost(String intentCode);
+
+    /**
+     * 获取意图的缓存TTL (工厂感知)
+     *
+     * @param factoryId 工厂ID
+     * @param intentCode 意图代码
+     * @return 缓存有效期 (分钟)，0表示不缓存
+     */
+    int getCacheTtl(String factoryId, String intentCode);
 
     /**
      * 获取意图的缓存TTL
      *
+     * @deprecated 使用 {@link #getCacheTtl(String, String)} 代替，需要提供factoryId
      * @param intentCode 意图代码
      * @return 缓存有效期 (分钟)，0表示不缓存
      */
+    @Deprecated
     int getCacheTtl(String intentCode);
 
     // ==================== 意图查询 ====================
 
     /**
-     * 获取所有启用的意图配置
+     * 获取所有启用的意图配置（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
+     * @return 意图配置列表（工厂级+平台级）
+     */
+    List<AIIntentConfig> getAllIntents(String factoryId);
+
+    /**
+     * 获取所有启用的意图配置（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #getAllIntents(String)} 代替
      * @return 意图配置列表
      */
+    @Deprecated
     List<AIIntentConfig> getAllIntents();
 
     /**
-     * 根据分类获取意图配置
+     * 根据分类获取意图配置（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
      * @param category 意图分类
      * @return 意图配置列表
      */
+    List<AIIntentConfig> getIntentsByCategory(String factoryId, String category);
+
+    /**
+     * 根据分类获取意图配置（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #getIntentsByCategory(String, String)} 代替
+     */
+    @Deprecated
     List<AIIntentConfig> getIntentsByCategory(String category);
 
     /**
-     * 根据敏感度级别获取意图配置
+     * 根据敏感度级别获取意图配置（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
      * @param sensitivityLevel 敏感度级别 (LOW, MEDIUM, HIGH, CRITICAL)
      * @return 意图配置列表
      */
+    List<AIIntentConfig> getIntentsBySensitivity(String factoryId, String sensitivityLevel);
+
+    /**
+     * 根据敏感度级别获取意图配置（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #getIntentsBySensitivity(String, String)} 代替
+     */
+    @Deprecated
     List<AIIntentConfig> getIntentsBySensitivity(String sensitivityLevel);
 
     /**
-     * 获取所有意图分类
+     * 获取所有意图分类（租户隔离）
      *
+     * @param factoryId 工厂ID（必须）
      * @return 分类列表
      */
+    List<String> getAllCategories(String factoryId);
+
+    /**
+     * 获取所有意图分类（无租户隔离，向后兼容）
+     * @deprecated 请使用 {@link #getAllCategories(String)} 代替
+     */
+    @Deprecated
     List<String> getAllCategories();
 
     // ==================== 意图管理 ====================

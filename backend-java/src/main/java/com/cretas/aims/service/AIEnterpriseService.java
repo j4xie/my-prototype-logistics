@@ -10,6 +10,7 @@ import com.cretas.aims.repository.AIAuditLogRepository;
 import com.cretas.aims.repository.AIQuotaUsageRepository;
 import com.cretas.aims.repository.config.AIQuotaConfigRepository;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.exception.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,7 +102,7 @@ public class AIEnterpriseService {
                                                          MobileDTO.AICostAnalysisRequest request,
                                                          HttpServletRequest httpRequest) {
         long startTime = System.currentTimeMillis();
-        String questionType = determineQuestionType(request, httpRequest);
+        String questionType = determineQuestionType(factoryId, request, httpRequest);
         boolean cacheHit = false;
         boolean success = false;
         String errorMessage = null;
@@ -1124,11 +1125,12 @@ public class AIEnterpriseService {
      * 3. 验证用户角色权限
      * 4. 根据敏感度决定是否需要审批
      *
+     * @param factoryId 工厂ID (用于多租户隔离)
      * @param request 请求参数
      * @param httpRequest HTTP请求 (用于提取用户角色)
      * @return 问题类型/意图代码
      */
-    private String determineQuestionType(MobileDTO.AICostAnalysisRequest request, HttpServletRequest httpRequest) {
+    private String determineQuestionType(String factoryId, MobileDTO.AICostAnalysisRequest request, HttpServletRequest httpRequest) {
         // 1. 优先使用显式指定的reportType (向后兼容)
         if (request.getReportType() != null && !request.getReportType().isEmpty()) {
             return request.getReportType();
@@ -1140,14 +1142,15 @@ public class AIEnterpriseService {
             return "default";
         }
 
-        // 3. 使用AI意图识别服务匹配意图
-        Optional<AIIntentConfig> matchedIntent = aiIntentService.recognizeIntent(question);
-        if (matchedIntent.isEmpty()) {
+        // 3. 使用AI意图识别服务匹配意图 (带操作类型检测，BUG-001/002 修复)
+        IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
+                question, factoryId, 1);
+        if (!matchResult.hasMatch()) {
             log.debug("No intent matched for question: {}, falling back to 'followup'", question);
             return "followup";
         }
 
-        AIIntentConfig intent = matchedIntent.get();
+        AIIntentConfig intent = matchResult.getBestMatch();
         String intentCode = intent.getIntentCode();
 
         // 4. 验证用户角色权限

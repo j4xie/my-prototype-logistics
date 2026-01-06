@@ -65,10 +65,11 @@ public class SemanticCacheConfig {
 
     /**
      * 缓存有效期 (小时)
+     * AI-Opt-3: 设置为 1 小时以平衡性能和数据新鲜度
      */
     @Column(name = "cache_ttl_hours")
     @Builder.Default
-    private Integer cacheTtlHours = 24;
+    private Integer cacheTtlHours = 1;
 
     /**
      * 最大缓存条目数
@@ -160,13 +161,14 @@ public class SemanticCacheConfig {
 
     /**
      * 创建默认配置
+     * AI-Opt-3: TTL 设置为 1 小时
      */
     public static SemanticCacheConfig defaultConfig() {
         return SemanticCacheConfig.builder()
             .factoryId(GLOBAL_CONFIG)
             .similarityThreshold(new BigDecimal("0.85"))
             .mediumThreshold(new BigDecimal("0.72"))
-            .cacheTtlHours(24)
+            .cacheTtlHours(1)
             .maxCacheEntries(10000)
             .embeddingModel("gte-base-zh")
             .embeddingDimension(768)

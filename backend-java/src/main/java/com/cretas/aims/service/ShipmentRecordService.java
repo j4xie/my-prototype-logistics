@@ -222,4 +222,25 @@ public class ShipmentRecordService {
             "returned".equals(status)
         );
     }
+
+    /**
+     * 根据ID和工厂ID获取出货记录（工厂隔离）
+     */
+    public Optional<ShipmentRecord> getByIdAndFactoryId(String id, String factoryId) {
+        return shipmentRecordRepository.findByIdAndFactoryId(id, factoryId);
+    }
+
+    /**
+     * 根据出货单号和工厂ID获取（工厂隔离）
+     */
+    public Optional<ShipmentRecord> getByShipmentNumberAndFactoryId(String shipmentNumber, String factoryId) {
+        return shipmentRecordRepository.findByShipmentNumberAndFactoryId(shipmentNumber, factoryId);
+    }
+
+    /**
+     * 根据物流单号和工厂ID获取（工厂隔离）
+     */
+    public Optional<ShipmentRecord> getByTrackingNumberAndFactoryId(String trackingNumber, String factoryId) {
+        return shipmentRecordRepository.findByTrackingNumberAndFactoryId(trackingNumber, factoryId);
+    }
 }

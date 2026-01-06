@@ -65,6 +65,24 @@ public interface LlmIntentFallbackClient {
     String generateClarificationQuestion(String userInput, List<IntentMatchResult.CandidateIntent> candidateIntents, String factoryId);
 
     /**
+     * 为缺失参数生成澄清问题
+     *
+     * 当意图已经识别成功，但执行时发现缺少必需的参数时调用。
+     * 生成1-3个自然友好的问题，引导用户补充缺失信息。
+     *
+     * @param userInput 用户原始输入
+     * @param intent 已匹配的意图配置
+     * @param missingParameters 缺失的参数名列表 (如 ["batchId", "quantity"])
+     * @param factoryId 工厂ID
+     * @return 澄清问题列表 (最多3个)
+     */
+    List<String> generateClarificationQuestionsForMissingParams(
+            String userInput,
+            AIIntentConfig intent,
+            List<String> missingParameters,
+            String factoryId);
+
+    /**
      * 检查 LLM 服务健康状态
      *
      * @return 是否健康

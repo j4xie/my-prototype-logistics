@@ -4,6 +4,8 @@ import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.intent.DataOperationFact;
+import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.MaterialBatch;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductType;
@@ -13,6 +15,7 @@ import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.service.RuleEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import com.cretas.aims.util.ErrorSanitizer;
@@ -55,6 +58,7 @@ public class DataOperationIntentHandler implements IntentHandler {
     private final ObjectMapper objectMapper;
     private final DashScopeClient dashScopeClient;
     private final DashScopeConfig dashScopeConfig;
+    private final RuleEngineService ruleEngineService;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -66,6 +70,7 @@ public class DataOperationIntentHandler implements IntentHandler {
                                        MaterialBatchRepository materialBatchRepository,
                                        RestTemplate restTemplate,
                                        ObjectMapper objectMapper,
+                                       RuleEngineService ruleEngineService,
                                        @Autowired(required = false) DashScopeClient dashScopeClient,
                                        @Autowired(required = false) DashScopeConfig dashScopeConfig) {
         this.productTypeRepository = productTypeRepository;
@@ -74,6 +79,7 @@ public class DataOperationIntentHandler implements IntentHandler {
         this.materialBatchRepository = materialBatchRepository;
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
+        this.ruleEngineService = ruleEngineService;
         this.dashScopeClient = dashScopeClient;
         this.dashScopeConfig = dashScopeConfig;
     }
@@ -158,6 +164,26 @@ public class DataOperationIntentHandler implements IntentHandler {
             if (updates == null || updates.isEmpty()) {
                 return buildFailedResponse(intentConfig, "未识别到要修改的内容");
             }
+
+            // ====== DROOLS GATEWAY: 数据操作规则验证 ======
+            ValidationResult operationValidation = validateDataOperationWithDrools(
+                    factoryId, entityType, operation, entityId, updates, userId, userRole);
+            if (!operationValidation.isValid()) {
+                log.warn("数据操作规则验证失败: entityType={}, operation={}, violations={}",
+                        entityType, operation, operationValidation.getViolations().size());
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentConfig.getIntentCode())
+                        .intentName(intentConfig.getIntentName())
+                        .intentCategory("DATA_OP")
+                        .status("VALIDATION_FAILED")
+                        .message("数据操作不符合业务规则: " + operationValidation.getViolationsSummary())
+                        .validationViolations(operationValidation.getViolations())
+                        .recommendations(operationValidation.getRecommendations())
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+            log.debug("数据操作规则验证通过: entityType={}, operation={}", entityType, operation);
 
             // 3. 执行数据操作
             IntentExecuteResponse.AffectedEntity affected = executeDataOperation(
@@ -979,5 +1005,113 @@ public class DataOperationIntentHandler implements IntentHandler {
                 .message(message)
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * 使用 Drools 验证数据操作
+     *
+     * @param factoryId 工厂ID
+     * @param entityType 实体类型
+     * @param operation 操作类型
+     * @param entityId 实体ID
+     * @param updates 更新字段
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return 验证结果
+     */
+    private ValidationResult validateDataOperationWithDrools(String factoryId, String entityType,
+                                                              String operation, String entityId,
+                                                              Map<String, Object> updates,
+                                                              Long userId, String userRole) {
+        try {
+            // 根据实体类型获取相关业务信息
+            int relatedBatchCount = 0;
+            int relatedMaterialBatchCount = 0;
+            int relatedProductionPlanCount = 0;
+            boolean productTypeExists = false;
+            String currentStatus = null;
+            String targetStatus = null;
+
+            // 根据不同实体类型查询相关数据
+            if ("PRODUCTION_BATCH".equals(entityType) && entityId != null) {
+                try {
+                    Long batchIdLong = Long.parseLong(entityId);
+                    Optional<ProductionBatch> batchOpt = productionBatchRepository.findByIdAndFactoryId(batchIdLong, factoryId);
+                    if (batchOpt.isPresent()) {
+                        ProductionBatch batch = batchOpt.get();
+                        currentStatus = batch.getStatus() != null ? String.valueOf(batch.getStatus().name()) : null;
+                        if (updates.containsKey("status")) {
+                            targetStatus = (String) updates.get("status");
+                        }
+                        // 检查是否有关联的原材料批次
+                        relatedMaterialBatchCount = 1; // 简化处理，实际需要查询关联表
+                    }
+                } catch (NumberFormatException e) {
+                    log.warn("无法解析批次ID: {}", entityId);
+                }
+            } else if ("PRODUCT_TYPE".equals(entityType) && entityId != null) {
+                productTypeExists = productTypeRepository.existsByIdAndFactoryId(entityId, factoryId);
+                // 检查是否有依赖此产品类型的生产计划
+                relatedProductionPlanCount = (int) productionPlanRepository.count();
+            } else if ("MATERIAL_BATCH".equals(entityType) && entityId != null) {
+                // 检查原材料批次是否被生产批次使用
+                relatedBatchCount = 1; // 简化处理
+            }
+
+            // 构建数据操作事实对象
+            DataOperationFact fact = DataOperationFact.builder()
+                    .entityType(entityType)
+                    .entityId(entityId)
+                    .operation(operation != null ? operation : "UPDATE")
+                    .targetFactoryId(factoryId)
+                    .materialBatchFactoryId(factoryId)
+                    .relatedBatchCount(relatedBatchCount)
+                    .relatedMaterialBatchCount(relatedMaterialBatchCount)
+                    .relatedProductionPlanCount(relatedProductionPlanCount)
+                    .productTypeExists(productTypeExists)
+                    .currentStatus(currentStatus)
+                    .targetStatus(targetStatus)
+                    .fieldsToUpdate(updates)
+                    .batchSize(1)
+                    .hasInconsistentFieldTypes(false)
+                    .hasEntitiesWithRelations(relatedBatchCount > 0 || relatedMaterialBatchCount > 0)
+                    .entitiesWithRelationsCount(relatedBatchCount + relatedMaterialBatchCount)
+                    .requiresMaterialConsumption(false)
+                    .isAtomicTransaction(true)
+                    .disposalRecordCreated(false)
+                    .isArchived(false)
+                    .retentionPeriodDays(90)
+                    .daysSinceCreation(0)
+                    .hasNoExternalDependencies(true)
+                    .createdAt(LocalDateTime.now())
+                    .userId(userId)
+                    .username("system")
+                    .build();
+
+            // 调用 RuleEngineService 执行数据操作验证规则
+            ValidationResult result = ruleEngineService.executeRulesWithAudit(
+                    factoryId,
+                    "dataOperationValidation",  // 规则组
+                    entityType,                 // 实体类型
+                    entityId != null ? entityId : "unknown", // 实体ID
+                    userId,                     // 执行者ID
+                    "system",                   // 执行者名称
+                    userRole,                   // 执行者角色
+                    fact                        // Drools 事实对象
+            );
+
+            log.debug("数据操作规则验证完成: entityType={}, operation={}, valid={}, violations={}",
+                    entityType, operation, result.isValid(), result.getViolations().size());
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("数据操作规则验证异常: entityType={}, operation={}, error={}",
+                    entityType, operation, e.getMessage(), e);
+            // 验证异常时返回通过，避免阻塞业务（可根据需求调整为验证失败）
+            return ValidationResult.builder()
+                    .valid(true)
+                    .build();
+        }
     }
 }

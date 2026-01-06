@@ -3,6 +3,8 @@ package com.cretas.aims.ai.client;
 import com.cretas.aims.ai.dto.ChatCompletionRequest;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.ai.dto.Tool;
+import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.config.DashScopeConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -295,5 +297,100 @@ public class DashScopeClient {
      */
     public boolean isAvailable() {
         return config.isAvailable();
+    }
+
+    /**
+     * 带工具调用的对话 (OpenAI Function Calling)
+     *
+     * @param messages   消息列表
+     * @param tools      可用工具列表
+     * @param toolChoice 工具选择策略 ("auto", "none", 或指定工具)
+     * @return 响应 (可能包含 tool_calls)
+     */
+    public ChatCompletionResponse chatCompletionWithTools(
+            List<ChatMessage> messages,
+            List<Tool> tools,
+            String toolChoice) {
+
+        if (!config.isAvailable()) {
+            log.warn("DashScope API 未配置或未启用");
+            return createErrorResponse("DashScope API 未配置");
+        }
+
+        // 构建请求
+        ChatCompletionRequest request = ChatCompletionRequest.builder()
+                .model(config.getModel())
+                .messages(messages)
+                .maxTokens(config.getMaxTokens())
+                .temperature(config.getLowTemperature())  // Function Calling 通常使用低温度
+                .tools(tools)
+                .toolChoice(toolChoice)
+                .build();
+
+        return chatCompletion(request);
+    }
+
+    /**
+     * 带工具调用的简单对话
+     *
+     * @param systemPrompt 系统提示词
+     * @param userInput    用户输入
+     * @param tools        可用工具列表
+     * @return 响应 (可能包含 tool_calls)
+     */
+    public ChatCompletionResponse chatWithTools(
+            String systemPrompt,
+            String userInput,
+            List<Tool> tools) {
+
+        List<ChatMessage> messages = List.of(
+                ChatMessage.system(systemPrompt),
+                ChatMessage.user(userInput)
+        );
+
+        return chatCompletionWithTools(messages, tools, "auto");
+    }
+
+    /**
+     * 检查响应是否包含工具调用
+     *
+     * @param response API 响应
+     * @return 是否包含工具调用
+     */
+    public boolean hasToolCalls(ChatCompletionResponse response) {
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()) {
+            return false;
+        }
+
+        ChatCompletionResponse.Message message = response.getChoices().get(0).getMessage();
+        return message != null && message.getToolCalls() != null && !message.getToolCalls().isEmpty();
+    }
+
+    /**
+     * 获取第一个工具调用
+     *
+     * @param response API 响应
+     * @return 第一个工具调用，如果没有则返回 null
+     */
+    public ToolCall getFirstToolCall(ChatCompletionResponse response) {
+        if (!hasToolCalls(response)) {
+            return null;
+        }
+
+        return response.getChoices().get(0).getMessage().getToolCalls().get(0);
+    }
+
+    /**
+     * 获取所有工具调用
+     *
+     * @param response API 响应
+     * @return 工具调用列表，如果没有则返回空列表
+     */
+    public List<ToolCall> getAllToolCalls(ChatCompletionResponse response) {
+        if (!hasToolCalls(response)) {
+            return List.of();
+        }
+
+        return response.getChoices().get(0).getMessage().getToolCalls();
     }
 }

@@ -71,6 +71,20 @@ public class ChatCompletionRequest {
     private ExtraBody extraBody;
 
     /**
+     * 可用工具列表 (OpenAI Function Calling)
+     */
+    private List<Tool> tools;
+
+    /**
+     * 工具选择策略 (OpenAI Function Calling)
+     * - "auto": LLM 自主决定是否调用工具
+     * - "none": 不调用任何工具
+     * - {"type": "function", "function": {"name": "xxx"}}: 强制调用指定工具
+     */
+    @JsonProperty("tool_choice")
+    private Object toolChoice;
+
+    /**
      * DashScope 扩展参数
      */
     @Data

@@ -4,6 +4,7 @@ import com.cretas.aims.client.isapi.IsapiClient;
 import com.cretas.aims.dto.isapi.IsapiCaptureDTO;
 import com.cretas.aims.dto.isapi.IsapiDeviceDTO;
 import com.cretas.aims.dto.isapi.IsapiStreamDTO;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.isapi.IsapiDevice;
 import com.cretas.aims.entity.isapi.IsapiDevice.DeviceStatus;
 import com.cretas.aims.entity.isapi.IsapiDeviceChannel;
@@ -58,7 +59,6 @@ public class IsapiDeviceService {
         IsapiDevice device = IsapiDevice.builder()
                 .factoryId(factoryId)
                 .deviceName(dto.getDeviceName())
-                .deviceType(dto.getDeviceType())
                 .deviceModel(dto.getDeviceModel())
                 .ipAddress(dto.getIpAddress())
                 .port(dto.getPort() != null ? dto.getPort() : 80)
@@ -75,6 +75,11 @@ public class IsapiDeviceService {
                 .equipmentId(dto.getEquipmentId())
                 .status(DeviceStatus.UNKNOWN)
                 .build();
+
+        // 设置统一设备类型
+        if (dto.getDeviceType() != null) {
+            device.setUnifiedDeviceType(UnifiedDeviceType.fromIsapiDeviceType(dto.getDeviceType()));
+        }
 
         device = deviceRepository.save(device);
         log.info("添加设备: {} - {}", device.getDeviceName(), device.getIpAddress());
@@ -99,7 +104,7 @@ public class IsapiDeviceService {
             device.setDeviceName(dto.getDeviceName());
         }
         if (dto.getDeviceType() != null) {
-            device.setDeviceType(dto.getDeviceType());
+            device.setUnifiedDeviceType(UnifiedDeviceType.fromIsapiDeviceType(dto.getDeviceType()));
         }
         if (dto.getIpAddress() != null) {
             device.setIpAddress(dto.getIpAddress());
@@ -381,7 +386,8 @@ public class IsapiDeviceService {
                 .id(device.getId())
                 .factoryId(device.getFactoryId())
                 .deviceName(device.getDeviceName())
-                .deviceType(device.getDeviceType())
+                .deviceType(device.getUnifiedDeviceType() != null ?
+                        device.getUnifiedDeviceType().toIsapiDeviceType() : null)
                 .deviceModel(device.getDeviceModel())
                 .serialNumber(device.getSerialNumber())
                 .firmwareVersion(device.getFirmwareVersion())

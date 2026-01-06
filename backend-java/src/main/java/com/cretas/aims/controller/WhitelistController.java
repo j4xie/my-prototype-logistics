@@ -39,7 +39,7 @@ public class WhitelistController {
 
     @PostMapping("/batch")
     @Operation(summary = "批量添加白名单", description = "批量添加多个手机号到白名单，返回成功和失败的详细结果")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO.BatchResult> batchAdd(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestHeader("Authorization") @Parameter(description = "访问令牌", example = "Bearer eyJhbGciOiJIUzI1NiJ9...") String authorization,
@@ -55,7 +55,7 @@ public class WhitelistController {
 
     @GetMapping
     @Operation(summary = "获取白名单列表", description = "分页获取白名单列表，支持按状态、部门、角色筛选和关键词搜索")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<PageResponse<WhitelistDTO>> getWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(required = false) @Parameter(description = "状态：ACTIVE-激活/EXPIRED-过期/LIMIT_REACHED-达上限", example = "ACTIVE") String status,
@@ -91,7 +91,7 @@ public class WhitelistController {
 
     @GetMapping("/{id}")
     @Operation(summary = "获取白名单详情", description = "根据ID获取白名单记录的详细信息")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO> getWhitelistById(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
@@ -102,7 +102,7 @@ public class WhitelistController {
 
     @PutMapping("/{id}")
     @Operation(summary = "更新白名单", description = "更新白名单记录信息，包括姓名、部门、角色、有效期等")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO> updateWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id,
@@ -114,7 +114,7 @@ public class WhitelistController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除白名单", description = "删除指定的白名单记录（软删除）")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Void> deleteWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
@@ -125,7 +125,7 @@ public class WhitelistController {
 
     @DeleteMapping("/batch")
     @Operation(summary = "批量删除白名单", description = "批量删除多个白名单记录，返回删除的数量")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Integer> batchDelete(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Parameter(description = "白名单ID列表") List<Integer> ids) {
@@ -136,7 +136,7 @@ public class WhitelistController {
 
     @GetMapping("/stats")
     @Operation(summary = "获取白名单统计信息", description = "获取白名单的总数、激活数、过期数等统计信息")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO.WhitelistStats> getStats(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.debug("获取白名单统计: factoryId={}", factoryId);
@@ -146,7 +146,7 @@ public class WhitelistController {
 
     @PutMapping("/expired")
     @Operation(summary = "更新过期的白名单状态", description = "将已过有效期的白名单状态更新为EXPIRED，返回更新数量")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Integer> updateExpired(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("更新过期的白名单状态: factoryId={}", factoryId);
@@ -156,7 +156,7 @@ public class WhitelistController {
 
     @PutMapping("/limit-reached")
     @Operation(summary = "更新达到使用上限的白名单状态", description = "将使用次数达上限的白名单状态更新为LIMIT_REACHED，返回更新数量")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Integer> updateLimitReached(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId) {
         log.info("更新达到使用上限的白名单状态: factoryId={}", factoryId);
@@ -186,7 +186,7 @@ public class WhitelistController {
 
     @GetMapping("/search")
     @Operation(summary = "搜索白名单", description = "根据关键词搜索白名单，匹配手机号、姓名等字段")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<PageResponse<WhitelistDTO>> searchWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam @Parameter(description = "搜索关键词（手机号/姓名）", example = "张三") String keyword,
@@ -201,7 +201,7 @@ public class WhitelistController {
 
     @GetMapping("/expiring")
     @Operation(summary = "获取即将过期的白名单", description = "获取指定天数内即将过期的白名单列表，用于提前提醒")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<List<WhitelistDTO>> getExpiringSoon(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(defaultValue = "7") @Parameter(description = "即将过期的天数范围", example = "7") Integer days) {
@@ -212,7 +212,7 @@ public class WhitelistController {
 
     @GetMapping("/most-active")
     @Operation(summary = "获取最活跃的白名单用户", description = "按使用次数排序获取最活跃的白名单记录")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<List<WhitelistDTO>> getMostActiveUsers(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(defaultValue = "10") @Parameter(description = "返回记录数量", example = "10") Integer limit) {
@@ -223,7 +223,7 @@ public class WhitelistController {
 
     @GetMapping("/recently-used")
     @Operation(summary = "获取最近使用的白名单", description = "按最后使用时间排序获取最近使用的白名单记录")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<List<WhitelistDTO>> getRecentlyUsed(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(defaultValue = "10") @Parameter(description = "返回记录数量", example = "10") Integer limit) {
@@ -234,7 +234,7 @@ public class WhitelistController {
 
     @GetMapping("/export")
     @Operation(summary = "导出白名单", description = "将白名单数据导出为CSV格式字符串")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<String> exportWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(required = false) @Parameter(description = "状态筛选：ACTIVE/EXPIRED/LIMIT_REACHED", example = "ACTIVE") String status) {
@@ -245,7 +245,7 @@ public class WhitelistController {
 
     @PostMapping("/import")
     @Operation(summary = "导入白名单", description = "从CSV格式数据批量导入白名单，返回导入结果")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO.BatchResult> importWhitelist(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestBody @Parameter(description = "CSV格式数据") String csvData) {
@@ -256,7 +256,7 @@ public class WhitelistController {
 
     @DeleteMapping("/cleanup")
     @Operation(summary = "清理已删除的记录", description = "物理删除指定天数之前已软删除的记录，释放空间")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Integer> cleanupDeleted(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @RequestParam(defaultValue = "30") @Parameter(description = "删除多少天前的记录", example = "30") Integer daysOld) {
@@ -267,7 +267,7 @@ public class WhitelistController {
 
     @PutMapping("/{id}/reset-usage")
     @Operation(summary = "重置使用次数", description = "将指定白名单的使用次数重置为0")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<Void> resetUsageCount(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id) {
@@ -278,7 +278,7 @@ public class WhitelistController {
 
     @PutMapping("/{id}/extend")
     @Operation(summary = "延长有效期", description = "延长指定白名单的有效期，在当前过期时间基础上增加天数")
-    @PreAuthorize("hasAnyAuthority('super_admin', 'factory_admin', 'permission_admin')")
+    @PreAuthorize("hasAuthority('factory_super_admin')")
     public ApiResponse<WhitelistDTO> extendExpiration(
             @PathVariable @Parameter(description = "工厂ID", example = "F001") String factoryId,
             @PathVariable @Parameter(description = "白名单ID", example = "1") Integer id,
