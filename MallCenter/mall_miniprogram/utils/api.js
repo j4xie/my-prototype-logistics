@@ -30,7 +30,7 @@ const request = (url, method, data, showLoading) => {
               title: '提示',
               content: res.data.msg ? res.data.msg : '没有数据' + '',
               success() {
-                
+
               },
               complete(){
                 if(res.data.code == 60001){
@@ -84,8 +84,51 @@ const request = (url, method, data, showLoading) => {
   })
 }
 
+/**
+ * 静默请求方法 - 用于行为追踪等后台功能
+ * 特点：
+ * 1. 不显示任何加载提示
+ * 2. 失败时不弹窗，只在控制台打印日志
+ * 3. 适用于不影响用户主流程的后台任务
+ */
+const silentRequest = (url, method, data) => {
+  let _url = __config.basePath + url
+  return new Promise((resolve, reject) => {
+    wx.request({
+      url: _url,
+      method: method,
+      data: data,
+      header: {
+        'app-id': wx.getAccountInfoSync().miniProgram.appId,
+        'third-session': getApp().globalData.thirdSession != null ? getApp().globalData.thirdSession : ''
+      },
+      success(res) {
+        if (res.statusCode == 200) {
+          if (res.data.code != 200) {
+            // 静默处理：只打印日志，不弹窗
+            console.warn('[SilentRequest]', url, '请求失败:', res.data)
+            reject(res.data.msg)
+          } else {
+            resolve(res.data)
+          }
+        } else {
+          // 静默处理 HTTP 错误
+          console.warn('[SilentRequest]', url, 'HTTP错误:', res.statusCode, res.data)
+          reject(new Error(`HTTP ${res.statusCode}`))
+        }
+      },
+      fail(error) {
+        // 静默处理网络错误
+        console.warn('[SilentRequest]', url, '网络错误:', error.errMsg)
+        reject(error)
+      }
+    })
+  })
+}
+
 module.exports = {
   request,
+  silentRequest,
   login: (data) => {//小程序登录接口
     return request('/weixin/api/ma/wxuser/login', 'post', data, false)
   },
@@ -320,11 +363,11 @@ module.exports = {
     })
   },
   // ========== 用户行为追踪相关 ==========
-  trackBehavior: (data) => {//上报单个行为事件
-    return request('/weixin/ma/behavior/track', 'post', data, false)
+  trackBehavior: (data) => {//上报单个行为事件（静默，不弹窗）
+    return silentRequest('/weixin/ma/behavior/track', 'post', data)
   },
-  trackBehaviorBatch: (data) => {//批量上报行为事件
-    return request('/weixin/ma/behavior/trackBatch', 'post', data, false)
+  trackBehaviorBatch: (data) => {//批量上报行为事件（静默，不弹窗）
+    return silentRequest('/weixin/ma/behavior/trackBatch', 'post', data)
   },
   trackProductView: (data) => {//上报商品浏览事件
     return request('/weixin/ma/behavior/view/product', 'post', data, false)
