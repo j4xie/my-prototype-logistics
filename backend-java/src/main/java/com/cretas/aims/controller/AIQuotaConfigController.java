@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.config.AIQuotaConfig;
 import com.cretas.aims.repository.config.AIQuotaConfigRepository;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -61,7 +62,7 @@ public class AIQuotaConfigController {
             log.error("获取配额配置失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "获取配额配置失败: " + e.getMessage()
+                    "message", "获取配额配置失败: " + ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -124,7 +125,7 @@ public class AIQuotaConfigController {
             log.error("创建配额配置失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "创建配置失败: " + e.getMessage()
+                    "message", "创建配置失败: " + ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -183,7 +184,7 @@ public class AIQuotaConfigController {
             log.error("更新配额配置失败: configId={}, error={}", configId, e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "更新配置失败: " + e.getMessage()
+                    "message", "更新配置失败: " + ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -231,7 +232,7 @@ public class AIQuotaConfigController {
             log.error("删除配额配置失败: configId={}, error={}", configId, e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "删除配置失败: " + e.getMessage()
+                    "message", "删除配置失败: " + ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -265,7 +266,7 @@ public class AIQuotaConfigController {
             log.error("获取配额配置详情失败: configId={}, error={}", configId, e.getMessage(), e);
             return ResponseEntity.ok(Map.of(
                     "success", false,
-                    "message", "获取配置失败: " + e.getMessage()
+                    "message", "获取配置失败: " + ErrorSanitizer.sanitize(e)
             ));
         }
     }

@@ -29,6 +29,18 @@ import EncodingRuleConfigScreen from "../../screens/factory-admin/config/Encodin
 import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
 import SopConfigScreen from "../../screens/management/SopConfigScreen";
 
+// IoT 电子秤设备管理
+import { IotDeviceListScreen } from "../../screens/factory-admin/iot/IotDeviceListScreen";
+import { IotDeviceDetailScreen } from "../../screens/factory-admin/iot/IotDeviceDetailScreen";
+import { IotDeviceCreateScreen } from "../../screens/factory-admin/iot/IotDeviceCreateScreen";
+import { ScaleTestScreen } from "../../screens/factory-admin/iot/ScaleTestScreen";
+
+// ISAPI 海康威视摄像头设备管理
+import { IsapiDeviceListScreen } from "../../screens/factory-admin/isapi/IsapiDeviceListScreen";
+import { IsapiDeviceDetailScreen } from "../../screens/factory-admin/isapi/IsapiDeviceDetailScreen";
+import { IsapiDeviceCreateScreen } from "../../screens/factory-admin/isapi/IsapiDeviceCreateScreen";
+import { IsapiSmartConfigScreen } from "../../screens/factory-admin/isapi/IsapiSmartConfigScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -165,6 +177,50 @@ export function FAManagementStackNavigator() {
         name="SopConfig"
         component={SopConfigScreen}
         options={{ title: "SOP配置" }}
+      />
+
+      {/* IoT 电子秤设备管理 */}
+      <Stack.Screen
+        name="IotDeviceList"
+        component={IotDeviceListScreen}
+        options={{ title: "IoT 设备管理" }}
+      />
+      <Stack.Screen
+        name="IotDeviceDetail"
+        component={IotDeviceDetailScreen}
+        options={{ title: "设备详情" }}
+      />
+      <Stack.Screen
+        name="IotDeviceCreate"
+        component={IotDeviceCreateScreen}
+        options={{ title: "添加设备" }}
+      />
+      <Stack.Screen
+        name="ScaleTest"
+        component={ScaleTestScreen}
+        options={{ title: "秤数据测试" }}
+      />
+
+      {/* ISAPI 海康威视摄像头设备管理 */}
+      <Stack.Screen
+        name="IsapiDeviceList"
+        component={IsapiDeviceListScreen}
+        options={{ title: "摄像头管理" }}
+      />
+      <Stack.Screen
+        name="IsapiDeviceDetail"
+        component={IsapiDeviceDetailScreen}
+        options={{ title: "摄像头详情" }}
+      />
+      <Stack.Screen
+        name="IsapiDeviceCreate"
+        component={IsapiDeviceCreateScreen}
+        options={{ title: "添加摄像头" }}
+      />
+      <Stack.Screen
+        name="IsapiSmartConfig"
+        component={IsapiSmartConfigScreen}
+        options={{ title: "智能分析配置" }}
       />
     </Stack.Navigator>
   );

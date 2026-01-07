@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -92,7 +94,7 @@ public class ShipmentIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + e.getMessage())
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -247,6 +249,18 @@ public class ShipmentIntentHandler implements IntentHandler {
                         .build();
             }
 
+            // 工厂隔离验证
+            if (!factoryId.equals(record.get().getFactoryId())) {
+                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentConfig.getIntentCode())
+                        .status("FAILED")
+                        .message("未找到出货记录: " + shipmentId)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
@@ -272,6 +286,18 @@ public class ShipmentIntentHandler implements IntentHandler {
                         .build();
             }
 
+            // 工厂隔离验证
+            if (!factoryId.equals(record.get().getFactoryId())) {
+                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentConfig.getIntentCode())
+                        .status("FAILED")
+                        .message("未找到出货单: " + shipmentNumber)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
@@ -286,6 +312,18 @@ public class ShipmentIntentHandler implements IntentHandler {
         if (trackingNumber != null) {
             Optional<ShipmentRecord> record = shipmentRecordService.getByTrackingNumber(trackingNumber);
             if (record.isEmpty()) {
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intentConfig.getIntentCode())
+                        .status("FAILED")
+                        .message("未找到物流单号: " + trackingNumber)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            // 工厂隔离验证
+            if (!factoryId.equals(record.get().getFactoryId())) {
+                log.warn("工厂隔离校验失败: 请求factoryId={}, 记录factoryId={}", factoryId, record.get().getFactoryId());
                 return IntentExecuteResponse.builder()
                         .intentRecognized(true)
                         .intentCode(intentConfig.getIntentCode())
@@ -779,6 +817,12 @@ public class ShipmentIntentHandler implements IntentHandler {
                 .message("出货/溯源意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 
     // === 工具方法 ===

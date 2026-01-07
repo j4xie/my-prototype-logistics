@@ -96,6 +96,11 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, St
     Optional<MaterialBatch> findByBatchNumber(String batchNumber);
 
     /**
+     * 根据工厂ID和批次号查找（工厂隔离）
+     */
+    Optional<MaterialBatch> findByFactoryIdAndBatchNumber(String factoryId, String batchNumber);
+
+    /**
      * 查找工厂的原材料批次
      */
     @EntityGraph(attributePaths = {"materialType", "supplier"})

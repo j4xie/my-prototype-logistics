@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
@@ -154,7 +156,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("获取行业模板包失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("获取模板包失败: " + e.getMessage());
+            return ApiResponse.error("获取模板包失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -181,7 +183,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("获取模板包详情失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取模板包失败: " + e.getMessage());
+            return ApiResponse.error("获取模板包失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -292,9 +294,9 @@ public class TemplatePackageController {
             errorResult.setSuccess(false);
             errorResult.setTemplatesImported(0);
             errorResult.setEntityTypes(List.of());
-            errorResult.setMessage("初始化失败: " + e.getMessage());
+            errorResult.setMessage("初始化失败: " + ErrorSanitizer.sanitize(e));
 
-            return ApiResponse.error("初始化模板失败: " + e.getMessage());
+            return ApiResponse.error("初始化模板失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -330,7 +332,7 @@ public class TemplatePackageController {
             try {
                 parseTemplatesJson(request.getTemplatesJson());
             } catch (Exception e) {
-                return ApiResponse.error("模板JSON格式无效: " + e.getMessage());
+                return ApiResponse.error("模板JSON格式无效: " + ErrorSanitizer.sanitize(e));
             }
 
             // 创建新模板包
@@ -357,7 +359,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("创建行业模板包失败: error={}", e.getMessage(), e);
-            return ApiResponse.error("创建模板包失败: " + e.getMessage());
+            return ApiResponse.error("创建模板包失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -404,7 +406,7 @@ public class TemplatePackageController {
                 try {
                     parseTemplatesJson(request.getTemplatesJson());
                 } catch (Exception e) {
-                    return ApiResponse.error("模板JSON格式无效: " + e.getMessage());
+                    return ApiResponse.error("模板JSON格式无效: " + ErrorSanitizer.sanitize(e));
                 }
                 templatePackage.setTemplatesJson(request.getTemplatesJson());
             }
@@ -428,7 +430,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("更新行业模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("更新模板包失败: " + e.getMessage());
+            return ApiResponse.error("更新模板包失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -477,7 +479,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("删除行业模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("删除模板包失败: " + e.getMessage());
+            return ApiResponse.error("删除模板包失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -523,7 +525,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("设置默认模板包失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("设置默认模板失败: " + e.getMessage());
+            return ApiResponse.error("设置默认模板失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -584,7 +586,7 @@ public class TemplatePackageController {
 
         } catch (Exception e) {
             log.error("获取模板使用情况失败: id={}, error={}", id, e.getMessage(), e);
-            return ApiResponse.error("获取使用情况失败: " + e.getMessage());
+            return ApiResponse.error("获取使用情况失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 

@@ -6,6 +6,7 @@ import com.cretas.aims.dto.traceability.TraceabilityDTO;
 import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.service.TraceabilityService;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -81,7 +82,7 @@ public class TraceabilityController {
             return ApiResponse.success(response);
         } catch (Exception e) {
             log.error("获取溯源记录列表失败", e);
-            return ApiResponse.error("获取溯源记录列表失败: " + e.getMessage());
+            return ApiResponse.error("获取溯源记录列表失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -122,7 +123,7 @@ public class TraceabilityController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "code", 400,
-                    "message", e.getMessage()
+                    "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -164,7 +165,7 @@ public class TraceabilityController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "code", 400,
-                    "message", e.getMessage()
+                    "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -196,7 +197,7 @@ public class TraceabilityController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "code", 400,
-                    "message", e.getMessage()
+                    "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -240,7 +241,7 @@ public class TraceabilityController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "code", 400,
-                    "message", e.getMessage()
+                    "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

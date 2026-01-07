@@ -139,6 +139,26 @@ public class IntentExecuteResponse {
      */
     private ConfirmableAction confirmableAction;
 
+    // ==================== 额外元数据 ====================
+
+    /**
+     * 额外元数据
+     * 用于传递验证失败、调试信息等
+     */
+    private Map<String, Object> metadata;
+
+    // ==================== 缓存相关 ====================
+
+    /**
+     * 是否来自缓存
+     */
+    private Boolean fromCache;
+
+    /**
+     * 缓存命中类型 (EXACT / SEMANTIC)
+     */
+    private String cacheHitType;
+
     // ==================== 嵌套类 ====================
 
     /**

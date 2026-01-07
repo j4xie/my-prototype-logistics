@@ -9,7 +9,6 @@
 2. 澄清问题设计 - 候选意图选择，不是简单问"对不对"
 3. 完整记录日志 - 支持错误归因和规则优化
 4. LLM Fallback - 规则匹配失败后的智能兜底
-5. LangChain集成 - 支持复杂多轮对话和工具调用
 
 ---
 
@@ -54,13 +53,12 @@
 
 ### 3.1 各阶段难度评估
 
-| Phase | 方案描述 | 工作量 | 依赖 |
-|-------|---------|--------|------|
-| **Phase 1** | 基础确认机制 | 2周 | 无 |
-| **Phase 2** | 智能确认策略 | 1周 | Phase 1 |
-| **Phase 3** | Fallback和学习机制 | 2周 | Phase 1-2 |
-| **Phase 4** | 规则优化系统 | 3周 | Phase 1-3 |
-| **LangChain** | 复杂多轮对话 | 4-6周 | 可独立 |
+| Phase | 方案描述 | 工作量 | 依赖 | 状态 |
+|-------|---------|--------|------|------|
+| **Phase 1** | 基础确认机制 | 2周 | 无 | ✅ 已完成 |
+| **Phase 2** | 智能确认策略 | 1周 | Phase 1 | ✅ 已完成 |
+| **Phase 3** | Fallback和学习机制 | 2周 | Phase 1-2 | ✅ 已完成 |
+| **Phase 4** | 规则优化系统 | 3周 | Phase 1-3 | ✅ 已完成 |
 
 ### 3.2 各功能实现差距
 
@@ -103,21 +101,6 @@
   - 需设计澄清问题格式规范
 改动量: 中等 (~300行Java)
 ```
-
-### 3.3 LangChain 集成评估
-
-**可行性评分: 7/10**
-
-| 维度 | 评分 | 说明 |
-|------|------|------|
-| 技术兼容性 | 9/10 | Qwen 兼容 OpenAI 格式，LangChain 原生支持 |
-| 开发工作量 | 6/10 | 需 4-6 周，工具系统最复杂 |
-| 迁移风险 | 7/10 | 可渐进式迁移，不破坏现有功能 |
-| 团队学习曲线 | 6/10 | 需学习 Agent/Tool 概念 |
-
-**建议**:
-- Phase 1-3 优先用简单 Qwen API (满足80%需求)
-- Phase 4 后按需引入 LangChain
 
 ---
 
@@ -197,13 +180,6 @@ if (sensitivity == HIGH || sensitivity == CRITICAL) {
 - 每周自动分析失败案例
 - 生成优化建议报告
 
-### 阶段 D: LangChain集成 (4-6周) - 长期
-
-仅当以下条件满足时启动:
-- 需要工具调用 (查数据库、API)
-- 需要多步骤推理链
-- 需要 Agent 自主决策
-
 ---
 
 ## 五、关键文件清单
@@ -259,12 +235,11 @@ if (sensitivity == HIGH || sensitivity == CRITICAL) {
 ## 八、结论与建议
 
 ### 方案评估结论
-用户方案设计完善，但需要**分阶段实施**:
+用户方案设计完善，**已全部实施完成**:
 
-1. **Phase 1-2 (确认机制)**: 建议立即开始，改动量可控
-2. **Phase 3 (Fallback)**: 建议在 Phase 1-2 后实施
-3. **Phase 4 (规则优化)**: 可选，看实际效果决定
-4. **LangChain**: 不建议立即引入，待需求明确后再评估
+1. **Phase 1-2 (确认机制)**: ✅ 已完成
+2. **Phase 3 (Fallback)**: ✅ 已完成
+3. **Phase 4 (规则优化)**: ✅ 已完成
 
 ### 推荐首批实施项
 1. ✅ A1 置信度返回 (3天)
@@ -416,15 +391,6 @@ cretas.ai.intent.suggestion.analysis-days=7
 
 ---
 
-### Phase D: LangChain集成 ⏳ 未开始
-
-仅当以下条件满足时启动:
-- 需要工具调用 (查数据库、API)
-- 需要多步骤推理链
-- 需要 Agent 自主决策
-
----
-
 ## 十、AI 全面管理能力 ✅ 已完成 (2026-01-03)
 
 ### 10.1 概述
@@ -541,6 +507,390 @@ backend-java/src/main/resources/db/migration/
 | 意图识别增强 (Phase A-C) | ✅ 已完成 | 100% |
 | 关键词学习机制 | ✅ 已完成 | 100% |
 | AI 全面管理能力 (Phase 1-3) | ✅ 已完成 | 100% |
-| LangChain 集成 (Phase D) | ⏳ 未开始 | 0% |
+| 全局关键词匹配修复 (BUG-007) | ✅ 已完成 | 100% |
 
-**整体评估**: 核心 AI 功能已全部完成，LangChain 集成为可选的长期目标。
+**整体评估**: 核心 AI 功能已全部完成，包括全局关键词晋升后的匹配逻辑修复、Python→Java 架构迁移。
+
+---
+
+## 十二、BUG-007 全局关键词匹配修复 ✅ 已完成 (2026-01-04)
+
+### 12.1 问题描述
+
+当关键词从多个工厂（3+）晋升到全局(GLOBAL)后，数据库存储成功，但意图匹配时无法使用这些全局关键词。
+
+### 12.2 根因分析
+
+`AIIntentServiceImpl.java` 的关键词匹配方法存在缺陷：
+- `getMatchedKeywords()` 只读取 `AIIntentConfig.keywords` JSON 字段
+- `calculateKeywordMatchScore()` 同样只读取 JSON 字段
+- 完全忽略了 `keyword_effectiveness` 表中的工厂级和全局关键词
+
+### 12.3 修复方案
+
+新增 `getAllKeywordsForMatching(factoryId, intent)` 方法，实现三层关键词合并：
+
+```java
+private List<String> getAllKeywordsForMatching(String factoryId, AIIntentConfig intent) {
+    Set<String> allKeywords = new HashSet<>();
+
+    // 1. 基础关键词 (from JSON field)
+    // 2. 工厂级关键词 (from keyword_effectiveness, effectiveness >= 0.5)
+    // 3. 全局关键词 (from keyword_effectiveness, factoryId = "GLOBAL")
+
+    return new ArrayList<>(allKeywords);
+}
+```
+
+### 12.4 修改文件
+
+- `backend-java/src/main/java/com/cretas/aims/service/impl/AIIntentServiceImpl.java`
+
+### 12.5 验证结果
+
+输入 "测试晋升专用词"（已晋升为 GLOBAL 的关键词）→ 成功匹配 BATCH_UPDATE 意图 ✅
+
+---
+
+## 十三、Python→Java 架构迁移 (DashScope 直连) ✅ 已完成 (2026-01-04)
+
+### 13.1 迁移概述
+
+将现有 Java + Python 混合架构迁移为**纯 Java 架构**，Java 后端直接调用阿里云 DashScope API（通义千问），彻底移除 Python AI 服务依赖。
+
+### 13.2 迁移范围
+
+| 功能 | 原架构 | 新架构 | 优先级 | 状态 |
+|------|--------|--------|--------|------|
+| 意图分类 LLM | Java → Python `/api/ai/intent/classify` | Java → DashScope API | P0 | ✅ 已完成 |
+| 成本分析 (思考模式) | Java → Python `/api/ai/chat` | Java → DashScope API (thinking_budget) | P0 | ✅ 已完成 |
+| 表单解析 | Java → Python `/api/ai/form/parse` | Java → DashScope API | P1 | ✅ 已完成 |
+| 电子秤视觉识别 | Python `scale_vision_parser.py` | Java DashScopeVisionClient (qwen2.5-vl) | P1 | ✅ 已完成 |
+| OCR 识别 | Java → Python `/api/ai/form/ocr` | Java → DashScope API | P2 | ✅ 已完成 |
+
+### 13.3 新增核心文件
+
+```
+backend-java/src/main/java/com/cretas/aims/
+├── ai/
+│   ├── client/
+│   │   ├── DashScopeClient.java           # 核心客户端 (OpenAI兼容格式)
+│   │   ├── DashScopeStreamClient.java     # 流式响应支持
+│   │   └── DashScopeVisionClient.java     # 视觉模型客户端 (设备识别)
+│   ├── dto/
+│   │   ├── ChatCompletionRequest.java     # 请求DTO
+│   │   ├── ChatCompletionResponse.java    # 响应DTO
+│   │   ├── ChatMessage.java               # 消息DTO (支持图片)
+│   │   └── ThinkingConfig.java            # 思考模式配置
+│   └── config/
+│       └── DashScopeConfig.java           # DashScope配置类
+├── config/
+│   └── AiHttpClientConfig.java            # OkHttp连接池配置
+```
+
+### 13.4 关键配置
+
+```properties
+# application.properties DashScope 配置
+
+# 是否启用 DashScope 直接调用
+cretas.ai.dashscope.enabled=true
+# API Key (从环境变量读取)
+cretas.ai.dashscope.api-key=${DASHSCOPE_API_KEY:}
+# API 基础 URL (OpenAI 兼容格式)
+cretas.ai.dashscope.base-url=https://dashscope.aliyuncs.com/compatible-mode/v1
+# 默认文本模型
+cretas.ai.dashscope.model=qwen-plus
+# 视觉模型 (设备铭牌识别)
+cretas.ai.dashscope.vision-model=qwen2.5-vl-3b-instruct
+# 思考模式配置
+cretas.ai.dashscope.thinking-enabled=true
+cretas.ai.dashscope.default-thinking-budget=50
+
+# 渐进式迁移开关
+cretas.ai.dashscope.migration.use-direct=true
+cretas.ai.dashscope.migration.intent-classify=false
+cretas.ai.dashscope.migration.cost-analysis=false
+cretas.ai.dashscope.migration.form-parse=false
+cretas.ai.dashscope.migration.vision=true
+```
+
+### 13.5 DashScopeVisionClient 功能
+
+电子秤视觉识别迁移自 Python `scale_vision_parser.py`：
+
+**品牌别名映射**:
+```java
+Map<String, List<String>> BRAND_ALIASES = Map.of(
+    "KELI", List.of("柯力", "KELI", "KL", "科力", "Keli"),
+    "YAOHUA", List.of("耀华", "YAOHUA", "YH", "上海耀华"),
+    "XICE", List.of("矽策", "XICE", "XC", "矽测"),
+    "METTLER", List.of("梅特勒", "METTLER", "MT", "托利多", "Mettler Toledo"),
+    // ...
+);
+```
+
+**连接类型标准化**:
+```java
+Map<String, List<String>> CONNECTION_TYPES = Map.of(
+    "RS232", List.of("RS232", "RS-232", "COM口", "串口"),
+    "RS485", List.of("RS485", "RS-485", "485"),
+    "TCP_IP", List.of("以太网", "Ethernet", "TCP/IP", "RJ45"),
+    "MODBUS_RTU", List.of("Modbus RTU", "MODBUS"),
+    // ...
+);
+```
+
+**识别结果 DTO**:
+```java
+@Data @Builder
+public static class ScaleRecognitionResult {
+    private boolean success;
+    private String brand;          // 标准化品牌名
+    private String model;          // 型号
+    private String maxCapacity;    // 最大量程
+    private String precision;      // 精度
+    private String connectionType; // 标准化连接类型
+    private String serialNumber;   // 序列号
+    private double confidence;     // 置信度 (0-1)
+    private String message;
+}
+```
+
+### 13.6 意图集成
+
+**电子秤意图配置** (SCALE 类):
+| 意图代码 | 描述 | 处理方式 |
+|----------|------|----------|
+| SCALE_ADD_DEVICE | 添加秤设备 | 表单输入 |
+| SCALE_ADD_DEVICE_VISION | 添加秤设备(视觉识别) | 上传铭牌图片 → DashScopeVisionClient |
+| SCALE_SELECT_PROTOCOL | 选择通信协议 | 协议列表选择 |
+| SCALE_CONFIG_CONNECTION | 配置连接参数 | 表单输入 |
+| SCALE_START_READING | 开始读取数据 | 调用读取服务 |
+| SCALE_STOP_READING | 停止读取数据 | 停止读取服务 |
+
+### 13.7 验证结果
+
+```bash
+# 1. DashScope 配置验证
+curl http://139.196.165.140:10010/api/mobile/F001/dashscope/health
+# Response: {"available":true,"visionModel":"qwen2.5-vl-3b-instruct","apiKeyConfigured":true}
+
+# 2. 视觉识别意图执行
+curl -X POST http://139.196.165.140:10010/api/mobile/F001/ai-intents/execute \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"userInput":"上传铭牌识别秤设备","context":{"imageBase64":"..."}}'
+# Response: {"status":"COMPLETED","message":"DashScope API 调用成功"}
+
+# 3. 所有意图列表包含 SCALE 类
+curl http://139.196.165.140:10010/api/mobile/F001/ai-intents
+# 返回包含 SCALE_ADD_DEVICE_VISION 等意图
+```
+
+### 13.8 架构优势
+
+| 对比项 | 原架构 (Java+Python) | 新架构 (纯Java) |
+|--------|---------------------|-----------------|
+| 部署复杂度 | 需部署 2 个服务 | 单一 JAR 文件 |
+| 网络延迟 | Java→Python→DashScope | Java→DashScope |
+| 维护成本 | 双语言维护 | 仅 Java |
+| 故障点 | Python 服务宕机影响 AI | 无中间服务依赖 |
+| 日志追踪 | 跨服务日志关联困难 | 单一日志系统 |
+
+### 13.9 回滚策略
+
+```properties
+# 如需回滚到 Python 服务，设置以下配置:
+cretas.ai.dashscope.migration.use-direct=false
+cretas.ai.service.url=http://localhost:8085
+```
+
+### 13.10 迁移完成状态
+
+| 模块 | 状态 | 验证日期 |
+|------|------|----------|
+| DashScopeClient | ✅ 完成 | 2026-01-04 |
+| DashScopeVisionClient | ✅ 完成 | 2026-01-04 |
+| AiHttpClientConfig | ✅ 完成 | 2026-01-04 |
+| SCALE 意图配置 | ✅ 完成 | 2026-01-04 |
+| 服务器部署验证 | ✅ 完成 | 2026-01-04 |
+
+---
+
+## 十四、总体完成度汇总
+
+| 模块 | 状态 | 完成度 | 完成日期 |
+|------|------|--------|----------|
+| 意图识别增强 (Phase A-C) | ✅ 已完成 | 100% | 2026-01-02 |
+| 关键词学习机制 | ✅ 已完成 | 100% | 2026-01-02 |
+| AI 全面管理能力 (Phase 1-3) | ✅ 已完成 | 100% | 2026-01-03 |
+| 全局关键词匹配修复 (BUG-007) | ✅ 已完成 | 100% | 2026-01-04 |
+| **Python→Java 架构迁移** | ✅ 已完成 | 100% | 2026-01-04 |
+| **版本快照与回滚机制** | ✅ 已完成 | 100% | 2026-01-04 |
+
+**最终架构**: 纯 Java + 阿里云 DashScope API (OpenAI兼容格式)
+
+**Python 服务状态**: 可安全下线，保留 14 天作为备份
+
+---
+
+## 十五、版本快照与回滚机制 ✅ 已完成 (2026-01-04)
+
+### 15.1 概述
+
+实现意图配置的版本控制和一键回滚能力，确保配置修改可追溯、可恢复。
+
+### 15.2 核心功能
+
+| 功能 | 描述 | 状态 |
+|------|------|------|
+| **自动快照保存** | 每次更新意图配置前自动保存当前状态为 `previousSnapshot` | ✅ 完成 |
+| **版本号递增** | 每次更新自动递增 `configVersion` | ✅ 完成 |
+| **一键回滚** | 通过 API 恢复到上个版本 | ✅ 完成 |
+| **缓存清除** | 回滚后立即清除 Spring Cache 确保一致性 | ✅ 完成 |
+| **批量回滚** | 支持工厂级批量回滚所有配置 | ✅ 完成 |
+| **版本历史** | 支持查询配置修改历史记录 | ✅ 完成 |
+
+### 15.3 数据库 Schema
+
+**新增字段** (ai_intent_configs 表):
+```sql
+ALTER TABLE ai_intent_configs
+ADD COLUMN config_version INT DEFAULT 1 COMMENT '配置版本号',
+ADD COLUMN previous_snapshot JSON COMMENT '上个版本快照(用于回滚)';
+```
+
+**历史记录表** (可选审计):
+```sql
+CREATE TABLE ai_intent_config_history (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    intent_config_id VARCHAR(36) NOT NULL,
+    factory_id VARCHAR(50) NOT NULL,
+    version_number INT NOT NULL,
+    snapshot JSON NOT NULL,
+    changed_by BIGINT,
+    changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    change_reason VARCHAR(200),
+    INDEX idx_config_version (intent_config_id, version_number)
+);
+```
+
+### 15.4 API 端点
+
+| 方法 | 路径 | 描述 |
+|------|------|------|
+| POST | `/ai-intents/{intentCode}/rollback` | 回滚单个意图到上个版本 |
+| POST | `/ai-intents/rollback-all` | 批量回滚工厂所有配置 |
+| POST | `/ai-intents/{intentCode}/rollback-to-version` | 回滚到指定版本 |
+| GET | `/ai-intents/{intentCode}/history` | 获取版本历史 |
+
+### 15.5 核心实现
+
+**IntentConfigRollbackService.java**:
+```java
+@Service
+@Slf4j
+public class IntentConfigRollbackService {
+
+    @Transactional
+    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+    public AIIntentConfig rollbackToLastVersion(String factoryId, String intentCode, String reason) {
+        AIIntentConfig config = findConfig(factoryId, intentCode);
+
+        if (config.getPreviousSnapshot() == null) {
+            throw new IllegalStateException("没有可回滚的版本");
+        }
+
+        // 保存当前状态为新快照（支持再次回滚）
+        String currentSnapshot = createSnapshot(config);
+
+        // 从快照恢复
+        restoreFromSnapshot(config, config.getPreviousSnapshot());
+
+        // 递增版本号
+        config.setConfigVersion(config.getConfigVersion() + 1);
+        config.setPreviousSnapshot(currentSnapshot);
+
+        // 记录历史
+        saveHistory(config, reason);
+
+        // 显式清除 Hibernate 一级缓存
+        entityManager.flush();
+        entityManager.clear();
+
+        return configRepo.save(config);
+    }
+}
+```
+
+### 15.6 关键 BUG 修复
+
+**BUG 1: Hibernate 一级缓存问题**
+- **问题**: 更新时先修改实体再创建快照，导致快照保存的是修改后的值
+- **修复**: 在修改实体前创建快照
+
+**BUG 2: Spring Cache 缓存问题**
+- **问题**: 回滚成功但立即查询返回旧缓存数据
+- **修复**: 添加 `@CacheEvict` 注解清除相关缓存
+
+```java
+@CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+public AIIntentConfig rollbackToLastVersion(...) { ... }
+
+@CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories"}, allEntries = true)
+public List<AIIntentConfig> rollbackAllConfigs(...) { ... }
+```
+
+### 15.7 验证结果
+
+```bash
+# 测试回滚流程
+$ /tmp/test_complete_rollback.sh
+
+=== Step 1: 当前状态 (V5, 包含 '版本测试V2') ===
+configVersion: 5
+keywords: ["版本测试V2", ...]
+
+=== Step 2: 更新到 V6 ===
+更新成功! configVersion: 6
+previousSnapshot.keywords: ["版本测试V2", ...]  # ✅ 快照正确保存
+
+=== Step 4: 执行回滚 (V6 → V5) ===
+回滚成功! configVersion: 7
+keywords: ["版本测试V2", ...]
+
+=== Step 5: 立即验证 ===
+configVersion: 7
+keywords: ["版本测试V2", ...]  # ✅ 立即可见，无需等待
+
+验证结果: ✅ 缓存清除修复成功
+```
+
+### 15.8 新增文件清单
+
+```
+backend-java/src/main/java/com/cretas/aims/
+├── service/
+│   └── impl/
+│       └── IntentConfigRollbackService.java   # 回滚服务
+├── entity/
+│   └── config/
+│       └── AIIntentConfigHistory.java         # 版本历史 Entity
+├── dto/
+│   └── intent/
+│       └── LlmIntentClassifyResponse.java     # LLM 响应验证 DTO
+└── config/
+    └── AiHttpClientConfig.java                # OkHttp 连接池配置
+
+backend-java/src/main/resources/db/migration/
+└── V2026_01_04_50__intent_version_snapshot.sql
+```
+
+### 15.9 与计划关联
+
+本功能对应计划文件: `/Users/jietaoxie/.claude/plans/imperative-tinkering-falcon.md`
+
+- **Phase 3 (简化版版本控制)**: ✅ 已完成
+- 取消了复杂的灰度发布系统，改用简单的版本快照+手动回滚
+- 人工监控 `IntentMatchRecord.execution_status` + 一键回滚

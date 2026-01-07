@@ -62,6 +62,17 @@ public interface QualityInspectionRepository extends JpaRepository<QualityInspec
     Optional<QualityInspection> findFirstByProductionBatchIdOrderByInspectionDateDesc(Long productionBatchId);
 
     /**
+     * 获取工厂内生产批次最新的质检记录（工厂隔离）
+     * 用于AI意图执行时的工厂隔离查询
+     *
+     * @param factoryId 工厂ID
+     * @param productionBatchId 生产批次ID
+     * @return 最新的质检记录
+     */
+    Optional<QualityInspection> findFirstByFactoryIdAndProductionBatchIdOrderByInspectionDateDesc(
+            String factoryId, Long productionBatchId);
+
+    /**
      * 统计指定日期之后的质检记录数量
      * @param factoryId 工厂ID
      * @param date 起始日期

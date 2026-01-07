@@ -2,6 +2,7 @@ package com.cretas.aims.service;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 /**
  * AI意图执行服务接口
@@ -61,4 +62,25 @@ public interface IntentExecutorService {
      */
     IntentExecuteResponse confirm(String factoryId, String confirmToken,
                                   Long userId, String userRole);
+
+    /**
+     * 流式执行用户输入的AI意图 (SSE)
+     *
+     * 通过 Server-Sent Events 实时返回执行进度:
+     * 1. start - 开始处理
+     * 2. cache_hit / cache_miss - 缓存查询结果
+     * 3. intent_recognized - 意图识别完成
+     * 4. executing - 开始执行
+     * 5. result - 执行结果
+     * 6. complete - 完成
+     * 7. error - 发生错误
+     *
+     * @param factoryId 工厂ID
+     * @param request 执行请求
+     * @param userId 当前用户ID
+     * @param userRole 当前用户角色
+     * @return SSE Emitter
+     */
+    SseEmitter executeStream(String factoryId, IntentExecuteRequest request,
+                              Long userId, String userRole);
 }

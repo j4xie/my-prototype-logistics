@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -83,7 +85,7 @@ public class QualityIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + e.getMessage())
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -166,7 +168,18 @@ public class QualityIntentHandler implements IntentHandler {
         if (request.getContext() != null) {
             Object batchIdObj = request.getContext().get("productionBatchId");
             if (batchIdObj != null) {
-                productionBatchId = Long.valueOf(batchIdObj.toString());
+                try {
+                    productionBatchId = Long.valueOf(batchIdObj.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("无效的批次ID格式: {}", batchIdObj);
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .status("NEED_MORE_INFO")
+                            .message("生产批次ID格式无效，请提供有效的数字ID")
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
             }
         }
 
@@ -180,9 +193,10 @@ public class QualityIntentHandler implements IntentHandler {
                     .build();
         }
 
-        // 获取该批次的最新质检记录
+        // 获取该批次的最新质检记录（使用工厂隔离查询）
         Optional<QualityInspection> latestInspection =
-                qualityInspectionRepository.findFirstByProductionBatchIdOrderByInspectionDateDesc(productionBatchId);
+                qualityInspectionRepository.findFirstByFactoryIdAndProductionBatchIdOrderByInspectionDateDesc(
+                        factoryId, productionBatchId);
 
         if (latestInspection.isEmpty()) {
             return IntentExecuteResponse.builder()
@@ -233,7 +247,18 @@ public class QualityIntentHandler implements IntentHandler {
         if (request.getContext() != null) {
             Object batchIdObj = request.getContext().get("productionBatchId");
             if (batchIdObj != null) {
-                productionBatchId = Long.valueOf(batchIdObj.toString());
+                try {
+                    productionBatchId = Long.valueOf(batchIdObj.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("无效的批次ID格式: {}", batchIdObj);
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .status("NEED_MORE_INFO")
+                            .message("生产批次ID格式无效，请提供有效的数字ID")
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
             }
         }
 
@@ -247,9 +272,10 @@ public class QualityIntentHandler implements IntentHandler {
                     .build();
         }
 
-        // 获取最新质检记录
+        // 获取最新质检记录（使用工厂隔离查询）
         Optional<QualityInspection> latestInspection =
-                qualityInspectionRepository.findFirstByProductionBatchIdOrderByInspectionDateDesc(productionBatchId);
+                qualityInspectionRepository.findFirstByFactoryIdAndProductionBatchIdOrderByInspectionDateDesc(
+                        factoryId, productionBatchId);
 
         if (latestInspection.isEmpty()) {
             return IntentExecuteResponse.builder()
@@ -314,7 +340,20 @@ public class QualityIntentHandler implements IntentHandler {
             Object actionObj = request.getContext().get("action");
             Object reasonObj = request.getContext().get("reason");
 
-            if (batchIdObj != null) productionBatchId = Long.valueOf(batchIdObj.toString());
+            if (batchIdObj != null) {
+                try {
+                    productionBatchId = Long.valueOf(batchIdObj.toString());
+                } catch (NumberFormatException e) {
+                    log.warn("无效的批次ID格式: {}", batchIdObj);
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intentConfig.getIntentCode())
+                            .status("NEED_MORE_INFO")
+                            .message("生产批次ID格式无效，请提供有效的数字ID")
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
+            }
             if (actionObj != null) actionCode = actionObj.toString().toUpperCase();
             if (reasonObj != null) reason = reasonObj.toString();
         }
@@ -330,9 +369,10 @@ public class QualityIntentHandler implements IntentHandler {
                     .build();
         }
 
-        // 获取质检记录
+        // 获取质检记录（使用工厂隔离查询）
         Optional<QualityInspection> latestInspection =
-                qualityInspectionRepository.findFirstByProductionBatchIdOrderByInspectionDateDesc(productionBatchId);
+                qualityInspectionRepository.findFirstByFactoryIdAndProductionBatchIdOrderByInspectionDateDesc(
+                        factoryId, productionBatchId);
 
         if (latestInspection.isEmpty()) {
             return IntentExecuteResponse.builder()
@@ -397,7 +437,7 @@ public class QualityIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentConfig.getIntentCode())
                     .status("FAILED")
-                    .message("处置执行失败: " + e.getMessage())
+                    .message("处置执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -453,6 +493,12 @@ public class QualityIntentHandler implements IntentHandler {
                 .message("质检意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 
     private String determineQualityStatus(QualityInspection inspection) {
