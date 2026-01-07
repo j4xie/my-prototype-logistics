@@ -59,9 +59,9 @@ export interface PageResponse<T> {
 class WhitelistApiClient {
   private getPath(factoryId?: string) {
     const currentFactoryId = getCurrentFactoryId(factoryId);
-    if (!currentFactoryId) {
+    /* if (!currentFactoryId) {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
-    }
+    } */
     return `/api/mobile/${currentFactoryId}/whitelist`;
   }
 

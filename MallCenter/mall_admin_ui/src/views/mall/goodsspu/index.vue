@@ -24,13 +24,6 @@
     >
       <template #menu-left>
         <el-button
-          v-if="checkPermi(['mall:goodsspu:add'])"
-          type="primary"
-          @click="goToCreate"
-          icon="el-icon-plus"
-          >新增商品</el-button
-        >
-        <el-button
           v-if="checkPermi(['mall:goodsspu:edit'])"
           type="success"
           @click="batchShelf('1')"
@@ -79,32 +72,11 @@
         >
         </el-image>
       </template>
-      <template #menu="{ row }">
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:edit'])"
-          type="primary"
-          size="small"
-          text
-          @click="goToEdit(row)"
-        >
-          编辑
-        </el-button>
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:get'])"
-          type="success"
-          size="small"
-          text
-          @click="goToPriceTier(row)"
-        >
-          定价
-        </el-button>
-      </template>
     </avue-crud>
   </div>
 </template>
 
 <script setup name="GoodsSpu">
-import { useRouter } from "vue-router";
 import { checkPermi, checkRole } from "@/utils/permission";
 import {
   getPage,
@@ -117,23 +89,7 @@ import {
 import { tableOption } from "@/const/crud/mall/goodsspu";
 import BaseEditor from "@/components/Editor/index.vue";
 
-const router = useRouter();
 const { proxy } = getCurrentInstance();
-
-// 跳转到创建页面
-function goToCreate() {
-  router.push("/mall/goodsspu-create");
-}
-
-// 跳转到编辑页面
-function goToEdit(row) {
-  router.push(`/mall/goodsspu-edit/${row.id}`);
-}
-
-// 跳转到阶梯定价页面
-function goToPriceTier(row) {
-  router.push(`/mall/goodsspu-pricetier/${row.id}`);
-}
 
 const data = reactive({
   form: {},

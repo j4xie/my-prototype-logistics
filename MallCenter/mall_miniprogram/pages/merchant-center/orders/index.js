@@ -30,8 +30,8 @@ Page({
         duration: 1500
       })
       setTimeout(() => {
-        wx.navigateTo({
-          url: '/pages/auth/login/index'
+        wx.switchTab({
+          url: '/pages/home/index'
         })
       }, 500)
       return
