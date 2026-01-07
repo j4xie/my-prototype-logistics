@@ -16,6 +16,18 @@ from dotenv import load_dotenv
 # 导入 OpenAI SDK (阿里云 DashScope 兼容 OpenAI 格式)
 from openai import OpenAI
 
+# 导入电子秤视觉解析器
+from scale_vision_parser import parse_scale_image, is_vision_enabled
+
+# 导入 Sentence-BERT Embedding 服务
+try:
+    from embedding_service import router as embedding_router, warmup_model as warmup_embedding
+    EMBEDDING_ENABLED = True
+except ImportError:
+    EMBEDDING_ENABLED = False
+    embedding_router = None
+    print("[WARN] embedding_service not available - semantic cache disabled")
+
 load_dotenv()
 
 # ==================== 配置 ====================
@@ -43,6 +55,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 注册 Embedding 路由
+if EMBEDDING_ENABLED and embedding_router:
+    app.include_router(embedding_router)
 
 # ==================== 数据模型 ====================
 class FoodProcessingRequest(BaseModel):
@@ -1471,13 +1487,13 @@ async def parse_form_ocr(request: OCRParseRequest):
     用途:
     - 拍照识别送货单、质检报告等
     - 扫描文档自动填充表单
+    - 电子秤设备铭牌/规格书识别
 
     流程:
-    1. 调用阿里云OCR识别图片文字
-    2. 将识别结果发送给LLM进行结构化提取
-    3. 返回解析出的字段值
-
-    注意: 当前使用模拟OCR，实际生产环境需要集成阿里云OCR API
+    1. 检查 entity_type，如果是 SCALE_CONFIGURATION 则使用专用视觉解析器
+    2. 其他类型使用阿里云OCR识别图片文字
+    3. 将识别结果发送给LLM进行结构化提取
+    4. 返回解析出的字段值
     """
     try:
         if not request.image_base64:
@@ -1489,6 +1505,54 @@ async def parse_form_ocr(request: OCRParseRequest):
                 message="图片数据不能为空"
             )
 
+        # ==================== 电子秤设备识别 (Qwen VL) ====================
+        if request.entity_type == "SCALE_CONFIGURATION":
+            if not is_vision_enabled():
+                return OCRParseResponse(
+                    success=False,
+                    extracted_text="",
+                    field_values={},
+                    confidence=0,
+                    message="视觉识别功能未启用，请配置 VISION_MODEL 和 VISION_ENABLED 环境变量"
+                )
+
+            # 使用专用视觉解析器识别设备铭牌
+            vision_result = parse_scale_image(request.image_base64, "铭牌")
+
+            if vision_result.get("success"):
+                # 映射到表单字段
+                field_values = {
+                    "equipmentName": f"{vision_result.get('brand', '')} {vision_result.get('model', '')}".strip(),
+                    "brandModel": {
+                        "brandName": vision_result.get('brand'),
+                        "modelCode": vision_result.get('model'),
+                    },
+                    "serialNumber": vision_result.get('serial_number'),
+                    "maxCapacity": vision_result.get('max_capacity'),
+                    "precision": vision_result.get('precision'),
+                    "connectionType": vision_result.get('connection_type'),
+                    "notes": vision_result.get('notes'),
+                }
+                # 清理 None 值
+                field_values = {k: v for k, v in field_values.items() if v is not None}
+
+                return OCRParseResponse(
+                    success=True,
+                    extracted_text=vision_result.get('raw_text', ''),
+                    field_values=field_values,
+                    confidence=vision_result.get('confidence', 0.8),
+                    message=vision_result.get('message', '设备识别成功')
+                )
+            else:
+                return OCRParseResponse(
+                    success=False,
+                    extracted_text=vision_result.get('raw_text', ''),
+                    field_values={},
+                    confidence=0,
+                    message=vision_result.get('message', '设备识别失败')
+                )
+
+        # ==================== 通用表单OCR识别 ====================
         # TODO: 集成阿里云OCR API
         # 当前使用模拟OCR结果（用于开发测试）
         # 实际生产环境需要替换为真实OCR调用:
@@ -1569,7 +1633,8 @@ async def form_assistant_health():
         "service": "form_assistant",
         "status": "running",
         "llm_available": bool(client),
-        "ocr_enabled": False,  # TODO: 集成阿里云OCR后改为True
+        "vision_enabled": is_vision_enabled(),  # Qwen VL 视觉识别
+        "ocr_enabled": False,  # 通用 OCR (待集成阿里云 OCR)
         "schema_generation_enabled": True,  # AI Schema 生成功能
         "supported_entity_types": [
             "MATERIAL_BATCH",
@@ -1577,12 +1642,14 @@ async def form_assistant_health():
             "PROCESSING_BATCH",
             "SHIPMENT",
             "EQUIPMENT",
-            "DISPOSAL_RECORD"
+            "DISPOSAL_RECORD",
+            "SCALE_CONFIGURATION"  # 电子秤设备配置
         ],
         "capabilities": [
-            "form_parse",       # 语音/文本解析填充表单
-            "ocr_parse",        # OCR图片解析 (待集成)
-            "schema_generate"   # AI生成Schema字段 (新功能)
+            "form_parse",           # 语音/文本解析填充表单
+            "ocr_parse",            # OCR图片解析 (通用表单)
+            "scale_vision_parse",   # 电子秤设备铭牌识别 (Qwen VL)
+            "schema_generate"       # AI生成Schema字段
         ]
     }
 
@@ -2977,6 +3044,14 @@ if __name__ == "__main__":
         print("Please set in .env: DASHSCOPE_API_KEY=sk-xxx")
     else:
         print("[OK] API Key configured")
+
+    # 预热 Embedding 模型 (可选)
+    if EMBEDDING_ENABLED:
+        print("[INFO] Embedding service enabled (Sentence-BERT)")
+        # 启动时不自动预热，首次请求时懒加载
+        # warmup_embedding()
+    else:
+        print("[WARN] Embedding service disabled")
 
     print("="*50 + "\n")
 

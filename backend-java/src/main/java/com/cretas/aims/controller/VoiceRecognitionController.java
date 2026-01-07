@@ -30,6 +30,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 /**
  * 语音识别控制器
  * 提供讯飞语音识别代理 API，包括历史记录、配置管理、批量识别
@@ -82,7 +84,7 @@ public class VoiceRecognitionController {
 
         } catch (Exception e) {
             log.error("语音识别异常", e);
-            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -119,7 +121,7 @@ public class VoiceRecognitionController {
 
         } catch (Exception e) {
             log.error("语音识别异常", e);
-            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("语音识别服务异常: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -280,12 +282,12 @@ public class VoiceRecognitionController {
             return ResponseEntity.ok(ApiResponse.success(task));
 
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
         } catch (IllegalStateException e) {
-            return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
         } catch (Exception e) {
             log.error("创建批量任务失败", e);
-            return ResponseEntity.ok(ApiResponse.error("创建批量任务失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("创建批量任务失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -329,7 +331,7 @@ public class VoiceRecognitionController {
             Map<String, Object> result = voiceRecognitionService.getBatchTaskResult(taskNumber);
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
         }
     }
 
@@ -349,7 +351,7 @@ public class VoiceRecognitionController {
             BatchVoiceTask task = voiceRecognitionService.cancelBatchTask(taskNumber, userId);
             return ResponseEntity.ok(ApiResponse.success(task));
         } catch (IllegalArgumentException | IllegalStateException e) {
-            return ResponseEntity.ok(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error(ErrorSanitizer.sanitize(e)));
         }
     }
 

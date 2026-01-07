@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.entity.Supplier;
 import com.cretas.aims.repository.SupplierRepository;
 import com.cretas.aims.service.SupplierAdmissionRuleService;
+import com.cretas.aims.util.ErrorSanitizer;
 import com.cretas.aims.service.SupplierAdmissionRuleService.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -78,7 +79,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("评估供应商准入失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "评估失败: " + e.getMessage());
+            response.put("message", "评估失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -146,7 +147,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("批量评估失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "批量评估失败: " + e.getMessage());
+            response.put("message", "批量评估失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -193,7 +194,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("检查供货许可失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "检查失败: " + e.getMessage());
+            response.put("message", "检查失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -254,7 +255,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("生成验收策略失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "生成失败: " + e.getMessage());
+            response.put("message", "生成失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -287,7 +288,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("获取规则配置失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -322,7 +323,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("更新规则配置失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "更新失败: " + e.getMessage());
+            response.put("message", "更新失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }
@@ -374,7 +375,7 @@ public class SupplierAdmissionController {
         } catch (Exception e) {
             log.error("获取评估报告失败: {}", e.getMessage(), e);
             response.put("success", false);
-            response.put("message", "获取失败: " + e.getMessage());
+            response.put("message", "获取失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.internalServerError().body(response);
         }
     }

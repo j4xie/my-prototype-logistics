@@ -12,6 +12,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -63,7 +65,7 @@ public class ShipmentController {
             log.error("获取出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -88,7 +90,7 @@ public class ShipmentController {
             log.error("按客户查询出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -112,7 +114,7 @@ public class ShipmentController {
             log.error("按日期范围查询出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -136,7 +138,7 @@ public class ShipmentController {
             log.error("物流追踪查询失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -163,7 +165,7 @@ public class ShipmentController {
             log.error("获取出货统计失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -188,7 +190,7 @@ public class ShipmentController {
             log.error("获取最近出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -214,7 +216,7 @@ public class ShipmentController {
             log.error("获取出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -241,7 +243,7 @@ public class ShipmentController {
             log.error("创建出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -266,7 +268,7 @@ public class ShipmentController {
             log.error("更新出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -292,7 +294,7 @@ public class ShipmentController {
             log.error("更新出货状态失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -315,7 +317,7 @@ public class ShipmentController {
             log.error("删除出货记录失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

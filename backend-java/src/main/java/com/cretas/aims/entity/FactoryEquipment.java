@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.enums.DeviceCategory;
 import lombok.*;
 import javax.persistence.*;
@@ -103,10 +104,33 @@ public class FactoryEquipment extends BaseEntity {
 
     /**
      * 设备类别: TRADITIONAL / IOT_SCALE / IOT_CAMERA / IOT_SENSOR
+     * @deprecated 使用 {@link #getUnifiedDeviceType()} 获取统一设备类型
      */
+    @Deprecated
     @Enumerated(EnumType.STRING)
     @Column(name = "device_category", length = 20)
     private DeviceCategory deviceCategory;
+
+    /**
+     * 获取统一设备类型
+     * 将旧的 deviceCategory 映射到新的 UnifiedDeviceType
+     *
+     * @return 统一设备类型
+     */
+    @Transient
+    public UnifiedDeviceType getUnifiedDeviceType() {
+        return UnifiedDeviceType.fromDeviceCategory(this.deviceCategory);
+    }
+
+    /**
+     * 设置统一设备类型
+     * 自动转换为旧的 deviceCategory 以保持兼容
+     *
+     * @param unifiedType 统一设备类型
+     */
+    public void setUnifiedDeviceType(UnifiedDeviceType unifiedType) {
+        this.deviceCategory = unifiedType != null ? unifiedType.toDeviceCategory() : null;
+    }
 
     /**
      * 关联秤协议配置 scale_protocol_configs.id

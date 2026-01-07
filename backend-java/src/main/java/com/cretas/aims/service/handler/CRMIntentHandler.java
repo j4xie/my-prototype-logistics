@@ -19,6 +19,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 客户/供应商意图处理器
@@ -100,7 +101,7 @@ public class CRMIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("CRM")
                     .status("FAILED")
-                    .message("客户/供应商操作失败: " + e.getMessage())
+                    .message("客户/供应商操作失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -533,5 +534,11 @@ public class CRMIntentHandler implements IntentHandler {
                 .message("客户/供应商意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -83,7 +85,7 @@ public class MaterialIntentHandler implements IntentHandler {
                     .intentRecognized(true)
                     .intentCode(intentCode)
                     .status("FAILED")
-                    .message("执行失败: " + e.getMessage())
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -602,5 +604,11 @@ public class MaterialIntentHandler implements IntentHandler {
                 .message("原材料批次意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

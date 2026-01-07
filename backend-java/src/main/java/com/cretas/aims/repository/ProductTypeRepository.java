@@ -22,6 +22,11 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * 根据工厂ID和产品代码查找
      */
     Optional<ProductType> findByFactoryIdAndCode(String factoryId, String code);
+
+    /**
+     * 根据ID和工厂ID查找（工厂隔离）
+     */
+    Optional<ProductType> findByIdAndFactoryId(String id, String factoryId);
      /**
      * 查找工厂的所有产品类型
       */

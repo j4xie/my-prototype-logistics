@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.entity.BatchRelation;
 import com.cretas.aims.service.BatchRelationService;
+import com.cretas.aims.util.ErrorSanitizer;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -59,7 +60,7 @@ public class BatchRelationController {
             log.error("获取批次关联列表失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -82,7 +83,7 @@ public class BatchRelationController {
             log.error("查询生产批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -105,7 +106,7 @@ public class BatchRelationController {
             log.error("查询原材料批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -128,7 +129,7 @@ public class BatchRelationController {
             log.error("正向追溯失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -151,7 +152,7 @@ public class BatchRelationController {
             log.error("反向追溯失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -173,7 +174,7 @@ public class BatchRelationController {
             log.error("获取未验证关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -197,7 +198,7 @@ public class BatchRelationController {
             log.error("获取批次关联详情失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -224,7 +225,7 @@ public class BatchRelationController {
             log.error("创建批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -249,7 +250,7 @@ public class BatchRelationController {
             log.error("更新批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -274,7 +275,7 @@ public class BatchRelationController {
             log.error("验证批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }
@@ -297,7 +298,7 @@ public class BatchRelationController {
             log.error("删除批次关联失败", e);
             return ResponseEntity.badRequest().body(Map.of(
                 "success", false,
-                "message", e.getMessage()
+                "message", ErrorSanitizer.sanitize(e)
             ));
         }
     }

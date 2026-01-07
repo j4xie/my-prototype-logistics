@@ -174,5 +174,6 @@ public class KeywordEffectiveness {
         public static final String MANUAL = "MANUAL";
         public static final String AUTO_LEARNED = "AUTO_LEARNED";
         public static final String PROMOTED = "PROMOTED";
+        public static final String FEEDBACK_LEARNED = "FEEDBACK_LEARNED";
     }
 }

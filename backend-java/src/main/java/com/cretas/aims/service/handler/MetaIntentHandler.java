@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import com.cretas.aims.util.ErrorSanitizer;
+
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,43 +52,56 @@ public class MetaIntentHandler implements IntentHandler {
 
         try {
             return switch (intentCode) {
-                case "INTENT_CREATE" -> handleCreateIntent(factoryId, request, intentConfig, userId);
-                case "INTENT_UPDATE" -> handleUpdateIntent(factoryId, request, intentConfig, userId);
+                case "INTENT_CREATE" -> handleCreateIntent(factoryId, request, intentConfig, userId, userRole);
+                case "INTENT_UPDATE" -> handleUpdateIntent(factoryId, request, intentConfig, userId, userRole);
                 case "INTENT_ANALYZE" -> handleAnalyzeIntent(factoryId, request, intentConfig);
                 default -> buildFailedResponse(intentCode, intentConfig, "未知的元意图: " + intentCode);
             };
 
         } catch (Exception e) {
             log.error("MetaIntentHandler执行失败: intentCode={}, error={}", intentCode, e.getMessage(), e);
-            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + e.getMessage());
+            return buildFailedResponse(intentCode, intentConfig, "执行失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
     /**
      * 处理创建意图
      * 根据用户描述生成新的意图配置
+     *
+     * 平台管理员(super_admin/platform_admin)可以选择创建:
+     * - 平台级意图 (scope: "PLATFORM"): factoryId = null, 所有工厂可见
+     * - 工厂级意图 (scope: "FACTORY"): factoryId = 指定工厂
+     * 普通工厂用户只能创建工厂级意图
      */
     private IntentExecuteResponse handleCreateIntent(String factoryId, IntentExecuteRequest request,
-                                                      AIIntentConfig intentConfig, Long userId) {
+                                                      AIIntentConfig intentConfig, Long userId, String userRole) {
         String userInput = request.getUserInput();
-        log.info("创建意图: factoryId={}, userInput={}", factoryId, userInput);
+        log.info("创建意图: factoryId={}, userRole={}, userInput={}", factoryId, userRole, userInput);
+
+        // 判断是否为平台管理员
+        boolean isPlatformAdmin = "super_admin".equals(userRole) || "platform_admin".equals(userRole);
 
         // 从 context 获取意图配置参数
         if (request.getContext() == null || request.getContext().isEmpty()) {
+            String scopeHint = isPlatformAdmin ?
+                    "- scope: 意图范围（PLATFORM=平台级共享/FACTORY=工厂级）[可选，默认FACTORY]\n" +
+                    "- targetFactoryId: 目标工厂ID（仅scope=FACTORY时有效）[可选，默认当前工厂]\n" : "";
             return buildNeedMoreInfoResponse(intentConfig,
                     "创建新意图需要提供以下信息：\n" +
                     "- intentCode: 意图代码（如 INVENTORY_ALERT）\n" +
                     "- intentName: 意图名称（如 库存告警）\n" +
                     "- intentCategory: 分类（SYSTEM/USER/CONFIG/DATA_OP/FORM）\n" +
                     "- keywords: 关键词数组\n" +
-                    "- description: 描述\n\n" +
+                    "- description: 描述\n" +
+                    scopeHint + "\n" +
                     "示例 context: {\n" +
                     "  \"intentCode\": \"INVENTORY_ALERT\",\n" +
                     "  \"intentName\": \"库存告警\",\n" +
                     "  \"intentCategory\": \"SYSTEM\",\n" +
                     "  \"keywords\": [\"库存告警\", \"库存不足\", \"缺货预警\"],\n" +
-                    "  \"description\": \"设置和管理库存告警规则\"\n" +
-                    "}");
+                    "  \"description\": \"设置和管理库存告警规则\"" +
+                    (isPlatformAdmin ? ",\n  \"scope\": \"PLATFORM\"  // 可选: PLATFORM 或 FACTORY" : "") +
+                    "\n}");
         }
 
         JsonNode params = objectMapper.valueToTree(request.getContext());
@@ -100,16 +115,44 @@ public class MetaIntentHandler implements IntentHandler {
         String newIntentCode = params.get("intentCode").asText();
         String newIntentName = params.get("intentName").asText();
 
-        // 检查是否已存在
-        Optional<AIIntentConfig> existing = intentConfigRepository
-                .findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(newIntentCode);
-        if (existing.isPresent()) {
+        // 确定有效的工厂ID（平台管理员可以选择创建平台级或工厂级意图）
+        String effectiveFactoryId = factoryId; // 默认使用当前工厂
+        String scopeDescription = "工厂级";
+
+        if (isPlatformAdmin && params.has("scope")) {
+            String scope = params.get("scope").asText().toUpperCase();
+            if ("PLATFORM".equals(scope)) {
+                // 平台级意图：所有工厂可见
+                effectiveFactoryId = null;
+                scopeDescription = "平台级";
+                log.info("平台管理员创建平台级意图: intentCode={}", newIntentCode);
+            } else if ("FACTORY".equals(scope)) {
+                // 工厂级意图：可指定目标工厂
+                if (params.has("targetFactoryId")) {
+                    effectiveFactoryId = params.get("targetFactoryId").asText();
+                    scopeDescription = "工厂级 (目标工厂: " + effectiveFactoryId + ")";
+                }
+                log.info("平台管理员创建工厂级意图: intentCode={}, factoryId={}", newIntentCode, effectiveFactoryId);
+            }
+        }
+
+        // 检查是否已存在（工厂级隔离：检查工厂范围内是否有同名意图）
+        // 平台级意图检查全局范围，工厂级意图检查工厂范围
+        boolean existsInScope;
+        if (effectiveFactoryId == null) {
+            // 平台级意图：检查是否已存在同名的平台级意图
+            existsInScope = intentConfigRepository.existsByIntentCodeAndDeletedAtIsNull(newIntentCode);
+        } else {
+            existsInScope = intentConfigRepository.existsByIntentCodeInFactoryScope(newIntentCode, effectiveFactoryId);
+        }
+        if (existsInScope) {
             return buildFailedResponse("INTENT_CREATE", intentConfig,
-                    "意图代码 '" + newIntentCode + "' 已存在，请使用 INTENT_UPDATE 更新或选择其他代码");
+                    "意图代码 '" + newIntentCode + "' 已存在（" + scopeDescription + "），请使用 INTENT_UPDATE 更新或选择其他代码");
         }
 
         // 构建新意图配置
         AIIntentConfig newConfig = AIIntentConfig.builder()
+                .factoryId(effectiveFactoryId) // null = 平台级, 非null = 工厂级
                 .intentCode(newIntentCode)
                 .intentName(newIntentName)
                 .intentCategory(params.has("intentCategory") ? params.get("intentCategory").asText() : "SYSTEM")
@@ -135,7 +178,8 @@ public class MetaIntentHandler implements IntentHandler {
 
         // 保存新配置
         AIIntentConfig saved = intentConfigRepository.save(newConfig);
-        log.info("新意图配置已创建: intentCode={}, id={}", saved.getIntentCode(), saved.getId());
+        log.info("新意图配置已创建: intentCode={}, id={}, scope={}",
+                saved.getIntentCode(), saved.getId(), scopeDescription);
 
         return IntentExecuteResponse.builder()
                 .intentRecognized(true)
@@ -146,6 +190,7 @@ public class MetaIntentHandler implements IntentHandler {
                 .status("COMPLETED")
                 .message("新意图 '" + newIntentName + "' 已创建成功！\n" +
                         "意图代码: " + newIntentCode + "\n" +
+                        "意图范围: " + scopeDescription + "\n" +
                         "现在可以使用关键词触发此意图。")
                 .quotaCost(intentConfig.getQuotaCost())
                 .affectedEntities(List.of(
@@ -157,7 +202,9 @@ public class MetaIntentHandler implements IntentHandler {
                                 .changes(Map.of(
                                         "intentCode", newIntentCode,
                                         "category", saved.getIntentCategory(),
-                                        "keywords", saved.getKeywords()
+                                        "keywords", saved.getKeywords(),
+                                        "scope", scopeDescription,
+                                        "factoryId", effectiveFactoryId != null ? effectiveFactoryId : "PLATFORM"
                                 ))
                                 .build()
                 ))
@@ -184,9 +231,10 @@ public class MetaIntentHandler implements IntentHandler {
      * 支持更新关键词、描述、优先级等
      */
     private IntentExecuteResponse handleUpdateIntent(String factoryId, IntentExecuteRequest request,
-                                                      AIIntentConfig intentConfig, Long userId) {
+                                                      AIIntentConfig intentConfig, Long userId, String userRole) {
         String userInput = request.getUserInput();
-        log.info("更新意图: factoryId={}, userInput={}", factoryId, userInput);
+        boolean isPlatformAdmin = "super_admin".equals(userRole) || "platform_admin".equals(userRole);
+        log.info("更新意图: factoryId={}, userRole={}, userInput={}", factoryId, userRole, userInput);
 
         if (request.getContext() == null || request.getContext().isEmpty()) {
             return buildNeedMoreInfoResponse(intentConfig,
@@ -213,16 +261,29 @@ public class MetaIntentHandler implements IntentHandler {
 
         String targetIntentCode = params.get("intentCode").asText();
 
-        // 查找现有意图
-        Optional<AIIntentConfig> existingOpt = intentConfigRepository
-                .findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(targetIntentCode);
+        // 查找现有意图（工厂级隔离：优先查找工厂级意图，其次平台级）
+        List<AIIntentConfig> matchingConfigs = intentConfigRepository
+                .findByIntentCodeAndFactoryIdOrPlatform(targetIntentCode, factoryId);
 
-        if (existingOpt.isEmpty()) {
+        if (matchingConfigs.isEmpty()) {
             return buildFailedResponse("INTENT_UPDATE", intentConfig,
                     "未找到意图: " + targetIntentCode);
         }
 
-        AIIntentConfig existing = existingOpt.get();
+        // 取第一个匹配结果（工厂级优先）
+        AIIntentConfig existing = matchingConfigs.get(0);
+
+        // 权限检查：工厂用户不能修改平台级意图
+        if (existing.getFactoryId() == null && !isPlatformAdmin) {
+            return buildFailedResponse("INTENT_UPDATE", intentConfig,
+                    "无权修改平台级意图 '" + targetIntentCode + "'。请联系平台管理员。");
+        }
+
+        // 权限检查：工厂用户只能修改自己工厂的意图
+        if (existing.getFactoryId() != null && !existing.getFactoryId().equals(factoryId) && !isPlatformAdmin) {
+            return buildFailedResponse("INTENT_UPDATE", intentConfig,
+                    "无权修改其他工厂的意图 '" + targetIntentCode + "'");
+        }
         List<String> changes = new ArrayList<>();
 
         // 处理添加关键词
@@ -330,8 +391,8 @@ public class MetaIntentHandler implements IntentHandler {
                                                        AIIntentConfig intentConfig) {
         log.info("分析意图使用情况: factoryId={}", factoryId);
 
-        // 获取所有意图配置
-        List<AIIntentConfig> allConfigs = intentConfigRepository.findByIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc();
+        // 获取当前工厂可见的意图配置（工厂级 + 平台级）
+        List<AIIntentConfig> allConfigs = intentConfigRepository.findByFactoryIdOrPlatformLevel(factoryId);
 
         // 按分类统计
         Map<String, Long> categoryStats = allConfigs.stream()
@@ -444,6 +505,12 @@ public class MetaIntentHandler implements IntentHandler {
                 .message(previewMessage)
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 
     // ==================== Helper Methods ====================

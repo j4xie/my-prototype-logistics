@@ -68,6 +68,25 @@ export function FAManagementScreen() {
           </View>
         </View>
 
+        {/* IoT 设备管理 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('management.iotManagement', 'IoT 设备管理')}</Text>
+          <View style={styles.grid}>
+            <GridItem
+              icon="scale"
+              title={t('management.scaleDevices', '电子秤设备')}
+              color="#1890ff"
+              onPress={() => navigation.navigate('IotDeviceList')}
+            />
+            <GridItem
+              icon="cctv"
+              title={t('management.cameraDevices', '摄像头设备')}
+              color="#722ed1"
+              onPress={() => navigation.navigate('IsapiDeviceList')}
+            />
+          </View>
+        </View>
+
         {/* 业务管理 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('management.businessManagement')}</Text>

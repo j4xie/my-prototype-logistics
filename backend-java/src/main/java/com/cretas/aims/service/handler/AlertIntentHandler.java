@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 告警意图处理器
@@ -85,7 +86,7 @@ public class AlertIntentHandler implements IntentHandler {
                     .intentName(intentConfig.getIntentName())
                     .intentCategory("ALERT")
                     .status("FAILED")
-                    .message("告警操作失败: " + e.getMessage())
+                    .message("告警操作失败: " + ErrorSanitizer.sanitize(e))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -483,5 +484,11 @@ public class AlertIntentHandler implements IntentHandler {
                 .message("告警意图预览功能")
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    @Override
+    public boolean supportsSemanticsMode() {
+        // 启用语义模式
+        return true;
     }
 }

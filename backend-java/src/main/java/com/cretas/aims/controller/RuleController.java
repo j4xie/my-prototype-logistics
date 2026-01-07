@@ -22,6 +22,7 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
 import java.util.*;
+import com.cretas.aims.util.ErrorSanitizer;
 
 /**
  * 规则引擎控制器
@@ -287,10 +288,10 @@ public class RuleController {
             log.error("Dry-Run 执行异常 - factoryId={}", factoryId, e);
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("success", false);
-            errorResult.put("validationErrors", Collections.singletonList("执行异常: " + e.getMessage()));
+            errorResult.put("validationErrors", Collections.singletonList("执行异常: " + ErrorSanitizer.sanitize(e)));
             errorResult.put("rulesMatched", Collections.emptyList());
             errorResult.put("result", null);
-            return ApiResponse.error("Dry-Run 执行异常: " + e.getMessage());
+            return ApiResponse.error("Dry-Run 执行异常: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -391,7 +392,7 @@ public class RuleController {
             Map<String, Object> errorResult = new HashMap<>();
             errorResult.put("rulesExecuted", 0);
             errorResult.put("results", Collections.emptyList());
-            errorResult.put("message", "规则测试失败: " + e.getMessage());
+            errorResult.put("message", "规则测试失败: " + ErrorSanitizer.sanitize(e));
             errorResult.put("error", true);
             return ApiResponse.success(errorResult);
         }
@@ -452,7 +453,7 @@ public class RuleController {
 
         } catch (Exception e) {
             log.error("决策表上传失败", e);
-            return ApiResponse.error("决策表上传失败: " + e.getMessage());
+            return ApiResponse.error("决策表上传失败: " + ErrorSanitizer.sanitize(e));
         }
     }
 
@@ -697,7 +698,7 @@ public class RuleController {
             log.error("Transition validation failed: {}", e.getMessage());
             result.setValid(false);
             result.setGuardPassed(false);
-            result.setMessage("验证失败: " + e.getMessage());
+            result.setMessage("验证失败: " + ErrorSanitizer.sanitize(e));
             return ResponseEntity.ok(ApiResponse.success(result));
         }
     }
@@ -728,7 +729,7 @@ public class RuleController {
             }
         } catch (Exception e) {
             log.error("Transition execution failed: {}", e.getMessage());
-            return ResponseEntity.ok(ApiResponse.error("状态转换失败: " + e.getMessage()));
+            return ResponseEntity.ok(ApiResponse.error("状态转换失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 }

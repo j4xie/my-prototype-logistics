@@ -213,6 +213,58 @@ public interface IntentOptimizationSuggestionRepository extends JpaRepository<In
             @Param("intentCode") String intentCode,
             @Param("type") SuggestionType type);
 
+    // ==================== CREATE_INTENT 专用查询 ====================
+
+    /**
+     * 查找相同建议意图代码的待处理 CREATE_INTENT 建议
+     * 用于合并相同新意图的多次触发
+     */
+    @Query("SELECT s FROM IntentOptimizationSuggestion s WHERE s.factoryId = :factoryId " +
+           "AND s.suggestedIntentCode = :suggestedCode " +
+           "AND s.suggestionType = 'CREATE_INTENT' AND s.status = 'PENDING'")
+    List<IntentOptimizationSuggestion> findPendingCreateIntentSuggestion(
+            @Param("factoryId") String factoryId,
+            @Param("suggestedCode") String suggestedCode);
+
+    /**
+     * 分页查询工厂的 CREATE_INTENT 建议（用于管理界面）
+     */
+    @Query("SELECT s FROM IntentOptimizationSuggestion s WHERE s.factoryId = :factoryId " +
+           "AND s.suggestionType = 'CREATE_INTENT' AND s.status = :status " +
+           "ORDER BY s.frequency DESC, s.impactScore DESC")
+    Page<IntentOptimizationSuggestion> findCreateIntentSuggestions(
+            @Param("factoryId") String factoryId,
+            @Param("status") SuggestionStatus status,
+            Pageable pageable);
+
+    // ==================== 平台级晋升专用查询 ====================
+
+    /**
+     * 查询工厂特定意图的特定类型和状态的建议
+     * 用于检查是否已存在相同的晋升请求
+     */
+    List<IntentOptimizationSuggestion> findByFactoryIdAndIntentCodeAndSuggestionTypeAndStatus(
+            String factoryId,
+            String intentCode,
+            SuggestionType suggestionType,
+            SuggestionStatus status);
+
+    /**
+     * 查询特定类型和状态的所有建议（跨工厂）
+     * 用于平台管理员查看所有待审批的晋升请求
+     */
+    List<IntentOptimizationSuggestion> findBySuggestionTypeAndStatus(
+            SuggestionType suggestionType,
+            SuggestionStatus status);
+
+    /**
+     * 分页查询特定类型和状态的所有建议（跨工厂）
+     */
+    Page<IntentOptimizationSuggestion> findBySuggestionTypeAndStatus(
+            SuggestionType suggestionType,
+            SuggestionStatus status,
+            Pageable pageable);
+
     // ==================== 清理操作 ====================
 
     /**
