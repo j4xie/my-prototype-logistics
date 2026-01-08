@@ -3,7 +3,8 @@ import path from "path";
 import createVitePlugins from "./vite/plugins";
 
 // 连接服务器地址
-const url = "http://139.196.165.140:8083";
+//const url = "http://139.196.165.140:8083";
+const url = "https://centerapi.cretaceousfuture.com/";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => {

@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * 程序注解配置
@@ -26,5 +27,13 @@ public class ApplicationConfig
     public Jackson2ObjectMapperBuilderCustomizer jacksonObjectMapperCustomization()
     {
         return jacksonObjectMapperBuilder -> jacksonObjectMapperBuilder.timeZone(TimeZone.getDefault());
+    }
+    
+    /**
+     * RestTemplate 配置
+     */
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 }

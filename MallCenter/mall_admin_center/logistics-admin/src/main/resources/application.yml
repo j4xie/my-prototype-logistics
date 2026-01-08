@@ -154,8 +154,8 @@ wx:
   # 小程序配置
   ma:
     configs:
-      - appId: wxf8e90943620b4080
-        secret: ea1be8e6df8c378a3239341296f4be84
+      - appId: wx8a458528c6dfb405
+        secret: 66a488d7cc715a9c382a764595672ce8
         # 微信支付商户号，请去微信支付平台申请
         mchId: 1588227511
         # 微信支付商户APIv2密钥，请去微信支付平台申请
