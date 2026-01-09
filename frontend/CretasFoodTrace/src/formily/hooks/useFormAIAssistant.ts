@@ -31,20 +31,15 @@
  * @since 2025-12-28
  */
 
-import { useState, useCallback, useMemo, RefObject } from 'react';
+import { useState, useCallback, useMemo, useRef, RefObject } from 'react';
 import {
-  formAssistantApiClient,
-  FormParseRequest,
-  FormParseResponse,
-  OCRParseRequest,
-  OCRParseResponse,
   FormFieldDefinition,
   ValidationError,
   ValidationFeedbackRequest,
-  ValidationFeedbackResponse,
 } from '../../services/api/formAssistantApiClient';
 import { EntityType } from '../../services/api/formTemplateApiClient';
 import type { DynamicFormRef, FormSchema } from '../core/DynamicForm';
+import { aiService, FormEntityType, detectAnalysisMode } from '../../services/ai';
 
 // ========== 类型定义 ==========
 
@@ -171,6 +166,19 @@ export function useFormAIAssistant(
 ): UseFormAIAssistantReturn {
   const { formRef, entityType, schema, context, onAIFill, onError, onMissingFields } = options;
 
+  // 使用 ref 稳定 context 和回调，防止父组件传入内联对象导致无限循环
+  // 问题场景: <Component context={{ key: value }} /> 每次渲染创建新对象
+  const contextRef = useRef(context);
+  const onAIFillRef = useRef(onAIFill);
+  const onErrorRef = useRef(onError);
+  const onMissingFieldsRef = useRef(onMissingFields);
+
+  // 更新 ref 值（不触发重新渲染）
+  contextRef.current = context;
+  onAIFillRef.current = onAIFill;
+  onErrorRef.current = onError;
+  onMissingFieldsRef.current = onMissingFields;
+
   // 状态
   const [isProcessing, setIsProcessing] = useState(false);
   const [aiFilledFields, setAIFilledFields] = useState<string[]>([]);
@@ -184,7 +192,7 @@ export function useFormAIAssistant(
   // 从 Schema 提取字段定义
   const formFields = useMemo<FormFieldDefinition[] | undefined>(() => {
     if (!schema) return undefined;
-    return formAssistantApiClient.extractFieldsFromSchema(schema);
+    return aiService.extractFieldsFromSchema(schema);
   }, [schema]);
 
   /**
@@ -221,6 +229,7 @@ export function useFormAIAssistant(
 
   /**
    * 使用 AI 解析文本/语音输入
+   * 注意: 使用 ref 获取 context 和回调，避免依赖变化导致的无限循环
    */
   const parseWithAI = useCallback(
     async (userInput: string): Promise<AIParseResult> => {
@@ -239,21 +248,20 @@ export function useFormAIAssistant(
       setError(null);
 
       try {
-        const request: FormParseRequest = {
-          userInput,
-          entityType,
-          formFields,
-          context,
-        };
-
         console.log('[useFormAIAssistant] 发送 AI 解析请求:', {
           entityType,
           inputLength: userInput.length,
           fieldCount: formFields?.length ?? 0,
         });
 
-        const response: FormParseResponse =
-          await formAssistantApiClient.parseFormInput(request);
+        // 使用集中式 AI 服务（自动检测分析模式）
+        const aiResult = await aiService.parseFormInput(
+          userInput,
+          entityType as FormEntityType,
+          contextRef.current,
+          formFields
+        );
+        const response = aiResult.data;
 
         // P1-1: 检测是否需要追问
         const hasMissingFields = response.missingRequiredFields && response.missingRequiredFields.length > 0;
@@ -278,14 +286,14 @@ export function useFormAIAssistant(
           // 填充表单
           fillFormWithValues(response.fieldValues);
 
-          // 回调
-          onAIFill?.(response.fieldValues, response.confidence);
+          // 回调 (使用 ref 获取最新回调)
+          onAIFillRef.current?.(response.fieldValues, response.confidence);
 
           // P1-1: 如果有缺失字段，触发回调
           if (needsFollowUp && response.missingRequiredFields && response.suggestedQuestions) {
             console.log('[useFormAIAssistant] 检测到缺失必填字段:', response.missingRequiredFields);
             console.log('[useFormAIAssistant] 追问建议:', response.suggestedQuestions);
-            onMissingFields?.(
+            onMissingFieldsRef.current?.(
               response.missingRequiredFields,
               response.suggestedQuestions,
               response.followUpQuestion
@@ -293,7 +301,7 @@ export function useFormAIAssistant(
           }
         } else if (!response.success) {
           setError(response.message || 'AI 解析失败');
-          onError?.(response.message || 'AI 解析失败');
+          onErrorRef.current?.(response.message || 'AI 解析失败');
         }
 
         return result;
@@ -310,18 +318,19 @@ export function useFormAIAssistant(
 
         setLastResult(result);
         setError(errorMessage);
-        onError?.(errorMessage);
+        onErrorRef.current?.(errorMessage);
 
         return result;
       } finally {
         setIsProcessing(false);
       }
     },
-    [entityType, formFields, context, fillFormWithValues, onAIFill, onError, onMissingFields]
+    [entityType, formFields, fillFormWithValues] // 移除 context 和回调依赖，使用 ref 代替
   );
 
   /**
    * 使用 OCR 解析图片
+   * 注意: 使用 ref 获取回调，避免依赖变化导致的无限循环
    */
   const parseWithOCR = useCallback(
     async (imageBase64: string): Promise<AIParseResult> => {
@@ -340,20 +349,19 @@ export function useFormAIAssistant(
       setError(null);
 
       try {
-        const request: OCRParseRequest = {
-          imageBase64,
-          entityType,
-          formFields,
-        };
-
         console.log('[useFormAIAssistant] 发送 OCR 解析请求:', {
           entityType,
           imageSize: imageBase64.length,
           fieldCount: formFields?.length ?? 0,
         });
 
-        const response: OCRParseResponse =
-          await formAssistantApiClient.parseFormOCR(request);
+        // 使用集中式 AI 服务（自动检测分析模式）
+        const aiResult = await aiService.parseFormOCR(
+          imageBase64,
+          entityType as FormEntityType,
+          formFields
+        );
+        const response = aiResult.data;
 
         const result: AIParseResult = {
           success: response.success,
@@ -369,11 +377,11 @@ export function useFormAIAssistant(
           // 填充表单
           fillFormWithValues(response.fieldValues);
 
-          // 回调
-          onAIFill?.(response.fieldValues, response.confidence);
+          // 回调 (使用 ref 获取最新回调)
+          onAIFillRef.current?.(response.fieldValues, response.confidence);
         } else if (!response.success) {
           setError(response.message || 'OCR 解析失败');
-          onError?.(response.message || 'OCR 解析失败');
+          onErrorRef.current?.(response.message || 'OCR 解析失败');
         }
 
         return result;
@@ -390,14 +398,14 @@ export function useFormAIAssistant(
 
         setLastResult(result);
         setError(errorMessage);
-        onError?.(errorMessage);
+        onErrorRef.current?.(errorMessage);
 
         return result;
       } finally {
         setIsProcessing(false);
       }
     },
-    [entityType, formFields, fillFormWithValues, onAIFill, onError]
+    [entityType, formFields, fillFormWithValues] // 移除回调依赖，使用 ref 代替
   );
 
   /**
@@ -405,7 +413,8 @@ export function useFormAIAssistant(
    */
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await formAssistantApiClient.checkHealth();
+      // 使用集中式 AI 服务
+      const response = await aiService.checkFormAssistantHealth();
       return response.available;
     } catch (err) {
       console.warn('[useFormAIAssistant] 健康检查失败:', err);
@@ -467,8 +476,9 @@ export function useFormAIAssistant(
           hasUserInstruction: !!userInstruction,
         });
 
-        const response: ValidationFeedbackResponse =
-          await formAssistantApiClient.submitValidationFeedback(request);
+        // 使用集中式 AI 服务（自动检测分析模式）
+        const aiResult = await aiService.handleValidationFeedback(request);
+        const response = aiResult.data;
 
         const result: ValidationCorrectionResult = {
           success: response.success,
@@ -489,7 +499,7 @@ export function useFormAIAssistant(
 
         if (!response.success) {
           setError(response.message || 'AI 修正建议获取失败');
-          onError?.(response.message || 'AI 修正建议获取失败');
+          onErrorRef.current?.(response.message || 'AI 修正建议获取失败');
         }
 
         return result;
@@ -505,14 +515,14 @@ export function useFormAIAssistant(
 
         setLastValidationResult(result);
         setError(errorMessage);
-        onError?.(errorMessage);
+        onErrorRef.current?.(errorMessage);
 
         return result;
       } finally {
         setIsProcessing(false);
       }
     },
-    [entityType, formFields, validationSessionId, onError]
+    [entityType, formFields, validationSessionId] // 移除 onError 依赖，使用 onErrorRef.current 代替
   );
 
   /**

@@ -237,6 +237,20 @@ public interface IntentOptimizationSuggestionRepository extends JpaRepository<In
             @Param("status") SuggestionStatus status,
             Pageable pageable);
 
+    // ==================== UPDATE_INTENT 专用查询 ====================
+
+    /**
+     * 分页查询工厂的 UPDATE_INTENT/UPDATE_KEYWORDS 建议（用于管理界面）
+     * 包括更新现有意图和更新关键词两种类型
+     */
+    @Query("SELECT s FROM IntentOptimizationSuggestion s WHERE s.factoryId = :factoryId " +
+           "AND s.suggestionType IN ('UPDATE_INTENT', 'UPDATE_KEYWORDS') AND s.status = :status " +
+           "ORDER BY s.frequency DESC, s.impactScore DESC")
+    Page<IntentOptimizationSuggestion> findUpdateIntentSuggestions(
+            @Param("factoryId") String factoryId,
+            @Param("status") SuggestionStatus status,
+            Pageable pageable);
+
     // ==================== 平台级晋升专用查询 ====================
 
     /**

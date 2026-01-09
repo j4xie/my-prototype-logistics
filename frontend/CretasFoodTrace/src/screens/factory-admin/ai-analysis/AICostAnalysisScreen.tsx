@@ -2,6 +2,8 @@
  * AI成本分析页面
  * 支持时间范围选择和多维度分析
  * 支持流式响应，实时显示AI分析进度
+ *
+ * 使用集中式 AI 服务 (aiService)
  */
 import React, { useState, useCallback, useRef } from 'react';
 import {
@@ -9,7 +11,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -20,8 +21,22 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
-import { aiApiClient, AICostAnalysisResponse, SSECallbacks } from '../../../services/api/aiApiClient';
 import { MarkdownRenderer } from '../../../components/common/MarkdownRenderer';
+
+// 使用集中式 AI 服务
+import {
+  aiService,
+  detectAnalysisMode,
+  getModeDescription,
+  getModeLabel,
+  getModeIcon,
+  getEstimatedTime,
+} from '../../../services/ai';
+import type {
+  AnalysisMode,
+  AnalysisModeResult,
+  CostAnalysisResponse,
+} from '../../../services/ai';
 
 type NavigationProp = NativeStackNavigationProp<FAAIStackParamList, 'AICostAnalysis'>;
 
@@ -34,7 +49,7 @@ interface DateRange {
 
 export function AICostAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { t } = useTranslation('management');
+  const { t, i18n } = useTranslation('management');
   const scrollViewRef = useRef<ScrollView>(null);
 
   const [loading, setLoading] = useState(false);
@@ -45,7 +60,14 @@ export function AICostAnalysisScreen() {
     start.setDate(start.getDate() - 7); // 默认7天
     return { startDate: start, endDate: end };
   });
-  const [result, setResult] = useState<AICostAnalysisResponse | null>(null);
+  // 分析结果 - 使用统一的 CostAnalysisResponse 类型
+  const [result, setResult] = useState<{
+    success: boolean;
+    analysis?: string;
+    responseTimeMs?: number;
+    cacheHit?: boolean;
+    quota?: { remainingQuota?: number; weeklyQuota?: number };
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // 流式响应状态
@@ -54,6 +76,10 @@ export function AICostAnalysisScreen() {
   const [thinkingContent, setThinkingContent] = useState<string>('');
   const [partialAnswer, setPartialAnswer] = useState<string>('');
   const [showThinking, setShowThinking] = useState(false);
+
+  // AI 分析模式状态 - 用于显示当前使用的模式
+  const [currentMode, setCurrentMode] = useState<AnalysisMode | null>(null);
+  const [modeReason, setModeReason] = useState<string>('');
 
   // 快速日期范围选项
   const quickRanges = [
@@ -75,7 +101,7 @@ export function AICostAnalysisScreen() {
   };
 
   const formatDisplayDate = (date: Date): string => {
-    return date.toLocaleDateString('zh-CN', {
+    return date.toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
@@ -91,7 +117,7 @@ export function AICostAnalysisScreen() {
     return labels[dim];
   };
 
-  const runAnalysis = useCallback(async () => {
+  const runAnalysis = useCallback(async (question?: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -99,62 +125,97 @@ export function AICostAnalysisScreen() {
       setProgressMessage('');
       setThinkingContent('');
       setPartialAnswer('');
+      setCurrentMode(null);
+      setModeReason('');
+
+      // 🎯 使用集中式 AI 服务的模式检测
+      // 预先检测模式用于 UI 显示
+      const previewMode = detectAnalysisMode(question, dimension);
+      console.log('[AIService Mode Detection]', {
+        question,
+        dimension,
+        mode: previewMode.mode,
+        enableThinking: previewMode.enableThinking,
+        thinkingBudget: previewMode.thinkingBudget,
+        reason: previewMode.reason,
+        matchedKeywords: previewMode.matchedKeywords,
+      });
+
+      // 立即显示预检测的模式
+      setCurrentMode(previewMode.mode);
+      setModeReason(previewMode.reason);
 
       if (useStreaming) {
-        // 流式响应模式
-        const callbacks: SSECallbacks = {
-          onStart: () => {
-            setProgressMessage(t('aiCostAnalysis.startingAnalysis'));
-          },
-          onProgress: (message: string) => {
-            setProgressMessage(message);
-          },
-          onThinking: (content: string) => {
-            setThinkingContent((prev) => prev + content);
-            // 自动滚动到底部
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          },
-          onAnswer: (content: string) => {
-            setPartialAnswer((prev) => prev + content);
-            // 自动滚动到底部
-            scrollViewRef.current?.scrollToEnd({ animated: true });
-          },
-          onComplete: (data) => {
-            setResult({
-              success: true,
-              analysis: data.analysis,
-              session_id: data.sessionId,
-              responseTimeMs: data.responseTimeMs,
-            });
-            setProgressMessage('');
-            setLoading(false);
-          },
-          onError: (message: string) => {
-            setError(message);
-            setLoading(false);
-          },
-        };
-
-        await aiApiClient.analyzeTimeRangeCostStream(
+        // 🚀 使用集中式 aiService.analyzeCostStream
+        const modeInfo = await aiService.analyzeCostStream(
           {
             startDate: formatDate(dateRange.startDate),
             endDate: formatDate(dateRange.endDate),
             dimension,
+            question,
+            // forceMode: undefined, // 使用自动检测
           },
-          callbacks
+          {
+            onStart: (metadata) => {
+              // 更新确认的分析模式
+              if (metadata?.mode) {
+                setCurrentMode(metadata.mode);
+              }
+              // 显示检测到的分析模式
+              const modeDesc = getModeDescription(previewMode.mode);
+              const timeEst = getEstimatedTime(previewMode.mode);
+              setProgressMessage(`${modeDesc} · ${t('aiCostAnalysis.estimated')} ${timeEst}`);
+            },
+            onThinking: (content: string) => {
+              setThinkingContent((prev) => prev + content);
+              // 自动滚动到底部
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+            },
+            onContent: (content: string) => {
+              setPartialAnswer((prev) => prev + content);
+              // 自动滚动到底部
+              scrollViewRef.current?.scrollToEnd({ animated: true });
+            },
+            onDone: (fullContent: string) => {
+              setResult({
+                success: true,
+                analysis: fullContent,
+              });
+              setProgressMessage('');
+              setLoading(false);
+            },
+            onError: (message: string) => {
+              setError(message);
+              setLoading(false);
+            },
+          }
         );
+
+        // 更新模式信息
+        setCurrentMode(modeInfo.mode);
+        setModeReason(modeInfo.modeReason);
       } else {
-        // 非流式响应模式
-        const response = await aiApiClient.analyzeTimeRangeCost({
+        // 🚀 使用集中式 aiService.analyzeCost (非流式)
+        const response = await aiService.analyzeCost({
           startDate: formatDate(dateRange.startDate),
           endDate: formatDate(dateRange.endDate),
           dimension,
+          question,
+          // forceMode: undefined, // 使用自动检测
         });
 
-        if (response.success) {
-          setResult(response);
+        // 更新模式信息
+        setCurrentMode(response.mode);
+        setModeReason(response.modeReason);
+
+        if (response.success && response.data) {
+          setResult({
+            success: true,
+            analysis: response.data.analysis,
+            responseTimeMs: response.responseTimeMs,
+          });
         } else {
-          setError(response.errorMessage || t('aiCostAnalysis.analysisFailed'));
+          setError(response.errorMessage || response.data?.message || t('aiCostAnalysis.analysisFailed'));
         }
         setLoading(false);
       }
@@ -163,19 +224,10 @@ export function AICostAnalysisScreen() {
       setError(t('aiCostAnalysis.networkError'));
       setLoading(false);
     }
-  }, [dateRange, dimension, useStreaming]);
+  }, [dateRange, dimension, useStreaming, t]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon source="arrow-left" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('aiCostAnalysis.title')}</Text>
-        <View style={{ width: 40 }} />
-      </View>
-
+    <View style={styles.container}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -263,10 +315,41 @@ export function AICostAnalysisScreen() {
           </Text>
         </View>
 
+        {/* AI 分析模式指示器 */}
+        {currentMode && (
+          <View style={styles.section}>
+            <View style={styles.modeIndicator}>
+              <View style={styles.modeIndicatorLeft}>
+                <Text style={styles.modeIcon}>{getModeIcon(currentMode)}</Text>
+                <View style={styles.modeInfo}>
+                  <Text style={styles.modeLabel}>
+                    {currentMode === 'quick' ? t('aiCostAnalysis.quickMode') : t('aiCostAnalysis.deepMode')}
+                  </Text>
+                  <Text style={styles.modeDescription}>{getModeDescription(currentMode)}</Text>
+                </View>
+              </View>
+              <View style={[
+                styles.modeBadge,
+                currentMode === 'deep' ? styles.modeBadgeDeep : styles.modeBadgeQuick,
+              ]}>
+                <Text style={[
+                  styles.modeBadgeText,
+                  currentMode === 'deep' ? styles.modeBadgeTextDeep : styles.modeBadgeTextQuick,
+                ]}>
+                  {getModeLabel(currentMode)}
+                </Text>
+              </View>
+            </View>
+            {modeReason && (
+              <Text style={styles.modeReason}>{modeReason}</Text>
+            )}
+          </View>
+        )}
+
         {/* 开始分析按钮 */}
         <TouchableOpacity
           style={[styles.analyzeBtn, loading && styles.analyzeBtnDisabled]}
-          onPress={runAnalysis}
+          onPress={() => runAnalysis()}
           disabled={loading}
         >
           {loading ? (
@@ -360,7 +443,7 @@ export function AICostAnalysisScreen() {
 
         <View style={{ height: 32 }} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -368,27 +451,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e0e0e0',
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a202c',
   },
   scrollView: {
     flex: 1,
@@ -643,6 +705,65 @@ const styles = StyleSheet.create({
     height: 16,
     backgroundColor: '#667eea',
     marginTop: 8,
+  },
+  // AI 模式指示器样式
+  modeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+  },
+  modeIndicatorLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  modeIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  modeInfo: {
+    flex: 1,
+  },
+  modeLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a202c',
+    marginBottom: 2,
+  },
+  modeDescription: {
+    fontSize: 12,
+    color: '#718096',
+  },
+  modeBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  modeBadgeQuick: {
+    backgroundColor: '#e6fffa',
+  },
+  modeBadgeDeep: {
+    backgroundColor: '#faf5ff',
+  },
+  modeBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  modeBadgeTextQuick: {
+    color: '#319795',
+  },
+  modeBadgeTextDeep: {
+    color: '#805ad5',
+  },
+  modeReason: {
+    marginTop: 8,
+    fontSize: 11,
+    color: '#a0aec0',
+    paddingHorizontal: 4,
+    fontStyle: 'italic',
   },
 });
 

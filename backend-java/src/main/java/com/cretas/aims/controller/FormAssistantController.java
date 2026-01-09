@@ -78,6 +78,12 @@ public class FormAssistantController {
         private String entityType;
 
         private Map<String, Object> context;
+
+        /** 是否启用深度思考模式 (用于复杂解析场景) */
+        private Boolean enableThinking = false;
+
+        /** 思考预算 (10-100)，数值越大思考越深入 */
+        private Integer thinkingBudget = 20;
     }
 
     /**
@@ -162,6 +168,15 @@ public class FormAssistantController {
         private List<String> existingFields;  // 现有字段名列表，避免重复
 
         private Map<String, Object> context;  // 可选的上下文信息
+
+        /** 用户解释说明 - 当AI拒绝后，用户可提供理由再次尝试 */
+        private String userJustification;
+
+        /** 是否启用深度思考模式 (用于复杂Schema生成) */
+        private Boolean enableThinking = false;
+
+        /** 思考预算 (10-100)，数值越大思考越深入 */
+        private Integer thinkingBudget = 20;
     }
 
     /**
@@ -193,6 +208,13 @@ public class FormAssistantController {
         private List<Map<String, Object>> validationRules;  // 额外的验证规则
         private List<String> suggestions;  // AI建议
         private String message;
+
+        /** AI判断字段是否与当前实体类型相关 */
+        private boolean relevant;
+        /** 如果不相关，拒绝的原因说明 */
+        private String rejectionReason;
+        /** AI建议的更合适的实体类型（如字段更适合其他表单） */
+        private String suggestedEntityType;
     }
 
     /**
@@ -212,6 +234,12 @@ public class FormAssistantController {
         private List<ValidationError> validationErrors;  // 校验错误列表
 
         private String userInstruction;  // 用户补充说明
+
+        /** 是否启用深度思考模式 (用于复杂校验场景) */
+        private Boolean enableThinking = false;
+
+        /** 思考预算 (10-100)，数值越大思考越深入 */
+        private Integer thinkingBudget = 20;
     }
 
     /**
@@ -283,12 +311,17 @@ public class FormAssistantController {
                 formFieldMaps = convertFormFields(request.getFormFields());
             }
 
-            // 4. 调用 DashScope 服务
+            // 4. 调用 DashScope 服务 (支持思考模式)
+            boolean enableThinking = Boolean.TRUE.equals(request.getEnableThinking());
+            int thinkingBudget = request.getThinkingBudget() != null ? request.getThinkingBudget() : 20;
+
             FormAssistantService.FormParseResult parseResult = formAssistantService.parseFormInput(
                     request.getUserInput(),
                     request.getEntityType(),
                     formFieldMaps,
-                    factoryId
+                    factoryId,
+                    enableThinking,
+                    thinkingBudget
             );
 
             // 5. 转换响应
@@ -470,12 +503,18 @@ public class FormAssistantController {
         }
 
         try {
-            // 4. 调用 DashScope 服务
-            FormAssistantService.SchemaGenerateResult schemaResult = formAssistantService.generateSchema(
+            // 4. 调用 DashScope 服务 (支持用户解释说明和思考模式)
+            boolean enableThinking = Boolean.TRUE.equals(request.getEnableThinking());
+            int thinkingBudget = request.getThinkingBudget() != null ? request.getThinkingBudget() : 20;
+
+            FormAssistantService.SchemaGenerateResult schemaResult = formAssistantService.generateSchemaWithJustification(
                     request.getUserInput(),
                     request.getEntityType(),
                     request.getExistingFields(),
-                    factoryId
+                    request.getUserJustification(),  // 用户解释（可为null）
+                    factoryId,
+                    enableThinking,
+                    thinkingBudget
             );
 
             // 5. 转换响应
@@ -484,7 +523,12 @@ public class FormAssistantController {
             result.setMessage(schemaResult.getMessage());
             result.setSuggestions(schemaResult.getSuggestions());
 
-            // 转换字段列表
+            // 设置相关性判断结果
+            result.setRelevant(schemaResult.isRelevant());
+            result.setRejectionReason(schemaResult.getRejectionReason());
+            result.setSuggestedEntityType(schemaResult.getSuggestedEntityType());
+
+            // 转换字段列表（仅当相关时才有字段）
             if (schemaResult.getFields() != null) {
                 List<SchemaFieldDefinition> fields = schemaResult.getFields().stream()
                         .map(this::convertToSchemaFieldDefinition)
@@ -492,12 +536,14 @@ public class FormAssistantController {
                 result.setFields(fields);
             }
 
-            log.info("AI生成Schema成功: factoryId={}, fieldCount={}, entityType={}",
+            log.info("AI生成Schema{}: factoryId={}, relevant={}, fieldCount={}, entityType={}",
+                    schemaResult.isRelevant() ? "成功" : "被拒绝",
                     factoryId,
+                    schemaResult.isRelevant(),
                     result.getFields() != null ? result.getFields().size() : 0,
                     request.getEntityType());
 
-            // 消耗配额（仅在成功后）
+            // 消耗配额（仅在成功后，无论是否相关都算一次调用）
             if (schemaResult.isSuccess()) {
                 consumeQuota(factoryId, SCHEMA_GENERATE_QUOTA_COST);
             }
@@ -510,6 +556,7 @@ public class FormAssistantController {
             fallback.setSuccess(false);
             fallback.setMessage("AI服务异常: " + ErrorSanitizer.sanitize(e));
             fallback.setFields(List.of());
+            fallback.setRelevant(true);  // 错误情况默认为true，避免前端误判为拒绝
             return ApiResponse.success(fallback);
         }
     }
@@ -576,14 +623,19 @@ public class FormAssistantController {
                         .toList();
             }
 
-            // 4. 调用 DashScope 服务
+            // 4. 调用 DashScope 服务 (支持思考模式)
+            boolean enableThinking = Boolean.TRUE.equals(request.getEnableThinking());
+            int thinkingBudget = request.getThinkingBudget() != null ? request.getThinkingBudget() : 20;
+
             FormAssistantService.ValidationFeedbackResult feedbackResult = formAssistantService.submitValidationFeedback(
                     request.getEntityType(),
                     formFieldMaps,
                     request.getSubmittedValues(),
                     errorMaps,
                     request.getUserInstruction(),
-                    factoryId
+                    factoryId,
+                    enableThinking,
+                    thinkingBudget
             );
 
             // 5. 转换响应

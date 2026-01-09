@@ -55,13 +55,42 @@ public class FormAssistantService {
      */
     public FormParseResult parseFormInput(String userInput, String entityType,
                                           List<Map<String, Object>> formFields, String factoryId) {
+        return parseFormInput(userInput, entityType, formFields, factoryId, false, 20);
+    }
+
+    /**
+     * 解析用户自然语言输入为表单字段值（支持思考模式）
+     *
+     * @param userInput       用户输入
+     * @param entityType      实体类型
+     * @param formFields      表单字段定义
+     * @param factoryId       工厂ID
+     * @param enableThinking  是否启用思考模式
+     * @param thinkingBudget  思考预算 (10-100)
+     * @return 解析结果
+     */
+    public FormParseResult parseFormInput(String userInput, String entityType,
+                                          List<Map<String, Object>> formFields, String factoryId,
+                                          boolean enableThinking, int thinkingBudget) {
         if (!dashScopeClient.isAvailable()) {
             return FormParseResult.error("AI服务未配置");
         }
 
         try {
             String systemPrompt = buildFormParseSystemPrompt(entityType, formFields);
-            String response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            String response;
+
+            if (enableThinking) {
+                log.info("表单解析使用思考模式: thinkingBudget={}", thinkingBudget);
+                var thinkingResponse = dashScopeClient.chatWithThinking(systemPrompt, userInput, thinkingBudget);
+                if (thinkingResponse.hasError()) {
+                    return FormParseResult.error("AI思考模式错误: " + thinkingResponse.getErrorMessage());
+                }
+                response = thinkingResponse.getContent();
+            } else {
+                response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            }
+
             return parseFormParseResponse(response, formFields);
         } catch (Exception e) {
             log.error("表单解析失败", e);
@@ -272,13 +301,66 @@ public class FormAssistantService {
      */
     public SchemaGenerateResult generateSchema(String userInput, String entityType,
                                                List<String> existingFields, String factoryId) {
+        return generateSchemaWithJustification(userInput, entityType, existingFields, null, factoryId);
+    }
+
+    /**
+     * 根据自然语言描述生成 Formily JSON Schema 字段定义（支持用户解释）
+     *
+     * 当AI判断字段不相关时，用户可以提供解释说明为什么需要该字段。
+     * AI会重新评估，如果解释合理则接受该字段。
+     *
+     * @param userInput         用户描述
+     * @param entityType        实体类型
+     * @param existingFields    现有字段名列表
+     * @param userJustification 用户解释（为什么需要该字段）
+     * @param factoryId         工厂ID
+     * @return 生成的Schema字段
+     */
+    public SchemaGenerateResult generateSchemaWithJustification(String userInput, String entityType,
+                                                                 List<String> existingFields,
+                                                                 String userJustification,
+                                                                 String factoryId) {
+        return generateSchemaWithJustification(userInput, entityType, existingFields, userJustification, factoryId, false, 20);
+    }
+
+    /**
+     * 根据自然语言描述生成 Formily JSON Schema 字段定义（支持用户解释和思考模式）
+     *
+     * @param userInput         用户描述
+     * @param entityType        实体类型
+     * @param existingFields    现有字段名列表
+     * @param userJustification 用户解释（为什么需要该字段）
+     * @param factoryId         工厂ID
+     * @param enableThinking    是否启用思考模式
+     * @param thinkingBudget    思考预算 (10-100)
+     * @return 生成的Schema字段
+     */
+    public SchemaGenerateResult generateSchemaWithJustification(String userInput, String entityType,
+                                                                 List<String> existingFields,
+                                                                 String userJustification,
+                                                                 String factoryId,
+                                                                 boolean enableThinking,
+                                                                 int thinkingBudget) {
         if (!dashScopeClient.isAvailable()) {
             return SchemaGenerateResult.error("AI服务未配置");
         }
 
         try {
-            String systemPrompt = buildSchemaGeneratePrompt(entityType, existingFields);
-            String response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            String systemPrompt = buildSchemaGeneratePrompt(entityType, existingFields, userJustification);
+            String response;
+
+            if (enableThinking) {
+                log.info("Schema生成使用思考模式: thinkingBudget={}", thinkingBudget);
+                var thinkingResponse = dashScopeClient.chatWithThinking(systemPrompt, userInput, thinkingBudget);
+                if (thinkingResponse.hasError()) {
+                    return SchemaGenerateResult.error("AI思考模式错误: " + thinkingResponse.getErrorMessage());
+                }
+                response = thinkingResponse.getContent();
+            } else {
+                response = dashScopeClient.chatLowTemp(systemPrompt, userInput);
+            }
+
             return parseSchemaGenerateResponse(response);
         } catch (Exception e) {
             log.error("Schema生成失败", e);
@@ -287,18 +369,37 @@ public class FormAssistantService {
     }
 
     private String buildSchemaGeneratePrompt(String entityType, List<String> existingFields) {
+        return buildSchemaGeneratePrompt(entityType, existingFields, null);
+    }
+
+    private String buildSchemaGeneratePrompt(String entityType, List<String> existingFields, String userJustification) {
         StringBuilder sb = new StringBuilder();
-        sb.append("你是一个表单配置专家。用户会描述需要添加的表单字段，你需要生成 Formily JSON Schema 格式的字段定义。\n\n");
-        sb.append("实体类型: ").append(entityType).append("\n\n");
+        sb.append("你是一个食品加工厂的表单配置专家。用户会描述需要添加的表单字段，你需要:\n");
+        sb.append("1. 首先判断该字段是否与当前实体类型相关\n");
+        sb.append("2. 如果相关，生成 Formily JSON Schema 格式的字段定义\n");
+        sb.append("3. 如果不相关，拒绝并说明原因\n\n");
+
+        sb.append("实体类型: ").append(entityType).append("\n");
+        sb.append("实体类型说明:\n");
+        sb.append(getEntityTypeDescription(entityType));
+        sb.append("\n\n");
 
         if (existingFields != null && !existingFields.isEmpty()) {
             sb.append("现有字段 (避免重复): ").append(String.join(", ", existingFields)).append("\n\n");
         }
 
+        if (userJustification != null && !userJustification.isBlank()) {
+            sb.append("用户解释为什么需要此字段: ").append(userJustification).append("\n");
+            sb.append("请重新评估该字段是否合理。如果用户解释合理，可以接受。\n\n");
+        }
+
         sb.append("""
                 请以 JSON 格式返回:
+
+                如果字段与实体类型相关:
                 {
                     "success": true,
+                    "relevant": true,
                     "fields": [
                         {
                             "name": "fieldName",
@@ -316,6 +417,15 @@ public class FormAssistantService {
                     "suggestions": ["建议1", "建议2"]
                 }
 
+                如果字段与实体类型不相关:
+                {
+                    "success": true,
+                    "relevant": false,
+                    "rejectionReason": "该字段与质检检查无关，质检检查应关注产品质量指标...",
+                    "suggestedEntityType": "PROCESSING_BATCH",
+                    "suggestions": ["您可能需要将此字段添加到生产批次表单中"]
+                }
+
                 Formily 组件参考:
                 - Input: 文本输入
                 - NumberPicker: 数字输入
@@ -331,6 +441,45 @@ public class FormAssistantService {
         return sb.toString();
     }
 
+    /**
+     * 获取实体类型的业务描述，帮助AI理解该实体应该包含哪些字段
+     */
+    private String getEntityTypeDescription(String entityType) {
+        return switch (entityType.toUpperCase()) {
+            case "QUALITY_CHECK" -> """
+                - 质检检查表单：用于记录产品质量检验数据
+                - 相关字段示例：感官评分、温度检测、微生物指标、检验结果、合格/不合格判定等
+                - 不相关字段：生产数量、人员考勤、设备维护、运输信息等
+                """;
+            case "MATERIAL_BATCH" -> """
+                - 原料批次表单：用于记录原材料入库信息
+                - 相关字段示例：供应商、原料类型、数量、入库时间、存储位置、保质期等
+                - 不相关字段：产品销售、员工考勤、设备状态等
+                """;
+            case "PROCESSING_BATCH" -> """
+                - 生产批次表单：用于记录生产加工信息
+                - 相关字段示例：产品类型、生产数量、生产线、操作员、开始/结束时间、原料消耗等
+                - 不相关字段：客户信息、销售数据、财务信息等
+                """;
+            case "SHIPMENT" -> """
+                - 出货记录表单：用于记录产品出库和物流信息
+                - 相关字段示例：客户、发货数量、运输方式、运输温度、配送地址、签收状态等
+                - 不相关字段：生产工艺、设备维护、内部考勤等
+                """;
+            case "EQUIPMENT" -> """
+                - 设备管理表单：用于记录设备信息和维护数据
+                - 相关字段示例：设备型号、维护周期、故障记录、运行状态、校准日期等
+                - 不相关字段：产品销售、原料采购、人员管理等
+                """;
+            case "DISPOSAL_RECORD" -> """
+                - 废弃物处理表单：用于记录不合格品或废弃物处理信息
+                - 相关字段示例：处理原因、处理方式、处理数量、审批人、处理日期等
+                - 不相关字段：正常生产数据、销售信息等
+                """;
+            default -> "- 通用表单：请根据实际业务需求判断字段相关性\n";
+        };
+    }
+
     private SchemaGenerateResult parseSchemaGenerateResponse(String response) {
         try {
             JsonNode json = extractJson(response);
@@ -341,14 +490,25 @@ public class FormAssistantService {
             SchemaGenerateResult result = new SchemaGenerateResult();
             result.setSuccess(json.path("success").asBoolean(true));
 
-            // 解析字段列表
-            JsonNode fieldsNode = json.get("fields");
-            if (fieldsNode != null && fieldsNode.isArray()) {
-                List<Map<String, Object>> fields = objectMapper.convertValue(fieldsNode,
-                        new TypeReference<List<Map<String, Object>>>() {});
-                result.setFields(fields);
-            } else {
+            // 解析相关性判断结果
+            boolean relevant = json.path("relevant").asBoolean(true); // 默认为true
+            result.setRelevant(relevant);
+
+            if (!relevant) {
+                // 字段不相关，解析拒绝原因
+                result.setRejectionReason(json.path("rejectionReason").asText(null));
+                result.setSuggestedEntityType(json.path("suggestedEntityType").asText(null));
                 result.setFields(new ArrayList<>());
+            } else {
+                // 字段相关，解析字段列表
+                JsonNode fieldsNode = json.get("fields");
+                if (fieldsNode != null && fieldsNode.isArray()) {
+                    List<Map<String, Object>> fields = objectMapper.convertValue(fieldsNode,
+                            new TypeReference<List<Map<String, Object>>>() {});
+                    result.setFields(fields);
+                } else {
+                    result.setFields(new ArrayList<>());
+                }
             }
 
             // 解析建议
@@ -385,6 +545,32 @@ public class FormAssistantService {
             List<Map<String, Object>> validationErrors,
             String userInstruction,
             String factoryId) {
+        return submitValidationFeedback(entityType, formFields, submittedValues, validationErrors,
+                userInstruction, factoryId, false, 20);
+    }
+
+    /**
+     * 根据校验错误提供修正建议（支持思考模式）
+     *
+     * @param entityType       实体类型
+     * @param formFields       表单字段定义
+     * @param submittedValues  用户提交的值
+     * @param validationErrors 校验错误列表
+     * @param userInstruction  用户补充说明
+     * @param factoryId        工厂ID
+     * @param enableThinking   是否启用思考模式
+     * @param thinkingBudget   思考预算 (10-100)
+     * @return 修正建议
+     */
+    public ValidationFeedbackResult submitValidationFeedback(
+            String entityType,
+            List<Map<String, Object>> formFields,
+            Map<String, Object> submittedValues,
+            List<Map<String, Object>> validationErrors,
+            String userInstruction,
+            String factoryId,
+            boolean enableThinking,
+            int thinkingBudget) {
 
         if (!dashScopeClient.isAvailable()) {
             return ValidationFeedbackResult.error("AI服务未配置");
@@ -393,8 +579,20 @@ public class FormAssistantService {
         try {
             String prompt = buildValidationFeedbackPrompt(entityType, formFields,
                     submittedValues, validationErrors, userInstruction);
-            String response = dashScopeClient.chatLowTemp(
-                    "你是一个表单校验助手，帮助用户修正表单填写错误。", prompt);
+            String systemPrompt = "你是一个表单校验助手，帮助用户修正表单填写错误。";
+            String response;
+
+            if (enableThinking) {
+                log.info("校验反馈使用思考模式: thinkingBudget={}", thinkingBudget);
+                var thinkingResponse = dashScopeClient.chatWithThinking(systemPrompt, prompt, thinkingBudget);
+                if (thinkingResponse.hasError()) {
+                    return ValidationFeedbackResult.error("AI思考模式错误: " + thinkingResponse.getErrorMessage());
+                }
+                response = thinkingResponse.getContent();
+            } else {
+                response = dashScopeClient.chatLowTemp(systemPrompt, prompt);
+            }
+
             return parseValidationFeedbackResponse(response);
         } catch (Exception e) {
             log.error("校验反馈处理失败", e);
@@ -589,10 +787,29 @@ public class FormAssistantService {
         private List<String> suggestions;
         private String message;
 
+        /** AI判断字段是否与实体类型相关 */
+        private boolean relevant;
+        /** 如果不相关，拒绝原因 */
+        private String rejectionReason;
+        /** AI建议的实体类型（如果字段更适合其他表单） */
+        private String suggestedEntityType;
+
         public static SchemaGenerateResult error(String message) {
             return SchemaGenerateResult.builder()
                     .success(false)
                     .message(message)
+                    .fields(new ArrayList<>())
+                    .relevant(true) // 错误情况默认为true，避免前端误判
+                    .build();
+        }
+
+        public static SchemaGenerateResult rejected(String rejectionReason, String suggestedEntityType, List<String> suggestions) {
+            return SchemaGenerateResult.builder()
+                    .success(true)
+                    .relevant(false)
+                    .rejectionReason(rejectionReason)
+                    .suggestedEntityType(suggestedEntityType)
+                    .suggestions(suggestions)
                     .fields(new ArrayList<>())
                     .build();
         }

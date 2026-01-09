@@ -11,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Animated,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import { useLogin } from '../../hooks/useLogin';
 import { getPostLoginRoute } from '../../utils/navigationHelper';
 import { useAuthStore } from '../../store/authStore';
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../store/languageStore';
 import { NeoButton, ScreenWrapper } from '../../components/ui';
 import { theme } from '../../theme';
 import { logger } from '../../utils/logger';
@@ -28,6 +30,33 @@ const loginLogger = logger.createContextLogger('EnhancedLoginScreen');
 interface LoginScreenProps {
   navigation: any;
 }
+
+// ========== 语言切换按钮组件 ==========
+const LanguageSwitchButton: React.FC<{ light?: boolean }> = ({ light = false }) => {
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
+
+  return (
+    <TouchableOpacity
+      style={[styles.languageButton, light && styles.languageButtonLight]}
+      onPress={toggleLanguage}
+      activeOpacity={0.7}
+    >
+      <Ionicons
+        name="globe-outline"
+        size={18}
+        color={light ? '#FFFFFF' : theme.colors.primary}
+      />
+      <Text style={[styles.languageButtonText, light && styles.languageButtonTextLight]}>
+        {LANGUAGE_NAMES[language]}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 // ========== Landing 视图组件 ==========
 interface LandingViewProps {
@@ -48,14 +77,18 @@ const LandingView: React.FC<LandingViewProps> = ({ onLogin, onRegister }) => {
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
       <View style={styles.landingContent}>
-        {/* 顶部标题 */}
-        <Text style={styles.landingPageTitle}>Landing{'\n'}Page</Text>
+        {/* 顶部：语言切换 */}
+        <View style={styles.landingHeader}>
+          <LanguageSwitchButton light />
+        </View>
 
         {/* 中间品牌信息 */}
         <View style={styles.brandContainer}>
-          <View style={styles.logoCircle}>
-            <Ionicons name="leaf" size={56} color="#FFFFFF" />
-          </View>
+          <Image
+            source={require('../../../assets/icon.png')}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.brandTitle}>{t('brand.name')}</Text>
           <Text style={styles.brandSubtitle}>{t('brand.subtitle')}</Text>
         </View>
@@ -482,6 +515,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
+  brandLogo: {
+    width: 140,
+    height: 140,
+    marginBottom: 24,
+  },
   brandTitle: {
     fontSize: 32,
     fontWeight: '700',
@@ -523,6 +561,33 @@ const styles = StyleSheet.create({
   landingSecondaryButtonText: {
     fontSize: 18,
     fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  landingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 20,
+  },
+  languageButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  languageButtonLight: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  languageButtonText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.primary,
+  },
+  languageButtonTextLight: {
     color: '#FFFFFF',
   },
 

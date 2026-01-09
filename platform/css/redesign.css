@@ -1,0 +1,1676 @@
+/* 
+ * High-Tech Redesign System
+ * Inspired by Magic UI & Aceternity UI
+ */
+
+@property --beam-angle {
+    syntax: '<angle>';
+    initial-value: 0deg;
+    inherits: false;
+}
+
+:root {
+    /* Light Mode Professional Palette */
+    --tech-bg: #F8FAFC;
+    --tech-bg-warm: #FDF8F5;
+    --tech-surface: rgba(255, 255, 255, 0.95);
+    --tech-border: rgba(0, 0, 0, 0.08);
+    --tech-accent: #C45C26;
+    --tech-accent-bright: #E8732E;
+    --tech-cyan: #0EA5E9;
+    --tech-glow-amber: rgba(196, 92, 38, 0.15);
+    --tech-glow-cyan: rgba(14, 165, 233, 0.1);
+
+    /* Text colors for light mode */
+    --tech-text-primary: #1A1A1A;
+    --tech-text-secondary: #4B5563;
+    --tech-text-tertiary: #6B7280;
+
+    /* Bento Grid Utils */
+    --bento-gap: 20px;
+    --bento-radius: 20px;
+}
+
+/* === CRITICAL: Force Lucide Icons Visibility === */
+/* This must be at the top for highest priority */
+svg.lucide {
+    color: #C45C26 !important;
+    stroke: #C45C26 !important;
+    fill: none !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+}
+
+svg.lucide > * {
+    stroke: #C45C26 !important;
+    stroke-width: 2 !important;
+}
+
+/* Button icons should be white */
+.btn svg.lucide,
+.btn-primary svg.lucide,
+.btn-accent svg.lucide,
+.btn-tech svg.lucide {
+    color: white !important;
+    stroke: white !important;
+}
+
+.btn svg.lucide > *,
+.btn-primary svg.lucide > *,
+.btn-accent svg.lucide > * {
+    stroke: white !important;
+}
+
+/* Secondary button icons should be dark */
+.btn-secondary svg.lucide {
+    color: #1A1A1A !important;
+    stroke: #1A1A1A !important;
+}
+
+.btn-secondary svg.lucide > * {
+    stroke: #1A1A1A !important;
+}
+
+/* Check icons in lists should be green */
+.pricing-features svg.lucide,
+.solution-list svg.lucide {
+    color: #2D6A4F !important;
+    stroke: #2D6A4F !important;
+}
+
+.pricing-features svg.lucide > *,
+.solution-list svg.lucide > * {
+    stroke: #2D6A4F !important;
+}
+
+/* === Light Mode Text Colors === */
+.section .text-secondary,
+.section .body-sm {
+    color: var(--tech-text-secondary) !important;
+}
+
+.section .text-tertiary {
+    color: var(--tech-text-tertiary) !important;
+}
+
+/* === Light Theme Card Overrides (All Card Types) === */
+.dimension-card,
+.solution-card,
+.pricing-card,
+.feature-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 248, 0.95) 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.06),
+        0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Light Theme Card Text Colors */
+.dimension-card,
+.dimension-card *,
+.solution-card,
+.solution-card *,
+.pricing-card,
+.pricing-card *,
+.feature-card,
+.feature-card * {
+    color: var(--tech-text-secondary) !important;
+}
+
+.dimension-card .sys-name,
+.dimension-card .dimension-title,
+.solution-card .solution-title,
+.pricing-card h3 {
+    color: var(--tech-text-primary) !important;
+}
+
+.dimension-card .sys-val,
+.solution-card .solution-desc,
+.pricing-card .body-sm {
+    color: var(--tech-text-secondary) !important;
+}
+
+.dimension-card .ai-row {
+    background: linear-gradient(90deg, rgba(196, 92, 38, 0.12) 0%, rgba(196, 92, 38, 0.04) 100%) !important;
+    border-top: 1px solid rgba(196, 92, 38, 0.2) !important;
+    border-radius: 8px;
+}
+
+.dimension-card .ai-row .sys-name {
+    color: var(--tech-accent) !important;
+}
+
+.dimension-card .ai-row .sys-val strong {
+    color: var(--tech-accent) !important;
+}
+
+/* Fix icon containers */
+.dimension-card .dimension-icon,
+.solution-card .solution-icon {
+    background: rgba(196, 92, 38, 0.1) !important;
+}
+
+/* Fix Lucide icons visibility - Global Rules */
+.feature-icon,
+.solution-icon,
+.dimension-icon {
+    background: rgba(196, 92, 38, 0.1) !important;
+}
+
+/* All Lucide SVG icons - ensure they have color */
+svg.lucide,
+.lucide,
+[class*="lucide-"],
+svg[class*="lucide"],
+i svg,
+[data-lucide] + svg {
+    color: var(--tech-accent, #C45C26) !important;
+    stroke: var(--tech-accent, #C45C26) !important;
+    fill: none !important;
+}
+
+/* Force all icon SVG paths to have stroke - with explicit color */
+svg.lucide path,
+svg.lucide line,
+svg.lucide circle,
+svg.lucide polyline,
+svg.lucide rect,
+[class*="lucide-"] path,
+[class*="lucide-"] line,
+[class*="lucide-"] circle,
+.feature-icon svg path,
+.solution-icon svg path,
+.dimension-icon svg path,
+.hero-eyebrow svg path,
+.btn svg path {
+    stroke: currentColor !important;
+    stroke-width: 2 !important;
+}
+
+/* Global SVG default color for light theme */
+body svg:not(.logo-mark svg):not(footer svg) {
+    color: var(--tech-accent, #C45C26) !important;
+    stroke: var(--tech-accent, #C45C26) !important;
+}
+
+/* Ensure SVG inside buttons use button text color */
+.btn svg path,
+.btn-primary svg path,
+.btn-accent svg path {
+    stroke: white !important;
+}
+
+.btn-secondary svg path {
+    stroke: var(--tech-text-primary, #1A1A1A) !important;
+}
+
+.feature-icon svg,
+.feature-icon .lucide,
+.solution-icon svg,
+.solution-icon .lucide,
+.dimension-icon svg,
+.dimension-icon .lucide {
+    color: var(--tech-accent, #C45C26) !important;
+    stroke: var(--tech-accent, #C45C26) !important;
+}
+
+/* Hero eyebrow icon - zap icon */
+.hero-eyebrow svg,
+.hero-eyebrow .lucide,
+.hero-eyebrow svg.lucide-zap {
+    color: var(--tech-accent, #C45C26) !important;
+    stroke: var(--tech-accent, #C45C26) !important;
+}
+
+/* Button icons - inherit button text color */
+.btn svg,
+.btn .lucide,
+.btn-primary svg,
+.btn-primary .lucide,
+.btn-accent svg,
+.btn-accent .lucide {
+    color: white !important;
+    stroke: white !important;
+}
+
+/* Secondary button icons - dark color */
+.btn-secondary svg,
+.btn-secondary .lucide {
+    color: var(--tech-text-primary, #1A1A1A) !important;
+    stroke: var(--tech-text-primary, #1A1A1A) !important;
+}
+
+/* Pricing features check icons */
+.pricing-features svg,
+.pricing-features .lucide {
+    color: var(--success, #2D6A4F) !important;
+    stroke: var(--success, #2D6A4F) !important;
+}
+
+/* Solution list check icons */
+.solution-list svg,
+.solution-list .lucide {
+    color: var(--success, #2D6A4F) !important;
+    stroke: var(--success, #2D6A4F) !important;
+}
+
+/* Summary box icons */
+.summary-icon-inner svg,
+.summary-icon-inner .lucide {
+    color: inherit !important;
+    stroke: currentColor !important;
+}
+
+/* Contact info icons */
+.contact-info-card svg,
+.contact-info-card .lucide {
+    color: var(--tech-accent, #C45C26) !important;
+    stroke: var(--tech-accent, #C45C26) !important;
+}
+
+/* === CRITICAL VISIBILITY FIXES === */
+
+/* 1. Stat Numbers (Hero Section) */
+.hero .stat-number,
+.hero .counter,
+.hero .h2,
+.section .stat-number,
+.section .counter,
+.hero .stat-value,
+.section .stat-value {
+    color: var(--tech-text-primary) !important;
+    font-weight: 700 !important;
+}
+
+.hero .stat-label,
+.section .stat-label {
+    color: var(--tech-text-tertiary) !important;
+}
+
+/* Hero stats border */
+.hero-stats {
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Hero eyebrow badge */
+.hero-eyebrow {
+    background: rgba(196, 92, 38, 0.08) !important;
+    border: 1px solid rgba(196, 92, 38, 0.2) !important;
+    color: var(--tech-accent) !important;
+}
+
+/* Partner marquee items */
+.partner-item {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: var(--tech-text-secondary) !important;
+}
+
+.partner-item:hover {
+    border-color: var(--tech-accent) !important;
+    color: var(--tech-text-primary) !important;
+}
+
+/* Contact form light theme */
+.contact-form {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.contact-form h3 {
+    color: var(--tech-text-primary) !important;
+}
+
+.form-label {
+    color: var(--tech-text-primary) !important;
+}
+
+/* Featured pricing card fix */
+.pricing-card.featured {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 248, 245, 0.95) 100%) !important;
+    border: 2px solid var(--tech-accent) !important;
+    position: relative;
+    overflow: visible !important;
+}
+
+/* Disable the rotating border-beam animation on featured card */
+.pricing-card.featured.border-beam::before {
+    display: none !important;
+}
+
+.pricing-card.featured *:not(svg):not(svg *) {
+    color: var(--tech-text-secondary) !important;
+}
+
+/* Ensure SVG icons inside featured card have correct color */
+.pricing-card.featured svg,
+.pricing-card.featured .lucide {
+    color: var(--success, #2D6A4F) !important;
+    stroke: var(--success, #2D6A4F) !important;
+}
+
+.pricing-card.featured h3 {
+    color: var(--tech-text-primary) !important;
+}
+
+.pricing-card.featured .price {
+    color: var(--tech-text-primary) !important;
+}
+
+/* Card badge styling */
+.card-badge {
+    position: absolute !important;
+    top: -12px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: var(--tech-accent) !important;
+    color: white !important;
+    padding: 4px 16px !important;
+    border-radius: 100px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    z-index: 10 !important;
+}
+
+/* Pricing grid - equal height cards */
+#pricing .grid-2 {
+    align-items: stretch;
+}
+
+#pricing .grid-2 .pricing-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* ==================== RaaS Pricing Styles ==================== */
+
+/* RaaS Steps Container */
+.raas-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    position: relative;
+    padding-left: var(--space-1);
+}
+
+/* Connecting line between steps */
+.raas-steps::before {
+    content: '';
+    position: absolute;
+    /* Center line with step numbers: container-padding + step-padding + half-circle-width */
+    left: calc(var(--space-1) + var(--space-4) + 20px);
+    top: 60px;
+    bottom: 60px;
+    width: 2px;
+    background: linear-gradient(180deg,
+        var(--tech-accent) 0%,
+        rgba(196, 92, 38, 0.3) 50%,
+        rgba(196, 92, 38, 0.1) 100%
+    );
+    border-radius: 2px;
+}
+
+.raas-step {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    position: relative;
+    background: transparent;
+}
+
+.raas-step:hover {
+    background: rgba(196, 92, 38, 0.04);
+    transform: translateX(4px);
+}
+
+.raas-step-number {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%);
+    color: white !important;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 17px;
+    box-shadow: 0 4px 16px rgba(196, 92, 38, 0.35);
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.raas-step:hover .raas-step-number {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(196, 92, 38, 0.45);
+}
+
+/* Pulse ring animation for step numbers */
+.raas-step-number::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 2px solid var(--tech-accent);
+    opacity: 0;
+    animation: pulse-ring 2.5s ease-out infinite;
+}
+
+.raas-step:nth-child(1) .raas-step-number::after { animation-delay: 0s; }
+.raas-step:nth-child(2) .raas-step-number::after { animation-delay: 0.6s; }
+.raas-step:nth-child(3) .raas-step-number::after { animation-delay: 1.2s; }
+
+@keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+.raas-step-content {
+    flex: 1;
+    padding-top: 4px;
+}
+
+.raas-step-content h4 {
+    color: var(--tech-text-primary) !important;
+    font-size: 17px !important;
+    font-weight: 700 !important;
+    margin-bottom: 6px !important;
+    transition: color 0.3s ease;
+}
+
+.raas-step:hover .raas-step-content h4 {
+    color: var(--tech-accent) !important;
+}
+
+.raas-step-content p {
+    line-height: 1.6;
+}
+
+/* RaaS Benefits Grid */
+.raas-benefits-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.raas-benefit-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(253, 248, 245, 0.6) 100%);
+    border: 1px solid rgba(196, 92, 38, 0.08);
+    transition: all 0.35s cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.raas-benefit-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.raas-benefit-item:hover {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(253, 248, 245, 0.9) 100%);
+    border-color: rgba(196, 92, 38, 0.2);
+    transform: translateX(6px);
+    box-shadow: 0 4px 20px rgba(196, 92, 38, 0.1);
+}
+
+.raas-benefit-item:hover::before {
+    opacity: 1;
+}
+
+.raas-benefit-icon {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(196, 92, 38, 0.25);
+    transition: all 0.3s ease;
+}
+
+.raas-benefit-icon i,
+.raas-benefit-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+    color: white !important;
+    stroke: white !important;
+}
+
+.raas-benefit-item:hover .raas-benefit-icon {
+    transform: scale(1.1) rotate(-5deg);
+    box-shadow: 0 6px 16px rgba(196, 92, 38, 0.35);
+}
+
+.raas-benefit-content {
+    flex: 1;
+    padding-top: 2px;
+}
+
+.raas-benefit-content h4 {
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    color: var(--tech-text-primary) !important;
+    margin: 0 0 4px 0 !important;
+    transition: color 0.3s ease;
+}
+
+.raas-benefit-item:hover .raas-benefit-content h4 {
+    color: var(--tech-accent) !important;
+}
+
+.raas-benefit-content p {
+    font-size: 14px !important;
+    color: var(--tech-text-secondary) !important;
+    margin: 0 !important;
+    line-height: 1.5 !important;
+}
+
+/* Staggered animation for benefit items */
+.raas-benefit-item:nth-child(1) { transition-delay: 0ms; }
+.raas-benefit-item:nth-child(2) { transition-delay: 50ms; }
+.raas-benefit-item:nth-child(3) { transition-delay: 100ms; }
+.raas-benefit-item:nth-child(4) { transition-delay: 150ms; }
+.raas-benefit-item:nth-child(5) { transition-delay: 200ms; }
+
+/* Early Adopter Timeline - Enhanced */
+.early-adopter-timeline {
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+    margin: var(--space-7) 0;
+    perspective: 1000px;
+}
+
+.timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-5) var(--space-4);
+    min-width: 160px;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    border-radius: 16px;
+    background: transparent;
+}
+
+.timeline-item:hover {
+    transform: translateY(-4px);
+}
+
+.timeline-item.current {
+    background: linear-gradient(135deg,
+        rgba(196, 92, 38, 0.1) 0%,
+        rgba(196, 92, 38, 0.02) 100%
+    );
+    border-radius: 20px;
+    border: 2px solid var(--tech-accent);
+    box-shadow:
+        0 8px 32px rgba(196, 92, 38, 0.15),
+        0 0 0 4px rgba(196, 92, 38, 0.05);
+    transform: scale(1.05);
+    z-index: 2;
+}
+
+.timeline-item.current:hover {
+    transform: scale(1.08) translateY(-4px);
+}
+
+/* Glowing effect for current item */
+.timeline-item.current::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, var(--tech-accent), var(--tech-accent-bright));
+    opacity: 0.15;
+    filter: blur(12px);
+    z-index: -1;
+    animation: glow-pulse-soft 3s ease-in-out infinite;
+}
+
+@keyframes glow-pulse-soft {
+    0%, 100% { opacity: 0.1; transform: scale(1); }
+    50% { opacity: 0.2; transform: scale(1.02); }
+}
+
+.timeline-item.future {
+    opacity: 0.4;
+}
+
+.timeline-item.future:hover {
+    opacity: 0.6;
+}
+
+.timeline-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--tech-text-tertiary);
+    margin-bottom: var(--space-3);
+    padding: 4px 12px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.timeline-item.current .timeline-badge {
+    color: white !important;
+    background: var(--tech-accent);
+    box-shadow: 0 2px 8px rgba(196, 92, 38, 0.3);
+    animation: badge-shine 3s ease-in-out infinite;
+}
+
+@keyframes badge-shine {
+    0%, 100% { box-shadow: 0 2px 8px rgba(196, 92, 38, 0.3); }
+    50% { box-shadow: 0 4px 16px rgba(196, 92, 38, 0.5); }
+}
+
+.timeline-period {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--tech-text-primary) !important;
+    margin-bottom: var(--space-2);
+    font-family: var(--font-mono);
+}
+
+.timeline-item.current .timeline-period {
+    color: var(--tech-accent) !important;
+    font-size: 32px;
+    text-shadow: 0 2px 8px rgba(196, 92, 38, 0.2);
+}
+
+.timeline-desc {
+    font-size: 14px;
+    color: var(--tech-text-secondary) !important;
+    margin-bottom: var(--space-3);
+    font-weight: 500;
+}
+
+.timeline-slots {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--tech-text-tertiary) !important;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 4px 14px;
+    border-radius: 100px;
+    transition: all 0.3s ease;
+}
+
+.timeline-item:hover .timeline-slots {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.timeline-item.current .timeline-slots {
+    background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%);
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(196, 92, 38, 0.3);
+}
+
+/* Timeline Connector - Animated */
+.timeline-connector {
+    width: 50px;
+    height: 3px;
+    background: linear-gradient(90deg,
+        var(--tech-accent) 0%,
+        rgba(196, 92, 38, 0.2) 100%
+    );
+    margin-top: 70px;
+    flex-shrink: 0;
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Animated shine on connector */
+.timeline-connector::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: connector-shine 3s ease-in-out infinite;
+}
+
+@keyframes connector-shine {
+    0% { left: -100%; }
+    50%, 100% { left: 200%; }
+}
+
+/* Early adopter card enhancement */
+#pricing .pricing-card:last-child {
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.98) 0%,
+        rgba(253, 248, 245, 0.95) 50%,
+        rgba(255, 255, 255, 0.98) 100%
+    ) !important;
+    border: 1px solid rgba(196, 92, 38, 0.15) !important;
+}
+
+/* Mobile Timeline */
+@media (max-width: 768px) {
+    .early-adopter-timeline {
+        flex-direction: column;
+        align-items: center;
+        gap: var(--space-1);
+    }
+
+    .timeline-connector {
+        width: 3px;
+        height: 30px;
+        margin-top: 0;
+        background: linear-gradient(180deg, var(--tech-accent), rgba(196, 92, 38, 0.2));
+    }
+
+    .timeline-connector::after {
+        width: 100%;
+        height: 50%;
+        left: 0;
+        top: -100%;
+        background: linear-gradient(180deg, transparent, rgba(255,255,255,0.6), transparent);
+        animation: connector-shine-v 3s ease-in-out infinite;
+    }
+
+    @keyframes connector-shine-v {
+        0% { top: -100%; }
+        50%, 100% { top: 200%; }
+    }
+
+    .timeline-item {
+        min-width: 240px;
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .timeline-item.current {
+        transform: scale(1);
+    }
+
+    .timeline-item.current:hover {
+        transform: scale(1.02) translateY(-4px);
+    }
+
+    #pricing .grid-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .raas-steps::before {
+        display: none;
+    }
+}
+
+/* 2. Buttons - Make them visible and styled */
+.btn,
+.btn-primary,
+.btn-tech {
+    background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%) !important;
+    border: none !important;
+    color: #FFFFFF !important;
+    padding: 14px 28px !important;
+    border-radius: 12px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px rgba(196, 92, 38, 0.25) !important;
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-tech:hover {
+    background: linear-gradient(135deg, var(--tech-accent-bright) 0%, var(--tech-accent) 100%) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(196, 92, 38, 0.35) !important;
+}
+
+.btn-secondary,
+.btn-outline {
+    background: transparent !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    color: var(--tech-text-primary) !important;
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+    border-color: rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 3. Contact Cards - Light Theme */
+.contact-card,
+.contact-info-card,
+.info-card,
+section .contact-info-card,
+#contact .contact-info-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(253, 248, 245, 0.95) 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    color: var(--tech-text-primary) !important;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+}
+
+.contact-card *,
+.contact-info-card *,
+.info-card *,
+.contact-info-card h4,
+.contact-info-card p {
+    color: var(--tech-text-primary) !important;
+}
+
+/* Icon container inside contact cards */
+.contact-info-card div[style*="accent-light"],
+.contact-info-card div[style*="background"] {
+    background: rgba(196, 92, 38, 0.1) !important;
+}
+
+/* 4. Hardware Brand Names */
+.brand-tag,
+.partner-logo,
+.hardware-brand,
+.brand-pill {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.08) !important;
+    color: var(--tech-text-primary) !important;
+}
+
+/* 5. Form Inputs */
+input,
+textarea,
+select {
+    background: rgba(255, 255, 255, 0.95) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    color: var(--tech-text-primary) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: #9CA3AF !important;
+}
+
+/* 6. Image Containers */
+.bento-item img,
+.card img,
+.feature-card img {
+    border-radius: 12px !important;
+    background: transparent !important;
+}
+
+/* 7. Footer Text */
+footer,
+footer * {
+    color: var(--tech-text-secondary) !important;
+}
+
+footer a:hover {
+    color: var(--tech-accent) !important;
+}
+
+/* 8. Logo Text Fix */
+.logo-text {
+    color: var(--tech-text-primary) !important;
+    font-weight: 700 !important;
+}
+
+/* 9. Summary/Comparison Footer Cards */
+.summary-box,
+.comparison-footer .summary-box {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(250, 250, 248, 0.95) 100%) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 0, 0, 0.06) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+.summary-box *,
+.comparison-footer * {
+    color: var(--tech-text-secondary) !important;
+}
+
+.summary-box h4 {
+    color: var(--tech-text-primary) !important;
+}
+
+.summary-box.highlight {
+    border: 1px solid rgba(196, 92, 38, 0.25) !important;
+    background: linear-gradient(135deg, rgba(253, 248, 245, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%) !important;
+}
+
+/* === Light Professional Background === */
+.neural-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    /* Clean, professional light gradient */
+    background:
+        radial-gradient(ellipse 100% 80% at 70% 10%, rgba(196, 92, 38, 0.06), transparent 50%),
+        radial-gradient(ellipse 80% 60% at 20% 90%, rgba(14, 165, 233, 0.04), transparent 50%),
+        linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 30%, #F1F5F9 100%);
+    overflow: hidden;
+}
+
+.neural-grid {
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background-image:
+        linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(1000px) rotateX(60deg) translateY(0);
+    animation: grid-scroll 30s linear infinite;
+    mask-image: radial-gradient(circle at center, black 30%, transparent 70%);
+}
+
+.neural-glow {
+    position: absolute;
+    top: 20%;
+    right: 10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(196, 92, 38, 0.08), transparent 60%);
+    filter: blur(80px);
+    opacity: 0.8;
+    animation: glow-pulse 10s ease-in-out infinite alternate;
+}
+
+.neural-glow-secondary {
+    position: absolute;
+    bottom: 10%;
+    left: 5%;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.05), transparent 60%);
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: glow-pulse 12s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes glow-pulse {
+    from {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.3;
+    }
+
+    to {
+        transform: translate(-50%, -50%) scale(1.2);
+        opacity: 0.6;
+    }
+}
+
+@keyframes grid-scroll {
+    from {
+        transform: perspective(1000px) rotateX(60deg) translateY(0);
+    }
+
+    to {
+        transform: perspective(1000px) rotateX(60deg) translateY(60px);
+    }
+}
+
+/* === Section Typography === */
+.section .eyebrow {
+    color: var(--tech-accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.section .h1 {
+    color: var(--tech-text-primary);
+    font-weight: 800;
+}
+
+.section .text-secondary {
+    color: var(--tech-text-secondary);
+}
+
+/* === Section Overrides === */
+.bg-warm {
+    background: transparent !important;
+    /* Remove legacy warm backgrounds */
+}
+
+/* === AI Agent Highlight Style === */
+.ai-agent-highlight {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--tech-accent) 0%, var(--tech-accent-bright) 100%);
+    color: #FFFFFF !important;
+    padding: 8px 24px;
+    border-radius: 12px;
+    margin-right: 8px;
+    box-shadow: 0 4px 20px rgba(196, 92, 38, 0.3);
+    position: relative;
+    font-weight: 800;
+}
+
+.ai-agent-highlight::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--tech-accent), var(--tech-accent-bright), var(--tech-accent));
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0.4;
+}
+
+/* === Light Navigation === */
+.nav {
+    background: rgba(255, 255, 255, 0.9) !important;
+    backdrop-filter: blur(12px) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+    transition: all 0.3s var(--ease-out);
+}
+
+.nav-link {
+    color: var(--tech-text-secondary) !important;
+    transition: color 0.3s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--tech-text-primary) !important;
+}
+
+.logo-text {
+    color: var(--tech-text-primary) !important;
+    letter-spacing: 3px !important;
+}
+
+/* === Reveal Animations === */
+.reveal-hidden {
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
+
+.reveal-active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Ensure cards are always visible - override style.css animations */
+.reveal-stagger > *,
+.reveal-stagger.visible > *,
+.grid-3.reveal-stagger > *,
+.grid-3.mobile-scroll > *,
+.grid-2 > *,
+.bento-container > *,
+.feature-card,
+.solution-card,
+.pricing-card,
+.dimension-card,
+.bento-item {
+    opacity: 1 !important;
+    transform: none !important;
+    visibility: visible !important;
+}
+
+/* Also ensure reveal class elements are visible */
+.reveal,
+.reveal.visible {
+    opacity: 1 !important;
+    transform: none !important;
+}
+
+/* === Section Overrides === */
+.section,
+.hero,
+.bg-warm,
+.bg-surface {
+    background: transparent !important;
+}
+
+.section {
+    position: relative;
+    z-index: 10;
+}
+
+/* === Light Glass Cards === */
+.border-beam {
+    position: relative;
+    border-radius: var(--bento-radius);
+    /* Light glassmorphism */
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(250, 250, 248, 0.9) 100%);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    box-shadow:
+        0 4px 24px rgba(0, 0, 0, 0.04),
+        0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.border-beam::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: conic-gradient(from var(--beam-angle),
+            transparent 0deg,
+            var(--tech-accent) 60deg,
+            transparent 120deg);
+    animation: beam-rotate 4s linear infinite;
+    z-index: -1;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    padding: 2px;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.5s var(--ease-out);
+}
+
+.border-beam:hover::before {
+    opacity: 1;
+}
+
+@keyframes beam-rotate {
+    to {
+        --beam-angle: 360deg;
+    }
+}
+
+/* === Bento Grid Layout === */
+.bento-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 280px;
+    gap: var(--bento-gap);
+    margin: var(--space-8) 0;
+}
+
+/* Bento Variants */
+.bento-wide {
+    grid-column: span 2;
+}
+
+.bento-tall {
+    grid-row: span 2;
+}
+
+@media (max-width: 1024px) {
+    .bento-container {
+        grid-template-columns: repeat(2, 1fr);
+        grid-auto-rows: auto;
+    }
+
+    .bento-item {
+        grid-column: span 1 !important;
+        grid-row: span 1 !important;
+        height: auto;
+        min-height: 250px;
+    }
+
+    .bento-wide {
+        grid-column: span 2 !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .bento-container {
+        grid-template-columns: 1fr;
+    }
+
+    .bento-wide,
+    .bento-tall {
+        grid-column: span 1 !important;
+        grid-row: span 1 !important;
+    }
+
+    .hero-title {
+        font-size: 36px !important;
+    }
+}
+
+/* === AI Architecture Section - Pillar Image Container === */
+.pillar-image-container {
+    flex: 1;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 100px;
+    background: var(--bg-warm);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.pillar-image-container img {
+    max-width: 85% !important;
+    max-height: 140px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block !important;
+}
+
+.pillar-image-tall {
+    min-height: 200px;
+}
+
+.pillar-image-tall img {
+    max-height: 260px !important;
+}
+
+/* === Comprehensive Mobile Responsive === */
+@media (max-width: 768px) {
+    /* Navigation */
+    .navbar {
+        padding: 12px 16px !important;
+    }
+
+    .nav-links {
+        display: none !important;
+    }
+
+    /* Hero Section */
+    .hero {
+        padding-top: 80px !important;
+        padding-bottom: var(--space-6) !important;
+    }
+
+    .hero-title {
+        font-size: 28px !important;
+        line-height: 1.2 !important;
+    }
+
+    .hero-subtitle {
+        font-size: 14px !important;
+        padding: 0 16px;
+    }
+
+    .hero-visual {
+        margin-top: var(--space-4) !important;
+    }
+
+    .hero-visual img {
+        max-width: 100% !important;
+    }
+
+    /* AI Pillars Section */
+    #ai-architecture {
+        margin-top: var(--space-4) !important;
+    }
+
+    #ai-architecture .h1 {
+        font-size: 24px !important;
+        line-height: 1.3 !important;
+    }
+
+    .pillar-image-container {
+        min-height: 80px !important;
+        padding: 12px !important;
+    }
+
+    .pillar-image-container img {
+        max-height: 100px !important;
+    }
+
+    .pillar-image-tall {
+        min-height: 120px !important;
+    }
+
+    .pillar-image-tall img {
+        max-height: 150px !important;
+    }
+
+    /* Section Titles */
+    .section .h1,
+    .section h2.h1 {
+        font-size: 24px !important;
+        line-height: 1.3 !important;
+    }
+
+    .section .eyebrow {
+        font-size: 12px !important;
+    }
+
+    .section .body-lg {
+        font-size: 14px !important;
+        padding: 0 8px;
+    }
+
+    /* Comparison Section */
+    #comparison .container > div {
+        padding: 0 8px;
+    }
+
+    .dimension-card {
+        padding: var(--space-4) !important;
+        margin-bottom: var(--space-3);
+    }
+
+    .dimension-card .h3 {
+        font-size: 16px !important;
+    }
+
+    .dimension-card .body-sm {
+        font-size: 13px !important;
+    }
+
+    /* Pricing Cards */
+    .pricing-card {
+        padding: var(--space-5) !important;
+        margin-bottom: var(--space-4);
+    }
+
+    .pricing-card .h2 {
+        font-size: 20px !important;
+    }
+
+    .pricing-card .display {
+        font-size: 36px !important;
+    }
+
+    /* Solution Cards */
+    .solution-card {
+        padding: var(--space-4) !important;
+    }
+
+    /* Feature Cards */
+    .feature-card {
+        padding: var(--space-4) !important;
+    }
+
+    /* Grid Layouts */
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+        grid-template-columns: 1fr !important;
+        gap: var(--space-4) !important;
+    }
+
+    /* CTA Section */
+    .cta-section {
+        padding: var(--space-6) var(--space-4) !important;
+        border-radius: 16px !important;
+    }
+
+    .cta-section .h1 {
+        font-size: 22px !important;
+    }
+
+    /* Footer */
+    footer {
+        padding: var(--space-6) var(--space-4) !important;
+    }
+
+    .footer-grid {
+        grid-template-columns: 1fr !important;
+        gap: var(--space-4) !important;
+        text-align: center;
+    }
+
+    /* Buttons */
+    .btn,
+    .btn-primary,
+    .btn-secondary {
+        padding: 12px 20px !important;
+        font-size: 14px !important;
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* Hide decorative elements on mobile */
+    .glow-cursor::before,
+    .border-beam::before {
+        display: none !important;
+    }
+
+    /* Pricing Section - RaaS Cards */
+    #pricing .grid-2 {
+        grid-template-columns: 1fr !important;
+        gap: var(--space-4) !important;
+    }
+
+    #pricing .pricing-card {
+        padding: var(--space-5) !important;
+        margin: 0 !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    /* RaaS Steps */
+    .raas-steps {
+        padding-left: 0 !important;
+    }
+
+    .raas-steps::before {
+        display: none !important;
+    }
+
+    .raas-step {
+        padding: var(--space-3) !important;
+        gap: var(--space-3) !important;
+    }
+
+    .raas-step-number {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        font-size: 16px !important;
+    }
+
+    .raas-step-content h4 {
+        font-size: 15px !important;
+    }
+
+    .raas-step-content p {
+        font-size: 13px !important;
+    }
+
+    /* RaaS Benefits */
+    .raas-benefit-item {
+        padding: var(--space-3) !important;
+        gap: var(--space-3) !important;
+    }
+
+    .raas-benefit-icon {
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+    }
+
+    .raas-benefit-icon svg {
+        width: 20px !important;
+        height: 20px !important;
+    }
+
+    .raas-benefit-content h4 {
+        font-size: 14px !important;
+    }
+
+    .raas-benefit-content p {
+        font-size: 12px !important;
+    }
+
+    /* Early Adopter Timeline */
+    .early-adopter-timeline {
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0 !important;
+    }
+
+    .timeline-item {
+        min-width: auto !important;
+        width: 90% !important;
+        max-width: 280px !important;
+        padding: var(--space-4) !important;
+    }
+
+    .timeline-connector {
+        width: 3px !important;
+        height: 24px !important;
+        background: linear-gradient(180deg, var(--tech-accent), rgba(196, 92, 38, 0.2)) !important;
+    }
+
+    .timeline-period {
+        font-size: 22px !important;
+    }
+
+    .timeline-item.current .timeline-period {
+        font-size: 26px !important;
+    }
+
+    .timeline-desc {
+        font-size: 13px !important;
+    }
+
+    .timeline-slots {
+        font-size: 11px !important;
+        padding: 3px 10px !important;
+    }
+
+    /* Prevent horizontal overflow */
+    body {
+        overflow-x: hidden !important;
+    }
+
+    .container {
+        max-width: 100% !important;
+        overflow-x: hidden !important;
+    }
+
+    section {
+        overflow-x: hidden !important;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Extra small screens */
+    .hero-title {
+        font-size: 24px !important;
+    }
+
+    .section .h1,
+    .section h2.h1 {
+        font-size: 20px !important;
+    }
+
+    .pricing-card .display {
+        font-size: 28px !important;
+    }
+
+    .container {
+        padding: 0 12px !important;
+    }
+
+    .bento-item {
+        padding: var(--space-4) !important;
+    }
+
+    /* Extra small - RaaS Section */
+    .raas-step-number {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        font-size: 14px !important;
+    }
+
+    .raas-benefit-icon {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+    }
+
+    .timeline-item {
+        width: 95% !important;
+        padding: var(--space-3) !important;
+    }
+
+    .timeline-period {
+        font-size: 18px !important;
+    }
+
+    .timeline-item.current .timeline-period {
+        font-size: 22px !important;
+    }
+}
+
+/* === High-Tech Buttons === */
+.btn-tech {
+    background: var(--tech-surface);
+    border: 1px solid var(--tech-border);
+    color: white;
+    padding: 14px 28px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s var(--ease-out);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-tech::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: var(--tech-accent);
+    opacity: 0.2;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn-tech:hover::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* === Glow Cursor Wrapper === */
+.glow-cursor {
+    position: relative;
+}
+
+.glow-cursor::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(600px circle at var(--mouse-x) var(--mouse-y),
+            rgba(196, 92, 38, 0.06),
+            transparent 40%);
+    z-index: 10;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.5s;
+}
+
+.glow-cursor:hover::after {
+    opacity: 1;
+}

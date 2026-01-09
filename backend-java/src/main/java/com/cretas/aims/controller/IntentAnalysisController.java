@@ -269,6 +269,73 @@ public class IntentAnalysisController {
     }
 
     /**
+     * 获取优化建议统计数据
+     */
+    @Operation(summary = "获取优化建议统计", description = "获取各状态和类型的优化建议数量统计，用于仪表盘显示")
+    @GetMapping("/suggestions/stats")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSuggestionStats(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
+
+        try {
+            Map<String, Object> stats = new HashMap<>();
+
+            // 1. 按状态统计
+            List<Object[]> statusCounts = suggestionRepository.countByStatus(factoryId);
+            long pendingCount = 0, approvedCount = 0, rejectedCount = 0, totalCount = 0;
+
+            for (Object[] row : statusCounts) {
+                if (row[0] != null && row[1] != null) {
+                    String status = row[0].toString();
+                    long count = ((Number) row[1]).longValue();
+                    totalCount += count;
+
+                    switch (status) {
+                        case "PENDING":
+                            pendingCount = count;
+                            break;
+                        case "APPLIED":
+                            approvedCount = count;
+                            break;
+                        case "REJECTED":
+                            rejectedCount = count;
+                            break;
+                    }
+                }
+            }
+
+            stats.put("pendingCount", pendingCount);
+            stats.put("approvedCount", approvedCount);
+            stats.put("rejectedCount", rejectedCount);
+            stats.put("totalCount", totalCount);
+
+            // 2. 按类型统计 (仅 PENDING 状态)
+            List<Object[]> typeCounts = suggestionRepository.countBySuggestionType(factoryId);
+            long createIntentCount = 0, updateIntentCount = 0;
+
+            for (Object[] row : typeCounts) {
+                if (row[0] != null && row[1] != null) {
+                    String type = row[0].toString();
+                    long count = ((Number) row[1]).longValue();
+
+                    if ("CREATE_INTENT".equals(type)) {
+                        createIntentCount = count;
+                    } else if ("UPDATE_INTENT".equals(type) || "UPDATE_KEYWORDS".equals(type)) {
+                        updateIntentCount += count;
+                    }
+                }
+            }
+
+            stats.put("createIntentCount", createIntentCount);
+            stats.put("updateIntentCount", updateIntentCount);
+
+            return ResponseEntity.ok(ApiResponse.success(stats));
+        } catch (Exception e) {
+            log.error("获取建议统计失败: factoryId={}", factoryId, e);
+            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
      * 获取高影响力待处理建议
      */
     @Operation(summary = "获取高影响力待处理建议", description = "获取预估影响力超过阈值的待处理优化建议，优先级较高")
@@ -370,6 +437,41 @@ public class IntentAnalysisController {
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
             log.error("获取创建新意图建议失败: factoryId={}", factoryId, e);
+            return ResponseEntity.ok(ApiResponse.error("获取建议列表失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 获取更新意图建议列表
+     */
+    @Operation(summary = "获取更新意图建议列表",
+            description = "分页获取更新现有意图的建议（包括 UPDATE_INTENT 和 UPDATE_KEYWORDS 类型），支持按状态筛选。")
+    @GetMapping("/suggestions/update-intent")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUpdateIntentSuggestions(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @Parameter(description = "建议状态: PENDING/APPLIED/REJECTED", example = "PENDING")
+            @RequestParam(defaultValue = "PENDING") String status,
+            @Parameter(description = "页码，从0开始", example = "0") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页数量", example = "20") @RequestParam(defaultValue = "20") int size) {
+
+        try {
+            IntentOptimizationSuggestion.SuggestionStatus suggestionStatus =
+                    IntentOptimizationSuggestion.SuggestionStatus.valueOf(status.toUpperCase());
+            PageRequest pageRequest = PageRequest.of(page, size);
+
+            Page<IntentOptimizationSuggestion> suggestions =
+                    suggestionRepository.findUpdateIntentSuggestions(factoryId, suggestionStatus, pageRequest);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("content", suggestions.getContent());
+            result.put("totalElements", suggestions.getTotalElements());
+            result.put("totalPages", suggestions.getTotalPages());
+            result.put("page", page);
+            result.put("size", size);
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取更新意图建议失败: factoryId={}", factoryId, e);
             return ResponseEntity.ok(ApiResponse.error("获取建议列表失败: " + ErrorSanitizer.sanitize(e)));
         }
     }

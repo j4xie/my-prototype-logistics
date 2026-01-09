@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-nat
 import { Text, Avatar, List, Divider, Portal, Dialog, TextInput, HelperText, ActivityIndicator, Chip, Card } from 'react-native-paper';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigation } from '@react-navigation/native';
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../store/languageStore';
 import { userApiClient } from '../../services/api/userApiClient';
 import { platformAPI } from '../../services/api/platformApiClient';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
@@ -16,6 +17,12 @@ const profileLogger = logger.createContextLogger('ProfileScreen');
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const navigation = useNavigation();
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   const [passwordDialogVisible, setPasswordDialogVisible] = useState(false);
   const [oldPassword, setOldPassword] = useState('');
@@ -218,6 +225,18 @@ export default function ProfileScreen() {
         {/* Settings */}
         <NeoCard style={styles.card} padding="m">
             <Text style={styles.sectionTitle}>更多功能</Text>
+
+            {/* 语言切换 */}
+            <TouchableOpacity style={styles.settingItem} onPress={toggleLanguage}>
+                <View style={styles.settingLeft}>
+                    <List.Icon icon="translate" color="#9C27B0" />
+                    <Text style={styles.settingText}>语言 / Language</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginRight: 4 }}>{LANGUAGE_NAMES[language]}</Text>
+                </View>
+            </TouchableOpacity>
+            <Divider style={styles.divider} />
 
             {/* 修改密码 */}
             <TouchableOpacity style={styles.settingItem} onPress={() => setPasswordDialogVisible(true)}>

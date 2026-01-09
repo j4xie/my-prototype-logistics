@@ -40,6 +40,24 @@ public class RedisConfig extends CachingConfigurerSupport
         return template;
     }
 
+    @Bean("stringObjectRedisTemplate")
+    @SuppressWarnings(value = { "unchecked", "rawtypes" })
+    public RedisTemplate<String, Object> stringObjectRedisTemplate(RedisConnectionFactory connectionFactory)
+    {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        FastJson2JsonRedisSerializer serializer = new FastJson2JsonRedisSerializer(Object.class);
+
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(serializer);
+        template.setHashKeySerializer(new StringRedisSerializer());
+        template.setHashValueSerializer(serializer);
+
+        template.afterPropertiesSet();
+        return template;
+    }
+
     @Bean
     public DefaultRedisScript<Long> limitScript()
     {

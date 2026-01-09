@@ -28,7 +28,7 @@ type NavigationProp = NativeStackNavigationProp<FAAIStackParamList, 'CreatePlan'
 
 export function CreatePlanScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { t } = useTranslation('management');
+  const { t, i18n } = useTranslation('management');
 
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -115,7 +115,7 @@ export function CreatePlanScreen() {
   };
 
   const formatDate = (dateStr: string): string => {
-    return new Date(dateStr).toLocaleDateString('zh-CN', {
+    return new Date(dateStr).toLocaleDateString(i18n.language, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',

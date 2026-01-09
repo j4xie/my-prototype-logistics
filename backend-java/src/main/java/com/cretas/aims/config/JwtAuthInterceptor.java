@@ -155,7 +155,8 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
             // 排除非factoryId的路径部分
             if (!"auth".equals(factoryId) && !"activation".equals(factoryId)
                     && !"health".equals(factoryId) && !"upload".equals(factoryId)
-                    && !"voice".equals(factoryId)) {
+                    && !"voice".equals(factoryId) && !"ai".equals(factoryId)
+                    && !"scale-protocols".equals(factoryId)) {
                 return factoryId;
             }
         }

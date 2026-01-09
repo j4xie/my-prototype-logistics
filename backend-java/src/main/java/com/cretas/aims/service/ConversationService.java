@@ -24,7 +24,7 @@ import java.util.Optional;
 public interface ConversationService {
 
     /**
-     * 开始多轮对话
+     * 开始多轮对话 (意图识别模式)
      *
      * @param factoryId 工厂ID
      * @param userId 用户ID
@@ -34,7 +34,30 @@ public interface ConversationService {
     ConversationResponse startConversation(String factoryId, Long userId, String userInput);
 
     /**
+     * 开始参数收集对话 (参数收集模式)
+     *
+     * 当意图已确定但缺少必需参数时调用，创建专门用于收集参数的会话。
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param intentCode 已确定的意图代码
+     * @param intentName 意图名称 (用于生成友好提示)
+     * @param requiredParameters 需要收集的参数列表
+     * @param clarificationQuestions 初始澄清问题 (来自 Handler)
+     * @return 对话响应 (包含参数收集问题)
+     */
+    ConversationResponse startParameterCollection(
+            String factoryId,
+            Long userId,
+            String intentCode,
+            String intentName,
+            List<RequiredParameter> requiredParameters,
+            List<String> clarificationQuestions);
+
+    /**
      * 继续多轮对话
+     *
+     * 自动根据会话模式 (INTENT_RECOGNITION 或 PARAMETER_COLLECTION) 处理用户回复。
      *
      * @param sessionId 会话ID
      * @param userReply 用户回复
@@ -167,5 +190,59 @@ public interface ConversationService {
         private double averageRounds;
         /** 活跃会话数 */
         private long activeSessions;
+    }
+
+    /**
+     * 必需参数信息 (用于参数收集模式)
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class RequiredParameter {
+        /** 参数名称 (API字段名) */
+        private String name;
+        /** 显示标签 (用于生成提示语) */
+        private String label;
+        /** 参数类型 (string, number, date, etc.) */
+        private String type;
+        /** 验证提示 (例如: "请输入有效的批次号") */
+        private String validationHint;
+        /** 是否已收集 */
+        private boolean collected;
+        /** 收集到的值 */
+        private String value;
+    }
+
+    /**
+     * 参数收集响应 (扩展 ConversationResponse)
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class ParameterCollectionResponse {
+        /** 会话ID */
+        private String sessionId;
+        /** 当前轮次 */
+        private int currentRound;
+        /** 最大轮次 */
+        private int maxRounds;
+        /** 会话状态 */
+        private ConversationSession.SessionStatus status;
+        /** 是否完成 (所有参数已收集) */
+        private boolean completed;
+        /** 助手消息 (参数收集问题) */
+        private String message;
+        /** 已知的意图代码 */
+        private String intentCode;
+        /** 已知的意图名称 */
+        private String intentName;
+        /** 已收集的参数 (可用于执行) */
+        private java.util.Map<String, String> collectedParameters;
+        /** 仍需收集的参数列表 */
+        private List<RequiredParameter> pendingParameters;
+        /** 澄清问题列表 */
+        private List<String> clarificationQuestions;
     }
 }

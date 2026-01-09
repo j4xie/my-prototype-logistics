@@ -1,6 +1,11 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.isapi.BatchImportRequest;
+import com.cretas.aims.dto.isapi.DeviceDiscoveryRequest;
+import com.cretas.aims.dto.isapi.DiscoveredDeviceDTO;
+import com.cretas.aims.dto.isapi.HttpHostConfigRequest;
+import com.cretas.aims.dto.isapi.HttpHostConfigResponse;
 import com.cretas.aims.dto.isapi.IsapiCaptureDTO;
 import com.cretas.aims.dto.isapi.IsapiDeviceDTO;
 import com.cretas.aims.dto.isapi.IsapiEventDTO;
@@ -9,6 +14,7 @@ import com.cretas.aims.entity.isapi.IsapiDevice;
 import com.cretas.aims.entity.isapi.IsapiEventLog;
 import com.cretas.aims.repository.isapi.IsapiEventLogRepository;
 import com.cretas.aims.service.isapi.IsapiAlertAnalysisService;
+import com.cretas.aims.service.isapi.IsapiDeviceDiscoveryService;
 import com.cretas.aims.service.isapi.IsapiDeviceService;
 import com.cretas.aims.service.isapi.IsapiEventSubscriptionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +30,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +52,7 @@ import java.util.stream.Collectors;
 public class IsapiDeviceController {
 
     private final IsapiDeviceService deviceService;
+    private final IsapiDeviceDiscoveryService discoveryService;
     private final IsapiEventSubscriptionService subscriptionService;
     private final IsapiEventLogRepository eventLogRepository;
     private final IsapiAlertAnalysisService alertAnalysisService;
@@ -155,6 +163,32 @@ public class IsapiDeviceController {
         deviceService.syncDeviceInfo(deviceId);
         IsapiDevice device = deviceService.getDevice(deviceId);
         return ApiResponse.success("同步完成", deviceService.toDTO(device));
+    }
+
+    @PostMapping("/{deviceId}/configure-http-host")
+    @Operation(summary = "配置摄像头 HTTP 监听地址", description = "配置摄像头将事件推送到云端服务器")
+    public ApiResponse<HttpHostConfigResponse> configureHttpHost(
+            @PathVariable String factoryId,
+            @PathVariable String deviceId,
+            @RequestBody HttpHostConfigRequest request) {
+        try {
+            log.info("配置 HTTP Host: factoryId={}, deviceId={}, motionDetection={}, lineCrossing={}",
+                    factoryId, deviceId, request.getEnableMotionDetection(), request.getEnableLineCrossing());
+
+            HttpHostConfigResponse response = deviceService.configureHttpHost(deviceId, request);
+
+            if (response.getSuccess()) {
+                return ApiResponse.success("HTTP 监听配置成功", response);
+            } else {
+                return ApiResponse.success("HTTP 监听配置部分成功", response);
+            }
+        } catch (IllegalArgumentException e) {
+            log.error("配置 HTTP Host 失败: deviceId={}, error={}", deviceId, e.getMessage());
+            return ApiResponse.error(e.getMessage());
+        } catch (Exception e) {
+            log.error("配置 HTTP Host 异常: deviceId={}, error={}", deviceId, e.getMessage(), e);
+            return ApiResponse.error("配置失败: " + e.getMessage());
+        }
     }
 
     // ==================== 流媒体 ====================
@@ -477,6 +511,108 @@ public class IsapiDeviceController {
         summary.put("subscriptionCount", subscriptionService.getActiveSubscriptionCount());
 
         return ApiResponse.success(summary);
+    }
+
+    // ==================== 设备发现与导入 ====================
+
+    @PostMapping("/discover")
+    @Operation(summary = "扫描局域网发现设备")
+    public ApiResponse<List<DiscoveredDeviceDTO>> discoverDevices(
+            @PathVariable String factoryId,
+            @Valid @RequestBody DeviceDiscoveryRequest request) {
+        try {
+            log.info("开始设备发现: factoryId={}, network={}", factoryId, request.getNetworkCIDR());
+            List<DiscoveredDeviceDTO> devices = discoveryService.discoverDevices(request);
+            log.info("设备发现完成: factoryId={}, 发现 {} 个设备", factoryId, devices.size());
+            return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
+        } catch (Exception e) {
+            log.error("设备发现失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return ApiResponse.error("设备发现失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/batch-import")
+    @Operation(summary = "批量导入发现的设备")
+    public ApiResponse<Map<String, Object>> batchImportDevices(
+            @PathVariable String factoryId,
+            @Valid @RequestBody BatchImportRequest request) {
+        try {
+            log.info("开始批量导入设备: factoryId={}, count={}", factoryId, request.getDevices().size());
+
+            int successCount = 0;
+            int failCount = 0;
+            List<String> failedDevices = new ArrayList<>();
+
+            for (BatchImportRequest.DeviceImportItem item : request.getDevices()) {
+                try {
+                    // 转换设备类型
+                    IsapiDevice.DeviceType deviceType = IsapiDevice.DeviceType.IPC; // 默认 IPC
+                    if (item.getDeviceType() != null && !item.getDeviceType().isEmpty()) {
+                        try {
+                            deviceType = IsapiDevice.DeviceType.valueOf(item.getDeviceType().toUpperCase());
+                        } catch (IllegalArgumentException e) {
+                            log.warn("未知设备类型: {}, 使用默认 IPC", item.getDeviceType());
+                        }
+                    }
+
+                    IsapiDeviceDTO dto = IsapiDeviceDTO.builder()
+                            .ipAddress(item.getIpAddress())
+                            .port(item.getPort() > 0 ? item.getPort() : 80)
+                            .username(item.getUsername())
+                            .password(item.getPassword())
+                            .deviceName(item.getDeviceName() != null ? item.getDeviceName() : item.getIpAddress())
+                            .deviceType(deviceType)
+                            .locationDescription(item.getLocationDescription())
+                            .build();
+
+                    deviceService.addDevice(factoryId, dto);
+                    successCount++;
+                } catch (Exception e) {
+                    failCount++;
+                    failedDevices.add(item.getIpAddress() + ": " + e.getMessage());
+                    log.warn("导入设备失败: ip={}, error={}", item.getIpAddress(), e.getMessage());
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalCount", request.getDevices().size());
+            result.put("successCount", successCount);
+            result.put("failCount", failCount);
+            result.put("failedDevices", failedDevices);
+
+            log.info("批量导入完成: factoryId={}, success={}, fail={}", factoryId, successCount, failCount);
+
+            if (failCount == 0) {
+                return ApiResponse.success("批量导入成功", result);
+            } else if (successCount == 0) {
+                return ApiResponse.error("批量导入失败: 所有设备导入失败");
+            } else {
+                return ApiResponse.success("批量导入部分成功", result);
+            }
+        } catch (Exception e) {
+            log.error("批量导入设备失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return ApiResponse.error("批量导入失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/scan-single")
+    @Operation(summary = "扫描单个IP地址")
+    public ApiResponse<List<DiscoveredDeviceDTO>> scanSingleHost(
+            @PathVariable String factoryId,
+            @RequestParam String ip) {
+        try {
+            log.info("扫描单个IP: factoryId={}, ip={}", factoryId, ip);
+            List<DiscoveredDeviceDTO> devices = discoveryService.scanSingleHost(ip);
+            log.info("单IP扫描完成: factoryId={}, ip={}, 发现 {} 个设备", factoryId, ip, devices.size());
+
+            if (devices.isEmpty()) {
+                return ApiResponse.success("未发现设备", devices);
+            }
+            return ApiResponse.success("发现 " + devices.size() + " 个设备", devices);
+        } catch (Exception e) {
+            log.error("单IP扫描失败: factoryId={}, ip={}, error={}", factoryId, ip, e.getMessage(), e);
+            return ApiResponse.error("扫描失败: " + e.getMessage());
+        }
     }
 
     // ==================== 辅助方法 ====================

@@ -27,6 +27,7 @@ import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTranslation } from 'react-i18next';
 import { WHProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from "../../../store/languageStore";
 import { dashboardApiClient } from "../../../services/api/dashboardApiClient";
 import { handleError } from "../../../utils/errorHandler";
 
@@ -57,6 +58,12 @@ export function WHProfileScreen() {
   const theme = useTheme();
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   // 状态管理
   const [loading, setLoading] = useState(true);
@@ -149,6 +156,13 @@ export function WHProfileScreen() {
     {
       title: t('profile.sections.systemFeatures'),
       items: [
+        {
+          key: "language",
+          label: t('profile.menu.language') || '语言',
+          icon: "translate",
+          description: LANGUAGE_NAMES[language],
+          onPress: toggleLanguage,
+        },
         {
           key: "settings",
           label: t('profile.menu.settings'),

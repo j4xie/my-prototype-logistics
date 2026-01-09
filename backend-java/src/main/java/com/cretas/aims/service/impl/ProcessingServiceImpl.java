@@ -725,13 +725,23 @@ public class ProcessingServiceImpl implements ProcessingService {
         BigDecimal totalEquipmentCost = BigDecimal.ZERO;
         BigDecimal totalEquipmentHours = BigDecimal.ZERO;
 
+        // N+1 修复：预先批量查询所有设备，使用 Map 缓存
+        Set<Long> equipmentIds = usages.stream()
+                .map(BatchEquipmentUsage::getEquipmentId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<Long, FactoryEquipment> equipmentCache = equipmentRepository.findByIdIn(equipmentIds)
+                .stream()
+                .collect(Collectors.toMap(FactoryEquipment::getId, e -> e));
+
         for (BatchEquipmentUsage usage : usages) {
             Map<String, Object> equipmentDetail = new HashMap<>();
 
-            // equipmentId 是 Long 类型
+            // N+1 修复：使用预加载的 Map 进行查找
             Long equipmentIdLong = usage.getEquipmentId();
-            final BigDecimal[] hourlyCostHolder = {new BigDecimal("50")}; // 默认值
-            equipmentRepository.findById(equipmentIdLong).ifPresent(equipment -> {
+            BigDecimal hourlyCost = new BigDecimal("50"); // 默认值
+            FactoryEquipment equipment = equipmentCache.get(equipmentIdLong);
+            if (equipment != null) {
                 equipmentDetail.put("equipmentId", equipment.getId());
                 equipmentDetail.put("equipmentName", equipment.getEquipmentName());
                 equipmentDetail.put("equipmentCode", equipment.getEquipmentCode());
@@ -740,9 +750,9 @@ public class ProcessingServiceImpl implements ProcessingService {
                 equipmentDetail.put("hourlyCost", equipment.getHourlyCost());
                 // 获取设备的实际小时成本
                 if (equipment.getHourlyCost() != null) {
-                    hourlyCostHolder[0] = equipment.getHourlyCost();
+                    hourlyCost = equipment.getHourlyCost();
                 }
-            });
+            }
 
             equipmentDetail.put("usageId", usage.getId());
             equipmentDetail.put("startTime", usage.getStartTime());
@@ -751,7 +761,7 @@ public class ProcessingServiceImpl implements ProcessingService {
 
             // 使用记录中已存储的设备成本，如果没有则按设备实际小时成本计算
             BigDecimal equipmentCost = usage.getEquipmentCost() != null ? usage.getEquipmentCost() :
-                    (usage.getUsageHours() != null ? usage.getUsageHours().multiply(hourlyCostHolder[0]) : BigDecimal.ZERO);
+                    (usage.getUsageHours() != null ? usage.getUsageHours().multiply(hourlyCost) : BigDecimal.ZERO);
             equipmentDetail.put("cost", equipmentCost);
 
             totalEquipmentCost = totalEquipmentCost.add(equipmentCost);
@@ -1325,14 +1335,11 @@ public class ProcessingServiceImpl implements ProcessingService {
                 .filter(b -> b.getProductTypeId() != null)
                 .collect(Collectors.groupingBy(ProductionBatch::getProductTypeId));
 
-        // 预先查询所有产品类型名称
+        // N+1 修复：使用批量查询预先加载所有产品类型名称
         Set<String> productTypeIds = byProductType.keySet();
-        Map<String, String> productTypeNames = new HashMap<>();
-        for (String productTypeId : productTypeIds) {
-            productTypeRepository.findById(productTypeId).ifPresent(pt ->
-                productTypeNames.put(productTypeId, pt.getName())
-            );
-        }
+        Map<String, String> productTypeNames = productTypeRepository.findByIdIn(productTypeIds)
+                .stream()
+                .collect(Collectors.toMap(ProductType::getId, ProductType::getName));
 
         for (Map.Entry<String, List<ProductionBatch>> entry : byProductType.entrySet()) {
             Map<String, Object> item = new HashMap<>();
@@ -1839,11 +1846,18 @@ public class ProcessingServiceImpl implements ProcessingService {
         List<Map<String, Object>> results = new ArrayList<>();
         LocalDateTime now = LocalDateTime.now();
 
+        // N+1 修复：预先批量查询所有员工，使用 Map 缓存
+        Map<Long, User> workerCache = userRepository.findByIdIn(workerIds)
+                .stream()
+                .collect(Collectors.toMap(User::getId, u -> u));
+
         for (Long workerId : workerIds) {
             try {
-                // 3. 验证员工存在且属于该工厂
-                User worker = userRepository.findById(workerId)
-                        .orElseThrow(() -> new ResourceNotFoundException("员工不存在: " + workerId));
+                // 3. N+1 修复：使用预加载的 Map 进行员工查找
+                User worker = workerCache.get(workerId);
+                if (worker == null) {
+                    throw new ResourceNotFoundException("员工不存在: " + workerId);
+                }
 
                 if (!factoryId.equals(worker.getFactoryId())) {
                     throw new BusinessException("员工不属于该工厂: " + workerId);

@@ -4,27 +4,37 @@
  * 提供表单级别的联动逻辑，配合 Schema 中的 x-reactions 使用
  */
 
-import { Form, onFieldValueChange, onFormInit } from '@formily/core';
+import { Form, onFieldValueChange } from '@formily/core';
 
 /**
  * 质检表单联动效果
  *
  * 注册以下联动:
- * 1. 检测结果变化时，清空不合格原因（如果从FAIL切换到其他）
+ * 1. 检测结果变化时，控制不合格原因字段的显示/必填状态
  * 2. 温度异常时，自动建议不合格
- * 3. 表单初始化时的默认值设置
+ *
+ * 注意: 由于 Hermes 引擎不支持 Formily 的 x-reactions 字符串表达式编译,
+ * 所有字段联动逻辑都需要在这里通过 effects 函数实现
+ *
+ * 重要: 不要使用 onFormInit 中调用 setFieldState，会导致无限循环
+ * failReason 字段默认隐藏，只在 result 变为 'FAIL' 时显示
  */
-export const createQualityCheckEffects = (form: Form) => {
-  // 1. 检测结果变化时的联动
+export const createQualityCheckEffects = (_form?: Form) => {
+  // 1. 检测结果变化时的联动 - 控制 failReason 字段的显隐和必填
   onFieldValueChange('result', (field) => {
     const result = field.value;
+    const isFail = result === 'FAIL';
 
-    // 如果从不合格切换到其他状态，清空不合格原因
-    if (result !== 'FAIL') {
-      form.setFieldState('failReason', (state) => {
+    // 使用 field.form 获取表单实例（而非外部传入的参数）
+    field.form.setFieldState('failReason', (state) => {
+      state.display = isFail ? 'visible' : 'hidden';
+      state.required = isFail;
+
+      // 如果从不合格切换到其他状态，清空不合格原因
+      if (!isFail) {
         state.value = '';
-      });
-    }
+      }
+    });
   });
 
   // 2. 温度异常时的联动建议
@@ -37,12 +47,6 @@ export const createQualityCheckEffects = (form: Form) => {
       // 注意：不自动改变result值，只是提示
       console.log('温度偏高警告:', temp);
     }
-  });
-
-  // 3. 表单初始化
-  onFormInit(() => {
-    // 可以在这里设置默认值或执行初始化逻辑
-    console.log('质检表单初始化');
   });
 };
 

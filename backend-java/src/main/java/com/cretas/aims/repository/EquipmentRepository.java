@@ -148,4 +148,11 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Lon
            "AND e.lastMaintenanceDate < :date")
     List<FactoryEquipment> findMaintenanceDue(@Param("factoryId") String factoryId,
                                               @Param("date") LocalDate date);
+
+    /**
+     * 批量查询多个设备 - 解决 N+1 查询问题
+     * @param ids 设备ID集合
+     * @return 设备列表
+     */
+    List<FactoryEquipment> findByIdIn(java.util.Collection<Long> ids);
 }

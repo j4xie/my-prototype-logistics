@@ -182,9 +182,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
 
     /**
      * 根据工厂ID和启用状态查询
+     * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
     @Query("SELECT c FROM AIIntentConfig c " +
-           "WHERE c.factoryId = :factoryId " +
+           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
            "AND c.isActive = :enabled " +
            "AND c.deletedAt IS NULL")
     List<AIIntentConfig> findByFactoryIdAndEnabled(
@@ -193,9 +194,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
 
     /**
      * 根据工厂ID和意图代码查询
+     * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
     @Query("SELECT c FROM AIIntentConfig c " +
-           "WHERE c.factoryId = :factoryId " +
+           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
            "AND c.intentCode = :intentCode " +
            "AND c.deletedAt IS NULL")
     Optional<AIIntentConfig> findByFactoryIdAndIntentCode(
@@ -205,9 +207,10 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
     /**
      * 检查工厂级意图代码是否已存在
      * 用于自动创建意图时防止重复
+     * 注意：支持 factoryId 为 null 的情况（平台级意图）
      */
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN true ELSE false END FROM AIIntentConfig c " +
-           "WHERE c.factoryId = :factoryId " +
+           "WHERE ((:factoryId IS NULL AND c.factoryId IS NULL) OR c.factoryId = :factoryId) " +
            "AND c.intentCode = :intentCode " +
            "AND c.deletedAt IS NULL")
     boolean existsByFactoryIdAndIntentCode(

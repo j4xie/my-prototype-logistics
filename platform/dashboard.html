@@ -1,0 +1,1961 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时驾驶舱 | 白垩纪AI智能体</title>
+    <!-- Using system fonts to avoid external CDN dependencies -->
+    <style>
+        :root {
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --font-mono: "SF Mono", "Monaco", "Inconsolata", "Fira Mono", "Droid Sans Mono", "Source Code Pro", monospace;
+        }
+    </style>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- All icons are now inline SVG, no external dependency needed -->
+    <style>
+        /* --- Layout System (Fixed Sidebar + Content Margin) --- */
+        .dashboard-layout {
+            min-height: 100vh;
+            padding-top: 64px;
+            background: var(--bg-base);
+            position: relative;
+        }
+
+        /* Sidebar remains fixed */
+        .sidebar {
+            background: var(--bg-surface);
+            border-right: 1px solid var(--border-subtle);
+            padding: var(--space-5);
+            position: fixed;
+            top: 64px;
+            left: 0;
+            bottom: 0;
+            width: 240px;
+            overflow-y: auto;
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Content area with correct margins */
+        .main-content {
+            margin-left: 240px;
+            margin-right: 320px;
+            padding: var(--space-6);
+            min-height: calc(100vh - 64px);
+            transition: margin 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        /* AI Panel remains fixed */
+        .ai-panel {
+            position: fixed;
+            top: 64px;
+            right: 0;
+            bottom: 0;
+            width: 320px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid var(--border-subtle);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Responsive Breakpoints */
+
+        /* Large Desktop: Content squished by both */
+        @media (max-width: 1400px) {
+            .main-content {
+                margin-right: 0 !important;
+                /* Hide AI panel space by default */
+            }
+
+            .ai-panel {
+                transform: translateX(100%);
+            }
+
+            .ai-panel.active {
+                transform: translateX(0);
+            }
+
+            .ai-toggle-btn {
+                display: flex !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-content {
+                margin-left: 0 !important;
+                /* Hide Sidebar space on mobile */
+                padding: var(--space-4);
+            }
+
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.active {
+                transform: translateX(0);
+            }
+
+            .mobile-nav-toggle {
+                display: flex !important;
+            }
+        }
+
+        .mobile-nav-toggle {
+            display: none;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--bg-warm);
+            border: 1px solid var(--border-subtle);
+            cursor: pointer;
+            margin-right: var(--space-3);
+        }
+
+        .ai-toggle-btn {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #e07040);
+            color: white;
+            box-shadow: 0 4px 16px rgba(196, 92, 38, 0.4);
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .ai-toggle-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ai-toggle-btn svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .sidebar-section {
+            margin-bottom: var(--space-6);
+        }
+
+        .sidebar-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-3);
+            padding: 0 var(--space-3);
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-3);
+            padding: var(--space-3);
+            border-radius: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.15s;
+            margin-bottom: 2px;
+        }
+
+        .sidebar-item:hover {
+            background: var(--bg-warm);
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            background: var(--accent);
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(196, 92, 38, 0.2);
+        }
+
+        .ai-panel-header {
+            padding: var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .ai-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-5);
+        }
+
+        .ai-panel-footer {
+            padding: var(--space-4);
+            border-top: 1px solid var(--border-subtle);
+        }
+
+        /* Page Views */
+        .page-view {
+            display: none;
+        }
+
+        .page-view.active {
+            display: block;
+        }
+
+        .page-header {
+            margin-bottom: var(--space-6);
+        }
+
+        .page-title {
+            font-size: clamp(20px, 4vw, 32px);
+            font-weight: 700;
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+            line-height: 1.2;
+            word-break: keep-all;
+            white-space: normal;
+        }
+
+        .page-desc {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* KPI Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+            margin-bottom: var(--space-6);
+        }
+
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            padding: var(--space-5);
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-2);
+        }
+
+        .kpi-value {
+            font-family: var(--font-mono);
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .kpi-change {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            margin-top: var(--space-2);
+            padding: 2px 8px;
+            border-radius: 100px;
+        }
+
+        .kpi-change.positive {
+            background: rgba(45, 106, 79, 0.1);
+            color: var(--success);
+        }
+
+        .kpi-change.negative {
+            background: rgba(188, 71, 73, 0.1);
+            color: var(--error);
+        }
+
+        /* Data Table */
+        .data-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: var(--space-6);
+        }
+
+        .data-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            text-align: left;
+            padding: var(--space-3) var(--space-5);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-tertiary);
+            background: var(--bg-warm);
+        }
+
+        .data-table td {
+            padding: var(--space-4) var(--space-5);
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .data-table tr:hover {
+            background: var(--bg-warm);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.running {
+            background: rgba(45, 106, 79, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.pending {
+            background: rgba(212, 165, 116, 0.2);
+            color: #8B6914;
+        }
+
+        .status-badge.complete {
+            background: var(--bg-muted);
+            color: var(--text-tertiary);
+        }
+
+        .status-badge.error {
+            background: rgba(188, 71, 73, 0.1);
+            color: var(--error);
+        }
+
+        /* Live Feed */
+        .live-feed {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: var(--space-6);
+        }
+
+        .live-feed-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-4) var(--space-5);
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--success);
+        }
+
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .live-feed-body {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #1a1a1a;
+        }
+
+        .live-feed-body img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .live-overlay {
+            position: absolute;
+            bottom: var(--space-4);
+            left: var(--space-4);
+            right: var(--space-4);
+            display: flex;
+            gap: var(--space-3);
+        }
+
+        .live-stat {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            padding: var(--space-2) var(--space-3);
+            border-radius: 6px;
+            font-size: 12px;
+            color: white;
+            font-family: var(--font-mono);
+        }
+
+        /* Vision AI Simulation Overlays */
+        .vision-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .vision-box {
+            position: absolute;
+            border: 2px solid var(--accent);
+            background: rgba(196, 92, 38, 0.1);
+            border-radius: 4px;
+            transition: all 0.5s ease-in-out;
+        }
+
+        .vision-label {
+            position: absolute;
+            top: -22px;
+            left: -2px;
+            background: var(--accent);
+            color: white;
+            padding: 2px 6px;
+            font-size: 10px;
+            font-weight: 600;
+            border-radius: 4px 4px 0 0;
+            white-space: nowrap;
+        }
+
+        .vision-heatmap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 30% 40%, rgba(255, 0, 0, 0.2), transparent 40%),
+                radial-gradient(circle at 70% 60%, rgba(255, 165, 0, 0.2), transparent 30%);
+            mix-blend-mode: color;
+            opacity: 0.6;
+            display: none;
+            /* Toggleable via AI assistant */
+        }
+
+        /* AI Chat */
+        .chat-message {
+            margin-bottom: var(--space-4);
+        }
+
+        .chat-message.user {
+            text-align: right;
+        }
+
+        .chat-bubble {
+            display: inline-block;
+            max-width: 85%;
+            padding: var(--space-3) var(--space-4);
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .chat-message.ai .chat-bubble {
+            background: var(--bg-warm);
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.user .chat-bubble {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: var(--space-2);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--border-medium);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .chat-send {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: var(--space-5);
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: var(--space-2);
+        }
+
+        .form-input,
+        .form-select {
+            width: 100%;
+            padding: var(--space-3) var(--space-4);
+            border: 1px solid var(--border-medium);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Grid layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-5);
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-4);
+        }
+
+        /* ==================== Mobile Responsive - Industrial Control Panel ==================== */
+        @media (max-width: 640px) {
+            /* === KPI Grid - Precision Data Display === */
+            .kpi-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+                margin-bottom: 16px;
+            }
+
+            .kpi-card {
+                padding: 12px 10px;
+                border-radius: 10px;
+                background: linear-gradient(145deg, #ffffff 0%, #f8f6f4 100%);
+                border: 1px solid rgba(0,0,0,0.06);
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                position: relative;
+                overflow: hidden;
+            }
+
+            .kpi-card::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, var(--accent), #E07040);
+                opacity: 0.6;
+            }
+
+            .kpi-label {
+                font-size: 9px;
+                margin-bottom: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.04em;
+                color: var(--text-tertiary);
+                font-weight: 600;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .kpi-value {
+                font-size: 20px;
+                font-weight: 800;
+                line-height: 1;
+                letter-spacing: -0.03em;
+                color: var(--text-primary);
+            }
+
+            .kpi-change {
+                font-size: 9px;
+                margin-top: 6px;
+                padding: 3px 6px;
+                border-radius: 6px;
+                font-weight: 600;
+                display: inline-flex;
+                align-items: center;
+                gap: 2px;
+            }
+
+            .kpi-change svg {
+                width: 10px !important;
+                height: 10px !important;
+            }
+
+            /* === Page Header - Command Center === */
+            .page-header {
+                margin-bottom: 16px;
+                padding-bottom: 12px;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .page-title {
+                font-size: 22px;
+                font-weight: 800;
+                letter-spacing: -0.02em;
+                color: var(--text-primary);
+            }
+
+            .page-desc {
+                font-size: 12px;
+                color: var(--text-tertiary);
+                margin-top: 4px;
+            }
+
+            /* === Grid Layouts === */
+            .grid-2,
+            .grid-3 {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+
+            /* === Data Card - Industrial Panel === */
+            .data-card {
+                margin-bottom: 12px;
+                border-radius: 12px;
+                background: var(--bg-surface);
+                border: 1px solid var(--border-subtle);
+                box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+                position: relative;
+            }
+
+            /* Scroll indicator for tables */
+            .data-card::after {
+                content: '';
+                position: absolute;
+                top: 50px;
+                right: 0;
+                bottom: 0;
+                width: 40px;
+                background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9));
+                pointer-events: none;
+                opacity: 0.8;
+                z-index: 5;
+            }
+
+            .data-card-header {
+                padding: 12px 14px;
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                border-bottom: 1px solid var(--border-subtle);
+                position: sticky;
+                top: 0;
+                background: var(--bg-surface);
+                z-index: 10;
+            }
+
+            .data-card-header .h4 {
+                font-size: 14px;
+                font-weight: 700;
+                letter-spacing: -0.01em;
+            }
+
+            .data-card-header .btn {
+                padding: 8px 14px;
+                font-size: 11px;
+                font-weight: 600;
+                border-radius: 8px;
+                white-space: nowrap;
+            }
+
+            /* === Data Table - Precision Grid === */
+            .data-card {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: thin;
+            }
+
+            .data-table {
+                min-width: 520px;
+            }
+
+            .data-table th {
+                padding: 10px 12px;
+                font-size: 10px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                color: var(--text-tertiary);
+                background: linear-gradient(180deg, var(--bg-warm) 0%, var(--bg-muted) 100%);
+                border-bottom: 2px solid var(--border-subtle);
+                white-space: nowrap;
+            }
+
+            .data-table td {
+                padding: 12px;
+                font-size: 13px;
+                white-space: nowrap;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .data-table tr:hover {
+                background: var(--bg-warm);
+            }
+
+            .data-table tr:last-child td {
+                border-bottom: none;
+            }
+
+            /* === Live Feed - Monitor === */
+            .live-feed {
+                border-radius: 12px;
+                margin-bottom: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            }
+
+            .live-feed-header {
+                padding: 10px 14px;
+                background: linear-gradient(90deg, var(--bg-surface), var(--bg-warm));
+            }
+
+            .live-feed-header .h4 {
+                font-size: 13px;
+                font-weight: 700;
+            }
+
+            .live-indicator {
+                font-size: 10px;
+                font-weight: 600;
+            }
+
+            .live-overlay {
+                flex-wrap: wrap;
+                gap: 6px;
+                bottom: 8px;
+                left: 8px;
+                right: 8px;
+            }
+
+            .live-stat {
+                font-size: 10px;
+                padding: 4px 8px;
+                border-radius: 6px;
+                font-weight: 600;
+                backdrop-filter: blur(12px);
+            }
+
+            /* === Vision Overlay === */
+            .vision-label {
+                font-size: 8px;
+                padding: 2px 6px;
+                top: -18px;
+                font-weight: 700;
+            }
+
+            .vision-box {
+                border-width: 2px;
+            }
+
+            /* === Navigation === */
+            .nav-links {
+                display: none;
+            }
+
+            .nav-inner {
+                padding: 0 12px;
+            }
+
+            /* === Form Elements === */
+            .form-input,
+            .form-select {
+                font-size: 16px;
+                padding: 12px 14px;
+                border-radius: 10px;
+                border: 1px solid var(--border-medium);
+                background: var(--bg-surface);
+            }
+
+            .form-input:focus,
+            .form-select:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px rgba(196,92,38,0.1);
+            }
+
+            /* === Status Badges === */
+            .status-badge {
+                font-size: 10px;
+                padding: 4px 8px;
+                font-weight: 600;
+                border-radius: 6px;
+            }
+
+            /* === AI Panel === */
+            .ai-panel {
+                width: 100%;
+                max-width: 100%;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .ai-panel-header {
+                padding: 14px;
+                border-bottom: 1px solid var(--border-subtle);
+            }
+
+            .ai-panel-body {
+                padding: 14px;
+            }
+
+            .chat-bubble {
+                font-size: 13px;
+                padding: 10px 14px;
+                border-radius: 14px;
+            }
+
+            /* === Main Content === */
+            .main-content {
+                padding: 14px;
+            }
+        }
+
+        /* === Tablet Adjustments === */
+        @media (max-width: 900px) and (min-width: 641px) {
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .data-card::after {
+                display: none;
+            }
+        }
+
+        /* ==================== AI Toggle Button - Intelligent Assistant ==================== */
+        .ai-toggle-btn {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #C45C26 0%, #D96B35 50%, #C45C26 100%);
+            background-size: 200% 200%;
+            color: white;
+            box-shadow:
+                0 6px 24px rgba(196, 92, 38, 0.35),
+                0 0 0 4px rgba(196, 92, 38, 0.08),
+                inset 0 1px 0 rgba(255,255,255,0.25),
+                inset 0 -2px 0 rgba(0,0,0,0.1);
+            border: none;
+            cursor: pointer;
+            z-index: 1001;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            animation: aiPulse 3s ease-in-out infinite;
+        }
+
+        .ai-toggle-btn::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 20px;
+            background: conic-gradient(from 0deg, transparent, rgba(196,92,38,0.4), transparent, rgba(196,92,38,0.4), transparent);
+            animation: aiRing 4s linear infinite;
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .ai-toggle-btn:hover {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow:
+                0 10px 32px rgba(196, 92, 38, 0.45),
+                0 0 0 5px rgba(196, 92, 38, 0.12),
+                inset 0 1px 0 rgba(255,255,255,0.3),
+                inset 0 -2px 0 rgba(0,0,0,0.1);
+        }
+
+        .ai-toggle-btn:hover::before {
+            opacity: 1;
+        }
+
+        .ai-toggle-btn:active {
+            transform: translateY(0) scale(0.95);
+        }
+
+        .ai-toggle-btn svg {
+            width: 26px;
+            height: 26px;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+        }
+
+        @keyframes aiPulse {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes aiRing {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1400px) {
+            .ai-toggle-btn {
+                display: flex !important;
+            }
+        }
+
+        /* === Mobile-specific AI button === */
+        @media (max-width: 640px) {
+            .ai-toggle-btn {
+                bottom: 20px;
+                right: 16px;
+                width: 52px;
+                height: 52px;
+                border-radius: 14px;
+            }
+
+            .ai-toggle-btn svg {
+                width: 24px;
+                height: 24px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-inner">
+            <button class="mobile-nav-toggle" id="mobileNavToggle"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg></button>
+            <a href="index.html" class="logo">
+                <div class="logo-mark"><svg viewBox="0 0 40 40" fill="none">
+                        <!-- Stacked layers cube logo -->
+                        <path d="M20 4 L36 12 L20 20 L4 12 Z" fill="#E8E8E8"/>
+                        <path d="M20 10 L36 18 L20 26 L4 18 Z" fill="#A0A0A0"/>
+                        <path d="M20 16 L36 24 L20 32 L4 24 Z" fill="#707070"/>
+                        <path d="M20 22 L36 30 L20 38 L4 30 Z" fill="#404040"/>
+                    </svg></div>
+                <span class="logo-text">CRETACEOUS</span>
+            </a>
+            <div class="nav-links">
+                <span class="body-sm text-tertiary">演示环境</span>
+                <span class="mono" style="background:var(--bg-warm); padding:4px 12px; border-radius:6px;">批次
+                    #2026-0107-A3</span>
+                <a href="index.html" class="btn btn-secondary" style="padding:8px 16px;">返回官网</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-section">
+                <div class="sidebar-title">生产管理</div>
+                <div class="sidebar-item active" data-page="dashboard"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg> 实时驾驶舱</div>
+                <div class="sidebar-item" data-page="scheduling-analysis"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M9 15h12"/><path d="M9 9h12"/></svg> 调度分析</div>
+                <div class="sidebar-item" data-page="efficiency-analysis"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg> 人效分析</div>
+                <div class="sidebar-item" data-page="schedule"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> 生产排程</div>
+                <div class="sidebar-item" data-page="batch"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg> 批次追踪</div>
+                <div class="sidebar-item" data-page="quality"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg> 质量检测</div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">仓储物流</div>
+                <div class="sidebar-item" data-page="inventory"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 8.35V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/><rect width="12" height="12" x="6" y="10"/></svg> 库存管理</div>
+                <div class="sidebar-item" data-page="material"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/></svg> 物料流转</div>
+                <div class="sidebar-item" data-page="trace"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8h8"/><path d="M7 12h10"/><path d="M7 16h6"/></svg> 追溯查询</div>
+            </div>
+            <div class="sidebar-section">
+                <div class="sidebar-title">系统设置</div>
+                <div class="sidebar-item" data-page="users"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 用户管理</div>
+                <div class="sidebar-item" data-page="settings"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg> 系统配置</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Page 1: Dashboard -->
+            <div class="page-view active" id="page-dashboard">
+                <div class="page-header">
+                    <h1 class="page-title">实时驾驶舱</h1>
+                    <p class="page-desc">全局数据监控与实时生产状态</p>
+                </div>
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">今日产量 (瓶/件)</div>
+                        <div class="kpi-value">12,847</div>
+                        <div class="kpi-change positive"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> +8.2%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">出成率 (Yield)</div>
+                        <div class="kpi-value">84.2%</div>
+                        <div class="kpi-change positive"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> +1.5%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">良品率 (Pass Rate)</div>
+                        <div class="kpi-value">99.7%</div>
+                        <div class="kpi-change positive"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg> +0.3%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">冷链温控稳定性</div>
+                        <div class="kpi-value">99.2%</div>
+                        <div class="kpi-change positive"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg> 稳定</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">设备稼动率 (OEE)</div>
+                        <div class="kpi-value">94.2%</div>
+                        <div class="kpi-change negative"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg> -1.1%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">AI 自动干预次数</div>
+                        <div class="kpi-value">124</div>
+                        <div class="kpi-change positive"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg> 运行中</div>
+                    </div>
+                </div>
+                <div class="live-feed">
+                    <div class="live-feed-header">
+                        <h3 class="h4">生产线实时监控</h3>
+                        <div class="live-indicator"><span class="live-dot"></span> 实时画面</div>
+                    </div>
+                    <div class="live-feed-body" id="visionContainer">
+                        <img src="assets/images/dashboard_live_feed.png" alt="Production Line">
+                        <div class="vision-overlay">
+                            <!-- Simulated detection boxes -->
+                            <div class="vision-box" style="top: 28%; left: 10%; width: 34%; height: 42%;">
+                                <div class="vision-label">全自动罐装单元: 运行中</div>
+                            </div>
+                            <div class="vision-box" style="top: 62%; left: 15%; width: 12%; height: 28%;">
+                                <div class="vision-label">灌装批次: OK</div>
+                            </div>
+                            <div class="vision-box" style="top: 85%; left: 52%; width: 10%; height: 12%;">
+                                <div class="vision-label">传感器 B4: 18.5°C</div>
+                            </div>
+                            <div class="vision-heatmap" id="thermalMap"></div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat">温度: <span id="liveTemp">18.5</span>°C</div>
+                            <div class="live-stat">湿度: 62%</div>
+                            <div class="live-stat">产线速度: 124 件/分</div>
+                            <div class="live-stat">AI检测: <span style="color:var(--success)">正常</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-top:var(--space-6);">
+                    <!-- AI Orchestration Card -->
+                    <div class="data-card">
+                        <div class="data-card-header">
+                            <h3 class="h4">AI 智能调度中枢</h3>
+                            <span class="status-badge running">算法优化中</span>
+                        </div>
+                        <div class="live-feed-body" style="aspect-ratio: 16/10;">
+                            <img src="assets/images/dashboard_scheduling.png" alt="Scheduling Hub">
+                            <div class="vision-overlay">
+                                <div class="vision-box"
+                                    style="top: 15%; left: 20%; width: 60%; height: 50%; border-style: dashed; opacity: 0.6;">
+                                    <div class="vision-label">数字孪生同步: 99.8%</div>
+                                </div>
+                            </div>
+                            <div class="live-overlay">
+                                <div class="live-stat" style="background:var(--accent); color:white;">排程推荐: 批次 2026-A4
+                                    提前 5min</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Human Efficiency Card -->
+                    <div class="data-card">
+                        <div class="data-card-header">
+                            <h3 class="h4">人效实时分析</h3>
+                            <span class="status-badge running">Tracking Active</span>
+                        </div>
+                        <div class="live-feed-body" style="aspect-ratio: 16/10;">
+                            <img src="assets/images/dashboard_efficiency.png" alt="Efficiency Analysis">
+                            <div class="vision-overlay">
+                                <div class="vision-box"
+                                    style="top: 10%; left: 55%; width: 15%; height: 30%; border-color: var(--success);">
+                                    <div class="vision-label">效率: 92% (High)</div>
+                                </div>
+                                <div class="vision-box"
+                                    style="top: 50%; left: 10%; width: 15%; height: 35%; border-color: var(--warning);">
+                                    <div class="vision-label">工序: 质量抽检</div>
+                                </div>
+                            </div>
+                            <div class="live-overlay">
+                                <div class="live-stat">实时人效指数: 0.94</div>
+                                <div class="live-stat">平均停留时长: 242s</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page: Scheduling Analysis -->
+            <div class="page-view" id="page-scheduling-analysis">
+                <div class="page-header">
+                    <h1 class="page-title">AI 智能调度分析</h1>
+                    <p class="page-desc">基于数字孪生与前瞻算法的生产排程优化</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">排程符合度</div>
+                        <div class="kpi-value">98.5%</div>
+                        <div class="kpi-change positive">极高</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">预测等待耗时</div>
+                        <div class="kpi-value">-12%</div>
+                        <div class="kpi-change positive">优化中</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">资源利用率</div>
+                        <div class="kpi-value">94.2%</div>
+                        <div class="kpi-change positive">+3.1%</div>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">中枢调度实时快照</h3>
+                        <span class="status-badge running">算法优化中</span>
+                    </div>
+                    <div class="live-feed-body" style="aspect-ratio: 16/9;">
+                        <img src="assets/images/dashboard_scheduling.png" alt="Scheduling Hub">
+                        <div class="vision-overlay">
+                            <div class="vision-box"
+                                style="top: 15%; left: 20%; width: 60%; height: 50%; border-style: dashed; opacity: 0.6;">
+                                <div class="vision-label">数字孪生同步: 99.8%</div>
+                            </div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat" style="background:var(--accent); color:white;">排程推荐: 批次 2026-A4 提前
+                                5min</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Intelligent Scheduling Table -->
+                <div class="data-card" style="margin-top: var(--space-6);">
+                    <div class="data-card-header">
+                        <h3 class="h4">基于生成式 AI 的排程演化建议</h3>
+                        <div style="display:flex; gap:var(--space-2);">
+                            <span class="status-badge running"
+                                style="background:var(--accent-light); color:var(--accent);">AI 推荐引擎已就绪</span>
+                        </div>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>排程批次</th>
+                                <th>原始计划</th>
+                                <th>AI 优化后</th>
+                                <th>收益预估</th>
+                                <th>决策逻辑 (Generative Reasoning)</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">#2026-0107-A4</td>
+                                <td>14:00 - 18:00</td>
+                                <td style="color:var(--accent); font-weight:600;">13:45 - 17:30</td>
+                                <td>+25min 冗余</td>
+                                <td style="font-size:12px; color:var(--text-secondary);">根据前序 A2 批次清洗提前完成，建议平滑切入以避免
+                                    15min 设备空置。</td>
+                                <td><button class="btn btn-accent"
+                                        style="padding:4px 12px; font-size:12px;">执行建议</button></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">#2026-0108-B1</td>
+                                <td>1号产线</td>
+                                <td style="color:var(--accent); font-weight:600;">2号产线 (主调)</td>
+                                <td>-8% 能耗</td>
+                                <td style="font-size:12px; color:var(--text-secondary);">2号线伺服电机热损耗较低，适合跨度大于 6 小时的长持续订单。
+                                </td>
+                                <td><button class="btn btn-secondary"
+                                        style="padding:4px 12px; font-size:12px;">详情</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page: Human Efficiency Analysis -->
+            <div class="page-view" id="page-efficiency-analysis">
+                <div class="page-header">
+                    <h1 class="page-title">人效实时分析</h1>
+                    <p class="page-desc">工序合规性、作业强度与产线平衡度监控</p>
+                </div>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-label">实时人效指数</div>
+                        <div class="kpi-value">0.94</div>
+                        <div class="kpi-change positive">稳定</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">平均动作循环</div>
+                        <div class="kpi-value">24.5s</div>
+                        <div class="kpi-change positive">-0.8s</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">异常工时占比</div>
+                        <div class="kpi-value">2.1%</div>
+                        <div class="kpi-change negative">关注</div>
+                    </div>
+                </div>
+
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">工位作业跟踪</h3>
+                        <span class="status-badge running">Tracking Active</span>
+                    </div>
+                    <div class="live-feed-body" style="aspect-ratio: 16/9;">
+                        <img src="assets/images/dashboard_efficiency.png" alt="Efficiency Analysis">
+                        <div class="vision-overlay">
+                            <div class="vision-box"
+                                style="top: 10%; left: 55%; width: 15%; height: 30%; border-color: var(--success);">
+                                <div class="vision-label">效率: 92% (High)</div>
+                            </div>
+                            <div class="vision-box"
+                                style="top: 50%; left: 10%; width: 15%; height: 35%; border-color: var(--warning);">
+                                <div class="vision-label">工序: 质量抽检</div>
+                            </div>
+                        </div>
+                        <div class="live-overlay">
+                            <div class="live-stat">区域: 包装车间</div>
+                            <div class="live-stat">平均停留时长: 242s</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NEW: Individual Worker Efficiency Matrix -->
+                <div class="data-card" style="margin-top: var(--space-6);">
+                    <div class="data-card-header">
+                        <h3 class="h4">班组员工作效矩阵 (Individual Matrix)</h3>
+                        <span class="status-badge running">实时数据同步</span>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>员工姓名</th>
+                                <th>所属岗位</th>
+                                <th>当前任务 (Batch)</th>
+                                <th>实时效率指数</th>
+                                <th>标准作业偏差</th>
+                                <th>协作状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>陈志强</td>
+                                <td><span class="mono"
+                                        style="font-size:12px; border:1px solid var(--border-medium); padding:2px 6px; border-radius:4px;">中控巡检</span>
+                                </td>
+                                <td class="mono">#A3 (灌装)</td>
+                                <td style="font-weight:600; color:var(--success);">0.98</td>
+                                <td style="color:var(--text-tertiary);">±2.1% (Low)</td>
+                                <td><span class="status-badge running" style="padding:2px 8px;">活跃</span></td>
+                            </tr>
+                            <tr>
+                                <td>林晓梅</td>
+                                <td><span class="mono"
+                                        style="font-size:12px; border:1px solid var(--border-medium); padding:2px 6px; border-radius:4px;">灌装主操</span>
+                                </td>
+                                <td class="mono">#A3 (灌装)</td>
+                                <td style="font-weight:600; color:var(--accent);">0.85</td>
+                                <td style="color:var(--error);">+8.4% (高偏差)</td>
+                                <td><span class="status-badge pending" style="padding:2px 8px;">协助中</span></td>
+                            </tr>
+                            <tr>
+                                <td>王五</td>
+                                <td><span class="mono"
+                                        style="font-size:12px; border:1px solid var(--border-medium); padding:2px 6px; border-radius:4px;">末端装箱</span>
+                                </td>
+                                <td class="mono">#A2 (已完成)</td>
+                                <td style="font-weight:600; color:var(--success);">0.96</td>
+                                <td style="color:var(--text-tertiary);">±1.5%</td>
+                                <td><span class="status-badge complete" style="padding:2px 8px;">准备中</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 2: Schedule -->
+            <div class="page-view" id="page-schedule">
+                <div class="page-header">
+                    <h1 class="page-title">生产排程</h1>
+                    <p class="page-desc">管理和优化生产计划安排</p>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">本周排程计划</h3><button class="btn btn-accent" style="padding:8px 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> 新建排程</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>日期</th>
+                                <th>批次</th>
+                                <th>产品</th>
+                                <th>计划产量</th>
+                                <th>产线</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2026-01-07</td>
+                                <td class="mono">A3</td>
+                                <td>蒜蓉辣酱 300g</td>
+                                <td class="mono">6,000</td>
+                                <td>1号线</td>
+                                <td><span class="status-badge running"><span class="live-dot"
+                                            style="width:6px;height:6px;"></span> 进行中</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-07</td>
+                                <td class="mono">A4</td>
+                                <td>豆瓣酱 1kg</td>
+                                <td class="mono">3,000</td>
+                                <td>2号线</td>
+                                <td><span class="status-badge pending">待开始</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-08</td>
+                                <td class="mono">B1</td>
+                                <td>红烧牛肉酱 500g</td>
+                                <td class="mono">8,000</td>
+                                <td>1号线</td>
+                                <td><span class="status-badge pending">已排程</span></td>
+                            </tr>
+                            <tr>
+                                <td>2026-01-08</td>
+                                <td class="mono">B2</td>
+                                <td>香辣鸡丁酱 250g</td>
+                                <td class="mono">10,000</td>
+                                <td>2号线</td>
+                                <td><span class="status-badge pending">已排程</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 3: Batch -->
+            <div class="page-view" id="page-batch">
+                <div class="page-header">
+                    <h1 class="page-title">批次追踪</h1>
+                    <p class="page-desc">查看所有生产批次的详细信息</p>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">今日批次列表</h3><button class="btn btn-secondary" style="padding:8px 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg> 筛选</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>批次编号</th>
+                                <th>产品名称</th>
+                                <th>计划产量</th>
+                                <th>实际产量</th>
+                                <th>完成率</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">2026-0107-A1</td>
+                                <td>红烧牛肉酱 500g</td>
+                                <td class="mono">5,000</td>
+                                <td class="mono">5,120</td>
+                                <td class="mono">102.4%</td>
+                                <td><span class="status-badge complete">已完成</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">2026-0107-A2</td>
+                                <td>香辣鸡丁酱 250g</td>
+                                <td class="mono">8,000</td>
+                                <td class="mono">7,847</td>
+                                <td class="mono">98.1%</td>
+                                <td><span class="status-badge complete">已完成</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">2026-0107-A3</td>
+                                <td>蒜蓉辣酱 300g</td>
+                                <td class="mono">6,000</td>
+                                <td class="mono">4,280</td>
+                                <td class="mono">71.3%</td>
+                                <td><span class="status-badge running"><span class="live-dot"
+                                            style="width:6px;height:6px;"></span> 进行中</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">2026-0107-A4</td>
+                                <td>豆瓣酱 1kg</td>
+                                <td class="mono">3,000</td>
+                                <td class="mono">—</td>
+                                <td class="mono">—</td>
+                                <td><span class="status-badge pending">待开始</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 4: Quality -->
+            <div class="page-view" id="page-quality">
+                <div class="page-header">
+                    <h1 class="page-title">质量检测</h1>
+                    <p class="page-desc">产品质量检测记录与分析</p>
+                </div>
+                <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="kpi-card">
+                        <div class="kpi-label">今日检测数</div>
+                        <div class="kpi-value">1,247</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">合格率</div>
+                        <div class="kpi-value">99.2%</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">待处理异常</div>
+                        <div class="kpi-value" style="color:var(--error);">3</div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">检测记录</h3><button class="btn btn-accent" style="padding:8px 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg> 新增检测</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>检测编号</th>
+                                <th>批次</th>
+                                <th>检测项目</th>
+                                <th>检测值</th>
+                                <th>标准范围</th>
+                                <th>结果</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">QC-0107-001</td>
+                                <td class="mono">A3</td>
+                                <td>盐分含量</td>
+                                <td class="mono">12.3%</td>
+                                <td class="mono">11-13%</td>
+                                <td><span class="status-badge complete">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">QC-0107-002</td>
+                                <td class="mono">A3</td>
+                                <td>pH值</td>
+                                <td class="mono">4.2</td>
+                                <td class="mono">4.0-4.5</td>
+                                <td><span class="status-badge complete">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">QC-0107-003</td>
+                                <td class="mono">A2</td>
+                                <td>菌落总数</td>
+                                <td class="mono">850 CFU/g</td>
+                                <td class="mono">
+                                    <1000< /td>
+                                <td><span class="status-badge complete">合格</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">QC-0107-004</td>
+                                <td class="mono">A1</td>
+                                <td>水分含量</td>
+                                <td class="mono">68.5%</td>
+                                <td class="mono">65-70%</td>
+                                <td><span class="status-badge complete">合格</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 5: Inventory -->
+            <div class="page-view" id="page-inventory">
+                <div class="page-header">
+                    <h1 class="page-title">库存管理</h1>
+                    <p class="page-desc">原料与成品库存实时监控</p>
+                </div>
+                <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+                    <div class="kpi-card">
+                        <div class="kpi-label">原料库存金额</div>
+                        <div class="kpi-value">¥2.4M</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">成品库存数量</div>
+                        <div class="kpi-value">48,320</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-label">库存周转天数</div>
+                        <div class="kpi-value">12.5</div>
+                    </div>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">库存预警</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>物料编码</th>
+                                <th>物料名称</th>
+                                <th>当前库存</th>
+                                <th>安全库存</th>
+                                <th>状态</th>
+                                <th>建议</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">RM-001</td>
+                                <td>生姜</td>
+                                <td class="mono">120 kg</td>
+                                <td class="mono">200 kg</td>
+                                <td><span class="status-badge error">低于安全库存</span></td>
+                                <td>建议3天内补货</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">RM-002</td>
+                                <td>大蒜</td>
+                                <td class="mono">85 kg</td>
+                                <td class="mono">150 kg</td>
+                                <td><span class="status-badge error">低于安全库存</span></td>
+                                <td>建议3天内补货</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">RM-003</td>
+                                <td>辣椒粉</td>
+                                <td class="mono">450 kg</td>
+                                <td class="mono">300 kg</td>
+                                <td><span class="status-badge complete">正常</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">PM-001</td>
+                                <td>500g玻璃瓶</td>
+                                <td class="mono">12,000</td>
+                                <td class="mono">10,000</td>
+                                <td><span class="status-badge complete">正常</span></td>
+                                <td>—</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 6: Material -->
+            <div class="page-view" id="page-material">
+                <div class="page-header">
+                    <h1 class="page-title">物料流转</h1>
+                    <p class="page-desc">跟踪物料在各工序间的流动</p>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">今日物料流转记录</h3>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>物料</th>
+                                <th>数量</th>
+                                <th>从</th>
+                                <th>到</th>
+                                <th>操作人</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">14:32</td>
+                                <td>蒜蓉辣酱半成品</td>
+                                <td class="mono">500 kg</td>
+                                <td>配料车间</td>
+                                <td>灌装车间</td>
+                                <td>张三</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">13:15</td>
+                                <td>辣椒粉</td>
+                                <td class="mono">100 kg</td>
+                                <td>原料仓库</td>
+                                <td>配料车间</td>
+                                <td>李四</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">11:20</td>
+                                <td>红烧牛肉酱成品</td>
+                                <td class="mono">5,120 瓶</td>
+                                <td>包装车间</td>
+                                <td>成品仓库</td>
+                                <td>王五</td>
+                            </tr>
+                            <tr>
+                                <td class="mono">09:45</td>
+                                <td>牛肉</td>
+                                <td class="mono">300 kg</td>
+                                <td>冷库</td>
+                                <td>解冻室</td>
+                                <td>张三</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 7: Trace -->
+            <div class="page-view" id="page-trace">
+                <div class="page-header">
+                    <h1 class="page-title">追溯查询</h1>
+                    <p class="page-desc">产品全链路追溯查询</p>
+                </div>
+                <div class="data-card" style="padding: var(--space-6);">
+                    <h3 class="h4" style="margin-bottom: var(--space-5);">输入批次号或扫码查询</h3>
+                    <div style="display: flex; gap: var(--space-3); margin-bottom: var(--space-6);">
+                        <input type="text" class="form-input" placeholder="输入批次号，如：2026-0107-A1" value="2026-0107-A1"
+                            style="max-width: 400px;">
+                        <button class="btn btn-accent" style="padding: 12px 24px;"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg> 查询</button>
+                    </div>
+                    <div style="background: var(--bg-warm); border-radius: 12px; padding: var(--space-5);">
+                        <h4 class="h4" style="margin-bottom: var(--space-4);">追溯结果：批次 2026-0107-A1</h4>
+                        <div class="grid-2">
+                            <div><strong>产品名称：</strong>红烧牛肉酱 500g</div>
+                            <div><strong>生产日期：</strong>2026-01-07</div>
+                            <div><strong>生产产线：</strong>1号灌装线</div>
+                            <div><strong>操作班组：</strong>甲班</div>
+                            <div><strong>原料批次：</strong>牛肉 #RM-2026-0105-B2</div>
+                            <div><strong>质检结果：</strong>全部合格 (4/4)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 8: Users -->
+            <div class="page-view" id="page-users">
+                <div class="page-header">
+                    <h1 class="page-title">用户管理</h1>
+                    <p class="page-desc">管理系统用户与权限</p>
+                </div>
+                <div class="data-card">
+                    <div class="data-card-header">
+                        <h3 class="h4">系统用户</h3><button class="btn btn-accent" style="padding:8px 16px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg> 添加用户</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>用户名</th>
+                                <th>姓名</th>
+                                <th>角色</th>
+                                <th>部门</th>
+                                <th>最后登录</th>
+                                <th>状态</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="mono">admin</td>
+                                <td>系统管理员</td>
+                                <td>超级管理员</td>
+                                <td>信息部</td>
+                                <td class="mono">2026-01-07 14:32</td>
+                                <td><span class="status-badge running">在线</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">zhangsan</td>
+                                <td>张三</td>
+                                <td>生产主管</td>
+                                <td>生产部</td>
+                                <td class="mono">2026-01-07 13:45</td>
+                                <td><span class="status-badge running">在线</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">lisi</td>
+                                <td>李四</td>
+                                <td>质检员</td>
+                                <td>质量部</td>
+                                <td class="mono">2026-01-07 11:20</td>
+                                <td><span class="status-badge complete">离线</span></td>
+                            </tr>
+                            <tr>
+                                <td class="mono">wangwu</td>
+                                <td>王五</td>
+                                <td>仓库管理员</td>
+                                <td>仓储部</td>
+                                <td class="mono">2026-01-06 17:30</td>
+                                <td><span class="status-badge complete">离线</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Page 9: Settings -->
+            <div class="page-view" id="page-settings">
+                <div class="page-header">
+                    <h1 class="page-title">系统配置</h1>
+                    <p class="page-desc">系统参数与基础数据设置</p>
+                </div>
+                <div class="grid-2">
+                    <div class="data-card" style="padding: var(--space-5);">
+                        <h4 class="h4" style="margin-bottom: var(--space-4);">基础配置</h4>
+                        <div class="form-group"><label class="form-label">工厂名称</label><input type="text"
+                                class="form-input" value="白垩纪智能工厂（演示）"></div>
+                        <div class="form-group"><label class="form-label">时区设置</label><select class="form-select">
+                                <option>Asia/Shanghai (UTC+8)</option>
+                            </select></div>
+                        <div class="form-group"><label class="form-label">系统语言</label><select class="form-select">
+                                <option>简体中文</option>
+                                <option>English</option>
+                            </select></div>
+                        <button class="btn btn-accent">保存设置</button>
+                    </div>
+                    <div class="data-card" style="padding: var(--space-5);">
+                        <h4 class="h4" style="margin-bottom: var(--space-4);">IoT设备状态</h4>
+                        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+                            <div
+                                style="display:flex;justify-content:space-between;padding:var(--space-3);background:var(--bg-warm);border-radius:8px;">
+                                <span>Edge Gateway #1</span><span class="status-badge running">在线</span>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;padding:var(--space-3);background:var(--bg-warm);border-radius:8px;">
+                                <span>柯力电子秤 x4</span><span class="status-badge running">在线</span>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;padding:var(--space-3);background:var(--bg-warm);border-radius:8px;">
+                                <span>海康摄像头 x2</span><span class="status-badge running">在线</span>
+                            </div>
+                            <div
+                                style="display:flex;justify-content:space-between;padding:var(--space-3);background:var(--bg-warm);border-radius:8px;">
+                                <span>温湿度传感器 x8</span><span class="status-badge running">在线</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- AI Panel -->
+        <aside class="ai-panel">
+            <div class="ai-panel-header">
+                <div style="display:flex; align-items:center; gap:var(--space-3);">
+                    <div
+                        style="width:36px;height:36px;background:var(--accent-light);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>
+                    </div>
+                    <div>
+                        <div class="h4">AI 生产助手</div>
+                        <div class="body-sm text-tertiary">基于 DashScope 大模型</div>
+                    </div>
+                </div>
+            </div>
+            <div class="ai-panel-body" id="chatBody">
+                <div class="chat-message ai">
+                    <div class="chat-bubble">您好！我是您的AI生产助手。我可以帮您：<br><br>• 分析生产数据<br>• 预测设备故障<br>•
+                        优化排程计划<br><br>请问有什么可以帮您？</div>
+                </div>
+            </div>
+            <div class="ai-panel-footer">
+                <div class="chat-input-container">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="输入问题，按回车发送...">
+                    <button class="chat-send" id="chatSend"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // Icons are now inline SVG, no need for lucide.createIcons()
+
+        // Sidebar Navigation - Show real pages
+        const sidebarItems = document.querySelectorAll('.sidebar-item');
+        const pageViews = document.querySelectorAll('.page-view');
+        const sidebar = document.querySelector('.sidebar');
+        const aiPanel = document.querySelector('.ai-panel');
+        const mobileNavToggle = document.getElementById('mobileNavToggle');
+        const aiToggleBtn = document.getElementById('aiToggleBtn');
+
+        // Toggles
+        if (mobileNavToggle) {
+            mobileNavToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+        }
+
+        if (aiToggleBtn) {
+            aiToggleBtn.addEventListener('click', () => {
+                aiPanel.classList.toggle('active');
+            });
+        }
+
+        // Close panels when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 900 && sidebar.classList.contains('active') && !sidebar.contains(e.target) && !mobileNavToggle.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+            if (window.innerWidth <= 1400 && aiPanel.classList.contains('active') && !aiPanel.contains(e.target) && !aiToggleBtn.contains(e.target)) {
+                aiPanel.classList.remove('active');
+            }
+        });
+
+        sidebarItems.forEach(item => {
+            item.addEventListener('click', function () {
+                // Update active state
+                sidebarItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+
+                // Show corresponding page
+                const pageName = this.getAttribute('data-page');
+                pageViews.forEach(page => page.classList.remove('active'));
+                document.getElementById('page-' + pageName).classList.add('active');
+
+                // Close sidebar on mobile after selection
+                if (window.innerWidth <= 900) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        });
+
+        // AI Chat & Simulation Logic
+        const chatInput = document.getElementById('chatInput');
+        const chatSend = document.getElementById('chatSend');
+        const chatBody = document.getElementById('chatBody');
+        const thermalMap = document.getElementById('thermalMap');
+        const liveTemp = document.getElementById('liveTemp');
+
+        const aiResponses = {
+            '产量': '当前实时产量 12,847 件，达成率 102.4%。A1 灌装线运行平稳。',
+            '出成率': '当前出成率为 84.2%，较上个批次提升 1.5%。AI 优化了切割机器人的压力参数，减少了约 12kg 的原料损耗。',
+            '良品率': '良品率 99.7% 极佳。视觉 AI 成功拦截了 3 例封口不严的残次品。',
+            '温控': '冷链系统当前 18.5°C。已为您开启热成像模式进行实时监控。',
+            '温度': '冷链系统当前 18.5°C。已为您开启热成像模式进行实时监控。',
+            '故障': '预测 3 号电机在接下来的 24 小时内有 15% 的过载风险。建议在今晚 22:00 进行常规检查。',
+            '干预': '今日 AI 自动干预 124 次，主要为皮带调速和温控补偿。无需人工介入。',
+            'default': '作为白垩纪 AI 助手，我正在实时监控您的工厂。您可以询问关于“出成率”、“温控”或“自动干预”的细节。'
+        };
+
+        // Random temperature fluctuation
+        setInterval(() => {
+            if (!liveTemp) return;
+            const current = parseFloat(liveTemp.innerText);
+            if (isNaN(current)) return;
+            const next = (current + (Math.random() * 0.4 - 0.2)).toFixed(1);
+            liveTemp.innerText = next;
+        }, 3000);
+
+        function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            chatBody.innerHTML += `<div class="chat-message user"><div class="chat-bubble">${message}</div></div>`;
+            chatInput.value = '';
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Trigger UI simulations based on intent
+            if (message.includes('温控') || message.includes('温度')) {
+                thermalMap.style.display = 'block';
+                setTimeout(() => thermalMap.style.display = 'none', 10000);
+            }
+
+            setTimeout(() => {
+                let response = aiResponses.default;
+                for (const [keyword, resp] of Object.entries(aiResponses)) {
+                    if (message.includes(keyword)) { response = resp; break; }
+                }
+                chatBody.innerHTML += `<div class="chat-message ai"><div class="chat-bubble">${response}</div></div>`;
+                chatBody.scrollTop = chatBody.scrollHeight;
+                // Icons are now inline SVG, no need for lucide.createIcons()
+            }, 800);
+        }
+
+        chatSend.addEventListener('click', sendMessage);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
+    </script>
+    <!-- AI Toggle for mobile/tablet -->
+    <button class="ai-toggle-btn" id="aiToggleBtn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 8V4H8"/>
+            <rect width="16" height="12" x="4" y="8" rx="2"/>
+            <path d="M2 14h2"/>
+            <path d="M20 14h2"/>
+            <path d="M15 13v2"/>
+            <path d="M9 13v2"/>
+        </svg>
+    </button>
+</body>
+
+</html>

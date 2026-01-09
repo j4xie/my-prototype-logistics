@@ -70,6 +70,62 @@ export interface ProductSchedulingInfo {
 
 // ==================== End Phase 5 Types ====================
 
+// ==================== Custom Schema Configuration Types ====================
+
+/**
+ * 表单类型枚举
+ */
+export type FormSchemaType = 'MATERIAL_BATCH' | 'QUALITY_CHECK' | 'PROCESSING_BATCH';
+
+/**
+ * 自定义字段类型
+ */
+export type CustomFieldType = 'string' | 'number' | 'boolean' | 'date' | 'select' | 'multiSelect';
+
+/**
+ * 自定义字段配置
+ */
+export interface CustomFieldConfig {
+  /** 字段类型 */
+  type: CustomFieldType;
+  /** 字段标题 */
+  title: string;
+  /** 字段描述 */
+  description?: string;
+  /** 是否必填 */
+  required?: boolean;
+  /** 默认值 */
+  default?: string | number | boolean;
+  /** 枚举选项 (用于 select/multiSelect 类型) */
+  enum?: string[];
+  /** 最小值 (用于 number 类型) */
+  minimum?: number;
+  /** 最大值 (用于 number 类型) */
+  maximum?: number;
+  /** 最小长度 (用于 string 类型) */
+  minLength?: number;
+  /** 最大长度 (用于 string 类型) */
+  maxLength?: number;
+}
+
+/**
+ * 单个表单类型的 Schema 配置
+ */
+export interface FormSchemaConfig {
+  /** 自定义属性字段 */
+  properties: Record<string, CustomFieldConfig>;
+  /** 必填字段列表 */
+  required?: string[];
+}
+
+/**
+ * 产品类型的自定义 Schema 覆盖配置
+ * Key 为 FormSchemaType, Value 为该表单类型的配置
+ */
+export type CustomSchemaOverrides = Partial<Record<FormSchemaType, FormSchemaConfig>>;
+
+// ==================== End Custom Schema Configuration Types ====================
+
 export interface ProductType {
   id: string;
   factoryId: string;
@@ -102,6 +158,8 @@ export interface ProductType {
   shelfLifeDays?: number;
   /** 包装规格 */
   packageSpec?: string;
+  /** 自定义 Schema 覆盖配置 (JSON 格式，按 entityType 分组) */
+  customSchemaOverrides?: Record<string, unknown>;
 }
 
 /**
@@ -243,6 +301,62 @@ class ProductTypeApiClient {
   async getSchedulingInfoBatch(productTypeIds: string[], factoryId?: string): Promise<ProductSchedulingInfo[]> {
     return await apiClient.post(`${this.getPath(factoryId)}/scheduling-info/batch`, productTypeIds);
   }
+
+  // ==================== Custom Schema Configuration Methods ====================
+
+  /**
+   * 获取产品类型的自定义表单配置
+   * @param id 产品类型ID
+   * @param factoryId 工厂ID (可选)
+   * @returns 自定义表单配置，如果未配置则返回 null
+   */
+  async getCustomSchemaOverrides(id: string, factoryId?: string): Promise<CustomSchemaOverrides | null> {
+    const productType = await this.getProductTypeById(id, factoryId);
+    if (productType.customSchemaOverrides) {
+      // 如果已经是对象则直接返回
+      if (typeof productType.customSchemaOverrides === 'object') {
+        return productType.customSchemaOverrides as CustomSchemaOverrides;
+      }
+      // 如果是字符串则尝试解析
+      if (typeof productType.customSchemaOverrides === 'string') {
+        try {
+          return JSON.parse(productType.customSchemaOverrides);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 更新产品类型的自定义表单配置
+   * @param id 产品类型ID
+   * @param schemaOverrides 自定义表单配置
+   * @param factoryId 工厂ID (可选)
+   */
+  async updateCustomSchemaOverrides(
+    id: string,
+    schemaOverrides: CustomSchemaOverrides,
+    factoryId?: string
+  ): Promise<ProductType> {
+    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, {
+      customSchemaOverrides: JSON.stringify(schemaOverrides),
+    });
+  }
+
+  /**
+   * 清除产品类型的自定义表单配置
+   * @param id 产品类型ID
+   * @param factoryId 工厂ID (可选)
+   */
+  async clearCustomSchemaOverrides(id: string, factoryId?: string): Promise<ProductType> {
+    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, {
+      customSchemaOverrides: null,
+    });
+  }
+
+  // ==================== End Custom Schema Configuration Methods ====================
 }
 
 export const productTypeApiClient = new ProductTypeApiClient();

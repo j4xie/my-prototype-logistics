@@ -51,23 +51,38 @@ Page({
   },
 
   // 使用手机号登录
-  async loginWithPhone(code) {
+  async loginWithPhone(phoneCode) {
     wx.showLoading({ title: '登录中...' })
 
     try {
-      // 调用后端API获取手机号并登录
-      const res = await app.api.wechatPhoneLogin({ code: code })
+      // Step 1: 先获取 wx.login 的 jsCode
+      const loginRes = await new Promise((resolve, reject) => {
+        wx.login({
+          success: resolve,
+          fail: reject
+        })
+      })
 
-      if (res.code === 0 && res.data) {
+      if (!loginRes.code) {
+        throw new Error('微信登录失败')
+      }
+
+      // Step 2: 同时传递 jsCode 和手机号 code
+      const res = await app.api.wechatPhoneLogin({
+        jsCode: loginRes.code,  // wx.login 的 code
+        code: phoneCode         // 手机号授权的 code
+      })
+
+      if (res.code === 200 && res.data) {
         // 登录成功
         const userData = res.data
 
-        // 保存用户信息
+        // 保存 thirdSession 到全局数据
+        app.globalData.thirdSession = userData.thirdSession
+        app.globalData.wxUser = userData.user
+
+        // 保存用户信息到本地存储
         wx.setStorageSync('userInfo', userData.user)
-        wx.setStorageSync('accessToken', userData.accessToken)
-        if (userData.refreshToken) {
-          wx.setStorageSync('refreshToken', userData.refreshToken)
-        }
 
         wx.hideLoading()
         wx.showToast({
@@ -104,7 +119,7 @@ Page({
           }, 1500)
         }
       } else {
-        throw new Error(res.message || '登录失败')
+        throw new Error(res.msg || '登录失败')
       }
     } catch (error) {
       wx.hideLoading()

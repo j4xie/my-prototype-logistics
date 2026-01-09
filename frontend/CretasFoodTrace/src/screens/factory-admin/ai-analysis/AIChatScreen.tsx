@@ -8,7 +8,7 @@
  * - 后续消息复用同一会话
  */
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -20,13 +20,15 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { IconButton } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTranslation } from 'react-i18next';
-import { aiApiClient, AICostAnalysisResponse } from '../../../services/api/aiApiClient';
+import i18next from 'i18next';
+import { aiService, detectAnalysisMode } from '../../../services/ai';
+import type { AnalysisMode } from '../../../services/ai/types';
+import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
 import { useAuthStore } from '../../../store/authStore';
 
 // 消息类型
@@ -36,12 +38,16 @@ interface Message {
   content: string;
   timestamp: Date;
   isLoading?: boolean;
+  /** AI 分析模式 (仅 assistant 消息) */
+  mode?: AnalysisMode;
+  /** 响应时间 (仅 assistant 消息) */
+  responseTimeMs?: number;
 }
 
 export default function AIChatScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
-  const { t } = useTranslation('home');
+  const { t, i18n } = useTranslation('home');
   const scrollViewRef = useRef<ScrollView>(null);
 
   // 快捷问题列表
@@ -58,6 +64,12 @@ export default function AIChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [quotaRemaining, setQuotaRemaining] = useState<number | null>(null);
 
+  // 实时检测当前输入的分析模式
+  const detectedMode = useMemo(() => {
+    if (!inputText.trim()) return null;
+    return detectAnalysisMode(inputText);
+  }, [inputText]);
+
   // 生成唯一消息ID
   const generateMessageId = () => `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -68,7 +80,55 @@ export default function AIChatScreen() {
     }, 100);
   }, []);
 
-  // 发送消息
+  // 用于取消流式请求的 AbortController
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // 清理函数
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // 模拟流式显示效果（快速获取响应后逐字显示）
+  const simulateStreaming = useCallback(
+    (fullText: string, messageId: string, onComplete: () => void) => {
+      let currentIndex = 0;
+      const charsPerTick = 3; // 每次显示3个字符，速度更快
+      const tickInterval = 20; // 20ms 间隔
+
+      const tick = () => {
+        if (currentIndex < fullText.length) {
+          currentIndex = Math.min(currentIndex + charsPerTick, fullText.length);
+          const displayText = fullText.substring(0, currentIndex);
+
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId
+                ? { ...msg, content: displayText, isLoading: currentIndex < fullText.length }
+                : msg
+            )
+          );
+          scrollToBottom();
+
+          setTimeout(tick, tickInterval);
+        } else {
+          // 完成显示
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === messageId ? { ...msg, isLoading: false } : msg
+            )
+          );
+          onComplete();
+        }
+      };
+
+      tick();
+    },
+    [scrollToBottom]
+  );
+
+  // 发送消息 - 快速API + 模拟流式显示
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
     if (!messageText || isLoading) return;
@@ -86,12 +146,12 @@ export default function AIChatScreen() {
     setMessages((prev) => [...prev, userMessage]);
     scrollToBottom();
 
-    // 添加加载占位消息
-    const loadingMessageId = generateMessageId();
+    // 添加 AI 回复消息（初始为空，逐步填充）
+    const assistantMessageId = generateMessageId();
     setMessages((prev) => [
       ...prev,
       {
-        id: loadingMessageId,
+        id: assistantMessageId,
         role: 'assistant',
         content: '',
         timestamp: new Date(),
@@ -101,66 +161,73 @@ export default function AIChatScreen() {
     scrollToBottom();
 
     try {
-      let response: AICostAnalysisResponse;
+      // 使用集中式 AI 服务执行意图
+      // aiService 自动处理：
+      // - 分析模式检测 (enableThinking/thinkingBudget)
+      // - 响应时间追踪
+      // - 错误处理
+      const result = await aiService.executeIntent(messageText, {
+        sessionId: sessionId ?? undefined,
+        forceExecute: true,
+      });
 
-      if (!sessionId) {
-        // 第一条消息：使用时间范围分析创建新会话
-        const today = new Date();
-        const lastWeek = new Date(today);
-        lastWeek.setDate(lastWeek.getDate() - 7);
+      console.log('[AI Chat] aiService 响应:', result);
+      console.log('[AI Chat] 分析模式:', result.mode, result.modeReason);
 
-        // 格式化日期为 YYYY-MM-DD
-        const formatDate = (date: Date): string => {
-          return date.toISOString().slice(0, 10);
-        };
+      // 提取回复消息
+      let replyMessage = '';
 
-        response = await aiApiClient.analyzeTimeRangeCost({
-          startDate: formatDate(lastWeek),
-          endDate: formatDate(today),
-          dimension: 'overall',
-          question: messageText,
-        });
+      if (result.success && result.data) {
+        // result.data 是 IntentExecuteResponse 类型
+        // 使用 unknown 作为中间类型避免类型断言错误
+        const responseData = result.data as unknown as Record<string, unknown>;
 
-        // 保存sessionId
-        if (response.session_id) {
-          setSessionId(response.session_id);
+        // 优先使用 metadata.conversationMessage
+        const metadata = responseData.metadata as { conversationMessage?: string; sessionId?: string } | undefined;
+        if (metadata?.conversationMessage) {
+          replyMessage = metadata.conversationMessage;
+        } else if (typeof responseData.message === 'string') {
+          replyMessage = responseData.message;
+        } else {
+          replyMessage = t('aiChat.defaultReply');
+        }
+
+        // 更新 sessionId (可能在 metadata 或 responseData 中)
+        const newSessionId = (metadata?.sessionId || responseData.sessionId) as string | undefined;
+        if (newSessionId) {
+          setSessionId(newSessionId);
         }
       } else {
-        // 后续消息：继续对话
-        response = await aiApiClient.continueConversation({
-          sessionId,
-          message: messageText,
-        });
+        // 失败情况
+        replyMessage = result.errorMessage || result.data?.message || t('aiChat.networkError');
       }
 
-      // 更新配额
-      if (response.quota) {
-        setQuotaRemaining(response.quota.remainingQuota);
-      }
-
-      // 替换加载消息为实际回复
+      // 更新消息，添加模式和响应时间信息
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === loadingMessageId
+          msg.id === assistantMessageId
             ? {
                 ...msg,
-                content: response.analysis || '抱歉，未能获取回复',
-                isLoading: false,
+                mode: result.mode,
+                responseTimeMs: result.responseTimeMs,
               }
             : msg
         )
       );
-      scrollToBottom();
+
+      // 使用模拟流式效果显示回复
+      simulateStreaming(replyMessage, assistantMessageId, () => {
+        setIsLoading(false);
+      });
+
     } catch (error) {
       console.error('AI 对话失败:', error);
 
-      // 移除加载消息
-      setMessages((prev) => prev.filter((msg) => msg.id !== loadingMessageId));
+      // 移除空消息
+      setMessages((prev) => prev.filter((msg) => msg.id !== assistantMessageId));
 
-      // 显示错误提示
       const errorMessage = error instanceof Error ? error.message : t('aiChat.networkError');
-      Alert.alert(t('aiChat.sendFailed'), errorMessage, [{ text: t('common.confirm') }]);
-    } finally {
+      Alert.alert(t('aiChat.sendFailed'), errorMessage, [{ text: i18next.t('common:confirm') }]);
       setIsLoading(false);
     }
   };
@@ -169,7 +236,8 @@ export default function AIChatScreen() {
   const renderMessage = (message: Message) => {
     const isUser = message.role === 'user';
 
-    if (message.isLoading) {
+    // 流式加载状态：无内容时显示思考动画，有内容时显示内容+光标
+    if (message.isLoading && !message.content) {
       return (
         <View key={message.id} style={styles.messageRow}>
           <View style={styles.aiAvatar}>
@@ -198,7 +266,7 @@ export default function AIChatScreen() {
             <Text style={styles.userMessageText}>{message.content}</Text>
           </LinearGradient>
           <Text style={styles.timestamp}>
-            {message.timestamp.toLocaleTimeString('zh-CN', {
+            {message.timestamp.toLocaleTimeString(i18n.language, {
               hour: '2-digit',
               minute: '2-digit',
             })}
@@ -218,15 +286,34 @@ export default function AIChatScreen() {
           </LinearGradient>
         </View>
         <View style={styles.aiMessageContainer}>
+          {/* 显示分析模式指示器 (在消息气泡上方) */}
+          {message.mode && !message.isLoading && (
+            <View style={styles.modeIndicatorRow}>
+              <AIModeIndicator mode={message.mode} size="small" />
+              {message.responseTimeMs && (
+                <Text style={styles.responseTime}>
+                  {(message.responseTimeMs / 1000).toFixed(1)}s
+                </Text>
+              )}
+            </View>
+          )}
           <View style={styles.aiMessageBubble}>
-            <Text style={styles.aiMessageText}>{message.content}</Text>
+            <Text style={styles.aiMessageText}>
+              {message.content}
+              {/* 流式输出时显示闪烁光标 */}
+              {message.isLoading && message.content && (
+                <Text style={styles.streamingCursor}>|</Text>
+              )}
+            </Text>
           </View>
-          <Text style={styles.timestamp}>
-            {message.timestamp.toLocaleTimeString('zh-CN', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
+          {!message.isLoading && (
+            <Text style={styles.timestamp}>
+              {message.timestamp.toLocaleTimeString(i18n.language, {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+          )}
         </View>
       </View>
     );
@@ -281,16 +368,7 @@ export default function AIChatScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* 头部 */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <IconButton icon="chevron-left" size={28} iconColor="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{t('aiChat.title')}</Text>
-        <View style={{ width: 48 }} />
-      </View>
-
+    <View style={styles.container}>
       {/* 配额提示 */}
       {quotaRemaining !== null && (
         <View style={styles.quotaBanner}>
@@ -317,41 +395,52 @@ export default function AIChatScreen() {
         </ScrollView>
 
         {/* 输入区域 */}
-        <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.addButton}>
-            <IconButton icon="plus" size={20} iconColor="#666" />
-          </TouchableOpacity>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.input}
-              value={inputText}
-              onChangeText={setInputText}
-              placeholder={t('aiChat.inputPlaceholder')}
-              placeholderTextColor="#999"
-              multiline
-              maxLength={500}
-              editable={!isLoading}
-            />
-          </View>
-          <TouchableOpacity
-            style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
-            onPress={() => handleSend()}
-            disabled={isLoading || !inputText.trim()}
-          >
-            <LinearGradient
-              colors={isLoading || !inputText.trim() ? ['#ccc', '#ccc'] : ['#667eea', '#764ba2']}
-              style={styles.sendButtonGradient}
-            >
-              <IconButton
-                icon="send"
-                size={18}
-                iconColor="#fff"
+        <View style={styles.inputAreaContainer}>
+          {/* 实时模式检测指示器 - 仅在有输入时显示 */}
+          {detectedMode && (
+            <View style={styles.inputModeIndicator}>
+              <AIModeIndicator mode={detectedMode.mode} size="small" />
+              <Text style={styles.inputModeHint}>
+                {detectedMode.mode === 'deep' ? t('aiChat.deepModeHint') : t('aiChat.quickModeHint')}
+              </Text>
+            </View>
+          )}
+          <View style={styles.inputContainer}>
+            <TouchableOpacity style={styles.addButton}>
+              <IconButton icon="plus" size={20} iconColor="#666" />
+            </TouchableOpacity>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={inputText}
+                onChangeText={setInputText}
+                placeholder={t('aiChat.inputPlaceholder')}
+                placeholderTextColor="#999"
+                multiline
+                maxLength={500}
+                editable={!isLoading}
               />
-            </LinearGradient>
-          </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={[styles.sendButton, isLoading && styles.sendButtonDisabled]}
+              onPress={() => handleSend()}
+              disabled={isLoading || !inputText.trim()}
+            >
+              <LinearGradient
+                colors={isLoading || !inputText.trim() ? ['#ccc', '#ccc'] : ['#667eea', '#764ba2']}
+                style={styles.sendButtonGradient}
+              >
+                <IconButton
+                  icon="send"
+                  size={18}
+                  iconColor="#fff"
+                />
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -479,6 +568,10 @@ const styles = StyleSheet.create({
     color: '#667eea',
     marginLeft: 8,
   },
+  streamingCursor: {
+    color: '#667eea',
+    fontWeight: '300',
+  },
   quickQuestionsContainer: {
     marginTop: 20,
     marginLeft: 46,
@@ -508,11 +601,8 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   addButton: {
     width: 36,
@@ -550,5 +640,34 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // 模式指示器相关样式
+  modeIndicatorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    gap: 8,
+  },
+  responseTime: {
+    fontSize: 11,
+    color: '#999',
+  },
+  inputAreaContainer: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  inputModeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+    gap: 8,
+  },
+  inputModeHint: {
+    fontSize: 11,
+    color: '#999',
+    flex: 1,
   },
 });

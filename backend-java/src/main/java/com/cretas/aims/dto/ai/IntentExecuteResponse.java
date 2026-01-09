@@ -188,6 +188,25 @@ public class IntentExecuteResponse {
      */
     private String cacheHitType;
 
+    // ==================== 对话续接 ====================
+
+    /**
+     * 会话ID
+     * 当 status 为 NEED_MORE_INFO 或 NEED_CLARIFICATION 时返回
+     * 前端使用此ID续接对话，提供更多信息
+     */
+    private String sessionId;
+
+    /**
+     * 当前对话轮次
+     */
+    private Integer conversationRound;
+
+    /**
+     * 最大对话轮次
+     */
+    private Integer maxConversationRounds;
+
     // ==================== 嵌套类 ====================
 
     /**

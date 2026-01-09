@@ -8,3 +8,6 @@
 
 export { VisualSchemaEditor } from './VisualSchemaEditor';
 export type { default as VisualSchemaEditorDefault } from './VisualSchemaEditor';
+
+export { ProductTypeSchemaConfigModal } from './ProductTypeSchemaConfigModal';
+export type { default as ProductTypeSchemaConfigModalDefault } from './ProductTypeSchemaConfigModal';

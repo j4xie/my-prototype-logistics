@@ -24,7 +24,12 @@ export type EntityType =
   | 'PROCESSING_BATCH'
   | 'SHIPMENT'
   | 'EQUIPMENT'
-  | 'DISPOSAL_RECORD';
+  | 'DISPOSAL_RECORD'
+  | 'PRODUCT_TYPE'
+  | 'PRODUCTION_PLAN'
+  | 'SCALE_DEVICE'      // IoT电子秤设备
+  | 'SCALE_PROTOCOL'    // 电子秤协议文档
+  | 'ISAPI_DEVICE';     // ISAPI摄像头设备
 
 /**
  * 模板来源
@@ -337,6 +342,8 @@ class FormTemplateApiClient {
       'SHIPMENT',
       'EQUIPMENT',
       'DISPOSAL_RECORD',
+      'PRODUCT_TYPE',
+      'PRODUCTION_PLAN',
     ];
   }
 

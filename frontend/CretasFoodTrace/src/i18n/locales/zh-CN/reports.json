@@ -214,6 +214,10 @@
     "dateRange": "日期范围",
     "startDate": "开始日期",
     "endDate": "结束日期",
+    "quickSelect": "快捷选择：",
+    "last7Days": "最近7天",
+    "last30Days": "最近30天",
+    "last90Days": "最近90天",
     "reportTypes": {
       "production": {
         "label": "生产报表",
@@ -233,13 +237,28 @@
       "pdf": "PDF",
       "csv": "CSV"
     },
+    "formatHints": {
+      "excel": "Excel格式支持数据筛选和图表",
+      "pdf": "PDF格式适合打印和存档",
+      "csv": "CSV格式兼容性最好，适合导入其他系统"
+    },
     "preview": "预览",
+    "reportTypeLabel": "报表类型：",
+    "timeRangeLabel": "时间范围：",
+    "exportFormatLabel": "导出格式：",
+    "includesLabel": "包含内容：",
+    "days": "天",
     "export": "导出",
     "exporting": "导出中...",
     "exportSuccess": "导出成功",
     "exportFailed": "导出失败",
     "pleaseSelectDateRange": "请选择日期范围",
-    "noFactoryInfo": "无法获取工厂信息"
+    "noFactoryInfo": "无法获取工厂信息",
+    "viewLater": "稍后查看",
+    "shareFile": "分享文件",
+    "shareFailed": "分享失败",
+    "shareFailedMessage": "无法分享文件，请稍后重试",
+    "confirm": "确定"
   },
   "status": {
     "completed": "已完成",

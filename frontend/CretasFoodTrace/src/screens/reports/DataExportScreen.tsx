@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
+import { useLanguageStore } from '../../store/languageStore';
 import { useAuthStore } from '../../store/authStore';
 import { APP_CONFIG, API_BASE_URL } from '../../constants/config';
 import { getFactoryId } from '../../types/auth';
@@ -47,6 +48,7 @@ export default function DataExportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const { t } = useTranslation('reports');
+  const { currentLanguage } = useLanguageStore();
 
   // 报表配置
   const [reportType, setReportType] = useState<ReportType>('production');
@@ -191,21 +193,21 @@ export default function DataExportScreen() {
         // 显示成功消息并提供分享选项
         Alert.alert(
           t('export.exportSuccess'),
-          `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件大小：${(fileSize / 1024).toFixed(2)} KB`,
+          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(currentLanguage)} - ${endDate.toLocaleDateString(currentLanguage)}\n\n${(fileSize / 1024).toFixed(2)} KB`,
           [
             {
-              text: '稍后查看',
+              text: t('export.viewLater'),
               style: 'cancel',
             },
             {
-              text: '分享文件',
+              text: t('export.shareFile'),
               onPress: async () => {
                 try {
                   await Sharing.shareAsync(downloadResult.uri);
                   dataExportLogger.info('报表已分享', { fileName });
                 } catch (shareError) {
                   dataExportLogger.error('分享报表失败', shareError as Error, { fileName });
-                  Alert.alert('分享失败', '无法分享文件，请稍后重试');
+                  Alert.alert(t('export.shareFailed'), t('export.shareFailedMessage'));
                 }
               },
             },
@@ -214,8 +216,8 @@ export default function DataExportScreen() {
       } else {
         Alert.alert(
           t('export.exportSuccess'),
-          `${reportTypeLabel} (${formatLabel}) 已生成\n\n日期范围：${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}\n\n文件已保存到：${downloadResult.uri}`,
-          [{ text: '确定' }]
+          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(currentLanguage)} - ${endDate.toLocaleDateString(currentLanguage)}\n\n${downloadResult.uri}`,
+          [{ text: t('export.confirm') }]
         );
       }
     } catch (error) {
@@ -312,7 +314,7 @@ export default function DataExportScreen() {
                 onPress={() => setShowStartPicker(true)}
                 style={styles.dateChip}
               >
-                {startDate.toLocaleDateString('zh-CN')}
+                {startDate.toLocaleDateString(currentLanguage)}
               </Chip>
             </View>
 
@@ -326,14 +328,14 @@ export default function DataExportScreen() {
                 onPress={() => setShowEndPicker(true)}
                 style={styles.dateChip}
               >
-                {endDate.toLocaleDateString('zh-CN')}
+                {endDate.toLocaleDateString(currentLanguage)}
               </Chip>
             </View>
 
             {/* 快捷日期选择 */}
             <View style={styles.quickDates}>
               <Text variant="bodySmall" style={styles.quickDatesLabel}>
-                快捷选择：
+                {t('export.quickSelect')}
               </Text>
               <View style={styles.quickDateButtons}>
                 <Button
@@ -345,7 +347,7 @@ export default function DataExportScreen() {
                   }}
                   style={styles.quickDateButton}
                 >
-                  最近7天
+                  {t('export.last7Days')}
                 </Button>
                 <Button
                   mode="outlined"
@@ -356,7 +358,7 @@ export default function DataExportScreen() {
                   }}
                   style={styles.quickDateButton}
                 >
-                  最近30天
+                  {t('export.last30Days')}
                 </Button>
                 <Button
                   mode="outlined"
@@ -367,7 +369,7 @@ export default function DataExportScreen() {
                   }}
                   style={styles.quickDateButton}
                 >
-                  最近90天
+                  {t('export.last90Days')}
                 </Button>
               </View>
             </View>
@@ -391,9 +393,9 @@ export default function DataExportScreen() {
             {/* 格式说明 */}
             <View style={styles.formatInfo}>
               <Text variant="bodySmall" style={styles.formatInfoText}>
-                {currentFormat?.value === 'excel' && '• Excel格式支持数据筛选和图表'}
-                {currentFormat?.value === 'pdf' && '• PDF格式适合打印和存档'}
-                {currentFormat?.value === 'csv' && '• CSV格式兼容性最好，适合导入其他系统'}
+                {currentFormat?.value === 'excel' && `• ${t('export.formatHints.excel')}`}
+                {currentFormat?.value === 'pdf' && `• ${t('export.formatHints.pdf')}`}
+                {currentFormat?.value === 'csv' && `• ${t('export.formatHints.csv')}`}
               </Text>
             </View>
           </Card.Content>
@@ -405,7 +407,7 @@ export default function DataExportScreen() {
           <Card.Content>
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
-                报表类型：
+                {t('export.reportTypeLabel')}
               </Text>
               <Chip style={{ backgroundColor: currentReport?.color }}>
                 {currentReport?.label}
@@ -414,17 +416,17 @@ export default function DataExportScreen() {
 
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
-                时间范围：
+                {t('export.timeRangeLabel')}
               </Text>
               <Text variant="bodyMedium">
-                {startDate.toLocaleDateString()} - {endDate.toLocaleDateString()}
-                ({Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} 天)
+                {startDate.toLocaleDateString(currentLanguage)} - {endDate.toLocaleDateString(currentLanguage)}
+                ({Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} {t('export.days')})
               </Text>
             </View>
 
             <View style={styles.previewRow}>
               <Text variant="bodyMedium" style={styles.previewLabel}>
-                导出格式：
+                {t('export.exportFormatLabel')}
               </Text>
               <Text variant="bodyMedium">
                 {currentFormat?.label} ({currentFormat?.extension})
@@ -434,7 +436,7 @@ export default function DataExportScreen() {
             <Divider style={styles.divider} />
 
             <Text variant="bodySmall" style={styles.previewHint}>
-              包含内容：{currentReport?.description}
+              {t('export.includesLabel')}{currentReport?.description}
             </Text>
           </Card.Content>
         </Card>
@@ -516,7 +518,8 @@ const styles = StyleSheet.create({
     paddingLeft: 0,
   },
   radioLabel: {
-    fontSize: 0,
+    width: 0,
+    height: 0,
   },
   radioContent: {
     flex: 1,

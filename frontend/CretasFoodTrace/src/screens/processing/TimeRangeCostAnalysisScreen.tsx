@@ -7,11 +7,14 @@ import { ProcessingStackParamList } from '../../types/navigation';
 import { DatePickerModal } from 'react-native-paper-dates';
 import { useAuthStore } from '../../store/authStore';
 import { processingApiClient } from '../../services/api/processingApiClient';
-import { aiApiClient, AIQuotaInfo } from '../../services/api/aiApiClient';
+import { aiApiClient } from '../../services/api/aiApiClient';
 import { AIQuota } from '../../types/processing';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
+import { aiService } from '../../services/ai';
+import { AIModeIndicator } from '../../components/ai';
+import type { AnalysisMode } from '../../services/ai/types';
 import { MarkdownRenderer } from '../../components/common/MarkdownRenderer';
 
 // 创建TimeRangeCostAnalysis专用logger
@@ -59,11 +62,9 @@ export default function TimeRangeCostAnalysisScreen() {
 
   // AI分析状态
   const [showAISection, setShowAISection] = useState(false);
-  const [aiQuotaInfo, setAiQuotaInfo] = useState<AIQuotaInfo | null>(null);
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [aiLoading, setAiLoading] = useState(false);
   const [aiQuota, setAiQuota] = useState<AIQuota | null>(null);
-  const [sessionId, setSessionId] = useState<string>('');
 
   // 自定义问题状态
   const [customQuestion, setCustomQuestion] = useState('');
@@ -71,6 +72,9 @@ export default function TimeRangeCostAnalysisScreen() {
 
   // 思考模式状态（默认开启）
   const [enableThinking, setEnableThinking] = useState(true);
+
+  // AI 分析模式状态
+  const [analysisMode, setAnalysisMode] = useState<AnalysisMode>('quick');
 
   // 快捷时间范围选项
   const quickRangeOptions = [
@@ -219,37 +223,37 @@ export default function TimeRangeCostAnalysisScreen() {
         startDate: dateRange.startDate.toISOString().split('T')[0],
         endDate: dateRange.endDate.toISOString().split('T')[0],
         hasQuestion: !!question,
+        enableThinking,
       });
 
-      // 调用AI时间范围分析API
-      const response = await aiApiClient.analyzeTimeRangeCost({
-        startDate: dateRange.startDate.toISOString().split('T')[0] as string,
-        endDate: dateRange.endDate.toISOString().split('T')[0] as string,
-        dimension: 'overall', // 可选: daily, weekly, overall
+      // 使用集中式 AI 服务进行成本分析
+      const startDateStr = dateRange.startDate.toISOString().split('T')[0] ?? '';
+      const endDateStr = dateRange.endDate.toISOString().split('T')[0] ?? '';
+      const result = await aiService.analyzeCost({
+        startDate: startDateStr,
+        endDate: endDateStr,
+        dimension: 'overall',
         question: question || undefined,
-        enableThinking, // 思考模式开关
-      }, factoryId);
+        forceMode: enableThinking ? 'deep' : undefined,
+      });
 
       timeRangeLogger.info('AI分析完成', {
-        hasAnalysis: !!response.analysis,
-        sessionId: response.session_id,
-        quotaRemaining: response.quota?.remainingQuota,
+        success: result.success,
+        mode: result.mode,
+        modeReason: result.modeReason,
+        responseTimeMs: result.responseTimeMs,
       });
 
-      if (response.success) {
-        setAiAnalysis(response.analysis || '');
-        setSessionId(response.session_id || '');
+      // 更新分析模式
+      setAnalysisMode(result.mode);
 
-        // 更新配额信息
-        if (response.quota) {
-          setAiQuotaInfo(response.quota);
-        }
-
+      if (result.success && result.data) {
+        setAiAnalysis(result.data.analysis || '');
         // 清空自定义问题输入
         setCustomQuestion('');
         setShowQuestionInput(false);
       } else {
-        throw new Error(response.errorMessage || 'AI分析失败');
+        throw new Error(result.errorMessage || result.data?.message || 'AI分析失败');
       }
     } catch (error) {
       timeRangeLogger.error('AI分析失败', error, {
@@ -509,10 +513,13 @@ export default function TimeRangeCostAnalysisScreen() {
                   <View style={styles.aiResultSection}>
                     {/* AI分析结果 */}
                     <View style={styles.aiResultCard}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Text variant="titleMedium" style={styles.aiResultTitle}>
-                          分析结果
-                        </Text>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <Text variant="titleMedium" style={styles.aiResultTitle}>
+                            分析结果
+                          </Text>
+                          <AIModeIndicator mode={analysisMode} size="small" />
+                        </View>
                         <IconButton
                           icon="close"
                           size={20}
@@ -524,11 +531,6 @@ export default function TimeRangeCostAnalysisScreen() {
                       </View>
                       <Divider style={styles.aiDivider} />
                       <MarkdownRenderer content={aiAnalysis} />
-                      {sessionId && (
-                        <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 12 }}>
-                          会话ID: {sessionId.substring(0, 8)}...
-                        </Text>
-                      )}
                     </View>
 
                     {/* 快速问题 */}

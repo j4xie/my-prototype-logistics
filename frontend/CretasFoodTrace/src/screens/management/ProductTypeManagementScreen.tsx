@@ -18,7 +18,8 @@ import {
   SegmentedButtons,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
-import { productTypeApiClient, ProcessingStep, SkillRequirement, ProcessingStageOption } from '../../services/api/productTypeApiClient';
+import { productTypeApiClient, ProcessingStep, SkillRequirement, ProcessingStageOption, CustomSchemaOverrides } from '../../services/api/productTypeApiClient';
+import { ProductTypeSchemaConfigModal } from '../../components/schema';
 import { equipmentApiClient, Equipment } from '../../services/api/equipmentApiClient';
 import qualityCheckItemApi, { QualityCheckItem } from '../../services/api/qualityCheckItemApiClient';
 import { useAuthStore } from '../../store/authStore';
@@ -26,6 +27,12 @@ import { getFactoryId } from '../../types/auth';
 import { logger } from '../../utils/logger';
 import { canManageBasicData, getPermissionDebugInfo } from '../../utils/permissionHelper';
 import { ProcessingStepsEditor } from '../../components/processing';
+// SKU 配置简化组件
+import { SkuTemplateSelector, type AppliedTemplateConfig } from '../../components/sku/SkuTemplateSelector';
+import { SkuVoiceFAB } from '../../components/sku/SkuVoiceFAB';
+import { SkuVoiceDialog } from '../../components/sku/SkuVoiceDialog';
+import type { SkuTemplate } from '../../config/skuTemplates';
+import type { ExtractedSkuConfig } from '../../services/ai/SkuConfigAIPrompt';
 
 // 创建ProductTypeManagement专用logger
 const productTypeLogger = logger.createContextLogger('ProductTypeManagement');
@@ -57,6 +64,8 @@ interface ProductType {
   qualityCheckIds?: string[];
   complexityScore?: number;
   productionTimeMinutes?: number;
+  // Custom Schema Overrides
+  customSchemaOverrides?: CustomSchemaOverrides | null;
 }
 
 /**
@@ -86,6 +95,11 @@ export default function ProductTypeManagementScreen() {
   const [categoryMenuVisible, setCategoryMenuVisible] = useState(false);
   const [unitMenuVisible, setUnitMenuVisible] = useState(false);
   const [complexityMenuVisible, setComplexityMenuVisible] = useState(false);
+
+  // Schema Config Modal
+  const [schemaConfigModalVisible, setSchemaConfigModalVisible] = useState(false);
+  const [schemaConfigItem, setSchemaConfigItem] = useState<ProductType | null>(null);
+  const [schemaConfig, setSchemaConfig] = useState<CustomSchemaOverrides | null>(null);
 
   // 权限检查
   const canManage = canManageBasicData(user);
@@ -146,23 +160,41 @@ export default function ProductTypeManagementScreen() {
           factoryId,
         });
         // 将后端DTO映射到前端显示格式
-        const mappedTypes: ProductType[] = response.data.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          code: item.productCode || item.code || '',
-          category: item.category || undefined,
-          unit: item.unit || 'kg',
-          isActive: item.isActive !== false,
-          createdAt: item.createdAt || new Date().toISOString(),
-          // SKU Config fields
-          workHours: item.workHours,
-          processingSteps: item.processingSteps || [],
-          skillRequirements: item.skillRequirements || { minLevel: 1, preferredLevel: 3, specialSkills: [] },
-          equipmentIds: item.equipmentIds || [],
-          qualityCheckIds: item.qualityCheckIds || [],
-          complexityScore: item.complexityScore || 3,
-          productionTimeMinutes: item.productionTimeMinutes,
-        }));
+        const mappedTypes: ProductType[] = response.data.map((item: any) => {
+          // Parse customSchemaOverrides if it's a string
+          let parsedSchemaOverrides: CustomSchemaOverrides | null = null;
+          if (item.customSchemaOverrides) {
+            if (typeof item.customSchemaOverrides === 'string') {
+              try {
+                parsedSchemaOverrides = JSON.parse(item.customSchemaOverrides);
+              } catch {
+                parsedSchemaOverrides = null;
+              }
+            } else {
+              parsedSchemaOverrides = item.customSchemaOverrides;
+            }
+          }
+
+          return {
+            id: item.id,
+            name: item.name,
+            code: item.productCode || item.code || '',
+            category: item.category || undefined,
+            unit: item.unit || 'kg',
+            isActive: item.isActive !== false,
+            createdAt: item.createdAt || new Date().toISOString(),
+            // SKU Config fields
+            workHours: item.workHours,
+            processingSteps: item.processingSteps || [],
+            skillRequirements: item.skillRequirements || { minLevel: 1, preferredLevel: 3, specialSkills: [] },
+            equipmentIds: item.equipmentIds || [],
+            qualityCheckIds: item.qualityCheckIds || [],
+            complexityScore: item.complexityScore || 3,
+            productionTimeMinutes: item.productionTimeMinutes,
+            // Custom Schema Overrides
+            customSchemaOverrides: parsedSchemaOverrides,
+          };
+        });
         setProductTypes(mappedTypes);
       } else {
         productTypeLogger.warn('API返回数据为空', { factoryId });
@@ -371,6 +403,87 @@ export default function ProductTypeManagementScreen() {
     }));
   };
 
+  // 模板选择处理
+  const handleTemplateSelect = useCallback((template: SkuTemplate) => {
+    setSkuConfig({
+      workHours: template.defaultWorkHours.toString(),
+      processingSteps: template.processingSteps,
+      skillRequirements: template.skillRequirements,
+      equipmentIds: skuConfig.equipmentIds, // 保留现有设备选择
+      qualityCheckIds: skuConfig.qualityCheckIds, // 保留现有质检项选择
+      complexityScore: template.complexityScore,
+    });
+    productTypeLogger.info('应用SKU模板', { templateId: template.id, templateName: template.name });
+  }, [skuConfig.equipmentIds, skuConfig.qualityCheckIds]);
+
+  // 应用模板配置处理 (从 SkuTemplateSelector 的确认按钮)
+  const handleApplyTemplate = useCallback((config: AppliedTemplateConfig) => {
+    setSkuConfig(prev => ({
+      ...prev,
+      workHours: config.workHours.toString(),
+      processingSteps: config.processingSteps,
+      skillRequirements: config.skillRequirements,
+      complexityScore: config.complexityScore,
+    }));
+    productTypeLogger.info('应用模板配置', {
+      workHours: config.workHours,
+      complexityScore: config.complexityScore,
+      stepsCount: config.processingSteps.length,
+    });
+  }, []);
+
+  // 语音配置确认处理
+  const handleVoiceConfigConfirm = useCallback((extractedConfig: ExtractedSkuConfig) => {
+    setSkuConfig(prev => ({
+      ...prev,
+      workHours: extractedConfig.workHours?.toString() || prev.workHours,
+      processingSteps: extractedConfig.processingSteps || prev.processingSteps,
+      skillRequirements: extractedConfig.skillRequirements
+        ? {
+            minLevel: extractedConfig.skillRequirements.minLevel || prev.skillRequirements.minLevel,
+            preferredLevel: extractedConfig.skillRequirements.preferredLevel || prev.skillRequirements.preferredLevel,
+            specialSkills: extractedConfig.skillRequirements.specialSkills || prev.skillRequirements.specialSkills,
+          }
+        : prev.skillRequirements,
+      complexityScore: extractedConfig.complexityScore || prev.complexityScore,
+    }));
+    productTypeLogger.info('应用语音配置', {
+      workHours: extractedConfig.workHours,
+      stepsCount: extractedConfig.processingSteps?.length,
+    });
+  }, []);
+
+  // 表单配置模态框处理
+  const handleConfigSchema = (item: ProductType) => {
+    setSchemaConfigItem(item);
+    setSchemaConfig(item.customSchemaOverrides || null);
+    setSchemaConfigModalVisible(true);
+  };
+
+  const handleSaveSchemaConfig = async (newConfig: CustomSchemaOverrides) => {
+    if (!schemaConfigItem) return;
+
+    await productTypeApiClient.updateCustomSchemaOverrides(
+      schemaConfigItem.id,
+      newConfig,
+      factoryId
+    );
+    productTypeLogger.info('表单配置保存成功', {
+      id: schemaConfigItem.id,
+      name: schemaConfigItem.name,
+      formTypes: Object.keys(newConfig),
+    });
+    loadProductTypes();
+  };
+
+  // 计算已配置的表单类型数量
+  const getSchemaConfigCount = (item: ProductType): number => {
+    if (!item.customSchemaOverrides) return 0;
+    return Object.keys(item.customSchemaOverrides).filter(
+      key => Object.keys(item.customSchemaOverrides?.[key as keyof CustomSchemaOverrides]?.properties || {}).length > 0
+    ).length;
+  };
+
   // 无权限界面
   if (!canManage) {
     return (
@@ -520,15 +633,26 @@ export default function ProductTypeManagementScreen() {
                   >
                     {item.isActive ? '启用中' : '已停用'}
                   </Chip>
-                  <Button
-                    mode="outlined"
-                    compact
-                    icon="cog"
-                    onPress={() => handleConfigSku(item)}
-                    style={styles.configButton}
-                  >
-                    配置SKU
-                  </Button>
+                  <View style={styles.configButtonsRow}>
+                    <Button
+                      mode="outlined"
+                      compact
+                      icon="form-select"
+                      onPress={() => handleConfigSchema(item)}
+                      style={styles.schemaConfigButton}
+                    >
+                      表单配置{getSchemaConfigCount(item) > 0 ? ` (${getSchemaConfigCount(item)})` : ''}
+                    </Button>
+                    <Button
+                      mode="outlined"
+                      compact
+                      icon="cog"
+                      onPress={() => handleConfigSku(item)}
+                      style={styles.configButton}
+                    >
+                      配置SKU
+                    </Button>
+                  </View>
                 </View>
               </Card.Content>
             </Card>
@@ -661,6 +785,14 @@ export default function ProductTypeManagementScreen() {
             <Text style={styles.modalTitle}>
               配置 SKU: {configItem?.name}
             </Text>
+
+            {/* 模板快速选择 */}
+            <SkuTemplateSelector
+              onSelectTemplate={handleTemplateSelect}
+              onApplyTemplate={handleApplyTemplate}
+              selectedTemplateId={undefined}
+              isEditMode={!!configItem?.workHours}
+            />
 
             {loadingOptions ? (
               <ActivityIndicator style={{ marginVertical: 20 }} />
@@ -848,6 +980,13 @@ export default function ProductTypeManagementScreen() {
               </Button>
             </View>
           </ScrollView>
+
+          {/* SKU 语音配置 FAB - 在 Modal 内部显示 */}
+          <SkuVoiceFAB
+            visible={true}
+            isEditMode={!!configItem?.workHours}
+            position="left"
+          />
         </Modal>
       </Portal>
 
@@ -857,6 +996,26 @@ export default function ProductTypeManagementScreen() {
         style={styles.fab}
         onPress={handleAdd}
         label="添加产品类型"
+      />
+
+      {/* SKU 语音配置对话框 */}
+      <SkuVoiceDialog
+        onConfirm={handleVoiceConfigConfirm}
+        onCancel={() => {}}
+      />
+
+      {/* 表单配置模态框 */}
+      <ProductTypeSchemaConfigModal
+        visible={schemaConfigModalVisible}
+        productTypeId={schemaConfigItem?.id || ''}
+        productTypeName={schemaConfigItem?.name || ''}
+        initialConfig={schemaConfig}
+        onDismiss={() => {
+          setSchemaConfigModalVisible(false);
+          setSchemaConfigItem(null);
+          setSchemaConfig(null);
+        }}
+        onSave={handleSaveSchemaConfig}
       />
     </View>
   );
@@ -1002,6 +1161,13 @@ const styles = StyleSheet.create({
   configButton: {
     borderColor: '#FF9800',
   },
+  configButtonsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  schemaConfigButton: {
+    borderColor: '#1976D2',
+  },
   fab: {
     position: 'absolute',
     margin: 16,
@@ -1021,6 +1187,9 @@ const styles = StyleSheet.create({
     marginVertical: 40,
     borderRadius: 8,
     maxHeight: '90%',
+    minHeight: 400,
+    position: 'relative',
+    overflow: 'visible',
   },
   modalTitle: {
     fontSize: 20,

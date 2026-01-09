@@ -28,6 +28,9 @@ import { useAuthStore } from '../../store/authStore';
 import { AIQuota } from '../../types/processing';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { aiService, detectAnalysisMode } from '../../services/ai';
+import { AIModeIndicator } from '../../components/ai';
+import type { AnalysisMode } from '../../services/ai/types';
 
 // 创建BatchComparison专用logger
 const batchComparisonLogger = logger.createContextLogger('BatchComparison');
@@ -71,6 +74,9 @@ export default function BatchComparisonScreen() {
 
   // 思考模式状态（默认开启）
   const [enableThinking, setEnableThinking] = useState(true);
+
+  // 当前分析模式
+  const [currentMode, setCurrentMode] = useState<AnalysisMode>('quick');
 
   // 快速问题
   const QUICK_QUESTIONS = [
@@ -196,28 +202,32 @@ export default function BatchComparisonScreen() {
       setAiLoading(true);
       setShowAISection(true);
 
-      // 调用AI批次对比分析API
-      const response = await aiApiClient.compareBatchCosts({
+      // 预检测分析模式用于日志
+      const preDetectMode = detectAnalysisMode(question, dimension);
+
+      batchComparisonLogger.debug('AI分析模式检测', {
+        autoDetectedMode: preDetectMode.mode,
+        manualToggle: enableThinking,
+        reason: preDetectMode.reason,
+        matchedKeywords: preDetectMode.matchedKeywords,
+      });
+
+      // 使用集中式 AI 服务进行批次对比分析
+      // enableThinking 为 true 时强制使用深度模式，否则自动检测
+      const result = await aiService.compareBatches({
         batchIds: Array.from(selectedBatches),
         dimension: dimension,
         question: question || undefined,
-        enableThinking, // 思考模式开关
-      }, factoryId);
+        forceMode: enableThinking ? 'deep' : undefined,
+      });
 
-      if (response && response.success) {
-        setAiAnalysis(response.analysis || '');
-        setSessionId(response.session_id || '');
+      // 更新当前分析模式
+      setCurrentMode(result.mode);
 
-        // 更新配额信息 - 转换 AIQuotaInfo -> AIQuota
-        if (response.quota) {
-          setAiQuota({
-            used: response.quota.usedQuota,
-            limit: response.quota.weeklyQuota,
-            remaining: response.quota.remainingQuota,
-            period: 'weekly',
-            resetDate: response.quota.resetDate,
-          });
-        }
+      if (result.success && result.data) {
+        setAiAnalysis(result.data.analysis || '');
+        // 会话ID不再从新API返回，清空
+        setSessionId('');
 
         // 清空自定义问题输入
         setCustomQuestion('');
@@ -227,10 +237,19 @@ export default function BatchComparisonScreen() {
           batchCount: selectedBatches.size,
           dimension,
           hasQuestion: !!question,
-          sessionId: response.session_id,
+          mode: result.mode,
+          modeReason: result.modeReason,
+          responseTimeMs: result.responseTimeMs,
           factoryId,
         });
+      } else {
+        const errorMessage = result.data?.message || result.errorMessage || 'AI分析失败';
+        Alert.alert('AI分析失败', errorMessage);
+        setAiAnalysis('');
       }
+
+      // 刷新配额信息
+      await loadAIQuota();
     } catch (error) {
       batchComparisonLogger.error('AI批次对比分析失败', error as Error, {
         batchCount: selectedBatches.size,
@@ -432,7 +451,12 @@ export default function BatchComparisonScreen() {
           <Card style={styles.aiCard} mode="elevated">
             <Card.Content>
               <View style={styles.aiHeader}>
-                <Text variant="titleMedium" style={styles.aiTitle}>AI对比分析</Text>
+                <View style={styles.aiTitleRow}>
+                  <Text variant="titleMedium" style={styles.aiTitle}>AI对比分析</Text>
+                  {!aiLoading && aiAnalysis && (
+                    <AIModeIndicator mode={currentMode} size="small" style={styles.modeIndicator} />
+                  )}
+                </View>
                 {aiQuota && (
                   <Chip
                     icon="flash"
@@ -655,6 +679,14 @@ const styles = StyleSheet.create({
   aiTitle: {
     fontWeight: '700',
     color: '#212121',
+  },
+  aiTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modeIndicator: {
+    marginLeft: 4,
   },
   quotaBadge: {
     backgroundColor: '#E3F2FD',

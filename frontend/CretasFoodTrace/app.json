@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "CretasFoodTrace",
+    "name": "白垩纪工业Agent",
     "slug": "CretasFoodTrace",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2d5016"
     },
     "ios": {
       "supportsTablet": true,

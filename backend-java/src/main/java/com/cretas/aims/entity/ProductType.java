@@ -123,6 +123,31 @@ public class ProductType extends BaseEntity {
 
     // ==================== End Phase 5 Fields ====================
 
+    // ==================== Custom Form Schema Configuration ====================
+
+    /**
+     * Custom schema overrides for various entity types associated with this product type.
+     * Allows each product type to define specialized input forms for different data entities.
+     *
+     * JSON Format:
+     * {
+     *   "MATERIAL_BATCH": {
+     *     "additionalFields": [...],
+     *     "requiredFields": [...],
+     *     "fieldValidations": {...}
+     *   },
+     *   "QUALITY_CHECK": {
+     *     "additionalFields": [...],
+     *     "checkItems": [...]
+     *   },
+     *   "PRODUCTION_RECORD": {...}
+     * }
+     */
+    @Column(name = "custom_schema_overrides", columnDefinition = "TEXT")
+    private String customSchemaOverrides;
+
+    // ==================== End Custom Form Schema Configuration ====================
+
     @Column(name = "package_spec", length = 100)
     private String packageSpec;
     @Column(name = "is_active", nullable = false)

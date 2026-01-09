@@ -141,25 +141,12 @@ export const qualityCheckSchema: FormSchema = {
         numberOfLines: 3,
         placeholder: '请详细描述不合格原因',
       },
-      // 联动: 只有结果为"不合格"时才显示且必填
-      'x-reactions': {
-        dependencies: ['result'],
-        fulfill: {
-          state: {
-            visible: '{{$deps[0] === "FAIL"}}',
-            required: '{{$deps[0] === "FAIL"}}',
-          },
-        },
-      },
+      // 注意: 联动逻辑已移至 qualityEffects.ts 中的 createQualityCheckEffects
+      // 原因: Hermes 引擎不支持 Formily 的 x-reactions 字符串表达式编译
       'x-validator': [
         {
-          validator: (value: string, rule: any, ctx: any) => {
-            const result = ctx.form?.values?.result;
-            if (result === 'FAIL' && !value?.trim()) {
-              return '不合格时必须填写原因';
-            }
-            return true;
-          },
+          required: true,
+          message: '不合格时必须填写原因',
         },
       ],
     },

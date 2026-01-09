@@ -54,35 +54,16 @@ export function FAManagementScreen() {
               onPress={() => navigation.navigate('EmployeeList')}
             />
             <GridItem
-              icon="cog"
-              title={t('management.equipmentManagement')}
+              icon="devices"
+              title={t('management.deviceCenter', '设备中心')}
               color="#52c41a"
-              onPress={() => navigation.navigate('EquipmentList')}
+              onPress={() => navigation.navigate('UnifiedDeviceManagement')}
             />
             <GridItem
               icon="domain"
               title={t('management.departmentManagement')}
               color="#fa8c16"
               onPress={() => navigation.navigate('DepartmentManagement')}
-            />
-          </View>
-        </View>
-
-        {/* IoT 设备管理 */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('management.iotManagement', 'IoT 设备管理')}</Text>
-          <View style={styles.grid}>
-            <GridItem
-              icon="scale"
-              title={t('management.scaleDevices', '电子秤设备')}
-              color="#1890ff"
-              onPress={() => navigation.navigate('IotDeviceList')}
-            />
-            <GridItem
-              icon="cctv"
-              title={t('management.cameraDevices', '摄像头设备')}
-              color="#722ed1"
-              onPress={() => navigation.navigate('IsapiDeviceList')}
             />
           </View>
         </View>
@@ -148,6 +129,12 @@ export function FAManagementScreen() {
               onPress={() => navigation.navigate('SchemaConfig')}
             />
             <GridItem
+              icon="file-document-multiple-outline"
+              title={t('formTemplate.title', '表单模版')}
+              color="#722ed1"
+              onPress={() => navigation.navigate('FormTemplateList')}
+            />
+            <GridItem
               icon="code-braces"
               title={t('management.ruleConfiguration')}
               color="#9c27b0"
@@ -176,6 +163,12 @@ export function FAManagementScreen() {
               title={t('management.sopConfig')}
               color="#13c2c2"
               onPress={() => navigation.navigate('SopConfig')}
+            />
+            <GridItem
+              icon="robot-outline"
+              title={t('management.intentView', 'AI意图查看')}
+              color="#eb2f96"
+              onPress={() => navigation.navigate('IntentView')}
             />
           </View>
         </View>

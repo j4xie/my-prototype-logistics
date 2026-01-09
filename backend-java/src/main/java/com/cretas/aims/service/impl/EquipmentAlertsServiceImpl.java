@@ -15,6 +15,8 @@ import com.cretas.aims.service.EquipmentAlertsService;
 import com.cretas.aims.service.PushNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -88,6 +90,7 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
     }
 
     @Override
+    @Cacheable(value = "alertStats", key = "#factoryId")
     public Map<String, Object> getAlertStatistics(String factoryId) {
         log.info("查询告警统计: factoryId={}", factoryId);
 
@@ -125,6 +128,7 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "alertStats", key = "#factoryId")
     public EquipmentAlertDTO acknowledgeAlert(String factoryId, Integer alertId, Long userId, String userName) {
         log.info("确认告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
@@ -159,6 +163,7 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "alertStats", key = "#factoryId")
     public EquipmentAlertDTO resolveAlert(String factoryId, Integer alertId, Long userId, String userName, String resolution) {
         log.info("处理告警: factoryId={}, alertId={}, userId={}", factoryId, alertId, userId);
 
@@ -195,14 +200,11 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
     private EquipmentAlertDTO convertToDTO(EquipmentAlert alert) {
         String equipmentName = "未知设备";
         if (alert.getEquipmentId() != null) {
-            equipmentRepository.findById(alert.getEquipmentId())
-                    .ifPresent(e -> {});
-            Optional<FactoryEquipment> equipment = equipmentRepository.findById(alert.getEquipmentId());
-            if (equipment.isPresent()) {
-                equipmentName = equipment.get().getEquipmentName();
-            }
+            // P0-1 修复: 删除无效空lambda，优化为单次查询
+            equipmentName = equipmentRepository.findById(alert.getEquipmentId())
+                    .map(FactoryEquipment::getEquipmentName)
+                    .orElse("未知设备");
         }
-
         return EquipmentAlertDTO.builder()
                 .id(alert.getId())
                 .factoryId(alert.getFactoryId())
@@ -239,6 +241,7 @@ public class EquipmentAlertsServiceImpl implements EquipmentAlertsService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "alertStats", key = "#factoryId")
     public EquipmentAlertDTO createAlert(String factoryId, CreateEquipmentAlertRequest request) {
         log.info("创建告警: factoryId={}, equipmentId={}, alertType={}",
                 factoryId, request.getEquipmentId(), request.getAlertType());

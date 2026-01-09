@@ -131,6 +131,22 @@ public class AIIntentConfig extends BaseEntity {
     private String keywords;
 
     /**
+     * 负向关键词列表 (JSON数组)
+     * 匹配时会扣分，防止意图误匹配
+     * 如: SCALE_DELETE 不应匹配 ["列表", "查看"]
+     */
+    @Column(name = "negative_keywords", columnDefinition = "JSON")
+    private String negativeKeywords;
+
+    /**
+     * 负向关键词惩罚百分比 (0-100)
+     * 每匹配一个负向词扣分 penalty/100
+     */
+    @Column(name = "negative_keyword_penalty")
+    @Builder.Default
+    private Integer negativeKeywordPenalty = 15;
+
+    /**
      * 正则匹配规则 (可选)
      * 用于更精确的意图匹配
      */
@@ -144,12 +160,22 @@ public class AIIntentConfig extends BaseEntity {
     private String description;
 
     /**
-     * 处理器类名 (可选)
+     * 处理器类名 (可选 - 旧架构)
      * 用于路由到特定的处理方法
      * 如: CostAnalysisHandler, FormGenerationHandler
+     * @deprecated 推荐使用 toolName 字段替代
      */
     @Column(name = "handler_class", length = 200)
     private String handlerClass;
+
+    /**
+     * 关联的 Tool 名称 (新 Tool Calling 架构)
+     * 对应 ToolExecutor.getToolName() 返回的值
+     * 如: material_batch_query, quality_check_create
+     * 优先级高于 handlerClass
+     */
+    @Column(name = "tool_name", length = 100)
+    private String toolName;
 
     /**
      * 最大响应token数
@@ -270,6 +296,22 @@ public class AIIntentConfig extends BaseEntity {
         } catch (Exception e) {
             // 如果解析失败，尝试按逗号分割
             return java.util.Arrays.asList(keywords.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
+        }
+    }
+
+    /**
+     * 获取负向关键词列表
+     */
+    public java.util.List<String> getNegativeKeywordsList() {
+        if (negativeKeywords == null || negativeKeywords.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(negativeKeywords,
+                mapper.getTypeFactory().constructCollectionType(java.util.List.class, String.class));
+        } catch (Exception e) {
+            return java.util.Arrays.asList(negativeKeywords.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
         }
     }
 

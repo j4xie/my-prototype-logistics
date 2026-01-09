@@ -8,7 +8,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
@@ -57,7 +56,7 @@ export function IntentSuggestionDetailScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteParams>();
   const { suggestionId } = route.params;
-  const { t } = useTranslation('home');
+  const { t, i18n } = useTranslation('home');
 
   const [loading, setLoading] = useState(true);
   const [suggestion, setSuggestion] = useState<IntentOptimizationSuggestion | null>(null);
@@ -84,7 +83,7 @@ export function IntentSuggestionDetailScreen() {
       setEditedKeywords(data.suggestedKeywords || []);
     } catch (err) {
       console.error('Load suggestion failed:', err);
-      Alert.alert('加载失败', '无法加载建议详情');
+      Alert.alert(t('intentSuggestions.loadFailed'), t('intentSuggestions.loadFailedMessage'));
       navigation.goBack();
     } finally {
       setLoading(false);
@@ -113,28 +112,28 @@ export function IntentSuggestionDetailScreen() {
     // 验证必填字段
     if (suggestion.suggestionType === 'CREATE_INTENT') {
       if (!editedCode.trim()) {
-        Alert.alert('验证失败', '意图代码不能为空');
+        Alert.alert(t('intentSuggestions.validationFailed'), t('intentSuggestions.intentCodeRequired'));
         return;
       }
       if (!editedName.trim()) {
-        Alert.alert('验证失败', '意图名称不能为空');
+        Alert.alert(t('intentSuggestions.validationFailed'), t('intentSuggestions.intentNameRequired'));
         return;
       }
       if (editedKeywords.length === 0) {
-        Alert.alert('验证失败', '至少需要一个关键词');
+        Alert.alert(t('intentSuggestions.validationFailed'), t('intentSuggestions.keywordsRequired'));
         return;
       }
     }
 
     Alert.alert(
-      '确认审批',
+      t('intentSuggestions.confirmApproval'),
       suggestion.suggestionType === 'CREATE_INTENT'
-        ? `确定要创建新意图「${editedName}」吗？`
-        : '确定要更新该意图的配置吗？',
+        ? t('intentSuggestions.confirmCreateIntent', { name: editedName })
+        : t('intentSuggestions.confirmUpdateIntent'),
       [
-        { text: '取消', style: 'cancel' },
+        { text: t('intentSuggestions.cancel'), style: 'cancel' },
         {
-          text: '确定',
+          text: t('intentSuggestions.confirm'),
           onPress: async () => {
             try {
               setSubmitting(true);
@@ -154,12 +153,12 @@ export function IntentSuggestionDetailScreen() {
                 };
                 await intentAnalysisApiClient.approveUpdateIntent(suggestionId, request);
               }
-              Alert.alert('成功', '建议已审批通过', [
-                { text: '确定', onPress: () => navigation.goBack() },
+              Alert.alert(t('intentSuggestions.success'), t('intentSuggestions.approvalSuccess'), [
+                { text: t('intentSuggestions.confirm'), onPress: () => navigation.goBack() },
               ]);
             } catch (err) {
               console.error('Approve failed:', err);
-              Alert.alert('审批失败', '请稍后重试');
+              Alert.alert(t('intentSuggestions.approvalFailed'), t('intentSuggestions.retryLater'));
             } finally {
               setSubmitting(false);
             }
@@ -177,12 +176,12 @@ export function IntentSuggestionDetailScreen() {
         rejectReason.trim() || undefined
       );
       setRejectDialogVisible(false);
-      Alert.alert('成功', '建议已拒绝', [
-        { text: '确定', onPress: () => navigation.goBack() },
+      Alert.alert(t('intentSuggestions.success'), t('intentSuggestions.rejectSuccess'), [
+        { text: t('intentSuggestions.confirm'), onPress: () => navigation.goBack() },
       ]);
     } catch (err) {
       console.error('Reject failed:', err);
-      Alert.alert('拒绝失败', '请稍后重试');
+      Alert.alert(t('intentSuggestions.rejectFailed'), t('intentSuggestions.retryLater'));
     } finally {
       setSubmitting(false);
     }
@@ -190,12 +189,12 @@ export function IntentSuggestionDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('intentSuggestions.loading')}</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -207,7 +206,7 @@ export function IntentSuggestionDetailScreen() {
 
   return (
     <Provider>
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -232,11 +231,11 @@ export function IntentSuggestionDetailScreen() {
                   styles.typeBadgeText,
                   { color: isCreateIntent ? '#52c41a' : '#1890ff' }
                 ]}>
-                  {isCreateIntent ? '新建意图' : '更新意图'}
+                  {isCreateIntent ? t('intentSuggestions.createIntent') : t('intentSuggestions.updateIntent')}
                 </Text>
               </View>
               <View style={styles.confidenceContainer}>
-                <Text style={styles.confidenceLabel}>LLM 置信度</Text>
+                <Text style={styles.confidenceLabel}>{t('intentSuggestions.llmConfidence')}</Text>
                 <Text style={styles.confidenceValue}>
                   {Math.round(suggestion.llmConfidence * 100)}%
                 </Text>
@@ -248,7 +247,7 @@ export function IntentSuggestionDetailScreen() {
               <View style={styles.reasoningCard}>
                 <View style={styles.reasoningHeader}>
                   <Icon source="robot" size={18} color="#667eea" />
-                  <Text style={styles.reasoningTitle}>AI 分析说明</Text>
+                  <Text style={styles.reasoningTitle}>{t('intentSuggestions.aiAnalysisReason')}</Text>
                 </View>
                 <Text style={styles.reasoningText}>{suggestion.llmReasoning}</Text>
               </View>
@@ -259,10 +258,10 @@ export function IntentSuggestionDetailScreen() {
               <View style={styles.originalCard}>
                 <View style={styles.cardHeader}>
                   <Icon source="format-quote-open" size={18} color="#fa8c16" />
-                  <Text style={styles.cardTitle}>触发输入</Text>
+                  <Text style={styles.cardTitle}>{t('intentSuggestions.triggerInput')}</Text>
                   <View style={styles.frequencyBadge}>
                     <Icon source="fire" size={14} color="#fa8c16" />
-                    <Text style={styles.frequencyText}>{suggestion.frequency} 次</Text>
+                    <Text style={styles.frequencyText}>{suggestion.frequency} {t('intentSuggestions.times')}</Text>
                   </View>
                 </View>
                 <Text style={styles.originalText}>{suggestion.originalInput}</Text>
@@ -272,17 +271,17 @@ export function IntentSuggestionDetailScreen() {
             {/* 可编辑字段 */}
             <View style={styles.editSection}>
               <Text style={styles.sectionTitle}>
-                {isCreateIntent ? '新意图配置' : '更新配置'}
+                {isCreateIntent ? t('intentSuggestions.newIntentConfig') : t('intentSuggestions.updateConfig')}
               </Text>
 
               {/* 意图代码（仅新建时可编辑） */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>意图代码 *</Text>
+                <Text style={styles.fieldLabel}>{t('intentSuggestions.intentCode')} *</Text>
                 <TextInput
                   style={[styles.input, !isCreateIntent && styles.inputDisabled]}
                   value={editedCode}
                   onChangeText={setEditedCode}
-                  placeholder="如: MATERIAL_BATCH_QUERY"
+                  placeholder={t('intentSuggestions.intentCodePlaceholder')}
                   editable={isCreateIntent}
                 />
               </View>
@@ -290,24 +289,24 @@ export function IntentSuggestionDetailScreen() {
               {/* 意图名称（仅新建时显示） */}
               {isCreateIntent && (
                 <View style={styles.fieldGroup}>
-                  <Text style={styles.fieldLabel}>意图名称 *</Text>
+                  <Text style={styles.fieldLabel}>{t('intentSuggestions.intentName')} *</Text>
                   <TextInput
                     style={styles.input}
                     value={editedName}
                     onChangeText={setEditedName}
-                    placeholder="如: 原料批次查询"
+                    placeholder={t('intentSuggestions.intentNamePlaceholder')}
                   />
                 </View>
               )}
 
               {/* 描述 */}
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>描述</Text>
+                <Text style={styles.fieldLabel}>{t('intentSuggestions.description')}</Text>
                 <TextInput
                   style={[styles.input, styles.inputMultiline]}
                   value={editedDescription}
                   onChangeText={setEditedDescription}
-                  placeholder="意图的详细描述..."
+                  placeholder={t('intentSuggestions.descriptionPlaceholder')}
                   multiline
                   numberOfLines={3}
                 />
@@ -316,7 +315,7 @@ export function IntentSuggestionDetailScreen() {
               {/* 关键词 */}
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>
-                  关键词 {isCreateIntent && '*'}
+                  {t('intentSuggestions.keywords')} {isCreateIntent && '*'}
                 </Text>
                 <View style={styles.keywordsContainer}>
                   {editedKeywords.map((keyword, index) => (
@@ -335,7 +334,7 @@ export function IntentSuggestionDetailScreen() {
                     style={[styles.input, styles.keywordInput]}
                     value={newKeyword}
                     onChangeText={setNewKeyword}
-                    placeholder="输入关键词"
+                    placeholder={t('intentSuggestions.keywordPlaceholder')}
                     onSubmitEditing={handleAddKeyword}
                   />
                   <TouchableOpacity
@@ -350,26 +349,26 @@ export function IntentSuggestionDetailScreen() {
 
             {/* 元信息 */}
             <View style={styles.metaSection}>
-              <Text style={styles.sectionTitle}>其他信息</Text>
+              <Text style={styles.sectionTitle}>{t('intentSuggestions.otherInfo')}</Text>
               <View style={styles.metaCard}>
                 <InfoRow
-                  label="建议ID"
+                  label={t('intentSuggestions.suggestionId')}
                   value={suggestion.id.substring(0, 8) + '...'}
                   icon="identifier"
                 />
                 <InfoRow
-                  label="工厂ID"
+                  label={t('intentSuggestions.factoryId')}
                   value={suggestion.factoryId}
                   icon="factory"
                 />
                 <InfoRow
-                  label="创建时间"
-                  value={new Date(suggestion.createdAt).toLocaleString('zh-CN')}
+                  label={t('intentSuggestions.createdAt')}
+                  value={new Date(suggestion.createdAt).toLocaleString(i18n.language)}
                   icon="clock-outline"
                 />
                 {suggestion.suggestedCategory && (
                   <InfoRow
-                    label="建议分类"
+                    label={t('intentSuggestions.suggestedCategory')}
                     value={suggestion.suggestedCategory}
                     icon="tag"
                   />
@@ -390,7 +389,7 @@ export function IntentSuggestionDetailScreen() {
               labelStyle={styles.rejectButtonLabel}
               icon="close"
             >
-              拒绝
+              {t('intentSuggestions.reject')}
             </Button>
             <Button
               mode="contained"
@@ -401,7 +400,7 @@ export function IntentSuggestionDetailScreen() {
               labelStyle={styles.approveButtonLabel}
               icon="check"
             >
-              批准
+              {t('intentSuggestions.approve')}
             </Button>
           </View>
 
@@ -411,32 +410,32 @@ export function IntentSuggestionDetailScreen() {
               visible={rejectDialogVisible}
               onDismiss={() => setRejectDialogVisible(false)}
             >
-              <Dialog.Title>拒绝建议</Dialog.Title>
+              <Dialog.Title>{t('intentSuggestions.rejectSuggestion')}</Dialog.Title>
               <Dialog.Content>
                 <TextInput
                   style={[styles.input, styles.inputMultiline]}
                   value={rejectReason}
                   onChangeText={setRejectReason}
-                  placeholder="请输入拒绝原因（可选）"
+                  placeholder={t('intentSuggestions.rejectReasonPlaceholder')}
                   multiline
                   numberOfLines={3}
                 />
               </Dialog.Content>
               <Dialog.Actions>
-                <Button onPress={() => setRejectDialogVisible(false)}>取消</Button>
+                <Button onPress={() => setRejectDialogVisible(false)}>{t('common.cancel')}</Button>
                 <Button
                   onPress={handleReject}
                   loading={submitting}
                   disabled={submitting}
                   textColor="#e53e3e"
                 >
-                  确认拒绝
+                  {t('intentSuggestions.confirmReject')}
                 </Button>
               </Dialog.Actions>
             </Dialog>
           </Portal>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Provider>
   );
 }
