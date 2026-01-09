@@ -12,19 +12,3 @@
 -keep class com.facebook.react.turbomodule.** { *; }
 
 # Add any project specific keep options here:
-
-# Expo modules - keep all expo classes
--keep class expo.** { *; }
--keep class com.facebook.** { *; }
--keep class com.facebook.hermes.** { *; }
--keep class com.facebook.jni.** { *; }
-
-# Keep all Expo module classes
--keepclassmembers class * {
-    @expo.modules.core.interfaces.ExpoProp *;
-    @expo.modules.core.interfaces.ExpoMethod *;
-}
-
-# Don't warn about missing classes
--dontwarn expo.**
--dontwarn com.facebook.**

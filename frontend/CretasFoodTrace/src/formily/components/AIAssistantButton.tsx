@@ -104,7 +104,45 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
   // 动画
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
-  // AI 助手 Hook
+  // 显示提示 (必须在其他回调之前定义，因为它们依赖此函数)
+  const showSnackbar = useCallback((message: string, type: 'success' | 'error') => {
+    setSnackbarMessage(message);
+    setSnackbarType(type);
+    setSnackbarVisible(true);
+  }, []);
+
+  // 稳定的回调引用 (防止 useFormAIAssistant 无限重渲染)
+  const onAIFillSuccessRef = useRef(onAIFillSuccess);
+  const onAIFillErrorRef = useRef(onAIFillError);
+  onAIFillSuccessRef.current = onAIFillSuccess;
+  onAIFillErrorRef.current = onAIFillError;
+
+  // 稳定的 AI 填充回调
+  const handleAIFill = useCallback((fieldValues: Record<string, unknown>, confidence: number) => {
+    showSnackbar(`AI 已填充 ${Object.keys(fieldValues).length} 个字段 (置信度: ${Math.round(confidence * 100)}%)`, 'success');
+    onAIFillSuccessRef.current?.(fieldValues, confidence);
+  }, [showSnackbar]);
+
+  // 稳定的错误回调
+  const handleAIError = useCallback((err: string) => {
+    showSnackbar(err, 'error');
+    onAIFillErrorRef.current?.(err);
+  }, [showSnackbar]);
+
+  // 稳定的缺失字段回调
+  const handleMissingFields = useCallback((
+    missingFields: string[],
+    suggestedQuestions: string[],
+    followUpQuestion?: string
+  ) => {
+    console.log('[AIAssistantButton] 检测到缺失字段，打开追问弹窗');
+    setCurrentMissingFields(missingFields);
+    setCurrentSuggestedQuestions(suggestedQuestions);
+    setCurrentFollowUpQuestion(followUpQuestion);
+    setIsMissingFieldsPromptVisible(true);
+  }, []);
+
+  // AI 助手 Hook (使用稳定的回调)
   const {
     parseWithAI,
     parseWithOCR,
@@ -117,30 +155,10 @@ export const AIAssistantButton: React.FC<AIAssistantButtonProps> = ({
     entityType,
     schema,
     context,
-    onAIFill: (fieldValues, confidence) => {
-      showSnackbar(`AI 已填充 ${Object.keys(fieldValues).length} 个字段 (置信度: ${Math.round(confidence * 100)}%)`, 'success');
-      onAIFillSuccess?.(fieldValues, confidence);
-    },
-    onError: (err) => {
-      showSnackbar(err, 'error');
-      onAIFillError?.(err);
-    },
-    // P1-1: 缺失字段追问回调
-    onMissingFields: (missingFields, suggestedQuestions, followUpQuestion) => {
-      console.log('[AIAssistantButton] 检测到缺失字段，打开追问弹窗');
-      setCurrentMissingFields(missingFields);
-      setCurrentSuggestedQuestions(suggestedQuestions);
-      setCurrentFollowUpQuestion(followUpQuestion);
-      setIsMissingFieldsPromptVisible(true);
-    },
+    onAIFill: handleAIFill,
+    onError: handleAIError,
+    onMissingFields: handleMissingFields,
   });
-
-  // 显示提示
-  const showSnackbar = useCallback((message: string, type: 'success' | 'error') => {
-    setSnackbarMessage(message);
-    setSnackbarType(type);
-    setSnackbarVisible(true);
-  }, []);
 
   // 切换菜单
   const toggleMenu = useCallback(() => {

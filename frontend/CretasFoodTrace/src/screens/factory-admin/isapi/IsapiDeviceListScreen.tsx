@@ -31,6 +31,8 @@ type IsapiStackParamList = {
   IsapiDeviceList: undefined;
   IsapiDeviceDetail: { deviceId: string };
   IsapiDeviceCreate: undefined;
+  IsapiDeviceDiscovery: undefined;
+  DeviceSetupWizard: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<IsapiStackParamList, 'IsapiDeviceList'>;
@@ -52,22 +54,43 @@ export function IsapiDeviceListScreen() {
   const loadData = useCallback(async () => {
     try {
       setError(null);
-      const [devicesResponse, subStatus] = await Promise.all([
-        isapiApiClient.getIsapiDevices({
+
+      // 分别处理两个 API 调用，避免一个失败影响另一个
+      let devicesResponse: { content: IsapiDevice[] } | null = null;
+      let subStatus: { activeCount: number; activeDevices: string[] } | null = null;
+
+      try {
+        devicesResponse = await isapiApiClient.getIsapiDevices({
           page: 1,
           size: 50,
           keyword: searchKeyword || undefined,
-        }),
-        isapiApiClient.getSubscriptionStatus(),
-      ]);
+        });
+      } catch (deviceErr) {
+        console.error('获取设备列表失败:', deviceErr);
+      }
 
-      let filteredDevices = devicesResponse.content || [];
-      if (selectedStatus) {
-        filteredDevices = filteredDevices.filter(d => d.status === selectedStatus);
+      try {
+        subStatus = await isapiApiClient.getSubscriptionStatus();
+      } catch (subErr) {
+        console.error('获取订阅状态失败:', subErr);
+      }
+
+      // 防御性检查：确保 devicesResponse 及其 content 存在
+      let filteredDevices: IsapiDevice[] = [];
+      if (devicesResponse && devicesResponse.content) {
+        filteredDevices = devicesResponse.content;
+        if (selectedStatus) {
+          filteredDevices = filteredDevices.filter(d => d.status === selectedStatus);
+        }
       }
 
       setDevices(filteredDevices);
-      setSubscriptionStatus(subStatus);
+      setSubscriptionStatus(subStatus || { activeCount: 0, activeDevices: [] });
+
+      // 如果设备列表获取失败，显示错误
+      if (!devicesResponse) {
+        setError('无法获取设备列表');
+      }
     } catch (err) {
       console.error('加载设备列表失败:', err);
       setError('加载设备列表失败');
@@ -273,18 +296,29 @@ export function IsapiDeviceListScreen() {
           <View style={styles.emptyContainer}>
             <Icon source="cctv-off" size={60} color="#a0aec0" />
             <Text style={styles.emptyText}>暂无设备</Text>
-            <Text style={styles.emptySubText}>点击右下角按钮添加摄像头设备</Text>
+            <Text style={styles.emptySubText}>请在管理中心添加摄像头设备</Text>
           </View>
         }
       />
 
-      {/* 添加按钮 */}
+      {/* 配置向导 FAB */}
+      <TouchableOpacity
+        style={styles.fabSecondary}
+        onPress={() => navigation.navigate('DeviceSetupWizard')}
+        activeOpacity={0.8}
+      >
+        <Icon source="wizard-hat" size={22} color="#ffffff" />
+      </TouchableOpacity>
+
+      {/* 添加设备 FAB */}
       <TouchableOpacity
         style={styles.fab}
         onPress={() => navigation.navigate('IsapiDeviceCreate')}
+        activeOpacity={0.8}
       >
         <Icon source="plus" size={28} color="#ffffff" />
       </TouchableOpacity>
+
     </SafeAreaView>
   );
 }
@@ -524,6 +558,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#3182ce',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  fabSecondary: {
+    position: 'absolute',
+    right: 20,
+    bottom: 100,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#48bb78',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#48bb78',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,

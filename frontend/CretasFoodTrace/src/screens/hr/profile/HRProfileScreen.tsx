@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 import { useAuthStore } from '../../../store/authStore';
 import { HR_THEME } from '../../../types/hrNavigation';
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../../store/languageStore';
 
 interface MenuItem {
   id: string;
@@ -32,6 +33,12 @@ export default function HRProfileScreen() {
   const { user, logout } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const { t } = useTranslation('hr');
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   const handleLogout = () => {
     Alert.alert(t('profile.logoutConfirm'), t('profile.logoutMessage'), [
@@ -69,6 +76,7 @@ export default function HRProfileScreen() {
     {
       title: t('profile.sections.system'),
       items: [
+        { id: 'language', icon: 'translate', label: t('profile.menu.language') || '语言', onPress: toggleLanguage },
         { id: 'settings', icon: 'cog', label: t('profile.menu.settings') },
         { id: 'help', icon: 'help-circle', label: t('profile.menu.help') },
         { id: 'about', icon: 'information', label: t('profile.menu.about') },
@@ -102,7 +110,10 @@ export default function HRProfileScreen() {
             <Text style={styles.badgeText}>{item.badge}</Text>
           </View>
         )}
-        <MaterialCommunityIcons name="chevron-right" size={22} color={HR_THEME.textMuted} />
+        {item.id === 'language' && (
+          <Text style={styles.languageText}>{LANGUAGE_NAMES[language]}</Text>
+        )}
+        {item.id !== 'language' && <MaterialCommunityIcons name="chevron-right" size={22} color={HR_THEME.textMuted} />}
       </View>
     </TouchableOpacity>
   );
@@ -224,6 +235,7 @@ const styles = StyleSheet.create({
   },
   menuLabel: { flex: 1, fontSize: 15, color: HR_THEME.textPrimary, marginLeft: 12 },
   menuRight: { flexDirection: 'row', alignItems: 'center' },
+  languageText: { fontSize: 14, color: HR_THEME.textMuted, marginRight: 4 },
   badge: {
     minWidth: 18, height: 18, borderRadius: 9,
     backgroundColor: HR_THEME.danger, justifyContent: 'center', alignItems: 'center',

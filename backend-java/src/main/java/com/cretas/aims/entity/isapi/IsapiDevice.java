@@ -74,6 +74,9 @@ public class IsapiDevice extends BaseEntity {
     @Column(name = "serial_number", length = 100)
     private String serialNumber;
 
+    @Column(name = "mac_address", length = 17)
+    private String macAddress;
+
     @Column(name = "firmware_version", length = 50)
     private String firmwareVersion;
 

@@ -1,6 +1,14 @@
 {
   "title": "Management Center",
   "subtitle": "Factory Configuration & System Management",
+  "deviceCenter": {
+    "title": "Device Center",
+    "tabs": {
+      "scale": "Scales",
+      "camera": "Cameras",
+      "equipment": "Equipment"
+    }
+  },
   "sections": {
     "productionConfig": {
       "title": "Production Config",
@@ -483,10 +491,23 @@
   "conversionRate": {
     "title": "Conversion Rate Management",
     "searchPlaceholder": "Search material or product name",
+    "products": "Products",
+    "avgConversionRate": "Avg Conversion",
+    "avgWastageRate": "Avg Wastage",
+    "notConfigured": "Not configured",
+    "infoText": "Click material card to view details and configure conversion rates",
+    "materialList": "Material List",
+    "empty": "No data",
+    "errors": {
+      "noFactory": "Unable to get factory info, please login again"
+    },
     "stats": {
       "total": "Total Configs",
       "materials": "Material Types",
-      "products": "Product Types"
+      "products": "Product Types",
+      "materialTypes": "Material Types",
+      "productTypes": "Product Types",
+      "configured": "Configured"
     },
     "empty": {
       "noRates": "No conversion rates yet",
@@ -1158,6 +1179,37 @@
       "row": "Row {{number}}"
     }
   },
+  "aiCostAnalysis": {
+    "title": "Cost Analysis",
+    "timeRange": "Time Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
+    "analysisDimension": "Analysis Dimension",
+    "overallAnalysis": "Overall Analysis",
+    "dailyAnalysis": "Daily Analysis",
+    "weeklyAnalysis": "Weekly Analysis",
+    "realtimeStreaming": "Real-time Streaming",
+    "streamingOnHint": "When enabled, you can see AI analysis process in real-time",
+    "streamingOffHint": "When disabled, will wait for complete result",
+    "startAnalysis": "Start Analysis",
+    "analyzing": "Analyzing...",
+    "startingAnalysis": "Starting analysis...",
+    "aiThinkingProcess": "AI Thinking Process",
+    "aiAnswering": "AI is answering...",
+    "analysisResult": "Analysis Result",
+    "quota": "Remaining quota: {{remaining}}/{{total}}",
+    "responseTime": "Response time: {{time}}ms{{cached}}",
+    "cached": "cached",
+    "noResult": "No analysis result",
+    "analysisFailed": "Analysis failed, please try again later",
+    "networkError": "Network error, please check connection",
+    "quickMode": "Quick Mode",
+    "deepMode": "Deep Analysis",
+    "estimated": "Est."
+  },
   "aiSettings": {
     "title": "AI Analysis Settings",
     "loading": "Loading settings...",
@@ -1233,6 +1285,88 @@
       "loadFailed": "Failed to load settings",
       "saveSuccess": "Settings saved",
       "saveFailed": "Failed to save"
+    }
+  },
+  "createPlan": {
+    "title": "Create Production Plan",
+    "planType": "Plan Type",
+    "inventoryProduction": "Inventory Production",
+    "useExistingMaterials": "Use Existing Materials",
+    "futurePlan": "Future Plan",
+    "pendingMaterials": "Pending Materials",
+    "productTypeRequired": "Product Type *",
+    "selectProductType": "Please select product type",
+    "selectProductTypePlaceholder": "Please select product type",
+    "noProductTypes": "No product types available",
+    "plannedQuantityRequired": "Planned Quantity *",
+    "enterValidQuantity": "Please enter a valid quantity",
+    "enterQuantity": "Please enter quantity",
+    "plannedDateRequired": "Planned Date *",
+    "selectPlanDate": "Please select plan date",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "daysLater": "{{days}} days later",
+    "customerOrderOptional": "Customer Order Number (Optional)",
+    "enterCustomerOrder": "Please enter customer order number",
+    "notesOptional": "Notes (Optional)",
+    "enterNotes": "Please enter notes",
+    "createPlanBtn": "Create Production Plan",
+    "creating": "Creating...",
+    "createSuccess": "Production plan created successfully",
+    "createFailed": "Failed to create production plan",
+    "networkError": "Network error, please try again later"
+  },
+  "equipmentManagement": {
+    "title": "Equipment Management",
+    "searchPlaceholder": "Search equipment name or code...",
+    "filters": {
+      "all": "All"
+    },
+    "empty": {
+      "title": "No equipment"
+    },
+    "info": {
+      "type": "Type",
+      "location": "Location",
+      "model": "Model",
+      "operator": "Operator"
+    },
+    "actions": {
+      "create": "Add Equipment",
+      "status": "Status",
+      "detail": "Details"
+    },
+    "statusMenu": {
+      "running": "Running",
+      "maintenance": "Maintenance",
+      "inactive": "Inactive"
+    },
+    "dialogs": {
+      "createTitle": "Add Equipment",
+      "editTitle": "Edit Equipment",
+      "deleteTitle": "Delete Equipment",
+      "deleteMessage": "Are you sure you want to delete this equipment? This action cannot be undone.",
+      "fields": {
+        "name": "Equipment Name",
+        "code": "Equipment Code",
+        "model": "Model",
+        "location": "Location",
+        "operator": "Operator",
+        "selectOperator": "Select Operator",
+        "loadingOperators": "Loading...",
+        "noOperator": "No Operator",
+        "notes": "Notes"
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "save": "Save",
+        "delete": "Delete"
+      }
+    },
+    "messages": {
+      "loadFailed": "Load Failed",
+      "factoryIdError": "Unable to get factory information"
     }
   }
 }

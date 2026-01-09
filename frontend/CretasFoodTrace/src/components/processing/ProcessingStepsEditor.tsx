@@ -70,19 +70,27 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
     fetchStageOptions();
   }, []);
 
+  // 默认加工环节选项
+  const defaultStageOptions: ProcessingStageOption[] = [
+    { value: 'RECEIVING', label: '接收', description: '原料接收验收' },
+    { value: 'SLICING', label: '切片', description: '机械切片' },
+    { value: 'PACKAGING', label: '包装', description: '成品包装' },
+  ];
+
   const fetchStageOptions = async () => {
     try {
       setLoadingOptions(true);
       const options = await productTypeApiClient.getProcessingStages(factoryId);
-      setStageOptions(options);
+      // 确保 options 是数组，否则使用默认选项
+      if (Array.isArray(options) && options.length > 0) {
+        setStageOptions(options);
+      } else {
+        setStageOptions(defaultStageOptions);
+      }
     } catch (error) {
       console.error('加载加工环节类型失败:', error);
       // 使用默认选项
-      setStageOptions([
-        { value: 'RECEIVING', label: '接收', description: '原料接收验收' },
-        { value: 'SLICING', label: '切片', description: '机械切片' },
-        { value: 'PACKAGING', label: '包装', description: '成品包装' },
-      ]);
+      setStageOptions(defaultStageOptions);
     } finally {
       setLoadingOptions(false);
     }
@@ -91,7 +99,7 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
   // 获取环节类型的显示名称
   const getStageLabel = useCallback(
     (stageType: string) => {
-      const option = stageOptions.find((o) => o.value === stageType);
+      const option = (stageOptions || []).find((o) => o.value === stageType);
       return option?.label || stageType;
     },
     [stageOptions]
@@ -258,7 +266,7 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
           <View style={styles.stageSelectModal}>
             <Text style={styles.stageSelectTitle}>选择加工环节</Text>
             <ScrollView style={styles.stageSelectList}>
-              {stageOptions.map((option) => (
+              {(stageOptions || []).map((option) => (
                 <TouchableOpacity
                   key={option.value}
                   style={[

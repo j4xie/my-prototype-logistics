@@ -109,6 +109,60 @@ public class ConversationServiceImpl implements ConversationService {
 
     @Override
     @Transactional
+    public ConversationResponse startParameterCollection(
+            String factoryId,
+            Long userId,
+            String intentCode,
+            String intentName,
+            List<RequiredParameter> requiredParameters,
+            List<String> clarificationQuestions) {
+
+        log.info("开始参数收集对话: factory={}, user={}, intent={}, params={}",
+                factoryId, userId, intentCode, requiredParameters.size());
+
+        // 取消之前的活跃会话
+        sessionRepository.cancelActiveSessionsForUser(factoryId, userId, LocalDateTime.now());
+
+        // 构建初始收集问题
+        String initialQuestion = buildParameterCollectionMessage(
+                intentName, requiredParameters, clarificationQuestions);
+
+        // 转换参数类型
+        List<ConversationSession.RequiredParameter> sessionParams = requiredParameters.stream()
+                .map(p -> ConversationSession.RequiredParameter.builder()
+                        .name(p.getName())
+                        .label(p.getLabel())
+                        .type(p.getType())
+                        .validationHint(p.getValidationHint())
+                        .collected(false)
+                        .build())
+                .collect(Collectors.toList());
+
+        // 创建参数收集会话
+        ConversationSession session = ConversationSession.createForParameterCollection(
+                factoryId, userId, intentCode, sessionParams, initialQuestion);
+        session.setMaxRounds(maxRounds);
+        session.setTimeoutMinutes(timeoutMinutes);
+
+        sessionRepository.save(session);
+
+        log.info("参数收集会话已创建: sessionId={}, intentCode={}", session.getSessionId(), intentCode);
+
+        return ConversationResponse.builder()
+                .sessionId(session.getSessionId())
+                .currentRound(session.getCurrentRound())
+                .maxRounds(session.getMaxRounds())
+                .status(session.getStatus())
+                .completed(false)
+                .message(initialQuestion)
+                .intentCode(intentCode)
+                .intentName(intentName)
+                .requiresConfirmation(true)
+                .build();
+    }
+
+    @Override
+    @Transactional
     public ConversationResponse continueConversation(String sessionId, String userReply) {
         log.info("继续多轮对话: session={}, reply={}", sessionId, truncate(userReply, 50));
 
@@ -146,6 +200,98 @@ public class ConversationServiceImpl implements ConversationService {
                     .build();
         }
 
+        // 根据会话模式分发处理
+        if (session.isParameterCollectionMode()) {
+            return continueParameterCollection(session, userReply);
+        } else {
+            return continueIntentRecognition(session, userReply);
+        }
+    }
+
+    /**
+     * 继续参数收集对话
+     */
+    private ConversationResponse continueParameterCollection(ConversationSession session, String userReply) {
+        log.info("继续参数收集: session={}, reply={}", session.getSessionId(), truncate(userReply, 50));
+
+        // 添加用户消息
+        session.addUserMessage(userReply);
+
+        // 进入下一轮
+        if (!session.nextRound()) {
+            session.maxRoundsReached();
+            sessionRepository.save(session);
+            return ConversationResponse.builder()
+                    .sessionId(session.getSessionId())
+                    .currentRound(session.getCurrentRound())
+                    .maxRounds(session.getMaxRounds())
+                    .status(SessionStatus.MAX_ROUNDS_REACHED)
+                    .completed(false)
+                    .intentCode(session.getKnownIntentCode())
+                    .message("对话已达最大轮次。请尝试重新开始操作。")
+                    .build();
+        }
+
+        // 使用 LLM 提取参数值
+        LlmParameterExtractionResult extractionResult = extractParametersWithLlm(session, userReply);
+
+        // 更新收集到的参数
+        if (extractionResult.getExtractedParams() != null) {
+            for (Map.Entry<String, String> entry : extractionResult.getExtractedParams().entrySet()) {
+                if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                    session.addCollectedParameter(entry.getKey(), entry.getValue());
+                    log.info("收集到参数: {}={}", entry.getKey(), entry.getValue());
+                }
+            }
+        }
+
+        // 检查是否所有参数都已收集
+        if (session.allParametersCollected()) {
+            session.completeParameterCollection();
+            sessionRepository.save(session);
+
+            String message = String.format("好的，已收集到所有必需信息。正在为您执行「%s」...",
+                    session.getKnownIntentCode());
+            session.addAssistantMessage(message);
+
+            log.info("参数收集完成: session={}, intent={}, params={}",
+                    session.getSessionId(), session.getKnownIntentCode(), session.getCollectedParameters());
+
+            return ConversationResponse.builder()
+                    .sessionId(session.getSessionId())
+                    .currentRound(session.getCurrentRound())
+                    .maxRounds(session.getMaxRounds())
+                    .status(SessionStatus.COMPLETED)
+                    .completed(true)
+                    .message(message)
+                    .intentCode(session.getKnownIntentCode())
+                    .confidence(1.0)
+                    .requiresConfirmation(false)
+                    .build();
+        }
+
+        // 生成下一个参数收集问题
+        String nextQuestion = buildNextParameterQuestion(session);
+        session.addAssistantMessage(nextQuestion);
+
+        sessionRepository.save(session);
+
+        return ConversationResponse.builder()
+                .sessionId(session.getSessionId())
+                .currentRound(session.getCurrentRound())
+                .maxRounds(session.getMaxRounds())
+                .status(session.getStatus())
+                .completed(false)
+                .message(nextQuestion)
+                .intentCode(session.getKnownIntentCode())
+                .requiresConfirmation(true)
+                .build();
+    }
+
+    /**
+     * 继续意图识别对话 (原有逻辑)
+     */
+    private ConversationResponse continueIntentRecognition(ConversationSession session, String userReply) {
         // 添加用户消息
         session.addUserMessage(userReply);
 
@@ -166,7 +312,7 @@ public class ConversationServiceImpl implements ConversationService {
             session.maxRoundsReached();
             sessionRepository.save(session);
             return ConversationResponse.builder()
-                    .sessionId(sessionId)
+                    .sessionId(session.getSessionId())
                     .currentRound(session.getCurrentRound())
                     .maxRounds(session.getMaxRounds())
                     .status(SessionStatus.MAX_ROUNDS_REACHED)
@@ -643,5 +789,334 @@ public class ConversationServiceImpl implements ConversationService {
         private String message;
         private List<CandidateIntent> candidates;
         private String reasoning;
+    }
+
+    /**
+     * LLM 参数提取结果
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    private static class LlmParameterExtractionResult {
+        /** 提取到的参数 (参数名 -> 参数值) */
+        private Map<String, String> extractedParams;
+        /** LLM 推理过程 */
+        private String reasoning;
+        /** 是否成功提取 */
+        private boolean successful;
+        /** 错误消息 (如果失败) */
+        private String errorMessage;
+    }
+
+    // ========== 参数收集辅助方法 ==========
+
+    /**
+     * 构建参数收集初始消息
+     *
+     * @param intentName 意图名称
+     * @param requiredParameters 需要收集的参数列表
+     * @param clarificationQuestions Handler 提供的澄清问题
+     * @return 初始收集消息
+     */
+    private String buildParameterCollectionMessage(
+            String intentName,
+            List<RequiredParameter> requiredParameters,
+            List<String> clarificationQuestions) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("好的，我来帮您执行「").append(intentName != null ? intentName : "操作").append("」。\n\n");
+
+        // 如果 Handler 提供了澄清问题，直接使用
+        if (clarificationQuestions != null && !clarificationQuestions.isEmpty()) {
+            sb.append("需要您提供以下信息：\n");
+            for (String question : clarificationQuestions) {
+                sb.append("• ").append(question).append("\n");
+            }
+        } else if (requiredParameters != null && !requiredParameters.isEmpty()) {
+            // 否则根据参数列表生成问题
+            sb.append("请提供以下必需信息：\n");
+            for (RequiredParameter param : requiredParameters) {
+                String label = param.getLabel() != null ? param.getLabel() : param.getName();
+                sb.append("• ").append(label);
+                if (param.getValidationHint() != null && !param.getValidationHint().isEmpty()) {
+                    sb.append(" (").append(param.getValidationHint()).append(")");
+                }
+                sb.append("\n");
+            }
+        }
+
+        sb.append("\n请直接告诉我，我会帮您完成操作。");
+        return sb.toString();
+    }
+
+    /**
+     * 使用 LLM 从用户输入中提取参数值
+     *
+     * @param session 当前会话
+     * @param userReply 用户回复
+     * @return 提取结果
+     */
+    private LlmParameterExtractionResult extractParametersWithLlm(ConversationSession session, String userReply) {
+        List<ConversationSession.RequiredParameter> pendingParams = session.getRequiredParameters();
+        if (pendingParams == null || pendingParams.isEmpty()) {
+            return LlmParameterExtractionResult.builder()
+                    .extractedParams(new HashMap<>())
+                    .successful(true)
+                    .build();
+        }
+
+        // 过滤出未收集的参数
+        List<ConversationSession.RequiredParameter> uncollectedParams = pendingParams.stream()
+                .filter(p -> !p.isCollected())
+                .collect(Collectors.toList());
+
+        if (uncollectedParams.isEmpty()) {
+            return LlmParameterExtractionResult.builder()
+                    .extractedParams(new HashMap<>())
+                    .successful(true)
+                    .build();
+        }
+
+        // 如果 DashScope 不可用，尝试简单提取
+        if (dashScopeClient == null || !dashScopeClient.isAvailable()) {
+            log.debug("DashScope 不可用，使用简单提取");
+            return extractParametersSimple(uncollectedParams, userReply);
+        }
+
+        try {
+            // 构建 LLM 提示词
+            String systemPrompt = buildParameterExtractionPrompt(uncollectedParams, session);
+            String response = dashScopeClient.chat(systemPrompt, "用户输入: " + userReply);
+
+            // 解析 LLM 响应
+            return parseParameterExtractionResponse(response, uncollectedParams);
+
+        } catch (Exception e) {
+            log.error("LLM 参数提取失败: {}", e.getMessage(), e);
+            // 降级到简单提取
+            return extractParametersSimple(uncollectedParams, userReply);
+        }
+    }
+
+    /**
+     * 构建参数提取提示词
+     */
+    private String buildParameterExtractionPrompt(
+            List<ConversationSession.RequiredParameter> params,
+            ConversationSession session) {
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个参数提取助手。请从用户输入中提取以下参数值。\n\n");
+        sb.append("## 意图: ").append(session.getKnownIntentCode()).append("\n\n");
+
+        sb.append("## 需要提取的参数:\n");
+        for (ConversationSession.RequiredParameter param : params) {
+            sb.append(String.format("- **%s** (%s): %s\n",
+                    param.getName(),
+                    param.getLabel() != null ? param.getLabel() : param.getName(),
+                    param.getType() != null ? param.getType() : "string"));
+            if (param.getValidationHint() != null) {
+                sb.append("  提示: ").append(param.getValidationHint()).append("\n");
+            }
+        }
+
+        sb.append("\n## 输出格式 (JSON):\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"extracted\": {\n");
+        sb.append("    \"参数名\": \"提取的值或null\"\n");
+        sb.append("  },\n");
+        sb.append("  \"reasoning\": \"提取理由\"\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+        sb.append("仅返回 JSON，对于无法提取的参数，值设为 null。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析 LLM 参数提取响应
+     */
+    private LlmParameterExtractionResult parseParameterExtractionResponse(
+            String response,
+            List<ConversationSession.RequiredParameter> expectedParams) {
+
+        Map<String, String> extractedParams = new HashMap<>();
+
+        try {
+            // 提取 JSON
+            Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
+            Matcher matcher = pattern.matcher(response);
+
+            if (!matcher.find()) {
+                log.warn("无法从参数提取响应中提取 JSON");
+                return LlmParameterExtractionResult.builder()
+                        .extractedParams(extractedParams)
+                        .successful(false)
+                        .errorMessage("无法解析 LLM 响应")
+                        .build();
+            }
+
+            JsonNode json = objectMapper.readTree(matcher.group());
+            String reasoning = json.has("reasoning") ? json.get("reasoning").asText() : null;
+
+            if (json.has("extracted") && json.get("extracted").isObject()) {
+                JsonNode extracted = json.get("extracted");
+                for (ConversationSession.RequiredParameter param : expectedParams) {
+                    if (extracted.has(param.getName())) {
+                        JsonNode valueNode = extracted.get(param.getName());
+                        if (!valueNode.isNull()) {
+                            String value = valueNode.asText();
+                            if (value != null && !value.isEmpty() && !"null".equalsIgnoreCase(value)) {
+                                extractedParams.put(param.getName(), value);
+                            }
+                        }
+                    }
+                }
+            }
+
+            return LlmParameterExtractionResult.builder()
+                    .extractedParams(extractedParams)
+                    .reasoning(reasoning)
+                    .successful(true)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("解析参数提取响应失败: {}", e.getMessage(), e);
+            return LlmParameterExtractionResult.builder()
+                    .extractedParams(extractedParams)
+                    .successful(false)
+                    .errorMessage(e.getMessage())
+                    .build();
+        }
+    }
+
+    /**
+     * 简单参数提取 (不使用 LLM)
+     *
+     * 针对单参数场景，直接使用用户输入作为参数值
+     */
+    private LlmParameterExtractionResult extractParametersSimple(
+            List<ConversationSession.RequiredParameter> params,
+            String userReply) {
+
+        Map<String, String> extractedParams = new HashMap<>();
+        String trimmedReply = userReply.trim();
+
+        // 如果只有一个未收集的参数，直接使用用户输入
+        if (params.size() == 1) {
+            ConversationSession.RequiredParameter param = params.get(0);
+            if (!trimmedReply.isEmpty()) {
+                // 基本验证
+                if (isValidParameterValue(param, trimmedReply)) {
+                    extractedParams.put(param.getName(), trimmedReply);
+                }
+            }
+        } else {
+            // 多参数场景: 尝试按行/逗号分割
+            String[] parts = trimmedReply.split("[,，;；\\n]+");
+            int partIndex = 0;
+            for (ConversationSession.RequiredParameter param : params) {
+                if (partIndex < parts.length) {
+                    String value = parts[partIndex].trim();
+                    // 移除可能的标签前缀 (如 "批次号: XXX")
+                    int colonIndex = value.indexOf(':');
+                    if (colonIndex == -1) colonIndex = value.indexOf('：');
+                    if (colonIndex > 0 && colonIndex < value.length() - 1) {
+                        value = value.substring(colonIndex + 1).trim();
+                    }
+                    if (!value.isEmpty() && isValidParameterValue(param, value)) {
+                        extractedParams.put(param.getName(), value);
+                    }
+                    partIndex++;
+                }
+            }
+        }
+
+        return LlmParameterExtractionResult.builder()
+                .extractedParams(extractedParams)
+                .successful(true)
+                .reasoning("简单提取模式")
+                .build();
+    }
+
+    /**
+     * 验证参数值是否符合类型要求
+     */
+    private boolean isValidParameterValue(ConversationSession.RequiredParameter param, String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+
+        String type = param.getType();
+        if (type == null) {
+            return true; // 无类型限制
+        }
+
+        switch (type.toLowerCase()) {
+            case "number":
+            case "integer":
+            case "int":
+                return value.matches("-?\\d+(\\.\\d+)?");
+            case "date":
+                return value.matches("\\d{4}-\\d{2}-\\d{2}") ||
+                       value.matches("\\d{4}/\\d{2}/\\d{2}") ||
+                       value.matches("\\d{8}");
+            case "boolean":
+            case "bool":
+                return value.matches("(?i)true|false|yes|no|是|否|1|0");
+            case "uuid":
+                return value.matches("[a-fA-F0-9-]{36}");
+            default:
+                return true; // string 或其他类型
+        }
+    }
+
+    /**
+     * 构建下一个参数收集问题
+     *
+     * @param session 当前会话
+     * @return 下一个问题
+     */
+    private String buildNextParameterQuestion(ConversationSession session) {
+        Optional<ConversationSession.RequiredParameter> nextParamOpt = session.getNextPendingParameter();
+
+        if (nextParamOpt.isEmpty()) {
+            return "好的，信息收集完成。正在处理您的请求...";
+        }
+
+        ConversationSession.RequiredParameter nextParam = nextParamOpt.get();
+
+        // 获取已收集的参数用于上下文
+        Map<String, String> collected = session.getCollectedParameters();
+        int collectedCount = collected != null ? collected.size() : 0;
+        List<ConversationSession.RequiredParameter> allParams = session.getRequiredParameters();
+        int totalCount = allParams != null ? allParams.size() : 0;
+
+        StringBuilder sb = new StringBuilder();
+
+        // 如果已收集部分参数，先确认
+        if (collectedCount > 0) {
+            sb.append("好的，已记录。");
+        }
+
+        // 提示还需要的参数
+        int remainingCount = totalCount - collectedCount - 1; // -1 是因为下面会问当前参数
+        if (remainingCount > 0) {
+            sb.append(String.format("还需要 %d 项信息。\n\n", remainingCount + 1));
+        } else {
+            sb.append("\n\n");
+        }
+
+        // 生成当前参数的问题
+        String label = nextParam.getLabel() != null ? nextParam.getLabel() : nextParam.getName();
+        sb.append("请提供 **").append(label).append("**");
+
+        if (nextParam.getValidationHint() != null && !nextParam.getValidationHint().isEmpty()) {
+            sb.append("\n").append("(").append(nextParam.getValidationHint()).append(")");
+        }
+
+        return sb.toString();
     }
 }

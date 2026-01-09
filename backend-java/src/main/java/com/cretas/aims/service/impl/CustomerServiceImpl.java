@@ -15,6 +15,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
@@ -46,6 +49,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "customerList", key = "#factoryId"),
+        @CacheEvict(value = "customerStats", key = "#factoryId")
+    })
     public CustomerDTO createCustomer(String factoryId, CreateCustomerRequest request, Long userId) {
         log.info("创建客户: factoryId={}, name={}", factoryId, request.getName());
         // 检查客户名称是否重复
@@ -71,6 +78,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "customerList", key = "#factoryId"),
+        @CacheEvict(value = "customerStats", key = "#factoryId")
+    })
     public CustomerDTO updateCustomer(String factoryId, String customerId, CreateCustomerRequest request) {
         log.info("更新客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -90,6 +101,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "customerList", key = "#factoryId"),
+        @CacheEvict(value = "customerStats", key = "#factoryId")
+    })
     public void deleteCustomer(String factoryId, String customerId) {
         log.info("删除客户: factoryId={}, customerId={}", factoryId, customerId);
         Customer customer = customerRepository.findByIdAndFactoryId(customerId, factoryId)
@@ -136,6 +151,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Cacheable(value = "customerList", key = "#factoryId")
     public List<CustomerDTO> getActiveCustomers(String factoryId) {
         List<Customer> customers = customerRepository.findByFactoryIdAndIsActive(factoryId, true);
         return customers.stream()
@@ -169,6 +185,10 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "customerList", key = "#factoryId"),
+        @CacheEvict(value = "customerStats", key = "#factoryId")
+    })
     public CustomerDTO toggleCustomerStatus(String factoryId, String customerId, Boolean isActive) {
         log.info("切换客户状态: factoryId={}, customerId={}, isActive={}",
                 factoryId, customerId, isActive);
@@ -183,6 +203,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "customerStats", key = "#factoryId")
     public CustomerDTO updateCustomerRating(String factoryId, String customerId,
                                            Integer rating, String notes) {
         log.info("更新客户评级: factoryId={}, customerId={}, rating={}",
@@ -201,6 +222,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "customerStats", key = "#factoryId")
     public CustomerDTO updateCreditLimit(String factoryId, String customerId, BigDecimal creditLimit) {
         log.info("更新客户信用额度: factoryId={}, customerId={}, creditLimit={}",
                 factoryId, customerId, creditLimit);
@@ -217,6 +239,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "customerStats", key = "#factoryId")
     public CustomerDTO updateCurrentBalance(String factoryId, String customerId, BigDecimal balance) {
         log.info("更新客户当前余额: factoryId={}, customerId={}, balance={}",
                 factoryId, customerId, balance);
@@ -498,6 +521,7 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     @Override
+    @Cacheable(value = "customerStats", key = "#factoryId")
     public Map<String, Object> getOverallCustomerStatistics(String factoryId) {
         Map<String, Object> statistics = new HashMap<>();
         // 客户总数

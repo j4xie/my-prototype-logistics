@@ -1,0 +1,16 @@
+{
+    "gateway_id": "edge-factory-001",
+    "device_id": "041c830f-d530-4c4f-a655-8401b828cb25",
+    "backend_url": "http://139.196.165.140:10010",
+    "capture_interval": 60,
+    "heartbeat_interval": 30,
+    "enable_capture": true,
+    "enable_events": true,
+    "camera": {
+        "ip": "192.168.3.227",
+        "port": 80,
+        "username": "admin",
+        "password": "1585785322@Qq",
+        "protocol": "http"
+    }
+}

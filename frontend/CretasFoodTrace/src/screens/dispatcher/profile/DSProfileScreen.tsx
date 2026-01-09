@@ -28,6 +28,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../../store/languageStore';
+import { useAuthStore } from '../../../store/authStore';
+import { CommonActions } from '@react-navigation/native';
 
 // 主题颜色
 const DISPATCHER_THEME = {
@@ -198,6 +201,12 @@ const accountMenuItems: MenuItem[] = [
 
 const systemMenuItems: MenuItem[] = [
   {
+    id: 'language',
+    title: '语言切换',
+    icon: 'language-outline',
+    iconType: 'ionicons',
+  },
+  {
     id: 'schedulingSettings',
     title: '排产设置',
     icon: 'settings-outline',
@@ -230,6 +239,13 @@ export default function DSProfileScreen() {
   const [profile] = useState<UserProfile>(defaultProfile);
   const [todayStats] = useState<TodayStats>(defaultTodayStats);
   const [metrics] = useState<PerformanceMetric[]>(defaultPerformanceMetrics);
+  const { language, setLanguage } = useLanguageStore();
+  const logout = useAuthStore((state) => state.logout);
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   // 下拉刷新
   const onRefresh = useCallback(async () => {
@@ -250,9 +266,13 @@ export default function DSProfileScreen() {
           text: '确定',
           style: 'destructive',
           onPress: () => {
-            // TODO: 调用登出API并清除token
-            // authService.logout();
-            console.log('Logout');
+            logout();
+            navigation.dispatch(
+              CommonActions.reset({
+                index: 0,
+                routes: [{ name: 'Auth' }],
+              })
+            );
           },
         },
       ]
@@ -261,6 +281,10 @@ export default function DSProfileScreen() {
 
   // 菜单项点击 - 处理跨 Tab 导航
   const handleMenuPress = (item: MenuItem) => {
+    if (item.id === 'language') {
+      toggleLanguage();
+      return;
+    }
     if (item.screen) {
       // 跨 Tab 导航映射
       const crossTabNavigation: Record<string, { tab: string; screen: string }> = {
@@ -355,7 +379,10 @@ export default function DSProfileScreen() {
             {item.badge}
           </Text>
         )}
-        <Ionicons name="chevron-forward" size={18} color="#ccc" />
+        {item.id === 'language' && (
+          <Text style={styles.languageText}>{LANGUAGE_NAMES[language]}</Text>
+        )}
+        {item.id !== 'language' && <Ionicons name="chevron-forward" size={18} color="#ccc" />}
       </View>
     </TouchableOpacity>
   );
@@ -657,6 +684,11 @@ const styles = StyleSheet.create({
   },
   menuBadge: {
     fontSize: 11,
+  },
+  languageText: {
+    fontSize: 13,
+    color: DISPATCHER_THEME.secondary,
+    marginRight: 4,
   },
   logoutButton: {
     backgroundColor: '#fff',

@@ -14,6 +14,43 @@ import {
   IFlyTekResult,
 } from './types';
 import { IFLYTEK_CONFIG, IFLYTEK_WSS_URL, AUDIO_RECORDING_CONFIG } from './config';
+import { API_BASE_URL } from '../../constants/config';
+
+/**
+ * 讯飞兼容的录音配置
+ * 讯飞要求: raw PCM, 16000Hz, 单声道
+ */
+const IFLYTEK_RECORDING_OPTIONS: Audio.RecordingOptions = {
+  android: {
+    extension: '.wav',
+    outputFormat: Audio.AndroidOutputFormat.DEFAULT,
+    audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
+    sampleRate: 16000,
+    numberOfChannels: 1,
+    bitRate: 256000,
+  },
+  ios: {
+    extension: '.wav',
+    outputFormat: Audio.IOSOutputFormat.LINEARPCM,
+    audioQuality: Audio.IOSAudioQuality.HIGH,
+    sampleRate: 16000,
+    numberOfChannels: 1,
+    bitRate: 256000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: 'audio/wav',
+    bitsPerSecond: 256000,
+  },
+};
+
+/**
+ * WAV 文件头大小 (字节)
+ * 标准 WAV 文件头为 44 字节，需要跳过才能获取纯 PCM 数据
+ */
+const WAV_HEADER_SIZE = 44;
 
 type ResultCallback = (result: SpeechRecognitionResult) => void;
 type StatusCallback = (status: SpeechRecognitionStatus) => void;
@@ -115,19 +152,34 @@ class SpeechRecognitionService {
         throw new Error('未获得录音权限');
       }
 
-      // 设置音频模式
+      // 如果有正在进行的录音，先停止
+      if (this.recording) {
+        try {
+          await this.recording.stopAndUnloadAsync();
+        } catch (e) {
+          // 忽略错误
+        }
+        this.recording = null;
+      }
+
+      // 设置音频模式 - 必须同时设置 iOS 和 Android 选项
       await Audio.setAudioModeAsync({
+        // iOS 选项
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
+        // Android 选项
+        staysActiveInBackground: false,
+        shouldDuckAndroid: true,
+        playThroughEarpieceAndroid: false,
       });
 
       // 重置状态
       this.recognizedText = '';
       this.audioChunks = [];
 
-      // 开始录音
+      // 开始录音 - 使用讯飞兼容配置 (16000Hz, 单声道, PCM)
       const { recording } = await Audio.Recording.createAsync(
-        AUDIO_RECORDING_CONFIG
+        IFLYTEK_RECORDING_OPTIONS
       );
       this.recording = recording;
 
@@ -208,10 +260,17 @@ class SpeechRecognitionService {
    */
   private async sendAudioToIFlyTek(audioUri: string): Promise<SpeechRecognitionResult> {
     try {
-      // 读取音频文件
-      const audioBase64 = await FileSystem.readAsStringAsync(audioUri, {
+      // 读取音频文件 (WAV 格式)
+      const audioBase64Full = await FileSystem.readAsStringAsync(audioUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
+
+      // 跳过 WAV 文件头 (44 字节)，只发送纯 PCM 数据
+      // Base64 编码: 44 字节 → ceil(44/3)*4 = 60 个 Base64 字符
+      const wavHeaderBase64Chars = Math.ceil(WAV_HEADER_SIZE / 3) * 4; // = 60
+      const audioBase64 = audioBase64Full.substring(wavHeaderBase64Chars);
+
+      console.log(`[STT] 原始 Base64 长度: ${audioBase64Full.length}, 去掉头后: ${audioBase64.length}`);
 
       // 方案1: 通过后端代理发送到讯飞
       // 这是推荐的方式，因为可以在后端安全地处理密钥和签名
@@ -241,8 +300,7 @@ class SpeechRecognitionService {
   private async sendViaBackendProxy(audioBase64: string): Promise<SpeechRecognitionResult> {
     // 调用后端 API 进行语音识别
     // 后端会处理讯飞的 WebSocket 连接和鉴权
-
-    const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://139.196.165.140:10010';
+    // API_BASE_URL 使用统一配置
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/mobile/voice/recognize`, {
@@ -267,18 +325,28 @@ class SpeechRecognitionService {
       const data = await response.json();
 
       if (data.success && data.data) {
+        // data.success 为 true 表示后端已确认识别成功
+        // 无需再检查 result.code，因为后端 ApiResponse.success() 已验证
         const result = data.data;
-        if (result.code === 0 && result.text) {
+        const text = result.text || '';
+
+        if (!text.trim()) {
+          // 返回空结果，让调用方决定如何处理（静音或噪音）
           return {
-            text: result.text,
-            isFinal: result.isFinal ?? true,
-            confidence: undefined, // 讯飞API不返回置信度
+            text: '',
+            isFinal: true,
+            confidence: undefined,
           };
         }
-        throw new Error(result.message || '识别失败');
+        return {
+          text: text,
+          isFinal: result.isFinal ?? true,
+          confidence: undefined, // 讯飞API不返回置信度
+        };
       }
 
-      throw new Error(data.message || '识别失败');
+      // API 调用失败或识别失败
+      throw new Error(data.message || data.data?.message || '识别失败');
     } catch (error) {
       console.error('后端代理调用失败:', error);
       throw error;

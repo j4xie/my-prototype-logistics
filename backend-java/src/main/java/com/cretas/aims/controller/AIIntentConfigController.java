@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -116,7 +117,8 @@ public class AIIntentConfigController {
     }
 
     @PostMapping("/keywords/cleanup")
-    @Operation(summary = "清理低效关键词", description = "清理效果评分低于阈值的关键词")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清理低效关键词", description = "清理效果评分低于阈值的关键词（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Integer>> cleanupLowEffectivenessKeywords(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody CleanupRequest request) {
@@ -288,7 +290,8 @@ public class AIIntentConfigController {
     // ==================== 意图管理 ====================
 
     @PostMapping
-    @Operation(summary = "创建意图配置", description = "创建新的AI意图配置")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "创建意图配置", description = "创建新的AI意图配置（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AIIntentConfig>> createIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody AIIntentConfig intentConfig) {
@@ -299,7 +302,8 @@ public class AIIntentConfigController {
     }
 
     @PutMapping("/{intentCode}")
-    @Operation(summary = "更新意图配置", description = "更新现有的AI意图配置")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "更新意图配置", description = "更新现有的AI意图配置（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AIIntentConfig>> updateIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode,
@@ -312,7 +316,8 @@ public class AIIntentConfigController {
     }
 
     @PatchMapping("/{intentCode}/active")
-    @Operation(summary = "启用/禁用意图", description = "切换意图的启用状态")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "启用/禁用意图", description = "切换意图的启用状态（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Void>> setIntentActive(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode,
@@ -325,7 +330,8 @@ public class AIIntentConfigController {
     }
 
     @DeleteMapping("/{intentCode}")
-    @Operation(summary = "删除意图配置", description = "软删除意图配置")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "删除意图配置", description = "软删除意图配置（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Void>> deleteIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode) {
@@ -338,7 +344,8 @@ public class AIIntentConfigController {
     // ==================== 版本回滚 ====================
 
     @PostMapping("/{intentCode}/rollback")
-    @Operation(summary = "回滚意图配置", description = "回滚单个意图配置到上个版本")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "回滚意图配置", description = "回滚单个意图配置到上个版本（仅工厂管理员）")
     public ResponseEntity<ApiResponse<AIIntentConfig>> rollbackIntent(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "意图代码") @PathVariable String intentCode,
@@ -374,7 +381,8 @@ public class AIIntentConfigController {
     }
 
     @PostMapping("/rollback-all")
-    @Operation(summary = "批量回滚工厂意图", description = "回滚工厂的所有意图配置到上个版本")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "批量回滚工厂意图", description = "回滚工厂的所有意图配置到上个版本（仅工厂管理员）")
     public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> rollbackAllIntents(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody RollbackRequest request,
@@ -432,7 +440,8 @@ public class AIIntentConfigController {
     // ==================== 缓存管理 ====================
 
     @PostMapping("/cache/refresh")
-    @Operation(summary = "刷新意图缓存", description = "清除并重新加载意图配置缓存")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "刷新意图缓存", description = "清除并重新加载意图配置缓存（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Void>> refreshCache(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 
@@ -442,7 +451,8 @@ public class AIIntentConfigController {
     }
 
     @PostMapping("/cache/clear")
-    @Operation(summary = "清除意图缓存", description = "清除意图配置缓存")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清除意图缓存", description = "清除意图配置缓存（仅工厂管理员）")
     public ResponseEntity<ApiResponse<Void>> clearCache(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 

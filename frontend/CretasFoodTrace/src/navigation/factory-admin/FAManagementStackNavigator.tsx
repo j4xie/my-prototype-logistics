@@ -23,11 +23,14 @@ import DisposalRecordManagementScreen from "../../screens/management/DisposalRec
 import EquipmentManagementScreen from "../../screens/processing/EquipmentManagementScreen";
 import EquipmentDetailScreen from "../../screens/processing/EquipmentDetailScreen";
 import SchemaConfigScreen from "../../screens/factory-admin/config/SchemaConfigScreen";
+import { FormTemplateListScreen } from "../../screens/factory-admin/config/FormTemplateListScreen";
+import { FormTemplateDetailScreen } from "../../screens/factory-admin/config/FormTemplateDetailScreen";
 import RuleConfigurationScreen from "../../screens/management/RuleConfigurationScreen";
 import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
 import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
 import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
 import SopConfigScreen from "../../screens/management/SopConfigScreen";
+import { FAIntentViewScreen } from "../../screens/factory-admin/management/FAIntentViewScreen";
 
 // IoT 电子秤设备管理
 import { IotDeviceListScreen } from "../../screens/factory-admin/iot/IotDeviceListScreen";
@@ -39,7 +42,17 @@ import { ScaleTestScreen } from "../../screens/factory-admin/iot/ScaleTestScreen
 import { IsapiDeviceListScreen } from "../../screens/factory-admin/isapi/IsapiDeviceListScreen";
 import { IsapiDeviceDetailScreen } from "../../screens/factory-admin/isapi/IsapiDeviceDetailScreen";
 import { IsapiDeviceCreateScreen } from "../../screens/factory-admin/isapi/IsapiDeviceCreateScreen";
+import { IsapiDeviceDiscoveryScreen } from "../../screens/factory-admin/isapi/IsapiDeviceDiscoveryScreen";
 import { IsapiSmartConfigScreen } from "../../screens/factory-admin/isapi/IsapiSmartConfigScreen";
+import { DeviceSetupWizardScreen } from "../../screens/factory-admin/isapi/DeviceSetupWizardScreen";
+
+// 智能设备添加
+import { SmartDeviceAddScreen } from "../../screens/factory-admin/device/SmartDeviceAddScreen";
+import { CameraAddMethodScreen } from "../../screens/factory-admin/device/CameraAddMethodScreen";
+import { AIDeviceInputScreen } from "../../screens/factory-admin/device/AIDeviceInputScreen";
+
+// 统一设备管理中心
+import { UnifiedDeviceManagementScreen } from "../../screens/factory-admin/device/UnifiedDeviceManagementScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
@@ -144,6 +157,18 @@ export function FAManagementStackNavigator() {
         options={{ title: "表单配置" }}
       />
 
+      {/* 表单模版管理 */}
+      <Stack.Screen
+        name="FormTemplateList"
+        component={FormTemplateListScreen}
+        options={{ title: "表单模版" }}
+      />
+      <Stack.Screen
+        name="FormTemplateDetail"
+        component={FormTemplateDetailScreen}
+        options={{ title: "模版详情" }}
+      />
+
       {/* 规则配置 (Drools 规则 + 状态机) */}
       <Stack.Screen
         name="RuleConfiguration"
@@ -177,6 +202,20 @@ export function FAManagementStackNavigator() {
         name="SopConfig"
         component={SopConfigScreen}
         options={{ title: "SOP配置" }}
+      />
+
+      {/* 意图配置查看 (只读) */}
+      <Stack.Screen
+        name="IntentView"
+        component={FAIntentViewScreen}
+        options={{ title: "意图配置" }}
+      />
+
+      {/* 统一设备管理中心 */}
+      <Stack.Screen
+        name="UnifiedDeviceManagement"
+        component={UnifiedDeviceManagementScreen}
+        options={{ title: "设备中心" }}
       />
 
       {/* IoT 电子秤设备管理 */}
@@ -218,9 +257,36 @@ export function FAManagementStackNavigator() {
         options={{ title: "添加摄像头" }}
       />
       <Stack.Screen
+        name="IsapiDeviceDiscovery"
+        component={IsapiDeviceDiscoveryScreen}
+        options={{ title: "设备发现" }}
+      />
+      <Stack.Screen
         name="IsapiSmartConfig"
         component={IsapiSmartConfigScreen}
         options={{ title: "智能分析配置" }}
+      />
+      <Stack.Screen
+        name="DeviceSetupWizard"
+        component={DeviceSetupWizardScreen}
+        options={{ title: "设备配置向导" }}
+      />
+
+      {/* 智能设备添加 */}
+      <Stack.Screen
+        name="SmartDeviceAdd"
+        component={SmartDeviceAddScreen}
+        options={{ title: "添加设备" }}
+      />
+      <Stack.Screen
+        name="CameraAddMethod"
+        component={CameraAddMethodScreen}
+        options={{ title: "添加摄像头" }}
+      />
+      <Stack.Screen
+        name="AIDeviceInput"
+        component={AIDeviceInputScreen}
+        options={{ title: "AI识别添加" }}
       />
     </Stack.Navigator>
   );

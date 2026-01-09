@@ -17,17 +17,18 @@ import java.util.List;
  * AI报告定时任务调度器
  *
  * 功能：
- * 1. 每周一早上6点自动生成所有工厂的周报告
- * 2. 每月1日早上6点自动生成所有工厂的月报告
- * 3. 定期清理过期的报告和审计日志
+ * 1. 每天晚上20:00自动生成所有工厂的日报分析（生产、质量、成本、设备、库存）
+ * 2. 每周一早上6点自动生成所有工厂的周报告
+ * 3. 每月1日早上6点自动生成所有工厂的月报告
+ * 4. 定期清理过期的报告和审计日志
  *
  * 注意：
  * - 定时任务生成的报告不消耗AI配额
- * - 周报告保留30天，月报告保留90天
+ * - 日报保留7天，周报告保留30天，月报告保留90天
  * - 审计日志保留3年（ISO 27001合规）
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2025-11-04
  */
 @Component
@@ -98,6 +99,62 @@ public class AIReportScheduler {
 
         } catch (Exception e) {
             log.error("周报告生成任务异常: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 每天晚上20:00自动生成所有工厂的日报分析
+     * Cron表达式: 0 0 20 * * *
+     * - 秒: 0
+     * - 分: 0
+     * - 时: 20
+     * - 日: *（每天）
+     * - 月: *（任意）
+     * - 星期: *（任意）
+     *
+     * 分析当天的生产、质量、成本、设备、库存数据
+     */
+    @Scheduled(cron = "0 0 20 * * *")
+    public void generateDailyReportsForAllFactories() {
+        log.info("========== 开始生成日报分析 ==========");
+        long startTime = System.currentTimeMillis();
+
+        try {
+            // 1. 获取所有活跃的工厂
+            List<Factory> activeFactories = factoryRepository.findByIsActiveTrue();
+
+            log.info("找到 {} 个活跃工厂，开始生成日报分析", activeFactories.size());
+
+            // 2. 日报分析当天数据
+            LocalDate today = LocalDate.now();
+            log.info("报告日期: {}", today);
+
+            // 3. 为每个工厂生成日报
+            int successCount = 0;
+            int failureCount = 0;
+
+            for (Factory factory : activeFactories) {
+                try {
+                    aiEnterpriseService.generateDailyReport(factory.getId());
+                    successCount++;
+                    log.info("工厂 {} 日报生成成功", factory.getId());
+
+                    // 避免同时请求过多，间隔1秒
+                    Thread.sleep(1000);
+
+                } catch (Exception e) {
+                    failureCount++;
+                    log.error("工厂 {} 日报生成失败: {}", factory.getId(), e.getMessage(), e);
+                }
+            }
+
+            long duration = System.currentTimeMillis() - startTime;
+            log.info("========== 日报分析生成完成 ==========");
+            log.info("总计: {} 个工厂 | 成功: {} | 失败: {} | 耗时: {}ms",
+                    activeFactories.size(), successCount, failureCount, duration);
+
+        } catch (Exception e) {
+            log.error("日报批量生成任务失败: {}", e.getMessage(), e);
         }
     }
 
@@ -247,6 +304,20 @@ public class AIReportScheduler {
 
         } catch (Exception e) {
             log.error("旧审计日志清理任务异常: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 手动触发日报生成（用于测试或补生成）
+     */
+    public void manualGenerateDailyReport(String factoryId) {
+        log.info("手动触发日报生成: factoryId={}", factoryId);
+        try {
+            aiEnterpriseService.generateDailyReport(factoryId);
+            log.info("手动日报生成成功: factoryId={}", factoryId);
+        } catch (Exception e) {
+            log.error("手动日报生成失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            throw e;
         }
     }
 

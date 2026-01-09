@@ -69,6 +69,25 @@ public class CacheConfig {
         cacheConfigurations.put("allIntents", defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigurations.put("intentsByCategory", defaultConfig.entryTtl(Duration.ofHours(1)));
         cacheConfigurations.put("intentCategories", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("intentsBySensitivity", defaultConfig.entryTtl(Duration.ofHours(1)));
+        // Legacy 缓存（向后兼容）
+        cacheConfigurations.put("allIntents_legacy", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("intentsByCategory_legacy", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("intentCategories_legacy", defaultConfig.entryTtl(Duration.ofHours(1)));
+        // AI Tool 数据查询缓存 - 提升 SSE 流式响应性能
+        cacheConfigurations.put("qualityStats", defaultConfig.entryTtl(Duration.ofMinutes(15)));
+        cacheConfigurations.put("shipmentStats", defaultConfig.entryTtl(Duration.ofMinutes(15)));
+        cacheConfigurations.put("customerStats", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("alertStats", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigurations.put("equipmentStats", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("productTypes", defaultConfig.entryTtl(Duration.ofHours(4)));
+        cacheConfigurations.put("materialTypes", defaultConfig.entryTtl(Duration.ofHours(6)));
+        cacheConfigurations.put("equipmentList", defaultConfig.entryTtl(Duration.ofHours(2)));
+        cacheConfigurations.put("customerList", defaultConfig.entryTtl(Duration.ofHours(2)));
+        // AI 报告缓存
+        cacheConfigurations.put("dailySummary", defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigurations.put("weeklySummary", defaultConfig.entryTtl(Duration.ofDays(7)));
+        cacheConfigurations.put("aiToolResult", defaultConfig.entryTtl(Duration.ofMinutes(10)));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
@@ -95,7 +114,26 @@ public class CacheConfig {
                 // AI意图服务缓存
                 new ConcurrentMapCache("allIntents"),
                 new ConcurrentMapCache("intentsByCategory"),
-                new ConcurrentMapCache("intentCategories")
+                new ConcurrentMapCache("intentCategories"),
+                new ConcurrentMapCache("intentsBySensitivity"),
+                // Legacy 缓存（向后兼容）
+                new ConcurrentMapCache("allIntents_legacy"),
+                new ConcurrentMapCache("intentsByCategory_legacy"),
+                new ConcurrentMapCache("intentCategories_legacy"),
+                // AI Tool 数据查询缓存 - 提升 SSE 流式响应性能
+                new ConcurrentMapCache("qualityStats"),
+                new ConcurrentMapCache("shipmentStats"),
+                new ConcurrentMapCache("customerStats"),
+                new ConcurrentMapCache("alertStats"),
+                new ConcurrentMapCache("equipmentStats"),
+                new ConcurrentMapCache("productTypes"),
+                new ConcurrentMapCache("materialTypes"),
+                new ConcurrentMapCache("equipmentList"),
+                new ConcurrentMapCache("customerList"),
+                // AI 报告缓存
+                new ConcurrentMapCache("dailySummary"),
+                new ConcurrentMapCache("weeklySummary"),
+                new ConcurrentMapCache("aiToolResult")
         ));
         return cacheManager;
     }

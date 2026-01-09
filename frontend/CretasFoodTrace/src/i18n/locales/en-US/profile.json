@@ -19,7 +19,8 @@
     "membership": "Membership",
     "settings": "Settings",
     "operationLog": "Operation Log",
-    "statistics": "Statistics"
+    "statistics": "Statistics",
+    "language": "Language"
   },
   "roles": {
     "factoryAdmin": "Factory Admin",
@@ -81,7 +82,17 @@
     "themeSystem": "System",
     "fontSize": "Font Size",
     "cache": "Cache",
-    "clearCache": "Clear Cache"
+    "clearCache": "Clear Cache",
+    "dataSync": "Data Sync",
+    "autoSync": "Auto Sync",
+    "autoSyncDescription": "Automatically sync data when network is available",
+    "wifiOnly": "WiFi Only",
+    "wifiOnlyDescription": "Only sync data on WiFi network",
+    "storage": "Storage",
+    "advancedSettings": "Advanced Settings",
+    "serverSettings": "Server Settings",
+    "productionEnv": "Production Environment",
+    "networkDiagnostic": "Network Diagnostic"
   },
   "helpCenter": {
     "title": "Help Center",

@@ -109,6 +109,23 @@ public class ProductTypeDTO {
 
     // ==================== End Phase 5 Fields ====================
 
+    // ==================== Custom Form Schema Configuration ====================
+
+    /**
+     * Custom schema overrides for various entity types associated with this product type.
+     * JSON format allows defining specialized input forms for MATERIAL_BATCH, QUALITY_CHECK, etc.
+     *
+     * Example:
+     * {
+     *   "MATERIAL_BATCH": { "additionalFields": [...], "requiredFields": [...] },
+     *   "QUALITY_CHECK": { "checkItems": [...] }
+     * }
+     */
+    @Schema(description = "Custom schema overrides for different entity types (JSON)")
+    private String customSchemaOverrides;
+
+    // ==================== End Custom Form Schema Configuration ====================
+
     // 关联信息
     private String factoryName;
     private String createdByName;

@@ -28,6 +28,7 @@ import {
   generateCompletionSummary,
   getMissingItems,
 } from './QualityInspectionAIPrompt';
+import { API_BASE_URL } from '../../constants/config';
 
 type StatusCallback = (status: VoiceAssistantStatus) => void;
 type MessageCallback = (message: ChatMessage) => void;
@@ -224,9 +225,7 @@ class VoiceAssistantService {
         userText
       );
 
-      // 调用 DeepSeek API
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://139.196.165.140:10010';
-
+      // 调用 DeepSeek API (使用统一配置的 API_BASE_URL)
       const response = await fetch(`${API_BASE_URL}/api/mobile/ai/chat`, {
         method: 'POST',
         headers: {

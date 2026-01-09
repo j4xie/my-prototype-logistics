@@ -9,6 +9,7 @@ import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.config.DashScopeConfig;
+import com.cretas.aims.config.IntentMatchingConfig;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.IntentMatchResult.CandidateIntent;
 import com.cretas.aims.dto.intent.IntentMatchResult.MatchMethod;
@@ -96,7 +97,59 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     private final ToolRegistry toolRegistry;
 
+    private final IntentMatchingConfig intentMatchingConfig;
+
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
+
+    // ==================== Category 定义（两阶段分类用） ====================
+
+    /**
+     * Category 描述映射表
+     * 用于两阶段分类的第一阶段（粗分类）
+     *
+     * 总计 16 个 Category，约 113 个意图
+     */
+    private static final Map<String, String> CATEGORY_DESCRIPTIONS = Map.ofEntries(
+            Map.entry("MATERIAL", "原材料管理 - 库存查询、批次领用、过期预警、低库存告警"),
+            Map.entry("QUALITY", "质量检测 - 质检任务执行、结果查询、不合格品处置"),
+            Map.entry("SHIPMENT", "出货物流 - 创建出货单、发货确认、物流跟踪、收货确认"),
+            Map.entry("CRM", "客户供应商 - 客户管理、供应商评价、联系人维护"),
+            Map.entry("HR", "人事考勤 - 打卡签到、考勤查询、请假申请"),
+            Map.entry("ALERT", "告警管理 - 告警查询、告警确认、告警解决、告警诊断"),
+            Map.entry("SCALE", "电子秤设备 - 秤设备列表、称重操作、校准管理"),
+            Map.entry("REPORT", "报表统计 - 生产报表、质量报表、库存报表、综合看板"),
+            Map.entry("DATA_OP", "数据操作 - 批量更新、数据修改、数据导入导出"),
+            Map.entry("SYSTEM", "系统配置 - 调度模式、功能开关、系统参数"),
+            Map.entry("CONFIG", "业务配置 - 转化率设置、规则配置、阈值调整"),
+            Map.entry("USER", "用户管理 - 创建用户、角色分配、权限管理"),
+            Map.entry("FORM", "表单生成 - 动态表单创建、表单模板管理"),
+            Map.entry("META", "意图管理 - 意图创建、意图测试、意图优化"),
+            Map.entry("PROCESSING", "生产批次 - 批次创建、批次启动、批次完成、加工记录"),
+            Map.entry("EQUIPMENT", "设备管理 - 设备状态查询、设备告警、设备维护保养")
+    );
+
+    /**
+     * Category 示例输入映射
+     * 帮助 LLM 理解每个 Category 的典型用户表达
+     */
+    private static final Map<String, List<String>> CATEGORY_EXAMPLES = Map.ofEntries(
+            Map.entry("MATERIAL", List.of("查看原材料库存", "领用一批原料", "快过期的材料有哪些")),
+            Map.entry("QUALITY", List.of("执行质检任务", "查看质检结果", "处理不合格品")),
+            Map.entry("SHIPMENT", List.of("创建出货单", "确认发货", "查看物流状态")),
+            Map.entry("CRM", List.of("查看客户列表", "评价供应商", "添加新客户")),
+            Map.entry("HR", List.of("打卡签到", "查看考勤记录", "请假申请")),
+            Map.entry("ALERT", List.of("有什么告警", "确认这个警报", "解决设备异常")),
+            Map.entry("SCALE", List.of("电子秤列表", "开始称重", "校准秤设备")),
+            Map.entry("REPORT", List.of("看生产报表", "今日产量统计", "库存报告")),
+            Map.entry("DATA_OP", List.of("批量更新数据", "修改产品信息", "导出数据")),
+            Map.entry("SYSTEM", List.of("切换调度模式", "开启某功能", "系统设置")),
+            Map.entry("CONFIG", List.of("设置转化率", "配置规则", "调整阈值")),
+            Map.entry("USER", List.of("创建新用户", "分配角色", "修改权限")),
+            Map.entry("FORM", List.of("创建表单", "编辑表单模板")),
+            Map.entry("META", List.of("创建新意图", "测试意图识别")),
+            Map.entry("PROCESSING", List.of("创建生产批次", "开始加工", "完成批次")),
+            Map.entry("EQUIPMENT", List.of("设备状态查询", "设备告警处理", "安排设备维护"))
+    );
 
     @Value("${cretas.ai.conversation.threshold:0.3}")
     private double conversationThreshold;
@@ -109,7 +162,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             @Autowired(required = false) IntentOptimizationSuggestionRepository suggestionRepository,
             @Autowired(required = false) AIIntentConfigRepository intentConfigRepository,
             @Autowired(required = false) ConversationService conversationService,
-            @Autowired(required = false) ToolRegistry toolRegistry) {
+            @Autowired(required = false) ToolRegistry toolRegistry,
+            @Autowired(required = false) IntentMatchingConfig intentMatchingConfig) {
         // OkHttp 客户端
         if (aiServiceHttpClient != null) {
             this.httpClient = aiServiceHttpClient;
@@ -139,10 +193,21 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         // Tool Registry (用于 Tool Calling)
         this.toolRegistry = toolRegistry;
 
+        // 意图匹配配置 (用于两阶段分类)
+        this.intentMatchingConfig = intentMatchingConfig;
+
         if (dashScopeConfig != null && dashScopeConfig.shouldUseDirect("intent-classify")) {
             log.info("DashScope direct intent classification ENABLED");
         } else {
             log.info("Using Python service for intent classification (DashScope direct: disabled)");
+        }
+
+        // 两阶段分类日志
+        if (intentMatchingConfig != null && intentMatchingConfig.isTwoPhaseClassificationEnabled()) {
+            log.info("Two-phase classification ENABLED (threshold={} intents)",
+                    intentMatchingConfig.getTwoPhaseThreshold());
+        } else {
+            log.info("Two-phase classification DISABLED - using single-phase classification");
         }
 
         if (autoCreateIntentEnabled && suggestionRepository != null) {
@@ -311,19 +376,32 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     /**
      * 使用 DashScope 直接进行意图分类 (新方式)
+     *
+     * 支持两种分类模式：
+     * 1. 两阶段分类：当意图数量 >= 阈值时启用，先粗分类再细分类
+     * 2. 单阶段分类：意图数量较少时直接在全量意图中匹配
+     *
+     * 两阶段分类的优势：
+     * - 减少单次 LLM 处理的选项数量
+     * - 提高分类准确率
+     * - 更好的可解释性（先确定领域再确定具体意图）
      */
     private IntentMatchResult classifyIntentDirect(String userInput, List<AIIntentConfig> availableIntents, String factoryId, Long userId, String userRole) {
-        log.debug("Using DashScope direct intent classification");
+        log.debug("Using DashScope direct intent classification, intent count: {}",
+                availableIntents != null ? availableIntents.size() : 0);
 
         try {
-            // 构建系统提示词
-            String systemPrompt = buildIntentClassifyPrompt(availableIntents);
-
-            // 调用 DashScope
-            String responseJson = dashScopeClient.classifyIntent(systemPrompt, userInput);
-
-            // 解析响应
-            return parseDirectClassifyResponse(responseJson, userInput, availableIntents, factoryId, userId, userRole);
+            // 判断是否使用两阶段分类
+            if (shouldUseTwoPhaseClassification(availableIntents)) {
+                log.info("[Classification] Using TWO-PHASE mode for {} intents (threshold: {})",
+                        availableIntents.size(),
+                        intentMatchingConfig != null ? intentMatchingConfig.getTwoPhaseThreshold() : "N/A");
+                return classifyIntentTwoPhase(userInput, availableIntents, factoryId, userId, userRole);
+            } else {
+                log.debug("[Classification] Using SINGLE-PHASE mode for {} intents",
+                        availableIntents != null ? availableIntents.size() : 0);
+                return classifyIntentSinglePhase(userInput, availableIntents, factoryId, userId, userRole);
+            }
 
         } catch (Exception e) {
             log.error("DashScope direct intent classification failed: {}", e.getMessage(), e);
@@ -363,10 +441,52 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     /**
      * 构建意图分类系统提示词
+     *
+     * 优化点：
+     * 1. 添加 Few-Shot 示例，覆盖口语化/同义词表达
+     * 2. 强调必须做出决策，避免返回 UNKNOWN
      */
     private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents) {
         StringBuilder sb = new StringBuilder();
         sb.append("你是一个意图识别助手。根据用户输入，从以下意图列表中选择最匹配的意图。\n\n");
+
+        // Few-Shot 示例 (口语化表达映射) - 方案 B
+        sb.append("## 口语化表达示例\n\n");
+        sb.append("以下是常见的口语化表达与标准意图的映射关系，请参考这些示例进行判断：\n\n");
+        sb.append("| 口语化表达 | 对应意图 |\n");
+        sb.append("|-----------|--------|\n");
+        // 考勤类
+        sb.append("| 打个卡、签到、我要打卡 | CLOCK_IN |\n");
+        sb.append("| 签退、下班打卡 | CLOCK_OUT |\n");
+        sb.append("| 我打卡了没、今天出勤了没 | ATTENDANCE_STATUS |\n");
+        sb.append("| 这周考勤、看看考勤记录 | ATTENDANCE_HISTORY |\n");
+        // 原材料类
+        sb.append("| 看看原料库存、查一下原材料 | MATERIAL_BATCH_QUERY |\n");
+        sb.append("| 领用原材料、使用原料 | MATERIAL_BATCH_USE |\n");
+        sb.append("| 快过期的原料、临期原材料 | MATERIAL_EXPIRING_ALERT |\n");
+        sb.append("| 原料快没了、缺货预警 | MATERIAL_LOW_STOCK_ALERT |\n");
+        // 设备类
+        sb.append("| 秤有哪些、电子秤列表 | SCALE_LIST_DEVICES |\n");
+        sb.append("| 设备保养、维护记录 | EQUIPMENT_MAINTENANCE |\n");
+        sb.append("| 哪个机器有问题、设备告警 | ALERT_BY_EQUIPMENT |\n");
+        // 质检类
+        sb.append("| 做一下质检、开始QC | QUALITY_CHECK_EXECUTE |\n");
+        sb.append("| 看看质检记录、QC检测有哪些 | QUALITY_CHECK_QUERY |\n");
+        sb.append("| 不合格品怎么处理、处置不良品 | QUALITY_DISPOSITION_EXECUTE |\n");
+        // 告警类
+        sb.append("| 有什么警报、所有告警 | ALERT_LIST |\n");
+        sb.append("| 处理掉这个警报、关闭告警 | ALERT_RESOLVE |\n");
+        sb.append("| 分析一下警报原因、告警诊断 | ALERT_DIAGNOSE |\n");
+        // 报表类
+        sb.append("| 看看报表、数据总览 | REPORT_DASHBOARD_OVERVIEW |\n");
+        sb.append("| 今天生产了多少、产量报告 | REPORT_PRODUCTION |\n");
+        sb.append("| 库存情况 | REPORT_INVENTORY |\n");
+        // 供应商/客户类
+        sb.append("| 供货商名单、供货方有哪些 | SUPPLIER_LIST |\n");
+        sb.append("| 找一下供货商、查询供货方 | SUPPLIER_SEARCH |\n");
+        sb.append("| 老客户名单、买家列表 | CUSTOMER_LIST |\n");
+        sb.append("\n");
+
         sb.append("## 可用意图列表\n\n");
 
         for (AIIntentConfig intent : availableIntents) {
@@ -379,13 +499,19 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             }
         }
 
-        sb.append("\n## 输出格式\n\n");
+        sb.append("\n## 重要规则\n\n");
+        sb.append("1. **必须做出决策**：尽量从已有意图中选择最接近的，只有在用户输入完全无法理解时才返回 UNKNOWN\n");
+        sb.append("2. **理解同义词**：参考上面的口语化示例，用户可能使用不同的表达方式描述相同的意图\n");
+        sb.append("3. **优先语义匹配**：即使没有完全匹配的关键词，也要根据语义选择最相关的意图\n");
+        sb.append("4. **置信度校准**：如果有合理的匹配，置信度应该在 0.6 以上\n\n");
+
+        sb.append("## 输出格式\n\n");
         sb.append("请以 JSON 格式返回，包含以下字段：\n");
         sb.append("```json\n");
         sb.append("{\n");
-        sb.append("  \"intent_code\": \"匹配的意图代码，如果无法匹配返回 UNKNOWN\",\n");
+        sb.append("  \"intent_code\": \"匹配的意图代码，尽量避免返回 UNKNOWN\",\n");
         sb.append("  \"confidence\": 0.0-1.0 之间的置信度,\n");
-        sb.append("  \"reasoning\": \"判断理由\",\n");
+        sb.append("  \"reasoning\": \"判断理由，说明为什么选择这个意图\",\n");
         sb.append("  \"other_candidates\": [\n");
         sb.append("    {\"intent_code\": \"其他可能的意图\", \"confidence\": 0.0-1.0}\n");
         sb.append("  ]\n");
@@ -394,6 +520,409 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("仅返回 JSON，不要包含其他文字。");
 
         return sb.toString();
+    }
+
+    // ==================== 两阶段分类实现 ====================
+
+    /**
+     * 判断是否应该使用两阶段分类
+     *
+     * 条件：
+     * 1. 配置已启用两阶段分类
+     * 2. 可用意图数量超过阈值
+     * 3. DashScope 客户端可用
+     *
+     * @param availableIntents 可用意图列表
+     * @return true 表示应使用两阶段分类
+     */
+    private boolean shouldUseTwoPhaseClassification(List<AIIntentConfig> availableIntents) {
+        if (intentMatchingConfig == null) {
+            return false;
+        }
+        if (!intentMatchingConfig.isTwoPhaseClassificationEnabled()) {
+            return false;
+        }
+        if (availableIntents == null) {
+            return false;
+        }
+        // 只有当意图数量超过阈值时才使用两阶段分类
+        return availableIntents.size() >= intentMatchingConfig.getTwoPhaseThreshold();
+    }
+
+    /**
+     * 两阶段意图分类主方法
+     *
+     * 工作流程：
+     * 1. 第一阶段（粗分类）：从 16 个 Category 中选择最匹配的分类
+     * 2. 根据选中的 Category 筛选出相关意图
+     * 3. 第二阶段（细分类）：在筛选后的意图列表中进行精确匹配
+     *
+     * 优势：
+     * - 减少 LLM 单次处理的选项数量（从 100+ 降至 6-15）
+     * - 提高分类准确率
+     * - 两次 LLM 调用，但每次负载更小
+     *
+     * @param userInput 用户输入
+     * @param availableIntents 可用意图列表
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return 意图匹配结果
+     */
+    private IntentMatchResult classifyIntentTwoPhase(
+            String userInput,
+            List<AIIntentConfig> availableIntents,
+            String factoryId,
+            Long userId,
+            String userRole) {
+
+        log.info("[Two-Phase] Starting two-phase classification for input: '{}'", truncate(userInput, 50));
+
+        try {
+            // ===== 第一阶段：粗分类 =====
+            log.debug("[Two-Phase] Phase 1: Category classification");
+            String categoryPrompt = buildCategoryClassifyPrompt();
+            String categoryResponse = dashScopeClient.classifyIntent(categoryPrompt, userInput);
+            String matchedCategory = parseCategoryClassifyResponse(categoryResponse);
+
+            if (matchedCategory == null || matchedCategory.isEmpty() || "UNKNOWN".equalsIgnoreCase(matchedCategory)) {
+                log.warn("[Two-Phase] Phase 1 failed to match category, falling back to single-phase");
+                // 降级到单阶段分类
+                return classifyIntentSinglePhase(userInput, availableIntents, factoryId, userId, userRole);
+            }
+
+            log.info("[Two-Phase] Phase 1 result: category={}", matchedCategory);
+
+            // ===== 筛选该 Category 下的意图 =====
+            List<AIIntentConfig> categoryIntents = filterIntentsByCategory(availableIntents, matchedCategory);
+
+            if (categoryIntents.isEmpty()) {
+                log.warn("[Two-Phase] No intents found for category '{}', trying related categories", matchedCategory);
+                // 尝试扩展到相关 Category
+                categoryIntents = filterIntentsByRelatedCategories(availableIntents, matchedCategory);
+
+                if (categoryIntents.isEmpty()) {
+                    log.warn("[Two-Phase] Still no intents found, falling back to single-phase");
+                    return classifyIntentSinglePhase(userInput, availableIntents, factoryId, userId, userRole);
+                }
+            }
+
+            log.info("[Two-Phase] Phase 2: Fine classification among {} intents (category: {})",
+                    categoryIntents.size(), matchedCategory);
+
+            // ===== 第二阶段：细分类 =====
+            String intentPrompt = buildIntentClassifyPromptForCategory(matchedCategory, categoryIntents);
+            String intentResponse = dashScopeClient.classifyIntent(intentPrompt, userInput);
+
+            // 解析细分类结果（复用现有解析逻辑）
+            IntentMatchResult result = parseDirectClassifyResponse(
+                    intentResponse, userInput, categoryIntents, factoryId, userId, userRole);
+
+            // 如果细分类失败，尝试在全量意图中匹配
+            if (result.getBestMatch() == null && result.getConfidence() < 0.5) {
+                log.warn("[Two-Phase] Phase 2 low confidence, trying full intent list as fallback");
+                return classifyIntentSinglePhase(userInput, availableIntents, factoryId, userId, userRole);
+            }
+
+            log.info("[Two-Phase] Classification completed: intent={}, confidence={}",
+                    result.getBestMatch() != null ? result.getBestMatch().getIntentCode() : "UNKNOWN",
+                    result.getConfidence());
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("[Two-Phase] Classification failed: {}, falling back to single-phase", e.getMessage(), e);
+            // 降级到单阶段分类
+            return classifyIntentSinglePhase(userInput, availableIntents, factoryId, userId, userRole);
+        }
+    }
+
+    /**
+     * 单阶段分类（原有逻辑封装）
+     * 用于两阶段分类失败时的降级处理
+     */
+    private IntentMatchResult classifyIntentSinglePhase(
+            String userInput,
+            List<AIIntentConfig> availableIntents,
+            String factoryId,
+            Long userId,
+            String userRole) {
+
+        log.debug("[Single-Phase] Using single-phase classification");
+        String systemPrompt = buildIntentClassifyPrompt(availableIntents);
+        String responseJson = dashScopeClient.classifyIntent(systemPrompt, userInput);
+        return parseDirectClassifyResponse(responseJson, userInput, availableIntents, factoryId, userId, userRole);
+    }
+
+    /**
+     * 构建 Category 粗分类提示词
+     *
+     * 设计原则：
+     * 1. 简洁清晰的 Category 描述
+     * 2. 提供示例帮助 LLM 理解
+     * 3. 输出格式严格限定为 JSON
+     *
+     * @return 粗分类系统提示词
+     */
+    private String buildCategoryClassifyPrompt() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个意图分类助手。根据用户输入，选择最匹配的业务类别。\n\n");
+
+        sb.append("## 可用类别\n\n");
+        sb.append("| 类别代码 | 描述 | 示例输入 |\n");
+        sb.append("|----------|------|----------|\n");
+
+        for (Map.Entry<String, String> entry : CATEGORY_DESCRIPTIONS.entrySet()) {
+            String category = entry.getKey();
+            String description = entry.getValue();
+            List<String> examples = CATEGORY_EXAMPLES.getOrDefault(category, List.of());
+            String exampleStr = examples.isEmpty() ? "-" : String.join("; ", examples);
+
+            sb.append(String.format("| %s | %s | %s |\n", category, description, exampleStr));
+        }
+
+        sb.append("\n## 重要规则\n\n");
+        sb.append("1. **必须选择一个类别**：根据语义选择最相关的类别，避免返回 UNKNOWN\n");
+        sb.append("2. **理解口语表达**：用户可能使用口语化的方式描述需求\n");
+        sb.append("3. **关注核心意图**：忽略修饰词，关注用户真正想做什么\n\n");
+
+        sb.append("## 输出格式\n\n");
+        sb.append("请以 JSON 格式返回：\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"category\": \"类别代码\",\n");
+        sb.append("  \"confidence\": 0.0-1.0,\n");
+        sb.append("  \"reasoning\": \"判断理由\"\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+        sb.append("仅返回 JSON，不要包含其他文字。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析 Category 粗分类响应
+     *
+     * @param responseJson LLM 返回的 JSON 响应
+     * @return 匹配的 Category 代码，解析失败返回 null
+     */
+    private String parseCategoryClassifyResponse(String responseJson) {
+        try {
+            // 提取 JSON 部分
+            Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
+            Matcher matcher = pattern.matcher(responseJson);
+
+            if (!matcher.find()) {
+                log.warn("[Two-Phase] Could not extract JSON from category response: {}",
+                        truncate(responseJson, 100));
+                return null;
+            }
+
+            JsonNode json = objectMapper.readTree(matcher.group());
+
+            String category = json.has("category") ? json.get("category").asText() : null;
+            double confidence = json.has("confidence") ? json.get("confidence").asDouble() : 0.5;
+            String reasoning = json.has("reasoning") ? json.get("reasoning").asText() : null;
+
+            log.debug("[Two-Phase] Category parse result: category={}, confidence={}, reasoning={}",
+                    category, confidence, truncate(reasoning, 50));
+
+            // 验证 Category 是否有效
+            if (category != null && CATEGORY_DESCRIPTIONS.containsKey(category.toUpperCase())) {
+                return category.toUpperCase();
+            }
+
+            // 尝试模糊匹配
+            if (category != null) {
+                String upperCategory = category.toUpperCase();
+                for (String validCategory : CATEGORY_DESCRIPTIONS.keySet()) {
+                    if (upperCategory.contains(validCategory) || validCategory.contains(upperCategory)) {
+                        log.debug("[Two-Phase] Fuzzy matched category: {} -> {}", category, validCategory);
+                        return validCategory;
+                    }
+                }
+            }
+
+            log.warn("[Two-Phase] Invalid category returned: {}", category);
+            return null;
+
+        } catch (Exception e) {
+            log.error("[Two-Phase] Failed to parse category response: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 构建 Category 内的细分类提示词
+     *
+     * 与单阶段分类的区别：
+     * 1. 意图数量更少（通常 6-15 个）
+     * 2. 可以提供更详细的意图描述
+     * 3. 强调该 Category 的上下文
+     *
+     * @param category 已匹配的 Category
+     * @param categoryIntents 该 Category 下的意图列表
+     * @return 细分类系统提示词
+     */
+    private String buildIntentClassifyPromptForCategory(String category, List<AIIntentConfig> categoryIntents) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个意图识别助手。用户的需求属于「");
+        sb.append(CATEGORY_DESCRIPTIONS.getOrDefault(category, category));
+        sb.append("」类别。\n\n");
+        sb.append("请从以下意图中选择最匹配的一个：\n\n");
+
+        sb.append("## 可用意图列表\n\n");
+
+        for (AIIntentConfig intent : categoryIntents) {
+            sb.append(String.format("### %s (%s)\n", intent.getIntentCode(), intent.getIntentName()));
+            if (intent.getDescription() != null && !intent.getDescription().isEmpty()) {
+                sb.append(String.format("描述: %s\n", intent.getDescription()));
+            }
+            if (intent.getKeywords() != null && !intent.getKeywords().isEmpty()) {
+                sb.append(String.format("关键词: %s\n", intent.getKeywords()));
+            }
+            sb.append("\n");
+        }
+
+        sb.append("## 重要规则\n\n");
+        sb.append("1. **必须做出决策**：从上述意图中选择最接近的\n");
+        sb.append("2. **语义优先**：即使没有完全匹配的关键词，也要根据语义选择\n");
+        sb.append("3. **置信度校准**：如果有合理的匹配，置信度应该在 0.7 以上\n\n");
+
+        sb.append("## 输出格式\n\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"intent_code\": \"匹配的意图代码\",\n");
+        sb.append("  \"confidence\": 0.0-1.0,\n");
+        sb.append("  \"reasoning\": \"判断理由\",\n");
+        sb.append("  \"other_candidates\": [{\"intent_code\": \"...\", \"confidence\": 0.0-1.0}]\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+        sb.append("仅返回 JSON。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 根据 Category 筛选意图
+     *
+     * @param availableIntents 所有可用意图
+     * @param category 目标 Category
+     * @return 属于该 Category 的意图列表
+     */
+    private List<AIIntentConfig> filterIntentsByCategory(List<AIIntentConfig> availableIntents, String category) {
+        if (availableIntents == null || category == null) {
+            return Collections.emptyList();
+        }
+
+        String upperCategory = category.toUpperCase();
+
+        return availableIntents.stream()
+                .filter(intent -> {
+                    // 方式1: 直接匹配 intentCategory 字段
+                    if (intent.getIntentCategory() != null &&
+                            intent.getIntentCategory().toUpperCase().equals(upperCategory)) {
+                        return true;
+                    }
+
+                    // 方式2: 通过 intentCode 前缀推断 Category
+                    String intentCode = intent.getIntentCode();
+                    if (intentCode != null) {
+                        String upperCode = intentCode.toUpperCase();
+                        // 检查是否以 Category 开头（如 MATERIAL_BATCH_QUERY 属于 MATERIAL）
+                        if (upperCode.startsWith(upperCategory + "_")) {
+                            return true;
+                        }
+                        // 特殊映射处理
+                        if (matchesCategoryByCodePattern(upperCode, upperCategory)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 根据相关 Category 筛选意图（扩展匹配）
+     *
+     * 当主 Category 没有匹配的意图时，尝试匹配相关 Category
+     * 例如：EQUIPMENT 可能与 ALERT、SCALE 相关
+     *
+     * @param availableIntents 所有可用意图
+     * @param primaryCategory 主 Category
+     * @return 相关 Category 的意图列表
+     */
+    private List<AIIntentConfig> filterIntentsByRelatedCategories(
+            List<AIIntentConfig> availableIntents, String primaryCategory) {
+
+        // Category 关联映射
+        Map<String, List<String>> relatedCategories = Map.ofEntries(
+                Map.entry("EQUIPMENT", List.of("ALERT", "SCALE")),
+                Map.entry("ALERT", List.of("EQUIPMENT", "QUALITY")),
+                Map.entry("SCALE", List.of("EQUIPMENT")),
+                Map.entry("QUALITY", List.of("PROCESSING", "MATERIAL")),
+                Map.entry("PROCESSING", List.of("MATERIAL", "QUALITY", "EQUIPMENT")),
+                Map.entry("MATERIAL", List.of("PROCESSING", "QUALITY")),
+                Map.entry("SHIPMENT", List.of("CRM")),
+                Map.entry("CRM", List.of("SHIPMENT")),
+                Map.entry("REPORT", List.of("DATA_OP")),
+                Map.entry("DATA_OP", List.of("REPORT")),
+                Map.entry("SYSTEM", List.of("CONFIG", "USER")),
+                Map.entry("CONFIG", List.of("SYSTEM")),
+                Map.entry("USER", List.of("HR", "SYSTEM"))
+        );
+
+        List<String> related = relatedCategories.getOrDefault(primaryCategory.toUpperCase(), Collections.emptyList());
+
+        if (related.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<AIIntentConfig> result = new ArrayList<>();
+        for (String relatedCategory : related) {
+            result.addAll(filterIntentsByCategory(availableIntents, relatedCategory));
+        }
+
+        log.debug("[Two-Phase] Expanded to related categories {}, found {} intents",
+                related, result.size());
+
+        return result;
+    }
+
+    /**
+     * 通过意图代码模式匹配 Category
+     *
+     * 处理特殊的意图代码命名模式
+     */
+    private boolean matchesCategoryByCodePattern(String intentCode, String category) {
+        // 特殊映射规则
+        Map<String, List<String>> categoryPatterns = Map.ofEntries(
+                // HR 类别的特殊前缀
+                Map.entry("HR", List.of("CLOCK_", "ATTENDANCE_", "LEAVE_")),
+                // CRM 类别的特殊前缀
+                Map.entry("CRM", List.of("CUSTOMER_", "SUPPLIER_")),
+                // REPORT 类别的特殊前缀
+                Map.entry("REPORT", List.of("REPORT_", "DASHBOARD_", "STATS_")),
+                // META 类别的特殊前缀
+                Map.entry("META", List.of("INTENT_", "CREATE_INTENT")),
+                // PROCESSING 类别的特殊前缀
+                Map.entry("PROCESSING", List.of("BATCH_", "PRODUCTION_"))
+        );
+
+        List<String> patterns = categoryPatterns.get(category);
+        if (patterns == null) {
+            return false;
+        }
+
+        for (String pattern : patterns) {
+            if (intentCode.startsWith(pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -435,30 +964,82 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             }
 
             if (matchedConfig == null) {
-                log.warn("DashScope returned unknown intent code: '{}'", intentCode);
+                log.warn("DashScope returned unknown intent code: '{}', confidence: {}", intentCode, confidence);
 
-                // 使用 Tool Calling 让 LLM 决定是否创建新意图 (替代硬编码逻辑)
-                if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
-                    log.info("[Tool Calling] Intent not matched, asking LLM whether to create new intent");
-                    return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
-                            intentCode, reasoning, confidence, userId, userRole);
-                } else if (autoCreateIntentEnabled && factoryId != null) {
-                    // 降级：Tool Calling 不可用时使用旧逻辑
-                    log.warn("[Legacy Mode] Tool Calling unavailable, using hardcoded logic");
-                    if (!"UNKNOWN".equalsIgnoreCase(intentCode)) {
-                        log.info("[CREATE_INTENT] LLM suggested new intent code: {} for input: {}",
-                                intentCode, truncate(userInput, 50));
-                        tryCreateIntentSuggestion(factoryId, userInput, intentCode, null, reasoning, confidence);
-                    } else if (reasoning != null && !reasoning.isEmpty()) {
-                        String generatedCode = generateIntentCodeFromInput(userInput);
-                        String generatedName = generateIntentNameFromInput(userInput);
-                        log.info("[CREATE_INTENT] LLM returned UNKNOWN with reasoning, generating suggestion: {} ({})",
-                                generatedCode, generatedName);
-                        tryCreateIntentSuggestion(factoryId, userInput, generatedCode, generatedName, reasoning, 0.5);
+                // ===== 方案 A: 高置信度时信任 LLM 判断，尝试模糊匹配 =====
+                // 当 LLM 高置信度(>=0.6)理解意图但代码不在列表中时，尝试模糊匹配
+                if (confidence >= 0.6 && !"UNKNOWN".equalsIgnoreCase(intentCode)) {
+                    log.info("[Fuzzy Match] LLM suggested '{}' with confidence {}, attempting fuzzy match",
+                            intentCode, confidence);
+
+                    // 尝试模糊匹配：基于代码相似性或语义相似性
+                    AIIntentConfig fuzzyMatch = findFuzzyMatchIntent(intentCode, availableIntents);
+                    if (fuzzyMatch != null) {
+                        log.info("[Fuzzy Match] Found similar intent: {} for LLM suggestion: {}",
+                                fuzzyMatch.getIntentCode(), intentCode);
+                        matchedConfig = fuzzyMatch;
+                        // 稍微降低置信度，因为是模糊匹配
+                        confidence = Math.max(0.5, confidence - 0.1);
+                    } else {
+                        // 尝试通过 LLM reasoning 提取可执行操作
+                        if (reasoning != null && !reasoning.isEmpty()) {
+                            AIIntentConfig reasoningMatch = findIntentFromReasoning(reasoning, availableIntents);
+                            if (reasoningMatch != null) {
+                                log.info("[Reasoning Match] Found intent from reasoning: {} for input: {}",
+                                        reasoningMatch.getIntentCode(), truncate(userInput, 50));
+                                matchedConfig = reasoningMatch;
+                                confidence = Math.max(0.5, confidence - 0.15);
+                            }
+                        }
                     }
                 }
 
-                return IntentMatchResult.empty(userInput);
+                // 如果模糊匹配成功，继续处理（不返回空结果）
+                if (matchedConfig != null) {
+                    log.info("[Fuzzy Match Success] Proceeding with matched intent: {}", matchedConfig.getIntentCode());
+                } else {
+                    // 使用 Tool Calling 让 LLM 决定是否创建新意图 (替代硬编码逻辑)
+                    if (autoCreateIntentEnabled && factoryId != null && shouldUseToolCalling()) {
+                        log.info("[Tool Calling] Intent not matched, asking LLM whether to create new intent");
+                        return tryCreateIntentViaToolCalling(userInput, availableIntents, factoryId,
+                                intentCode, reasoning, confidence, userId, userRole);
+                    } else if (autoCreateIntentEnabled && factoryId != null) {
+                        // 降级：Tool Calling 不可用时使用旧逻辑
+                        log.warn("[Legacy Mode] Tool Calling unavailable, using hardcoded logic");
+                        boolean suggestionCreated = false;
+                        double suggestionConfidence = 0.0;
+
+                        if (!"UNKNOWN".equalsIgnoreCase(intentCode)) {
+                            log.info("[CREATE_INTENT] LLM suggested new intent code: {} for input: {}",
+                                    intentCode, truncate(userInput, 50));
+                            tryCreateIntentSuggestion(factoryId, userInput, intentCode, null, reasoning, confidence);
+                            suggestionCreated = true;
+                            suggestionConfidence = Math.max(confidence, 0.75);  // 确保 >= 0.70
+                        } else if (reasoning != null && !reasoning.isEmpty()) {
+                            String generatedCode = generateIntentCodeFromInput(userInput);
+                            String generatedName = generateIntentNameFromInput(userInput);
+                            log.info("[CREATE_INTENT] LLM returned UNKNOWN with reasoning, generating suggestion: {} ({})",
+                                    generatedCode, generatedName);
+                            tryCreateIntentSuggestion(factoryId, userInput, generatedCode, generatedName, reasoning, 0.5);
+                            suggestionCreated = true;
+                            suggestionConfidence = 0.75;  // UNKNOWN 但有推理，设为 0.75 触发学习
+                        }
+
+                        // 如果创建了建议，返回带有置信度的结果以触发自学习
+                        if (suggestionCreated) {
+                            return IntentMatchResult.builder()
+                                    .userInput(userInput)
+                                    .confidence(suggestionConfidence)
+                                    .matchMethod(MatchMethod.LLM)
+                                    .isStrongSignal(false)
+                                    .requiresConfirmation(true)
+                                    .clarificationQuestion("已创建新的意图配置建议，等待审核。")
+                                    .build();
+                        }
+                    }
+
+                    return IntentMatchResult.empty(userInput);
+                }
             }
 
             // 构建候选列表
@@ -1475,6 +2056,180 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         return "新功能: " + baseName;
     }
 
+    // ==================== 方案 A: 模糊匹配辅助方法 ====================
+
+    /**
+     * 模糊匹配意图配置
+     * 当 LLM 返回的 intent_code 不在列表中但语义相近时，尝试找到最接近的意图
+     *
+     * 匹配策略：
+     * 1. 代码前缀匹配（如 MATERIAL_BATCH_XXX → MATERIAL_BATCH_QUERY）
+     * 2. 关键动词匹配（查询→QUERY, 创建→CREATE, 列表→LIST）
+     * 3. 领域关键词匹配（原材料→MATERIAL, 质检→QUALITY, 考勤→ATTENDANCE）
+     */
+    private AIIntentConfig findFuzzyMatchIntent(String suggestedCode, List<AIIntentConfig> availableIntents) {
+        if (suggestedCode == null || suggestedCode.isEmpty()) {
+            return null;
+        }
+
+        String upperCode = suggestedCode.toUpperCase();
+
+        // 策略1: 前缀匹配 - 找到相同前缀的意图
+        String[] parts = upperCode.split("_");
+        if (parts.length >= 2) {
+            String prefix = parts[0] + "_" + parts[1]; // 如 MATERIAL_BATCH
+
+            for (AIIntentConfig intent : availableIntents) {
+                if (intent.getIntentCode().toUpperCase().startsWith(prefix)) {
+                    log.debug("[Fuzzy Match] Prefix match: {} → {}", suggestedCode, intent.getIntentCode());
+                    return intent;
+                }
+            }
+        }
+
+        // 策略2: 动词映射
+        Map<String, String> verbMappings = Map.ofEntries(
+                Map.entry("查", "_QUERY"), Map.entry("查询", "_QUERY"),
+                Map.entry("搜索", "_SEARCH"), Map.entry("找", "_SEARCH"),
+                Map.entry("列表", "_LIST"), Map.entry("所有", "_LIST"), Map.entry("全部", "_LIST"),
+                Map.entry("添加", "_CREATE"), Map.entry("新增", "_CREATE"), Map.entry("创建", "_CREATE"),
+                Map.entry("修改", "_UPDATE"), Map.entry("更新", "_UPDATE"), Map.entry("编辑", "_UPDATE"),
+                Map.entry("删除", "_DELETE"), Map.entry("移除", "_DELETE")
+        );
+
+        for (Map.Entry<String, String> entry : verbMappings.entrySet()) {
+            if (upperCode.contains(entry.getValue().substring(1))) { // 去掉前缀下划线比较
+                // 找到包含该动词后缀的意图
+                for (AIIntentConfig intent : availableIntents) {
+                    if (intent.getIntentCode().toUpperCase().endsWith(entry.getValue())) {
+                        // 如果领域前缀也匹配，优先返回
+                        if (parts.length > 0 && intent.getIntentCode().toUpperCase().startsWith(parts[0])) {
+                            log.debug("[Fuzzy Match] Verb+Domain match: {} → {}", suggestedCode, intent.getIntentCode());
+                            return intent;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 策略3: 领域关键词映射
+        Map<String, String> domainMappings = Map.ofEntries(
+                Map.entry("MATERIAL", "MATERIAL_BATCH_QUERY"),
+                Map.entry("原材料", "MATERIAL_BATCH_QUERY"),
+                Map.entry("原料", "MATERIAL_BATCH_QUERY"),
+                Map.entry("QUALITY", "QUALITY_CHECK_QUERY"),
+                Map.entry("质检", "QUALITY_CHECK_QUERY"),
+                Map.entry("ATTENDANCE", "ATTENDANCE_TODAY"),
+                Map.entry("考勤", "ATTENDANCE_TODAY"),
+                Map.entry("打卡", "CLOCK_IN"),
+                Map.entry("SCALE", "SCALE_LIST_DEVICES"),
+                Map.entry("电子秤", "SCALE_LIST_DEVICES"),
+                Map.entry("秤", "SCALE_LIST_DEVICES"),
+                Map.entry("ALERT", "ALERT_LIST"),
+                Map.entry("告警", "ALERT_LIST"),
+                Map.entry("SUPPLIER", "SUPPLIER_LIST"),
+                Map.entry("供应商", "SUPPLIER_LIST"),
+                Map.entry("CUSTOMER", "CUSTOMER_LIST"),
+                Map.entry("客户", "CUSTOMER_LIST"),
+                Map.entry("REPORT", "REPORT_DASHBOARD_OVERVIEW"),
+                Map.entry("报表", "REPORT_DASHBOARD_OVERVIEW")
+        );
+
+        for (Map.Entry<String, String> entry : domainMappings.entrySet()) {
+            if (upperCode.contains(entry.getKey().toUpperCase())) {
+                String targetCode = entry.getValue();
+                AIIntentConfig match = availableIntents.stream()
+                        .filter(i -> i.getIntentCode().equalsIgnoreCase(targetCode))
+                        .findFirst()
+                        .orElse(null);
+                if (match != null) {
+                    log.debug("[Fuzzy Match] Domain keyword match: {} → {}", suggestedCode, match.getIntentCode());
+                    return match;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 从 LLM reasoning 中提取意图
+     * 分析 LLM 的推理文本，找到它实际理解的意图
+     *
+     * 示例 reasoning:
+     * - "用户想要上班打卡" → CLOCK_IN
+     * - "用户询问原材料库存情况" → MATERIAL_BATCH_QUERY
+     */
+    private AIIntentConfig findIntentFromReasoning(String reasoning, List<AIIntentConfig> availableIntents) {
+        if (reasoning == null || reasoning.isEmpty()) {
+            return null;
+        }
+
+        // 关键词到意图代码的映射
+        Map<String, String> keywordToIntent = Map.ofEntries(
+                // 考勤相关
+                Map.entry("打卡", "CLOCK_IN"),
+                Map.entry("签到", "CLOCK_IN"),
+                Map.entry("上班", "CLOCK_IN"),
+                Map.entry("签退", "CLOCK_OUT"),
+                Map.entry("下班", "CLOCK_OUT"),
+                Map.entry("考勤", "ATTENDANCE_TODAY"),
+                Map.entry("出勤", "ATTENDANCE_TODAY"),
+                // 原材料相关
+                Map.entry("原材料", "MATERIAL_BATCH_QUERY"),
+                Map.entry("原料", "MATERIAL_BATCH_QUERY"),
+                Map.entry("库存", "MATERIAL_BATCH_QUERY"),
+                Map.entry("领用", "MATERIAL_BATCH_USE"),
+                // 质检相关
+                Map.entry("质检", "QUALITY_CHECK_QUERY"),
+                Map.entry("检测", "QUALITY_CHECK_EXECUTE"),
+                Map.entry("质量", "QUALITY_CHECK_QUERY"),
+                // 设备相关
+                Map.entry("电子秤", "SCALE_LIST_DEVICES"),
+                Map.entry("称重设备", "SCALE_LIST_DEVICES"),
+                Map.entry("秤", "SCALE_LIST_DEVICES"),
+                Map.entry("设备", "SCALE_LIST_DEVICES"),
+                // 告警相关
+                Map.entry("告警", "ALERT_LIST"),
+                Map.entry("警报", "ALERT_LIST"),
+                Map.entry("异常", "ALERT_ACTIVE"),
+                // 供应商/客户
+                Map.entry("供应商", "SUPPLIER_LIST"),
+                Map.entry("供货", "SUPPLIER_LIST"),
+                Map.entry("客户", "CUSTOMER_LIST"),
+                Map.entry("买家", "CUSTOMER_LIST"),
+                // 报表
+                Map.entry("报表", "REPORT_DASHBOARD_OVERVIEW"),
+                Map.entry("报告", "REPORT_DASHBOARD_OVERVIEW"),
+                Map.entry("统计", "REPORT_DASHBOARD_OVERVIEW"),
+                Map.entry("数据", "REPORT_DASHBOARD_OVERVIEW"),
+                // 生产
+                Map.entry("生产", "PRODUCTION_PLAN_LIST"),
+                Map.entry("加工", "PROCESSING_BATCH_LIST"),
+                Map.entry("批次", "PROCESSING_BATCH_LIST"),
+                // 溯源
+                Map.entry("溯源", "TRACE_BATCH"),
+                Map.entry("追溯", "TRACE_BATCH")
+        );
+
+        // 在 reasoning 中查找关键词
+        for (Map.Entry<String, String> entry : keywordToIntent.entrySet()) {
+            if (reasoning.contains(entry.getKey())) {
+                String targetCode = entry.getValue();
+                AIIntentConfig match = availableIntents.stream()
+                        .filter(i -> i.getIntentCode().equalsIgnoreCase(targetCode))
+                        .findFirst()
+                        .orElse(null);
+                if (match != null) {
+                    log.debug("[Reasoning Match] Found keyword '{}' → intent: {}", entry.getKey(), match.getIntentCode());
+                    return match;
+                }
+            }
+        }
+
+        return null;
+    }
+
     // ==================== Tool Calling 流程 (新架构) ====================
 
     /**
@@ -1591,11 +2346,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
                 String result = executor.execute(toolCall, context);
                 log.info("[Tool Calling] Tool execution result: {}", truncate(result, 200));
 
-                // 解析结果（可选：可以将结果返回给 LLM 进行 ReAct loop）
-                // 当前版本：直接返回空结果，因为意图已通过 tool 创建
+                // 返回结果，置信度设为 0.75 以触发自学习机制
+                // 自学习阈值为 0.70，Tool Calling 成功创建意图建议后应触发学习
                 return IntentMatchResult.builder()
                         .userInput(userInput)
-                        .confidence(0.0)
+                        .confidence(0.75)  // 设置 >= 0.70 以触发自学习
                         .matchMethod(MatchMethod.LLM)
                         .isStrongSignal(false)
                         .requiresConfirmation(true)

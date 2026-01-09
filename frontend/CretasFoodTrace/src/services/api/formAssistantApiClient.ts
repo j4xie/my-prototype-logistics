@@ -57,6 +57,10 @@ export interface FormParseRequest {
   formFields?: FormFieldDefinition[];
   /** 上下文信息 (如当前工厂名称、常用供应商等) */
   context?: Record<string, unknown>;
+  /** 是否启用深度思考模式 (用于复杂解析场景) */
+  enableThinking?: boolean;
+  /** 思考预算 (10-100)，数值越大思考越深入 */
+  thinkingBudget?: number;
 }
 
 /**
@@ -157,6 +161,14 @@ export interface SchemaGenerateRequest {
   entityType: EntityType;
   /** 现有字段 (避免重复) */
   existingFields?: string[];
+  /** 用户解释说明 - 当AI拒绝后，用户可提供理由再次尝试 */
+  userJustification?: string;
+  /** 修改模式 - 当为 true 时，AI 会修改现有字段而非添加新字段 */
+  modifyMode?: boolean;
+  /** 是否启用深度思考模式 (用于复杂Schema生成) */
+  enableThinking?: boolean;
+  /** 思考预算 (10-100)，数值越大思考越深入 */
+  thinkingBudget?: number;
 }
 
 /**
@@ -169,8 +181,17 @@ export interface SchemaGenerateResponse {
   fields: SchemaFieldDefinition[];
   /** 验证规则 */
   validationRules?: Array<Record<string, unknown>>;
+  /** AI建议 */
+  suggestions?: string[];
   /** 消息 */
   message?: string;
+
+  /** AI判断字段是否与当前实体类型相关 */
+  relevant?: boolean;
+  /** 如果不相关，拒绝的原因说明 */
+  rejectionReason?: string;
+  /** AI建议的更合适的实体类型（如字段更适合其他表单） */
+  suggestedEntityType?: string;
 }
 
 /**
@@ -194,6 +215,101 @@ interface ApiResponse<T> {
   success: boolean;
   data: T;
   message: string;
+}
+
+// ========== AI Schema 分析类型 ==========
+
+/**
+ * Schema分析请求
+ * 分析现有表单配置，获取优化建议
+ */
+export interface SchemaAnalyzeRequest {
+  /** 实体类型 */
+  entityType: EntityType;
+  /** 当前 Schema JSON */
+  schemaJson: string;
+  /** 分析重点 (可选) */
+  focusAreas?: ('usability' | 'validation' | 'performance' | 'completeness')[];
+  /** 业务上下文描述 (可选，帮助AI理解业务场景) */
+  businessContext?: string;
+}
+
+/**
+ * Schema优化建议
+ */
+export interface SchemaAnalyzeSuggestion {
+  /** 建议ID */
+  id: string;
+  /** 建议类型 */
+  type: 'add_field' | 'remove_field' | 'modify_field' | 'add_validation' | 'improve_ux' | 'optimize_structure';
+  /** 相关字段名 (如果适用) */
+  fieldName?: string;
+  /** 建议标题 */
+  title: string;
+  /** 详细描述 */
+  description: string;
+  /** 优先级 */
+  priority: 'high' | 'medium' | 'low';
+  /** 建议的修改内容 (JSON格式的字段定义或修改) */
+  suggestedChange?: Record<string, unknown>;
+  /** 预期效果 */
+  expectedBenefit?: string;
+}
+
+/**
+ * Schema分析响应
+ */
+export interface SchemaAnalyzeResponse {
+  /** 是否成功 */
+  success: boolean;
+  /** 总体评分 (0-100) */
+  overallScore: number;
+  /** 各维度评分 */
+  dimensionScores: {
+    usability: number;     // 易用性
+    validation: number;    // 校验完整性
+    completeness: number;  // 字段完整性
+    structure: number;     // 结构合理性
+  };
+  /** 优化建议列表 */
+  suggestions: SchemaAnalyzeSuggestion[];
+  /** 总结评价 */
+  summary: string;
+  /** 消息 */
+  message?: string;
+}
+
+/**
+ * Schema优化请求
+ * 应用选中的优化建议
+ */
+export interface SchemaOptimizeRequest {
+  /** 实体类型 */
+  entityType: EntityType;
+  /** 当前 Schema JSON */
+  schemaJson: string;
+  /** 要应用的建议ID列表 (为空则应用所有) */
+  suggestionIds?: string[];
+  /** 用户额外说明 */
+  userInstruction?: string;
+}
+
+/**
+ * Schema优化响应
+ */
+export interface SchemaOptimizeResponse {
+  /** 是否成功 */
+  success: boolean;
+  /** 优化后的字段列表 */
+  fields: SchemaFieldDefinition[];
+  /** 应用的优化数量 */
+  appliedCount: number;
+  /** 变更摘要 */
+  changeSummary: string;
+  /** 消息 */
+  message?: string;
+  /** 优化后的完整 Schema JSON 字符串 */
+  optimizedSchema?: string;
 }
 
 // ========== 校验反馈类型 (Phase 1.2) ==========
@@ -230,6 +346,10 @@ export interface ValidationFeedbackRequest {
   validationErrors: ValidationError[];
   /** 用户补充说明 (可选) */
   userInstruction?: string;
+  /** 是否启用深度思考模式 (用于复杂校验场景) */
+  enableThinking?: boolean;
+  /** 思考预算 (10-100)，数值越大思考越深入 */
+  thinkingBudget?: number;
 }
 
 /**
@@ -432,6 +552,7 @@ class FormAssistantApiClient {
       return {
         success: false,
         fields: [],
+        relevant: true, // 错误情况默认为true，避免误判为拒绝
         message: response.message || 'AI生成Schema失败',
       };
     } catch (error) {
@@ -439,6 +560,7 @@ class FormAssistantApiClient {
       return {
         success: false,
         fields: [],
+        relevant: true, // 错误情况默认为true，避免误判为拒绝
         message: error instanceof Error ? error.message : 'AI服务暂时不可用',
       };
     }
@@ -487,6 +609,122 @@ class FormAssistantApiClient {
       return {
         success: false,
         confidence: 0,
+        message: error instanceof Error ? error.message : 'AI服务暂时不可用',
+      };
+    }
+  }
+
+  /**
+   * AI分析Schema配置
+   *
+   * 分析现有表单Schema配置，返回优化建议
+   * 包括字段完整性、校验规则、用户体验等多维度评估
+   *
+   * 示例:
+   * - 输入: 质检表单Schema
+   * - 输出: 建议添加"合格判定"字段，建议为"温度"字段添加范围校验
+   *
+   * @param request 分析请求
+   * @param factoryId 工厂ID (可选)
+   * @returns 分析结果和优化建议
+   */
+  async analyzeSchema(
+    request: SchemaAnalyzeRequest,
+    factoryId?: string
+  ): Promise<SchemaAnalyzeResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<SchemaAnalyzeResponse>>(
+        `${this.getBasePath(factoryId)}/analyze-schema`,
+        request
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      // 兼容直接返回数据的情况
+      if ('overallScore' in response) {
+        return response as unknown as SchemaAnalyzeResponse;
+      }
+
+      return {
+        success: false,
+        overallScore: 0,
+        dimensionScores: {
+          usability: 0,
+          validation: 0,
+          completeness: 0,
+          structure: 0,
+        },
+        suggestions: [],
+        summary: '',
+        message: response.message || 'AI分析失败',
+      };
+    } catch (error) {
+      console.error('[FormAssistantApiClient] analyzeSchema error:', error);
+      return {
+        success: false,
+        overallScore: 0,
+        dimensionScores: {
+          usability: 0,
+          validation: 0,
+          completeness: 0,
+          structure: 0,
+        },
+        suggestions: [],
+        summary: '',
+        message: error instanceof Error ? error.message : 'AI服务暂时不可用',
+      };
+    }
+  }
+
+  /**
+   * AI优化Schema配置
+   *
+   * 根据选中的优化建议或用户指令，自动优化Schema配置
+   * 可以批量应用多个建议，或让AI根据用户描述自动优化
+   *
+   * 示例:
+   * - 输入: 应用建议ID ["add-validation-1", "improve-ux-2"]
+   * - 输出: 优化后的字段列表，变更摘要
+   *
+   * @param request 优化请求
+   * @param factoryId 工厂ID (可选)
+   * @returns 优化结果
+   */
+  async optimizeSchema(
+    request: SchemaOptimizeRequest,
+    factoryId?: string
+  ): Promise<SchemaOptimizeResponse> {
+    try {
+      const response = await apiClient.post<ApiResponse<SchemaOptimizeResponse>>(
+        `${this.getBasePath(factoryId)}/optimize-schema`,
+        request
+      );
+
+      if (response.success && response.data) {
+        return response.data;
+      }
+
+      // 兼容直接返回数据的情况
+      if ('fields' in response && 'appliedCount' in response) {
+        return response as unknown as SchemaOptimizeResponse;
+      }
+
+      return {
+        success: false,
+        fields: [],
+        appliedCount: 0,
+        changeSummary: '',
+        message: response.message || 'AI优化失败',
+      };
+    } catch (error) {
+      console.error('[FormAssistantApiClient] optimizeSchema error:', error);
+      return {
+        success: false,
+        fields: [],
+        appliedCount: 0,
+        changeSummary: '',
         message: error instanceof Error ? error.message : 'AI服务暂时不可用',
       };
     }

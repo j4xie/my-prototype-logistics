@@ -165,6 +165,31 @@ export interface ActiveStatusRequest {
 }
 
 /**
+ * 意图分类配置（从 system_enums 获取）
+ */
+export interface IntentCategoryConfig {
+  /** 枚举ID */
+  id: string;
+  /** 分类代码 */
+  enumCode: string;
+  /** 显示标签 */
+  enumLabel: string;
+  /** 描述 */
+  enumDescription?: string;
+  /** 排序 */
+  sortOrder: number;
+  /** 图标 */
+  icon?: string;
+  /** 颜色 */
+  color?: string;
+  /** 元数据（包含 subCategories 等） */
+  metadata?: {
+    subCategories?: string[];
+    [key: string]: unknown;
+  };
+}
+
+/**
  * 通用API响应包装
  */
 interface ApiResponseWrapper<T> {
@@ -534,6 +559,25 @@ class IntentConfigApiClient {
    */
   async clearCache(factoryId?: string): Promise<void> {
     await apiClient.post(`${this.getBasePath(factoryId)}/cache/clear`);
+  }
+
+  // ==================== 分类配置 ====================
+
+  /**
+   * 获取意图分类配置（从 system_enums 动态加载）
+   *
+   * @param factoryId 工厂ID（可选）
+   * @returns 分类配置列表
+   */
+  async getIntentCategoryConfigs(factoryId?: string): Promise<IntentCategoryConfig[]> {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的');
+    }
+    const response = await apiClient.get<ApiResponseWrapper<IntentCategoryConfig[]>>(
+      `/api/mobile/${currentFactoryId}/system-config/enums/INTENT_CATEGORY`
+    );
+    return response.data ?? [];
   }
 }
 

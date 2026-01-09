@@ -1,5 +1,12 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.config.DashScopeConfig;
+import com.cretas.aims.config.IntentKnowledgeBase;
+import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
+import com.cretas.aims.entity.AIAnalysisResult;
+import com.cretas.aims.repository.AIAnalysisResultRepository;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.cache.SemanticCacheHit;
@@ -17,6 +24,9 @@ import com.cretas.aims.service.LlmIntentFallbackClient;
 import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.SemanticCacheService;
 import com.cretas.aims.service.handler.IntentHandler;
+import com.cretas.aims.ai.dto.ToolCall;
+import com.cretas.aims.ai.tool.ToolExecutor;
+import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.util.ErrorSanitizer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -61,9 +71,16 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private final LlmIntentFallbackClient llmFallbackClient;
     private final ConversationService conversationService;
     private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
+    private final DashScopeConfig dashScopeConfig;
+    private final IntentKnowledgeBase knowledgeBase;
+    private final AIAnalysisResultRepository analysisResultRepository;
 
     // 处理器映射表: category -> handler
     private final Map<String, IntentHandler> handlerMap = new HashMap<>();
+
+    // Tool 注册中心（新架构）
+    private final ToolRegistry toolRegistry;
 
     // SSE 异步执行器
     private final ExecutorService sseExecutor = Executors.newCachedThreadPool();
@@ -79,7 +96,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      RuleEngineService ruleEngineService,
                                      @Lazy LlmIntentFallbackClient llmFallbackClient,
                                      ConversationService conversationService,
-                                     ObjectMapper objectMapper) {
+                                     ObjectMapper objectMapper,
+                                     ToolRegistry toolRegistry,
+                                     DashScopeClient dashScopeClient,
+                                     DashScopeConfig dashScopeConfig,
+                                     IntentKnowledgeBase knowledgeBase,
+                                     AIAnalysisResultRepository analysisResultRepository) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
         this.semanticsParser = semanticsParser;
@@ -88,6 +110,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.llmFallbackClient = llmFallbackClient;
         this.conversationService = conversationService;
         this.objectMapper = objectMapper;
+        this.toolRegistry = toolRegistry;
+        this.dashScopeClient = dashScopeClient;
+        this.dashScopeConfig = dashScopeConfig;
+        this.knowledgeBase = knowledgeBase;
+        this.analysisResultRepository = analysisResultRepository;
     }
 
     @PostConstruct
@@ -207,8 +234,33 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
         }
 
-        // 0.5. 查询语义缓存 (提升响应速度)
+        // 0.3. 早期问题类型检测 (Layer 0)
+        // 在缓存检查之前检测，确保通用问题和闲聊不会被业务意图缓存拦截
         String userInput = request.getUserInput();
+        if (userInput != null && !userInput.isEmpty()) {
+            QuestionType earlyQuestionType = knowledgeBase.detectQuestionType(userInput);
+            log.debug("早期问题类型检测: type={}, userInput='{}'", earlyQuestionType,
+                    userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+            // 对于通用咨询问题和闲聊，直接跳过缓存，路由到LLM
+            if (earlyQuestionType == QuestionType.GENERAL_QUESTION ||
+                earlyQuestionType == QuestionType.CONVERSATIONAL) {
+                log.info("问题类型为{}，跳过缓存直接路由到LLM: input='{}'", earlyQuestionType,
+                        userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+                String llmResponse = generateConversationalResponse(factoryId, userInput, earlyQuestionType,
+                        request.getEnableThinking(), request.getThinkingBudget());
+
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(false)
+                        .status("COMPLETED")
+                        .message(llmResponse)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+        }
+
+        // 0.5. 查询语义缓存 (提升响应速度) - 仅对操作指令类问题
         if (userInput != null && !userInput.isEmpty()) {
             try {
                 SemanticCacheHit cacheHit = semanticCacheService.queryCache(factoryId, userInput);
@@ -303,6 +355,24 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             }
 
             return builder.build();
+        }
+
+        // 2b. 处理通用咨询问题和闲聊 - 直接路由到LLM对话
+        if (matchResult.getQuestionType() == QuestionType.GENERAL_QUESTION ||
+            matchResult.getQuestionType() == QuestionType.CONVERSATIONAL) {
+            log.info("📋 通用问题/闲聊检测，路由到LLM对话: userInput={}, questionType={}",
+                    request.getUserInput(), matchResult.getQuestionType());
+
+            // 调用 LLM 获取对话式回复
+            String llmResponse = generateConversationalResponse(factoryId, request.getUserInput(), matchResult.getQuestionType(),
+                    request.getEnableThinking(), request.getThinkingBudget());
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("COMPLETED")
+                    .message(llmResponse)
+                    .executedAt(LocalDateTime.now())
+                    .build();
         }
 
         // 3. 处理无匹配但有候选意图的情况（弱信号）
@@ -430,34 +500,28 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
         log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
 
-        // 4. 路由到处理器
-        String category = intent.getIntentCategory();
-        IntentHandler handler = handlerMap.get(category);
+        // 4. 路由到执行器 - Tool 优先，Handler 回退
+        String toolName = intent.getToolName();
+        IntentExecuteResponse response;
 
-        if (handler == null) {
-            log.warn("未找到处理器: category={}", category);
-            return IntentExecuteResponse.builder()
-                    .intentRecognized(true)
-                    .intentCode(intent.getIntentCode())
-                    .intentName(intent.getIntentName())
-                    .intentCategory(category)
-                    .status("FAILED")
-                    .message("暂不支持此类型的意图执行: " + category)
-                    .executedAt(LocalDateTime.now())
-                    .build();
+        // 4a. Tool 架构优先（新架构）
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                log.info("使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+            } else {
+                log.warn("Tool 未找到，回退到 Handler: toolName={}", toolName);
+                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            }
+        } else {
+            // 4b. Handler 架构回退（旧架构）
+            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
         }
 
-        // 5. 预览模式
-        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
-            return handler.preview(factoryId, request, intent, userId, userRole);
-        }
-
-        // 6. 执行 - 优先使用语义模式
-        IntentExecuteResponse response = executeWithHandler(handler, factoryId, request, intent, userId, userRole);
-
-        // 6.5. 检查是否需要更多信息，生成澄清问题
+        // 6.5. 检查是否需要更多信息，生成澄清问题并创建对话会话
         if ("NEED_MORE_INFO".equals(response.getStatus())) {
-            response = enrichWithClarificationQuestions(response, request, intent, factoryId);
+            response = enrichWithClarificationQuestions(response, request, intent, factoryId, userId);
         }
 
         // 7. 处理缓存：标记缓存命中和写入新结果
@@ -490,6 +554,178 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         // 传统模式
         return handler.handle(factoryId, request, intent, userId, userRole);
+    }
+
+    /**
+     * 使用 Tool 执行意图（新架构）
+     *
+     * 将请求参数封装为 ToolCall 并执行 Tool，
+     * 然后将 Tool 执行结果转换为 IntentExecuteResponse。
+     */
+    private IntentExecuteResponse executeWithTool(ToolExecutor tool, String factoryId,
+                                                   IntentExecuteRequest request,
+                                                   AIIntentConfig intent,
+                                                   Long userId, String userRole) {
+        try {
+            // 1. 权限检查
+            if (tool.requiresPermission() && !tool.hasPermission(userRole)) {
+                log.warn("Tool 权限不足: tool={}, userRole={}", tool.getToolName(), userRole);
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intent.getIntentCode())
+                        .intentName(intent.getIntentName())
+                        .intentCategory(intent.getIntentCategory())
+                        .status("PERMISSION_DENIED")
+                        .message("您没有权限执行此操作: " + intent.getIntentName())
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            // 2. 构建 ToolCall
+            Map<String, Object> params = new HashMap<>();
+            if (request.getContext() != null) {
+                params.putAll(request.getContext());
+            }
+            // 添加 userInput 作为参数
+            params.put("userInput", request.getUserInput());
+            params.put("intentCode", intent.getIntentCode());
+
+            String argumentsJson = objectMapper.writeValueAsString(params);
+            ToolCall toolCall = ToolCall.of(
+                    java.util.UUID.randomUUID().toString(),
+                    tool.getToolName(),
+                    argumentsJson
+            );
+
+            // 3. 构建执行上下文
+            Map<String, Object> context = new HashMap<>();
+            context.put("factoryId", factoryId);
+            context.put("userId", userId);
+            context.put("userRole", userRole);
+            context.put("intentConfig", intent);
+            context.put("request", request);
+
+            // 4. 执行 Tool
+            log.debug("执行 Tool: name={}, arguments={}", tool.getToolName(), argumentsJson);
+            String resultJson = tool.execute(toolCall, context);
+
+            // 5. 解析 Tool 结果并转换为 IntentExecuteResponse
+            return parseToolResultToResponse(resultJson, intent);
+
+        } catch (JsonProcessingException e) {
+            log.error("Tool 参数序列化失败: tool={}, error={}", tool.getToolName(), e.getMessage());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("FAILED")
+                    .message("参数处理失败: " + e.getMessage())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        } catch (Exception e) {
+            log.error("Tool 执行失败: tool={}, error={}", tool.getToolName(), e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("FAILED")
+                    .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
+    /**
+     * 解析 Tool 执行结果为 IntentExecuteResponse
+     *
+     * Tool 返回的 JSON 格式约定：
+     * - success: boolean
+     * - data: Object (业务数据)
+     * - message: String
+     * - needMoreInfo: boolean (可选，表示需要更多参数)
+     * - missingParams: List<String> (可选，缺失的参数列表)
+     */
+    @SuppressWarnings("unchecked")
+    private IntentExecuteResponse parseToolResultToResponse(String resultJson, AIIntentConfig intent) {
+        try {
+            Map<String, Object> result = objectMapper.readValue(resultJson, Map.class);
+
+            Boolean success = (Boolean) result.getOrDefault("success", true);
+            Object data = result.get("data");
+            String message = (String) result.getOrDefault("message", success ? "执行成功" : "执行失败");
+            Boolean needMoreInfo = (Boolean) result.getOrDefault("needMoreInfo", false);
+
+            String status;
+            if (Boolean.TRUE.equals(needMoreInfo)) {
+                status = "NEED_MORE_INFO";
+            } else if (Boolean.TRUE.equals(success)) {
+                status = "SUCCESS";
+            } else {
+                status = "FAILED";
+            }
+
+            IntentExecuteResponse.IntentExecuteResponseBuilder builder = IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status(status)
+                    .message(message)
+                    .resultData(data)
+                    .executedAt(LocalDateTime.now());
+
+            return builder.build();
+
+        } catch (Exception e) {
+            log.error("解析 Tool 结果失败: json={}, error={}", resultJson, e.getMessage());
+            // 如果解析失败，直接返回原始 JSON 作为 resultData
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("SUCCESS")
+                    .message("执行完成")
+                    .resultData(resultJson)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
+    /**
+     * Handler 回退执行（旧架构）
+     *
+     * 当 tool_name 为空或 Tool 未找到时，使用此方法
+     */
+    private IntentExecuteResponse executeWithHandlerFallback(String factoryId,
+                                                              IntentExecuteRequest request,
+                                                              AIIntentConfig intent,
+                                                              Long userId, String userRole) {
+        String category = intent.getIntentCategory();
+        IntentHandler handler = handlerMap.get(category);
+
+        if (handler == null) {
+            log.warn("未找到处理器: category={}", category);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(category)
+                    .status("FAILED")
+                    .message("暂不支持此类型的意图执行: " + category)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 预览模式
+        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
+            return handler.preview(factoryId, request, intent, userId, userRole);
+        }
+
+        // 执行 - 优先使用语义模式
+        return executeWithHandler(handler, factoryId, request, intent, userId, userRole);
     }
 
     @Override
@@ -743,22 +979,23 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 "intentName", intent.getIntentName()
         ));
 
-        // 路由到处理器执行
-        String category = intent.getIntentCategory();
-        IntentHandler handler = handlerMap.get(category);
-
+        // 路由到执行器 - Tool 优先，Handler 回退
+        String toolName = intent.getToolName();
         IntentExecuteResponse response;
-        if (handler == null) {
-            response = IntentExecuteResponse.builder()
-                    .intentRecognized(true)
-                    .intentCode(intent.getIntentCode())
-                    .intentName(intent.getIntentName())
-                    .status("FAILED")
-                    .message("暂不支持此类型的意图执行: " + category)
-                    .executedAt(LocalDateTime.now())
-                    .build();
+
+        // Tool 架构优先（新架构）
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                log.info("[SSE] 使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+            } else {
+                log.warn("[SSE] Tool 未找到，回退到 Handler: toolName={}", toolName);
+                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            }
         } else {
-            response = executeWithHandler(handler, factoryId, request, intent, userId, userRole);
+            // Handler 架构回退（旧架构）
+            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
         }
 
         // 发送结果
@@ -1073,31 +1310,50 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .build();
         }
 
-        // 4. 路由到处理器
+        // 4. 路由到执行器 - Tool 优先，Handler 回退
+        String toolName = intent.getToolName();
         String category = intent.getIntentCategory();
-        IntentHandler handler = handlerMap.get(category);
+        IntentExecuteResponse response;
 
-        if (handler == null) {
-            log.warn("未找到处理器: category={}", category);
+        // 5. 预览模式 - 仍使用 Handler（Tool 不支持预览）
+        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
+            IntentHandler handler = handlerMap.get(category);
+            if (handler != null) {
+                return handler.preview(factoryId, request, intent, userId, userRole);
+            }
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intent.getIntentCode())
                     .intentName(intent.getIntentName())
-                    .intentCategory(category)
                     .status("FAILED")
-                    .message("暂不支持此类型的意图执行: " + category)
+                    .message("预览模式暂不支持此意图类型")
                     .executedAt(LocalDateTime.now())
                     .build();
         }
 
-        // 5. 预览模式
-        if (Boolean.TRUE.equals(request.getPreviewOnly())) {
-            return handler.preview(factoryId, request, intent, userId, userRole);
+        // 6. Tool 架构优先（新架构）
+        if (toolName != null && !toolName.isEmpty()) {
+            Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
+            if (toolOpt.isPresent()) {
+                log.info("[显式执行] 使用 Tool 执行: intentCode={}, toolName={}", intentCode, toolName);
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+            } else {
+                log.warn("[显式执行] Tool 未找到，回退到 Handler: toolName={}", toolName);
+                response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            }
+        } else {
+            // Handler 架构回退（旧架构）
+            log.info("[显式执行] 使用 Handler: intentCode={}, category={}", intentCode, category);
+            response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
         }
 
-        // 6. 执行 - 优先使用语义模式
-        log.info("显式意图执行: intentCode={}, handler={}", intentCode, handler.getClass().getSimpleName());
-        return executeWithHandler(handler, factoryId, request, intent, userId, userRole);
+        // 6.5. 检查是否需要更多信息，生成澄清问题并创建对话会话
+        // (与主执行流程保持一致，确保 NEED_MORE_INFO 状态时返回 sessionId)
+        if ("NEED_MORE_INFO".equals(response.getStatus())) {
+            response = enrichWithClarificationQuestions(response, request, intent, factoryId, userId);
+        }
+
+        return response;
     }
 
     /**
@@ -1358,7 +1614,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             IntentExecuteResponse response,
             IntentExecuteRequest request,
             AIIntentConfig intent,
-            String factoryId) {
+            String factoryId,
+            Long userId) {
 
         try {
             // 1. 从消息中提取缺失参数
@@ -1380,7 +1637,48 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     factoryId
             );
 
-            // 3. 构建增强的响应
+            // 3. 将缺失参数转换为 RequiredParameter 对象
+            List<ConversationService.RequiredParameter> requiredParameters = missingParams.stream()
+                    .map(paramName -> ConversationService.RequiredParameter.builder()
+                            .name(paramName)
+                            .label(getParameterLabel(paramName, intent))
+                            .type(getParameterType(paramName, intent))
+                            .validationHint(getParameterValidationHint(paramName, intent))
+                            .collected(false)
+                            .build())
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 4. 创建参数收集会话（使用 PARAMETER_COLLECTION 模式）
+            String sessionId = null;
+            Integer conversationRound = 1;
+            Integer maxConversationRounds = 5;
+
+            if (userId != null) {
+                try {
+                    ConversationService.ConversationResponse conversationResp =
+                            conversationService.startParameterCollection(
+                                    factoryId,
+                                    userId,
+                                    intent.getIntentCode(),
+                                    intent.getIntentName(),
+                                    requiredParameters,
+                                    clarificationQuestions
+                            );
+
+                    if (conversationResp != null && conversationResp.getSessionId() != null) {
+                        sessionId = conversationResp.getSessionId();
+                        conversationRound = conversationResp.getCurrentRound();
+                        maxConversationRounds = conversationResp.getMaxRounds();
+                        log.info("Created PARAMETER_COLLECTION session: sessionId={}, intent={}, params={}",
+                                sessionId, intent.getIntentCode(), missingParams);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to create parameter collection session: {}", e.getMessage());
+                    // 继续返回响应，只是没有sessionId
+                }
+            }
+
+            // 4. 构建增强的响应（包含会话信息）
             return IntentExecuteResponse.builder()
                     .intentRecognized(response.getIntentRecognized())
                     .intentCode(response.getIntentCode())
@@ -1389,6 +1687,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .status(response.getStatus())
                     .message("需要更多信息来完成此操作")
                     .clarificationQuestions(clarificationQuestions)
+                    .sessionId(sessionId)
+                    .conversationRound(conversationRound)
+                    .maxConversationRounds(maxConversationRounds)
                     .executedAt(response.getExecutedAt())
                     .build();
 
@@ -1433,6 +1734,104 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         log.debug("Extracted {} parameters from message: {}", params.size(), params);
         return params;
+    }
+
+    /**
+     * 获取参数的用户友好标签
+     *
+     * @param paramName 参数名称
+     * @param intent 意图配置
+     * @return 用户友好的标签
+     */
+    private String getParameterLabel(String paramName, AIIntentConfig intent) {
+        // 常见参数名称映射
+        java.util.Map<String, String> labelMap = java.util.Map.ofEntries(
+                java.util.Map.entry("batchId", "批次ID"),
+                java.util.Map.entry("batchNumber", "批次号"),
+                java.util.Map.entry("quantity", "数量"),
+                java.util.Map.entry("materialTypeId", "原材料类型"),
+                java.util.Map.entry("productTypeId", "产品类型"),
+                java.util.Map.entry("equipmentId", "设备ID"),
+                java.util.Map.entry("userId", "用户ID"),
+                java.util.Map.entry("date", "日期"),
+                java.util.Map.entry("startDate", "开始日期"),
+                java.util.Map.entry("endDate", "结束日期"),
+                java.util.Map.entry("reason", "原因"),
+                java.util.Map.entry("notes", "备注"),
+                java.util.Map.entry("status", "状态"),
+                java.util.Map.entry("supplierId", "供应商ID"),
+                java.util.Map.entry("warehouseId", "仓库ID"),
+                java.util.Map.entry("locationId", "库位ID"),
+                java.util.Map.entry("weight", "重量"),
+                java.util.Map.entry("temperature", "温度"),
+                java.util.Map.entry("workstationId", "工位ID")
+        );
+
+        String label = labelMap.get(paramName);
+        if (label != null) {
+            return label;
+        }
+
+        // 驼峰转友好名称 (如 batchNumber -> 批次 Number)
+        // 简化处理: 返回原名
+        return paramName;
+    }
+
+    /**
+     * 获取参数的数据类型
+     *
+     * @param paramName 参数名称
+     * @param intent 意图配置
+     * @return 数据类型 (string, number, date, uuid, etc.)
+     */
+    private String getParameterType(String paramName, AIIntentConfig intent) {
+        // 根据参数名推断类型
+        String lowerName = paramName.toLowerCase();
+
+        if (lowerName.endsWith("id")) {
+            // 大多数ID是UUID或字符串
+            return "string";
+        } else if (lowerName.equals("quantity") || lowerName.equals("weight") ||
+                   lowerName.equals("amount") || lowerName.equals("temperature") ||
+                   lowerName.equals("count")) {
+            return "number";
+        } else if (lowerName.contains("date") || lowerName.equals("startdate") ||
+                   lowerName.equals("enddate")) {
+            return "date";
+        } else {
+            return "string";
+        }
+    }
+
+    /**
+     * 获取参数的验证提示
+     *
+     * @param paramName 参数名称
+     * @param intent 意图配置
+     * @return 验证提示信息
+     */
+    private String getParameterValidationHint(String paramName, AIIntentConfig intent) {
+        String lowerName = paramName.toLowerCase();
+
+        if (lowerName.equals("batchid") || lowerName.equals("batchnumber")) {
+            return "请输入有效的批次ID或批次号";
+        } else if (lowerName.equals("quantity")) {
+            return "请输入有效的数量（正整数）";
+        } else if (lowerName.equals("materialtypeid")) {
+            return "请输入原材料类型ID";
+        } else if (lowerName.equals("producttypeid")) {
+            return "请输入产品类型ID";
+        } else if (lowerName.equals("equipmentid")) {
+            return "请输入设备ID";
+        } else if (lowerName.contains("date")) {
+            return "请输入日期，格式: YYYY-MM-DD";
+        } else if (lowerName.equals("weight")) {
+            return "请输入重量（数字）";
+        } else if (lowerName.equals("temperature")) {
+            return "请输入温度值";
+        } else {
+            return null; // 无特殊验证提示
+        }
     }
 
     /**
@@ -1562,5 +1961,195 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
 
         return result.toString();
+    }
+
+    /**
+     * 生成通用对话式回复
+     *
+     * 用于处理 GENERAL_QUESTION 和 CONVERSATIONAL 类型的问题。
+     * 这些问题不是具体的业务操作指令，而是通用咨询或闲聊。
+     *
+     * @param factoryId 工厂ID
+     * @param userInput 用户输入
+     * @param questionType 问题类型
+     * @param enableThinking 是否启用深度思考模式（仅GENERAL_QUESTION有效）
+     * @param thinkingBudget 思考预算Token数（10-100）
+     * @return LLM 生成的对话式回复
+     */
+    private String generateConversationalResponse(String factoryId, String userInput, QuestionType questionType,
+                                                   Boolean enableThinking, Integer thinkingBudget) {
+        String systemPrompt;
+
+        if (questionType == QuestionType.GENERAL_QUESTION) {
+            // 通用咨询问题（如何提高生产效率？降低成本？）
+            // 尝试获取预计算的分析报告，为建议提供数据支撑
+            String factoryAnalysisContext = getPrecomputedAnalysisContext(factoryId);
+
+            if (factoryAnalysisContext != null && !factoryAnalysisContext.isEmpty()) {
+                // 有预计算分析数据 - 提供数据驱动的建议
+                systemPrompt = """
+                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或成本优化的咨询问题。
+
+                    **重要**: 下面是该工厂的最新运营分析报告，请基于此数据提供针对性建议：
+
+                    ---
+                    %s
+                    ---
+
+                    请根据以下原则回答：
+                    1. **数据驱动**: 结合上述分析报告中的具体数据和问题点给出建议
+                    2. **针对性强**: 基于报告中发现的问题提供具体改进措施
+                    3. **可操作**: 建议应该是具体可执行的，带有明确的行动步骤
+                    4. **量化目标**: 如果可能，给出预期的改进效果
+                    5. 回答使用中文，不超过500字
+
+                    注意：你正在为这家具体工厂提供咨询建议，而非通用建议。
+                    """.formatted(factoryAnalysisContext);
+            } else {
+                // 无预计算数据 - 使用通用建议模板
+                systemPrompt = """
+                    你是白垩纪食品溯源系统的智能助手。用户正在询问一个关于生产管理、质量控制或食品安全的通用咨询问题。
+
+                    请根据以下原则回答：
+                    1. 提供专业、实用的建议
+                    2. 结合食品加工行业的最佳实践
+                    3. 如果问题涉及具体数据查询，建议用户使用系统的具体功能
+                    4. 回答简洁明了，不超过300字
+                    5. 使用中文回答
+
+                    注意：这不是一个具体的系统操作指令，而是通用知识咨询。
+                    """;
+            }
+        } else {
+            // 闲聊类型
+            systemPrompt = """
+                你是白垩纪食品溯源系统的智能助手。用户发起了一个日常对话。
+
+                请根据以下原则回答：
+                1. 友好、亲切地回应
+                2. 如果用户打招呼，简单回应并询问是否需要帮助
+                3. 适时引导用户使用系统功能
+                4. 回答简洁，不超过100字
+                5. 使用中文回答
+                """;
+        }
+
+        try {
+            // 判断是否使用深度思考模式
+            // 条件: enableThinking=true 且 是咨询类问题(GENERAL_QUESTION)
+            boolean useThinkingMode = Boolean.TRUE.equals(enableThinking)
+                    && questionType == QuestionType.GENERAL_QUESTION
+                    && dashScopeConfig.isThinkingEnabled();
+
+            int budget = (thinkingBudget != null && thinkingBudget >= 10 && thinkingBudget <= 100)
+                    ? thinkingBudget : 30;
+
+            log.info("🤖 调用 LLM 生成对话回复: questionType={}, enableThinking={}, thinkingMode={}, budget={}, userInput='{}'",
+                    questionType, enableThinking, useThinkingMode, budget,
+                    userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+            String response;
+            if (useThinkingMode) {
+                // 深度思考模式 - 适用于咨询类问题
+                log.info("🧠 使用深度思考模式生成咨询回复: budget={}", budget);
+                ChatCompletionResponse thinkingResponse = dashScopeClient.chatWithThinking(systemPrompt, userInput, budget);
+                response = thinkingResponse.getContent();
+
+                if (thinkingResponse.hasError()) {
+                    log.warn("深度思考模式返回错误，降级使用普通模式: error={}", thinkingResponse.getError());
+                    response = dashScopeClient.chat(systemPrompt, userInput);
+                }
+            } else {
+                // 快速模式 - 适用于闲聊或未开启思考的场景
+                response = dashScopeClient.chat(systemPrompt, userInput);
+            }
+
+            log.info("✅ LLM 对话回复生成成功: responseLength={}, thinkingMode={}",
+                    response != null ? response.length() : 0, useThinkingMode);
+            return response;
+
+        } catch (Exception e) {
+            log.error("❌ LLM 对话回复生成失败: {}", e.getMessage(), e);
+
+            // 返回友好的错误回复
+            if (questionType == QuestionType.GENERAL_QUESTION) {
+                return "抱歉，我暂时无法回答您的问题。您可以尝试询问具体的系统操作，如「查询库存」「查看今日考勤」等。";
+            } else {
+                return "您好！有什么可以帮您的吗？您可以询问库存查询、生产计划、考勤记录等相关问题。";
+            }
+        }
+    }
+
+    /**
+     * 获取工厂的预计算分析上下文
+     *
+     * 优先级：日报 > 周报 > 月报
+     * 仅返回未过期的分析结果
+     *
+     * @param factoryId 工厂ID
+     * @return 分析文本上下文，若无数据返回null
+     */
+    private String getPrecomputedAnalysisContext(String factoryId) {
+        if (factoryId == null || factoryId.isEmpty()) {
+            log.debug("无法获取预计算分析: factoryId 为空");
+            return null;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        StringBuilder context = new StringBuilder();
+
+        try {
+            // 1. 尝试获取最新日报分析
+            Optional<AIAnalysisResult> dailyAnalysis = analysisResultRepository
+                    .findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                            factoryId, "daily", now);
+
+            if (dailyAnalysis.isPresent()) {
+                AIAnalysisResult daily = dailyAnalysis.get();
+                context.append("## 最新日报分析 (").append(daily.getPeriodStart().toLocalDate()).append(")\n\n");
+                context.append(daily.getAnalysisText()).append("\n\n");
+                log.info("📊 获取到工厂日报分析: factoryId={}, createdAt={}", factoryId, daily.getCreatedAt());
+            }
+
+            // 2. 尝试获取最新周报分析
+            Optional<AIAnalysisResult> weeklyAnalysis = analysisResultRepository
+                    .findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                            factoryId, "weekly", now);
+
+            if (weeklyAnalysis.isPresent()) {
+                AIAnalysisResult weekly = weeklyAnalysis.get();
+                context.append("## 最新周报分析 (").append(weekly.getPeriodStart().toLocalDate())
+                       .append(" ~ ").append(weekly.getPeriodEnd().toLocalDate()).append(")\n\n");
+                context.append(weekly.getAnalysisText()).append("\n\n");
+                log.info("📊 获取到工厂周报分析: factoryId={}, createdAt={}", factoryId, weekly.getCreatedAt());
+            }
+
+            // 3. 尝试获取最新月报分析（如果没有日报和周报）
+            if (context.length() == 0) {
+                Optional<AIAnalysisResult> monthlyAnalysis = analysisResultRepository
+                        .findFirstByFactoryIdAndReportTypeAndExpiresAtAfterOrderByCreatedAtDesc(
+                                factoryId, "monthly", now);
+
+                if (monthlyAnalysis.isPresent()) {
+                    AIAnalysisResult monthly = monthlyAnalysis.get();
+                    context.append("## 最新月报分析 (").append(monthly.getPeriodStart().toLocalDate())
+                           .append(" ~ ").append(monthly.getPeriodEnd().toLocalDate()).append(")\n\n");
+                    context.append(monthly.getAnalysisText()).append("\n\n");
+                    log.info("📊 获取到工厂月报分析: factoryId={}, createdAt={}", factoryId, monthly.getCreatedAt());
+                }
+            }
+
+            if (context.length() > 0) {
+                log.info("✅ 预计算分析上下文已加载: factoryId={}, contextLength={}", factoryId, context.length());
+                return context.toString();
+            } else {
+                log.debug("⚠️ 未找到工厂的预计算分析数据: factoryId={}", factoryId);
+                return null;
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 获取预计算分析失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return null;
+        }
     }
 }

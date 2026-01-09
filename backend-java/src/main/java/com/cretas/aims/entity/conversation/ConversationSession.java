@@ -9,7 +9,10 @@ import lombok.*;
 import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * 多轮对话会话实体
@@ -95,6 +98,35 @@ public class ConversationSession {
     private SessionStatus status = SessionStatus.ACTIVE;
 
     /**
+     * 会话模式 (默认: 意图识别模式)
+     */
+    @Column(name = "session_mode", length = 30)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SessionMode sessionMode = SessionMode.INTENT_RECOGNITION;
+
+    /**
+     * 已知意图代码 (仅用于 PARAMETER_COLLECTION 模式)
+     * 当模式为参数收集时，此字段存储已确定的意图代码
+     */
+    @Column(name = "known_intent_code", length = 100)
+    private String knownIntentCode;
+
+    /**
+     * 必需参数列表 JSON (仅用于 PARAMETER_COLLECTION 模式)
+     * 格式: [{"name": "batchId", "label": "批次ID", "type": "string", "collected": false, "value": null}]
+     */
+    @Column(name = "required_parameters_json", columnDefinition = "TEXT")
+    private String requiredParametersJson;
+
+    /**
+     * 已收集参数 JSON
+     * 格式: {"batchId": "BATCH-001", "materialTypeId": "RMT-001"}
+     */
+    @Column(name = "collected_parameters_json", columnDefinition = "TEXT")
+    private String collectedParametersJson;
+
+    /**
      * 对话历史 JSON
      * 格式: [{"role": "user/assistant", "content": "...", "timestamp": "..."}]
      */
@@ -162,6 +194,18 @@ public class ConversationSession {
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
+    }
+
+    // ========== 会话模式枚举 ==========
+
+    /**
+     * 会话模式：区分意图识别对话和参数收集对话
+     */
+    public enum SessionMode {
+        /** 意图识别模式 - 帮助用户明确想做什么操作 */
+        INTENT_RECOGNITION,
+        /** 参数收集模式 - 意图已确定，收集缺失的必需参数 */
+        PARAMETER_COLLECTION
     }
 
     // ========== 会话状态枚举 ==========
@@ -382,7 +426,7 @@ public class ConversationSession {
     }
 
     /**
-     * 创建新会话
+     * 创建新会话 (意图识别模式)
      */
     public static ConversationSession create(String factoryId, Long userId, String originalInput) {
         ConversationSession session = ConversationSession.builder()
@@ -392,6 +436,7 @@ public class ConversationSession {
                 .currentRound(1)
                 .maxRounds(5)
                 .status(SessionStatus.ACTIVE)
+                .sessionMode(SessionMode.INTENT_RECOGNITION)
                 .timeoutMinutes(10)
                 .build();
 
@@ -399,5 +444,178 @@ public class ConversationSession {
         session.addUserMessage(originalInput);
 
         return session;
+    }
+
+    /**
+     * 创建参数收集会话
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param intentCode 已确定的意图代码
+     * @param requiredParameters 需要收集的参数列表
+     * @param initialQuestion 初始收集问题
+     */
+    public static ConversationSession createForParameterCollection(
+            String factoryId,
+            Long userId,
+            String intentCode,
+            List<RequiredParameter> requiredParameters,
+            String initialQuestion) {
+
+        ConversationSession session = ConversationSession.builder()
+                .factoryId(factoryId)
+                .userId(userId)
+                .originalInput("[参数收集] " + intentCode)
+                .currentRound(1)
+                .maxRounds(5)
+                .status(SessionStatus.ACTIVE)
+                .sessionMode(SessionMode.PARAMETER_COLLECTION)
+                .knownIntentCode(intentCode)
+                .timeoutMinutes(10)
+                .build();
+
+        // 设置必需参数
+        session.setRequiredParameters(requiredParameters);
+
+        // 添加初始助手消息
+        session.addAssistantMessage(initialQuestion);
+
+        return session;
+    }
+
+    // ========== 参数收集相关方法 ==========
+
+    /**
+     * 获取必需参数列表
+     */
+    public List<RequiredParameter> getRequiredParameters() {
+        if (requiredParametersJson == null || requiredParametersJson.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(requiredParametersJson,
+                    new TypeReference<List<RequiredParameter>>() {});
+        } catch (JsonProcessingException e) {
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 设置必需参数列表
+     */
+    public void setRequiredParameters(List<RequiredParameter> parameters) {
+        try {
+            this.requiredParametersJson = OBJECT_MAPPER.writeValueAsString(parameters);
+        } catch (JsonProcessingException e) {
+            this.requiredParametersJson = "[]";
+        }
+    }
+
+    /**
+     * 获取已收集参数
+     */
+    public Map<String, String> getCollectedParameters() {
+        if (collectedParametersJson == null || collectedParametersJson.isEmpty()) {
+            return new HashMap<>();
+        }
+        try {
+            return OBJECT_MAPPER.readValue(collectedParametersJson,
+                    new TypeReference<Map<String, String>>() {});
+        } catch (JsonProcessingException e) {
+            return new HashMap<>();
+        }
+    }
+
+    /**
+     * 设置已收集参数
+     */
+    public void setCollectedParameters(Map<String, String> parameters) {
+        try {
+            this.collectedParametersJson = OBJECT_MAPPER.writeValueAsString(parameters);
+        } catch (JsonProcessingException e) {
+            this.collectedParametersJson = "{}";
+        }
+    }
+
+    /**
+     * 添加收集到的参数
+     */
+    public void addCollectedParameter(String name, String value) {
+        Map<String, String> params = getCollectedParameters();
+        params.put(name, value);
+        setCollectedParameters(params);
+
+        // 更新参数状态
+        List<RequiredParameter> required = getRequiredParameters();
+        for (RequiredParameter param : required) {
+            if (param.getName().equals(name)) {
+                param.setCollected(true);
+                param.setValue(value);
+            }
+        }
+        setRequiredParameters(required);
+        this.lastActiveAt = LocalDateTime.now();
+    }
+
+    /**
+     * 获取下一个待收集的参数
+     */
+    public Optional<RequiredParameter> getNextPendingParameter() {
+        return getRequiredParameters().stream()
+                .filter(p -> !p.isCollected())
+                .findFirst();
+    }
+
+    /**
+     * 检查是否所有参数都已收集
+     */
+    public boolean allParametersCollected() {
+        return getRequiredParameters().stream()
+                .allMatch(RequiredParameter::isCollected);
+    }
+
+    /**
+     * 完成参数收集会话
+     */
+    public void completeParameterCollection() {
+        this.status = SessionStatus.COMPLETED;
+        this.completedAt = LocalDateTime.now();
+        // 对于参数收集模式，finalIntentCode 已经在创建时设置
+        if (this.finalIntentCode == null) {
+            this.finalIntentCode = this.knownIntentCode;
+        }
+        this.lastConfidence = 1.0; // 参数收集完成置信度为 100%
+    }
+
+    /**
+     * 检查会话是否为参数收集模式
+     */
+    public boolean isParameterCollectionMode() {
+        return sessionMode == SessionMode.PARAMETER_COLLECTION;
+    }
+
+    // ========== 参数实体类 ==========
+
+    /**
+     * 必需参数定义
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class RequiredParameter {
+        /** 参数名称 (API 字段名) */
+        private String name;
+        /** 显示标签 */
+        private String label;
+        /** 参数类型 */
+        private String type;
+        /** 验证提示 */
+        private String validationHint;
+        /** 是否已收集 */
+        private boolean collected;
+        /** 收集到的值 */
+        private String value;
     }
 }

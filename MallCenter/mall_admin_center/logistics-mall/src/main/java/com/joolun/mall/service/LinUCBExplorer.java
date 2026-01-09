@@ -14,6 +14,8 @@ import com.joolun.mall.mapper.LinUCBExplorationLogMapper;
 import com.joolun.mall.mapper.UserInterestTagMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -53,12 +55,41 @@ public class LinUCBExplorer implements BanditExplorer {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
+    /**
+     * 特征工程服务 - 提供 128 维特征向量
+     * 使用 @Lazy 注入避免循环依赖
+     */
+    @Autowired
+    @Lazy
+    private FeatureEngineeringService featureEngineeringService;
+
     // 算法参数
     private static final double ALPHA = 1.5;  // 探索系数，越大越偏向探索
-    private static final int USER_FEATURE_DIM = 24;  // 用户特征维度
-    private static final int ITEM_FEATURE_DIM = 16;  // 商品特征维度
-    private static final int TOTAL_FEATURE_DIM = USER_FEATURE_DIM + ITEM_FEATURE_DIM;  // 总特征维度
+
+    /**
+     * 特征维度配置 - 已升级到 128 维
+     *
+     * 用户特征 (64维):
+     * - 基础属性 (0-7): 用户等级、注册天数、最近活跃度等
+     * - 行为序列 (8-31): 最近浏览、收藏、购买商品的embedding均值
+     * - 偏好特征 (32-47): 价格敏感度、品牌偏好、品类偏好
+     * - 时间特征 (48-63): 周几、时段、节假日
+     *
+     * 商品特征 (64维):
+     * - 基础属性 (0-7): 价格归一化、库存状态、上架时间
+     * - 向量嵌入 (8-39): 商品文本embedding压缩
+     * - 统计特征 (40-55): 销量、评分、浏览量
+     * - 上下文特征 (56-63): 分类热度、竞品数量
+     */
+    private static final int USER_FEATURE_DIM = 64;  // 用户特征维度 (从24维升级)
+    private static final int ITEM_FEATURE_DIM = 64;  // 商品特征维度 (从16维升级)
+    private static final int TOTAL_FEATURE_DIM = USER_FEATURE_DIM + ITEM_FEATURE_DIM;  // 总特征维度 = 128
+
+    // 向后兼容：旧版特征维度（用于迁移）
+    private static final int LEGACY_TOTAL_FEATURE_DIM = 40;
+
     private static final double DEFAULT_EXPLORATION_RATE = 0.2;  // 20% 探索率
+    private static final String ALGORITHM_VERSION = "2.0";  // 算法版本号
 
     // Redis 缓存前缀
     private static final String LINUCB_EXPLORATION_PREFIX = "linucb:exploration:";
@@ -314,16 +345,39 @@ public class LinUCBExplorer implements BanditExplorer {
     // ==================== 特征构建 ====================
 
     /**
-     * 构建用户特征向量 (24维)
+     * 构建用户特征向量 (64维)
+     *
      * 维度分配:
-     * - 0-4: 分类偏好 (top 5 categories one-hot)
-     * - 5-9: 价格区间偏好 (5个区间)
-     * - 10-14: 品牌偏好 (top 5 brands one-hot)
-     * - 15-17: 用户状态 (cold_start/warming/mature)
-     * - 18-20: 活跃时段 (早/中/晚)
-     * - 21-23: 统计特征 (购买频次/平均消费/活跃度)
+     * - 0-7: 基础属性 (用户等级、注册天数、最近活跃度等)
+     * - 8-31: 行为序列 (最近浏览、收藏、购买商品的embedding均值)
+     * - 32-47: 偏好特征 (价格敏感度、品牌偏好、品类偏好)
+     * - 48-63: 时间特征 (周几、时段、节假日)
+     *
+     * @param wxUserId 用户ID
+     * @return 64维用户特征向量
      */
     private double[] buildUserFeatureVector(String wxUserId) {
+        // 优先使用特征工程服务（提供更丰富的128维中的64维用户特征）
+        if (featureEngineeringService != null && featureEngineeringService.isAvailable()) {
+            try {
+                double[] features = featureEngineeringService.buildUserFeatureVector(wxUserId);
+                if (features != null && features.length == USER_FEATURE_DIM) {
+                    return features;
+                }
+            } catch (Exception e) {
+                log.warn("特征工程服务构建用户特征失败，降级到旧版实现: {}", e.getMessage());
+            }
+        }
+
+        // 降级：使用旧版简化实现
+        return buildUserFeatureVectorLegacy(wxUserId);
+    }
+
+    /**
+     * 旧版用户特征构建（降级用）
+     * 将24维扩展到64维，保持向后兼容
+     */
+    private double[] buildUserFeatureVectorLegacy(String wxUserId) {
         double[] features = new double[USER_FEATURE_DIM];
         Arrays.fill(features, 0);
 
@@ -331,60 +385,78 @@ public class LinUCBExplorer implements BanditExplorer {
             // 获取用户兴趣标签
             List<UserInterestTag> tags = interestTagMapper.selectTopTags(wxUserId, 20);
 
-            // 分类偏好 (0-4)
+            // 分类偏好 (0-7) - 扩展到8维
             List<UserInterestTag> categoryTags = tags.stream()
                     .filter(t -> "category".equals(t.getTagType()))
-                    .limit(5)
+                    .limit(8)
                     .collect(Collectors.toList());
             for (int i = 0; i < categoryTags.size(); i++) {
                 features[i] = categoryTags.get(i).getWeight().doubleValue();
             }
 
-            // 价格区间偏好 (5-9)
+            // 价格区间偏好 (8-15) - 扩展到8维
             List<UserInterestTag> priceTags = tags.stream()
                     .filter(t -> "price_range".equals(t.getTagType()))
-                    .limit(5)
+                    .limit(8)
                     .collect(Collectors.toList());
             for (int i = 0; i < priceTags.size(); i++) {
-                features[5 + i] = priceTags.get(i).getWeight().doubleValue();
+                features[8 + i] = priceTags.get(i).getWeight().doubleValue();
             }
 
-            // 品牌偏好 (10-14)
+            // 品牌偏好 (16-23) - 扩展到8维
             List<UserInterestTag> brandTags = tags.stream()
                     .filter(t -> "brand".equals(t.getTagType()))
-                    .limit(5)
+                    .limit(8)
                     .collect(Collectors.toList());
             for (int i = 0; i < brandTags.size(); i++) {
-                features[10 + i] = brandTags.get(i).getWeight().doubleValue();
+                features[16 + i] = brandTags.get(i).getWeight().doubleValue();
             }
 
-            // 用户状态 (15-17) - 根据标签数量判断
+            // 用户状态 (24-31) - 扩展到8维
             int tagCount = tags.size();
             if (tagCount < 3) {
-                features[15] = 1.0;  // cold_start
+                features[24] = 1.0;  // cold_start
             } else if (tagCount < 10) {
-                features[16] = 1.0;  // warming
+                features[25] = 1.0;  // warming
+            } else if (tagCount < 20) {
+                features[26] = 1.0;  // mature
             } else {
-                features[17] = 1.0;  // mature
+                features[27] = 1.0;  // expert
             }
+            features[28] = Math.min(1.0, tagCount / 30.0);  // 标签丰富度
 
-            // 活跃时段 (18-20) - 根据当前时间
+            // 活跃时段 (32-39) - 扩展到8维
             int hour = java.time.LocalTime.now().getHour();
-            if (hour >= 6 && hour < 12) {
-                features[18] = 1.0;  // 早
-            } else if (hour >= 12 && hour < 18) {
-                features[19] = 1.0;  // 中
+            if (hour >= 6 && hour < 9) {
+                features[32] = 1.0;  // 早晨
+            } else if (hour >= 9 && hour < 12) {
+                features[33] = 1.0;  // 上午
+            } else if (hour >= 12 && hour < 14) {
+                features[34] = 1.0;  // 午间
+            } else if (hour >= 14 && hour < 18) {
+                features[35] = 1.0;  // 下午
+            } else if (hour >= 18 && hour < 21) {
+                features[36] = 1.0;  // 晚间
             } else {
-                features[20] = 1.0;  // 晚
+                features[37] = 1.0;  // 夜间
             }
 
-            // 统计特征 (21-23) - 归一化
+            // 统计特征 (40-47) - 扩展到8维
             double totalWeight = tags.stream()
                     .mapToDouble(t -> t.getWeight().doubleValue())
                     .sum();
-            features[21] = Math.min(1.0, totalWeight / 5.0);  // 购买频次指标
-            features[22] = Math.min(1.0, tagCount / 20.0);     // 活跃度指标
-            features[23] = tags.isEmpty() ? 0 : tags.get(0).getWeight().doubleValue();  // 最强兴趣权重
+            features[40] = Math.min(1.0, totalWeight / 5.0);  // 购买频次指标
+            features[41] = Math.min(1.0, tagCount / 20.0);     // 活跃度指标
+            features[42] = tags.isEmpty() ? 0 : tags.get(0).getWeight().doubleValue();  // 最强兴趣权重
+            features[43] = tags.isEmpty() ? 0 : tags.stream()
+                    .mapToDouble(t -> t.getWeight().doubleValue())
+                    .average().orElse(0);  // 平均兴趣权重
+
+            // 周几特征 (48-54) - 7维
+            int dayOfWeek = java.time.LocalDate.now().getDayOfWeek().getValue();
+            features[47 + dayOfWeek] = 1.0;
+
+            // 保留空间 (55-63) - 未来扩展用
 
         } catch (Exception e) {
             log.warn("构建用户特征向量失败: {}", e.getMessage());
@@ -394,47 +466,151 @@ public class LinUCBExplorer implements BanditExplorer {
     }
 
     /**
-     * 构建分类特征向量 (16维)
-     * 使用 one-hot + 统计特征
+     * 构建分类特征向量 (64维)
+     *
+     * 维度分配:
+     * - 0-15: One-hot 分类编码
+     * - 16-23: 分类热度特征
+     * - 24-31: 分类位置特征
+     * - 32-47: 分类统计特征
+     * - 48-55: 时间相关特征
+     * - 56-63: 保留
+     *
+     * @param category 分类ID
+     * @param allCategories 所有活跃分类列表
+     * @return 64维分类特征向量
      */
     private double[] buildCategoryFeatureVector(String category, List<String> allCategories) {
+        // 优先使用特征工程服务
+        if (featureEngineeringService != null && featureEngineeringService.isAvailable()) {
+            try {
+                double[] features = featureEngineeringService.buildCategoryFeatureVector(category, allCategories);
+                if (features != null && features.length == ITEM_FEATURE_DIM) {
+                    return features;
+                }
+            } catch (Exception e) {
+                log.warn("特征工程服务构建分类特征失败，降级到旧版实现: {}", e.getMessage());
+            }
+        }
+
+        // 降级：使用旧版简化实现
+        return buildCategoryFeatureVectorLegacy(category, allCategories);
+    }
+
+    /**
+     * 旧版分类特征构建（降级用）
+     * 将16维扩展到64维，保持向后兼容
+     */
+    private double[] buildCategoryFeatureVectorLegacy(String category, List<String> allCategories) {
         double[] features = new double[ITEM_FEATURE_DIM];
         Arrays.fill(features, 0);
 
-        // One-hot 编码 (前10维)
         int index = allCategories.indexOf(category);
-        if (index >= 0 && index < 10) {
+
+        // One-hot 编码 (0-15): 16维
+        if (index >= 0 && index < 16) {
             features[index] = 1.0;
+        } else if (index >= 16) {
+            // 超过16个分类使用hash编码
+            features[index % 16] = 1.0;
         }
 
-        // 分类热度特征 (10-15)
+        // 分类热度特征 (16-23): 8维
         try {
             // 获取分类下的商品统计
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(GoodsSpu::getCategoryFirst, category)
                     .eq(GoodsSpu::getShelf, "1");
-            Long count = goodsSpuMapper.selectCount(wrapper);
-            features[10] = Math.min(1.0, count / 100.0);  // 商品数量归一化
+            List<GoodsSpu> products = goodsSpuMapper.selectList(wrapper);
+            long count = products.size();
 
-            // 分类索引归一化
-            features[11] = allCategories.isEmpty() ? 0 : (double) index / allCategories.size();
+            features[16] = Math.min(1.0, count / 100.0);  // 商品数量归一化
+            features[17] = allCategories.isEmpty() ? 0 : (double) index / allCategories.size();  // 分类索引归一化
+            features[18] = count > 20 ? 1.0 : 0;  // 热门分类标记
+            features[19] = count < 5 ? 1.0 : 0;   // 稀缺分类标记
+
+            // 计算分类内的销量总和
+            int totalSales = products.stream()
+                    .filter(p -> p.getSaleNum() != null)
+                    .mapToInt(GoodsSpu::getSaleNum)
+                    .sum();
+            features[20] = Math.min(1.0, totalSales / 10000.0);
+
+            // 计算平均价格
+            double avgPrice = products.stream()
+                    .filter(p -> p.getSalesPrice() != null)
+                    .mapToDouble(p -> p.getSalesPrice().doubleValue())
+                    .average()
+                    .orElse(0);
+            features[21] = Math.min(1.0, avgPrice / 1000.0);
+
+            // 有库存商品比例
+            long inStockCount = products.stream()
+                    .filter(p -> p.getStock() != null && p.getStock() > 0)
+                    .count();
+            features[22] = count > 0 ? (double) inStockCount / count : 0;
+
+            // 新品比例
+            java.time.LocalDateTime thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30);
+            long newCount = products.stream()
+                    .filter(p -> p.getCreateTime() != null && p.getCreateTime().isAfter(thirtyDaysAgo))
+                    .count();
+            features[23] = count > 0 ? (double) newCount / count : 0;
 
         } catch (Exception e) {
             log.warn("构建分类特征向量失败: {}", e.getMessage());
         }
+
+        // 分类位置特征 (24-31): 8维
+        features[24] = index < allCategories.size() / 3 ? 1.0 : 0;  // 热门分类（前1/3）
+        features[25] = index >= allCategories.size() * 2 / 3 ? 1.0 : 0;  // 冷门分类（后1/3）
+        features[26] = allCategories.size() > 10 && index < 10 ? 1.0 : 0;  // top10分类
+        features[27] = Math.max(0, 1.0 - (double) index / Math.max(1, allCategories.size()));  // 排名分数
+
+        // 时间特征 (32-39): 8维
+        int hour = java.time.LocalTime.now().getHour();
+        int dayOfWeek = java.time.LocalDate.now().getDayOfWeek().getValue();
+        features[32] = (hour >= 9 && hour < 21) ? 1.0 : 0;  // 营业时间
+        features[33] = (dayOfWeek <= 5) ? 1.0 : 0;  // 工作日
+        features[34] = (dayOfWeek > 5) ? 1.0 : 0;   // 周末
+        features[35] = (hour >= 11 && hour < 14) || (hour >= 17 && hour < 20) ? 1.0 : 0;  // 用餐时段
+
+        // 保留空间 (40-63): 24维 - 未来扩展用
 
         return features;
     }
 
     /**
      * 拼接用户和商品特征向量
+     * 总维度: 128 = 64(用户) + 64(商品)
+     *
+     * @param userFeatures 64维用户特征向量
+     * @param itemFeatures 64维商品/分类特征向量
+     * @return 128维组合特征向量
      */
     private double[] concatenateFeatures(double[] userFeatures, double[] itemFeatures) {
+        // 优先使用特征工程服务
+        if (featureEngineeringService != null) {
+            try {
+                return featureEngineeringService.concatenateFeatures(userFeatures, itemFeatures);
+            } catch (Exception e) {
+                log.debug("特征工程服务拼接特征失败，使用默认实现: {}", e.getMessage());
+            }
+        }
+
+        // 默认实现
         double[] combined = new double[TOTAL_FEATURE_DIM];
-        System.arraycopy(userFeatures, 0, combined, 0,
-                Math.min(userFeatures.length, USER_FEATURE_DIM));
-        System.arraycopy(itemFeatures, 0, combined, USER_FEATURE_DIM,
-                Math.min(itemFeatures.length, ITEM_FEATURE_DIM));
+        Arrays.fill(combined, 0);
+
+        if (userFeatures != null) {
+            System.arraycopy(userFeatures, 0, combined, 0,
+                    Math.min(userFeatures.length, USER_FEATURE_DIM));
+        }
+        if (itemFeatures != null) {
+            System.arraycopy(itemFeatures, 0, combined, USER_FEATURE_DIM,
+                    Math.min(itemFeatures.length, ITEM_FEATURE_DIM));
+        }
+
         return combined;
     }
 
@@ -442,6 +618,7 @@ public class LinUCBExplorer implements BanditExplorer {
 
     /**
      * 获取或创建臂参数
+     * 支持从旧版40维自动迁移到新版128维
      */
     private LinUCBArmParameter getOrCreateArmParameter(String armId, String armType) {
         // 先从缓存获取
@@ -449,7 +626,13 @@ public class LinUCBExplorer implements BanditExplorer {
         try {
             String cached = redisTemplate.opsForValue().get(cacheKey);
             if (cached != null) {
-                return objectMapper.readValue(cached, LinUCBArmParameter.class);
+                LinUCBArmParameter cachedParam = objectMapper.readValue(cached, LinUCBArmParameter.class);
+                // 检查是否需要迁移
+                if (cachedParam.getFeatureDimension() == TOTAL_FEATURE_DIM) {
+                    return cachedParam;
+                }
+                // 需要迁移，清除缓存
+                redisTemplate.delete(cacheKey);
             }
         } catch (Exception e) {
             log.warn("读取缓存失败: {}", e.getMessage());
@@ -459,22 +642,15 @@ public class LinUCBExplorer implements BanditExplorer {
         LinUCBArmParameter param = armParameterMapper.selectByArmIdAndType(armId, armType);
 
         if (param == null) {
-            // 创建新的臂参数
-            param = new LinUCBArmParameter();
-            param.setArmId(armId);
-            param.setArmType(armType);
-            param.setFeatureDimension(TOTAL_FEATURE_DIM);
-            param.setAMatrix(serializeMatrix(identityMatrix(TOTAL_FEATURE_DIM)));
-            param.setBVector(serializeVector(new double[TOTAL_FEATURE_DIM]));
-            param.setThetaVector(serializeVector(new double[TOTAL_FEATURE_DIM]));
-            param.setSelectionCount(0);
-            param.setPositiveFeedbackCount(0);
-            param.setNegativeFeedbackCount(0);
-            param.setCumulativeReward(BigDecimal.ZERO);
-            param.setExpectedCtr(BigDecimal.ZERO);
-            param.setAlgorithmVersion("1.0");
-
+            // 创建新的臂参数（128维）
+            param = createNewArmParameter(armId, armType);
             armParameterMapper.insert(param);
+            log.info("创建新的LinUCB臂参数: armId={}, armType={}, dim={}", armId, armType, TOTAL_FEATURE_DIM);
+        } else if (param.getFeatureDimension() != TOTAL_FEATURE_DIM) {
+            // 需要迁移旧版参数到新版
+            param = migrateArmParameter(param);
+            log.info("迁移LinUCB臂参数: armId={}, oldDim={}, newDim={}",
+                    armId, param.getFeatureDimension(), TOTAL_FEATURE_DIM);
         }
 
         // 存入缓存
@@ -487,6 +663,83 @@ public class LinUCBExplorer implements BanditExplorer {
         }
 
         return param;
+    }
+
+    /**
+     * 创建新的臂参数（128维）
+     */
+    private LinUCBArmParameter createNewArmParameter(String armId, String armType) {
+        LinUCBArmParameter param = new LinUCBArmParameter();
+        param.setArmId(armId);
+        param.setArmType(armType);
+        param.setFeatureDimension(TOTAL_FEATURE_DIM);
+        param.setAMatrix(serializeMatrix(identityMatrix(TOTAL_FEATURE_DIM)));
+        param.setBVector(serializeVector(new double[TOTAL_FEATURE_DIM]));
+        param.setThetaVector(serializeVector(new double[TOTAL_FEATURE_DIM]));
+        param.setSelectionCount(0);
+        param.setPositiveFeedbackCount(0);
+        param.setNegativeFeedbackCount(0);
+        param.setCumulativeReward(BigDecimal.ZERO);
+        param.setExpectedCtr(BigDecimal.ZERO);
+        param.setAlgorithmVersion(ALGORITHM_VERSION);
+        return param;
+    }
+
+    /**
+     * 迁移旧版臂参数到新版128维
+     * 保留已学习的模式，扩展到新维度
+     */
+    private LinUCBArmParameter migrateArmParameter(LinUCBArmParameter oldParam) {
+        int oldDim = oldParam.getFeatureDimension();
+
+        try {
+            // 解析旧的矩阵和向量
+            double[][] oldA = parseMatrix(oldParam.getAMatrix(), oldDim);
+            double[] oldB = parseVector(oldParam.getBVector());
+            double[] oldTheta = parseVector(oldParam.getThetaVector());
+
+            // 创建新的128维矩阵和向量
+            double[][] newA = identityMatrix(TOTAL_FEATURE_DIM);
+            double[] newB = new double[TOTAL_FEATURE_DIM];
+            double[] newTheta = new double[TOTAL_FEATURE_DIM];
+
+            // 复制旧值到新矩阵（保留已学习的模式）
+            int copyDim = Math.min(oldDim, TOTAL_FEATURE_DIM);
+            for (int i = 0; i < copyDim; i++) {
+                for (int j = 0; j < copyDim; j++) {
+                    newA[i][j] = oldA[i][j];
+                }
+                newB[i] = oldB[i];
+                newTheta[i] = oldTheta[i];
+            }
+
+            // 更新参数
+            oldParam.setFeatureDimension(TOTAL_FEATURE_DIM);
+            oldParam.setAMatrix(serializeMatrix(newA));
+            oldParam.setBVector(serializeVector(newB));
+            oldParam.setThetaVector(serializeVector(newTheta));
+            oldParam.setAlgorithmVersion(ALGORITHM_VERSION);
+
+            // 保存更新
+            armParameterMapper.updateParameters(
+                    oldParam.getArmId(),
+                    oldParam.getArmType(),
+                    oldParam.getAMatrix(),
+                    oldParam.getBVector(),
+                    oldParam.getThetaVector()
+            );
+
+            // 更新维度（如果有这个字段的更新方法）
+            // armParameterMapper.updateDimension(oldParam.getArmId(), oldParam.getArmType(), TOTAL_FEATURE_DIM);
+
+        } catch (Exception e) {
+            log.error("迁移臂参数失败，重置为新参数: armId={}, error={}",
+                    oldParam.getArmId(), e.getMessage());
+            // 迁移失败，创建全新参数
+            return createNewArmParameter(oldParam.getArmId(), oldParam.getArmType());
+        }
+
+        return oldParam;
     }
 
     /**

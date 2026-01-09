@@ -4,6 +4,7 @@ import com.cretas.aims.config.IFlytekConfig;
 import com.cretas.aims.dto.voice.IFlytekWebSocketMessage;
 import com.cretas.aims.dto.voice.VoiceRecognitionRequest;
 import com.cretas.aims.dto.voice.VoiceRecognitionResponse;
+import com.cretas.aims.service.AudioConversionService;
 import com.cretas.aims.service.IFlytekVoiceService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -36,12 +37,26 @@ import java.util.concurrent.*;
 public class IFlytekVoiceServiceImpl implements IFlytekVoiceService {
 
     private final IFlytekConfig config;
+    private final AudioConversionService audioConversionService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * WebSocket 超时时间（秒）
      */
     private static final int WEBSOCKET_TIMEOUT = 30;
+
+    /**
+     * 每帧音频大小（字节）
+     * 讯飞要求每帧音频约40ms，16kHz采样率下约为1280字节
+     * Base64编码后会增大约33%，所以原始音频块大小设为1280
+     */
+    private static final int AUDIO_FRAME_SIZE = 1280;
+
+    /**
+     * 帧间隔（毫秒）
+     * 讯飞要求发送间隔约40ms
+     */
+    private static final int FRAME_INTERVAL_MS = 40;
 
     @Override
     public VoiceRecognitionResponse recognize(VoiceRecognitionRequest request) {
@@ -54,6 +69,18 @@ public class IFlytekVoiceServiceImpl implements IFlytekVoiceService {
             // 生成鉴权 URL
             String authUrl = generateAuthUrl();
             log.debug("讯飞鉴权URL: {}", authUrl);
+
+            // 转换音频格式（处理 Android 非 PCM 格式）
+            if (request.getAudioData() != null && !request.getAudioData().isEmpty()) {
+                String format = request.getFormat() != null ? request.getFormat() : "raw";
+                log.info("开始音频格式转换，原始格式声明: {}", format);
+                String convertedAudio = audioConversionService.convertToPcm(request.getAudioData(), format);
+                request.setAudioData(convertedAudio);
+                // 转换后强制使用 raw 格式
+                request.setFormat("raw");
+                request.setEncoding("raw");
+                log.info("音频转换完成，设置格式为 raw");
+            }
 
             // 执行 WebSocket 识别
             return executeWebSocketRecognition(authUrl, request);
@@ -126,17 +153,16 @@ public class IFlytekVoiceServiceImpl implements IFlytekVoiceService {
             public void onOpen(ServerHandshake handshake) {
                 log.debug("讯飞 WebSocket 连接已建立");
 
-                try {
-                    // 发送首帧（包含 common 和 business）
-                    sendFirstFrame(this, request);
-
-                    // 发送末帧（音频数据）
-                    sendLastFrame(this, request);
-
-                } catch (Exception e) {
-                    log.error("发送音频数据失败", e);
-                    future.complete(VoiceRecognitionResponse.error(-3, "发送音频失败"));
-                }
+                // 使用异步线程发送音频帧，避免阻塞 WebSocket 线程
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        // 分帧发送音频数据
+                        sendAudioFrames(this, request);
+                    } catch (Exception e) {
+                        log.error("发送音频数据失败", e);
+                        future.complete(VoiceRecognitionResponse.error(-3, "发送音频失败: " + e.getMessage()));
+                    }
+                });
             }
 
             @Override
@@ -218,48 +244,111 @@ public class IFlytekVoiceServiceImpl implements IFlytekVoiceService {
     }
 
     /**
-     * 发送首帧
+     * 分帧发送音频数据
+     * 讯飞要求:
+     * - status=0: 首帧，包含common、business和第一段音频
+     * - status=1: 中间帧，只包含音频数据
+     * - status=2: 末帧，包含最后一段音频
      */
-    private void sendFirstFrame(WebSocketClient client, VoiceRecognitionRequest request) throws Exception {
-        IFlytekWebSocketMessage.Request firstFrame = IFlytekWebSocketMessage.Request.builder()
-            .common(IFlytekWebSocketMessage.Common.builder()
-                .appId(config.getAppId())
-                .build())
-            .business(IFlytekWebSocketMessage.Business.builder()
-                .language(request.getLanguage() != null ? request.getLanguage() : config.getLanguage())
-                .domain(config.getDomain())
-                .accent(config.getAccent())
-                .ptt(request.getPtt() != null && request.getPtt() ? 1 : (config.isPtt() ? 1 : 0))
-                .build())
-            .data(IFlytekWebSocketMessage.AudioData.builder()
-                .status(0)  // 首帧
-                .format(request.getFormat())
-                .encoding(request.getEncoding())
-                .audio("")  // 首帧不发送音频
-                .build())
-            .build();
+    private void sendAudioFrames(WebSocketClient client, VoiceRecognitionRequest request) throws Exception {
+        String audioBase64 = request.getAudioData();
+        if (audioBase64 == null || audioBase64.isEmpty()) {
+            // 没有音频数据，直接发送空的首帧和末帧
+            sendFrame(client, request, 0, "", true);
+            Thread.sleep(FRAME_INTERVAL_MS);
+            sendFrame(client, request, 2, "", false);
+            return;
+        }
 
-        String jsonMessage = objectMapper.writeValueAsString(firstFrame);
-        log.debug("发送首帧: {}", jsonMessage);
-        client.send(jsonMessage);
+        // 解码 Base64 音频数据
+        byte[] audioBytes = Base64.getDecoder().decode(audioBase64);
+        int totalBytes = audioBytes.length;
+        int offset = 0;
+        int frameIndex = 0;
+
+        log.info("开始分帧发送音频: 总大小={} bytes, 每帧={} bytes, 预计帧数={}",
+            totalBytes, AUDIO_FRAME_SIZE, (totalBytes + AUDIO_FRAME_SIZE - 1) / AUDIO_FRAME_SIZE);
+
+        while (offset < totalBytes) {
+            // 计算当前帧大小
+            int remaining = totalBytes - offset;
+            int frameSize = Math.min(AUDIO_FRAME_SIZE, remaining);
+            boolean isLastFrame = (offset + frameSize >= totalBytes);
+
+            // 提取当前帧的音频数据
+            byte[] frameBytes = new byte[frameSize];
+            System.arraycopy(audioBytes, offset, frameBytes, 0, frameSize);
+            String frameBase64 = Base64.getEncoder().encodeToString(frameBytes);
+
+            // 确定帧状态
+            int status;
+            boolean includeHeader;
+            if (frameIndex == 0) {
+                status = 0;  // 首帧
+                includeHeader = true;
+            } else if (isLastFrame) {
+                status = 2;  // 末帧
+                includeHeader = false;
+            } else {
+                status = 1;  // 中间帧
+                includeHeader = false;
+            }
+
+            // 发送帧
+            sendFrame(client, request, status, frameBase64, includeHeader);
+
+            // 更新偏移
+            offset += frameSize;
+            frameIndex++;
+
+            // 帧间隔（非末帧时等待）
+            if (!isLastFrame) {
+                Thread.sleep(FRAME_INTERVAL_MS);
+            }
+        }
+
+        log.info("音频分帧发送完成: 共 {} 帧", frameIndex);
     }
 
     /**
-     * 发送末帧（包含音频数据）
+     * 发送单个音频帧
      */
-    private void sendLastFrame(WebSocketClient client, VoiceRecognitionRequest request) throws Exception {
-        IFlytekWebSocketMessage.Request lastFrame = IFlytekWebSocketMessage.Request.builder()
-            .data(IFlytekWebSocketMessage.AudioData.builder()
-                .status(2)  // 末帧
-                .format(request.getFormat())
-                .encoding(request.getEncoding())
-                .audio(request.getAudioData())
-                .build())
-            .build();
+    private void sendFrame(WebSocketClient client, VoiceRecognitionRequest request,
+                          int status, String audioBase64, boolean includeHeader) throws Exception {
 
-        String jsonMessage = objectMapper.writeValueAsString(lastFrame);
-        log.debug("发送末帧 (音频长度: {} bytes)",
-            request.getAudioData() != null ? request.getAudioData().length() : 0);
+        IFlytekWebSocketMessage.Request.RequestBuilder builder = IFlytekWebSocketMessage.Request.builder();
+
+        // 首帧需要包含 common 和 business
+        if (includeHeader) {
+            builder.common(IFlytekWebSocketMessage.Common.builder()
+                    .appId(config.getAppId())
+                    .build())
+                .business(IFlytekWebSocketMessage.Business.builder()
+                    .language(request.getLanguage() != null ? request.getLanguage() : config.getLanguage())
+                    .domain(config.getDomain())
+                    .accent(config.getAccent())
+                    .ptt(request.getPtt() != null && request.getPtt() ? 1 : (config.isPtt() ? 1 : 0))
+                    .build());
+        }
+
+        // 所有帧都包含 data
+        builder.data(IFlytekWebSocketMessage.AudioData.builder()
+            .status(status)
+            .format(request.getFormat())
+            .encoding(request.getEncoding())
+            .audio(audioBase64)
+            .build());
+
+        String jsonMessage = objectMapper.writeValueAsString(builder.build());
+
+        if (status == 0) {
+            log.debug("发送首帧 (status=0, audio_size={})", audioBase64.length());
+        } else if (status == 2) {
+            log.debug("发送末帧 (status=2, audio_size={})", audioBase64.length());
+        } else {
+            log.trace("发送中间帧 (status=1, audio_size={})", audioBase64.length());
+        }
+
         client.send(jsonMessage);
     }
 

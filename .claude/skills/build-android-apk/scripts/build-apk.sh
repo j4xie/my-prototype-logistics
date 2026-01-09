@@ -1,11 +1,13 @@
 #!/bin/bash
 # build-apk.sh - 构建 Android APK
 # 支持 Debug 和 Release 两种模式
+# 用法: ./build-apk.sh [项目路径] [release|debug] [--clean]
 
 set -e
 
 PROJECT_ROOT="${1:-/Users/jietaoxie/my-prototype-logistics/frontend/CretasFoodTrace}"
 BUILD_TYPE="${2:-release}"  # debug 或 release
+DO_CLEAN="${3:-}"  # --clean 表示清理构建
 
 echo "================================================"
 echo "  构建 Android APK"
@@ -44,9 +46,13 @@ fi
 # 3. 进入 android 目录构建
 cd android
 
-# 4. 清理之前的构建
-echo "清理之前的构建..."
-./gradlew clean --quiet
+# 4. 可选：清理之前的构建
+if [ "$DO_CLEAN" = "--clean" ]; then
+    echo "清理之前的构建..."
+    ./gradlew clean --quiet
+else
+    echo "跳过清理（增量构建，更快）"
+fi
 
 # 5. 执行构建
 if [ "$BUILD_TYPE" = "release" ]; then

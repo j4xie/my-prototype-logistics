@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
@@ -79,6 +81,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "materialTypes", key = "#factoryId")
     public RawMaterialTypeDTO createMaterialType(String factoryId, RawMaterialTypeDTO dto) {
         log.info("创建原材料类型: factoryId={}, code={}", factoryId, dto.getCode());
 
@@ -121,6 +124,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "materialTypes", key = "#factoryId")
     public RawMaterialTypeDTO updateMaterialType(String factoryId, String id, RawMaterialTypeDTO dto) {
         log.info("更新原材料类型: factoryId={}, id={}", factoryId, id);
 
@@ -160,6 +164,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "materialTypes", key = "#factoryId")
     public void deleteMaterialType(String factoryId, String id) {
         log.info("删除原材料类型: factoryId={}, id={}", factoryId, id);
 
@@ -263,6 +268,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
     }
 
     @Override
+    @Cacheable(value = "materialTypes", key = "#factoryId")
     public List<RawMaterialTypeDTO> getActiveMaterialTypes(String factoryId) {
         log.info("获取激活的原材料类型: factoryId={}", factoryId);
 
@@ -340,6 +346,7 @@ public class RawMaterialTypeServiceImpl implements RawMaterialTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "materialTypes", key = "#factoryId")
     public void updateMaterialTypesStatus(String factoryId, List<String> ids, Boolean isActive) {
         log.info("批量更新原材料类型状态: factoryId={}, ids={}, isActive={}", factoryId, ids, isActive);
 

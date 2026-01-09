@@ -81,4 +81,11 @@ public interface ProductTypeRepository extends JpaRepository<ProductType, String
      * @return 产品类型列表
      */
     List<ProductType> findByFactoryIdAndIsActiveTrue(String factoryId);
+
+    /**
+     * 批量查询多个产品类型 - 解决 N+1 查询问题
+     * @param ids 产品类型ID集合
+     * @return 产品类型列表
+     */
+    List<ProductType> findByIdIn(java.util.Collection<String> ids);
 }

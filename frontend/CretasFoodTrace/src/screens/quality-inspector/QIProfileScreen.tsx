@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 
 import { QI_COLORS, QualityInspectorStackParamList } from '../../types/qualityInspector';
 import { useAuthStore } from '../../store/authStore';
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../store/languageStore';
 
 type NavigationProp = NativeStackNavigationProp<QualityInspectorStackParamList>;
 
@@ -38,6 +39,12 @@ export default function QIProfileScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation('quality');
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   const [todayStats, setTodayStats] = useState({
     inspected: 12,
@@ -81,6 +88,13 @@ export default function QIProfileScreen() {
       },
     ],
     [
+      {
+        id: 'language',
+        icon: 'language-outline',
+        label: t('profile.menu.language') || '语言',
+        value: LANGUAGE_NAMES[language],
+        onPress: toggleLanguage,
+      },
       {
         id: 'settings',
         icon: 'settings-outline',

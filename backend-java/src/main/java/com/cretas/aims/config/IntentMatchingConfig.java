@@ -86,6 +86,25 @@ public class IntentMatchingConfig {
          */
         @Positive
         private int timeout = 10000;
+
+        /**
+         * 是否启用两阶段分类（粗分类 + 细分类）
+         *
+         * 当意图数量较多（如 90+）时，启用两阶段分类可以提高准确率：
+         * - 第一阶段：从 15 个 Category 中选择粗分类
+         * - 第二阶段：在选中的 Category 内进行细分类
+         *
+         * 默认启用，适用于意图数量超过 50 的场景
+         */
+        private boolean twoPhaseClassificationEnabled = true;
+
+        /**
+         * 触发两阶段分类的意图数量阈值
+         * 当可用意图数量超过此值时，自动启用两阶段分类
+         * 默认值：50（低于此值使用单阶段分类即可）
+         */
+        @Positive
+        private int twoPhaseThreshold = 50;
     }
 
     /**
@@ -405,5 +424,19 @@ public class IntentMatchingConfig {
      */
     public int getOperationTypeMismatchPenalty() {
         return weight.getOperationTypeMismatchPenalty();
+    }
+
+    /**
+     * 检查两阶段分类是否启用
+     */
+    public boolean isTwoPhaseClassificationEnabled() {
+        return llmFallback.isTwoPhaseClassificationEnabled();
+    }
+
+    /**
+     * 获取触发两阶段分类的意图数量阈值
+     */
+    public int getTwoPhaseThreshold() {
+        return llmFallback.getTwoPhaseThreshold();
     }
 }
