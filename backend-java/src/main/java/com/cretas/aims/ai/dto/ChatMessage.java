@@ -142,9 +142,14 @@ public class ChatMessage {
         }
 
         public static ContentPart image(String base64) {
+            // 自动检测图片格式 (PNG 以 iVBOR 开头, JPEG 以 /9j/ 开头)
+            String mimeType = "image/jpeg";
+            if (base64 != null && base64.startsWith("iVBOR")) {
+                mimeType = "image/png";
+            }
             return ContentPart.builder()
                     .type("image_url")
-                    .image_url(new ImageUrl("data:image/jpeg;base64," + base64))
+                    .image_url(new ImageUrl("data:" + mimeType + ";base64," + base64))
                     .build();
         }
 

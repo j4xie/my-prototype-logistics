@@ -1,6 +1,7 @@
 package com.cretas.aims.dto.intent;
 
 import com.cretas.aims.config.IntentKnowledgeBase.ActionType;
+import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -85,6 +86,13 @@ public class IntentMatchResult {
     private ActionType actionType;
 
     /**
+     * 问题类型（第一层分类）
+     * 用于区分操作指令、通用咨询问题、闲聊
+     * GENERAL_QUESTION 和 CONVERSATIONAL 类型会跳过关键词匹配，直接路由到LLM
+     */
+    private QuestionType questionType;
+
+    /**
      * 目标实体标识
      * 例如: MB-F001-001 (物料批次), WO-F001-001 (工单)
      * 从用户输入中提取的实体标识符
@@ -114,6 +122,7 @@ public class IntentMatchResult {
         FUSION,     // 融合匹配（语义+关键词加权）
         SIMILAR,    // 相似表达匹配 (编辑距离)
         LLM,        // LLM fallback 匹配
+        DOMAIN_DEFAULT, // 域默认意图匹配 (Layer 3.5)
         NONE        // 未匹配
     }
 

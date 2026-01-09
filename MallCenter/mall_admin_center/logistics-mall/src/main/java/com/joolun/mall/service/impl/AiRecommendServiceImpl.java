@@ -10,10 +10,13 @@ import com.joolun.mall.entity.GoodsSpu;
 import com.joolun.mall.mapper.AiDemandRecordMapper;
 import com.joolun.mall.mapper.GoodsSpuMapper;
 import com.joolun.mall.service.AiRecommendService;
+import com.joolun.mall.service.ProductKnowledgeService;
 import com.joolun.mall.service.SearchKeywordService;
+import com.joolun.mall.service.VectorSearchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,8 +40,17 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
     private final GoodsSpuMapper goodsSpuMapper;
     private final SearchKeywordService searchKeywordService;
+    private final VectorSearchService vectorSearchService;
+    private final ProductKnowledgeService productKnowledgeService;
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
+    private final RedisTemplate<String, Object> redisTemplate;
+
+    // 会话状态缓存key前缀
+    private static final String SESSION_STATE_KEY = "mall:ai:session:state:";
+    // 极速匹配服务状态
+    private static final String STATE_AWAITING_EXPRESS_MATCH_CONFIRM = "awaiting_express_match_confirm";
+    private static final String STATE_COLLECTING_REQUIREMENTS = "collecting_requirements";
 
     // 实际配置为 DashScope API Key (通义千问)
     @Value("${ai.deepseek.api-key:}")
@@ -51,6 +63,14 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     // 实际配置为 qwen-plus
     @Value("${ai.deepseek.model:deepseek-chat}")
     private String deepseekModel;
+
+    // RAG 功能开关
+    @Value("${ai.rag.enabled:true}")
+    private boolean ragEnabled;
+
+    // RAG 检索数量
+    @Value("${ai.rag.topk:5}")
+    private int ragTopK;
 
     private static final String SYSTEM_PROMPT = """
         你是白垩纪食品溯源商城的智能客服助手。你的任务是：
@@ -74,44 +94,108 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         Map<String, Object> result = new HashMap<>();
 
         try {
-            // 1. 调用DeepSeek API分析用户意图
-            Map<String, Object> analysis = analyzeMessage(message);
+            // 0. 检查会话状态 - 是否在极速匹配服务流程中
+            Map<String, Object> sessionState = getSessionState(sessionId);
+            String currentState = sessionState != null ? (String) sessionState.get("state") : null;
+
+            // 处理极速匹配服务确认
+            if (STATE_AWAITING_EXPRESS_MATCH_CONFIRM.equals(currentState)) {
+                return handleExpressMatchConfirmation(sessionId, userId, merchantId, message, sessionState);
+            }
+
+            // 处理需求收集
+            if (STATE_COLLECTING_REQUIREMENTS.equals(currentState)) {
+                return handleRequirementCollection(sessionId, userId, merchantId, message, sessionState);
+            }
+
+            // 1. RAG: 先检索相关商品知识
+            List<GoodsSpu> ragProducts = new ArrayList<>();
+            String enhancedPrompt = null;
+            if (ragEnabled && productKnowledgeService != null) {
+                try {
+                    ragProducts = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
+                    if (!ragProducts.isEmpty()) {
+                        enhancedPrompt = productKnowledgeService.enhancePromptWithKnowledge(message, ragProducts);
+                        log.debug("RAG 检索到 {} 个相关商品，已增强提示", ragProducts.size());
+                    }
+                } catch (Exception ragEx) {
+                    log.warn("RAG 知识检索失败，降级到普通模式: {}", ragEx.getMessage());
+                }
+            }
+
+            // 2. 调用DeepSeek API分析用户意图（使用RAG增强的提示或普通提示）
+            Map<String, Object> analysis = analyzeMessageWithRag(message, enhancedPrompt);
             String intent = (String) analysis.getOrDefault("intent", "other");
             List<String> keywords = (List<String>) analysis.getOrDefault("keywords", new ArrayList<>());
             String aiResponse = (String) analysis.getOrDefault("response", "抱歉，我没有理解您的问题");
             double confidence = (double) analysis.getOrDefault("confidence", 0.5);
+            boolean sourcedFromKnowledge = (boolean) analysis.getOrDefault("sourcedFromKnowledge", false);
 
-            // 2. 根据关键词搜索商品
+            // 3. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
             List<GoodsSpu> matchedProducts = new ArrayList<>();
-            if (!keywords.isEmpty()) {
-                matchedProducts = semanticSearch(String.join(" ", keywords), 5);
+            if (!ragProducts.isEmpty()) {
+                // 优先使用RAG检索的商品
+                matchedProducts = ragProducts;
+            } else if (!keywords.isEmpty()) {
+                String query = String.join(" ", keywords);
+                if (vectorSearchService.isAvailable()) {
+                    matchedProducts = vectorSearchService.searchSimilarProducts(query, 5);
+                }
+                // 向量搜索无结果时降级到关键词搜索
+                if (matchedProducts.isEmpty()) {
+                    matchedProducts = semanticSearch(query, 5);
+                }
             }
 
-            // 3. 构建响应
+            // 4. 检查商品与关键词的相关性
+            boolean hasRelevantProducts = hasRelevantProducts(matchedProducts, keywords);
+
+            // 5. 构建响应
             result.put("sessionId", sessionId);
             result.put("response", aiResponse);
+            result.put("ragEnabled", ragEnabled && !ragProducts.isEmpty());
+            result.put("sourcedFromKnowledge", sourcedFromKnowledge);
             result.put("intent", intent);
             result.put("keywords", keywords);
-            result.put("products", matchedProducts);
-            result.put("hasProducts", !matchedProducts.isEmpty());
+            result.put("products", hasRelevantProducts ? matchedProducts : new ArrayList<>());
+            result.put("hasProducts", hasRelevantProducts);
 
-            // 4. 记录需求
+            // 6. 记录需求
             List<String> productIds = matchedProducts.stream()
                     .map(GoodsSpu::getId)
                     .collect(Collectors.toList());
             recordDemand(sessionId, userId, merchantId, message, aiResponse, keywords,
                     intent, confidence, productIds, intent);
 
-            // 5. 如果是产品咨询且无结果，记录搜索关键词 (独立try-catch避免影响主响应)
-            if ("product_inquiry".equals(intent) && matchedProducts.isEmpty()) {
+            // 7. 极速匹配服务 - 当产品咨询无相关结果时主动询问
+            // 支持英文和中文意图匹配
+            boolean isProductInquiry = "product_inquiry".equals(intent)
+                    || (intent != null && (intent.contains("商品") || intent.contains("查询") || intent.contains("推荐") || intent.contains("product")));
+            if (isProductInquiry && !hasRelevantProducts) {
+                // 记录搜索关键词（无结果）
                 try {
                     for (String keyword : keywords) {
                         searchKeywordService.recordSearch(keyword, userId, merchantId, null, 0, "ai_chat");
                     }
                 } catch (Exception keywordEx) {
-                    // 关键词记录失败不影响主响应
                     log.warn("记录搜索关键词失败: {}", keywordEx.getMessage());
                 }
+
+                // 触发极速匹配服务询问
+                String expressMatchPrompt = buildExpressMatchPrompt(keywords);
+                result.put("response", expressMatchPrompt);
+                result.put("showExpressMatchOption", true);
+                result.put("expressMatchKeywords", keywords);
+
+                // 保存会话状态 - 使用HashMap因为Map.of不允许null值
+                Map<String, Object> stateData = new HashMap<>();
+                stateData.put("keywords", keywords);
+                stateData.put("originalMessage", message);
+                stateData.put("userId", userId);
+                if (merchantId != null) {
+                    stateData.put("merchantId", merchantId);
+                }
+                saveSessionState(sessionId, STATE_AWAITING_EXPRESS_MATCH_CONFIRM, stateData);
             }
 
         } catch (Exception e) {
@@ -123,26 +207,293 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         return result;
     }
 
+    /**
+     * 构建极速匹配服务询问提示
+     */
+    private String buildExpressMatchPrompt(List<String> keywords) {
+        String keywordStr = String.join("、", keywords);
+        return String.format(
+                "抱歉，我们暂时没有找到「%s」相关的商品。\n\n" +
+                "🚀 需要极速匹配服务吗？\n" +
+                "• 服务完全免费\n" +
+                "• 当天响应，专人对接\n" +
+                "• 为您寻找优质供应商\n\n" +
+                "回复「需要」或「是」开启极速匹配服务",
+                keywordStr
+        );
+    }
+
+    /**
+     * 处理极速匹配服务确认
+     */
+    private Map<String, Object> handleExpressMatchConfirmation(
+            String sessionId, Long userId, Long merchantId, String message, Map<String, Object> sessionState) {
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", sessionId);
+
+        String normalizedMessage = message.trim().toLowerCase();
+
+        // 先检查拒绝模式（优先级高于确认，避免"不需要"被当作"需要"处理）
+        boolean isRejected = normalizedMessage.contains("不需要") ||
+                normalizedMessage.contains("不用") ||
+                normalizedMessage.contains("算了") ||
+                normalizedMessage.contains("不要") ||
+                normalizedMessage.equals("不") ||
+                normalizedMessage.equals("no");
+
+        // 再检查确认模式
+        boolean isConfirmed = !isRejected && (
+                normalizedMessage.contains("需要") ||
+                normalizedMessage.contains("是") ||
+                normalizedMessage.contains("好") ||
+                normalizedMessage.contains("可以") ||
+                normalizedMessage.equals("yes") ||
+                normalizedMessage.equals("ok"));
+
+        if (isRejected) {
+            // 用户拒绝
+            result.put("response", "好的，没关系！如果之后有需要，随时可以找我帮忙寻找供应商。\n\n还有其他我能帮您的吗？");
+            clearSessionState(sessionId);
+
+        } else if (isConfirmed) {
+            // 用户确认需要极速匹配服务，进入需求收集阶段
+            List<String> keywords = (List<String>) sessionState.get("keywords");
+            String keywordStr = keywords != null ? String.join("、", keywords) : "商品";
+
+            result.put("response", String.format(
+                    "好的，我来帮您对接「%s」的供应商！\n\n" +
+                    "请简单描述您的需求：\n" +
+                    "• 预计采购数量？\n" +
+                    "• 有规格要求吗？（如：规格、品牌、产地）\n" +
+                    "• 预算范围？\n" +
+                    "• 期望交货时间？\n\n" +
+                    "您可以一次性告诉我，也可以分开说~",
+                    keywordStr
+            ));
+            result.put("showExpressMatchOption", false);
+            result.put("collectingRequirements", true);
+
+            // 更新状态为收集需求 - 使用HashMap因为Map.of不允许null值
+            Map<String, Object> collectStateData = new HashMap<>();
+            collectStateData.put("keywords", keywords != null ? keywords : List.of());
+            collectStateData.put("userId", userId);
+            if (merchantId != null) {
+                collectStateData.put("merchantId", merchantId);
+            }
+            collectStateData.put("startTime", System.currentTimeMillis());
+            saveSessionState(sessionId, STATE_COLLECTING_REQUIREMENTS, collectStateData);
+
+        } else if (normalizedMessage.contains("不") || normalizedMessage.contains("算了") ||
+                normalizedMessage.equals("no")) {
+            // 用户拒绝
+            result.put("response", "好的，没关系！如果之后有需要，随时可以找我帮忙寻找供应商。\n\n还有其他我能帮您的吗？");
+            clearSessionState(sessionId);
+
+        } else {
+            // 用户回复了其他内容，当作新的查询处理
+            clearSessionState(sessionId);
+            return chat(sessionId, userId, merchantId, message);
+        }
+
+        return result;
+    }
+
+    /**
+     * 处理需求收集
+     */
+    private Map<String, Object> handleRequirementCollection(
+            String sessionId, Long userId, Long merchantId, String message, Map<String, Object> sessionState) {
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("sessionId", sessionId);
+
+        List<String> keywords = (List<String>) sessionState.get("keywords");
+        String keywordStr = keywords != null ? String.join("、", keywords) : "商品";
+
+        // 创建极速匹配需求工单
+        try {
+            AiDemandRecord demandRecord = new AiDemandRecord();
+            demandRecord.setSessionId(sessionId);
+            demandRecord.setMessageId(UUID.randomUUID().toString());
+            demandRecord.setUserId(userId);
+            demandRecord.setMerchantId(merchantId);
+            demandRecord.setUserMessage(message);
+            demandRecord.setAiResponse("极速匹配服务 - 需求已记录");
+            demandRecord.setExtractedKeywords(objectMapper.writeValueAsString(keywords));
+            demandRecord.setExtractedIntent("express_match_request");
+            demandRecord.setConfidenceScore(BigDecimal.valueOf(1.0));
+            demandRecord.setMatchCount(0);
+            demandRecord.setDemandType("express_match");
+            demandRecord.setDemandUrgency(2); // 高优先级
+            demandRecord.setStatus(0); // 待处理
+            demandRecord.setCreateTime(LocalDateTime.now());
+
+            // 保存需求详情到备注字段（如有）
+            Map<String, Object> demandDetails = new HashMap<>();
+            demandDetails.put("searchKeywords", keywords);
+            demandDetails.put("userRequirements", message);
+            demandDetails.put("requestTime", LocalDateTime.now().toString());
+            demandDetails.put("serviceType", "express_match");
+            demandRecord.setMatchedProductIds(objectMapper.writeValueAsString(demandDetails));
+
+            baseMapper.insert(demandRecord);
+
+            // 记录到搜索关键词表（标记为极速匹配需求）
+            if (keywords != null) {
+                for (String keyword : keywords) {
+                    searchKeywordService.recordSearch(keyword, userId, merchantId, null, 0, "express_match");
+                }
+            }
+
+            result.put("response", String.format(
+                    "✅ 已收到您的「%s」采购需求！\n\n" +
+                    "📋 需求详情：\n%s\n\n" +
+                    "⏰ 我们的专员会在当天与您联系\n" +
+                    "📞 如有紧急需求，可拨打客服热线\n\n" +
+                    "还有其他需要帮助的吗？",
+                    keywordStr,
+                    message.length() > 100 ? message.substring(0, 100) + "..." : message
+            ));
+            result.put("expressMatchSubmitted", true);
+            result.put("demandRecordId", demandRecord.getId());
+
+            log.info("极速匹配需求已创建: sessionId={}, userId={}, keywords={}", sessionId, userId, keywords);
+
+        } catch (Exception e) {
+            log.error("创建极速匹配需求失败", e);
+            result.put("response", "抱歉，需求提交遇到问题，请稍后重试或联系客服。");
+            result.put("error", e.getMessage());
+        }
+
+        // 清除会话状态
+        clearSessionState(sessionId);
+
+        return result;
+    }
+
+    /**
+     * 获取会话状态
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getSessionState(String sessionId) {
+        Object state = redisTemplate.opsForValue().get(SESSION_STATE_KEY + sessionId);
+        if (state instanceof Map) {
+            return (Map<String, Object>) state;
+        }
+        return null;
+    }
+
+    /**
+     * 保存会话状态
+     */
+    private void saveSessionState(String sessionId, String state, Map<String, Object> data) {
+        Map<String, Object> sessionState = new HashMap<>(data);
+        sessionState.put("state", state);
+        redisTemplate.opsForValue().set(
+                SESSION_STATE_KEY + sessionId,
+                sessionState,
+                30, // 30分钟过期
+                java.util.concurrent.TimeUnit.MINUTES
+        );
+    }
+
+    /**
+     * 清除会话状态
+     */
+    private void clearSessionState(String sessionId) {
+        redisTemplate.delete(SESSION_STATE_KEY + sessionId);
+    }
+
     @Override
     public List<GoodsSpu> semanticSearch(String query, int limit) {
         if (query == null || query.trim().isEmpty()) {
             return new ArrayList<>();
         }
 
-        // 简单的关键词匹配搜索
-        // 实际生产环境可以使用Elasticsearch或向量搜索
+        // 1. 优先使用向量搜索（语义相似度匹配）
+        if (vectorSearchService.isAvailable()) {
+            try {
+                List<GoodsSpu> vectorResults = vectorSearchService.searchSimilarProducts(query, limit);
+                if (!vectorResults.isEmpty()) {
+                    log.debug("语义搜索使用向量搜索，返回 {} 个结果", vectorResults.size());
+                    return vectorResults;
+                }
+            } catch (Exception e) {
+                log.warn("向量搜索失败，降级到关键词搜索: {}", e.getMessage());
+            }
+        }
+
+        // 2. 降级到关键词搜索
         LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> {
             String[] words = query.split("\\s+");
             for (String word : words) {
-                w.or(q -> q.like(GoodsSpu::getName, word)
-                          .or().like(GoodsSpu::getDescription, word));
+                if (word.length() >= 2) {  // 过滤太短的词
+                    w.or(q -> q.like(GoodsSpu::getName, word)
+                              .or().like(GoodsSpu::getDescription, word));
+                }
             }
         });
-        wrapper.eq(GoodsSpu::getShelf, 1) // 上架商品
+        wrapper.eq(GoodsSpu::getShelf, "1") // 上架商品
                .last("LIMIT " + limit);
 
         return goodsSpuMapper.selectList(wrapper);
+    }
+
+    /**
+     * 检查商品列表是否与搜索关键词相关
+     * 相关性判断: 商品名称必须包含至少一个关键词的核心部分
+     * @param products 商品列表
+     * @param keywords 搜索关键词
+     * @return 是否有相关商品
+     */
+    private boolean hasRelevantProducts(List<GoodsSpu> products, List<String> keywords) {
+        if (products == null || products.isEmpty()) {
+            return false;
+        }
+        if (keywords == null || keywords.isEmpty()) {
+            // 如果没有关键词，则认为所有商品都相关
+            return true;
+        }
+
+        // 对于每个商品，检查其名称是否包含任一关键词
+        for (GoodsSpu product : products) {
+            String productName = product.getName();
+            if (productName == null) continue;
+
+            productName = productName.toLowerCase();
+            for (String keyword : keywords) {
+                if (keyword == null || keyword.length() < 2) continue;
+
+                String normalizedKeyword = keyword.toLowerCase().trim();
+
+                // 直接匹配：商品名包含完整关键词
+                if (productName.contains(normalizedKeyword)) {
+                    log.debug("商品 '{}' 匹配关键词 '{}'", product.getName(), keyword);
+                    return true;
+                }
+
+                // 部分匹配：关键词长度>=3时，检查是否包含关键词的核心部分
+                // 例如："牛肉丸" -> "牛肉" 或 "肉丸" 都算匹配
+                if (normalizedKeyword.length() >= 3) {
+                    // 检查关键词的前N-1个字符
+                    String prefix = normalizedKeyword.substring(0, normalizedKeyword.length() - 1);
+                    // 检查关键词的后N-1个字符
+                    String suffix = normalizedKeyword.substring(1);
+
+                    if (productName.contains(prefix) || productName.contains(suffix)) {
+                        log.debug("商品 '{}' 部分匹配关键词 '{}' (prefix={}, suffix={})",
+                                product.getName(), keyword, prefix, suffix);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        log.debug("无相关商品匹配关键词: keywords={}, products={}",
+                keywords, products.stream().map(GoodsSpu::getName).collect(Collectors.toList()));
+        return false;
     }
 
     @Override
@@ -283,6 +634,91 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         }
 
         return fallbackAnalysis(message);
+    }
+
+    /**
+     * 使用RAG增强的提示分析用户消息
+     * @param message 用户消息
+     * @param ragEnhancedPrompt RAG增强的系统提示（可为null，null时使用默认提示）
+     * @return 分析结果
+     */
+    private Map<String, Object> analyzeMessageWithRag(String message, String ragEnhancedPrompt) {
+        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
+            log.warn("AI API Key未配置，使用降级分析");
+            return fallbackAnalysis(message);
+        }
+
+        // 如果没有RAG增强的提示，使用默认提示
+        String systemPrompt = (ragEnhancedPrompt != null && !ragEnhancedPrompt.isEmpty())
+                ? ragEnhancedPrompt
+                : SYSTEM_PROMPT;
+
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBearerAuth(deepseekApiKey);
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", deepseekModel);
+            requestBody.put("messages", List.of(
+                Map.of("role", "system", "content", systemPrompt),
+                Map.of("role", "user", "content", message)
+            ));
+            requestBody.put("temperature", 0.7);
+
+            String apiUrl = deepseekBaseUrl + "/v1/chat/completions";
+            log.debug("调用AI API (RAG模式={}): url={}, model={}",
+                    ragEnhancedPrompt != null, apiUrl, deepseekModel);
+
+            HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                    apiUrl,
+                    HttpMethod.POST,
+                    request,
+                    String.class
+            );
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                JsonNode root = objectMapper.readTree(response.getBody());
+                String content = root.path("choices").path(0).path("message").path("content").asText();
+
+                // 尝试解析JSON
+                try {
+                    Map<String, Object> result = objectMapper.readValue(content, Map.class);
+                    // 标记是否使用了RAG知识
+                    if (ragEnhancedPrompt != null) {
+                        result.putIfAbsent("sourcedFromKnowledge", true);
+                    }
+                    return result;
+                } catch (Exception jsonEx) {
+                    log.warn("AI返回内容不是纯JSON，尝试提取: {}", content);
+                    String jsonContent = extractJsonFromText(content);
+                    if (jsonContent != null) {
+                        Map<String, Object> result = objectMapper.readValue(jsonContent, Map.class);
+                        if (ragEnhancedPrompt != null) {
+                            result.putIfAbsent("sourcedFromKnowledge", true);
+                        }
+                        return result;
+                    }
+                    // 如果提取也失败，使用AI返回的文本作为response
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("intent", "other");
+                    result.put("keywords", extractKeywordsSimple(message));
+                    result.put("response", content);
+                    result.put("confidence", 0.7);
+                    result.put("sourcedFromKnowledge", ragEnhancedPrompt != null);
+                    return result;
+                }
+            } else {
+                log.warn("AI API返回非成功状态: {}", response.getStatusCode());
+            }
+        } catch (Exception e) {
+            log.error("AI API调用失败 (RAG模式={}): {}", ragEnhancedPrompt != null, e.getMessage(), e);
+        }
+
+        Map<String, Object> fallback = fallbackAnalysis(message);
+        fallback.put("sourcedFromKnowledge", false);
+        return fallback;
     }
 
     /**

@@ -78,30 +78,31 @@ public class WxUserApi {
 	}
 
 	/**
-	 * 微信一键获取手机号登录
-	 * 使用微信手机号快速验证组件获取的code来获取手机号
+	 * 微信一键获取手机号登录 (独立登录入口)
+	 * 自动完成: wx.login() + 获取手机号 + 创建会话
 	 * @param request
-	 * @param params 包含 code (手机号授权code)
-	 * @return 用户信息及手机号
+	 * @param params 包含 code (手机号授权code), jsCode (wx.login()获取的code)
+	 * @return 用户信息、手机号及thirdSession
 	 */
 	@PostMapping("/phone-login")
 	public AjaxResult phoneLogin(HttpServletRequest request, @RequestBody Map<String, String> params) {
 		try {
-			String code = params.get("code");
+			String code = params.get("code");       // 手机号授权code
+			String jsCode = params.get("jsCode");   // wx.login() 获取的 jsCode
+
 			if (code == null || code.trim().isEmpty()) {
 				return AjaxResult.error("手机号授权code不能为空");
 			}
-
-			// 获取当前登录用户的session
-			ThirdSession thirdSession = ThirdSessionHolder.getThirdSession();
-			if (thirdSession == null) {
-				return AjaxResult.error("请先登录微信");
+			if (jsCode == null || jsCode.trim().isEmpty()) {
+				return AjaxResult.error("微信登录jsCode不能为空");
 			}
 
-			String appId = thirdSession.getAppId();
-			String userId = thirdSession.getWxUserId();
+			String appId = WxMaUtil.getAppId(request);
 
-			// 使用微信API获取手机号
+			// Step 1: 使用 jsCode 登录获取 openid 和创建 ThirdSession
+			WxUser wxUser = wxUserService.loginMa(appId, jsCode);
+
+			// Step 2: 使用 code 获取手机号
 			WxMaPhoneNumberInfo phoneInfo = WxMaConfiguration.getMaService(appId)
 					.getUserService()
 					.getPhoneNoInfo(code);
@@ -112,21 +113,19 @@ public class WxUserApi {
 
 			String phoneNumber = phoneInfo.getPhoneNumber();
 
-			// 更新用户手机号
-			WxUser wxUser = wxUserService.getById(userId);
-			if (wxUser != null) {
-				wxUser.setPhone(phoneNumber);
-				wxUserService.updateById(wxUser);
-			}
+			// Step 3: 更新用户手机号
+			wxUser.setPhone(phoneNumber);
+			wxUserService.updateById(wxUser);
 
-			// 返回用户信息
+			// Step 4: 构建返回结果
 			Map<String, Object> result = new HashMap<>();
+			result.put("thirdSession", wxUser.getSessionKey());  // 返回 thirdSession 给前端
 			result.put("phoneNumber", phoneNumber);
 			result.put("purePhoneNumber", phoneInfo.getPurePhoneNumber());
 			result.put("countryCode", phoneInfo.getCountryCode());
 			result.put("user", wxUser);
 
-			log.info("微信一键登录成功: userId={}, phone={}", userId, phoneNumber);
+			log.info("微信一键登录成功: userId={}, phone={}", wxUser.getId(), phoneNumber);
 			return AjaxResult.success(result);
 
 		} catch (Exception e) {

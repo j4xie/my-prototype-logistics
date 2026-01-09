@@ -10,6 +10,7 @@ import { Icon } from "react-native-paper";
 import { useTranslation } from "react-i18next";
 import { WSProfileStackParamList } from "../../../types/navigation";
 import { useAuthStore } from "../../../store/authStore";
+import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from "../../../store/languageStore";
 
 type NavigationProp = NativeStackNavigationProp<WSProfileStackParamList, "WSProfile">;
 
@@ -39,6 +40,12 @@ export function WSProfileScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuthStore();
   const { t } = useTranslation('workshop');
+  const { language, setLanguage } = useLanguageStore();
+
+  const toggleLanguage = () => {
+    const newLang: SupportedLanguage = language === 'zh-CN' ? 'en-US' : 'zh-CN';
+    setLanguage(newLang);
+  };
 
   const handleLogout = () => {
     logout();
@@ -111,6 +118,13 @@ export function WSProfileScreen() {
         <View style={styles.menuSection}>
           <Text style={styles.sectionTitle}>{t('profile.sections.systemSettings')}</Text>
           <View style={styles.menuGroup}>
+            <MenuItem
+              icon="translate"
+              title={t('profile.menu.language') || '语言'}
+              onPress={toggleLanguage}
+              rightText={LANGUAGE_NAMES[language]}
+              showArrow={false}
+            />
             <MenuItem
               icon="cog-outline"
               title={t('profile.menu.settings')}

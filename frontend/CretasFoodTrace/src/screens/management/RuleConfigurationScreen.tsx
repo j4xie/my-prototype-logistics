@@ -372,17 +372,23 @@ export default function RuleConfigurationScreen() {
                       <View style={styles.ruleInfo}>
                         <Text style={styles.ruleName}>{rule.ruleName}</Text>
                         <View style={styles.ruleChips}>
-                          <Chip
-                            mode="flat"
-                            compact
-                            style={[
-                              styles.groupChip,
-                              { backgroundColor: RULE_GROUP_COLORS[rule.ruleGroup] + '20' },
-                            ]}
-                            textStyle={{ color: RULE_GROUP_COLORS[rule.ruleGroup] }}
-                          >
-                            {RULE_GROUP_LABELS[rule.ruleGroup]}
-                          </Chip>
+                          {(() => {
+                            const groupColor = RULE_GROUP_COLORS[rule.ruleGroup] || '#757575';
+                            const groupLabel = RULE_GROUP_LABELS[rule.ruleGroup] || rule.ruleGroup || '未知';
+                            return (
+                              <Chip
+                                mode="flat"
+                                compact
+                                style={[
+                                  styles.groupChip,
+                                  { backgroundColor: groupColor + '20' },
+                                ]}
+                                textStyle={{ color: groupColor }}
+                              >
+                                {groupLabel}
+                              </Chip>
+                            );
+                          })()}
                           <Chip mode="outlined" compact>
                             优先级: {rule.priority}
                           </Chip>
@@ -616,16 +622,22 @@ export default function RuleConfigurationScreen() {
 
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>规则组:</Text>
-                <Chip
-                  mode="flat"
-                  style={[
-                    styles.groupChip,
-                    { backgroundColor: RULE_GROUP_COLORS[selectedRule.ruleGroup] + '20' },
-                  ]}
-                  textStyle={{ color: RULE_GROUP_COLORS[selectedRule.ruleGroup] }}
-                >
-                  {RULE_GROUP_LABELS[selectedRule.ruleGroup]}
-                </Chip>
+                {(() => {
+                  const groupColor = RULE_GROUP_COLORS[selectedRule.ruleGroup] || '#757575';
+                  const groupLabel = RULE_GROUP_LABELS[selectedRule.ruleGroup] || selectedRule.ruleGroup || '未知';
+                  return (
+                    <Chip
+                      mode="flat"
+                      style={[
+                        styles.groupChip,
+                        { backgroundColor: groupColor + '20' },
+                      ]}
+                      textStyle={{ color: groupColor }}
+                    >
+                      {groupLabel}
+                    </Chip>
+                  );
+                })()}
               </View>
 
               <View style={styles.detailRow}>

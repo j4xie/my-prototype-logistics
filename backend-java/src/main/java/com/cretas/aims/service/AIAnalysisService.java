@@ -240,6 +240,18 @@ public class AIAnalysisService {
     }
 
     /**
+     * 构建精简版成本分析系统提示词（SSE 流式用，减少 Token）
+     */
+    private String buildCompactSystemPrompt() {
+        return """
+            食品成本分析师。根据数据识别异常，给出优化建议。
+            基准：原料50-60%，人工15-25%，设备10-15%；良品率>95%，效率>85%。
+            输出：1.概览 2.问题 3.建议（含节省金额）
+            简洁回复，突出关键发现。
+            """;
+    }
+
+    /**
      * 通过 Python 服务调用进行成本分析（原有逻辑）
      */
     private Map<String, Object> analyzeCostViaPython(String factoryId, String batchId,
@@ -589,6 +601,104 @@ public class AIAnalysisService {
         }
 
         return sb.toString();
+    }
+
+    /**
+     * 格式化精简版成本数据（SSE流式响应专用 - 减少约50% Token）
+     *
+     * 移除冗长的行业基准对比（Section 9），基准已内置于系统提示词。
+     * 所有部分压缩为单行格式，仅保留核心数值。
+     */
+    @SuppressWarnings("unchecked")
+    private String formatCompactCostData(Map<String, Object> costData) {
+        StringBuilder sb = new StringBuilder();
+
+        // 1. 批次信息（单行）
+        Map<String, Object> batchInfo = (Map<String, Object>) costData.get("batchInfo");
+        if (batchInfo != null) {
+            sb.append("批次: ").append(getStringValue(batchInfo, "batchNumber", "N/A"));
+            sb.append(" | ").append(getStringValue(batchInfo, "productName", "N/A"));
+            sb.append(" | 计划").append(formatMoney(getBigDecimalValue(batchInfo, "plannedQuantity"))).append("kg");
+            sb.append(" 实际").append(formatMoney(getBigDecimalValue(batchInfo, "actualQuantity"))).append("kg");
+            sb.append(" | 良品率").append(formatPercent(batchInfo.get("yieldRate"))).append("%");
+            sb.append(" 效率").append(formatPercent(batchInfo.get("efficiency"))).append("%\n");
+        }
+
+        // 2. 成本汇总（核心数据）
+        Map<String, Object> costSummary = (Map<String, Object>) costData.get("costSummary");
+        if (costSummary != null) {
+            sb.append("成本: ¥").append(formatMoney(getBigDecimalValue(costSummary, "totalCost")));
+            sb.append(" (原料").append(formatPercent(costSummary.get("materialCostRatio"))).append("%");
+            sb.append(" 人工").append(formatPercent(costSummary.get("laborCostRatio"))).append("%");
+            sb.append(" 设备").append(formatPercent(costSummary.get("equipmentCostRatio"))).append("%)");
+            sb.append(" | 单位¥").append(formatMoney(getBigDecimalValue(costSummary, "unitCost"))).append("/kg\n");
+        }
+
+        // 3. 原材料（汇总+Top3）
+        List<Map<String, Object>> materials = (List<Map<String, Object>>) costData.get("materialConsumptions");
+        if (materials != null && !materials.isEmpty()) {
+            sb.append("原料: ¥").append(formatMoney(getBigDecimalValue(costData, "totalMaterialCost")));
+            sb.append(" (").append(materials.size()).append("种) → ");
+            for (int i = 0; i < Math.min(materials.size(), 3); i++) {
+                Map<String, Object> m = materials.get(i);
+                if (i > 0) sb.append(", ");
+                sb.append(getStringValue(m, "materialName", ""));
+                sb.append(" ¥").append(formatMoney(getBigDecimalValue(m, "cost")));
+            }
+            sb.append("\n");
+        }
+
+        // 4. 设备+人工（合并一行）
+        sb.append("设备: ¥").append(formatMoney(getBigDecimalValue(costData, "totalEquipmentCost")));
+        sb.append(" (").append(getIntValue(costData, "equipmentUsageCount")).append("台");
+        sb.append(" ").append(getIntValue(costData, "totalEquipmentHours")).append("h)");
+        sb.append(" | 人工: ¥").append(formatMoney(getBigDecimalValue(costData, "totalLaborCost")));
+        Object totalHours = costData.get("totalWorkHours");
+        if (totalHours != null) {
+            sb.append(" (").append(String.format("%.1f", ((Number)totalHours).doubleValue())).append("h)");
+        }
+        sb.append("\n");
+
+        // 5. 质量检验（简化）
+        int qualityCount = getIntValue(costData, "qualityInspectionCount");
+        if (qualityCount > 0) {
+            sb.append("质检: ").append(qualityCount).append("次");
+            BigDecimal avgPassRate = getBigDecimalValue(costData, "averagePassRate");
+            if (avgPassRate.compareTo(BigDecimal.ZERO) > 0) {
+                sb.append(" | 合格率").append(formatPercent(avgPassRate)).append("%");
+            }
+            sb.append("\n");
+        }
+
+        // 6. 风险预警（仅显示1条最重要的）
+        List<String> risks = (List<String>) costData.get("risks");
+        if (risks != null && !risks.isEmpty()) {
+            sb.append("⚠️ ").append(risks.get(0));
+            if (risks.size() > 1) {
+                sb.append(" (+").append(risks.size() - 1).append("项)");
+            }
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    /**
+     * 格式化成本数据（支持精简模式）
+     *
+     * @param costData 成本数据
+     * @param compactMode true=使用精简格式(SSE)，false=使用完整格式
+     * @return 格式化后的字符串
+     */
+    @SuppressWarnings("unchecked")
+    public String formatCostDataWithMode(Map<String, Object> costData, boolean compactMode) {
+        boolean isEnhanced = costData.containsKey("batchInfo") && costData.containsKey("materialConsumptions");
+
+        if (!isEnhanced) {
+            return formatBasicCostData(costData);
+        }
+
+        return compactMode ? formatCompactCostData(costData) : formatEnhancedCostData(costData);
     }
 
     /**

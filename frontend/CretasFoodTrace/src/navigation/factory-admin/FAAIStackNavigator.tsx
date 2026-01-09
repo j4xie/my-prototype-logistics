@@ -27,11 +27,16 @@ export function FAAIStackNavigator() {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        headerBackTitle: '返回',
       }}
     >
       {/* AI分析中心 - 主页 */}
-      <Stack.Screen name="AIAnalysisCenter" component={AIAnalysisCenterScreen} />
+      <Stack.Screen
+        name="AIAnalysisCenter"
+        component={AIAnalysisCenterScreen}
+        options={{ headerShown: false }}
+      />
 
       {/* 成本分析 */}
       <Stack.Screen

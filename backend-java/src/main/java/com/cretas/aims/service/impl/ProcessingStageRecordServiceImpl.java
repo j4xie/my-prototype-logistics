@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.EnumMap;
 import java.util.stream.Collectors;
 
 /**
@@ -85,14 +86,26 @@ public class ProcessingStageRecordServiceImpl implements ProcessingStageRecordSe
         List<ProcessingStageRecord> records = repository
                 .findByFactoryIdAndProductionBatchIdOrderByStageOrderAsc(factoryId, productionBatchId);
 
+        // N+1 修复：预先批量查询所有环节类型的统计数据
+        Map<ProcessingStageType, Double> avgLossRateMap = new EnumMap<>(ProcessingStageType.class);
+        Map<ProcessingStageType, Double> avgPassRateMap = new EnumMap<>(ProcessingStageType.class);
+        Map<ProcessingStageType, Double> avgDurationMap = new EnumMap<>(ProcessingStageType.class);
+
+        repository.findAllAverageLossRatesByFactoryId(factoryId).forEach(row ->
+                avgLossRateMap.put((ProcessingStageType) row[0], (Double) row[1]));
+        repository.findAllAveragePassRatesByFactoryId(factoryId).forEach(row ->
+                avgPassRateMap.put((ProcessingStageType) row[0], (Double) row[1]));
+        repository.findAllAverageDurationsByFactoryId(factoryId).forEach(row ->
+                avgDurationMap.put((ProcessingStageType) row[0], (Double) row[1]));
+
         return records.stream().map(record -> {
             ProcessingStageRecordDTO dto = toDTO(record);
 
-            // 添加平均值对比数据
+            // 使用预加载的 Map 进行查找，避免 N+1 查询
             ProcessingStageType stageType = record.getStageType();
-            Double avgLossRate = repository.findAverageLossRateByFactoryIdAndStageType(factoryId, stageType);
-            Double avgPassRate = repository.findAveragePassRateByFactoryIdAndStageType(factoryId, stageType);
-            Double avgDuration = repository.findAverageDurationByFactoryIdAndStageType(factoryId, stageType);
+            Double avgLossRate = avgLossRateMap.get(stageType);
+            Double avgPassRate = avgPassRateMap.get(stageType);
+            Double avgDuration = avgDurationMap.get(stageType);
 
             if (avgLossRate != null) {
                 dto.setAvgLossRate(BigDecimal.valueOf(avgLossRate));
@@ -160,14 +173,26 @@ public class ProcessingStageRecordServiceImpl implements ProcessingStageRecordSe
     public Map<ProcessingStageType, Map<String, Object>> getStageStatistics(String factoryId) {
         Map<ProcessingStageType, Map<String, Object>> statistics = new HashMap<>();
 
-        for (ProcessingStageType stageType : ProcessingStageType.values()) {
-            Map<String, Object> stats = new HashMap<>();
+        // N+1 修复：预先批量查询所有环节类型的统计数据，只需 3 次 DB 查询
+        Map<ProcessingStageType, Double> avgLossRateMap = new EnumMap<>(ProcessingStageType.class);
+        Map<ProcessingStageType, Double> avgPassRateMap = new EnumMap<>(ProcessingStageType.class);
+        Map<ProcessingStageType, Double> avgDurationMap = new EnumMap<>(ProcessingStageType.class);
 
-            Double avgLossRate = repository.findAverageLossRateByFactoryIdAndStageType(factoryId, stageType);
-            Double avgPassRate = repository.findAveragePassRateByFactoryIdAndStageType(factoryId, stageType);
-            Double avgDuration = repository.findAverageDurationByFactoryIdAndStageType(factoryId, stageType);
+        repository.findAllAverageLossRatesByFactoryId(factoryId).forEach(row ->
+                avgLossRateMap.put((ProcessingStageType) row[0], (Double) row[1]));
+        repository.findAllAveragePassRatesByFactoryId(factoryId).forEach(row ->
+                avgPassRateMap.put((ProcessingStageType) row[0], (Double) row[1]));
+        repository.findAllAverageDurationsByFactoryId(factoryId).forEach(row ->
+                avgDurationMap.put((ProcessingStageType) row[0], (Double) row[1]));
+
+        // 遍历所有环节类型，使用预加载的 Map 进行查找
+        for (ProcessingStageType stageType : ProcessingStageType.values()) {
+            Double avgLossRate = avgLossRateMap.get(stageType);
+            Double avgPassRate = avgPassRateMap.get(stageType);
+            Double avgDuration = avgDurationMap.get(stageType);
 
             if (avgLossRate != null || avgPassRate != null || avgDuration != null) {
+                Map<String, Object> stats = new HashMap<>();
                 stats.put("avgLossRate", avgLossRate);
                 stats.put("avgPassRate", avgPassRate);
                 stats.put("avgDuration", avgDuration);

@@ -214,6 +214,10 @@
     "dateRange": "Date Range",
     "startDate": "Start Date",
     "endDate": "End Date",
+    "quickSelect": "Quick Select:",
+    "last7Days": "Last 7 Days",
+    "last30Days": "Last 30 Days",
+    "last90Days": "Last 90 Days",
     "reportTypes": {
       "production": {
         "label": "Production Report",
@@ -233,13 +237,28 @@
       "pdf": "PDF",
       "csv": "CSV"
     },
+    "formatHints": {
+      "excel": "Excel format supports data filtering and charts",
+      "pdf": "PDF format is suitable for printing and archiving",
+      "csv": "CSV format has best compatibility, ideal for importing to other systems"
+    },
     "preview": "Preview",
+    "reportTypeLabel": "Report Type:",
+    "timeRangeLabel": "Time Range:",
+    "exportFormatLabel": "Export Format:",
+    "includesLabel": "Includes:",
+    "days": "days",
     "export": "Export",
     "exporting": "Exporting...",
     "exportSuccess": "Export Successful",
     "exportFailed": "Export Failed",
     "pleaseSelectDateRange": "Please select date range",
-    "noFactoryInfo": "Unable to get factory info"
+    "noFactoryInfo": "Unable to get factory info",
+    "viewLater": "View Later",
+    "shareFile": "Share File",
+    "shareFailed": "Share Failed",
+    "shareFailedMessage": "Unable to share file. Please try again later.",
+    "confirm": "OK"
   },
   "status": {
     "completed": "Completed",

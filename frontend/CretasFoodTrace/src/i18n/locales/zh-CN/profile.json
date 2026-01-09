@@ -19,7 +19,8 @@
     "membership": "会员中心",
     "settings": "设置",
     "operationLog": "操作日志",
-    "statistics": "统计数据"
+    "statistics": "统计数据",
+    "language": "语言"
   },
   "roles": {
     "factoryAdmin": "工厂管理员",
@@ -81,7 +82,17 @@
     "themeSystem": "跟随系统",
     "fontSize": "字体大小",
     "cache": "缓存",
-    "clearCache": "清除缓存"
+    "clearCache": "清除缓存",
+    "dataSync": "数据同步",
+    "autoSync": "自动同步",
+    "autoSyncDescription": "在网络可用时自动同步数据",
+    "wifiOnly": "仅WiFi同步",
+    "wifiOnlyDescription": "仅在WiFi网络下同步数据",
+    "storage": "存储",
+    "advancedSettings": "高级设置",
+    "serverSettings": "服务器设置",
+    "productionEnv": "生产环境",
+    "networkDiagnostic": "网络诊断"
   },
   "helpCenter": {
     "title": "帮助中心",

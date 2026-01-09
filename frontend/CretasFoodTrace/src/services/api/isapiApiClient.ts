@@ -255,7 +255,7 @@ export async function getIsapiDevices(params?: {
   const factoryId = await getCurrentFactoryId();
   type ResponseType = AxiosResponse<ApiResponse<PageResponse<IsapiDevice>>>;
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices`, { params }) as ResponseType;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -264,7 +264,7 @@ export async function getIsapiDevices(params?: {
 export async function getIsapiDevice(deviceId: string): Promise<IsapiDevice> {
   const factoryId = await getCurrentFactoryId();
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/${deviceId}`) as AxiosResponse<ApiResponse<IsapiDevice>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -273,7 +273,7 @@ export async function getIsapiDevice(deviceId: string): Promise<IsapiDevice> {
 export async function createIsapiDevice(request: CreateIsapiDeviceRequest): Promise<IsapiDevice> {
   const factoryId = await getCurrentFactoryId();
   const response = await apiClient.post(`/api/mobile/${factoryId}/isapi/devices`, request) as AxiosResponse<ApiResponse<IsapiDevice>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -285,7 +285,7 @@ export async function updateIsapiDevice(
 ): Promise<IsapiDevice> {
   const factoryId = await getCurrentFactoryId();
   const response = await apiClient.put(`/api/mobile/${factoryId}/isapi/devices/${deviceId}`, request) as AxiosResponse<ApiResponse<IsapiDevice>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -309,7 +309,7 @@ export async function testConnection(deviceId: string): Promise<{
   const factoryId = await getCurrentFactoryId();
   type ResultType = { connected: boolean; deviceId: string; testedAt: string };
   const response = await apiClient.post(`/api/mobile/${factoryId}/isapi/devices/${deviceId}/test-connection`) as AxiosResponse<ApiResponse<ResultType>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -318,7 +318,7 @@ export async function testConnection(deviceId: string): Promise<{
 export async function syncDevice(deviceId: string): Promise<IsapiDevice> {
   const factoryId = await getCurrentFactoryId();
   const response = await apiClient.post(`/api/mobile/${factoryId}/isapi/devices/${deviceId}/sync`) as AxiosResponse<ApiResponse<IsapiDevice>>;
-  return response.data.data;
+  return response.data;
 }
 
 // ========== 流媒体 API ==========
@@ -329,7 +329,7 @@ export async function syncDevice(deviceId: string): Promise<IsapiDevice> {
 export async function getStreamUrls(deviceId: string): Promise<IsapiStream[]> {
   const factoryId = await getCurrentFactoryId();
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/${deviceId}/streams`) as AxiosResponse<ApiResponse<IsapiStream[]>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -339,7 +339,7 @@ export async function capturePicture(deviceId: string, channelId?: number): Prom
   const factoryId = await getCurrentFactoryId();
   const params = channelId ? { channelId } : {};
   const response = await apiClient.post(`/api/mobile/${factoryId}/isapi/devices/${deviceId}/capture`, null, { params }) as AxiosResponse<ApiResponse<IsapiCapture>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -386,7 +386,7 @@ export async function getSubscriptionStatus(): Promise<{
   const factoryId = await getCurrentFactoryId();
   type ResultType = { activeCount: number; activeDevices: string[] };
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/subscription-status`) as AxiosResponse<ApiResponse<ResultType>>;
-  return response.data.data;
+  return response.data;
 }
 
 // ========== 事件日志 API ==========
@@ -403,7 +403,7 @@ export async function getEvents(params?: {
   const factoryId = await getCurrentFactoryId();
   type ResponseType = AxiosResponse<ApiResponse<PageResponse<IsapiEvent>>>;
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/events`, { params }) as ResponseType;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -413,7 +413,7 @@ export async function getRecentAlerts(limit?: number): Promise<IsapiEvent[]> {
   const factoryId = await getCurrentFactoryId();
   const params = limit ? { limit } : {};
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/events/recent`, { params }) as AxiosResponse<ApiResponse<IsapiEvent[]>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -423,7 +423,7 @@ export async function getEventStatistics(hours?: number): Promise<IsapiEventStat
   const factoryId = await getCurrentFactoryId();
   const params = hours ? { hours } : {};
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/events/statistics`, { params }) as AxiosResponse<ApiResponse<IsapiEventStatistics>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -451,7 +451,7 @@ export async function getStatusSummary(): Promise<{
   const factoryId = await getCurrentFactoryId();
   type ResultType = { deviceStatus: Record<string, number>; subscriptionCount: number };
   const response = await apiClient.get(`/api/mobile/${factoryId}/isapi/devices/status-summary`) as AxiosResponse<ApiResponse<ResultType>>;
-  return response.data.data;
+  return response.data;
 }
 
 // ========== 辅助方法 ==========
@@ -611,7 +611,7 @@ export async function getSmartCapabilities(deviceId: string): Promise<SmartCapab
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/capabilities`
   ) as AxiosResponse<ApiResponse<SmartCapabilities>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -622,7 +622,7 @@ export async function getSmartStatus(deviceId: string, channelId: number = 1): P
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/channels/${channelId}/status`
   ) as AxiosResponse<ApiResponse<SmartStatus>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -650,7 +650,7 @@ export async function getAllSmartConfig(deviceId: string, channelId: number = 1)
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/all/${channelId}`
   ) as AxiosResponse<ApiResponse<ResultType>>;
-  return response.data.data;
+  return response.data;
 }
 
 // ========== 越界检测 API ==========
@@ -663,7 +663,7 @@ export async function getLineDetectionConfig(deviceId: string, channelId: number
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/channels/${channelId}/line-detection`
   ) as AxiosResponse<ApiResponse<SmartAnalysisConfig>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -691,7 +691,7 @@ export async function getFieldDetectionConfig(deviceId: string, channelId: numbe
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/channels/${channelId}/field-detection`
   ) as AxiosResponse<ApiResponse<SmartAnalysisConfig>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -719,7 +719,7 @@ export async function getFaceDetectionConfig(deviceId: string, channelId: number
   const response = await apiClient.get(
     `/api/mobile/${factoryId}/isapi/devices/${deviceId}/smart/channels/${channelId}/face-detection`
   ) as AxiosResponse<ApiResponse<SmartAnalysisConfig>>;
-  return response.data.data;
+  return response.data;
 }
 
 /**
@@ -843,6 +843,96 @@ export function createDefaultRule(type: SmartDetectionType): SmartDetectionRule 
   return baseRule;
 }
 
+// ========== 设备发现类型定义 ==========
+
+/**
+ * 设备发现请求
+ */
+export interface DeviceDiscoveryRequest {
+  networkCIDR: string;
+  timeout?: number;
+  ports?: number[];
+  maxConcurrent?: number;
+}
+
+/**
+ * 发现的设备
+ */
+export interface DiscoveredDevice {
+  ipAddress: string;
+  port: number;
+  deviceType: string;
+  deviceModel?: string;
+  serialNumber?: string;
+  deviceName?: string;
+  manufacturer: string;
+  isapiSupported: boolean;
+  authRequired: boolean;
+}
+
+/**
+ * 批量导入请求
+ */
+export interface BatchImportRequest {
+  devices: Array<{
+    ipAddress: string;
+    port: number;
+    username: string;
+    password: string;
+    deviceName?: string;
+    deviceType?: string;
+  }>;
+}
+
+/**
+ * 批量导入结果
+ */
+export interface BatchImportResult {
+  imported: number;
+  failed: number;
+  failedDevices?: Array<{
+    ipAddress: string;
+    error: string;
+  }>;
+}
+
+// ========== 设备发现 API ==========
+
+/**
+ * 发现网络中的 ISAPI 设备
+ */
+export async function discoverDevices(request: DeviceDiscoveryRequest): Promise<DiscoveredDevice[]> {
+  const factoryId = await getCurrentFactoryId();
+  const response = await apiClient.post(
+    `/api/mobile/${factoryId}/isapi/devices/discover`,
+    request
+  ) as AxiosResponse<ApiResponse<DiscoveredDevice[]>>;
+  return response.data;
+}
+
+/**
+ * 批量导入设备
+ */
+export async function batchImportDevices(request: BatchImportRequest): Promise<BatchImportResult> {
+  const factoryId = await getCurrentFactoryId();
+  const response = await apiClient.post(
+    `/api/mobile/${factoryId}/isapi/devices/batch-import`,
+    request
+  ) as AxiosResponse<ApiResponse<BatchImportResult>>;
+  return response.data;
+}
+
+/**
+ * 扫描单个主机
+ */
+export async function scanSingleHost(ip: string): Promise<DiscoveredDevice[]> {
+  const factoryId = await getCurrentFactoryId();
+  const response = await apiClient.get(
+    `/api/mobile/${factoryId}/isapi/devices/scan/${ip}`
+  ) as AxiosResponse<ApiResponse<DiscoveredDevice[]>>;
+  return response.data;
+}
+
 // ========== 导出默认对象 ==========
 
 export default {
@@ -887,6 +977,11 @@ export default {
   saveFieldDetectionConfig,
   getFaceDetectionConfig,
   saveFaceDetectionConfig,
+
+  // 设备发现
+  discoverDevices,
+  batchImportDevices,
+  scanSingleHost,
 
   // 辅助方法
   getDeviceTypeName,

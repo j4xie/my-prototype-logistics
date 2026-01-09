@@ -1,0 +1,11 @@
+# Cretas 边缘网关依赖
+
+# HTTP 请求库
+requests>=2.28.0
+
+# (可选) 如果需要处理视频流
+# opencv-python>=4.7.0
+
+# (可选) 如果需要本地 AI 推理
+# torch>=2.0.0
+# ultralytics>=8.0.0

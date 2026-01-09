@@ -100,4 +100,31 @@ public interface ProcessingStageRecordRepository extends JpaRepository<Processin
      * 删除批次的所有环节记录
      */
     void deleteByProductionBatchId(Long productionBatchId);
+
+    /**
+     * 批量查询所有环节类型的平均损耗率 (N+1 修复)
+     * @return Object[] = {stageType, avgLossRate}
+     */
+    @Query("SELECT r.stageType, AVG(r.lossRate) FROM ProcessingStageRecord r " +
+           "WHERE r.factoryId = :factoryId AND r.lossRate IS NOT NULL " +
+           "GROUP BY r.stageType")
+    List<Object[]> findAllAverageLossRatesByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 批量查询所有环节类型的平均合格率 (N+1 修复)
+     * @return Object[] = {stageType, avgPassRate}
+     */
+    @Query("SELECT r.stageType, AVG(r.passRate) FROM ProcessingStageRecord r " +
+           "WHERE r.factoryId = :factoryId AND r.passRate IS NOT NULL " +
+           "GROUP BY r.stageType")
+    List<Object[]> findAllAveragePassRatesByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 批量查询所有环节类型的平均时长 (N+1 修复)
+     * @return Object[] = {stageType, avgDuration}
+     */
+    @Query("SELECT r.stageType, AVG(r.durationMinutes) FROM ProcessingStageRecord r " +
+           "WHERE r.factoryId = :factoryId AND r.durationMinutes IS NOT NULL " +
+           "GROUP BY r.stageType")
+    List<Object[]> findAllAverageDurationsByFactoryId(@Param("factoryId") String factoryId);
 }

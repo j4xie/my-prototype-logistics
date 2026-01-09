@@ -1,6 +1,8 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 import type { IntentRecognizeResponse, IntentExecuteResponse } from '../../types/intent';
+import { API_BASE_URL } from '../../constants/config';
+import EventSource from 'react-native-sse';
 
 /**
  * AI API客户端
@@ -449,94 +451,82 @@ class AIApiClient {
     let fullAnalysis = '';
     let fullThinking = '';
 
-    try {
-      const response = await fetch(fullUrl, {
-        method: 'POST',
+    return new Promise<void>((resolve, reject) => {
+      const es = new EventSource<'message' | 'error'>(fullUrl, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
           'Authorization': `Bearer ${token}`,
         },
+        method: 'POST',
         body: JSON.stringify(request),
+        pollingInterval: 0, // 禁用轮询，使用真正的SSE
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      es.addEventListener('message', (event) => {
+        if (!event.data) return;
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('无法获取响应流');
-      }
+        try {
+          const eventData: SSEEventData = JSON.parse(event.data);
+          console.log('SSE Event:', eventData.type, eventData.message || eventData.content?.substring(0, 50));
 
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // 保留不完整的行
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData: SSEEventData = JSON.parse(line.substring(6));
-              console.log('SSE Event:', eventData.type, eventData.message || eventData.content?.substring(0, 50));
-
-              switch (eventData.type) {
-                case 'start':
-                  callbacks.onStart?.();
-                  break;
-                case 'progress':
-                  callbacks.onProgress?.(eventData.message || '处理中...');
-                  break;
-                case 'thinking':
-                  if (eventData.content) {
-                    fullThinking += eventData.content;
-                    callbacks.onThinking?.(eventData.content);
-                  }
-                  break;
-                case 'answer':
-                  if (eventData.content) {
-                    fullAnalysis += eventData.content;
-                    callbacks.onAnswer?.(eventData.content);
-                  }
-                  break;
-                case 'complete':
-                  callbacks.onComplete?.({
-                    analysis: eventData.analysis || fullAnalysis,
-                    sessionId: eventData.sessionId,
-                    responseTimeMs: eventData.responseTimeMs,
-                  });
-                  break;
-                case 'error':
-                  callbacks.onError?.(eventData.message || '分析失败');
-                  break;
+          switch (eventData.type) {
+            case 'start':
+              callbacks.onStart?.();
+              break;
+            case 'progress':
+              callbacks.onProgress?.(eventData.message || '处理中...');
+              break;
+            case 'thinking':
+              if (eventData.content) {
+                fullThinking += eventData.content;
+                callbacks.onThinking?.(eventData.content);
               }
-            } catch (parseError) {
-              console.warn('SSE 事件解析失败:', line, parseError);
-            }
+              break;
+            case 'answer':
+              if (eventData.content) {
+                fullAnalysis += eventData.content;
+                callbacks.onAnswer?.(eventData.content);
+              }
+              break;
+            case 'complete':
+              callbacks.onComplete?.({
+                analysis: eventData.analysis || fullAnalysis,
+                sessionId: eventData.sessionId,
+                responseTimeMs: eventData.responseTimeMs,
+              });
+              es.close();
+              resolve();
+              break;
+            case 'error':
+              callbacks.onError?.(eventData.message || '分析失败');
+              es.close();
+              reject(new Error(eventData.message || '分析失败'));
+              break;
           }
+        } catch (parseError) {
+          console.warn('SSE 事件解析失败:', event.data, parseError);
         }
-      }
-    } catch (error) {
-      console.error('SSE 流式请求失败:', error);
-      callbacks.onError?.(error instanceof Error ? error.message : '流式请求失败');
-      throw error;
-    }
+      });
+
+      es.addEventListener('error', (event) => {
+        console.error('SSE 流式请求失败:', event);
+        const errorMessage = event.message || '流式请求失败';
+        callbacks.onError?.(errorMessage);
+        es.close();
+        reject(new Error(errorMessage));
+      });
+    });
   }
 
   /**
    * 获取认证 token
    */
   private async getAuthToken(): Promise<string> {
-    // 从 SecureStore 或 zustand store 获取 token
+    // 从 SecureStore 获取 token（使用与 apiClient.ts 一致的 key）
     try {
       const SecureStore = await import('expo-secure-store');
-      const token = await SecureStore.getItemAsync('access_token');
+      const token = await SecureStore.getItemAsync('secure_access_token');
       return token || '';
     } catch {
       console.warn('无法获取 token');
@@ -548,9 +538,8 @@ class AIApiClient {
    * 获取 API 基础 URL
    */
   private async getBaseUrl(): Promise<string> {
-    // 使用与 apiClient 相同的配置
-    // 默认使用生产服务器
-    return 'http://139.196.165.140:10010';
+    // 使用统一配置的 API_BASE_URL
+    return API_BASE_URL;
   }
 
   /**
@@ -860,99 +849,87 @@ class AIApiClient {
     console.log('URL:', fullUrl);
     console.log('UserInput:', userInput);
 
-    try {
-      const response = await fetch(fullUrl, {
-        method: 'POST',
+    return new Promise<void>((resolve, reject) => {
+      const es = new EventSource<'message' | 'error'>(fullUrl, {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'text/event-stream',
           'Authorization': `Bearer ${token}`,
         },
+        method: 'POST',
         body: JSON.stringify({ userInput }),
+        pollingInterval: 0, // 禁用轮询，使用真正的SSE
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      es.addEventListener('message', (event) => {
+        if (!event.data) return;
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error('无法获取响应流');
-      }
+        try {
+          const eventData: IntentSSEEventData = JSON.parse(event.data);
+          console.log('Intent SSE Event:', eventData.type, eventData.message || eventData.intentCode);
 
-      const decoder = new TextDecoder();
-      let buffer = '';
+          switch (eventData.type) {
+            case 'start':
+              callbacks.onStart?.(eventData.message || '开始处理...');
+              break;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+            case 'cache_hit':
+              callbacks.onCacheHit?.({
+                latencyMs: eventData.latencyMs || 0,
+                cacheType: eventData.cacheType || 'EXACT',
+              });
+              break;
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || ''; // 保留不完整的行
+            case 'cache_miss':
+              callbacks.onCacheMiss?.(eventData.latencyMs || 0);
+              break;
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const eventData: IntentSSEEventData = JSON.parse(line.substring(6));
-              console.log('Intent SSE Event:', eventData.type, eventData.message || eventData.intentCode);
+            case 'intent_recognized':
+              callbacks.onIntentRecognized?.({
+                intentCode: eventData.intentCode || '',
+                intentName: eventData.intentName || '',
+                confidence: eventData.confidence || 0,
+              });
+              break;
 
-              switch (eventData.type) {
-                case 'start':
-                  callbacks.onStart?.(eventData.message || '开始处理...');
-                  break;
+            case 'executing':
+              callbacks.onExecuting?.(eventData.intentName || '');
+              break;
 
-                case 'cache_hit':
-                  callbacks.onCacheHit?.({
-                    latencyMs: eventData.latencyMs || 0,
-                    cacheType: eventData.cacheType || 'EXACT',
-                  });
-                  break;
-
-                case 'cache_miss':
-                  callbacks.onCacheMiss?.(eventData.latencyMs || 0);
-                  break;
-
-                case 'intent_recognized':
-                  callbacks.onIntentRecognized?.({
-                    intentCode: eventData.intentCode || '',
-                    intentName: eventData.intentName || '',
-                    confidence: eventData.confidence || 0,
-                  });
-                  break;
-
-                case 'executing':
-                  callbacks.onExecuting?.(eventData.intentName || '');
-                  break;
-
-                case 'result':
-                  if (eventData.result) {
-                    callbacks.onResult?.(eventData.result);
-                  }
-                  break;
-
-                case 'complete':
-                  callbacks.onComplete?.({
-                    status: eventData.status || 'SUCCESS',
-                    cacheHit: eventData.cacheHit || false,
-                  });
-                  break;
-
-                case 'error':
-                  callbacks.onError?.(eventData.message || '执行失败');
-                  break;
+            case 'result':
+              if (eventData.result) {
+                callbacks.onResult?.(eventData.result);
               }
-            } catch (parseError) {
-              console.warn('Intent SSE 事件解析失败:', line, parseError);
-            }
+              break;
+
+            case 'complete':
+              callbacks.onComplete?.({
+                status: eventData.status || 'SUCCESS',
+                cacheHit: eventData.cacheHit || false,
+              });
+              es.close();
+              resolve();
+              break;
+
+            case 'error':
+              callbacks.onError?.(eventData.message || '执行失败');
+              es.close();
+              reject(new Error(eventData.message || '执行失败'));
+              break;
           }
+        } catch (parseError) {
+          console.warn('Intent SSE 事件解析失败:', event.data, parseError);
         }
-      }
-    } catch (error) {
-      console.error('Intent SSE 流式请求失败:', error);
-      callbacks.onError?.(error instanceof Error ? error.message : '流式请求失败');
-      throw error;
-    }
+      });
+
+      es.addEventListener('error', (event) => {
+        console.error('Intent SSE 流式请求失败:', event);
+        const errorMessage = event.message || '流式请求失败';
+        callbacks.onError?.(errorMessage);
+        es.close();
+        reject(new Error(errorMessage));
+      });
+    });
   }
 
   // ========== 健康检查接口 ==========

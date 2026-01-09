@@ -75,4 +75,22 @@ public class IntentExecuteRequest {
      * 后续回复需携带此sessionId以延续对话
      */
     private String sessionId;
+
+    /**
+     * 是否启用AI思考过程 (可选)
+     * 启用后AI会进行深度推理分析，适用于咨询类问题
+     * 禁用时使用快速响应模式
+     * 默认: false
+     */
+    @Builder.Default
+    private Boolean enableThinking = false;
+
+    /**
+     * 思考预算Token数 (仅enableThinking=true时有效)
+     * 范围: 10-100，值越大推理越深入但响应越慢
+     * 建议值: 简单问题20, 复杂问题50-80
+     * 默认: 20
+     */
+    @Builder.Default
+    private Integer thinkingBudget = 20;
 }

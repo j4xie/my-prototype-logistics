@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -157,6 +158,7 @@ public class AIController {
         LocalDateTime endDateTime = request.getEndDate().atTime(23, 59, 59);
 
         // 调用企业级AI服务进行流式时间范围成本分析
+        // enableThinking=false 时关闭 AI 思考过程，可显著加速响应（推荐默认关闭）
         SseEmitter emitter = aiEnterpriseService.analyzeTimeRangeCostStream(
                 factoryId,
                 userId,
@@ -164,6 +166,8 @@ public class AIController {
                 endDateTime,
                 request.getDimension(),
                 request.getQuestion(),
+                Boolean.TRUE.equals(request.getEnableThinking()),
+                request.getThinkingBudget() != null ? request.getThinkingBudget() : 20,
                 httpRequest
         );
 
@@ -224,8 +228,9 @@ public class AIController {
      * 更新AI配额（仅供平台管理员使用）
      */
     @PutMapping("/quota")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "更新AI配额",
-               description = "平台管理员更新工厂的AI配额（仅限平台角色）")
+               description = "平台管理员更新工厂的AI配额（仅限平台超级管理员）")
     public ApiResponse<Void> updateQuota(
             @PathVariable @Parameter(description = "工厂ID") String factoryId,
             @RequestParam @Parameter(description = "新配额限制") Integer newQuotaLimit,
@@ -237,11 +242,6 @@ public class AIController {
 
         log.info("更新AI配额请求: factoryId={}, newQuotaLimit={}, user={}",
                 factoryId, newQuotaLimit, user.getClass().getSimpleName());
-
-        // 权限检查：仅平台管理员可以更新配额
-        // TODO: 实现具体的权限验证逻辑（检查用户是否为platform_admin角色）
-        // 当前简化处理：记录日志并继续
-        // 在生产环境中，应该检查用户角色：if (!isPlatformAdmin(user)) throw UnauthorizedException
 
         // 调用服务更新配额
         aiEnterpriseService.updateQuotaLimit(factoryId, newQuotaLimit);

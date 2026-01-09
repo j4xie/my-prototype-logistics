@@ -298,6 +298,13 @@ export type FAManagementStackParamList = {
   QualityCheckItemConfig: undefined;
   // SOP 流程配置
   SopConfig: undefined;
+  // 意图配置查看 (只读)
+  IntentView: undefined;
+  // 统一设备管理中心
+  UnifiedDeviceManagement: undefined;
+  // 表单模版管理
+  FormTemplateList: undefined;
+  FormTemplateDetail: { entityType: string };
   // IoT 电子秤设备管理
   IotDeviceList: undefined;
   IotDeviceDetail: { deviceId: number };
@@ -307,7 +314,13 @@ export type FAManagementStackParamList = {
   IsapiDeviceList: undefined;
   IsapiDeviceDetail: { deviceId: string };
   IsapiDeviceCreate: undefined;
+  IsapiDeviceDiscovery: undefined;
   IsapiSmartConfig: { deviceId: string; channelId?: number };
+  DeviceSetupWizard: undefined;
+  // 智能设备添加
+  SmartDeviceAdd: undefined;
+  CameraAddMethod: undefined;
+  AIDeviceInput: { deviceType: 'CAMERA' | 'SCALE' };
 };
 
 export type FAProfileStackParamList = {

@@ -47,7 +47,7 @@ function MenuItem({ icon, title, subtitle, color, onPress }: MenuItemProps) {
 
 export function AIAnalysisCenterScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { t } = useTranslation('home');
+  const { t, i18n } = useTranslation('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [quotaInfo, setQuotaInfo] = useState<AIQuotaInfo | null>(null);
@@ -124,7 +124,7 @@ export function AIAnalysisCenterScreen() {
                 </Text>
               </View>
               <Text style={styles.quotaReset}>
-                {t('aiAnalysis.resetTime')}: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString('zh-CN') : t('aiAnalysis.nextMonday')}
+                {t('aiAnalysis.resetTime')}: {quotaInfo.resetDate ? new Date(quotaInfo.resetDate).toLocaleDateString(i18n.language) : t('aiAnalysis.nextMonday')}
               </Text>
             </>
           ) : (

@@ -51,6 +51,12 @@ public class AIRequestDTO {
 
         @Schema(description = "自定义问题（可选）")
         private String question;
+
+        @Schema(description = "是否启用AI思考过程（关闭可加速响应）", example = "false")
+        private Boolean enableThinking = false;
+
+        @Schema(description = "思考预算Token数（仅enableThinking=true时有效）", example = "20")
+        private Integer thinkingBudget = 20;
     }
 
     /**

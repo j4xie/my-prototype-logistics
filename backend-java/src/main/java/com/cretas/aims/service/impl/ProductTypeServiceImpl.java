@@ -16,6 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +53,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "productTypes", key = "#factoryId")
     public ProductTypeDTO createProductType(String factoryId, ProductTypeDTO dto) {
         // 如果没有提供 code，自动生成 SKU
         if (dto.getCode() == null || dto.getCode().trim().isEmpty()) {
@@ -97,6 +101,9 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         productType.setEquipmentIds(serializeToJson(dto.getEquipmentIds()));
         productType.setQualityCheckIds(serializeToJson(dto.getQualityCheckIds()));
 
+        // Custom Form Schema Configuration
+        productType.setCustomSchemaOverrides(dto.getCustomSchemaOverrides());
+
         productType = productTypeRepository.save(productType);
         log.info("产品类型创建成功: id={}", productType.getId());
 
@@ -105,6 +112,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "productTypes", key = "#factoryId")
     public ProductTypeDTO updateProductType(String factoryId, String id, ProductTypeDTO dto) {
         log.info("更新产品类型: factoryId={}, id={}", factoryId, id);
 
@@ -148,6 +156,9 @@ public class ProductTypeServiceImpl implements ProductTypeService {
         if (dto.getEquipmentIds() != null) productType.setEquipmentIds(serializeToJson(dto.getEquipmentIds()));
         if (dto.getQualityCheckIds() != null) productType.setQualityCheckIds(serializeToJson(dto.getQualityCheckIds()));
 
+        // Custom Form Schema Configuration
+        if (dto.getCustomSchemaOverrides() != null) productType.setCustomSchemaOverrides(dto.getCustomSchemaOverrides());
+
         productType.setUpdatedAt(LocalDateTime.now());
         productType = productTypeRepository.save(productType);
 
@@ -157,6 +168,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "productTypes", key = "#factoryId")
     public void deleteProductType(String factoryId, String id) {
         log.info("删除产品类型: factoryId={}, id={}", factoryId, id);
 
@@ -215,6 +227,7 @@ public class ProductTypeServiceImpl implements ProductTypeService {
     }
 
     @Override
+    @Cacheable(value = "productTypes", key = "#factoryId")
     public List<ProductTypeDTO> getActiveProductTypes(String factoryId) {
         log.info("获取激活的产品类型: factoryId={}", factoryId);
 
@@ -374,6 +387,8 @@ public class ProductTypeServiceImpl implements ProductTypeService {
                 .skillRequirements(parseSkillRequirements(productType.getSkillRequirements()))
                 .equipmentIds(parseStringList(productType.getEquipmentIds()))
                 .qualityCheckIds(parseStringList(productType.getQualityCheckIds()))
+                // Custom Form Schema Configuration
+                .customSchemaOverrides(productType.getCustomSchemaOverrides())
                 .build();
     }
 

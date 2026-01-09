@@ -4,10 +4,11 @@ import { Text, Card, Button, Appbar, ActivityIndicator, Chip, TextInput as Paper
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProcessingStackParamList } from '../../types/navigation';
-import { aiApiClient, type AICostAnalysisResponse } from '../../services/api/aiApiClient';
 import { useAuthStore } from '../../store/authStore';
-import { handleError, getErrorMsg } from '../../utils/errorHandler';
+import { getErrorMsg } from '../../utils/errorHandler';
 import { logger } from '../../utils/logger';
+import { aiService, detectAnalysisMode, type AIResult, type CostAnalysisResponse, type AnalysisMode } from '../../services/ai';
+import { AIModeIndicator } from '../../components/ai';
 
 // 创建DeepSeekAnalysis专用logger
 const deepSeekLogger = logger.createContextLogger('DeepSeekAnalysis');
@@ -208,8 +209,9 @@ export default function DeepSeekAnalysisScreen() {
   // State
   const [loading, setLoading] = useState(true);
   const [aiLoading, setAiLoading] = useState(false);
-  const [analysisResponse, setAnalysisResponse] = useState<AICostAnalysisResponse | null>(null);
+  const [analysisResponse, setAnalysisResponse] = useState<AIResult<CostAnalysisResponse> | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
+  const [currentMode, setCurrentMode] = useState<AnalysisMode>('quick');
 
   // Follow-up question state
   const [question, setQuestion] = useState('');
@@ -220,8 +222,8 @@ export default function DeepSeekAnalysisScreen() {
 
   // Parse analysis text into structured data
   const parsedAnalysis = useMemo(() => {
-    if (!analysisResponse?.analysis) return null;
-    return parseAnalysisText(analysisResponse.analysis);
+    if (!analysisResponse?.data?.analysis) return null;
+    return parseAnalysisText(analysisResponse.data.analysis);
   }, [analysisResponse]);
 
   useEffect(() => {
@@ -234,25 +236,24 @@ export default function DeepSeekAnalysisScreen() {
 
       deepSeekLogger.debug('加载AI批次分析', { batchId, factoryId });
 
-      // API integration - POST /ai/analysis/cost/batch
-      const response = await aiApiClient.analyzeBatchCost(
-        {
-          batchId: Number(batchId),
-          analysisType: 'default', // 默认分析
-          enableThinking, // 思考模式开关
-        },
-        factoryId
-      );
+      // Use centralized AI service - auto-detects mode based on enableThinking state
+      const response = await aiService.analyzeBatchCost({
+        batchId: Number(batchId),
+        analysisType: 'default',
+        forceMode: enableThinking ? 'deep' : undefined,
+      });
 
       deepSeekLogger.info('AI分析加载成功', {
         batchId,
-        sessionId: (response as any).session_id,
-        hasAnalysis: !!(response as any).analysis,
-        quotaRemaining: (response as any).quota?.remaining,
+        mode: response.mode,
+        modeReason: response.modeReason,
+        hasAnalysis: !!response.data?.analysis,
+        responseTimeMs: response.responseTimeMs,
       });
 
       setAnalysisResponse(response);
-      setSessionId((response as any).session_id || '');
+      setCurrentMode(response.mode);
+      // Note: sessionId would need to come from response if backend supports it
     } catch (error) {
       deepSeekLogger.error('加载AI分析失败', error, {
         batchId,
@@ -283,35 +284,40 @@ export default function DeepSeekAnalysisScreen() {
       return;
     }
 
-    if (!sessionId) {
-      Alert.alert('提示', '无会话ID，无法追问');
-      return;
-    }
-
     try {
       setAiLoading(true);
 
-      deepSeekLogger.debug('AI追问', { batchId, sessionId, questionLength: question.length });
+      // Auto-detect mode from question, with enableThinking as override
+      const modeResult = detectAnalysisMode(question.trim());
+      const finalForceMode = enableThinking || modeResult.enableThinking ? 'deep' as const : undefined;
 
-      // API integration - POST /ai/analysis/cost/batch (with sessionId + question)
-      const response = await aiApiClient.analyzeBatchCost(
-        {
-          batchId: Number(batchId),
-          question: question.trim(),
-          sessionId,
-          analysisType: 'default',
-          enableThinking, // 思考模式开关
-        },
-        factoryId
-      );
+      deepSeekLogger.debug('AI追问', {
+        batchId,
+        sessionId,
+        questionLength: question.length,
+        detectedMode: modeResult.mode,
+        finalForceMode,
+        modeReason: modeResult.reason,
+      });
+
+      // Use centralized AI service with question for follow-up
+      const response = await aiService.analyzeBatchCost({
+        batchId: Number(batchId),
+        question: question.trim(),
+        sessionId: sessionId || undefined,
+        analysisType: 'default',
+        forceMode: finalForceMode,
+      });
 
       deepSeekLogger.info('AI追问回答成功', {
         batchId,
-        sessionId,
-        hasAnalysis: !!(response as any).analysis,
+        mode: response.mode,
+        hasAnalysis: !!response.data?.analysis,
+        responseTimeMs: response.responseTimeMs,
       });
 
       setAnalysisResponse(response);
+      setCurrentMode(response.mode);
       setQuestion('');
       setShowQuestionInput(false);
     } catch (error) {
@@ -351,7 +357,7 @@ export default function DeepSeekAnalysisScreen() {
         </Appbar.Header>
         <View style={styles.emptyContainer}>
           <Text variant="bodyLarge" style={styles.emptyText}>
-            {analysisResponse?.errorMessage || '暂无分析数据'}
+            {analysisResponse?.errorMessage || analysisResponse?.data?.message || '暂无分析数据'}
           </Text>
           <Button mode="outlined" onPress={loadAnalysis} style={styles.retryButton}>
             重试
@@ -361,7 +367,9 @@ export default function DeepSeekAnalysisScreen() {
     );
   }
 
-  const { analysis, quota, cacheHit, responseTimeMs } = analysisResponse;
+  // Extract data from the new response structure
+  const analysis = analysisResponse.data?.analysis || '';
+  const responseTimeMs = analysisResponse.responseTimeMs;
 
   return (
     <View style={styles.container}>
@@ -391,53 +399,24 @@ export default function DeepSeekAnalysisScreen() {
           </Card.Content>
         </Card>
 
-        {/* 配额信息 */}
-        {quota && (
-          <Card style={styles.card} mode="elevated">
-            <Card.Content>
-              <View style={styles.quotaRow}>
-                <Text variant="bodyMedium">
-                  本周已用: {quota.usedQuota} / {quota.weeklyQuota}
-                </Text>
-                <Chip
-                  mode="flat"
-                  style={{
-                    backgroundColor:
-                      quota.status === 'exhausted'
-                        ? '#FFEBEE'
-                        : quota.status === 'warning'
-                        ? '#FFF3E0'
-                        : '#E8F5E9',
-                  }}
-                  textStyle={{
-                    color:
-                      quota.status === 'exhausted'
-                        ? '#D32F2F'
-                        : quota.status === 'warning'
-                        ? '#F57C00'
-                        : '#388E3C',
-                  }}
-                >
-                  {quota.status === 'exhausted'
-                    ? '已用完'
-                    : quota.status === 'warning'
-                    ? '即将用完'
-                    : '充足'}
-                </Chip>
-              </View>
-              {cacheHit && (
-                <Text variant="bodySmall" style={styles.cacheHint}>
-                  ⚡ 缓存命中，未消耗配额
-                </Text>
-              )}
+        {/* 响应信息与模式指示器 */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Content>
+            <View style={styles.quotaRow}>
+              <AIModeIndicator mode={currentMode} size="medium" />
               {responseTimeMs && (
                 <Text variant="bodySmall" style={styles.responseTime}>
                   响应时间: {responseTimeMs}ms
                 </Text>
               )}
-            </Card.Content>
-          </Card>
-        )}
+            </View>
+            {analysisResponse.modeReason && (
+              <Text variant="bodySmall" style={styles.modeReason}>
+                {analysisResponse.modeReason}
+              </Text>
+            )}
+          </Card.Content>
+        </Card>
 
         {/* 综合评价 */}
         {parsedAnalysis?.summary && (
@@ -618,10 +597,9 @@ export default function DeepSeekAnalysisScreen() {
           </Card.Content>
         </Card>
 
-        {/* 追问区域 */}
-        {sessionId && (
-          <Card style={styles.card} mode="elevated">
-            <Card.Title title="追问AI" />
+        {/* 追问区域 - Always available for follow-up questions */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Title title="追问AI" />
             <Card.Content>
               {!showQuestionInput ? (
                 <Button
@@ -668,7 +646,6 @@ export default function DeepSeekAnalysisScreen() {
               )}
             </Card.Content>
           </Card>
-        )}
 
         {/* 操作按钮 */}
         <View style={styles.actionsContainer}>
@@ -753,6 +730,12 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: '#757575',
     fontSize: 12,
+  },
+  modeReason: {
+    marginTop: 8,
+    color: '#9E9E9E',
+    fontSize: 11,
+    fontStyle: 'italic',
   },
   summaryText: {
     fontSize: 16,

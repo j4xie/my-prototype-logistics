@@ -8,7 +8,6 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -16,7 +15,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon, Chip, Badge } from 'react-native-paper';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, TFunction } from 'react-i18next';
 import { FAAIStackParamList } from '../../../types/navigation';
 import {
   intentAnalysisApiClient,
@@ -53,14 +52,14 @@ function FilterChip({ label, selected, count, onPress }: FilterChipProps) {
   );
 }
 
-function getSuggestionTypeLabel(type: SuggestionType): string {
+function getSuggestionTypeLabel(type: SuggestionType, t: TFunction): string {
   switch (type) {
     case 'CREATE_INTENT':
-      return '新建意图';
+      return t('intentSuggestions.createIntent');
     case 'UPDATE_INTENT':
-      return '更新意图';
+      return t('intentSuggestions.updateIntent');
     case 'UPDATE_KEYWORDS':
-      return '更新关键词';
+      return t('intentSuggestions.updateKeywords');
     default:
       return type;
   }
@@ -82,9 +81,11 @@ function getSuggestionTypeColor(type: SuggestionType): string {
 interface SuggestionItemProps {
   item: IntentOptimizationSuggestion;
   onPress: () => void;
+  t: TFunction;
+  locale: string;
 }
 
-function SuggestionItem({ item, onPress }: SuggestionItemProps) {
+function SuggestionItem({ item, onPress, t, locale }: SuggestionItemProps) {
   const typeColor = getSuggestionTypeColor(item.suggestionType);
 
   return (
@@ -92,7 +93,7 @@ function SuggestionItem({ item, onPress }: SuggestionItemProps) {
       <View style={styles.suggestionHeader}>
         <View style={[styles.typeTag, { backgroundColor: typeColor + '20' }]}>
           <Text style={[styles.typeTagText, { color: typeColor }]}>
-            {getSuggestionTypeLabel(item.suggestionType)}
+            {getSuggestionTypeLabel(item.suggestionType, t)}
           </Text>
         </View>
         <View style={styles.confidenceBadge}>
@@ -109,7 +110,7 @@ function SuggestionItem({ item, onPress }: SuggestionItemProps) {
               {item.suggestedIntentName || item.suggestedIntentCode}
             </Text>
             <Text style={styles.suggestionSubtitle} numberOfLines={1}>
-              代码: {item.suggestedIntentCode}
+              {t('intentSuggestions.code')}: {item.suggestedIntentCode}
             </Text>
           </>
         ) : (
@@ -118,7 +119,7 @@ function SuggestionItem({ item, onPress }: SuggestionItemProps) {
               {item.intentCode}
             </Text>
             <Text style={styles.suggestionSubtitle} numberOfLines={1}>
-              建议更新关键词或描述
+              {t('intentSuggestions.suggestUpdateKeywordsOrDesc')}
             </Text>
           </>
         )}
@@ -149,11 +150,11 @@ function SuggestionItem({ item, onPress }: SuggestionItemProps) {
       <View style={styles.suggestionFooter}>
         <View style={styles.frequencyContainer}>
           <Icon source="fire" size={14} color="#fa8c16" />
-          <Text style={styles.frequencyText}>触发 {item.frequency} 次</Text>
+          <Text style={styles.frequencyText}>{t('intentSuggestions.triggeredTimes', { count: item.frequency })}</Text>
         </View>
         <View style={styles.dateContainer}>
           <Text style={styles.dateText}>
-            {new Date(item.createdAt).toLocaleDateString('zh-CN')}
+            {new Date(item.createdAt).toLocaleDateString(locale)}
           </Text>
           <Icon source="chevron-right" size={20} color="#ccc" />
         </View>
@@ -164,7 +165,7 @@ function SuggestionItem({ item, onPress }: SuggestionItemProps) {
 
 export function IntentSuggestionsListScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { t } = useTranslation('home');
+  const { t, i18n } = useTranslation('home');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [suggestions, setSuggestions] = useState<IntentOptimizationSuggestion[]>([]);
@@ -179,7 +180,16 @@ export function IntentSuggestionsListScreen() {
       const statsData = await intentAnalysisApiClient.getSuggestionStats();
       setStats(statsData);
     } catch (err) {
-      console.error('Load stats failed:', err);
+      // API 可能不存在，使用默认值
+      console.warn('Load stats failed, using defaults:', err);
+      setStats({
+        pendingCount: 0,
+        approvedCount: 0,
+        rejectedCount: 0,
+        totalCount: 0,
+        createIntentCount: 0,
+        updateIntentCount: 0,
+      });
     }
   }, []);
 
@@ -239,8 +249,8 @@ export function IntentSuggestionsListScreen() {
   }, [navigation]);
 
   const renderItem = useCallback(({ item }: { item: IntentOptimizationSuggestion }) => (
-    <SuggestionItem item={item} onPress={() => navigateToDetail(item)} />
-  ), [navigateToDetail]);
+    <SuggestionItem item={item} onPress={() => navigateToDetail(item)} t={t} locale={i18n.language} />
+  ), [navigateToDetail, t, i18n.language]);
 
   const renderFooter = useCallback(() => {
     if (!loadingMore) return null;
@@ -256,35 +266,37 @@ export function IntentSuggestionsListScreen() {
     return (
       <View style={styles.emptyContainer}>
         <Icon source="check-circle-outline" size={64} color="#52c41a" />
-        <Text style={styles.emptyTitle}>暂无待审批建议</Text>
+        <Text style={styles.emptyTitle}>{t('intentSuggestions.noPendingSuggestions')}</Text>
         <Text style={styles.emptySubtitle}>
           {filter === 'ALL'
-            ? '所有意图建议都已处理完成'
-            : `没有待审批的${filter === 'CREATE_INTENT' ? '新建意图' : '更新意图'}建议`
+            ? t('intentSuggestions.allProcessed')
+            : filter === 'CREATE_INTENT'
+              ? t('intentSuggestions.noCreateIntentSuggestions')
+              : t('intentSuggestions.noUpdateIntentSuggestions')
           }
         </Text>
       </View>
     );
-  }, [loading, filter]);
+  }, [loading, filter, t]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* 统计卡片 */}
       {stats && (
         <View style={styles.statsCard}>
           <View style={styles.statItem}>
             <Text style={styles.statValue}>{stats.pendingCount}</Text>
-            <Text style={styles.statLabel}>待审批</Text>
+            <Text style={styles.statLabel}>{t('intentSuggestions.pending')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#52c41a' }]}>{stats.approvedCount}</Text>
-            <Text style={styles.statLabel}>已通过</Text>
+            <Text style={styles.statLabel}>{t('intentSuggestions.approved')}</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
             <Text style={[styles.statValue, { color: '#e53e3e' }]}>{stats.rejectedCount}</Text>
-            <Text style={styles.statLabel}>已拒绝</Text>
+            <Text style={styles.statLabel}>{t('intentSuggestions.rejected')}</Text>
           </View>
         </View>
       )}
@@ -292,19 +304,19 @@ export function IntentSuggestionsListScreen() {
       {/* 筛选器 */}
       <View style={styles.filterContainer}>
         <FilterChip
-          label="全部"
+          label={t('intentSuggestions.all')}
           selected={filter === 'ALL'}
           count={stats?.pendingCount}
           onPress={() => setFilter('ALL')}
         />
         <FilterChip
-          label="新建意图"
+          label={t('intentSuggestions.createIntent')}
           selected={filter === 'CREATE_INTENT'}
           count={stats?.createIntentCount}
           onPress={() => setFilter('CREATE_INTENT')}
         />
         <FilterChip
-          label="更新意图"
+          label={t('intentSuggestions.updateIntent')}
           selected={filter === 'UPDATE_INTENT'}
           count={stats?.updateIntentCount}
           onPress={() => setFilter('UPDATE_INTENT')}
@@ -315,7 +327,7 @@ export function IntentSuggestionsListScreen() {
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
-          <Text style={styles.loadingText}>加载中...</Text>
+          <Text style={styles.loadingText}>{t('loading')}</Text>
         </View>
       ) : (
         <FlatList
@@ -333,7 +345,7 @@ export function IntentSuggestionsListScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

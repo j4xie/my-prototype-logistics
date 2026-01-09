@@ -57,6 +57,17 @@ public interface IsapiDeviceRepository extends JpaRepository<IsapiDevice, String
      */
     Optional<IsapiDevice> findBySerialNumber(String serialNumber);
 
+    /**
+     * 根据 MAC 地址查询（忽略大小写）
+     */
+    @Query("SELECT d FROM IsapiDevice d WHERE LOWER(d.macAddress) = LOWER(:macAddress)")
+    Optional<IsapiDevice> findByMacAddressIgnoreCase(@Param("macAddress") String macAddress);
+
+    /**
+     * 根据 IP 地址查询
+     */
+    Optional<IsapiDevice> findByIpAddress(String ipAddress);
+
     // ==================== 状态相关 ====================
 
     /**

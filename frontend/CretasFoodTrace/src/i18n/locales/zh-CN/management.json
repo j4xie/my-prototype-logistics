@@ -1,6 +1,14 @@
 {
   "title": "管理中心",
   "subtitle": "工厂配置与系统管理",
+  "deviceCenter": {
+    "title": "设备中心",
+    "tabs": {
+      "scale": "电子秤",
+      "camera": "摄像头",
+      "equipment": "通用设备"
+    }
+  },
   "sections": {
     "productionConfig": {
       "title": "生产配置",
@@ -483,10 +491,23 @@
   "conversionRate": {
     "title": "转换率管理",
     "searchPlaceholder": "搜索原料或产品名称",
+    "products": "产品转换",
+    "avgConversionRate": "平均转换率",
+    "avgWastageRate": "平均损耗率",
+    "notConfigured": "暂未配置",
+    "infoText": "点击原料卡片查看详情并配置转换率",
+    "materialList": "原料列表",
+    "empty": "暂无数据",
+    "errors": {
+      "noFactory": "无法获取工厂信息，请重新登录"
+    },
     "stats": {
       "total": "配置总数",
       "materials": "原料类型",
-      "products": "产品类型"
+      "products": "产品类型",
+      "materialTypes": "原料类型",
+      "productTypes": "产品类型",
+      "configured": "已配置"
     },
     "empty": {
       "noRates": "暂无转换率配置",
@@ -1158,6 +1179,55 @@
       "row": "第 {{number}} 行"
     }
   },
+  "qualityAnalysis": {
+    "title": "质量分析",
+    "loadFailed": "加载质量数据失败",
+    "noTrendData": "暂无趋势数据",
+    "dayUnit": "日",
+    "last7DaysTrend": "过去7天的趋势",
+    "days": "{{count}}天",
+    "averagePassRate": "平均合格率",
+    "totalInspections": "总检验数",
+    "passedBatches": "合格批次",
+    "failedBatches": "不合格批次",
+    "passRateTrend": "合格率趋势",
+    "detailedStats": "详细统计",
+    "totalSampleSize": "样品总数",
+    "passCount": "合格数",
+    "failCount": "不合格数",
+    "conditionalPass": "条件合格"
+  },
+  "aiCostAnalysis": {
+    "title": "成本分析",
+    "timeRange": "时间范围",
+    "startDate": "开始日期",
+    "endDate": "结束日期",
+    "last7Days": "最近7天",
+    "last30Days": "最近30天",
+    "last90Days": "最近90天",
+    "analysisDimension": "分析维度",
+    "overallAnalysis": "总体分析",
+    "dailyAnalysis": "按日分析",
+    "weeklyAnalysis": "按周分析",
+    "realtimeStreaming": "实时流式响应",
+    "streamingOnHint": "开启后可实时查看AI分析过程",
+    "streamingOffHint": "关闭后将等待完整结果返回",
+    "startAnalysis": "开始分析",
+    "analyzing": "分析中...",
+    "startingAnalysis": "正在启动分析...",
+    "aiThinkingProcess": "AI思考过程",
+    "aiAnswering": "AI正在回答...",
+    "analysisResult": "分析结果",
+    "quota": "剩余配额: {{remaining}}/{{total}}",
+    "responseTime": "响应时间: {{time}}ms{{cached}}",
+    "cached": "已缓存",
+    "noResult": "暂无分析结果",
+    "analysisFailed": "分析失败，请稍后重试",
+    "networkError": "网络错误，请检查网络连接",
+    "quickMode": "快速模式",
+    "deepMode": "深度分析",
+    "estimated": "预计"
+  },
   "aiSettings": {
     "title": "AI分析设置",
     "loading": "加载设置中...",
@@ -1233,6 +1303,214 @@
       "loadFailed": "加载设置失败",
       "saveSuccess": "设置已保存",
       "saveFailed": "保存失败"
+    }
+  },
+  "createPlan": {
+    "title": "创建生产计划",
+    "planType": "计划类型",
+    "inventoryProduction": "库存生产",
+    "useExistingMaterials": "使用现有原料",
+    "futurePlan": "未来计划",
+    "pendingMaterials": "待配原料",
+    "productTypeRequired": "产品类型*",
+    "selectProductType": "请选择产品类型",
+    "selectProductTypePlaceholder": "请选择产品类型",
+    "noProductTypes": "暂无产品类型",
+    "plannedQuantityRequired": "计划数量*",
+    "enterValidQuantity": "请输入有效的数量",
+    "enterQuantity": "请输入数量",
+    "plannedDateRequired": "计划日期*",
+    "selectPlanDate": "请选择计划日期",
+    "today": "今天",
+    "tomorrow": "明天",
+    "daysLater": "{{days}}天后",
+    "customerOrderOptional": "客户订单号（可选）",
+    "enterCustomerOrder": "请输入客户订单号",
+    "notesOptional": "备注（可选）",
+    "enterNotes": "请输入备注",
+    "createPlanBtn": "创建生产计划",
+    "creating": "创建中...",
+    "createSuccess": "生产计划创建成功",
+    "createFailed": "创建生产计划失败",
+    "networkError": "网络错误，请稍后重试"
+  },
+  "equipmentManagement": {
+    "title": "设备管理",
+    "searchPlaceholder": "搜索设备名称或编码...",
+    "filters": {
+      "all": "全部"
+    },
+    "empty": {
+      "title": "暂无设备"
+    },
+    "info": {
+      "type": "类型",
+      "location": "位置",
+      "model": "型号",
+      "operator": "操作员"
+    },
+    "actions": {
+      "create": "添加设备",
+      "status": "状态",
+      "detail": "详情"
+    },
+    "statusMenu": {
+      "running": "运行中",
+      "maintenance": "维护中",
+      "inactive": "已停用"
+    },
+    "dialogs": {
+      "createTitle": "添加设备",
+      "editTitle": "编辑设备",
+      "deleteTitle": "删除设备",
+      "deleteMessage": "确定要删除此设备吗？此操作不可撤销。",
+      "fields": {
+        "name": "设备名称",
+        "code": "设备编码",
+        "model": "型号",
+        "location": "位置",
+        "operator": "操作员",
+        "selectOperator": "选择操作员",
+        "loadingOperators": "加载中...",
+        "noOperator": "无操作员",
+        "notes": "备注"
+      },
+      "buttons": {
+        "cancel": "取消",
+        "create": "创建",
+        "save": "保存",
+        "delete": "删除"
+      }
+    },
+    "messages": {
+      "loadFailed": "加载失败",
+      "factoryIdError": "无法获取工厂信息"
+    }
+  },
+  "schemaConfig": {
+    "title": "表单配置中心",
+    "subtitle": "配置和管理各类表单模板",
+    "stats": {
+      "total": "表单类型",
+      "configured": "已配置",
+      "fieldCount": "总字段数"
+    },
+    "entityTypes": {
+      "QUALITY_CHECK": "质检表单",
+      "MATERIAL_BATCH": "原料批次",
+      "PROCESSING_BATCH": "生产批次",
+      "SHIPMENT": "出货单",
+      "EQUIPMENT": "设备信息",
+      "DISPOSAL_RECORD": "报废记录",
+      "PRODUCT_TYPE": "产品类型",
+      "PRODUCTION_PLAN": "生产计划"
+    },
+    "actions": {
+      "preview": "预览",
+      "configure": "配置",
+      "aiAdd": "AI添加",
+      "aiModify": "AI修改"
+    },
+    "tabs": {
+      "fields": "字段列表",
+      "form": "表单预览",
+      "analyze": "AI分析"
+    },
+    "preview": {
+      "title": "配置: {{name}}",
+      "fieldCount": "共 {{count}} 个字段",
+      "formPreviewHint": "此为表单预览效果，实际样式可能略有不同"
+    },
+    "fieldList": {
+      "required": "必填",
+      "type": "类型",
+      "component": "组件"
+    },
+    "analyze": {
+      "title": "AI表单分析",
+      "noSchema": "请先选择要分析的表单类型",
+      "failed": "分析失败",
+      "failedMessage": "AI分析时出错，请稍后重试",
+      "overallScore": "综合评分",
+      "usability": "易用性",
+      "validation": "验证完整性",
+      "completeness": "字段完整性",
+      "structure": "结构合理性",
+      "summary": "评价总结",
+      "suggestions": "优化建议 ({{count}}条)",
+      "expectedBenefit": "预期收益",
+      "applySelected": "应用选中 ({{count}})",
+      "reanalyze": "重新分析",
+      "empty": "点击下方按钮，让AI分析表单结构并给出优化建议",
+      "start": "开始AI分析",
+      "priority": {
+        "high": "高优先",
+        "medium": "中优先",
+        "low": "低优先"
+      },
+      "type": {
+        "add_field": "添加字段",
+        "modify_field": "修改字段",
+        "remove_field": "删除字段",
+        "reorder": "调整顺序",
+        "validation": "优化验证"
+      },
+      "applySuccess": "优化已应用",
+      "applySuccessMessage": "已应用 {{count}} 条优化建议",
+      "applyFailed": "应用失败",
+      "applyFailedMessage": "应用优化建议时出错"
+    },
+    "editField": {
+      "title": "编辑字段",
+      "fieldTitle": "字段标题",
+      "fieldTitlePlaceholder": "请输入字段显示名称",
+      "required": "必填",
+      "delete": "删除",
+      "save": "保存",
+      "deleteConfirm": "确定要删除此字段吗？",
+      "deleteSuccess": "字段已删除",
+      "saveSuccess": "字段已更新",
+      "saveFailed": "保存失败"
+    },
+    "aiModify": {
+      "title": "AI修改字段",
+      "description": "请描述您想要修改的内容",
+      "placeholder": "例如：把温度字段的范围改为-20到40度",
+      "execute": "执行修改",
+      "enterDescription": "请输入修改描述",
+      "examples": "修改示例：",
+      "example1": "把数量字段改为必填",
+      "example2": "把温度范围改为0-100",
+      "example3": "给重量字段添加单位提示",
+      "success": "修改成功",
+      "successMessage": "表单已按要求更新",
+      "failed": "修改失败",
+      "failedMessage": "AI修改时出错，请重试"
+    },
+    "aiAdd": {
+      "title": "AI添加字段",
+      "description": "请描述您想添加的字段",
+      "placeholder": "例如：添加一个运输温度字段，数值类型，范围-30到30度",
+      "generate": "生成字段",
+      "previewTitle": "预览生成的字段 ({{count}})",
+      "save": "保存到表单",
+      "reject": "AI 无法处理此请求",
+      "rejectReason": "AI 拒绝原因",
+      "suggestion": "建议尝试",
+      "justificationLabel": "如仍需添加，请说明理由",
+      "retry": "重新尝试",
+      "success": "添加成功",
+      "successMessage": "已添加 {{count}} 个新字段"
+    },
+    "version": {
+      "title": "版本历史",
+      "current": "当前版本",
+      "rollback": "回滚"
+    },
+    "messages": {
+      "loadFailed": "加载失败",
+      "saveFailed": "保存失败",
+      "saveSuccess": "保存成功"
     }
   }
 }

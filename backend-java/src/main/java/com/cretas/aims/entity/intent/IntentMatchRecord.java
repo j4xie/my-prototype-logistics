@@ -265,6 +265,7 @@ public class IntentMatchRecord extends BaseEntity {
         FUSION,     // 融合匹配（语义+关键词）
         SIMILAR,    // 相似表达匹配 (编辑距离)
         LLM,        // LLM fallback 匹配
+        DOMAIN_DEFAULT, // 域默认意图匹配 (Layer 3.5)
         NONE        // 未匹配
     }
 

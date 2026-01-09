@@ -24,6 +24,7 @@ import com.cretas.aims.service.KeywordEffectivenessService;
 import com.cretas.aims.service.KeywordLearningService;
 import com.cretas.aims.service.KeywordPromotionService;
 import com.cretas.aims.service.LlmIntentFallbackClient;
+import com.cretas.aims.service.AIIntentDomainDefaultService;
 import com.cretas.aims.service.impl.IntentConfigRollbackService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -70,6 +71,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final ExpressionLearningService expressionLearningService;
     private final SemanticCacheConfigRepository semanticCacheConfigRepository;
     private final ConversationService conversationService;
+    private final AIIntentDomainDefaultService domainDefaultService;
 
     /**
      * 意图匹配统一配置
@@ -276,72 +278,127 @@ public class AIIntentServiceImpl implements AIIntentService {
         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
         String normalizedInput = userInput.toLowerCase().trim();
 
-        // 收集所有匹配结果及其分数
-        List<IntentScoreEntry> scoredIntents = new ArrayList<>();
+        // ========== Layer 0: 问题类型分类（在关键词匹配之前）==========
+        // 判断是操作指令、通用咨询问题还是闲聊
+        IntentKnowledgeBase.QuestionType questionType = knowledgeBase.detectQuestionType(userInput);
+        log.debug("检测到问题类型: {} for input: '{}'", questionType, userInput);
 
-        // === BUG-001/002 修复：检测操作类型（查询 or 更新）===
+        // 如果是通用咨询问题或闲聊，直接路由到LLM（跳过关键词匹配）
+        if (questionType == IntentKnowledgeBase.QuestionType.GENERAL_QUESTION ||
+            questionType == IntentKnowledgeBase.QuestionType.CONVERSATIONAL) {
+
+            log.info("问题类型为{}，直接路由到LLM对话: input='{}'", questionType, userInput);
+
+            // 返回空匹配结果，让后续流程走LLM fallback
+            IntentMatchResult noMatchResult = IntentMatchResult.builder()
+                    .bestMatch(null)
+                    .topCandidates(Collections.emptyList())
+                    .confidence(0.0)
+                    .matchMethod(MatchMethod.NONE)
+                    .matchedKeywords(Collections.emptyList())
+                    .isStrongSignal(false)
+                    .requiresConfirmation(false)
+                    .userInput(userInput)
+                    .actionType(ActionType.UNKNOWN)
+                    .questionType(questionType) // 携带问题类型信息
+                    .build();
+
+            saveIntentMatchRecord(noMatchResult, factoryId, null, null, false);
+            return noMatchResult;
+        }
+
+        // ========== v4.0 并行多层评分架构 ==========
+        // 替代原有的 Layer 1.5 - Layer 4 串行瀑布式架构
+        // 并行执行: 短语匹配 + 语义匹配 + 关键词匹配，综合评分
+
         ActionType opType = knowledgeBase.detectActionType(normalizedInput);
         log.debug("检测到操作类型: {} for input: {}", opType, normalizedInput);
 
-        for (AIIntentConfig intent : allIntents) {
-            IntentScoreEntry entry = new IntentScoreEntry();
-            entry.config = intent;
+        // 调用并行评分方法
+        IntentMatchResult parallelResult = parallelScoreMatch(userInput, factoryId, allIntents, opType);
 
-            // 优先检查正则匹配
-            if (matchesByRegex(intent, normalizedInput)) {
-                entry.matchMethod = MatchMethod.REGEX;
-                entry.matchScore = matchingConfig.getRegexMatchScore(); // 使用配置的正则匹配分数
-                entry.matchedKeywords = Collections.emptyList();
-                scoredIntents.add(entry);
-                continue;
-            }
+        if (parallelResult != null && parallelResult.hasMatch()) {
+            double confidence = parallelResult.getConfidence();
+            log.info("并行评分匹配成功: intent={}, confidence={:.3f}, method={}",
+                    parallelResult.getBestMatch().getIntentCode(),
+                    confidence,
+                    parallelResult.getMatchMethod());
 
-            // 关键词匹配 - 使用合并后的关键词（基础 + 工厂级 + 全局）
-            List<String> matchedKeywords = getMatchedKeywords(intent, normalizedInput, factoryId);
-            if (!matchedKeywords.isEmpty()) {
-                entry.matchMethod = MatchMethod.KEYWORD;
-                // === BUG-001/002 修复：应用操作类型权重调整 ===
-                int baseScore = matchedKeywords.size() * matchingConfig.getKeywordMatchScore() + intent.getPriority();
-                int opTypeAdjustment = knowledgeBase.calculateOperationTypeAdjustment(
-                        intent.getIntentCode(), opType,
-                        matchingConfig.getOperationTypeMatchBonus(),
-                        matchingConfig.getOperationTypeMismatchPenalty());
-                entry.matchScore = baseScore + opTypeAdjustment;
+            // 置信度 >= 0.75: 直接返回（高置信度）
+            if (confidence >= 0.75) {
+                saveIntentMatchRecord(parallelResult, factoryId, null, null, false);
 
-                if (opTypeAdjustment != 0) {
-                    log.debug("操作类型调整: intent={}, opType={}, baseScore={}, adjustment={}, finalScore={}",
-                            intent.getIntentCode(), opType, baseScore, opTypeAdjustment, entry.matchScore);
+                // 记录训练样本
+                if (matchingConfig.isSampleCollectionEnabled()) {
+                    expressionLearningService.recordSample(factoryId, userInput,
+                            parallelResult.getBestMatch().getIntentCode(),
+                            TrainingSample.MatchMethod.KEYWORD, // 暂用KEYWORD
+                            confidence, null);
                 }
 
-                entry.matchedKeywords = matchedKeywords;
-                scoredIntents.add(entry);
+                return parallelResult;
             }
+
+            // 置信度 0.5-0.75: 中等置信度，可以返回但标记需要确认
+            if (confidence >= 0.5) {
+                IntentMatchResult confirmedResult = parallelResult.toBuilder()
+                        .requiresConfirmation(true)
+                        .build();
+                saveIntentMatchRecord(confirmedResult, factoryId, null, null, false);
+                return confirmedResult;
+            }
+
+            // 置信度 < 0.5: 低置信度，继续走后续流程（可能触发LLM）
+            log.debug("并行评分置信度过低 ({:.3f})，继续后续流程", confidence);
         }
 
-        // ========== 语义匹配层 (5层流程的第4层) ==========
-        if (matchingConfig.isSemanticMatchEnabled() && scoredIntents.isEmpty()) {
-            log.debug("关键词无匹配，尝试语义匹配: input='{}'", normalizedInput);
-            IntentMatchResult semanticResult = trySemanticMatch(userInput, factoryId, opType);
-            if (semanticResult != null && semanticResult.hasMatch()) {
-                log.info("语义匹配成功: intent={}, confidence={}, method={}",
-                        semanticResult.getBestMatch().getIntentCode(),
-                        semanticResult.getConfidence(),
-                        semanticResult.getMatchMethod());
-                saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
-                return semanticResult;
-            }
-        } else if (matchingConfig.isSemanticMatchEnabled() && !scoredIntents.isEmpty()) {
-            // 有关键词匹配结果时，尝试融合语义评分来提升置信度
-            List<IntentEmbeddingCacheService.SemanticMatchResult> semanticResults =
-                    embeddingCacheService.matchIntents(factoryId, userInput);
+        // 无并行评分结果，或置信度过低
+        List<IntentScoreEntry> scoredIntents = new ArrayList<>();
 
-            if (!semanticResults.isEmpty()) {
-                applyFusionScoring(scoredIntents, semanticResults);
-            }
-        }
-
-        if (scoredIntents.isEmpty()) {
+        if (parallelResult == null || parallelResult.getConfidence() < 0.5) {
             log.debug("No intent matched by rules or semantics for input: {}", userInput);
+
+            // ========== Layer 3.5: 域默认意图 (关键词失败但域检测成功) ==========
+            try {
+                IntentKnowledgeBase.Domain detectedDomain = knowledgeBase.detectDomain(normalizedInput);
+                String inputDomain = detectedDomain != null ? detectedDomain.name() : null;
+                if (inputDomain != null && !"GENERAL".equals(inputDomain)) {
+                    Optional<String> defaultIntentCode = domainDefaultService.getPrimaryIntent(factoryId, inputDomain);
+                    if (defaultIntentCode.isPresent()) {
+                        String intentCode = defaultIntentCode.get();
+                        Optional<AIIntentConfig> defaultIntent = findIntentByCode(intentCode, allIntents);
+                        if (defaultIntent.isPresent()) {
+                            AIIntentConfig intentConfig = defaultIntent.get();
+                            log.info("Layer 3.5 域默认意图触发: domain={}, defaultIntent={}, input='{}'",
+                                    inputDomain, intentCode, userInput);
+
+                            CandidateIntent candidate = CandidateIntent.builder()
+                                    .intentCode(intentCode)
+                                    .intentName(intentConfig.getIntentName())
+                                    .confidence(0.60)
+                                    .matchMethod(MatchMethod.DOMAIN_DEFAULT)
+                                    .build();
+
+                            IntentMatchResult defaultResult = IntentMatchResult.builder()
+                                    .bestMatch(intentConfig)
+                                    .topCandidates(List.of(candidate))
+                                    .confidence(0.60)
+                                    .matchMethod(MatchMethod.DOMAIN_DEFAULT)
+                                    .matchedKeywords(List.of())
+                                    .isStrongSignal(false)
+                                    .requiresConfirmation(true)
+                                    .userInput(userInput)
+                                    .actionType(opType)
+                                    .build();
+
+                            saveIntentMatchRecord(defaultResult, factoryId, userId, null, false);
+                            return defaultResult;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Layer 3.5 域默认意图查找失败: {}", e.getMessage());
+            }
 
             // ========== Layer 5: 多轮对话 (无匹配时自动触发) ==========
             if (userId != null) {
@@ -359,10 +416,14 @@ public class AIIntentServiceImpl implements AIIntentService {
                                 conversationResp.getMaxRounds());
 
                         // 返回带会话信息的空结果
+                        // 使用 conversationResp 的 confidence，如果为 null 则使用 0.75
+                        // 这样当 LLM 成功识别/建议意图时，可以触发自学习
+                        double respConfidence = conversationResp.getConfidence() != null
+                                ? conversationResp.getConfidence() : 0.75;
                         IntentMatchResult conversationResult = IntentMatchResult.builder()
                                 .bestMatch(null)
                                 .topCandidates(List.of())
-                                .confidence(0.0)
+                                .confidence(respConfidence)
                                 .matchMethod(MatchMethod.NONE)
                                 .matchedKeywords(List.of())
                                 .isStrongSignal(false)
@@ -394,6 +455,50 @@ public class AIIntentServiceImpl implements AIIntentService {
             if (scoreCompare != 0) return scoreCompare;
             return b.config.getPriority().compareTo(a.config.getPriority());
         });
+
+        // ========== 阶段四：意图消歧 ==========
+        // 如果前两个候选意图分数接近（差距<10%），应用消歧逻辑
+        IntentKnowledgeBase.Domain inputDomain = knowledgeBase.detectDomain(userInput);
+        if (scoredIntents.size() >= 2) {
+            IntentScoreEntry first = scoredIntents.get(0);
+            IntentScoreEntry second = scoredIntents.get(1);
+            double scoreDiff = (double)(first.matchScore - second.matchScore) / first.matchScore;
+
+            if (scoreDiff < 0.10) {
+                log.debug("检测到分数接近的意图，尝试消歧: first={} ({}), second={} ({}), diff={:.2f}%",
+                        first.config.getIntentCode(), first.matchScore,
+                        second.config.getIntentCode(), second.matchScore, scoreDiff * 100);
+
+                // 检查是否功能等价
+                if (knowledgeBase.areFunctionallyEquivalent(
+                        first.config.getIntentCode(), second.config.getIntentCode())) {
+                    log.debug("意图功能等价，保持第一个: {} <=> {}",
+                            first.config.getIntentCode(), second.config.getIntentCode());
+                } else {
+                    // 使用领域优先级选择
+                    List<String> candidateCodes = scoredIntents.stream()
+                            .limit(3)
+                            .map(e -> e.config.getIntentCode())
+                            .collect(Collectors.toList());
+                    Optional<String> bestIntentCode = knowledgeBase.selectBestIntent(candidateCodes, inputDomain);
+
+                    if (bestIntentCode.isPresent() &&
+                        !bestIntentCode.get().equals(first.config.getIntentCode())) {
+                        // 重新排序，将消歧选中的意图放到第一位
+                        String selectedCode = bestIntentCode.get();
+                        for (int i = 1; i < scoredIntents.size(); i++) {
+                            if (scoredIntents.get(i).config.getIntentCode().equals(selectedCode)) {
+                                IntentScoreEntry selected = scoredIntents.remove(i);
+                                scoredIntents.add(0, selected);
+                                log.info("消歧重排序: 选中 {} 替代 {}",
+                                        selectedCode, first.config.getIntentCode());
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         // 计算最高分用于归一化
         int maxScore = scoredIntents.get(0).matchScore;
@@ -538,9 +643,35 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         try {
+            // v4.1优化：当有候选意图时，优先使用候选意图列表（缩小LLM搜索空间）
+            List<AIIntentConfig> intentsForLlm = allIntents;
+            if (ruleResult != null && ruleResult.getTopCandidates() != null
+                    && !ruleResult.getTopCandidates().isEmpty()) {
+                // 从topCandidates提取意图代码
+                Set<String> candidateCodes = ruleResult.getTopCandidates().stream()
+                        .map(c -> c.getIntentCode())
+                        .collect(java.util.stream.Collectors.toSet());
+
+                // 将候选意图放在前面，其余意图放在后面
+                List<AIIntentConfig> prioritizedIntents = new ArrayList<>();
+                List<AIIntentConfig> otherIntents = new ArrayList<>();
+                for (AIIntentConfig intent : allIntents) {
+                    if (candidateCodes.contains(intent.getIntentCode())) {
+                        prioritizedIntents.add(intent);
+                    } else {
+                        otherIntents.add(intent);
+                    }
+                }
+                prioritizedIntents.addAll(otherIntents);
+                intentsForLlm = prioritizedIntents;
+
+                log.info("LLM fallback with {} prioritized candidates: {}",
+                        candidateCodes.size(), candidateCodes);
+            }
+
             // 调用 LLM 进行意图分类（传递userId和userRole用于Tool Calling）
             IntentMatchResult llmResult = llmFallbackClient.classifyIntent(
-                    userInput, allIntents, factoryId, userId, userRole);
+                    userInput, intentsForLlm, factoryId, userId, userRole);
 
             // 如果 LLM 成功匹配，使用 LLM 结果
             if (llmResult.hasMatch()) {
@@ -848,6 +979,9 @@ public class AIIntentServiceImpl implements AIIntentService {
                     case LLM:
                         recordBuilder.matchMethod(IntentMatchRecord.MatchMethod.LLM);
                         break;
+                    case DOMAIN_DEFAULT:
+                        recordBuilder.matchMethod(IntentMatchRecord.MatchMethod.DOMAIN_DEFAULT);
+                        break;
                     default:
                         recordBuilder.matchMethod(IntentMatchRecord.MatchMethod.NONE);
                 }
@@ -903,11 +1037,12 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // 2. 工厂级关键词 (from keyword_effectiveness table, effectiveness >= 0.5)
+        // 2. 工厂级关键词 (from keyword_effectiveness table, effectiveness >= 0.3)
+        // v4.1优化: 降低阈值0.5→0.3，让更多学习到的关键词参与匹配
         if (factoryId != null && !factoryId.isEmpty()) {
             try {
                 var factoryKeywords = keywordEffectivenessService.getEffectiveKeywords(
-                        factoryId, intentCode, new BigDecimal("0.5"));
+                        factoryId, intentCode, new BigDecimal("0.3"));
                 factoryKeywords.forEach(k -> allKeywords.add(k.getKeyword()));
                 if (!factoryKeywords.isEmpty()) {
                     log.debug("Added {} factory-level keywords for intent {} in factory {}",
@@ -919,9 +1054,10 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         // 3. 全局关键词 (GLOBAL, from keyword_effectiveness table)
+        // v4.1优化: 降低阈值0.5→0.3，让更多学习到的关键词参与匹配
         try {
             var globalKeywords = keywordEffectivenessService.getEffectiveKeywords(
-                    "GLOBAL", intentCode, new BigDecimal("0.5"));
+                    "GLOBAL", intentCode, new BigDecimal("0.3"));
             globalKeywords.forEach(k -> allKeywords.add(k.getKeyword()));
             if (!globalKeywords.isEmpty()) {
                 log.debug("Added {} global keywords for intent {}", globalKeywords.size(), intentCode);
@@ -935,6 +1071,11 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     /**
      * 获取匹配的关键词列表（带工厂ID）
+     *
+     * 优化6: 长关键词优先匹配
+     * - 按关键词长度倒序排列
+     * - 匹配到长关键词后，跳过其子串
+     * - 例如："查发货"应该匹配完整的"查发货"而非"发货"
      */
     private List<String> getMatchedKeywords(AIIntentConfig intent, String input, String factoryId) {
         List<String> keywords = getAllKeywordsForMatching(factoryId, intent);
@@ -942,9 +1083,27 @@ public class AIIntentServiceImpl implements AIIntentService {
             return Collections.emptyList();
         }
 
-        return keywords.stream()
-                .filter(keyword -> input.contains(keyword.toLowerCase()))
+        // 优化6: 按长度倒序排列，长关键词优先匹配
+        List<String> sortedKeywords = keywords.stream()
+                .sorted((a, b) -> Integer.compare(b.length(), a.length()))
                 .collect(Collectors.toList());
+
+        List<String> matchedKeywords = new ArrayList<>();
+        String lowerInput = input.toLowerCase();
+
+        for (String keyword : sortedKeywords) {
+            String lowerKeyword = keyword.toLowerCase();
+            if (lowerInput.contains(lowerKeyword)) {
+                // 检查是否已被更长的关键词覆盖
+                boolean coveredByLonger = matchedKeywords.stream()
+                        .anyMatch(longer -> longer.toLowerCase().contains(lowerKeyword));
+                if (!coveredByLonger) {
+                    matchedKeywords.add(keyword);
+                }
+            }
+        }
+
+        return matchedKeywords;
     }
 
     /**
@@ -1497,6 +1656,223 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
     }
 
+    // ==================== v4.0 并行评分架构 ====================
+
+    /**
+     * v4.0 并行多层评分
+     *
+     * 核心思想：并行执行所有匹配层，综合评分后决策
+     *
+     * 权重配置：
+     * - 短语精确匹配: 1.0 (满分，100%准确)
+     * - 语义向量匹配: 0.6 (主力层，高召回)
+     * - 关键词匹配:   0.3 (辅助层，易冲突)
+     * - 领域加分:     0.1 (微调)
+     *
+     * 置信度决策：
+     * - ≥0.75: 直接返回
+     * - 0.5-0.75: 需要LLM确认
+     * - <0.5: LLM兜底
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param allIntents 所有意图配置
+     * @param opType 操作类型
+     * @return 意图匹配结果
+     */
+    private IntentMatchResult parallelScoreMatch(String userInput, String factoryId,
+                                                  List<AIIntentConfig> allIntents, ActionType opType) {
+        String normalizedInput = userInput.toLowerCase().trim();
+
+        // ========== Layer 1: 并行执行短语匹配 ==========
+        Optional<String> phraseMatchedIntent = knowledgeBase.matchPhrase(userInput);
+
+        // ========== Layer 2: 并行执行语义匹配 ==========
+        List<UnifiedSemanticMatch> semanticResults = Collections.emptyList();
+        try {
+            semanticResults = embeddingCacheService.matchIntentsWithExpressions(factoryId, userInput, 0.50);
+        } catch (Exception e) {
+            log.warn("语义匹配异常: {}", e.getMessage());
+        }
+
+        // 构建语义分数映射
+        Map<String, Double> semanticScoreMap = new HashMap<>();
+        for (UnifiedSemanticMatch sr : semanticResults) {
+            semanticScoreMap.put(sr.getIntentCode(), sr.getSimilarity());
+        }
+
+        // ========== Layer 3: 并行执行关键词匹配 ==========
+        Map<String, KeywordMatchInfo> keywordScoreMap = new HashMap<>();
+        for (AIIntentConfig intent : allIntents) {
+            List<String> matchedKeywords = getMatchedKeywords(intent, normalizedInput, factoryId);
+            if (!matchedKeywords.isEmpty()) {
+                double keywordScore = Math.min(1.0, matchedKeywords.size() * 0.30); // v4.1优化: 每个关键词0.30分（原0.25），最高1.0
+                keywordScoreMap.put(intent.getIntentCode(), new KeywordMatchInfo(keywordScore, matchedKeywords));
+            }
+        }
+
+        // ========== 领域检测 ==========
+        IntentKnowledgeBase.Domain inputDomain = knowledgeBase.detectDomain(userInput);
+
+        // ========== 综合评分计算 ==========
+        List<ParallelScoreEntry> scoredEntries = new ArrayList<>();
+
+        for (AIIntentConfig intent : allIntents) {
+            String intentCode = intent.getIntentCode();
+
+            // 短语分数 (命中=1.0, 未命中=0.0)
+            double phraseScore = phraseMatchedIntent.isPresent() &&
+                    phraseMatchedIntent.get().equals(intentCode) ? 1.0 : 0.0;
+
+            // 语义分数 (0.0-1.0)
+            double semanticScore = semanticScoreMap.getOrDefault(intentCode, 0.0);
+
+            // 关键词分数 (0.0-1.0)
+            KeywordMatchInfo keywordInfo = keywordScoreMap.get(intentCode);
+            double keywordScore = keywordInfo != null ? keywordInfo.score : 0.0;
+            List<String> matchedKeywords = keywordInfo != null ? keywordInfo.keywords : Collections.emptyList();
+
+            // 领域加分 (同领域+0.15)
+            IntentKnowledgeBase.Domain intentDomain = knowledgeBase.getDomainFromIntentCode(intentCode);
+            double domainBonus = (inputDomain != IntentKnowledgeBase.Domain.GENERAL &&
+                    intentDomain == inputDomain) ? 0.15 : 0.0;
+
+            // 操作类型加分 (匹配+0.10)
+            double opTypeBonus = knowledgeBase.calculateOperationTypeAdjustment(
+                    intentCode, opType, 10, -3) / 100.0;
+
+            // === 负向关键词扣分 ===
+            double negativeKeywordPenalty = 0.0;
+            List<String> negativeKws = intent.getNegativeKeywordsList();
+            for (String negKw : negativeKws) {
+                if (normalizedInput.contains(negKw.toLowerCase())) {
+                    negativeKeywordPenalty += 0.15;  // 每个负向词扣0.15分
+                }
+            }
+
+            // 加权综合评分
+            // v4.2优化: 调整权重分布，关键词0.4→0.25，操作类型0.05→0.10，领域0.1→0.15
+            // 权重: 短语1.0, 语义0.6, 关键词0.25, 领域0.15, 操作类型0.10
+            double finalScore = phraseScore * 1.0
+                    + semanticScore * 0.6
+                    + keywordScore * 0.25
+                    + domainBonus * 1.0
+                    + opTypeBonus * 1.0;
+
+            // 扣除负向关键词惩罚
+            finalScore = Math.max(0.0, finalScore - negativeKeywordPenalty);
+
+            // 负向关键词扣分日志
+            if (negativeKeywordPenalty > 0) {
+                log.debug("负向关键词扣分: intent={}, penalty={:.2f}, negativeKws={}",
+                        intentCode, negativeKeywordPenalty, negativeKws);
+            }
+
+            // v4.1优化: 降低过滤阈值0.01→0.001，让低分意图也能进入候选，由LLM兜底
+            if (finalScore > 0.001) {
+                ParallelScoreEntry entry = new ParallelScoreEntry();
+                entry.config = intent;
+                entry.phraseScore = phraseScore;
+                entry.semanticScore = semanticScore;
+                entry.keywordScore = keywordScore;
+                entry.domainBonus = domainBonus;
+                entry.finalScore = finalScore;
+                entry.matchedKeywords = matchedKeywords;
+
+                // 确定主要匹配方法
+                if (phraseScore > 0) {
+                    entry.matchMethod = MatchMethod.EXACT;
+                } else if (semanticScore > keywordScore) {
+                    entry.matchMethod = MatchMethod.SEMANTIC;
+                } else if (keywordScore > 0) {
+                    entry.matchMethod = MatchMethod.KEYWORD;
+                } else {
+                    entry.matchMethod = MatchMethod.FUSION;
+                }
+
+                scoredEntries.add(entry);
+            }
+        }
+
+        // 无匹配结果
+        if (scoredEntries.isEmpty()) {
+            log.debug("并行评分无匹配结果: input='{}'", userInput);
+            return null;
+        }
+
+        // 按综合分数排序
+        scoredEntries.sort((a, b) -> Double.compare(b.finalScore, a.finalScore));
+
+        // 获取最佳匹配
+        ParallelScoreEntry bestEntry = scoredEntries.get(0);
+        double confidence = Math.min(1.0, bestEntry.finalScore);
+
+        log.debug("并行评分结果: intent={}, finalScore={:.3f}, phrase={:.2f}, semantic={:.2f}, keyword={:.2f}, domain={:.2f}",
+                bestEntry.config.getIntentCode(), bestEntry.finalScore,
+                bestEntry.phraseScore, bestEntry.semanticScore, bestEntry.keywordScore, bestEntry.domainBonus);
+
+        // 构建候选列表
+        List<CandidateIntent> candidates = scoredEntries.stream()
+                .limit(5)
+                .map(entry -> CandidateIntent.builder()
+                        .intentCode(entry.config.getIntentCode())
+                        .intentName(entry.config.getIntentName())
+                        .intentCategory(entry.config.getIntentCategory())
+                        .confidence(Math.min(1.0, entry.finalScore))
+                        .matchScore((int)(entry.finalScore * 100))
+                        .matchedKeywords(entry.matchedKeywords)
+                        .matchMethod(entry.matchMethod)
+                        .description(entry.config.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+
+        // 判断信号强度
+        boolean isStrongSignal = confidence >= 0.75 &&
+                (candidates.size() < 2 || candidates.get(0).getConfidence() - candidates.get(1).getConfidence() > 0.15);
+
+        // 判断是否需要确认
+        boolean requiresConfirmation = confidence < 0.75 || !isStrongSignal;
+
+        return IntentMatchResult.builder()
+                .bestMatch(bestEntry.config)
+                .topCandidates(candidates)
+                .confidence(confidence)
+                .matchMethod(bestEntry.matchMethod)
+                .matchedKeywords(bestEntry.matchedKeywords)
+                .isStrongSignal(isStrongSignal)
+                .requiresConfirmation(requiresConfirmation)
+                .userInput(userInput)
+                .actionType(opType)
+                .build();
+    }
+
+    /**
+     * 并行评分条目
+     */
+    private static class ParallelScoreEntry {
+        AIIntentConfig config;
+        double phraseScore;
+        double semanticScore;
+        double keywordScore;
+        double domainBonus;
+        double finalScore;
+        List<String> matchedKeywords;
+        MatchMethod matchMethod;
+    }
+
+    /**
+     * 关键词匹配信息
+     */
+    private static class KeywordMatchInfo {
+        double score;
+        List<String> keywords;
+
+        KeywordMatchInfo(double score, List<String> keywords) {
+            this.score = score;
+            this.keywords = keywords;
+        }
+    }
+
     // ==================== 语义匹配方法 ====================
 
     /**
@@ -1507,6 +1883,10 @@ public class AIIntentServiceImpl implements AIIntentService {
      * - HIGH (≥0.85): 直接使用语义结果
      * - MEDIUM (0.72-0.85): 返回结果但标记需要融合
      * - LOW (<0.72): 返回 null，交给 LLM fallback
+     *
+     * 优化7: 语义结果按领域重排序
+     * - 检测输入所属领域
+     * - 同领域的意图优先排序
      *
      * @param userInput 用户输入
      * @param factoryId 工厂ID
@@ -1522,6 +1902,27 @@ public class AIIntentServiceImpl implements AIIntentService {
             if (semanticResults.isEmpty()) {
                 log.debug("统一语义匹配无结果: factory={}, input='{}'", factoryId, userInput);
                 return null;
+            }
+
+            // 优化7: 检测输入领域并对语义结果进行领域重排序
+            IntentKnowledgeBase.Domain inputDomain = knowledgeBase.detectDomain(userInput);
+            if (inputDomain != IntentKnowledgeBase.Domain.GENERAL) {
+                // 按领域匹配度重排序：同领域优先，然后按相似度
+                semanticResults.sort((a, b) -> {
+                    IntentKnowledgeBase.Domain domainA = knowledgeBase.getDomainFromIntentCode(a.getIntentCode());
+                    IntentKnowledgeBase.Domain domainB = knowledgeBase.getDomainFromIntentCode(b.getIntentCode());
+
+                    boolean aMatch = (domainA == inputDomain);
+                    boolean bMatch = (domainB == inputDomain);
+
+                    // 同领域意图排前面
+                    if (aMatch && !bMatch) return -1;
+                    if (!aMatch && bMatch) return 1;
+                    // 同领域或都不匹配时，按相似度排序
+                    return Double.compare(b.getSimilarity(), a.getSimilarity());
+                });
+                log.debug("语义结果按领域重排序: inputDomain={}, top={}", inputDomain,
+                        semanticResults.isEmpty() ? "none" : semanticResults.get(0).getIntentCode());
             }
 
             // 获取最佳语义匹配
@@ -1689,5 +2090,21 @@ public class AIIntentServiceImpl implements AIIntentService {
                 }
             }
         }
+    }
+
+    /**
+     * 从意图列表中按代码查找意图配置
+     *
+     * @param intentCode 意图代码
+     * @param allIntents 所有意图配置列表
+     * @return 匹配的意图配置
+     */
+    private Optional<AIIntentConfig> findIntentByCode(String intentCode, List<AIIntentConfig> allIntents) {
+        if (intentCode == null || allIntents == null) {
+            return Optional.empty();
+        }
+        return allIntents.stream()
+                .filter(intent -> intentCode.equals(intent.getIntentCode()))
+                .findFirst();
     }
 }

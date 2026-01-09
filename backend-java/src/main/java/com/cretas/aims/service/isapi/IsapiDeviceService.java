@@ -1,6 +1,8 @@
 package com.cretas.aims.service.isapi;
 
 import com.cretas.aims.client.isapi.IsapiClient;
+import com.cretas.aims.dto.isapi.HttpHostConfigRequest;
+import com.cretas.aims.dto.isapi.HttpHostConfigResponse;
 import com.cretas.aims.dto.isapi.IsapiCaptureDTO;
 import com.cretas.aims.dto.isapi.IsapiDeviceDTO;
 import com.cretas.aims.dto.isapi.IsapiStreamDTO;
@@ -374,6 +376,200 @@ public class IsapiDeviceService {
     public int markTimeoutDevicesOffline(int timeoutSeconds) {
         LocalDateTime threshold = LocalDateTime.now().minusSeconds(timeoutSeconds);
         return deviceRepository.markTimeoutDevicesOffline(threshold);
+    }
+
+    // ==================== HTTP Host 配置 ====================
+
+    /**
+     * 配置摄像头 HTTP 监听地址
+     * 使摄像头将事件推送到云端服务器
+     *
+     * @param deviceId 设备 ID
+     * @param request  配置请求
+     * @return 配置结果
+     */
+    public HttpHostConfigResponse configureHttpHost(String deviceId, HttpHostConfigRequest request) {
+        IsapiDevice device = getDevice(deviceId);
+        List<String> errors = new ArrayList<>();
+        List<String> warnings = new ArrayList<>();
+
+        // 默认配置值
+        String serverIp = request.getCustomServerIp() != null ? request.getCustomServerIp() : "139.196.165.140";
+        int serverPort = request.getCustomServerPort() != null ? request.getCustomServerPort() : 10010;
+        String callbackPath = request.getCustomCallbackPath() != null ? request.getCustomCallbackPath() : "/api/mobile/edge/events";
+
+        boolean httpHostConfigured = false;
+        boolean motionDetectionEnabled = false;
+        boolean lineCrossingEnabled = false;
+        boolean intrusionDetectionEnabled = false;
+
+        try {
+            // 1. 配置 HTTP Host (事件推送目标)
+            String httpHostXml = buildHttpHostNotificationXml(serverIp, serverPort, callbackPath);
+            String httpHostUrl = device.getBaseUrl() + "/ISAPI/Event/notification/httpHosts/1";
+
+            try {
+                isapiClient.executePut(device, httpHostUrl, httpHostXml);
+                httpHostConfigured = true;
+                log.info("HTTP Host 配置成功: deviceId={}, server={}:{}", deviceId, serverIp, serverPort);
+            } catch (Exception e) {
+                errors.add("HTTP Host 配置失败: " + e.getMessage());
+                log.error("HTTP Host 配置失败: deviceId={}, error={}", deviceId, e.getMessage());
+            }
+
+            // 2. 配置移动侦测事件推送
+            if (Boolean.TRUE.equals(request.getEnableMotionDetection())) {
+                try {
+                    configureEventNotification(device, "VMD", true);
+                    motionDetectionEnabled = true;
+                    log.info("移动侦测配置成功: deviceId={}", deviceId);
+                } catch (Exception e) {
+                    warnings.add("移动侦测配置失败: " + e.getMessage());
+                    log.warn("移动侦测配置失败: deviceId={}, error={}", deviceId, e.getMessage());
+                }
+            }
+
+            // 3. 配置越界检测事件推送
+            if (Boolean.TRUE.equals(request.getEnableLineCrossing())) {
+                try {
+                    configureEventNotification(device, "linedetection", true);
+                    lineCrossingEnabled = true;
+                    log.info("越界检测配置成功: deviceId={}", deviceId);
+                } catch (Exception e) {
+                    warnings.add("越界检测配置失败 (设备可能不支持): " + e.getMessage());
+                    log.warn("越界检测配置失败: deviceId={}, error={}", deviceId, e.getMessage());
+                }
+            }
+
+            // 4. 配置区域入侵检测事件推送
+            if (Boolean.TRUE.equals(request.getEnableIntrusionDetection())) {
+                try {
+                    configureEventNotification(device, "fielddetection", true);
+                    intrusionDetectionEnabled = true;
+                    log.info("区域入侵检测配置成功: deviceId={}", deviceId);
+                } catch (Exception e) {
+                    warnings.add("区域入侵检测配置失败 (设备可能不支持): " + e.getMessage());
+                    log.warn("区域入侵检测配置失败: deviceId={}, error={}", deviceId, e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            errors.add("配置过程发生异常: " + e.getMessage());
+            log.error("HTTP Host 配置异常: deviceId={}, error={}", deviceId, e.getMessage(), e);
+        }
+
+        boolean success = httpHostConfigured && errors.isEmpty();
+
+        return HttpHostConfigResponse.builder()
+                .deviceId(deviceId)
+                .deviceName(device.getDeviceName())
+                .success(success)
+                .httpHostConfigured(httpHostConfigured)
+                .motionDetectionEnabled(motionDetectionEnabled)
+                .lineCrossingEnabled(lineCrossingEnabled)
+                .intrusionDetectionEnabled(intrusionDetectionEnabled)
+                .serverAddress(serverIp + ":" + serverPort)
+                .callbackPath(callbackPath)
+                .configuredAt(LocalDateTime.now())
+                .errors(errors.isEmpty() ? null : errors)
+                .warnings(warnings.isEmpty() ? null : warnings)
+                .build();
+    }
+
+    /**
+     * 构建 HTTP Host Notification XML
+     */
+    private String buildHttpHostNotificationXml(String ipAddress, int port, String url) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<HttpHostNotification version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                "  <id>1</id>\n" +
+                "  <url>" + url + "</url>\n" +
+                "  <protocolType>HTTP</protocolType>\n" +
+                "  <parameterFormatType>XML</parameterFormatType>\n" +
+                "  <addressingFormatType>ipaddress</addressingFormatType>\n" +
+                "  <ipAddress>" + ipAddress + "</ipAddress>\n" +
+                "  <portNo>" + port + "</portNo>\n" +
+                "  <httpAuthenticationMethod>none</httpAuthenticationMethod>\n" +
+                "</HttpHostNotification>";
+    }
+
+    /**
+     * 配置事件通知开关
+     *
+     * @param device    设备
+     * @param eventType 事件类型 (VMD, linedetection, fielddetection 等)
+     * @param enable    是否启用
+     */
+    private void configureEventNotification(IsapiDevice device, String eventType, boolean enable) throws Exception {
+        // 获取当前通知配置
+        String getUrl = device.getBaseUrl() + "/ISAPI/Event/notification/subscribeEvent";
+        String currentConfig = isapiClient.executeGet(device, getUrl);
+
+        // 检查是否已包含该事件类型的配置
+        // 如果需要更精细的控制，可以解析 XML 并修改
+        // 这里使用简化的方式：直接设置 HTTP 通知
+
+        // 构建事件触发配置 XML
+        String triggerUrl = device.getBaseUrl() + "/ISAPI/Event/triggers/" + eventType + "-1";
+        String triggerXml = buildEventTriggerXml(eventType, enable);
+
+        try {
+            isapiClient.executePut(device, triggerUrl, triggerXml);
+        } catch (Exception e) {
+            // 某些设备可能使用不同的 API 路径
+            String altUrl = device.getBaseUrl() + "/ISAPI/Smart/" + eventType + "/1";
+            String altXml = buildSmartEventXml(eventType, enable);
+            isapiClient.executePut(device, altUrl, altXml);
+        }
+    }
+
+    /**
+     * 构建事件触发配置 XML
+     */
+    private String buildEventTriggerXml(String eventType, boolean enable) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<EventTrigger version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                "  <id>1</id>\n" +
+                "  <eventType>" + eventType + "</eventType>\n" +
+                "  <inputIOPortID>1</inputIOPortID>\n" +
+                "  <EventTriggerNotificationList>\n" +
+                "    <EventTriggerNotification>\n" +
+                "      <id>1</id>\n" +
+                "      <notificationMethod>HTTP</notificationMethod>\n" +
+                "      <notificationRecurrence>recurring</notificationRecurrence>\n" +
+                "    </EventTriggerNotification>\n" +
+                "  </EventTriggerNotificationList>\n" +
+                "</EventTrigger>";
+    }
+
+    /**
+     * 构建智能事件配置 XML (用于移动侦测等)
+     */
+    private String buildSmartEventXml(String eventType, boolean enable) {
+        String enableStr = enable ? "true" : "false";
+        if ("VMD".equals(eventType)) {
+            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<MotionDetection version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                    "  <enabled>" + enableStr + "</enabled>\n" +
+                    "  <enableHighlight>" + enableStr + "</enableHighlight>\n" +
+                    "  <samplingInterval>2</samplingInterval>\n" +
+                    "  <startTriggerTime>500</startTriggerTime>\n" +
+                    "  <endTriggerTime>500</endTriggerTime>\n" +
+                    "</MotionDetection>";
+        } else if ("linedetection".equals(eventType)) {
+            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<LineDetection version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                    "  <id>1</id>\n" +
+                    "  <enabled>" + enableStr + "</enabled>\n" +
+                    "</LineDetection>";
+        } else if ("fielddetection".equals(eventType)) {
+            return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                    "<FieldDetection version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                    "  <id>1</id>\n" +
+                    "  <enabled>" + enableStr + "</enabled>\n" +
+                    "</FieldDetection>";
+        }
+        return "";
     }
 
     // ==================== DTO 转换 ====================

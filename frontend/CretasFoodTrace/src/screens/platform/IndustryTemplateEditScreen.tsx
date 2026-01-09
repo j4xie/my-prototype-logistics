@@ -84,6 +84,8 @@ const ENTITY_TYPE_INFO: Record<EntityType, { name: string; description: string; 
   SHIPMENT: { name: '出货记录', description: '出货物流相关字段', icon: 'truck-delivery' },
   EQUIPMENT: { name: '设备管理', description: '设备信息相关字段', icon: 'tools' },
   DISPOSAL_RECORD: { name: '处置记录', description: '废弃处置相关字段', icon: 'delete' },
+  PRODUCT_TYPE: { name: '产品类型', description: '产品类型配置字段', icon: 'barcode' },
+  PRODUCTION_PLAN: { name: '生产计划', description: '生产计划相关字段', icon: 'calendar-clock' },
 };
 
 // 默认 Schema 模板
@@ -256,6 +258,57 @@ const DEFAULT_SCHEMAS: Record<EntityType, object> = {
         type: 'string',
         title: '处理人',
         'x-component': 'Input',
+      },
+    },
+  },
+  PRODUCT_TYPE: {
+    type: 'object',
+    properties: {
+      code: {
+        type: 'string',
+        title: '产品代码',
+        'x-component': 'Input',
+      },
+      name: {
+        type: 'string',
+        title: '产品名称',
+        'x-component': 'Input',
+      },
+      category: {
+        type: 'string',
+        title: '产品分类',
+        'x-component': 'Select',
+      },
+      specifications: {
+        type: 'string',
+        title: '规格说明',
+        'x-component': 'TextArea',
+      },
+    },
+  },
+  PRODUCTION_PLAN: {
+    type: 'object',
+    properties: {
+      planCode: {
+        type: 'string',
+        title: '计划编号',
+        'x-component': 'Input',
+      },
+      plannedDate: {
+        type: 'string',
+        title: '计划日期',
+        'x-component': 'DatePicker',
+      },
+      targetQuantity: {
+        type: 'number',
+        title: '目标产量',
+        'x-component': 'NumberPicker',
+      },
+      priority: {
+        type: 'string',
+        title: '优先级',
+        enum: ['高', '中', '低'],
+        'x-component': 'Select',
       },
     },
   },

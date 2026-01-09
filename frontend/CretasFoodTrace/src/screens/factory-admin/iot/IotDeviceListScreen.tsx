@@ -47,10 +47,17 @@ export function IotDeviceListScreen() {
         keyword: searchKeyword || undefined,
         status: selectedStatus || undefined,
       });
-      setDevices(response.content || []);
+      // 防御性检查：确保 response 及其 content 存在
+      if (response && response.content) {
+        setDevices(response.content);
+      } else {
+        setDevices([]);
+        setError('无法获取设备列表');
+      }
     } catch (err) {
       console.error('加载设备列表失败:', err);
       setError('加载设备列表失败');
+      setDevices([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -216,7 +223,7 @@ export function IotDeviceListScreen() {
         <View style={styles.emptyContainer}>
           <Icon source="scale-off" size={64} color="#a0aec0" />
           <Text style={styles.emptyTitle}>暂无设备</Text>
-          <Text style={styles.emptySubtitle}>点击右下角按钮添加新设备</Text>
+          <Text style={styles.emptySubtitle}>请在管理中心添加新设备</Text>
         </View>
       ) : (
         <FlatList
@@ -231,14 +238,6 @@ export function IotDeviceListScreen() {
         />
       )}
 
-      {/* 添加按钮 */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('IotDeviceCreate')}
-        activeOpacity={0.8}
-      >
-        <Icon source="plus" size={24} color="#fff" />
-      </TouchableOpacity>
     </SafeAreaView>
   );
 }

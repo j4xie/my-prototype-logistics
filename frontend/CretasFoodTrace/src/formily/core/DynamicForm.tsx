@@ -31,6 +31,10 @@ const mapEntityTypeForRules = (entityType: EntityType | undefined): RuleEntityTy
     SHIPMENT: 'Shipment',
     EQUIPMENT: 'Equipment',
     DISPOSAL_RECORD: 'DisposalRecord',
+    PRODUCT_TYPE: 'MaterialBatch', // 产品类型表单映射到 MaterialBatch 规则
+    PRODUCTION_PLAN: 'ProcessingBatch', // 生产计划表单映射到 ProcessingBatch 规则
+    SCALE_DEVICE: 'Equipment', // IoT电子秤设备映射到 Equipment 规则
+    SCALE_PROTOCOL: 'Equipment', // 电子秤协议文档映射到 Equipment 规则
   };
   return mapping[entityType] ?? 'MaterialBatch';
 };
@@ -236,29 +240,44 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         form.setPattern(disabled ? 'disabled' : readOnly ? 'readOnly' : 'editable');
       }, [form, disabled, readOnly]);
 
+      // 稳定的回调引用 (防止 useRuleHooks 无限重渲染)
+      const onRuleExecutedRef = useRef(onRuleExecuted);
+      const onRuleValidationErrorRef = useRef(onRuleValidationError);
+      onRuleExecutedRef.current = onRuleExecuted;
+      onRuleValidationErrorRef.current = onRuleValidationError;
+
+      // 稳定的规则回调
+      const handleRuleAfterExecute = useCallback((result: RuleExecutionResult) => {
+        onRuleExecutedRef.current?.(result);
+      }, []);
+
+      const handleRuleValuesModified = useCallback((modifiedValues: Record<string, unknown>) => {
+        // 将规则修改的值应用到表单
+        Object.entries(modifiedValues).forEach(([key, value]) => {
+          form.setFieldState(key, (state) => {
+            state.value = value;
+          });
+        });
+      }, [form]);
+
+      const handleRuleValidationError = useCallback((errors: string[]) => {
+        onRuleValidationErrorRef.current?.(errors);
+      }, []);
+
+      const handleRuleError = useCallback((error: string) => {
+        console.error('[DynamicForm] 规则执行错误:', error);
+      }, []);
+
       // 规则 Hook
       const ruleHooks = useRuleHooks({
         formRef: internalRef,
         entityType: mapEntityTypeForRules(entityType),
         factoryId,
         enabled: enableRuleHooks && !!entityType,
-        onAfterExecute: (result) => {
-          onRuleExecuted?.(result);
-        },
-        onValuesModified: (modifiedValues) => {
-          // 将规则修改的值应用到表单
-          Object.entries(modifiedValues).forEach(([key, value]) => {
-            form.setFieldState(key, (state) => {
-              state.value = value;
-            });
-          });
-        },
-        onValidationError: (errors) => {
-          onRuleValidationError?.(errors);
-        },
-        onError: (error) => {
-          console.error('[DynamicForm] 规则执行错误:', error);
-        },
+        onAfterExecute: handleRuleAfterExecute,
+        onValuesModified: handleRuleValuesModified,
+        onValidationError: handleRuleValidationError,
+        onError: handleRuleError,
       });
 
       // beforeCreate Hook 执行 (表单初始化时)
@@ -353,6 +372,11 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
         }
       }, [form, onSubmit, enableRuleHooks, entityType, ruleHooks, onRuleWarning]);
 
+      // 使用 ref 存储 handleSubmit 以打破循环依赖
+      // 循环链: ruleHooks(依赖internalRef) → handleSubmit(依赖ruleHooks) → formRefObject(依赖handleSubmit) → useEffect更新internalRef
+      const handleSubmitRef = useRef(handleSubmit);
+      handleSubmitRef.current = handleSubmit;
+
       // 校验修正弹窗回调：应用 AI 建议的修正值
       const handleApplySuggestions = useCallback((correctedValues: Record<string, unknown>) => {
         // 将 AI 修正值应用到表单
@@ -399,10 +423,11 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
       }, []);
 
       // 创建 ref 对象
+      // 注意: submit 使用 handleSubmitRef 以打破循环依赖，避免 Maximum update depth exceeded
       const formRefObject: DynamicFormRef = useMemo(() => ({
         form,
         validate: () => form.validate(),
-        submit: handleSubmit,
+        submit: () => handleSubmitRef.current(),
         reset: () => form.reset(),
         getValues: () => form.values,
         setValues: (values) => form.setValues(values),
@@ -410,7 +435,7 @@ export const DynamicForm = forwardRef<DynamicFormRef, DynamicFormProps>(
           state.value = value;
         }),
         getFieldValue: (path) => form.getFieldState(path)?.value,
-      }), [form, handleSubmit]);
+      }), [form]); // 移除 handleSubmit 依赖，使用 ref 代替
 
       // 暴露方法给父组件
       useImperativeHandle(ref, () => formRefObject, [formRefObject]);
