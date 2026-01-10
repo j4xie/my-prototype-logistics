@@ -284,12 +284,6 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             collectStateData.put("startTime", System.currentTimeMillis());
             saveSessionState(sessionId, STATE_COLLECTING_REQUIREMENTS, collectStateData);
 
-        } else if (normalizedMessage.contains("不") || normalizedMessage.contains("算了") ||
-                normalizedMessage.equals("no")) {
-            // 用户拒绝
-            result.put("response", "好的，没关系！如果之后有需要，随时可以找我帮忙寻找供应商。\n\n还有其他我能帮您的吗？");
-            clearSessionState(sessionId);
-
         } else {
             // 用户回复了其他内容，当作新的查询处理
             clearSessionState(sessionId);
