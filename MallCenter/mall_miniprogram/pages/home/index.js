@@ -185,21 +185,23 @@ Page({
       })
     }
   },
-  // 加载AI配置
+  // 加载AI配置（静默请求，不弹窗）
   loadAiConfig() {
-    app.api.getAiConfig()
-      .then(res => {
-        if (res.code === 200 && res.data) {
+    const config = app.globalData.config
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/ai/config',
+      method: 'GET',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
           this.setData({
-            showAiAssistant: res.data.enabled === true
+            showAiAssistant: res.data.data.enabled === true
           })
         }
-      })
-      .catch(err => {
+      },
+      fail: (err) => {
         console.log('加载AI配置失败:', err)
-        // 默认不显示
-        this.setData({ showAiAssistant: false })
-      })
+      }
+    })
   },
   // 加载首页Banner
   loadBanners() {
