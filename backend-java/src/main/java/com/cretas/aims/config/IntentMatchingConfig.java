@@ -63,6 +63,11 @@ public class IntentMatchingConfig {
      */
     private MatchingWeightConfig weight = new MatchingWeightConfig();
 
+    /**
+     * 并行评分权重配置
+     */
+    private ParallelScoreConfig parallelScore = new ParallelScoreConfig();
+
     // ==================== 内部配置类 ====================
 
     /**
@@ -77,9 +82,10 @@ public class IntentMatchingConfig {
 
         /**
          * LLM 触发的置信度阈值（低于此值触发 LLM）
+         * v4.2: 提高至0.65，让更多低置信度匹配走LLM验证
          */
         @Min(0) @Max(1)
-        private double confidenceThreshold = 0.3;
+        private double confidenceThreshold = 0.65;
 
         /**
          * LLM 服务超时时间(ms)
@@ -296,6 +302,59 @@ public class IntentMatchingConfig {
          */
         @Min(0) @Max(1)
         private double semanticMatchWeight = 0.75;
+    }
+
+    /**
+     * 并行评分权重配置
+     */
+    @Data
+    public static class ParallelScoreConfig {
+        /**
+         * 短语精确匹配权重
+         */
+        @Min(0) @Max(2)
+        private double phraseWeight = 1.0;
+
+        /**
+         * 语义向量匹配权重
+         */
+        @Min(0) @Max(2)
+        private double semanticWeight = 0.6;
+
+        /**
+         * 关键词匹配权重
+         */
+        @Min(0) @Max(2)
+        private double keywordWeight = 0.25;
+
+        /**
+         * 领域匹配加分
+         */
+        @Min(0) @Max(1)
+        private double domainBonus = 0.15;
+
+        /**
+         * 操作类型匹配加分
+         */
+        @Min(0) @Max(1)
+        private double operationTypeBonus = 0.10;
+
+        /**
+         * 负向关键词惩罚
+         */
+        @Min(0) @Max(1)
+        private double negativeKeywordPenalty = 0.15;
+
+        /**
+         * 关键词递减收益权重数组
+         */
+        private double[] keywordDiminishingWeights = {0.30, 0.25, 0.20, 0.15, 0.10};
+
+        /**
+         * 递减收益后续关键词的固定权重
+         */
+        @Min(0) @Max(1)
+        private double keywordTailWeight = 0.05;
     }
 
     // ==================== 便捷方法 ====================

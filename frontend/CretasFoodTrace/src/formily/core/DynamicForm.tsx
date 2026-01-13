@@ -35,6 +35,7 @@ const mapEntityTypeForRules = (entityType: EntityType | undefined): RuleEntityTy
     PRODUCTION_PLAN: 'ProcessingBatch', // 生产计划表单映射到 ProcessingBatch 规则
     SCALE_DEVICE: 'Equipment', // IoT电子秤设备映射到 Equipment 规则
     SCALE_PROTOCOL: 'Equipment', // 电子秤协议文档映射到 Equipment 规则
+    ISAPI_DEVICE: 'Equipment', // ISAPI摄像头设备映射到 Equipment 规则
   };
   return mapping[entityType] ?? 'MaterialBatch';
 };

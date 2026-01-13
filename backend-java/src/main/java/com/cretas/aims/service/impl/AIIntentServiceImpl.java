@@ -254,7 +254,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                             .matchMethod(MatchMethod.EXACT)
                             .matchedKeywords(Collections.emptyList())
                             .isStrongSignal(true)
-                            .requiresConfirmation(false)
+                            .requiresConfirmation(true)  // v4.2: 需要确认
                             .userInput(userInput)
                             .actionType(detectedActionType)
                             .build();
@@ -289,7 +289,10 @@ public class AIIntentServiceImpl implements AIIntentService {
 
             log.info("问题类型为{}，直接路由到LLM对话: input='{}'", questionType, userInput);
 
-            // 返回空匹配结果，让后续流程走LLM fallback
+            // v4.2: 生成澄清问题，帮助用户明确需求
+            String clarification = generateGeneralQuestionClarification(userInput, questionType);
+
+            // 返回空匹配结果，让后续流程走LLM fallback，但携带clarification问题
             IntentMatchResult noMatchResult = IntentMatchResult.builder()
                     .bestMatch(null)
                     .topCandidates(Collections.emptyList())
@@ -297,7 +300,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                     .matchMethod(MatchMethod.NONE)
                     .matchedKeywords(Collections.emptyList())
                     .isStrongSignal(false)
-                    .requiresConfirmation(false)
+                    .requiresConfirmation(true)  // v4.2: 需要确认
+                    .clarificationQuestion(clarification)  // v4.2: 澄清问题
                     .userInput(userInput)
                     .actionType(ActionType.UNKNOWN)
                     .questionType(questionType) // 携带问题类型信息
@@ -720,24 +724,54 @@ public class AIIntentServiceImpl implements AIIntentService {
                 return resultWithActionType;
             }
 
-            // 如果 LLM 也没匹配，返回规则结果或空
-            log.debug("LLM fallback did not find a match");
-            IntentMatchResult fallbackResult = ruleResult != null ? ruleResult :
-                    IntentMatchResult.empty(userInput, actionType);
-            // 如果 ruleResult 存在但没有 actionType，补充设置
-            if (ruleResult != null && ruleResult.getActionType() == null) {
-                fallbackResult = fallbackResult.toBuilder().actionType(actionType).build();
+            // 如果 LLM 也没匹配，触发 clarification 机制
+            log.info("LLM fallback did not find a match, triggering clarification for: '{}'", userInput);
+
+            // v4.2优化: LLM无法识别时，返回带clarification的结果而不是直接返回NONE
+            String clarificationQuestion = generateLlmFailureClarification(userInput, allIntents);
+
+            IntentMatchResult fallbackResult;
+            if (ruleResult != null) {
+                // 有规则候选结果，带上clarification问题
+                fallbackResult = ruleResult.toBuilder()
+                        .actionType(actionType != null ? actionType : ruleResult.getActionType())
+                        .requiresConfirmation(true)
+                        .clarificationQuestion(clarificationQuestion)
+                        .build();
+            } else {
+                // 完全没有匹配，返回空结果但带clarification
+                fallbackResult = IntentMatchResult.builder()
+                        .userInput(userInput)
+                        .actionType(actionType)
+                        .confidence(0.0)
+                        .requiresConfirmation(true)
+                        .clarificationQuestion(clarificationQuestion)
+                        .build();
             }
             saveIntentMatchRecord(fallbackResult, factoryId, null, null, true);
             return fallbackResult;
 
         } catch (Exception e) {
             log.error("LLM fallback failed: {}", e.getMessage(), e);
-            IntentMatchResult fallbackResult = ruleResult != null ? ruleResult :
-                    IntentMatchResult.empty(userInput, actionType);
-            // 如果 ruleResult 存在但没有 actionType，补充设置
-            if (ruleResult != null && ruleResult.getActionType() == null) {
-                fallbackResult = fallbackResult.toBuilder().actionType(actionType).build();
+            // v4.2优化: 异常时也触发clarification而不是直接返回空
+            String clarificationQuestion = "抱歉，系统处理时遇到问题。请您重新描述一下您的需求，或者选择：\n" +
+                    "1. 查询数据\n2. 执行操作\n3. 查看报表";
+
+            IntentMatchResult fallbackResult;
+            if (ruleResult != null) {
+                fallbackResult = ruleResult.toBuilder()
+                        .actionType(actionType != null ? actionType : ruleResult.getActionType())
+                        .requiresConfirmation(true)
+                        .clarificationQuestion(clarificationQuestion)
+                        .build();
+            } else {
+                fallbackResult = IntentMatchResult.builder()
+                        .userInput(userInput)
+                        .actionType(actionType)
+                        .confidence(0.0)
+                        .requiresConfirmation(true)
+                        .clarificationQuestion(clarificationQuestion)
+                        .build();
             }
             saveIntentMatchRecord(fallbackResult, factoryId, null, null, true);
             return fallbackResult;
@@ -907,6 +941,73 @@ public class AIIntentServiceImpl implements AIIntentService {
         return sb.toString();
     }
 
+    /**
+     * v4.2: LLM无法识别意图时生成澄清问题
+     * 当规则匹配和LLM都无法确定意图时，生成引导性问题让用户澄清
+     */
+    private String generateLlmFailureClarification(String userInput, List<AIIntentConfig> allIntents) {
+        // 尝试从输入中识别领域，给出领域相关的建议
+        IntentKnowledgeBase.Domain detectedDomain = knowledgeBase.detectDomain(userInput);
+
+        if (detectedDomain != null && detectedDomain != IntentKnowledgeBase.Domain.GENERAL) {
+            // 根据检测到的领域，给出该领域常见操作的建议
+            String domainName = detectedDomain.getDisplayName();
+            return String.format("我没有完全理解您的意思。您的问题似乎与「%s」相关，请问您想要：\n" +
+                    "1. 查询%s相关信息\n" +
+                    "2. 执行%s相关操作\n" +
+                    "3. 查看%s统计报表\n" +
+                    "或者，请您更详细地描述一下需求？",
+                    domainName, domainName, domainName, domainName);
+        }
+
+        // 无法识别领域时的通用澄清问题
+        return "抱歉，我没有完全理解您的意思。请问您想要：\n" +
+                "1. 查询某类数据（如设备、原料、生产批次等）\n" +
+                "2. 执行某个操作（如创建、修改、删除等）\n" +
+                "3. 查看报表或统计\n" +
+                "4. 其他（请详细描述）\n" +
+                "请选择或更详细地描述您的需求。";
+    }
+
+    /**
+     * v4.2: 为通用咨询问题生成澄清提示
+     *
+     * 当系统检测到用户输入是GENERAL_QUESTION类型时，生成引导性问题
+     * 帮助用户明确是想要咨询建议还是执行具体操作
+     *
+     * @param userInput 用户输入
+     * @param questionType 问题类型
+     * @return 澄清问题字符串
+     */
+    private String generateGeneralQuestionClarification(String userInput,
+            IntentKnowledgeBase.QuestionType questionType) {
+        // 尝试识别输入中的关键词来生成更精准的澄清
+        IntentKnowledgeBase.Domain detectedDomain = knowledgeBase.detectDomain(userInput);
+
+        if (questionType == IntentKnowledgeBase.QuestionType.CONVERSATIONAL) {
+            // 闲聊类型 - 不需要澄清，直接交给LLM回复
+            return null;
+        }
+
+        // GENERAL_QUESTION类型 - 可能是咨询也可能是操作意图不明确
+        if (detectedDomain != null && detectedDomain != IntentKnowledgeBase.Domain.GENERAL) {
+            String domainName = detectedDomain.getDisplayName();
+            return String.format("您的问题与「%s」相关。请问您是想：\n" +
+                    "1. 获取%s相关的建议和指导\n" +
+                    "2. 查询具体的%s数据\n" +
+                    "3. 执行%s相关操作\n" +
+                    "请选择或详细描述您的需求。",
+                    domainName, domainName, domainName, domainName);
+        }
+
+        // 无法识别领域时的通用澄清
+        return "请问您是想：\n" +
+                "1. 获取操作建议和指导\n" +
+                "2. 查询具体数据（如库存、生产进度等）\n" +
+                "3. 执行某个操作（如创建任务、修改信息等）\n" +
+                "请选择或更详细地描述您的需求。";
+    }
+
     // ==================== 意图匹配记录 ====================
 
     /**
@@ -1072,9 +1173,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     /**
      * 获取匹配的关键词列表（带工厂ID）
      *
-     * 优化6: 长关键词优先匹配
+     * v5.0优化: 长关键词优先匹配，基于位置的重叠检测
      * - 按关键词长度倒序排列
-     * - 匹配到长关键词后，跳过其子串
+     * - 使用位置追踪防止短词覆盖长词
      * - 例如："查发货"应该匹配完整的"查发货"而非"发货"
      */
     private List<String> getMatchedKeywords(AIIntentConfig intent, String input, String factoryId) {
@@ -1083,7 +1184,7 @@ public class AIIntentServiceImpl implements AIIntentService {
             return Collections.emptyList();
         }
 
-        // 优化6: 按长度倒序排列，长关键词优先匹配
+        // v5.0优化: 按长度降序排序，长关键词优先匹配
         List<String> sortedKeywords = keywords.stream()
                 .sorted((a, b) -> Integer.compare(b.length(), a.length()))
                 .collect(Collectors.toList());
@@ -1091,19 +1192,40 @@ public class AIIntentServiceImpl implements AIIntentService {
         List<String> matchedKeywords = new ArrayList<>();
         String lowerInput = input.toLowerCase();
 
+        // 记录已匹配的位置区间，防止短词覆盖长词
+        Set<Integer> usedPositions = new HashSet<>();
+
         for (String keyword : sortedKeywords) {
             String lowerKeyword = keyword.toLowerCase();
-            if (lowerInput.contains(lowerKeyword)) {
-                // 检查是否已被更长的关键词覆盖
-                boolean coveredByLonger = matchedKeywords.stream()
-                        .anyMatch(longer -> longer.toLowerCase().contains(lowerKeyword));
-                if (!coveredByLonger) {
-                    matchedKeywords.add(keyword);
-                }
+            int idx = lowerInput.indexOf(lowerKeyword);
+            if (idx >= 0 && !isPositionOverlap(idx, lowerKeyword.length(), usedPositions)) {
+                matchedKeywords.add(keyword);
+                markPositionUsed(idx, lowerKeyword.length(), usedPositions);
             }
         }
 
         return matchedKeywords;
+    }
+
+    /**
+     * 检查位置是否与已使用的位置重叠
+     */
+    private boolean isPositionOverlap(int start, int length, Set<Integer> usedPositions) {
+        for (int i = start; i < start + length; i++) {
+            if (usedPositions.contains(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 标记位置为已使用
+     */
+    private void markPositionUsed(int start, int length, Set<Integer> usedPositions) {
+        for (int i = start; i < start + length; i++) {
+            usedPositions.add(i);
+        }
     }
 
     /**
@@ -1706,7 +1828,15 @@ public class AIIntentServiceImpl implements AIIntentService {
         for (AIIntentConfig intent : allIntents) {
             List<String> matchedKeywords = getMatchedKeywords(intent, normalizedInput, factoryId);
             if (!matchedKeywords.isEmpty()) {
-                double keywordScore = Math.min(1.0, matchedKeywords.size() * 0.30); // v4.1优化: 每个关键词0.30分（原0.25），最高1.0
+                // v5.0优化: 关键词评分递减收益
+                double keywordScore = 0.0;
+                double[] diminishingWeights = matchingConfig.getParallelScore().getKeywordDiminishingWeights();
+                double tailWeight = matchingConfig.getParallelScore().getKeywordTailWeight();
+                for (int i = 0; i < matchedKeywords.size(); i++) {
+                    double weight = (i < diminishingWeights.length) ? diminishingWeights[i] : tailWeight;
+                    keywordScore += weight;
+                }
+                keywordScore = Math.min(1.0, keywordScore);
                 keywordScoreMap.put(intent.getIntentCode(), new KeywordMatchInfo(keywordScore, matchedKeywords));
             }
         }
@@ -1732,10 +1862,14 @@ public class AIIntentServiceImpl implements AIIntentService {
             double keywordScore = keywordInfo != null ? keywordInfo.score : 0.0;
             List<String> matchedKeywords = keywordInfo != null ? keywordInfo.keywords : Collections.emptyList();
 
-            // 领域加分 (同领域+0.15)
+            // v5.0优化: 根据领域关键词命中数量动态加分
             IntentKnowledgeBase.Domain intentDomain = knowledgeBase.getDomainFromIntentCode(intentCode);
-            double domainBonus = (inputDomain != IntentKnowledgeBase.Domain.GENERAL &&
-                    intentDomain == inputDomain) ? 0.15 : 0.0;
+            double domainBonus = 0.0;
+            if (inputDomain != IntentKnowledgeBase.Domain.GENERAL && intentDomain == inputDomain) {
+                int domainKeywordCount = knowledgeBase.countDomainKeywords(normalizedInput, inputDomain);
+                // 命中1个词+0.10, 2个词+0.15, 3+个词+0.20
+                domainBonus = Math.min(0.20, 0.05 + domainKeywordCount * 0.05);
+            }
 
             // 操作类型加分 (匹配+0.10)
             double opTypeBonus = knowledgeBase.calculateOperationTypeAdjustment(
@@ -1751,11 +1885,11 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
 
             // 加权综合评分
-            // v4.2优化: 调整权重分布，关键词0.4→0.25，操作类型0.05→0.10，领域0.1→0.15
-            // 权重: 短语1.0, 语义0.6, 关键词0.25, 领域0.15, 操作类型0.10
-            double finalScore = phraseScore * 1.0
-                    + semanticScore * 0.6
-                    + keywordScore * 0.25
+            // v5.0优化: 使用配置的权重
+            IntentMatchingConfig.ParallelScoreConfig scoreConfig = matchingConfig.getParallelScore();
+            double finalScore = phraseScore * scoreConfig.getPhraseWeight()
+                    + semanticScore * scoreConfig.getSemanticWeight()
+                    + keywordScore * scoreConfig.getKeywordWeight()
                     + domainBonus * 1.0
                     + opTypeBonus * 1.0;
 

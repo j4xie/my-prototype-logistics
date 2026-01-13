@@ -35,7 +35,6 @@ import { useState, useCallback, useMemo, useRef, RefObject } from 'react';
 import {
   FormFieldDefinition,
   ValidationError,
-  ValidationFeedbackRequest,
 } from '../../services/api/formAssistantApiClient';
 import { EntityType } from '../../services/api/formTemplateApiClient';
 import type { DynamicFormRef, FormSchema } from '../core/DynamicForm';
@@ -192,7 +191,8 @@ export function useFormAIAssistant(
   // 从 Schema 提取字段定义
   const formFields = useMemo<FormFieldDefinition[] | undefined>(() => {
     if (!schema) return undefined;
-    return aiService.extractFieldsFromSchema(schema);
+    // extractFieldsFromSchema 返回的类型与 FormFieldDefinition 兼容
+    return aiService.extractFieldsFromSchema(schema) as FormFieldDefinition[];
   }, [schema]);
 
   /**
@@ -268,10 +268,10 @@ export function useFormAIAssistant(
         const needsFollowUp = hasMissingFields ?? false;
 
         const result: AIParseResult = {
-          success: response.success,
+          success: aiResult.success,
           fieldValues: response.fieldValues,
           confidence: response.confidence,
-          message: response.message,
+          message: aiResult.errorMessage,
           unparsedText: response.unparsedText,
           // P1-1: 缺字段自动追问
           missingRequiredFields: response.missingRequiredFields,
@@ -282,7 +282,7 @@ export function useFormAIAssistant(
 
         setLastResult(result);
 
-        if (response.success && Object.keys(response.fieldValues).length > 0) {
+        if (aiResult.success && Object.keys(response.fieldValues).length > 0) {
           // 填充表单
           fillFormWithValues(response.fieldValues);
 
@@ -299,9 +299,9 @@ export function useFormAIAssistant(
               response.followUpQuestion
             );
           }
-        } else if (!response.success) {
-          setError(response.message || 'AI 解析失败');
-          onErrorRef.current?.(response.message || 'AI 解析失败');
+        } else if (!aiResult.success) {
+          setError(aiResult.errorMessage || 'AI 解析失败');
+          onErrorRef.current?.(aiResult.errorMessage || 'AI 解析失败');
         }
 
         return result;
@@ -364,24 +364,24 @@ export function useFormAIAssistant(
         const response = aiResult.data;
 
         const result: AIParseResult = {
-          success: response.success,
+          success: aiResult.success,
           fieldValues: response.fieldValues,
           confidence: response.confidence,
-          message: response.message,
+          message: aiResult.errorMessage,
           extractedText: response.extractedText,
         };
 
         setLastResult(result);
 
-        if (response.success && Object.keys(response.fieldValues).length > 0) {
+        if (aiResult.success && Object.keys(response.fieldValues).length > 0) {
           // 填充表单
           fillFormWithValues(response.fieldValues);
 
           // 回调 (使用 ref 获取最新回调)
           onAIFillRef.current?.(response.fieldValues, response.confidence);
-        } else if (!response.success) {
-          setError(response.message || 'OCR 解析失败');
-          onErrorRef.current?.(response.message || 'OCR 解析失败');
+        } else if (!aiResult.success) {
+          setError(aiResult.errorMessage || 'OCR 解析失败');
+          onErrorRef.current?.(aiResult.errorMessage || 'OCR 解析失败');
         }
 
         return result;
@@ -460,15 +460,6 @@ export function useFormAIAssistant(
       setError(null);
 
       try {
-        const request: ValidationFeedbackRequest = {
-          sessionId: validationSessionId ?? undefined,
-          entityType,
-          formFields,
-          submittedValues,
-          validationErrors: errors,
-          userInstruction,
-        };
-
         console.log('[useFormAIAssistant] 发送校验反馈请求:', {
           entityType,
           errorCount: errors.length,
@@ -477,17 +468,36 @@ export function useFormAIAssistant(
         });
 
         // 使用集中式 AI 服务（自动检测分析模式）
-        const aiResult = await aiService.handleValidationFeedback(request);
+        // 直接构建请求对象以匹配 AIService.handleValidationFeedback 的参数类型
+        const aiResult = await aiService.handleValidationFeedback({
+          entityType: entityType as FormEntityType,
+          submittedValues,
+          validationErrors: errors.map(e => ({
+            field: e.field,
+            message: e.message,
+            rule: e.rule,
+            currentValue: e.currentValue,
+          })),
+          formFields: formFields?.map(f => ({
+            name: f.name,
+            title: f.title,
+            type: f.type,
+            description: f.description,
+            required: f.required,
+          })),
+          sessionId: validationSessionId ?? undefined,
+          userInstruction,
+        });
         const response = aiResult.data;
 
         const result: ValidationCorrectionResult = {
-          success: response.success,
+          success: aiResult.success,
           correctionHints: response.correctionHints,
           correctedValues: response.correctedValues,
           explanation: response.explanation,
           confidence: response.confidence,
           sessionId: response.sessionId,
-          message: response.message,
+          message: aiResult.errorMessage,
         };
 
         setLastValidationResult(result);
@@ -497,9 +507,9 @@ export function useFormAIAssistant(
           setValidationSessionId(response.sessionId);
         }
 
-        if (!response.success) {
-          setError(response.message || 'AI 修正建议获取失败');
-          onErrorRef.current?.(response.message || 'AI 修正建议获取失败');
+        if (!aiResult.success) {
+          setError(aiResult.errorMessage || 'AI 修正建议获取失败');
+          onErrorRef.current?.(aiResult.errorMessage || 'AI 修正建议获取失败');
         }
 
         return result;

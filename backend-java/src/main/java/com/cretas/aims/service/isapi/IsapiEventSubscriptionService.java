@@ -48,6 +48,9 @@ public class IsapiEventSubscriptionService {
     @Autowired(required = false)
     private IsapiAlertAnalysisService alertAnalysisService;
 
+    @Autowired(required = false)
+    private AutoLabelRecognitionService labelRecognitionService;
+
     // 活动的订阅连接 (deviceId -> Call)
     private final Map<String, Call> activeSubscriptions = new ConcurrentHashMap<>();
 
@@ -186,6 +189,30 @@ public class IsapiEventSubscriptionService {
         if (alertAnalysisService != null && alertAnalysisService.shouldAnalyze(eventLog)) {
             alertAnalysisService.analyzeAlertAsync(eventLog, device);
         }
+
+        // 标签自动识别触发 (VMD 或 区域入侵事件)
+        if (labelRecognitionService != null && isLabelRecognitionTriggerEvent(eventType, eventState)) {
+            labelRecognitionService.onIsapiEvent(
+                    device.getFactoryId(),
+                    eventType,
+                    device.getId(),
+                    eventLog.getId().toString()
+            );
+        }
+    }
+
+    /**
+     * 判断是否为标签识别触发事件
+     */
+    private boolean isLabelRecognitionTriggerEvent(String eventType, EventState eventState) {
+        if (eventState != EventState.ACTIVE) {
+            return false;
+        }
+        // VMD (视频移动侦测) 或 区域入侵检测
+        return "VMD".equalsIgnoreCase(eventType)
+                || "fielddetection".equalsIgnoreCase(eventType)
+                || "linedetection".equalsIgnoreCase(eventType)
+                || "regionEntrance".equalsIgnoreCase(eventType);
     }
 
     /**

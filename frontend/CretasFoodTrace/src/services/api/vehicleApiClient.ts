@@ -3,7 +3,8 @@
  * 用于仓库装车管理
  */
 
-import { apiClient, getFactoryId } from './apiClient';
+import { apiClient } from './apiClient';
+import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 
 /**
  * 车辆信息
@@ -45,24 +46,24 @@ export const vehicleApiClient = {
    * @param status 可选状态筛选
    */
   async getVehicles(status?: string): Promise<Vehicle[]> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const params = status ? { status } : {};
     const response = await apiClient.get<Vehicle[]>(
       `/api/mobile/${factoryId}/vehicles`,
       { params }
     );
-    return response.data || [];
+    return response || [];
   },
 
   /**
    * 获取可用车辆
    */
   async getAvailableVehicles(): Promise<Vehicle[]> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.get<Vehicle[]>(
       `/api/mobile/${factoryId}/vehicles/available`
     );
-    return response.data || [];
+    return response || [];
   },
 
   /**
@@ -77,83 +78,83 @@ export const vehicleApiClient = {
    * 获取车辆详情
    */
   async getVehicle(vehicleId: string): Promise<Vehicle> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.get<Vehicle>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}`
     );
-    if (!response.data) {
+    if (!response) {
       throw new Error('车辆不存在');
     }
-    return response.data;
+    return response;
   },
 
   /**
    * 创建车辆
    */
   async createVehicle(data: VehicleRequest): Promise<Vehicle> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.post<Vehicle>(
       `/api/mobile/${factoryId}/vehicles`,
       data
     );
-    if (!response.data) {
+    if (!response) {
       throw new Error('创建失败');
     }
-    return response.data;
+    return response;
   },
 
   /**
    * 更新车辆
    */
   async updateVehicle(vehicleId: string, data: Partial<VehicleRequest>): Promise<Vehicle> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.put<Vehicle>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}`,
       data
     );
-    if (!response.data) {
+    if (!response) {
       throw new Error('更新失败');
     }
-    return response.data;
+    return response;
   },
 
   /**
    * 更新车辆状态
    */
   async updateVehicleStatus(vehicleId: string, status: string): Promise<Vehicle> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.patch<Vehicle>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}/status`,
       null,
       { params: { status } }
     );
-    if (!response.data) {
+    if (!response) {
       throw new Error('状态更新失败');
     }
-    return response.data;
+    return response;
   },
 
   /**
    * 更新装载量
    */
   async updateCurrentLoad(vehicleId: string, load: number): Promise<Vehicle> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     const response = await apiClient.patch<Vehicle>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}/load`,
       null,
       { params: { load } }
     );
-    if (!response.data) {
+    if (!response) {
       throw new Error('装载量更新失败');
     }
-    return response.data;
+    return response;
   },
 
   /**
    * 删除车辆
    */
   async deleteVehicle(vehicleId: string): Promise<void> {
-    const factoryId = await getFactoryId();
+    const factoryId = getCurrentFactoryId();
     await apiClient.delete(`/api/mobile/${factoryId}/vehicles/${vehicleId}`);
   },
 };

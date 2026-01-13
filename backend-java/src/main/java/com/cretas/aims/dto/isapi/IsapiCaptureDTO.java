@@ -67,4 +67,11 @@ public class IsapiCaptureDTO {
 
     private Boolean success;
     private String error;
+
+    /**
+     * 是否抓拍成功
+     */
+    public boolean isSuccess() {
+        return Boolean.TRUE.equals(success);
+    }
 }

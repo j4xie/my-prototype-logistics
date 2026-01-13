@@ -28,6 +28,51 @@ import isapiApiClient, {
   getEventSeverityColor,
 } from '../../../services/api/isapiApiClient';
 
+// AI分析结果类型
+interface AIAnalysisResult {
+  threatLevel: 'HIGH' | 'MEDIUM' | 'LOW' | 'NONE';
+  detectedObjects: string[];
+  riskAssessment: string;
+  summary?: string;
+}
+
+// 扩展IsapiEvent接口以包含AI分析字段
+interface IsapiEventWithAI extends IsapiEvent {
+  aiAnalyzed?: boolean;
+  aiAnalysisResult?: AIAnalysisResult;
+  pictureUrl?: string;
+}
+
+// 获取威胁等级颜色
+function getThreatLevelColor(level: AIAnalysisResult['threatLevel']): string {
+  switch (level) {
+    case 'HIGH':
+      return '#e53e3e'; // 红色
+    case 'MEDIUM':
+      return '#ed8936'; // 橙色
+    case 'LOW':
+      return '#ecc94b'; // 黄色
+    case 'NONE':
+    default:
+      return '#a0aec0'; // 灰色
+  }
+}
+
+// 获取威胁等级文本
+function getThreatLevelText(level: AIAnalysisResult['threatLevel']): string {
+  switch (level) {
+    case 'HIGH':
+      return '高危';
+    case 'MEDIUM':
+      return '中危';
+    case 'LOW':
+      return '低危';
+    case 'NONE':
+    default:
+      return '无风险';
+  }
+}
+
 type RouteParams = {
   IsapiDeviceDetail: { deviceId: string };
 };
@@ -43,7 +88,7 @@ export function IsapiDeviceDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [device, setDevice] = useState<IsapiDevice | null>(null);
   const [streams, setStreams] = useState<IsapiStream[]>([]);
-  const [recentEvents, setRecentEvents] = useState<IsapiEvent[]>([]);
+  const [recentEvents, setRecentEvents] = useState<IsapiEventWithAI[]>([]);
   const [subscribed, setSubscribed] = useState(false);
   const [capture, setCapture] = useState<IsapiCapture | null>(null);
   const [capturing, setCapturing] = useState(false);
@@ -327,15 +372,76 @@ export function IsapiDeviceDetailScreen() {
             <Text style={styles.sectionTitle}>最近告警</Text>
             {recentEvents.map((event) => (
               <View key={event.id} style={styles.eventCard}>
-                <View style={[styles.eventSeverity, { backgroundColor: getEventSeverityColor(event.severity) }]} />
-                <View style={styles.eventContent}>
-                  <Text style={styles.eventType}>{event.eventTypeName}</Text>
-                  <Text style={styles.eventTime}>
-                    {new Date(event.eventTime).toLocaleString()}
-                  </Text>
+                {/* 告警头部信息 */}
+                <View style={styles.eventHeader}>
+                  <View style={[styles.eventSeverity, { backgroundColor: getEventSeverityColor(event.severity) }]} />
+                  <View style={styles.eventContent}>
+                    <View style={styles.eventTitleRow}>
+                      <Text style={styles.eventType}>{event.eventTypeName}</Text>
+                      {/* AI威胁等级徽章 */}
+                      {event.aiAnalyzed && event.aiAnalysisResult && (
+                        <View style={[
+                          styles.threatLevelBadge,
+                          { backgroundColor: getThreatLevelColor(event.aiAnalysisResult.threatLevel) }
+                        ]}>
+                          <Text style={styles.threatLevelText}>
+                            {getThreatLevelText(event.aiAnalysisResult.threatLevel)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.eventTime}>
+                      {new Date(event.eventTime).toLocaleString()}
+                    </Text>
+                  </View>
+                  {event.processed && (
+                    <Icon source="check-circle" size={18} color="#48bb78" />
+                  )}
                 </View>
-                {event.processed && (
-                  <Icon source="check-circle" size={18} color="#48bb78" />
+
+                {/* 告警图片缩略图 */}
+                {event.pictureUrl && (
+                  <View style={styles.eventImageContainer}>
+                    <Image
+                      source={{ uri: event.pictureUrl }}
+                      style={styles.eventImage}
+                      resizeMode="cover"
+                    />
+                  </View>
+                )}
+
+                {/* AI分析结果区域 */}
+                {event.aiAnalyzed && event.aiAnalysisResult && (
+                  <View style={styles.aiAnalysisSection}>
+                    <View style={styles.aiAnalysisHeader}>
+                      <Icon source="brain" size={14} color="#3182ce" />
+                      <Text style={styles.aiAnalysisTitle}>AI分析</Text>
+                    </View>
+
+                    {/* 检测对象chips */}
+                    {event.aiAnalysisResult.detectedObjects.length > 0 && (
+                      <View style={styles.detectedObjectsRow}>
+                        <Text style={styles.detectedObjectsLabel}>检测对象:</Text>
+                        <View style={styles.objectChipsContainer}>
+                          {event.aiAnalysisResult.detectedObjects.map((obj, index) => (
+                            <View key={index} style={styles.objectChip}>
+                              <Text style={styles.objectChipText}>{obj}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* 风险评估描述 */}
+                    {event.aiAnalysisResult.riskAssessment && (
+                      <View style={styles.riskAssessmentRow}>
+                        <Text style={styles.riskAssessmentLabel}>风险评估:</Text>
+                        <Text style={styles.riskAssessmentText} numberOfLines={2}>
+                          {event.aiAnalysisResult.riskAssessment}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
                 )}
               </View>
             ))}
@@ -608,12 +714,15 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   eventCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 12,
     marginBottom: 8,
+    overflow: 'hidden',
+  },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   eventSeverity: {
     width: 4,
@@ -624,6 +733,11 @@ const styles = StyleSheet.create({
   eventContent: {
     flex: 1,
   },
+  eventTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   eventType: {
     fontSize: 14,
     fontWeight: '500',
@@ -633,6 +747,87 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#718096',
     marginTop: 2,
+  },
+  // AI威胁等级徽章
+  threatLevelBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  threatLevelText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  // 告警图片
+  eventImageContainer: {
+    marginTop: 10,
+    borderRadius: 6,
+    overflow: 'hidden',
+    backgroundColor: '#f7fafc',
+  },
+  eventImage: {
+    width: '100%',
+    height: 120,
+  },
+  // AI分析区域
+  aiAnalysisSection: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  aiAnalysisHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: 8,
+  },
+  aiAnalysisTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#3182ce',
+  },
+  detectedObjectsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  detectedObjectsLabel: {
+    fontSize: 12,
+    color: '#718096',
+    marginRight: 8,
+    marginTop: 2,
+  },
+  objectChipsContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  objectChip: {
+    backgroundColor: '#ebf8ff',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  objectChipText: {
+    fontSize: 11,
+    color: '#2b6cb0',
+    fontWeight: '500',
+  },
+  riskAssessmentRow: {
+    marginTop: 4,
+  },
+  riskAssessmentLabel: {
+    fontSize: 12,
+    color: '#718096',
+    marginBottom: 2,
+  },
+  riskAssessmentText: {
+    fontSize: 12,
+    color: '#4a5568',
+    lineHeight: 18,
   },
   deleteBtn: {
     flexDirection: 'row',
