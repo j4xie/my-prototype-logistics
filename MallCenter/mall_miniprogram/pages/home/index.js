@@ -38,7 +38,9 @@ Page({
     usePersonalized: false,      // 是否使用个性化推荐(需5+行为)
     // ========== 冷启动弹窗相关 ==========
     showColdStartPopup: false,   // 是否显示冷启动弹窗
-    coldStartChecked: false      // 是否已检查过冷启动状态
+    coldStartChecked: false,     // 是否已检查过冷启动状态
+    // ========== AI助手开关 ==========
+    showAiAssistant: false       // 是否显示AI助手入口（通过接口控制）
   },
 
   // 启动广告定时器
@@ -53,6 +55,8 @@ Page({
         this.loadBanners()
         // 加载个性化推荐
         this.loadRecommendations()
+        // 加载AI配置
+        this.loadAiConfig()
         // 延迟显示启动广告
         setTimeout(() => {
           this.loadSplashAd()
@@ -180,6 +184,22 @@ Page({
         url: page
       })
     }
+  },
+  // 加载AI配置
+  loadAiConfig() {
+    app.api.getAiConfig()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          this.setData({
+            showAiAssistant: res.data.enabled === true
+          })
+        }
+      })
+      .catch(err => {
+        console.log('加载AI配置失败:', err)
+        // 默认不显示
+        this.setData({ showAiAssistant: false })
+      })
   },
   // 加载首页Banner
   loadBanners() {

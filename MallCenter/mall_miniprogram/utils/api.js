@@ -212,6 +212,9 @@ module.exports = {
     return request('/weixin/api/ma/search-keyword/suggest?prefix=' + encodeURIComponent(prefix) + '&limit=' + limit, 'get', null, false)
   },
   // ========== AI聊天相关 ==========
+  getAiConfig: () => {//获取AI配置（是否启用等）
+    return request('/weixin/api/ma/ai/config', 'get', null, false)
+  },
   aiChat: (data) => {//AI对话
     return request('/weixin/api/ma/ai/chat', 'post', data, true)
   },

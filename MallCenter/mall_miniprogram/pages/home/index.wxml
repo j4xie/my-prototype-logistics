@@ -121,7 +121,7 @@
       </view>
       <text class="cuIcon-right"></text>
     </navigator>
-    <navigator class="quick-action-item" hover-class="none" url='/pages/ai-rag/chat/index'>
+    <navigator class="quick-action-item" hover-class="none" url='/pages/ai-rag/chat/index' wx:if="{{showAiAssistant}}">
       <view class="quick-action-icon ai-icon">
         <text class="cuIcon-message"></text>
       </view>
@@ -230,7 +230,7 @@
 </view>
 
 <!-- 浮动AI客服按钮 -->
-<navigator class="floating-ai-btn" hover-class="floating-ai-btn-active" url="/pages/ai-rag/chat/index">
+<navigator class="floating-ai-btn" hover-class="floating-ai-btn-active" url="/pages/ai-rag/chat/index" wx:if="{{showAiAssistant}}">
   <text class="cuIcon-service"></text>
 </navigator>
 

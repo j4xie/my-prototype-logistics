@@ -95,7 +95,7 @@
         <text class="cu-tag badge">{{unreadCount > 99 ? '99+' : unreadCount}}</text>
       </view>
     </navigator>
-    <navigator class="cu-item arrow" url="/pages/ai-rag/chat/index" hover-class="none">
+    <navigator class="cu-item arrow" url="/pages/ai-rag/chat/index" hover-class="none" wx:if="{{showAiAssistant}}">
       <view class="content">
         <text class="cuIcon-creativefill text-xl text-purple margin-right-sm"></text>
         <text class="text-black">AI智能助手</text>

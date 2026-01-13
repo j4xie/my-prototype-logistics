@@ -12,7 +12,8 @@ Page({
     wxUser: null,
     userInfo: null,
     orderCountAll: [],
-    unreadCount: 0
+    unreadCount: 0,
+    showAiAssistant: false  // AI助手开关
   },
   onShow(){
     const wxUser = app.globalData.wxUser
@@ -38,6 +39,7 @@ Page({
 
     this.wxUserGet()
     this.orderCountAll()
+    this.loadAiConfig()
     this.loadUnreadCount()
     if(this.data.config.adEnable){
       // 在页面中定义插屏广告
@@ -87,6 +89,20 @@ Page({
         })
       }
     })
+  },
+  // 加载AI配置
+  loadAiConfig() {
+    app.api.getAiConfig()
+      .then(res => {
+        if (res.code === 200 && res.data) {
+          this.setData({
+            showAiAssistant: res.data.enabled === true
+          })
+        }
+      })
+      .catch(err => {
+        console.log('加载AI配置失败:', err)
+      })
   },
   //获取商城用户信息
   wxUserGet(){
