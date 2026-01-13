@@ -289,8 +289,8 @@ export const useSkuConfigVoiceStore = create<SkuConfigVoiceState>((set, get) => 
         // 特殊处理数组和对象
         processingSteps: newConfig.processingSteps || current.processingSteps,
         skillRequirements: {
-          ...current.skillRequirements,
-          ...newConfig.skillRequirements,
+          minLevel: newConfig.skillRequirements?.minLevel ?? current.skillRequirements?.minLevel ?? 1,
+          preferredLevel: newConfig.skillRequirements?.preferredLevel ?? current.skillRequirements?.preferredLevel ?? 1,
           specialSkills: [
             ...(current.skillRequirements?.specialSkills || []),
             ...(newConfig.skillRequirements?.specialSkills || []),

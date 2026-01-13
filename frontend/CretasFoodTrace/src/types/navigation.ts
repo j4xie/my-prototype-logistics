@@ -106,6 +106,20 @@ export type ProcessingStackParamList = {
 
   // AI语音质检 - Phase 4
   VoiceInspection: undefined;                          // 语音质检主屏幕
+
+  // 标签扫描 - 通用组件
+  LabelScan: {
+    workstationId: string;
+    batchNumber?: string; // 期望的批次号（用于匹配验证）
+  };
+
+  // 工位监控 - 生产模块
+  WorkstationMonitor: {
+    workstationId?: string;
+    cameraId?: string;
+    scaleDeviceId?: string;
+    productionBatchId?: string;
+  };
 };
 
 // ==================== 考勤模块导航参数 ====================
@@ -321,6 +335,8 @@ export type FAManagementStackParamList = {
   SmartDeviceAdd: undefined;
   CameraAddMethod: undefined;
   AIDeviceInput: { deviceType: 'CAMERA' | 'SCALE' };
+  // 标签自动识别监控
+  LabelRecognitionMonitor: undefined;
 };
 
 export type FAProfileStackParamList = {

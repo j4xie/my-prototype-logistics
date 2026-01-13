@@ -54,6 +54,9 @@ import { AIDeviceInputScreen } from "../../screens/factory-admin/device/AIDevice
 // 统一设备管理中心
 import { UnifiedDeviceManagementScreen } from "../../screens/factory-admin/device/UnifiedDeviceManagementScreen";
 
+// 标签自动识别监控
+import { LabelRecognitionMonitorScreen } from "../../screens/production/LabelRecognitionMonitorScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -287,6 +290,13 @@ export function FAManagementStackNavigator() {
         name="AIDeviceInput"
         component={AIDeviceInputScreen}
         options={{ title: "AI识别添加" }}
+      />
+
+      {/* 标签自动识别监控 */}
+      <Stack.Screen
+        name="LabelRecognitionMonitor"
+        component={LabelRecognitionMonitorScreen}
+        options={{ title: "标签识别监控" }}
       />
     </Stack.Navigator>
   );

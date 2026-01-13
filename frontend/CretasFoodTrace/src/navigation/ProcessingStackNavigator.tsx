@@ -60,6 +60,12 @@ import CreatePackagingScreen from '../screens/processing/CreatePackagingScreen';
 // 原材料消耗记录
 import MaterialConsumptionHistoryScreen from '../screens/processing/MaterialConsumptionHistoryScreen';
 
+// 工位监控
+import { WorkstationMonitorScreen } from '../screens/production/WorkstationMonitorScreen';
+
+// 标签扫描 (shared模块)
+import LabelScanScreen from '../screens/shared/LabelScanScreen';
+
 // 溯源功能 - Phase 3
 import {
   TraceabilityScreen,
@@ -251,6 +257,18 @@ export function ProcessingStackNavigator() {
         name="VoiceInspection"
         component={VoiceInspectionScreen}
       /> */}
+
+      {/* 工位监控 */}
+      <Stack.Screen
+        name="WorkstationMonitor"
+        component={WorkstationMonitorScreen}
+      />
+
+      {/* 标签扫描 - 通用组件 */}
+      <Stack.Screen
+        name="LabelScan"
+        component={LabelScanScreen}
+      />
     </Stack.Navigator>
   );
 }

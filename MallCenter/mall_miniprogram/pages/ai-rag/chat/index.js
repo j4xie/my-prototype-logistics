@@ -22,6 +22,14 @@ Page({
   },
 
   onLoad(options) {
+    // 清空旧格式的缓存数据（修复字段映射问题后的一次性清理）
+    const cacheVersion = wx.getStorageSync('aiChatCacheVersion')
+    if (cacheVersion !== 'v2') {
+      wx.removeStorageSync('aiChatHistory')
+      wx.setStorageSync('aiChatCacheVersion', 'v2')
+      console.log('[AI Chat] 已清理旧版本缓存')
+    }
+
     // 尝试恢复之前的会话ID，否则生成新的
     const savedSessionId = wx.getStorageSync('aiChatSessionId')
     const sessionId = savedSessionId || this.generateSessionId()
@@ -84,15 +92,32 @@ Page({
     try {
       const res = await api.getAiSessionHistory(sessionId)
       if (res.code === 200 && res.data && res.data.length > 0) {
-        // 转换服务端数据格式
-        const messages = res.data.map(item => ({
-          id: item.id || Date.now(),
-          sender: item.role === 'user' ? 'user' : 'ai',
-          text: item.content || item.message,
-          sources: item.sources || [],
-          products: item.products || [],
-          timeStr: item.createTime ? this.formatServerTime(item.createTime) : this.formatTime(new Date())
-        }))
+        // 转换服务端数据格式 - 每条AiDemandRecord包含用户消息和AI回复，需要拆分为两条消息
+        const messages = []
+        res.data.forEach(item => {
+          // 用户消息
+          if (item.userMessage) {
+            messages.push({
+              id: `${item.id}_user`,
+              sender: 'user',
+              text: item.userMessage,
+              sources: [],
+              products: [],
+              timeStr: item.createTime ? this.formatServerTime(item.createTime) : this.formatTime(new Date())
+            })
+          }
+          // AI回复
+          if (item.aiResponse) {
+            messages.push({
+              id: `${item.id}_ai`,
+              sender: 'ai',
+              text: item.aiResponse,
+              sources: [],
+              products: [],
+              timeStr: item.createTime ? this.formatServerTime(item.createTime) : this.formatTime(new Date())
+            })
+          }
+        })
         
         this.setData({ 
           messages, 

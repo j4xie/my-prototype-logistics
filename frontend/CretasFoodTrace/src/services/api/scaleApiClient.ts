@@ -1,9 +1,7 @@
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
-import { getErrorMsg } from '../../utils/errorHandler';
-import { AxiosResponse } from 'axios';
 
-// API 响应包装类型
+// API 响应包装类型 (用于后端返回的标准格式)
 interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -228,9 +226,11 @@ export async function getScaleDevices(params?: {
   totalElements: number;
   totalPages: number;
 }> {
-  const factoryId = await getCurrentFactoryId();
-  type ResponseType = AxiosResponse<ApiResponse<{ content: ScaleDevice[]; totalElements: number; totalPages: number }>>;
-  const response = await apiClient.get(`/api/mobile/${factoryId}/scale-devices`, { params }) as ResponseType;
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.get<ApiResponse<{ content: ScaleDevice[]; totalElements: number; totalPages: number }>>(
+    `/api/mobile/${factoryId}/scale-devices`,
+    { params }
+  );
   return response.data;
 }
 
@@ -238,8 +238,10 @@ export async function getScaleDevices(params?: {
  * 获取秤设备详情
  */
 export async function getScaleDevice(equipmentId: number): Promise<ScaleDevice> {
-  const factoryId = await getCurrentFactoryId();
-  const response = await apiClient.get(`/api/mobile/${factoryId}/scale-devices/${equipmentId}`) as AxiosResponse<ApiResponse<ScaleDevice>>;
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.get<ApiResponse<ScaleDevice>>(
+    `/api/mobile/${factoryId}/scale-devices/${equipmentId}`
+  );
   return response.data;
 }
 
@@ -247,8 +249,11 @@ export async function getScaleDevice(equipmentId: number): Promise<ScaleDevice> 
  * 创建秤设备
  */
 export async function createScaleDevice(request: CreateScaleDeviceRequest): Promise<ScaleDevice> {
-  const factoryId = await getCurrentFactoryId();
-  const response = await apiClient.post(`/api/mobile/${factoryId}/scale-devices`, request) as AxiosResponse<ApiResponse<ScaleDevice>>;
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.post<ApiResponse<ScaleDevice>>(
+    `/api/mobile/${factoryId}/scale-devices`,
+    request
+  );
   return response.data;
 }
 
@@ -259,8 +264,11 @@ export async function updateScaleDevice(
   equipmentId: number,
   request: UpdateScaleDeviceRequest
 ): Promise<ScaleDevice> {
-  const factoryId = await getCurrentFactoryId();
-  const response = await apiClient.put(`/api/mobile/${factoryId}/scale-devices/${equipmentId}`, request) as AxiosResponse<ApiResponse<ScaleDevice>>;
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.put<ApiResponse<ScaleDevice>>(
+    `/api/mobile/${factoryId}/scale-devices/${equipmentId}`,
+    request
+  );
   return response.data;
 }
 
@@ -268,7 +276,7 @@ export async function updateScaleDevice(
  * 删除秤设备
  */
 export async function deleteScaleDevice(equipmentId: number): Promise<void> {
-  const factoryId = await getCurrentFactoryId();
+  const factoryId = getCurrentFactoryId();
   await apiClient.delete(`/api/mobile/${factoryId}/scale-devices/${equipmentId}`);
 }
 
@@ -280,11 +288,14 @@ export async function bindProtocol(
   protocolId: string,
   connectionParams?: string
 ): Promise<ScaleDevice> {
-  const factoryId = await getCurrentFactoryId();
-  const response = await apiClient.post(`/api/mobile/${factoryId}/scale-devices/${equipmentId}/bind-protocol`, {
-    protocolId,
-    connectionParams,
-  }) as AxiosResponse<ApiResponse<ScaleDevice>>;
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.post<ApiResponse<ScaleDevice>>(
+    `/api/mobile/${factoryId}/scale-devices/${equipmentId}/bind-protocol`,
+    {
+      protocolId,
+      connectionParams,
+    }
+  );
   return response.data;
 }
 
@@ -299,12 +310,15 @@ export async function testParse(
   parseResult?: ScaleDataParseResult;
   errorMessage?: string;
 }> {
-  const factoryId = await getCurrentFactoryId();
+  const factoryId = getCurrentFactoryId();
   type ParseResultType = { success: boolean; parseResult?: ScaleDataParseResult; errorMessage?: string };
-  const response = await apiClient.post(`/api/mobile/${factoryId}/scale-devices/test-parse`, {
-    protocolId,
-    rawDataHex,
-  }) as AxiosResponse<ApiResponse<ParseResultType>>;
+  const response = await apiClient.post<ApiResponse<ParseResultType>>(
+    `/api/mobile/${factoryId}/scale-devices/test-parse`,
+    {
+      protocolId,
+      rawDataHex,
+    }
+  );
   return response.data;
 }
 
@@ -319,7 +333,10 @@ export async function getProtocols(params?: {
   verifiedOnly?: boolean;
   activeOnly?: boolean;
 }): Promise<ScaleProtocol[]> {
-  const response = await apiClient.get('/api/mobile/scale-protocols', { params }) as AxiosResponse<ApiResponse<ScaleProtocol[]>>;
+  const response = await apiClient.get<ApiResponse<ScaleProtocol[]>>(
+    '/api/mobile/scale-protocols',
+    { params }
+  );
   return response.data;
 }
 
@@ -327,7 +344,9 @@ export async function getProtocols(params?: {
  * 获取协议详情
  */
 export async function getProtocol(protocolId: string): Promise<ScaleProtocol> {
-  const response = await apiClient.get(`/api/mobile/scale-protocols/${protocolId}`) as AxiosResponse<ApiResponse<ScaleProtocol>>;
+  const response = await apiClient.get<ApiResponse<ScaleProtocol>>(
+    `/api/mobile/scale-protocols/${protocolId}`
+  );
   return response.data;
 }
 
@@ -335,7 +354,10 @@ export async function getProtocol(protocolId: string): Promise<ScaleProtocol> {
  * 创建协议
  */
 export async function createProtocol(request: Partial<ScaleProtocol>): Promise<ScaleProtocol> {
-  const response = await apiClient.post('/api/mobile/scale-protocols', request) as AxiosResponse<ApiResponse<ScaleProtocol>>;
+  const response = await apiClient.post<ApiResponse<ScaleProtocol>>(
+    '/api/mobile/scale-protocols',
+    request
+  );
   return response.data;
 }
 
@@ -346,7 +368,10 @@ export async function updateProtocol(
   protocolId: string,
   request: Partial<ScaleProtocol>
 ): Promise<ScaleProtocol> {
-  const response = await apiClient.put(`/api/mobile/scale-protocols/${protocolId}`, request) as AxiosResponse<ApiResponse<ScaleProtocol>>;
+  const response = await apiClient.put<ApiResponse<ScaleProtocol>>(
+    `/api/mobile/scale-protocols/${protocolId}`,
+    request
+  );
   return response.data;
 }
 
@@ -368,7 +393,10 @@ export async function getBrandModels(params?: {
   keyword?: string;
   recommendedOnly?: boolean;
 }): Promise<ScaleBrandModel[]> {
-  const response = await apiClient.get('/api/mobile/scale-protocols/brand-models', { params }) as AxiosResponse<ApiResponse<ScaleBrandModel[]>>;
+  const response = await apiClient.get<ApiResponse<ScaleBrandModel[]>>(
+    '/api/mobile/scale-protocols/brand-models',
+    { params }
+  );
   return response.data;
 }
 
@@ -376,7 +404,9 @@ export async function getBrandModels(params?: {
  * 获取品牌型号详情
  */
 export async function getBrandModel(modelId: string): Promise<ScaleBrandModel> {
-  const response = await apiClient.get(`/api/mobile/scale-protocols/brand-models/${modelId}`) as AxiosResponse<ApiResponse<ScaleBrandModel>>;
+  const response = await apiClient.get<ApiResponse<ScaleBrandModel>>(
+    `/api/mobile/scale-protocols/brand-models/${modelId}`
+  );
   return response.data;
 }
 
@@ -384,7 +414,10 @@ export async function getBrandModel(modelId: string): Promise<ScaleBrandModel> {
  * 创建品牌型号
  */
 export async function createBrandModel(request: Partial<ScaleBrandModel>): Promise<ScaleBrandModel> {
-  const response = await apiClient.post('/api/mobile/scale-protocols/brand-models', request) as AxiosResponse<ApiResponse<ScaleBrandModel>>;
+  const response = await apiClient.post<ApiResponse<ScaleBrandModel>>(
+    '/api/mobile/scale-protocols/brand-models',
+    request
+  );
   return response.data;
 }
 
@@ -395,7 +428,10 @@ export async function updateBrandModel(
   modelId: string,
   request: Partial<ScaleBrandModel>
 ): Promise<ScaleBrandModel> {
-  const response = await apiClient.put(`/api/mobile/scale-protocols/brand-models/${modelId}`, request) as AxiosResponse<ApiResponse<ScaleBrandModel>>;
+  const response = await apiClient.put<ApiResponse<ScaleBrandModel>>(
+    `/api/mobile/scale-protocols/brand-models/${modelId}`,
+    request
+  );
   return response.data;
 }
 
@@ -403,7 +439,9 @@ export async function updateBrandModel(
  * 获取品牌列表
  */
 export async function getBrands(): Promise<BrandInfo[]> {
-  const response = await apiClient.get('/api/mobile/scale-protocols/brands') as AxiosResponse<ApiResponse<BrandInfo[]>>;
+  const response = await apiClient.get<ApiResponse<BrandInfo[]>>(
+    '/api/mobile/scale-protocols/brands'
+  );
   return response.data;
 }
 
@@ -413,8 +451,8 @@ export async function getBrands(): Promise<BrandInfo[]> {
  * 获取可用协议列表（带工厂过滤）
  */
 export async function getAvailableProtocols(): Promise<ScaleProtocol[]> {
-  const factoryId = await getCurrentFactoryId();
-  return getProtocols({ factoryId, activeOnly: true });
+  const factoryId = getCurrentFactoryId();
+  return getProtocols({ factoryId: factoryId ?? undefined, activeOnly: true });
 }
 
 /**
