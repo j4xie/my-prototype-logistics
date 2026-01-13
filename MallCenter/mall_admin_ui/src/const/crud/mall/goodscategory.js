@@ -47,6 +47,17 @@ export const tableOption = {
       ],
     },
     {
+      label: "图标文字",
+      prop: "iconText",
+      tip: "首页分类显示的单个汉字，如：日、牛、鲜",
+      rules: [
+        {
+          max: 1,
+          message: "图标文字只能是1个字符",
+        },
+      ],
+    },
+    {
       label: "是否显示",
       prop: "enable",
       type: "radio",
