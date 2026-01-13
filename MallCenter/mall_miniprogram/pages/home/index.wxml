@@ -34,63 +34,19 @@
     </swiper>
   </view>
 
-  <!-- 食品分类网格 - 10个分类 -->
+  <!-- 食品分类网格 - 动态从后端获取 -->
   <view class="category-section">
     <view class="category-grid">
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_001'>
+      <!-- 动态分类列表 -->
+      <navigator class="category-item" hover-class="none"
+        wx:for="{{categoryList}}" wx:key="id"
+        url='/pages/goods/goods-list/index?categoryFirst={{item.id}}'>
         <view class="category-icon-box">
-          <text class="category-icon-text">牛</text>
+          <text class="category-icon-text">{{item.iconText || item.name[0]}}</text>
         </view>
-        <text class="category-name">牛羊肉类</text>
+        <text class="category-name">{{item.name}}</text>
       </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_002'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">禽</text>
-        </view>
-        <text class="category-name">家禽蛋副</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_003'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">调</text>
-        </view>
-        <text class="category-name">调理肉类</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_004'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">罐</text>
-        </view>
-        <text class="category-name">肉肠罐头</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_005'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">鲜</text>
-        </view>
-        <text class="category-name">海鲜水产</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_006'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">蔬</text>
-        </view>
-        <text class="category-name">蔬菜菌菇</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_007'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">面</text>
-        </view>
-        <text class="category-name">米面制品</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_008'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">点</text>
-        </view>
-        <text class="category-name">小吃点心</text>
-      </navigator>
-      <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index?categoryFirst=FOOD_CAT_009'>
-        <view class="category-icon-box">
-          <text class="category-icon-text">水</text>
-        </view>
-        <text class="category-name">水发产品</text>
-      </navigator>
+      <!-- 所有分类入口（固定显示） -->
       <navigator class="category-item" hover-class="none" url='/pages/goods/goods-list/index'>
         <view class="category-icon-box category-all">
           <text class="cuIcon-apps category-icon-cuicon"></text>
