@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.joolun.common.annotation.Anonymous;
 
 /**
  * 广告管理
@@ -42,6 +43,7 @@ public class AdvertisementController extends BaseController {
     /**
      * 按类型获取有效广告（公开接口，供C端使用）
      */
+    @Anonymous
     @GetMapping("/active/{type}")
     public AjaxResult listActiveByType(@PathVariable("type") String type) {
         return AjaxResult.success(advertisementService.listActiveByType(type));
@@ -50,6 +52,7 @@ public class AdvertisementController extends BaseController {
     /**
      * 获取启动广告（公开接口，供C端使用）
      */
+    @Anonymous
     @GetMapping("/splash")
     public AjaxResult getSplashAd() {
         return AjaxResult.success(advertisementService.getSplashAd());
@@ -58,6 +61,7 @@ public class AdvertisementController extends BaseController {
     /**
      * 获取首页Banner（公开接口，供C端使用）
      */
+    @Anonymous
     @GetMapping("/banners")
     public AjaxResult getHomeBanners() {
         return AjaxResult.success(advertisementService.getHomeBanners());
@@ -95,6 +99,7 @@ public class AdvertisementController extends BaseController {
     /**
      * 记录广告点击（公开接口）
      */
+    @Anonymous
     @PostMapping("/{id}/click")
     public AjaxResult recordClick(@PathVariable("id") Long id) {
         return AjaxResult.success(advertisementService.recordClick(id));
@@ -103,6 +108,7 @@ public class AdvertisementController extends BaseController {
     /**
      * 记录广告展示（公开接口）
      */
+    @Anonymous
     @PostMapping("/{id}/view")
     public AjaxResult recordView(@PathVariable("id") Long id) {
         return AjaxResult.success(advertisementService.recordView(id));

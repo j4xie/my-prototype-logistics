@@ -439,30 +439,114 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("停止生产", "PROCESSING_STOP");
         phraseToIntentMapping.put("暂停生产", "PROCESSING_PAUSE");
         phraseToIntentMapping.put("恢复生产", "PROCESSING_RESUME");
+        // === v4.2优化：生产类短语映射补充 ===
+        phraseToIntentMapping.put("正在生产的批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("生产订单", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("车间生产情况", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("全部批次信息", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("生产进度如何", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("登记生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("安排生产任务", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("启动这个批次", "PROCESSING_BATCH_START");
+        phraseToIntentMapping.put("生产任务开始", "PROCESSING_BATCH_START");
+        phraseToIntentMapping.put("开始生产", "PROCESSING_BATCH_START");
+        phraseToIntentMapping.put("生产任务暂停", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("暂停这个批次", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("批次生产完了", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("完成这个批次", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("生产任务结束", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("删除这个生产计划", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("作废生产任务", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("取消这个批次", "PROCESSING_BATCH_CANCEL");
 
         // === 质检相关 ===
         phraseToIntentMapping.put("质检记录", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("质检报告", "QUALITY_REPORT_QUERY");
         phraseToIntentMapping.put("质量检测", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("检验结果", "QUALITY_CHECK_QUERY");
+        // === v4.2优化：质检类短语映射补充 ===
+        phraseToIntentMapping.put("检验内容", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质量要求", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("做质量检查", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("检查产品质量", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("执行质检", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("检验数据分析", "QUALITY_STATS");
+        phraseToIntentMapping.put("质量统计", "QUALITY_STATS");
+        phraseToIntentMapping.put("品质怎么样", "QUALITY_STATS");
+        phraseToIntentMapping.put("处理不合格品", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("次品怎么处理", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("不合格品处理", "QUALITY_DISPOSITION_EXECUTE");
 
         // === 原料/物料相关 ===
         phraseToIntentMapping.put("原料入库", "MATERIAL_INBOUND_QUERY");
         phraseToIntentMapping.put("物料入库", "MATERIAL_INBOUND_QUERY");
         phraseToIntentMapping.put("原料批次", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("原料列表", "MATERIAL_LIST");
+        // === v4.2优化：原料类短语映射补充 ===
+        phraseToIntentMapping.put("原料有哪些", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料库存情况", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料信息", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料批次列表", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("仓库原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("材料清单", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料数量", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存不足预警", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("即将到期的物料", "MATERIAL_EXPIRING_ALERT");
+        phraseToIntentMapping.put("已失效物料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("不能用的原料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("应该用哪批原料", "MATERIAL_FIFO_RECOMMEND");
+        phraseToIntentMapping.put("哪批原料该先用", "MATERIAL_FIFO_RECOMMEND");
+        phraseToIntentMapping.put("修改库存", "MATERIAL_ADJUST_QUANTITY");
 
         // === 报表相关 ===
         phraseToIntentMapping.put("今日报表", "DAILY_REPORT");
         phraseToIntentMapping.put("日报表", "DAILY_REPORT");
-        phraseToIntentMapping.put("生产报表", "PRODUCTION_REPORT");
+        phraseToIntentMapping.put("生产报表", "REPORT_PRODUCTION");
         phraseToIntentMapping.put("统计报表", "STATS_REPORT");
         phraseToIntentMapping.put("数据报表", "DATA_REPORT");
+        // === v4.2优化：报表类短语映射补充 ===
+        phraseToIntentMapping.put("生产情况报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("今天生产了多少", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("产量报表", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产统计", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("产出报表", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产效率分析", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("效率报表", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("效率怎么样", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("库存够不够", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("库存报表", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("给我看看数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("厂里现在什么情况", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("今天忙不忙", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("最近怎么样", "REPORT_DASHBOARD_OVERVIEW");
+        // === v4.2优化：报表类短语映射补充（冲92%）===
+        phraseToIntentMapping.put("综合报表", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("首页数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("整体情况", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("产量数据", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("加工数据报表", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("物料库存报表", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("质量报表", "REPORT_QUALITY");
+        phraseToIntentMapping.put("品质数据报告", "REPORT_QUALITY");
+        phraseToIntentMapping.put("质检报表", "REPORT_QUALITY");
+        phraseToIntentMapping.put("合格率报表", "REPORT_QUALITY");
+        phraseToIntentMapping.put("质量分析报告", "REPORT_QUALITY");
+        phraseToIntentMapping.put("品质报告", "REPORT_QUALITY");
+        phraseToIntentMapping.put("设备效率报告", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("机器效率", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("产线效率", "REPORT_EFFICIENCY");
 
         // === 客户相关 ===
         phraseToIntentMapping.put("客户列表", "CUSTOMER_LIST");
         phraseToIntentMapping.put("客户信息", "CUSTOMER_QUERY");
         phraseToIntentMapping.put("客户查询", "CUSTOMER_QUERY");
+        // === v4.2优化：客户类短语映射补充 ===
+        phraseToIntentMapping.put("客户资料", "CUSTOMER_LIST");
+        phraseToIntentMapping.put("所有客户", "CUSTOMER_LIST");
+        phraseToIntentMapping.put("客户满意度如何", "CUSTOMER_STATS");
+        phraseToIntentMapping.put("客户评价", "CUSTOMER_STATS");
 
         // === 用户/员工相关 ===
         phraseToIntentMapping.put("员工列表", "USER_LIST");
@@ -486,6 +570,15 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("历史考勤", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("打卡记录", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("考勤记录", "ATTENDANCE_HISTORY");
+        // === v4.2优化：考勤类短语映射补充 ===
+        phraseToIntentMapping.put("我先撤了", "CLOCK_OUT");
+        phraseToIntentMapping.put("今天干完了", "CLOCK_OUT");
+        phraseToIntentMapping.put("下班了", "CLOCK_OUT");
+        phraseToIntentMapping.put("走了", "CLOCK_OUT");
+        phraseToIntentMapping.put("考勤数据分析", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("考勤统计", "ATTENDANCE_STATS");
+        phraseToIntentMapping.put("考勤异常人员", "ATTENDANCE_ANOMALY");
+        phraseToIntentMapping.put("考勤异常", "ATTENDANCE_ANOMALY");
 
         // === 口语化"帮我X"模式短语 (v4.0 优化) ===
         // 考勤类
@@ -539,6 +632,10 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("产品溯源二维码", "TRACE_PUBLIC");
         phraseToIntentMapping.put("消费者溯源", "TRACE_PUBLIC");
         phraseToIntentMapping.put("对外溯源", "TRACE_PUBLIC");
+        // === v4.2优化：溯源类短语映射补充 ===
+        phraseToIntentMapping.put("追踪这个批次", "TRACE_BATCH");
+        phraseToIntentMapping.put("消费者可查的溯源", "TRACE_PUBLIC");
+        phraseToIntentMapping.put("可查溯源", "TRACE_PUBLIC");
 
         // === v4.1优化：告警类短语映射（解决ALERT混淆）===
         phraseToIntentMapping.put("活跃告警", "ALERT_ACTIVE");
@@ -574,11 +671,62 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("告警根因分析", "ALERT_DIAGNOSE");
         phraseToIntentMapping.put("分析告警原因", "ALERT_DIAGNOSE");
 
+        // === v4.2优化：告警类短语映射补充（解决ALERT混淆）===
+        phraseToIntentMapping.put("系统警报", "ALERT_LIST");
+        phraseToIntentMapping.put("异常提醒", "ALERT_LIST");
+        phraseToIntentMapping.put("所有报警", "ALERT_LIST");
+        phraseToIntentMapping.put("警报都有哪些", "ALERT_LIST");
+        phraseToIntentMapping.put("报警汇总", "ALERT_LIST");
+        phraseToIntentMapping.put("预警消息", "ALERT_LIST");
+        phraseToIntentMapping.put("告警清单", "ALERT_LIST");
+        phraseToIntentMapping.put("预警信息汇总", "ALERT_LIST");
+        phraseToIntentMapping.put("有什么告警", "ALERT_LIST");
+        phraseToIntentMapping.put("现在有哪些告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("进行中的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("还没处理的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("待解决的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("未关闭的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("活动中的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("正在发生的异常", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("当前的异常", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("告警可以关了", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("完成告警处理", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("异常发生频率", "ALERT_STATS");
+        // === v4.2优化：告警诊断短语映射 ===
+        phraseToIntentMapping.put("告警怎么回事", "ALERT_DIAGNOSE");
+        phraseToIntentMapping.put("为什么会报警", "ALERT_DIAGNOSE");
+        phraseToIntentMapping.put("报警原因", "ALERT_DIAGNOSE");
+
+        // === v4.2优化：设备类短语映射（解决EQUIPMENT混淆）===
+        phraseToIntentMapping.put("有多少台设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("获取设备数据", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("调出设备信息", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("机台一览", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("工厂机器汇总", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("车间里有几台设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("查看某台设备", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("设备基本情况", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("设备型号查询", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("具体设备状态", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("机器利用率", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("机器警告列表", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("机台维护情况", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("设备检修安排", "EQUIPMENT_MAINTENANCE");
+
         // === v4.1优化：秤类短语映射扩展（解决SCALE NONE问题）===
         phraseToIntentMapping.put("地磅列表", "SCALE_LIST_DEVICES");
         phraseToIntentMapping.put("台秤列表", "SCALE_LIST_DEVICES");
         phraseToIntentMapping.put("台秤清单", "SCALE_LIST_DEVICES");
         phraseToIntentMapping.put("称重设备列表", "SCALE_LIST_DEVICES");
+        // === v4.2优化：秤类短语映射补充（解决SCALE混淆）===
+        phraseToIntentMapping.put("秤都在哪里", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("称重器材列表", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("看下秤的情况", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("查看某个秤", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("秤具体是什么型号", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("新增一个秤", "SCALE_ADD_DEVICE");
+        phraseToIntentMapping.put("接入一台秤", "SCALE_ADD_DEVICE");
+        phraseToIntentMapping.put("秤信息变更", "SCALE_UPDATE_DEVICE");
         phraseToIntentMapping.put("称重设备清单", "SCALE_LIST_DEVICES");
         phraseToIntentMapping.put("称重设备", "SCALE_LIST_DEVICES");
         phraseToIntentMapping.put("智能秤列表", "SCALE_LIST_DEVICES");
@@ -639,6 +787,17 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货数量统计", "SHIPMENT_STATS");
         phraseToIntentMapping.put("出货量分析", "SHIPMENT_STATS");
         phraseToIntentMapping.put("本月出货统计", "SHIPMENT_STATS");
+        // === v4.2优化：出货类短语映射补充 ===
+        phraseToIntentMapping.put("查一下出货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出货订单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出货情况如何", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("录入发货单", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("新增发货记录", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("某天的发货记录", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("按日期查出货", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("给谁发过货", "SHIPMENT_BY_CUSTOMER");
+        phraseToIntentMapping.put("客户发货记录", "SHIPMENT_BY_CUSTOMER");
+        phraseToIntentMapping.put("发给这个客户的货", "SHIPMENT_BY_CUSTOMER");
         phraseToIntentMapping.put("修改发货单", "SHIPMENT_UPDATE");
         phraseToIntentMapping.put("更新出货信息", "SHIPMENT_UPDATE");
         phraseToIntentMapping.put("编辑发货记录", "SHIPMENT_UPDATE");
@@ -665,6 +824,365 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("关闭设备", "EQUIPMENT_STOP");
         phraseToIntentMapping.put("把设备关了", "EQUIPMENT_STOP");
         phraseToIntentMapping.put("关掉设备", "EQUIPMENT_STOP");
+
+        // === v4.2优化：供应商类短语映射 ===
+        phraseToIntentMapping.put("供应商列表", "SUPPLIER_LIST");
+        phraseToIntentMapping.put("合作供应商", "SUPPLIER_LIST");
+        phraseToIntentMapping.put("所有供应商", "SUPPLIER_LIST");
+        phraseToIntentMapping.put("供应商表现怎样", "SUPPLIER_RANKING");
+        phraseToIntentMapping.put("供应商排名", "SUPPLIER_RANKING");
+
+        // === v4.2优化：系统配置类短语映射 ===
+        phraseToIntentMapping.put("排产改为自动", "SCHEDULING_SET_AUTO");
+        phraseToIntentMapping.put("开启自动排产", "SCHEDULING_SET_AUTO");
+        phraseToIntentMapping.put("改为人工排产", "SCHEDULING_SET_MANUAL");
+        phraseToIntentMapping.put("切换功能状态", "FACTORY_FEATURE_TOGGLE");
+        phraseToIntentMapping.put("修改规则", "RULE_CONFIG");
+        phraseToIntentMapping.put("规则修改", "RULE_CONFIG");
+
+        // === v4.2优化：出货类补充 ===
+        phraseToIntentMapping.put("配送订单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("安排出货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("安排发货任务", "SHIPMENT_CREATE");
+
+        // === v4.2优化：原料类补充 ===
+        phraseToIntentMapping.put("快要过期的材料", "MATERIAL_EXPIRING_ALERT");
+        phraseToIntentMapping.put("即将过期原料", "MATERIAL_EXPIRING_ALERT");
+        phraseToIntentMapping.put("调整原料数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("原料数量变更", "MATERIAL_ADJUST_QUANTITY");
+
+        // === v4.2优化：客户类补充 ===
+        phraseToIntentMapping.put("合作客户", "CUSTOMER_LIST");
+        phraseToIntentMapping.put("查找某个客户", "CUSTOMER_SEARCH");
+        phraseToIntentMapping.put("搜索客户", "CUSTOMER_SEARCH");
+        phraseToIntentMapping.put("活跃客户列表", "CUSTOMER_ACTIVE");
+        phraseToIntentMapping.put("活跃客户", "CUSTOMER_ACTIVE");
+        phraseToIntentMapping.put("客户分析", "CUSTOMER_STATS");
+
+        // === v4.2优化：用户类补充 ===
+        phraseToIntentMapping.put("调整用户角色", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("用户权限调整", "USER_ROLE_ASSIGN");
+
+        // === v4.2优化：生产类补充 ===
+        phraseToIntentMapping.put("重新开始生产", "PROCESSING_BATCH_RESUME");
+        phraseToIntentMapping.put("继续生产", "PROCESSING_BATCH_RESUME");
+
+        // === v4.2优化：质检类补充 ===
+        phraseToIntentMapping.put("质量问题处置", "QUALITY_DISPOSITION_EXECUTE");
+        phraseToIntentMapping.put("处置质量问题", "QUALITY_DISPOSITION_EXECUTE");
+
+        // === v5.0优化：E类-短输入领域映射 ===
+        // 秤领域短输入
+        phraseToIntentMapping.put("秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("智能秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("IoT秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤设备", "SCALE_LIST_DEVICES");
+        // 告警领域短输入
+        phraseToIntentMapping.put("告警", "ALERT_QUERY");
+        phraseToIntentMapping.put("预警", "ALERT_QUERY");
+        phraseToIntentMapping.put("警报", "ALERT_QUERY");
+        phraseToIntentMapping.put("异常", "ALERT_QUERY");
+        phraseToIntentMapping.put("报警", "ALERT_QUERY");
+        // 原料领域短输入
+        phraseToIntentMapping.put("原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("材料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原材料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("辅料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("库存", "REPORT_INVENTORY");
+        // 生产领域短输入
+        phraseToIntentMapping.put("生产", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("加工", "PROCESSING_RECORD_QUERY");
+        phraseToIntentMapping.put("产量", "DAILY_PRODUCTION_QUERY");
+        phraseToIntentMapping.put("产出", "DAILY_PRODUCTION_QUERY");
+        phraseToIntentMapping.put("生产线", "PROCESSING_BATCH_LIST");
+        // 质检领域短输入
+        phraseToIntentMapping.put("质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品质", "QUALITY_STATS");
+        phraseToIntentMapping.put("质量", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("检验", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("合格率", "QUALITY_STATS");
+        phraseToIntentMapping.put("不良品", "QUALITY_DISPOSITION_EXECUTE");
+
+        // === v5.0优化：F类-操作+领域组合 ===
+        // 查询操作
+        phraseToIntentMapping.put("查询设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("列出批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("有哪些原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("显示告警", "ALERT_LIST");
+        phraseToIntentMapping.put("获取发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("搜索质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("查找秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("统计报表", "REPORT_DASHBOARD_OVERVIEW");
+        // 创建操作
+        phraseToIntentMapping.put("新建批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建发货单", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("添加设备", "EQUIPMENT_CREATE");
+        phraseToIntentMapping.put("新增原料", "MATERIAL_INBOUND_QUERY");
+        phraseToIntentMapping.put("录入质检", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("登记批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("建立发货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("生成报表", "REPORT_PRODUCTION");
+        // 删除/取消操作
+        phraseToIntentMapping.put("删除设备", "EQUIPMENT_DELETE");
+        phraseToIntentMapping.put("取消批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("作废发货", "SHIPMENT_CANCEL");
+        phraseToIntentMapping.put("清除告警", "ALERT_ACKNOWLEDGE");
+        // 更新操作
+        phraseToIntentMapping.put("修改设备", "EQUIPMENT_UPDATE");
+        phraseToIntentMapping.put("更新批次", "PROCESSING_BATCH_UPDATE");
+        phraseToIntentMapping.put("编辑发货", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("设置告警", "ALERT_SETTINGS");
+
+        // === v5.0优化：D类-更多负向词排斥场景的正向映射 ===
+        phraseToIntentMapping.put("列出秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的列表", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("所有的秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("查看秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤有多少", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的数目", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤设备查询", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("查询秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的清单列表", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("看看秤", "SCALE_LIST_DEVICES");
+        // 告警活跃类
+        phraseToIntentMapping.put("活跃的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("当前的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("未处理的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("进行中告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("正在发生警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("实时告警信息", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("最新的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("紧急的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("待处理告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("还未关闭告警", "ALERT_ACTIVE");
+        // 原料查询类
+        phraseToIntentMapping.put("查询原料库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料查看", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料列表查询", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料清单查看", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查看物料统计", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料有什么", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料查询统计", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料情况查看", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查原料清单", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("看原料列表", "MATERIAL_BATCH_QUERY");
+        // 生产控制类
+        phraseToIntentMapping.put("取消生产", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("作废批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("取消这个批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("生产任务作废", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("撤销生产计划", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("启动批次", "PROCESSING_BATCH_START");
+        phraseToIntentMapping.put("完成生产", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("结束批次", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
+
+        // === v5.0优化：H类-高置信短语 ===
+        phraseToIntentMapping.put("发货查询", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("库存查询", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("告警列表", "ALERT_LIST");
+        phraseToIntentMapping.put("质检记录", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("生产批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("秤列表", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("今日生产", "DAILY_PRODUCTION_QUERY");
+        phraseToIntentMapping.put("设备列表", "EQUIPMENT_LIST");
+
+        // === v5.0优化：H类边界-更多场景映射 ===
+        phraseToIntentMapping.put("设备情况怎么样", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("生产进度如何", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("原料够不够用", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("质量有问题吗", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("发货正常吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("告警严重吗", "ALERT_QUERY");
+        phraseToIntentMapping.put("秤准不准", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("效率高不高", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("库存足够吗", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("进度快不快", "PROCESSING_BATCH_LIST");
+
+        // === v5.0优化：J类-学习表达映射 ===
+        phraseToIntentMapping.put("显示所有设备清单", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("我要看全部机器", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("查看今日的产量数据", "DAILY_PRODUCTION_QUERY");
+        phraseToIntentMapping.put("统计一下发货情况", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("列出所有原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("展示质检结果报告", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("查询告警信息列表", "ALERT_LIST");
+        phraseToIntentMapping.put("获取秤设备数据", "SCALE_DATA_QUERY");
+        phraseToIntentMapping.put("显示生产批次进度", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("查看库存报表", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("统计设备运行数据", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("列出发货单明细", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("查询原料库存量", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("获取质量统计数据", "QUALITY_STATS");
+        phraseToIntentMapping.put("显示所有告警记录", "ALERT_QUERY");
+        // 中置信度口语
+        phraseToIntentMapping.put("机器状态怎样", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("产品做好了没", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("东西发走了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("材料还有没", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("检测过了吗", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("有警告吗", "ALERT_QUERY");
+        phraseToIntentMapping.put("称了多少", "SCALE_DATA_QUERY");
+        phraseToIntentMapping.put("产线忙不忙", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("仓库有货吗", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("设备转着呢", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("单子出了", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("料够用", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("品质OK", "QUALITY_STATS");
+        phraseToIntentMapping.put("有异常", "ALERT_QUERY");
+        phraseToIntentMapping.put("秤好使", "SCALE_DEVICE_DETAIL");
+        // 正向反馈类
+        phraseToIntentMapping.put("设备运行状态概览", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("生产批次完成进度", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("发货订单追踪查询", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("原料库存盘点清单", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("质量检测合格统计", "QUALITY_STATS");
+        phraseToIntentMapping.put("告警事件处理记录", "ALERT_QUERY");
+        phraseToIntentMapping.put("称重设备在线状态", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("生产效率分析报表", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("库存预警提醒", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("设备维护保养计划", "EQUIPMENT_MAINTENANCE_QUERY");
+        phraseToIntentMapping.put("机台运转情况", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("工单执行状态", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("物流配送进度", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("物资存储情况", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("品控检测结果", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("异常报警汇总", "ALERT_QUERY");
+        phraseToIntentMapping.put("电子秤读数记录", "SCALE_RECORD_QUERY");
+        phraseToIntentMapping.put("产能利用率报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("原料消耗预警", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("设备保修记录", "EQUIPMENT_MAINTENANCE_QUERY");
+
+        // === v5.0优化：K类-版本控制/行业术语映射 ===
+        phraseToIntentMapping.put("设备运维管理", "EQUIPMENT_MAINTENANCE_QUERY");
+        phraseToIntentMapping.put("产线作业进度", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("出库发运记录", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("物料领用清单", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("品质管控数据", "QUALITY_STATS");
+        phraseToIntentMapping.put("告警通知中心", "ALERT_LIST");
+        phraseToIntentMapping.put("计量设备管理", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("生产计划看板", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("仓储管理报表", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("设备健康监测", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("全厂设备一览", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("车间生产汇总", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("发货业务统计", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("原辅料库存表", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("质量管理系统", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("预警监控平台", "ALERT_QUERY");
+        phraseToIntentMapping.put("智能称重系统", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("制造执行系统", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("经营分析报表", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("资产管理系统", "EQUIPMENT_LIST");
+
+        // === v5.0优化：B类-更多负向词相关映射 ===
+        // 秤列表变体
+        phraseToIntentMapping.put("秤有几个", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("智能秤有哪些", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("查看所有秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("列出全部秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的清单", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("工厂有多少秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("称重设备一览", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤设备统计", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("现有的秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("可用的秤列表", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("在线的秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤都有什么", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("哪些秤在用", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤设备总数", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("联网的秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的数量", "SCALE_LIST_DEVICES");
+        // 告警活跃变体
+        phraseToIntentMapping.put("待处理的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("未解决的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("正在发生的警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("进行中的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("还有什么告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("现有告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("待解决警报", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("尚未关闭的告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("今日告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("紧急告警", "ALERT_ACTIVE");
+        phraseToIntentMapping.put("最新告警", "ALERT_ACTIVE");
+        // 告警其他
+        phraseToIntentMapping.put("告警情况", "ALERT_QUERY");
+        phraseToIntentMapping.put("历史告警", "ALERT_HISTORY");
+        phraseToIntentMapping.put("告警记录", "ALERT_QUERY");
+        // 原料查询变体
+        phraseToIntentMapping.put("原料清单", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料统计", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查询原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料有哪些", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查看物料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料库存查询", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料列表", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料汇总", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("材料情况", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料总量", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("仓库物料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料概览", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料明细", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料状态", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料数据", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料信息", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("看原料", "MATERIAL_BATCH_QUERY");
+
+        // === v5.0优化：A类-秤相关映射 ===
+        phraseToIntentMapping.put("称重记录查询", "SCALE_RECORD_QUERY");
+        phraseToIntentMapping.put("秤的详细状态", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("读取秤重量", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("IoT秤管理", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("秤的称重数据", "SCALE_DATA_QUERY");
+        phraseToIntentMapping.put("最近称重记录", "SCALE_RECORD_QUERY");
+        phraseToIntentMapping.put("秤设备概览", "SCALE_LIST_DEVICES");
+
+        // === v5.0优化：C类-口语表达映射 ===
+        phraseToIntentMapping.put("这批货咋样了", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("货发了没", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("东西做完了吗", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("料够不够", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("机器有事儿没", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("秤好使不", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("质量咋样", "QUALITY_STATS");
+        phraseToIntentMapping.put("今儿干了多少", "DAILY_PRODUCTION_QUERY");
+        phraseToIntentMapping.put("告警有没有", "ALERT_QUERY");
+        phraseToIntentMapping.put("活儿干完没", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("发出去了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("机子转着呢吗", "EQUIPMENT_STATUS_QUERY");
+        // 语义区分
+        phraseToIntentMapping.put("设备状况", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备问题", "EQUIPMENT_ALERT_QUERY");
+        phraseToIntentMapping.put("生产情况", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("生产问题", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("原料状况", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料问题", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("质量情况", "QUALITY_STATS");
+        phraseToIntentMapping.put("质量问题", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("发货状况", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货问题", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("告警情况", "ALERT_QUERY");
+        phraseToIntentMapping.put("告警问题", "ALERT_QUERY");
+        phraseToIntentMapping.put("秤的状况", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("秤的问题", "SCALE_DEVICE_DETAIL");
+        phraseToIntentMapping.put("报表状况", "REPORT_DASHBOARD_OVERVIEW");
+
+        // === v5.0优化：G类-操作指令短输入 ===
+        phraseToIntentMapping.put("查库存", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("创建批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("看发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("查设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("看告警", "ALERT_QUERY");
+        phraseToIntentMapping.put("查质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("看秤", "SCALE_LIST_DEVICES");
+        phraseToIntentMapping.put("查原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("看报表", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("查生产", "PROCESSING_BATCH_LIST");
 
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
@@ -1237,6 +1755,34 @@ public class IntentKnowledgeBase {
                 input, detectedDomain, domainScores);
 
         return detectedDomain;
+    }
+
+    /**
+     * 统计输入中命中的领域关键词数量
+     * 用于动态计算领域加分
+     *
+     * @param input 用户输入（已小写化）
+     * @param domain 目标领域
+     * @return 命中的领域关键词数量
+     */
+    public int countDomainKeywords(String input, Domain domain) {
+        if (input == null || domain == null || domain == Domain.GENERAL) {
+            return 0;
+        }
+
+        Set<String> keywords = domainKeywords.get(domain);
+        if (keywords == null || keywords.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        String normalizedInput = input.toLowerCase();
+        for (String kw : keywords) {
+            if (normalizedInput.contains(kw.toLowerCase())) {
+                count++;
+            }
+        }
+        return count;
     }
 
     /**

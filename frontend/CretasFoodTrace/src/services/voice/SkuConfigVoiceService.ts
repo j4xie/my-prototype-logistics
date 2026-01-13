@@ -304,8 +304,8 @@ class SkuConfigVoiceService {
         ...newConfig,
         processingSteps: newConfig.processingSteps || this.accumulatedConfig.processingSteps,
         skillRequirements: {
-          ...this.accumulatedConfig.skillRequirements,
-          ...newConfig.skillRequirements,
+          minLevel: newConfig.skillRequirements?.minLevel ?? this.accumulatedConfig.skillRequirements?.minLevel ?? 1,
+          preferredLevel: newConfig.skillRequirements?.preferredLevel ?? this.accumulatedConfig.skillRequirements?.preferredLevel ?? 1,
           specialSkills: [
             ...(this.accumulatedConfig.skillRequirements?.specialSkills || []),
             ...(newConfig.skillRequirements?.specialSkills || []),
