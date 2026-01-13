@@ -40,7 +40,9 @@ Page({
     showColdStartPopup: false,   // 是否显示冷启动弹窗
     coldStartChecked: false,     // 是否已检查过冷启动状态
     // ========== AI助手开关 ==========
-    showAiAssistant: false       // 是否显示AI助手入口（通过接口控制）
+    showAiAssistant: false,      // 是否显示AI助手入口（通过接口控制）
+    // ========== 首页分类 ==========
+    categoryList: []             // 动态分类列表（从后端获取）
   },
 
   // 启动广告定时器
@@ -53,6 +55,8 @@ Page({
         // 加载数据
         this.loadData()
         this.loadBanners()
+        // 加载首页分类
+        this.loadCategories()
         // 加载个性化推荐
         this.loadRecommendations()
         // 加载AI配置
@@ -185,6 +189,29 @@ Page({
       })
     }
   },
+  // 加载首页分类（从后端动态获取）
+  loadCategories() {
+    app.api.goodsCategoryGet()
+      .then(res => {
+        if (res.data && res.data.length > 0) {
+          // 过滤出启用的分类，并限制显示数量
+          let categories = res.data.filter(item => item.enable === '1' || item.enable === 1)
+          // 最多显示9个分类 + 1个"所有分类"
+          if (categories.length > 9) {
+            categories = categories.slice(0, 9)
+          }
+          this.setData({
+            categoryList: categories
+          })
+          console.log('首页分类加载完成:', categories.length)
+        }
+      })
+      .catch(err => {
+        console.error('加载首页分类失败:', err)
+        // 失败时不做特殊处理，页面会显示空分类或使用默认
+      })
+  },
+
   // 加载AI配置（静默请求，不弹窗）
   loadAiConfig() {
     const config = app.globalData.config

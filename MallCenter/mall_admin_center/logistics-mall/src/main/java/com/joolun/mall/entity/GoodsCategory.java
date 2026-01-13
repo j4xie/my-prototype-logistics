@@ -63,6 +63,11 @@ private static final long serialVersionUID = 1L;
 	@Excel(name = "排序")
     private Integer sort;
     /**
+   * 图标文字（首页分类显示用，单个汉字）
+   */
+	@Excel(name = "图标文字")
+    private String iconText;
+    /**
    * 创建时间
    */
 	@Excel(name = "创建时间")
