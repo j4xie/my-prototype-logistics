@@ -5,6 +5,7 @@ import com.joolun.common.core.domain.AjaxResult;
 import com.joolun.mall.entity.AiDemandRecord;
 import com.joolun.mall.entity.GoodsSpu;
 import com.joolun.mall.service.AiRecommendService;
+import com.joolun.system.service.ISysConfigService;
 import com.joolun.weixin.entity.ThirdSession;
 import com.joolun.weixin.entity.WxUser;
 import com.joolun.weixin.service.WxUserService;
@@ -32,6 +33,7 @@ public class AiChatApi {
     private final AiRecommendService aiRecommendService;
     private final MerchantUserHelper merchantUserHelper;
     private final WxUserService wxUserService;
+    private final ISysConfigService configService;
 
     /**
      * 获取当前登录用户
@@ -222,6 +224,22 @@ public class AiChatApi {
         health.put("timestamp", System.currentTimeMillis());
         // 可以添加更多健康检查，如DeepSeek API连接状态
         return AjaxResult.success(health);
+    }
+
+    /**
+     * 获取AI功能配置
+     * 返回AI助手相关的配置项，用于前端控制功能显示
+     *
+     * @return AI配置信息
+     */
+    @GetMapping("/config")
+    public AjaxResult getAiConfig() {
+        Map<String, Object> config = new HashMap<>();
+        // 获取AI助手开关配置
+        String aiEnabled = configService.selectConfigByKey("mall.ai.assistant.enabled");
+        config.put("enabled", "true".equalsIgnoreCase(aiEnabled));
+        config.put("timestamp", System.currentTimeMillis());
+        return AjaxResult.success(config);
     }
 
     /**
