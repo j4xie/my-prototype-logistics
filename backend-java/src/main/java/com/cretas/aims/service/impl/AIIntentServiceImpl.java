@@ -3,6 +3,7 @@ package com.cretas.aims.service.impl;
 import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.config.IntentKnowledgeBase.ActionType;
 import com.cretas.aims.config.IntentMatchingConfig;
+import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.IntentMatchResult.CandidateIntent;
 import com.cretas.aims.dto.intent.IntentMatchResult.MatchMethod;
@@ -277,6 +278,44 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 使用租户隔离获取意图配置
         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
         String normalizedInput = userInput.toLowerCase().trim();
+
+        // ========== v5.0优化: 短语映射优先检查 (在问题类型检测之前) ==========
+        // 修复v4.0回归: 避免"品质怎么样"等业务短语被错误分类为GENERAL_QUESTION
+        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput);
+        if (phraseMatch.isPresent()) {
+            String intentCode = phraseMatch.get();
+            AIIntentConfig matchedConfig = allIntents.stream()
+                    .filter(c -> intentCode.equals(c.getIntentCode()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (matchedConfig != null) {
+                log.debug("短语映射优先命中: '{}' -> {}", userInput, intentCode);
+
+                IntentMatchResult result = IntentMatchResult.builder()
+                        .bestMatch(matchedConfig)
+                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                matchedConfig, 1.0, 100, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                        .confidence(1.0)
+                        .matchMethod(MatchMethod.PHRASE_MATCH)
+                        .matchedKeywords(Collections.singletonList(userInput))
+                        .isStrongSignal(true)
+                        .requiresConfirmation(false)
+                        .userInput(userInput)
+                        .actionType(knowledgeBase.detectActionType(normalizedInput))
+                        .build();
+
+                // 记录训练样本
+                if (matchingConfig.isSampleCollectionEnabled()) {
+                    expressionLearningService.recordSample(factoryId, userInput,
+                            matchedConfig.getIntentCode(), TrainingSample.MatchMethod.EXACT,
+                            1.0, null);
+                }
+
+                saveIntentMatchRecord(result, factoryId, null, null, false);
+                return result;
+            }
+        }
 
         // ========== Layer 0: 问题类型分类（在关键词匹配之前）==========
         // 判断是操作指令、通用咨询问题还是闲聊
@@ -1428,6 +1467,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
         return intentRepository.findByFactoryIdOrPlatformLevel(factoryId).stream()
                 .map(AIIntentConfig::getIntentCategory)
+                .filter(category -> category != null && !category.isBlank())
                 .distinct()
                 .sorted()
                 .toList();
@@ -2240,5 +2280,51 @@ public class AIIntentServiceImpl implements AIIntentService {
         return allIntents.stream()
                 .filter(intent -> intentCode.equals(intent.getIntentCode()))
                 .findFirst();
+    }
+
+    // ==================== 意图反馈学习 ====================
+
+    /**
+     * 处理意图识别反馈
+     * 用户可以纠正错误的意图识别结果，系统自动学习
+     *
+     * @param factoryId 工厂ID
+     * @param userId    用户ID
+     * @param request   反馈请求
+     */
+    @Override
+    @Transactional
+    public void processIntentFeedback(String factoryId, Long userId, IntentFeedbackRequest request) {
+        log.info("处理意图反馈: factoryId={}, userId={}, input='{}', matched={}, correct={}, isCorrect={}",
+                factoryId, userId, request.getUserInput(), request.getMatchedIntentCode(),
+                request.getCorrectIntentCode(), request.getIsCorrect());
+
+        // 1. 记录反馈样本
+        if (matchingConfig.isSampleCollectionEnabled()) {
+            expressionLearningService.recordFeedback(
+                    factoryId,
+                    request.getUserInput(),
+                    request.getMatchedIntentCode(),
+                    request.getCorrectIntentCode(),
+                    request.getIsCorrect(),
+                    request.getSessionId()
+            );
+        }
+
+        // 2. 如果是负向反馈且提供了正确意图，触发学习
+        if (Boolean.FALSE.equals(request.getIsCorrect()) &&
+                request.getCorrectIntentCode() != null &&
+                !request.getCorrectIntentCode().isEmpty()) {
+
+            // 学习正确的表达映射
+            if (matchingConfig.isAutoLearnEnabled()) {
+                expressionLearningService.learnExpression(
+                        factoryId,
+                        request.getUserInput(),
+                        request.getCorrectIntentCode()
+                );
+                log.info("已学习新表达: '{}' -> {}", request.getUserInput(), request.getCorrectIntentCode());
+            }
+        }
     }
 }
