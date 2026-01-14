@@ -24,7 +24,10 @@ const request = (url, method, data, showLoading) => {
       },
       success(res) {
         if (res.statusCode == 200) {
-          if (res.data.code != 200) {
+          if(res.data.code == 401){
+            resolve(res.data);
+          }
+          else if (res.data.code != 200) {
             console.log(res.data)
             wx.showModal({
               title: '提示',
@@ -56,14 +59,14 @@ const request = (url, method, data, showLoading) => {
           reject()
         } else {
           console.log(res)
-          wx.showModal({
+          /*wx.showModal({
             title: '提示',
             content: res.errMsg + ':' + res.data.message + ':' + res.data.msg,
             success(res) {
 
             }
-          })
-          reject()
+          })*/
+          //reject()
         }
       },
       fail(error) {

@@ -6,7 +6,8 @@
  */
 export default {
   //服务器地址，即后台服务的访问地址；本地开发填http://localhost:8083即可，正式服务器环境http://139.196.165.140:8083；如果要用真机调试要把localhost换成局域网ip，手机和电脑要处于同一局域网中
-  basePath: 'http://139.196.165.140:8083',
+  //basePath: 'http://139.196.165.140:8083',
+  basePath: 'https://centerapi.cretaceousfuture.com',
   //广告配置，小程序流量主：https://mp.weixin.qq.com/wxopen/frame
   //广告开关（true/false）
   adEnable: true,
