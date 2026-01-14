@@ -4,3 +4,4 @@
 
 export * from './timeouts';
 export * from './errorMessages';
+export * from './homeModuleSchemas';

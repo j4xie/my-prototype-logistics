@@ -156,6 +156,16 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
                                            @Param("endDate") LocalDateTime endDate);
 
     /**
+     * 计算指定日期范围内的计划产量
+     * 用于 KPI 计算：产量完成率 = 实际产量 / 计划产量
+     */
+    @Query("SELECT SUM(p.plannedQuantity) FROM ProductionPlan p WHERE p.factoryId = :factoryId " +
+           "AND p.endTime BETWEEN :startDate AND :endDate")
+    BigDecimal calculatePlannedOutputBetweenDates(@Param("factoryId") String factoryId,
+                                                   @Param("startDate") LocalDateTime startDate,
+                                                   @Param("endDate") LocalDateTime endDate);
+
+    /**
      * 计算指定日期范围内的总成本
      */
     @Query("SELECT SUM(COALESCE(p.actualMaterialCost, 0) + " +

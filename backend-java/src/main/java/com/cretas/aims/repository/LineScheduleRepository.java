@@ -57,4 +57,43 @@ public interface LineScheduleRepository extends JpaRepository<LineSchedule, Stri
      * 按状态查询所有排程（用于定时任务延期检测）
      */
     List<LineSchedule> findByStatus(LineSchedule.ScheduleStatus status);
+
+    /**
+     * 根据计划ID删除所有产线排程（用于重新生成排程）
+     */
+    void deleteByPlanId(String planId);
+
+    /**
+     * 查询分配给某车间主任的排程任务
+     */
+    List<LineSchedule> findBySupervisorIdAndStatusIn(
+        Long supervisorId, List<LineSchedule.ScheduleStatus> statuses);
+
+    /**
+     * 查询分配给某车间主任的所有排程
+     */
+    List<LineSchedule> findBySupervisorId(Long supervisorId);
+
+    /**
+     * 查询某工厂分配给某车间主任的排程任务
+     */
+    @Query("SELECT ls FROM LineSchedule ls WHERE ls.plan.factoryId = :factoryId " +
+           "AND ls.supervisorId = :supervisorId " +
+           "AND ls.status IN :statuses " +
+           "ORDER BY ls.plannedStartTime")
+    List<LineSchedule> findBySupervisorAndStatuses(
+        @Param("factoryId") String factoryId,
+        @Param("supervisorId") Long supervisorId,
+        @Param("statuses") List<LineSchedule.ScheduleStatus> statuses);
+
+    /**
+     * 查询某工厂分配给某车间主任的待处理任务
+     */
+    @Query("SELECT ls FROM LineSchedule ls WHERE ls.plan.factoryId = :factoryId " +
+           "AND ls.supervisorId = :supervisorId " +
+           "AND ls.status = 'pending' " +
+           "ORDER BY ls.plannedStartTime")
+    List<LineSchedule> findPendingTasksBySupervisor(
+        @Param("factoryId") String factoryId,
+        @Param("supervisorId") Long supervisorId);
 }

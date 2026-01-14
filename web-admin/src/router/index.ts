@@ -78,6 +78,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'ProductionConversions',
             component: () => import('@/views/production/conversions/index.vue'),
             meta: { requiresAuth: true, title: '转换率配置', module: 'production' }
+          },
+          {
+            path: 'bom',
+            name: 'BomManagement',
+            component: () => import('@/views/production/bom/index.vue'),
+            meta: { requiresAuth: true, title: 'BOM成本管理', module: 'production' }
           }
         ]
       },
@@ -278,6 +284,18 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'SystemSettings',
             component: () => import('@/views/system/settings/index.vue'),
             meta: { requiresAuth: true, title: '系统设置', module: 'system' }
+          },
+          {
+            path: 'ai-intents',
+            name: 'SystemAIIntents',
+            component: () => import('@/views/system/ai-intents/index.vue'),
+            meta: { requiresAuth: true, title: 'AI意图配置', module: 'system' }
+          },
+          {
+            path: 'products',
+            name: 'ProductManagement',
+            component: () => import('@/views/system/products/index.vue'),
+            meta: { requiresAuth: true, title: '产品信息管理', module: 'system' }
           }
         ]
       },
@@ -312,6 +330,12 @@ const businessRoutes: RouteRecordRaw[] = [
             name: 'AnalyticsKPI',
             component: () => import('@/views/analytics/kpi/index.vue'),
             meta: { requiresAuth: true, title: 'KPI看板', module: 'analytics' }
+          },
+          {
+            path: 'production-report',
+            name: 'ProductionReport',
+            component: () => import('@/views/analytics/production-report/index.vue'),
+            meta: { requiresAuth: true, title: '车间实时生产报表', module: 'analytics' }
           }
         ]
       },

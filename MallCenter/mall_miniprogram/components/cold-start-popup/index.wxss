@@ -43,7 +43,7 @@
 .popup-header {
   padding: 40rpx 30rpx 30rpx;
   text-align: center;
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
   color: #fff;
 }
 
@@ -82,7 +82,7 @@
 
 .step.active {
   background-color: #fff;
-  color: #e74c3c;
+  color: #52c41a;
 }
 
 .step-line {
@@ -130,8 +130,8 @@
 }
 
 .category-item.selected {
-  background-color: #fff5f4;
-  border-color: #e74c3c;
+  background-color: #d7f0db;
+  border-color: #52c41a;
 }
 
 .category-icon {
@@ -155,7 +155,7 @@
   right: 8rpx;
   width: 32rpx;
   height: 32rpx;
-  background-color: #e74c3c;
+  background-color: #52c41a;
   color: #fff;
   border-radius: 50%;
   display: flex;
@@ -183,8 +183,8 @@
 }
 
 .price-item.selected {
-  background-color: #fff5f4;
-  border-color: #e74c3c;
+  background-color: #d7f0db;
+  border-color: #52c41a;
 }
 
 .price-info {
@@ -213,8 +213,8 @@
 }
 
 .radio-icon.checked {
-  border-color: #e74c3c;
-  background-color: #e74c3c;
+  border-color: #52c41a;
+  background-color: #52c41a;
   position: relative;
 }
 
@@ -264,7 +264,7 @@
   justify-content: center;
   font-size: 28rpx;
   color: #fff;
-  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background: linear-gradient(135deg, #52c41a 0%, #389e0d 100%);
 }
 
 .btn-complete.disabled {

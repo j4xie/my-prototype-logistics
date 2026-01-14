@@ -1,347 +1,412 @@
-<!--
-  - Copyright (C) 2024
-  - All rights reserved, Designed By www.joolun.com
--->
+<script setup lang="ts">
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessageBox } from "element-plus";
+import { Search, Refresh, Plus, Edit, Delete } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import {
+  getGoodsSpuPage,
+  deleteGoodsSpu,
+  publishGoodsSpu,
+  unpublishGoodsSpu
+} from "@/api/mall/goodsSpu";
+import type { GoodsSpu, GoodsSpuQuery } from "@/api/mall/types/goodsSpu";
+import MerchantSelect from "@/components/MerchantSelect/index.vue";
+
+defineOptions({
+  name: "GoodsSpuIndex"
+});
+
+const router = useRouter();
+
+// 加载状态
+const loading = ref(false);
+
+// 商品列表
+const tableData = ref<GoodsSpu[]>([]);
+
+// 分页信息
+const pagination = reactive({
+  current: 1,
+  size: 10,
+  total: 0
+});
+
+// 查询参数
+const queryParams = reactive<GoodsSpuQuery>({
+  name: "",
+  categoryId: "",
+  status: undefined,
+  merchantId: undefined
+});
+
+// 获取商品列表
+const fetchData = async () => {
+  loading.value = true;
+  try {
+    const res = await getGoodsSpuPage({
+      ...queryParams,
+      current: pagination.current,
+      size: pagination.size
+    });
+    if (res.code === 200) {
+      tableData.value = res.data.records;
+      pagination.total = res.data.total;
+    } else {
+      message(res.msg || "获取商品列表失败", { type: "error" });
+    }
+  } catch (error) {
+    message("获取商品列表失败", { type: "error" });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 搜索
+const handleSearch = () => {
+  pagination.current = 1;
+  fetchData();
+};
+
+// 重置
+const handleReset = () => {
+  queryParams.name = "";
+  queryParams.categoryId = "";
+  queryParams.status = undefined;
+  queryParams.merchantId = undefined;
+  pagination.current = 1;
+  fetchData();
+};
+
+// 新增商品
+const handleAdd = () => {
+  router.push("/mall/merchant/goods/form");
+};
+
+// 编辑商品
+const handleEdit = (row: GoodsSpu) => {
+  router.push(`/mall/merchant/goods/form/${row.id}`);
+};
+
+// 删除商品
+const handleDelete = async (row: GoodsSpu) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除商品「${row.name}」吗？`,
+      "删除确认",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }
+    );
+    const res = await deleteGoodsSpu(row.id);
+    if (res.code === 200) {
+      message("删除成功", { type: "success" });
+      fetchData();
+    } else {
+      message(res.msg || "删除失败", { type: "error" });
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      message("删除失败", { type: "error" });
+    }
+  }
+};
+
+// 上架/下架商品
+const handleToggleStatus = async (row: GoodsSpu) => {
+  const isPublish = row.shelf === "0";
+  const action = isPublish ? "上架" : "下架";
+  try {
+    await ElMessageBox.confirm(
+      `确定要${action}商品「${row.name}」吗？`,
+      `${action}确认`,
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }
+    );
+    const res = isPublish
+      ? await publishGoodsSpu(row.id)
+      : await unpublishGoodsSpu(row.id);
+    if (res.code === 200) {
+      message(`${action}成功`, { type: "success" });
+      fetchData();
+    } else {
+      message(res.msg || `${action}失败`, { type: "error" });
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      message(`${action}失败`, { type: "error" });
+    }
+  }
+};
+
+// 分页大小改变
+const handleSizeChange = (size: number) => {
+  pagination.size = size;
+  pagination.current = 1;
+  fetchData();
+};
+
+// 页码改变
+const handleCurrentChange = (current: number) => {
+  pagination.current = current;
+  fetchData();
+};
+
+// 格式化价格（后端已经是元为单位）
+const formatPrice = (price: number) => {
+  if (!price && price !== 0) return "-";
+  return `¥${price.toFixed(2)}`;
+};
+
+// 格式化状态
+const formatStatus = (status: string) => {
+  return status === "1" ? "上架中" : "已下架";
+};
+
+// 解析图片URL（处理后端返回的逗号分隔字符串格式）
+const parsePicUrls = (picUrls: string[] | null | undefined): string[] => {
+  if (!picUrls || picUrls.length === 0) return [];
+  // 后端返回格式可能是 ["url1,url2,url3"] 或 ["url1", "url2", "url3"]
+  const result: string[] = [];
+  for (const url of picUrls) {
+    if (url && url.includes(",")) {
+      result.push(...url.split(",").map(u => u.trim()).filter(u => u));
+    } else if (url) {
+      result.push(url);
+    }
+  }
+  return result;
+};
+
+// 获取状态类型
+const getStatusType = (status: string) => {
+  return status === "1" ? "success" : "info";
+};
+
+// 格式化 ID（显示前8位 + ...）
+const formatId = (id: string | undefined) => {
+  if (!id) return "-";
+  if (id.length <= 8) return id;
+  return id.substring(0, 8) + "...";
+};
+
+onMounted(() => {
+  fetchData();
+});
+</script>
+
 <template>
-  <div>
-    <avue-crud
-      ref="crud"
-      v-model="form"
-      :page="page"
-      :data="tableData"
-      :table-loading="tableLoading"
-      :option="tableOption"
-      :permission="permissionList"
-      :before-open="beforeOpen"
-      @on-load="getPageF"
-      @refresh-change="refreshChange"
-      @row-update="handleUpdate"
-      @row-save="handleSave"
-      @row-del="handleDel"
-      @sort-change="sortChange"
-      @search-change="searchChange"
-      @selection-change="selectionChange"
-    >
-      <template #menu-left>
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:add'])"
-          type="primary"
-          @click="goToCreate"
-          icon="el-icon-plus"
-          >新增商品</el-button
-        >
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:edit'])"
-          type="success"
-          @click="batchShelf('1')"
-          icon="el-icon-document"
-          >批量上架</el-button
-        >
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:edit'])"
-          type="warning"
-          @click="batchShelf('0')"
-          icon="el-icon-document"
-          >批量下架</el-button
-        >
+  <div class="goods-spu-index">
+    <!-- 搜索区域 -->
+    <el-card shadow="never" class="search-card">
+      <el-form :model="queryParams" :inline="true">
+        <el-form-item label="所属商户">
+          <MerchantSelect
+            v-model="queryParams.merchantId"
+            :show-all="true"
+            all-label="全部商户"
+            placeholder="请选择商户"
+            @change="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="商品名称">
+          <el-input
+            v-model="queryParams.name"
+            placeholder="请输入商品名称"
+            clearable
+            style="width: 200px"
+            @keyup.enter="handleSearch"
+          />
+        </el-form-item>
+        <el-form-item label="商品状态">
+          <el-select
+            v-model="queryParams.status"
+            placeholder="请选择状态"
+            clearable
+            style="width: 150px"
+          >
+            <el-option label="上架中" value="1" />
+            <el-option label="已下架" value="0" />
+          </el-select>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :icon="Search" @click="handleSearch">
+            搜索
+          </el-button>
+          <el-button :icon="Refresh" @click="handleReset">重置</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <!-- 表格区域 -->
+    <el-card shadow="never" class="table-card">
+      <template #header>
+        <div class="table-header">
+          <span class="title">商品列表</span>
+          <el-button type="primary" :icon="Plus" @click="handleAdd">
+            新增商品
+          </el-button>
+        </div>
       </template>
-      <template #salesPrice="scope">
-        <div style="color: red">￥{{ scope.row.salesPrice }}</div>
-      </template>
-      <template #shelf="scope">
-        <el-switch
-          active-value="1"
-          inactive-value="0"
-          v-model="scope.row.shelf"
-          style="--el-switch-on-color: #13ce66; --el-switch-off-color: #ff4949"
-          inline-prompt
-          active-icon="Check"
-          inactive-icon="Close"
-          @change="changeShelf(scope.row)"
-        >
-        </el-switch>
-      </template>
-      <template #description-form>
-        <BaseEditor v-model="form.description" :minHeight="300" />
-      </template>
-      <template #picUrls-form="scope">
-        <ImageUpload
-          :limit="5"
-          :disabled="scope.type == 'view'"
-          returnType="array"
-          v-model="form.picUrls"
+
+      <el-table :data="tableData" v-loading="loading" stripe border>
+        <el-table-column label="ID" width="110">
+          <template #default="{ row }">
+            <el-tooltip :content="row.id" placement="top" :show-after="300">
+              <span class="id-cell">{{ formatId(row.id) }}</span>
+            </el-tooltip>
+          </template>
+        </el-table-column>
+        <el-table-column label="商品图片" width="90" align="center">
+          <template #default="{ row }">
+            <el-image
+              v-if="parsePicUrls(row.picUrls).length > 0"
+              :src="parsePicUrls(row.picUrls)[0]"
+              :preview-src-list="parsePicUrls(row.picUrls)"
+              fit="cover"
+              class="goods-image"
+              preview-teleported
+            />
+            <span v-else class="no-image">暂无图片</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="name" label="商品名称" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="categoryName" label="分类" width="100" show-overflow-tooltip />
+        <el-table-column label="价格" width="140" align="right">
+          <template #default="{ row }">
+            <div class="price-wrapper">
+              <span class="price">{{ formatPrice(row.salesPrice) }}</span>
+              <del v-if="row.marketPrice && row.marketPrice > row.salesPrice" class="market-price">
+                {{ formatPrice(row.marketPrice) }}
+              </del>
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="stock" label="库存" width="80" align="center" />
+        <el-table-column prop="sort" label="排序" width="70" align="center" />
+        <el-table-column label="状态" width="90" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getStatusType(row.shelf)" size="small">
+              {{ formatStatus(row.shelf) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="创建时间" width="170" />
+        <el-table-column label="操作" width="180" fixed="right" align="center">
+          <template #default="{ row }">
+            <el-button type="primary" link :icon="Edit" @click="handleEdit(row)">
+              编辑
+            </el-button>
+            <el-button
+              :type="row.shelf === '0' ? 'success' : 'warning'"
+              link
+              @click="handleToggleStatus(row)"
+            >
+              {{ row.shelf === "0" ? "上架" : "下架" }}
+            </el-button>
+            <el-button type="danger" link :icon="Delete" @click="handleDelete(row)">
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- 分页 -->
+      <div class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="pagination.current"
+          v-model:page-size="pagination.size"
+          :page-sizes="[10, 20, 50, 100]"
+          :total="pagination.total"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
         />
-      </template>
-      <template #picUrls="scope">
-        <el-image
-          style="width: 100px; height: 100px"
-          :src="scope.row.picUrls ? scope.row.picUrls[0] : ''"
-        >
-        </el-image>
-      </template>
-      <template #menu="{ row }">
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:edit'])"
-          type="primary"
-          size="small"
-          text
-          @click="goToEdit(row)"
-        >
-          编辑
-        </el-button>
-        <el-button
-          v-if="checkPermi(['mall:goodsspu:get'])"
-          type="success"
-          size="small"
-          text
-          @click="goToPriceTier(row)"
-        >
-          定价
-        </el-button>
-      </template>
-    </avue-crud>
+      </div>
+    </el-card>
   </div>
 </template>
 
-<script setup name="GoodsSpu">
-import { useRouter } from "vue-router";
-import { checkPermi, checkRole } from "@/utils/permission";
-import {
-  getPage,
-  getObj,
-  addObj,
-  putObj,
-  delObj,
-  putObjShelf,
-} from "@/api/mall/goodsspu";
-import { tableOption } from "@/const/crud/mall/goodsspu";
-import BaseEditor from "@/components/Editor/index.vue";
+<style lang="scss" scoped>
+.goods-spu-index {
+  padding: 20px;
 
-const router = useRouter();
-const { proxy } = getCurrentInstance();
-
-// 跳转到创建页面
-function goToCreate() {
-  router.push("/mall/goodsspu-create");
-}
-
-// 跳转到编辑页面
-function goToEdit(row) {
-  router.push(`/mall/goodsspu-edit/${row.id}`);
-}
-
-// 跳转到阶梯定价页面
-function goToPriceTier(row) {
-  router.push(`/mall/goodsspu-pricetier/${row.id}`);
-}
-
-const data = reactive({
-  form: {},
-  tableData: [],
-  page: {
-    total: 0, // 总页数
-    currentPage: 1, // 当前页数
-    pageSize: 20, // 每页显示多少条
-    ascs: [], //升序字段
-    descs: "create_time", //降序字段
-  },
-  paramsSearch: {},
-  tableLoading: false,
-  dialogAppraises: false,
-  optionAppraises: {
-    props: {
-      avatar: "nickName",
-      author: "headimgUrl",
-      body: "content",
-    },
-  },
-  selectionData: [],
-  pointsConfig: null,
-});
-const { form, page, tableData, tableLoading } = toRefs(data);
-
-const permissionList = computed(() => {
-  return {
-    addBtn: checkPermi(["mall:goodsspu:add"]),
-    delBtn: checkPermi(["mall:goodsspu:del"]),
-    editBtn: checkPermi(["mall:goodsspu:edit"]),
-    viewBtn: checkPermi(["mall:goodsspu:get"]),
-  };
-});
-
-function selectionChange(list) {
-  data.selectionData = list;
-}
-
-function batchShelf(shelf) {
-  if (data.selectionData.length <= 0) {
-    proxy.$message.error("请选择商品");
-    return;
+  .search-card {
+    margin-bottom: 16px;
   }
-  let selectionIds = "";
-  data.selectionData.forEach((item) => {
-    selectionIds += item.id + ",";
-  });
-  putObjShelfF(selectionIds, shelf);
-}
 
-function changeShelf(row) {
-  if (row && row.id) putObjShelfF(row.id, row.shelf);
-}
+  .table-card {
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-function putObjShelfF(ids, shelf) {
-  putObjShelf({
-    ids: ids,
-    shelf: shelf,
-  })
-    .then((response) => {
-      getPageF(data.page);
-    })
-    .catch(() => {
-      getPageF(data.page);
-    });
-}
+      .title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+  }
 
-function beforeOpen(done, type) {
-  if (type == "add") {
-    done();
-  } else if (type == "edit") {
-    data.tableLoading = true;
-    getObj(data.form.id)
-      .then((response) => {
-        data.form["description"] = response.data.description;
-        data.tableLoading = false;
-        done();
-      })
-      .catch(() => {
-        data.tableLoading = false;
-        done();
-      });
+  .id-cell {
+    font-family: "SF Mono", "Monaco", "Consolas", monospace;
+    font-size: 12px;
+    color: #606266;
+    cursor: pointer;
+
+    &:hover {
+      color: #409eff;
+    }
+  }
+
+  .goods-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 6px;
+    object-fit: cover;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: scale(1.05);
+    }
+  }
+
+  .no-image {
+    color: #c0c4cc;
+    font-size: 12px;
+    display: inline-block;
+    padding: 15px 0;
+  }
+
+  .price-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1.4;
+  }
+
+  .price {
+    color: #f56c6c;
+    font-weight: 600;
+    font-size: 14px;
+  }
+
+  .market-price {
+    color: #c0c4cc;
+    font-size: 12px;
+    text-decoration: line-through;
+  }
+
+  .pagination-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
   }
 }
-
-function searchChange(params, done) {
-  params = proxy.filterForm(params);
-  data.paramsSearch = params;
-  data.page.currentPage = 1;
-  getPageF(data.page, params);
-  done();
-}
-
-function sortChange(val) {
-  let prop = val.prop ? val.prop.replace(/([A-Z])/g, "_$1").toLowerCase() : "";
-  if (val.order == "ascending") {
-    data.page.descs = [];
-    data.page.ascs = prop;
-  } else if (val.order == "descending") {
-    data.page.ascs = [];
-    data.page.descs = prop;
-  } else {
-    data.page.ascs = [];
-    data.page.descs = [];
-  }
-  getPageF(data.page);
-}
-
-function getPageF(page, params) {
-  data.tableLoading = true;
-  if (data.paramsSearch.categoryId) {
-    data.paramsSearch.categoryFirst = data.paramsSearch.categoryId[0];
-    data.paramsSearch.categorySecond = data.paramsSearch.categoryId[1];
-  }
-  getPage(
-    Object.assign(
-      {
-        current: page.currentPage,
-        size: page.pageSize,
-        descs: data.page.descs,
-        ascs: data.page.ascs,
-      },
-      params,
-      data.paramsSearch
-    )
-  )
-    .then((response) => {
-      let tableData = response.data.records ? response.data.records : [];
-      tableData.forEach(function (item, index) {
-        let categoryId = [];
-        if (item.categoryFirst) {
-          categoryId.push(item.categoryFirst);
-        }
-        if (item.categorySecond) {
-          categoryId.push(item.categorySecond);
-        }
-        item.categoryId = categoryId;
-      });
-      data.tableData = tableData;
-      data.page.total = response.data.total;
-      data.page.currentPage = page.currentPage;
-      data.page.pageSize = page.pageSize;
-      data.tableLoading = false;
-    })
-    .catch(() => {
-      data.tableLoading = false;
-    });
-}
-
-function handleDel(row, index) {
-  proxy
-    .$confirm("是否确认删除此数据", "提示", {
-      confirmButtonText: "确定",
-      cancelButtonText: "取消",
-      type: "warning",
-    })
-    .then(function () {
-      return delObj(row.id);
-    })
-    .then(() => {
-      proxy.$message({
-        showClose: true,
-        message: "删除成功",
-        type: "success",
-      });
-      getPageF(data.page);
-    })
-    .catch(function (err) {});
-}
-
-function handleUpdate(row, index, done, loading) {
-  row.categoryFirst = row.categoryId[0];
-  row.categorySecond = row.categoryId[1] ? row.categoryId[1] : "";
-  putObj(row)
-    .then(() => {
-      proxy.$message({
-        showClose: true,
-        message: "修改成功",
-        type: "success",
-      });
-      done();
-      getPageF(data.page);
-    })
-    .catch(() => {
-      loading();
-    });
-}
-
-function handleSave(row, done, loading) {
-  row.categoryFirst = row.categoryId[0];
-  row.categorySecond = row.categoryId[1] ? row.categoryId[1] : "";
-  addObj(row)
-    .then(() => {
-      proxy.$message({
-        showClose: true,
-        message: "添加成功",
-        type: "success",
-      });
-      done();
-      getPageF(data.page);
-    })
-    .catch(() => {
-      loading();
-    });
-}
-
-function refreshChange(page) {
-  getPageF(data.page);
-}
-</script>
+</style>

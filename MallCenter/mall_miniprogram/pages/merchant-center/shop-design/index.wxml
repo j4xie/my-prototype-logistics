@@ -1,0 +1,634 @@
+<!--
+  店铺装修 - 主页面
+  功能：主题选择、AI推荐、预览效果
+-->
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-mask" wx:if="{{loading}}">
+    <view class="cu-load loading"></view>
+  </view>
+
+  <!-- 当前主题状态 -->
+  <view class="current-theme-section">
+    <view class="section-header">
+      <text class="section-title">当前主题</text>
+    </view>
+    <view class="current-theme-card" wx:if="{{currentTheme}}">
+      <view class="theme-preview-bar" style="background: {{currentTheme.previewBg || 'linear-gradient(135deg, #52c41a, #389e0d)'}}"></view>
+      <view class="theme-info">
+        <text class="theme-name">{{currentTheme.name || '清新绿'}}</text>
+        <text class="theme-desc">{{currentTheme.description || '当前使用的主题'}}</text>
+      </view>
+    </view>
+    <view class="empty-theme" wx:else>
+      <text class="text-gray">未设置主题，使用默认配置</text>
+    </view>
+  </view>
+
+  <!-- AI智能装修入口 -->
+  <view class="ai-section">
+    <view class="section-header">
+      <text class="section-title">AI智能装修</text>
+      <view class="ai-tag">
+        <text class="cuIcon-magic"></text>
+        <text>智能匹配</text>
+      </view>
+    </view>
+
+    <!-- 引导式装修入口 -->
+    <view class="guide-entry" bindtap="startGuideFlow">
+      <view class="guide-entry-icon">
+        <text class="cuIcon-creativefill"></text>
+      </view>
+      <view class="guide-entry-content">
+        <text class="guide-entry-title">开始引导式装修</text>
+        <text class="guide-entry-desc">4步完成店铺风格设置，AI智能推荐最佳方案</text>
+      </view>
+      <text class="cuIcon-right guide-entry-arrow"></text>
+    </view>
+
+    <!-- 快速输入区域 -->
+    <view class="quick-input-section">
+      <view class="quick-input-header">
+        <text class="quick-input-title">快速推荐</text>
+        <text class="quick-input-tip">或输入描述，快速获取推荐</text>
+      </view>
+      <view class="ai-input-area">
+        <textarea
+          class="ai-input"
+          placeholder="描述您的店铺特点，如：我是一家生鲜水果店，主要销售有机蔬菜..."
+          maxlength="200"
+          bindinput="onAiPromptInput"
+          value="{{aiPrompt}}"
+        ></textarea>
+        <view class="ai-input-footer">
+          <text class="char-count">{{aiPrompt.length}}/200</text>
+          <button class="ai-submit-btn" bindtap="submitAiAnalysis" loading="{{aiLoading}}">
+            <text class="cuIcon-magic" wx:if="{{!aiLoading}}"></text>
+            <text>{{aiLoading ? '分析中...' : '智能推荐'}}</text>
+          </button>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI推荐结果 -->
+    <view class="ai-result" wx:if="{{aiResult}}">
+      <view class="ai-result-header">
+        <text class="cuIcon-check text-green"></text>
+        <text>AI推荐结果</text>
+      </view>
+      <view class="ai-result-content" wx:if="{{aiResult.matchedTheme}}">
+        <view class="recommended-theme">
+          <view class="theme-preview-bar small" style="background: {{aiResult.matchedTheme.previewBg}}"></view>
+          <view class="theme-info">
+            <text class="theme-name">{{aiResult.matchedTheme.name}}</text>
+            <text class="theme-reason">{{aiResult.reason}}</text>
+          </view>
+          <button class="apply-btn" size="mini" bindtap="applyAiRecommendation">应用</button>
+        </view>
+      </view>
+      <view class="ai-result-message" wx:else>
+        <text>{{aiResult.message}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 主题选择 - 按行业分类 -->
+  <view class="themes-section">
+    <view class="section-header">
+      <text class="section-title">主题风格</text>
+      <text class="theme-count">共{{themes.length}}套</text>
+    </view>
+
+    <!-- 食品生鲜类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-emoji"></text>
+        <text>食品生鲜</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id <= 3}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 高端奢侈类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-crown"></text>
+        <text>高端奢侈</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 4 && item.id <= 5}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 母婴甜品类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-favor"></text>
+        <text>母婴甜品</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 6 && item.id <= 7}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 美妆时尚类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-skin"></text>
+        <text>美妆时尚</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 8 && item.id <= 9}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 科技家居类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-computer"></text>
+        <text>科技家居</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 10 && item.id <= 11}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 促销节日类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-sale"></text>
+        <text>促销节日</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 12 && item.id <= 13}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 健康通用类 -->
+    <view class="theme-category">
+      <view class="category-label">
+        <text class="cuIcon-safe"></text>
+        <text>健康通用</text>
+      </view>
+      <scroll-view class="themes-scroll" scroll-x enhanced show-scrollbar="{{false}}">
+        <view class="themes-scroll-inner">
+          <view
+            class="theme-card {{selectedThemeId === item.id ? 'selected' : ''}}"
+            wx:for="{{themes}}"
+            wx:key="id"
+            wx:if="{{item.id >= 14 && item.id <= 15}}"
+            bindtap="selectTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-preview" style="background: {{item.previewBg}}">
+              <view class="selected-badge" wx:if="{{selectedThemeId === item.id}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-content">
+              <text class="theme-name">{{item.name}}</text>
+              <text class="theme-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 推荐图片 -->
+  <view class="section assets-section" wx:if="{{recommendedImages.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">推荐图片</text>
+      <text class="asset-count">{{recommendedImages.length}}张</text>
+    </view>
+    <scroll-view scroll-x class="image-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="image-scroll-inner">
+        <view class="image-item" wx:for="{{recommendedImages}}" wx:key="id" bindtap="onImageSelect" data-image="{{item}}">
+          <image src="{{item.url}}" mode="aspectFill" class="preview-image"/>
+          <text class="image-name">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 推荐布局 -->
+  <view class="section assets-section" wx:if="{{layouts.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">页面布局</text>
+      <text class="asset-count">{{layouts.length}}套</text>
+    </view>
+    <scroll-view scroll-x class="layout-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="layout-scroll-inner">
+        <view class="layout-item {{selectedLayout && selectedLayout.id === item.id ? 'selected' : ''}}"
+              wx:for="{{layouts}}" wx:key="id"
+              bindtap="onLayoutSelect" data-layout="{{item}}">
+          <image src="{{item.previewImage || '/images/default-layout.png'}}" mode="aspectFill" class="layout-preview"/>
+          <text class="layout-name">{{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 组件样式 -->
+  <view class="section assets-section" wx:if="{{componentStyles.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">商品卡片样式</text>
+    </view>
+    <view class="style-grid">
+      <view class="style-item {{selectedStyle && selectedStyle.id === item.id ? 'selected' : ''}}"
+            wx:for="{{componentStyles}}" wx:key="id"
+            wx:if="{{item.componentType === 'goods_card'}}"
+            bindtap="onStyleSelect" data-style="{{item}}">
+        <text>{{item.styleName}}</text>
+      </view>
+    </view>
+  </view>
+</view>
+
+<!-- 预览弹窗 -->
+<view class="preview-modal" wx:if="{{showPreview}}">
+  <view class="preview-mask" bindtap="closePreview"></view>
+  <view class="preview-content">
+    <view class="preview-header">
+      <text class="preview-title">效果预览</text>
+      <text class="cuIcon-close" bindtap="closePreview"></text>
+    </view>
+    <view class="preview-body" style="{{previewStyle}}">
+      <!-- 模拟首页预览 -->
+      <view class="preview-navbar">
+        <view class="preview-logo"></view>
+        <view class="preview-search">搜索商品</view>
+      </view>
+      <view class="preview-notice">
+        <text class="preview-notice-text">欢迎光临本店</text>
+      </view>
+      <view class="preview-categories">
+        <view class="preview-cat-item" wx:for="{{4}}" wx:key="*this">
+          <view class="preview-cat-icon"></view>
+          <text class="preview-cat-name">分类{{index + 1}}</text>
+        </view>
+      </view>
+      <view class="preview-banner"></view>
+      <view class="preview-section-title">热销商品</view>
+      <view class="preview-products">
+        <view class="preview-product" wx:for="{{2}}" wx:key="*this">
+          <view class="preview-product-img"></view>
+          <view class="preview-product-info">
+            <text class="preview-product-name">商品名称</text>
+            <view class="preview-product-price">
+              <text class="preview-price">¥99.00</text>
+              <view class="preview-buy-btn">购买</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="preview-footer">
+      <button class="cancel-btn" bindtap="closePreview">取消</button>
+      <button class="apply-btn primary" bindtap="applyTheme">应用此主题</button>
+    </view>
+  </view>
+</view>
+
+<!-- 引导式装修向导 -->
+<view class="guide-wizard" wx:if="{{showGuideWizard}}">
+  <view class="guide-wizard-mask" bindtap="closeGuideWizard"></view>
+  <view class="guide-wizard-content">
+    <!-- 向导头部 -->
+    <view class="guide-wizard-header">
+      <text class="guide-wizard-title">AI智能装修向导</text>
+      <text class="cuIcon-close" bindtap="closeGuideWizard"></text>
+    </view>
+
+    <!-- 步骤指示器 -->
+    <view class="guide-steps">
+      <view class="guide-step {{guideStep >= 1 ? 'active' : ''}} {{guideStep > 1 ? 'completed' : ''}}">
+        <view class="step-num">{{guideStep > 1 ? '✓' : '1'}}</view>
+        <text class="step-label">行业</text>
+      </view>
+      <view class="step-line {{guideStep > 1 ? 'active' : ''}}"></view>
+      <view class="guide-step {{guideStep >= 2 ? 'active' : ''}} {{guideStep > 2 ? 'completed' : ''}}">
+        <view class="step-num">{{guideStep > 2 ? '✓' : '2'}}</view>
+        <text class="step-label">风格</text>
+      </view>
+      <view class="step-line {{guideStep > 2 ? 'active' : ''}}"></view>
+      <view class="guide-step {{guideStep >= 3 ? 'active' : ''}} {{guideStep > 3 ? 'completed' : ''}}">
+        <view class="step-num">{{guideStep > 3 ? '✓' : '3'}}</view>
+        <text class="step-label">主题</text>
+      </view>
+      <view class="step-line {{guideStep > 3 ? 'active' : ''}}"></view>
+      <view class="guide-step {{guideStep >= 4 ? 'active' : ''}}">
+        <view class="step-num">4</view>
+        <text class="step-label">确认</text>
+      </view>
+    </view>
+
+    <!-- 向导内容区域 -->
+    <view class="guide-wizard-body">
+      <!-- Step 1: 行业选择 -->
+      <view class="guide-step-content" wx:if="{{guideStep === 1}}">
+        <view class="step-title">您的店铺主要经营什么？</view>
+        <view class="step-subtitle">选择行业类型，帮助AI更精准推荐</view>
+        <view class="industry-grid">
+          <view
+            class="industry-item {{guideData.industry === item.code ? 'selected' : ''}}"
+            wx:for="{{industryOptions}}"
+            wx:key="code"
+            bindtap="selectIndustry"
+            data-industry="{{item}}"
+          >
+            <text class="{{item.icon}}"></text>
+            <text class="industry-name">{{item.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- Step 2: 风格选择 -->
+      <view class="guide-step-content" wx:if="{{guideStep === 2}}">
+        <view class="step-title">您喜欢什么样的视觉风格？</view>
+        <view class="step-subtitle">根据您选择的「{{guideData.industryName}}」推荐以下风格</view>
+        <view class="style-options">
+          <view
+            class="style-option {{guideData.style === item.code ? 'selected' : ''}}"
+            wx:for="{{styleOptions}}"
+            wx:key="code"
+            bindtap="selectStyle"
+            data-style="{{item}}"
+          >
+            <view class="style-preview" style="background: {{item.previewBg}}">
+              <view class="style-selected-badge" wx:if="{{guideData.style === item.code}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="style-info">
+              <text class="style-name">{{item.name}}</text>
+              <text class="style-desc">{{item.description}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- Step 3: 主题确认 -->
+      <view class="guide-step-content" wx:if="{{guideStep === 3}}">
+        <view class="step-title">AI为您推荐以下主题</view>
+        <view class="step-subtitle">基于「{{guideData.industryName}}」+「{{guideData.styleName}}」精选</view>
+        <view class="recommended-themes">
+          <view
+            class="theme-option {{guideData.themeCode === item.code ? 'selected' : ''}}"
+            wx:for="{{recommendedThemes}}"
+            wx:key="code"
+            bindtap="selectGuideTheme"
+            data-theme="{{item}}"
+          >
+            <view class="theme-option-preview" style="background: {{item.previewBg}}">
+              <view class="theme-option-badge" wx:if="{{index === 0}}">推荐</view>
+              <view class="theme-selected-badge" wx:if="{{guideData.themeCode === item.code}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+            <view class="theme-option-info">
+              <text class="theme-option-name">{{item.name}}</text>
+              <text class="theme-option-slogan">{{item.slogan}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <!-- Step 4: 配置确认 -->
+      <view class="guide-step-content" wx:if="{{guideStep === 4}}">
+        <view class="step-title">确认装修配置</view>
+        <view class="step-subtitle">以下是您的选择，确认后将立即应用</view>
+
+        <view class="config-summary">
+          <view class="config-item">
+            <text class="config-label">行业类型</text>
+            <text class="config-value">{{guideData.industryName}}</text>
+          </view>
+          <view class="config-item">
+            <text class="config-label">视觉风格</text>
+            <text class="config-value">{{guideData.styleName}}</text>
+          </view>
+          <view class="config-item">
+            <text class="config-label">应用主题</text>
+            <text class="config-value">{{guideData.themeName}}</text>
+          </view>
+        </view>
+
+        <!-- 主题预览 -->
+        <view class="guide-preview" wx:if="{{guideData.selectedTheme}}">
+          <view class="guide-preview-header">
+            <text class="guide-preview-title">效果预览</text>
+          </view>
+          <view class="guide-preview-body" style="{{guidePreviewStyle}}">
+            <view class="preview-navbar">
+              <view class="preview-logo"></view>
+              <view class="preview-search">搜索商品</view>
+            </view>
+            <view class="preview-notice">
+              <text class="preview-notice-text">欢迎光临</text>
+            </view>
+            <view class="preview-categories">
+              <view class="preview-cat-item" wx:for="{{4}}" wx:key="*this">
+                <view class="preview-cat-icon"></view>
+                <text class="preview-cat-name">分类</text>
+              </view>
+            </view>
+            <view class="preview-products mini">
+              <view class="preview-product" wx:for="{{2}}" wx:key="*this">
+                <view class="preview-product-img"></view>
+                <view class="preview-product-info">
+                  <text class="preview-product-name">商品</text>
+                  <view class="preview-buy-btn mini">购买</view>
+                </view>
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 可选：AI生成专属图片 -->
+        <view class="ai-image-section">
+          <view class="ai-image-header">
+            <text class="ai-image-title">AI生成专属素材</text>
+            <text class="ai-image-optional">（可选）</text>
+          </view>
+          <view class="ai-image-desc">输入您的主打产品，AI将生成专属Banner图片</view>
+          <view class="ai-image-input-wrap">
+            <input
+              class="ai-image-input"
+              placeholder="例如：有机苹果、进口车厘子"
+              bindinput="onProductInput"
+              value="{{guideData.productDesc}}"
+            />
+            <button
+              class="ai-image-btn {{generatingImage ? 'loading' : ''}}"
+              bindtap="generateAiImage"
+              disabled="{{generatingImage}}"
+            >
+              {{generatingImage ? '生成中...' : '生成图片'}}
+            </button>
+          </view>
+          <view class="generated-images" wx:if="{{generatedImages.length > 0}}">
+            <view
+              class="generated-image"
+              wx:for="{{generatedImages}}"
+              wx:key="index"
+              bindtap="selectGeneratedImage"
+              data-index="{{index}}"
+            >
+              <image src="{{item.url}}" mode="aspectFill" />
+              <view class="image-selected" wx:if="{{selectedImageIndex === index}}">
+                <text class="cuIcon-check"></text>
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 向导底部按钮 -->
+    <view class="guide-wizard-footer">
+      <button class="guide-prev-btn" bindtap="guidePrevStep" wx:if="{{guideStep > 1}}">
+        <text class="cuIcon-back"></text>
+        <text>上一步</text>
+      </button>
+      <button class="guide-cancel-btn" bindtap="closeGuideWizard" wx:if="{{guideStep === 1}}">
+        取消
+      </button>
+      <button
+        class="guide-next-btn {{canProceed ? '' : 'disabled'}}"
+        bindtap="guideNextStep"
+        disabled="{{!canProceed}}"
+        wx:if="{{guideStep < 4}}"
+      >
+        <text>下一步</text>
+        <text class="cuIcon-right"></text>
+      </button>
+      <button
+        class="guide-finish-btn {{canProceed ? '' : 'disabled'}}"
+        bindtap="finishGuideFlow"
+        disabled="{{!canProceed || applyingConfig}}"
+        wx:if="{{guideStep === 4}}"
+        loading="{{applyingConfig}}"
+      >
+        <text class="cuIcon-check" wx:if="{{!applyingConfig}}"></text>
+        <text>{{applyingConfig ? '应用中...' : '完成并应用'}}</text>
+      </button>
+    </view>
+  </view>
+</view>

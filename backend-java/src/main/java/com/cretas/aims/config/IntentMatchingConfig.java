@@ -68,6 +68,18 @@ public class IntentMatchingConfig {
      */
     private ParallelScoreConfig parallelScore = new ParallelScoreConfig();
 
+    /**
+     * LLM Reranking 配置
+     * 用于中置信度区间 (0.58-0.85) 的二次确认
+     */
+    private LlmRerankingConfig llmReranking = new LlmRerankingConfig();
+
+    /**
+     * v6.0 语义优先架构配置
+     * 将语义匹配从"并行评分因子"提升为"第一优先级路由"
+     */
+    private SemanticFirstConfig semanticFirst = new SemanticFirstConfig();
+
     // ==================== 内部配置类 ====================
 
     /**
@@ -82,10 +94,10 @@ public class IntentMatchingConfig {
 
         /**
          * LLM 触发的置信度阈值（低于此值触发 LLM）
-         * v4.2: 提高至0.65，让更多低置信度匹配走LLM验证
+         * v5.0: 降低至0.58，让更多中等置信度匹配走LLM验证，提高准确率
          */
         @Min(0) @Max(1)
-        private double confidenceThreshold = 0.65;
+        private double confidenceThreshold = 0.58;
 
         /**
          * LLM 服务超时时间(ms)
@@ -305,6 +317,109 @@ public class IntentMatchingConfig {
     }
 
     /**
+     * LLM Reranking 配置
+     * 用于中置信度区间的语义评分 + LLM 双保险机制
+     */
+    @Data
+    public static class LlmRerankingConfig {
+        /**
+         * 是否启用 LLM Reranking
+         * 启用后，中置信度区间 (confidenceLowerBound - confidenceUpperBound) 会触发 LLM 重排序
+         */
+        private boolean enabled = true;
+
+        /**
+         * Reranking 触发的置信度下限
+         * 低于此值走 LLM Fallback (完整分类)
+         */
+        @Min(0) @Max(1)
+        private double confidenceLowerBound = 0.58;
+
+        /**
+         * Reranking 触发的置信度上限
+         * 高于此值直接返回语义评分结果
+         */
+        @Min(0) @Max(1)
+        private double confidenceUpperBound = 0.85;
+
+        /**
+         * Reranking 时传递给 LLM 的候选数量
+         * 默认传递 Top-3 候选意图
+         */
+        @Positive
+        private int topCandidatesCount = 3;
+
+        /**
+         * LLM Reranking 超时时间 (ms)
+         */
+        @Positive
+        private int timeout = 8000;
+
+        /**
+         * 是否在 Reranking 时包含意图示例
+         * 启用后会将 example_queries 传给 LLM 作为参考
+         */
+        private boolean includeExamples = true;
+
+        /**
+         * Reranking 成功后的最小置信度提升阈值
+         * LLM 确认的意图，置信度至少提升此值
+         */
+        @Min(0) @Max(1)
+        private double confidenceBoostMin = 0.1;
+    }
+
+    /**
+     * v6.0 语义优先架构配置
+     * 核心改革: 将语义匹配从"并行评分因子"提升为"第一优先级路由"
+     */
+    @Data
+    public static class SemanticFirstConfig {
+        /**
+         * 是否启用语义优先架构
+         * 启用后使用语义路由+精确验证模式，替代并行评分模式
+         */
+        private boolean enabled = true;
+
+        /**
+         * 高置信度阈值 - 语义路由直接返回的置信度门槛
+         * 语义分数 >= 此值时直接返回，不经过精确验证层
+         */
+        @Min(0) @Max(1)
+        private double highConfidenceThreshold = 0.85;
+
+        /**
+         * 短语验证加分 - 语义结果被短语匹配确认时的加分
+         */
+        @Min(0) @Max(1)
+        private double phraseVerificationBonus = 0.15;
+
+        /**
+         * 关键词验证加分 - 语义结果命中意图特征词时的加分
+         */
+        @Min(0) @Max(1)
+        private double keywordVerificationBonus = 0.10;
+
+        /**
+         * 粒度不匹配惩罚 - 用户输入粒度与意图粒度不一致时的扣分
+         */
+        @Min(0) @Max(1)
+        private double granularityMismatchPenalty = 0.20;
+
+        /**
+         * 域不匹配惩罚 - 用户输入领域与意图领域不一致时的扣分
+         */
+        @Min(0) @Max(1)
+        private double domainMismatchPenalty = 0.25;
+
+        /**
+         * 域匹配加分 - 用户输入领域与意图领域一致时的加分
+         */
+        @Min(0) @Max(1)
+        private double domainMatchBonus = 0.05;
+    }
+
+    /**
      * 并行评分权重配置
      */
     @Data
@@ -497,5 +612,75 @@ public class IntentMatchingConfig {
      */
     public int getTwoPhaseThreshold() {
         return llmFallback.getTwoPhaseThreshold();
+    }
+
+    // ==================== LLM Reranking 便捷方法 ====================
+
+    /**
+     * 检查 LLM Reranking 是否启用
+     */
+    public boolean isLlmRerankingEnabled() {
+        return llmReranking.isEnabled();
+    }
+
+    /**
+     * 获取 Reranking 置信度下限
+     */
+    public double getLlmRerankingLowerBound() {
+        return llmReranking.getConfidenceLowerBound();
+    }
+
+    /**
+     * 获取 Reranking 置信度上限
+     */
+    public double getLlmRerankingUpperBound() {
+        return llmReranking.getConfidenceUpperBound();
+    }
+
+    /**
+     * 获取 Reranking 候选数量
+     */
+    public int getLlmRerankingTopCandidates() {
+        return llmReranking.getTopCandidatesCount();
+    }
+
+    /**
+     * 判断置信度是否在 Reranking 区间内
+     * @param confidence 置信度
+     * @return true 如果在 [lowerBound, upperBound) 区间内
+     */
+    public boolean isInRerankingRange(double confidence) {
+        return confidence >= llmReranking.getConfidenceLowerBound()
+                && confidence < llmReranking.getConfidenceUpperBound();
+    }
+
+    /**
+     * 获取 Reranking 配置
+     */
+    public LlmRerankingConfig getLlmRerankingConfig() {
+        return llmReranking;
+    }
+
+    // ==================== v6.0 语义优先配置访问器 ====================
+
+    /**
+     * 判断是否启用语义优先架构
+     */
+    public boolean isSemanticFirstEnabled() {
+        return semanticFirst.isEnabled();
+    }
+
+    /**
+     * 获取语义优先高置信度阈值
+     */
+    public double getSemanticFirstHighThreshold() {
+        return semanticFirst.getHighConfidenceThreshold();
+    }
+
+    /**
+     * 获取语义优先配置
+     */
+    public SemanticFirstConfig getSemanticFirstConfig() {
+        return semanticFirst;
     }
 }

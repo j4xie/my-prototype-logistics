@@ -31,6 +31,13 @@ import type { AnalysisMode } from '../../../services/ai/types';
 import { AIModeIndicator } from '../../../components/ai/AIModeIndicator';
 import { useAuthStore } from '../../../store/authStore';
 
+// 建议操作类型
+interface SuggestedAction {
+  label: string;
+  value: string;
+  description?: string;
+}
+
 // 消息类型
 interface Message {
   id: string;
@@ -42,6 +49,10 @@ interface Message {
   mode?: AnalysisMode;
   /** 响应时间 (仅 assistant 消息) */
   responseTimeMs?: number;
+  /** 需要澄清时的建议操作列表 */
+  suggestedActions?: SuggestedAction[];
+  /** 会话ID (用于多轮对话) */
+  sessionIdForReply?: string;
 }
 
 export default function AIChatScreen() {
@@ -128,6 +139,18 @@ export default function AIChatScreen() {
     [scrollToBottom]
   );
 
+  // 处理建议选项点击
+  const handleSuggestedActionClick = async (action: SuggestedAction, messageId: string) => {
+    // 清除该消息的建议选项（已选择）
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === messageId ? { ...msg, suggestedActions: undefined } : msg
+      )
+    );
+    // 发送用户选择作为新消息
+    await handleSend(action.label);
+  };
+
   // 发送消息 - 快速API + 模拟流式显示
   const handleSend = async (text?: string) => {
     const messageText = text || inputText.trim();
@@ -161,14 +184,13 @@ export default function AIChatScreen() {
     scrollToBottom();
 
     try {
-      // 使用集中式 AI 服务执行意图
-      // aiService 自动处理：
-      // - 分析模式检测 (enableThinking/thinkingBudget)
-      // - 响应时间追踪
-      // - 错误处理
-      const result = await aiService.executeIntent(messageText, {
+      // 使用多轮对话 API 进行意图识别（比规则匹配更准确）
+      // aiService.chatWithConversation 使用 LLM 进行意图识别:
+      // - 准确率更高（95%+ vs 规则匹配的 60%）
+      // - 支持多轮对话澄清
+      // - 自动处理模糊输入
+      const result = await aiService.chatWithConversation(messageText, {
         sessionId: sessionId ?? undefined,
-        forceExecute: true,
       });
 
       console.log('[AI Chat] aiService 响应:', result);
@@ -176,33 +198,109 @@ export default function AIChatScreen() {
 
       // 提取回复消息
       let replyMessage = '';
+      let suggestedActions: SuggestedAction[] = [];
+      let sessionIdForReply: string | undefined;
 
       if (result.success && result.data) {
         // result.data 是 IntentExecuteResponse 类型
-        // 使用 unknown 作为中间类型避免类型断言错误
+        // 响应结构: { code, message: '操作成功', data: { message: '真正的回复', ... }, success }
         const responseData = result.data as unknown as Record<string, unknown>;
+        const innerData = responseData.data as Record<string, unknown> | undefined;
 
-        // 优先使用 metadata.conversationMessage
-        const metadata = responseData.metadata as { conversationMessage?: string; sessionId?: string } | undefined;
-        if (metadata?.conversationMessage) {
-          replyMessage = metadata.conversationMessage;
-        } else if (typeof responseData.message === 'string') {
+        // 优先从 innerData 中提取消息
+        const innerMetadata = innerData?.metadata as { conversationMessage?: string; sessionId?: string } | undefined;
+
+        if (innerMetadata?.conversationMessage) {
+          // 优先使用 metadata.conversationMessage
+          replyMessage = innerMetadata.conversationMessage;
+        } else if (typeof innerData?.message === 'string' && innerData.message) {
+          // 使用 innerData.message (真正的 AI 回复)
+          replyMessage = innerData.message;
+        } else if (typeof responseData.message === 'string' && responseData.message !== '操作成功') {
+          // 兜底：使用外层 message (但排除 '操作成功')
           replyMessage = responseData.message;
         } else {
           replyMessage = t('aiChat.defaultReply');
         }
 
-        // 更新 sessionId (可能在 metadata 或 responseData 中)
-        const newSessionId = (metadata?.sessionId || responseData.sessionId) as string | undefined;
+        // 更新 sessionId (可能在 innerData 或 innerMetadata 中)
+        const newSessionId = (innerMetadata?.sessionId || innerData?.sessionId || responseData.sessionId) as string | undefined;
         if (newSessionId) {
           setSessionId(newSessionId);
+          sessionIdForReply = newSessionId;
+        }
+
+        // 提取状态和意图代码
+        const status = innerData?.status as string | undefined;
+        const intentCode = innerData?.intentCode as string | undefined;
+        console.log('[AI Chat] 响应状态:', status, '意图:', intentCode);
+
+        // 当对话完成且有意图代码时，自动执行意图获取实际数据
+        if (status === 'COMPLETED' && intentCode) {
+          console.log('[AI Chat] 对话完成，自动执行意图:', intentCode);
+          try {
+            // 执行意图获取实际数据
+            const executeResult = await aiService.executeIntent(messageText, {
+              intentCode,
+              forceExecute: true,
+            });
+            console.log('[AI Chat] 意图执行结果:', executeResult);
+
+            if (executeResult.success && executeResult.data) {
+              const execData = executeResult.data as unknown as Record<string, unknown>;
+              const execInnerData = execData.data as Record<string, unknown> | undefined;
+              // 使用执行结果的消息替换原消息
+              if (execInnerData?.message && typeof execInnerData.message === 'string') {
+                replyMessage = execInnerData.message;
+              } else if (execData.message && typeof execData.message === 'string' && execData.message !== '操作成功') {
+                replyMessage = execData.message;
+              }
+              // 如果有结构化数据，追加到消息中
+              // 后端 IntentExecuteResponse 使用 resultData (不是 result)，分析内容在 analysis 字段
+              if (execInnerData?.resultData) {
+                const resultData = execInnerData.resultData as Record<string, unknown>;
+                // 优先使用 analysis 字段 (成本分析等)，备用 summary 字段
+                const analysisContent = resultData.analysis || resultData.summary;
+                if (analysisContent && typeof analysisContent === 'string') {
+                  replyMessage = `${replyMessage}\n\n${analysisContent}`;
+                }
+              }
+            }
+          } catch (execError) {
+            console.warn('[AI Chat] 意图执行失败:', execError);
+            // 执行失败时保留原消息
+          }
+        }
+
+        // 当需要用户进一步澄清或选择时显示建议操作
+        // ACTIVE: 后端 ConversationService 返回的进行中状态
+        if ((status === 'NEED_CLARIFICATION' || status === 'CONVERSATION_CONTINUE' || status === 'ACTIVE') && Array.isArray(innerData?.suggestedActions)) {
+          suggestedActions = (innerData.suggestedActions as Array<Record<string, unknown>>).map((action) => ({
+            // 后端字段: actionName, actionCode, description
+            label: (action.actionName || action.label || action.name || action.description) as string,
+            value: (action.actionCode || action.value || action.code || action.actionName) as string,
+            description: action.description as string | undefined,
+          })).filter((action) => action.label && action.value); // 过滤掉没有 label 或 value 的选项
+          console.log('[AI Chat] 需要澄清，选项:', suggestedActions);
+        }
+
+        // 如果有候选意图列表，也可以作为建议操作
+        if (suggestedActions.length === 0 && Array.isArray(innerData?.candidates) && (innerData.candidates as unknown[]).length > 0) {
+          suggestedActions = (innerData.candidates as Array<Record<string, unknown>>).map((candidate) => ({
+            label: (candidate.intentName || candidate.intentCode) as string,
+            value: candidate.intentCode as string,
+            description: candidate.matchReason as string | undefined,
+          })).filter((action) => action.label && action.value);
+          console.log('[AI Chat] 从候选意图提取选项:', suggestedActions);
         }
       } else {
         // 失败情况
-        replyMessage = result.errorMessage || result.data?.message || t('aiChat.networkError');
+        const responseData = result.data as unknown as Record<string, unknown> | undefined;
+        const innerData = responseData?.data as Record<string, unknown> | undefined;
+        replyMessage = result.errorMessage || (innerData?.message as string) || (responseData?.message as string) || t('aiChat.networkError');
       }
 
-      // 更新消息，添加模式和响应时间信息
+      // 更新消息，添加模式、响应时间和建议操作
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantMessageId
@@ -210,6 +308,8 @@ export default function AIChatScreen() {
                 ...msg,
                 mode: result.mode,
                 responseTimeMs: result.responseTimeMs,
+                suggestedActions: suggestedActions.length > 0 ? suggestedActions : undefined,
+                sessionIdForReply,
               }
             : msg
         )
@@ -306,6 +406,25 @@ export default function AIChatScreen() {
               )}
             </Text>
           </View>
+          {/* 显示建议操作按钮 (当需要澄清时) */}
+          {!message.isLoading && message.suggestedActions && message.suggestedActions.length > 0 && (
+            <View style={styles.suggestedActionsContainer}>
+              {message.suggestedActions.map((action, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestedActionButton}
+                  onPress={() => handleSuggestedActionClick(action, message.id)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.suggestedActionText}>{action.label}</Text>
+                  {/* 只有当 description 与 label 不同时才显示 */}
+                  {action.description && action.description !== action.label && (
+                    <Text style={styles.suggestedActionDesc}>{action.description}</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           {!message.isLoading && (
             <Text style={styles.timestamp}>
               {message.timestamp.toLocaleTimeString(i18n.language, {
@@ -669,5 +788,33 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#999',
     flex: 1,
+  },
+  // 建议操作按钮样式
+  suggestedActionsContainer: {
+    marginTop: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  suggestedActionButton: {
+    backgroundColor: '#f0f5ff',
+    borderWidth: 1,
+    borderColor: '#667eea',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minWidth: 80,
+  },
+  suggestedActionText: {
+    fontSize: 13,
+    color: '#667eea',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  suggestedActionDesc: {
+    fontSize: 11,
+    color: '#999',
+    marginTop: 2,
+    textAlign: 'center',
   },
 });

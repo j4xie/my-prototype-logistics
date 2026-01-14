@@ -164,4 +164,22 @@ public class MerchantServiceImpl extends ServiceImpl<MerchantMapper, Merchant> i
         wrapper.eq(Merchant::getStatus, 0);
         return baseMapper.selectCount(wrapper);
     }
+
+    @Override
+    public List<Map<String, Object>> listSimple() {
+        LambdaQueryWrapper<Merchant> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Merchant::getDelFlag, 0)
+               .eq(Merchant::getStatus, 1) // 只返回已认证的商户
+               .select(Merchant::getId, Merchant::getMerchantNo, Merchant::getMerchantName)
+               .orderByAsc(Merchant::getMerchantName);
+        List<Merchant> merchants = baseMapper.selectList(wrapper);
+
+        return merchants.stream().map(m -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("id", m.getId());
+            map.put("merchantNo", m.getMerchantNo());
+            map.put("merchantName", m.getMerchantName());
+            return map;
+        }).collect(java.util.stream.Collectors.toList());
+    }
 }

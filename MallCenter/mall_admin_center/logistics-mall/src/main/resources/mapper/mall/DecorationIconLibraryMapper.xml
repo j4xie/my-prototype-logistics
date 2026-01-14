@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationIconLibraryMapper">
+    <resultMap id="iconLibraryMap" type="com.joolun.mall.entity.DecorationIconLibrary">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="iconContent" column="icon_content"/>
+        <result property="iconType" column="icon_type"/>
+        <result property="category" column="category"/>
+        <result property="tags" column="tags"/>
+        <result property="defaultColor" column="default_color"/>
+        <result property="defaultSize" column="default_size"/>
+        <result property="status" column="status"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="useCount" column="use_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="iconLibrarySql">
+        t.`id`, t.`name`, t.`code`, t.`icon_content`, t.`icon_type`,
+        t.`category`, t.`tags`, t.`default_color`, t.`default_size`,
+        t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+    </sql>
+
+    <select id="selectByCategory" resultMap="iconLibraryMap">
+        SELECT <include refid="iconLibrarySql"/>
+        FROM decoration_icon_library t
+        WHERE t.`status` = 1 AND t.`category` = #{category}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectByIconType" resultMap="iconLibraryMap">
+        SELECT <include refid="iconLibrarySql"/>
+        FROM decoration_icon_library t
+        WHERE t.`status` = 1 AND t.`icon_type` = #{iconType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectActiveList" resultMap="iconLibraryMap">
+        SELECT <include refid="iconLibrarySql"/>
+        FROM decoration_icon_library t
+        WHERE t.`status` = 1
+        ORDER BY t.`sort_order` ASC
+    </select>
+</mapper>

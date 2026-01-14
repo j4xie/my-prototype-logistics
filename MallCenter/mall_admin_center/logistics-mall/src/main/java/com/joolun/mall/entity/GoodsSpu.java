@@ -126,4 +126,10 @@ private static final long serialVersionUID = 1L;
 	 */
 	@Version
 	private Integer version;
+	/**
+	 * 商户ID
+	 */
+	@Excel(name = "商户ID")
+	@TableField("merchant_id")
+	private Long merchantId;
 }

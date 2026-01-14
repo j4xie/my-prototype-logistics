@@ -135,6 +135,24 @@ export interface PendingBatch {
   currentProbability?: number;
 }
 
+/** 车间主任排程任务DTO */
+export interface SupervisorTaskDTO {
+  scheduleId: string;
+  planId: string;
+  productionLineId: string;
+  productionLineName: string;
+  batchId: number | null;
+  batchNumber: string | null;
+  productName: string | null;
+  plannedQuantity: number;
+  plannedStartTime: string;
+  plannedEndTime: string;
+  assignedWorkers: number;
+  status: string;
+  isUrgent: boolean;
+  workshopLocation: string | null;
+}
+
 // ========== API 客户端类 ==========
 
 class SchedulingApiClient {
@@ -473,6 +491,16 @@ class SchedulingApiClient {
   }): Promise<ApiResponse<ProductionLine[]>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(`${this.getPath(factoryId)}/production-lines`, { params: query });
+  }
+
+  /**
+   * 获取车间列表（产线列表的别名）
+   */
+  async getWorkshopList(params?: {
+    status?: string;
+    factoryId?: string;
+  }): Promise<ApiResponse<ProductionLine[]>> {
+    return this.getProductionLines(params);
   }
 
   /**
@@ -972,6 +1000,24 @@ class SchedulingApiClient {
   ): Promise<ApiResponse<MixedBatchRule[]>> {
     const currentFactoryId = requireFactoryId(factoryId);
     return await apiClient.put(`/api/mobile/${currentFactoryId}/mixed-batch/rules`, rules);
+  }
+
+  // ==================== 车间主任任务 ====================
+
+  /**
+   * 获取车间主任排程任务
+   * GET /api/mobile/{factoryId}/scheduling/supervisor/tasks
+   *
+   * @param status 任务状态过滤 (可选，多状态用逗号分隔，如 "pending,in_progress")
+   * @param factoryId 工厂ID（可选）
+   * @returns 车间主任的排程任务列表
+   */
+  async getSupervisorTasks(
+    status?: string,
+    factoryId?: string
+  ): Promise<ApiResponse<SupervisorTaskDTO[]>> {
+    const params = status ? { status } : {};
+    return await apiClient.get(`${this.getPath(factoryId)}/supervisor/tasks`, { params });
   }
 
   // ==================== HR 模块方法 ====================

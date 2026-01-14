@@ -252,7 +252,9 @@ public class LearnedExpression {
         /** 语义匹配高置信度 */
         SEMANTIC_HIGH,
         /** 从关键词匹配学习 */
-        KEYWORD_MATCH
+        KEYWORD_MATCH,
+        /** LLM Reranking 确认 (中置信度区间) */
+        LLM_RERANKING
     }
 
     /**

@@ -73,6 +73,9 @@ public class LineSchedule {
     @Column(name = "delay_reason", columnDefinition = "TEXT")
     private String delayReason;
 
+    @Column(name = "supervisor_id")
+    private Long supervisorId;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

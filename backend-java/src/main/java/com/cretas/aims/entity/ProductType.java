@@ -150,6 +150,35 @@ public class ProductType extends BaseEntity {
 
     @Column(name = "package_spec", length = 100)
     private String packageSpec;
+
+    // ==================== 产品信息管理增强字段 ====================
+
+    /**
+     * 产品大类: FINISHED_PRODUCT, RAW_MATERIAL, PACKAGING, SEASONING, CUSTOMER_MATERIAL
+     */
+    @Column(name = "product_category", length = 50)
+    private String productCategory;
+
+    /**
+     * 规格（如 310g*42袋/箱）
+     */
+    @Column(name = "specification", length = 200)
+    private String specification;
+
+    /**
+     * 关联客户
+     */
+    @Column(name = "related_customer", length = 100)
+    private String relatedCustomer;
+
+    /**
+     * 产品图片URL
+     */
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    // ==================== End 产品信息管理增强字段 ====================
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
     @Column(name = "notes", columnDefinition = "TEXT")

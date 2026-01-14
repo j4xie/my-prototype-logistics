@@ -116,8 +116,9 @@ class AIService {
       };
 
       // 调用 API
+      // 注意：intentCode 可以为空，后端会通过 userInput 进行意图识别
       const response = await aiApiClient.executeIntent(
-        request.intentCode || userInput,
+        request.intentCode || '',  // 不传 userInput 作为 intentCode
         {
           ...request.context,
           userInput: request.userInput,
@@ -140,6 +141,102 @@ class AIService {
       };
     } catch (error) {
       this.logError('executeIntent', error);
+      return {
+        success: false,
+        data: {
+          success: false,
+          message: error instanceof Error ? error.message : 'AI 服务调用失败',
+        },
+        mode: modeResult.mode,
+        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        responseTimeMs: Date.now() - startTime,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
+  }
+
+  // ============ 多轮对话（LLM意图识别）============
+
+  /**
+   * 使用多轮对话进行意图识别
+   *
+   * 相比 executeIntent，此方法使用 LLM 进行意图识别，准确率更高。
+   * 当用户输入模糊时，会返回需要澄清的状态和建议选项。
+   *
+   * @param userInput 用户输入
+   * @param options 选项
+   * @returns AI响应结果
+   *
+   * @example
+   * // 新对话
+   * await aiService.chatWithConversation('最近一周的生产成本如何？');
+   *
+   * // 继续对话
+   * await aiService.chatWithConversation('我选择总体成本', { sessionId: 'xxx' });
+   */
+  async chatWithConversation(
+    userInput: string,
+    options?: { sessionId?: string; userId?: number }
+  ): Promise<AIResult<IntentExecuteResponse>> {
+    const startTime = Date.now();
+
+    // 检测分析模式
+    const modeResult = detectAnalysisMode(userInput);
+    this.log('chatWithConversation', { userInput, mode: modeResult.mode, options });
+
+    try {
+      let response;
+
+      if (options?.sessionId) {
+        // 继续已有对话
+        response = await aiApiClient.replyConversation(options.sessionId, userInput);
+      } else {
+        // 启动新对话
+        response = await aiApiClient.startConversation(userInput, options?.userId);
+      }
+
+      this.log('chatWithConversation response', response);
+
+      // 转换为统一的 IntentExecuteResponse 格式
+      // 后端 ConversationService 返回的状态:
+      // - ACTIVE: 对话进行中，需要更多输入
+      // - COMPLETED: 对话完成，意图已识别
+      // - FAILED: 对话失败
+      const executeResponse: IntentExecuteResponse = {
+        success: response.status === 'COMPLETED' || response.status === 'CONVERSATION_CONTINUE' || response.status === 'NEED_CLARIFICATION' || response.status === 'ACTIVE',
+        message: '操作成功',
+        data: {
+          status: response.status,
+          message: response.message,
+          intentCode: response.intentCode,
+          intentRecognized: !!response.intentCode,
+          suggestedActions: response.suggestedActions,
+          candidates: response.candidates,
+          metadata: {
+            ...response.metadata,
+            sessionId: response.sessionId,
+            confidence: response.confidence,
+          },
+        },
+      };
+
+      // 如果有执行结果，合并到响应中
+      if (response.executionResult) {
+        executeResponse.data = {
+          ...executeResponse.data,
+          ...response.executionResult,
+        };
+      }
+
+      return {
+        success: executeResponse.success,
+        data: executeResponse,
+        mode: modeResult.mode,
+        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        responseTimeMs: Date.now() - startTime,
+      };
+    } catch (error) {
+      this.logError('chatWithConversation', error);
       return {
         success: false,
         data: {

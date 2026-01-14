@@ -27,6 +27,9 @@ import CostAnalysisDashboard from "../../screens/processing/CostAnalysisDashboar
 // Formily 演示页面
 import { FormilyDemoScreen } from "../../screens/demo";
 
+// 首页布局编辑器
+import HomeLayoutEditorScreen from "../../screens/factory-admin/home/HomeLayoutEditorScreen";
+
 const Stack = createNativeStackNavigator<FAHomeStackParamList>();
 
 export function FAHomeStackNavigator() {
@@ -104,6 +107,17 @@ export function FAHomeStackNavigator() {
         name="FormilyDemo"
         component={FormilyDemoScreen}
         options={{ title: "Formily演示" }}
+      />
+
+      {/* 首页布局编辑器 */}
+      <Stack.Screen
+        name="HomeLayoutEditor"
+        component={HomeLayoutEditorScreen}
+        options={{
+          title: "首页布局编辑",
+          headerShown: false,
+          presentation: "modal",
+        }}
       />
     </Stack.Navigator>
   );

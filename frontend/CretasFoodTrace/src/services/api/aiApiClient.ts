@@ -297,6 +297,46 @@ export interface ConversationResponse {
 }
 
 /**
+ * 多轮对话启动响应
+ *
+ * 对应后端 ConversationService.ConversationResponse
+ */
+export interface ConversationStartResponse {
+  /** 对话状态: COMPLETED-意图已识别可执行, ACTIVE-对话进行中, CONVERSATION_CONTINUE-需要继续对话, NEED_CLARIFICATION-需要澄清 */
+  status: 'COMPLETED' | 'ACTIVE' | 'CONVERSATION_CONTINUE' | 'NEED_CLARIFICATION' | 'FAILED';
+  /** AI回复消息 */
+  message: string;
+  /** 识别到的意图代码 (当 status=COMPLETED 时) */
+  intentCode?: string;
+  /** 意图识别置信度 (0-1) */
+  confidence?: number;
+  /** 会话ID (用于继续对话) */
+  sessionId?: string;
+  /** 候选意图列表 */
+  candidates?: Array<{
+    intentCode: string;
+    intentName: string;
+    confidence: number;
+    matchReason?: string;
+  }>;
+  /** 建议操作 (当需要澄清时) */
+  suggestedActions?: Array<{
+    actionName: string;
+    actionCode: string;
+    description: string;
+    endpoint?: string;
+  }>;
+  /** 执行结果 (当 status=COMPLETED 并自动执行时) */
+  executionResult?: Record<string, unknown>;
+  /** 元数据 */
+  metadata?: {
+    conversationMessage?: string;
+    sessionId?: string;
+    [key: string]: unknown;
+  };
+}
+
+/**
  * 对话消息
  */
 export interface ConversationMessage {
@@ -353,6 +393,7 @@ export interface HealthCheckResponse {
 class AIApiClient {
   /**
    * 获取基础路径
+   * 对应后端 AIController
    */
   private getBasePath(factoryId?: string): string {
     const currentFactoryId = getCurrentFactoryId(factoryId);
@@ -360,6 +401,30 @@ class AIApiClient {
       throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
     }
     return `/api/mobile/${currentFactoryId}/ai`;
+  }
+
+  /**
+   * 获取意图接口基础路径
+   * 对应后端 AIIntentConfigController
+   */
+  private getIntentBasePath(factoryId?: string): string {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/ai-intents`;
+  }
+
+  /**
+   * 获取对话接口基础路径
+   * 对应后端 ConversationController
+   */
+  private getConversationBasePath(factoryId?: string): string {
+    const currentFactoryId = getCurrentFactoryId(factoryId);
+    if (!currentFactoryId) {
+      throw new Error('factoryId 是必需的，请先登录或提供 factoryId 参数');
+    }
+    return `/api/mobile/${currentFactoryId}/conversation`;
   }
 
   // ========== 成本分析接口 ==========
@@ -604,6 +669,72 @@ class AIApiClient {
 
   // ========== 对话管理接口 ==========
 
+  // ========== 多轮对话（意图识别）接口 ==========
+
+  /**
+   * 启动多轮对话
+   *
+   * 使用 LLM 进行意图识别，比规则匹配更准确。
+   * 当意图识别置信度高时返回 COMPLETED，否则进入多轮对话。
+   *
+   * @param userInput 用户输入
+   * @param userId 用户ID（可选）
+   * @param factoryId 工厂ID（可选）
+   */
+  async startConversation(
+    userInput: string,
+    userId?: number,
+    factoryId?: string
+  ): Promise<ConversationStartResponse> {
+    const response = await apiClient.post<{ success: boolean; data: ConversationStartResponse }>(
+      `${this.getConversationBasePath(factoryId)}/start`,
+      { userInput, userId }
+    );
+    // 提取 data 层
+    return response.data || (response as unknown as ConversationStartResponse);
+  }
+
+  /**
+   * 继续多轮对话
+   *
+   * 用户回复澄清问题后，继续意图识别对话。
+   *
+   * @param sessionId 会话ID
+   * @param userReply 用户回复
+   * @param factoryId 工厂ID（可选）
+   */
+  async replyConversation(
+    sessionId: string,
+    userReply: string,
+    factoryId?: string
+  ): Promise<ConversationStartResponse> {
+    const response = await apiClient.post<{ success: boolean; data: ConversationStartResponse }>(
+      `${this.getConversationBasePath(factoryId)}/${sessionId}/reply`,
+      { userReply }
+    );
+    return response.data || (response as unknown as ConversationStartResponse);
+  }
+
+  /**
+   * 确认意图
+   *
+   * 用户从候选列表中选择确认意图。
+   *
+   * @param sessionId 会话ID
+   * @param intentCode 确认的意图代码
+   * @param factoryId 工厂ID（可选）
+   */
+  async confirmConversationIntent(
+    sessionId: string,
+    intentCode: string,
+    factoryId?: string
+  ): Promise<{ success: boolean; message: string }> {
+    return await apiClient.post(
+      `${this.getConversationBasePath(factoryId)}/${sessionId}/confirm`,
+      { intentCode }
+    );
+  }
+
   /**
    * 获取AI对话历史
    *
@@ -766,7 +897,7 @@ class AIApiClient {
     factoryId?: string
   ): Promise<IntentRecognizeResponse> {
     const response = await apiClient.post<IntentRecognizeResponse>(
-      `${this.getBasePath(factoryId)}/ai-intents/recognize`,
+      `${this.getIntentBasePath(factoryId)}/recognize`,
       { userInput, context }
     );
     return response;
@@ -787,7 +918,7 @@ class AIApiClient {
     factoryId?: string
   ): Promise<void> {
     await apiClient.post(
-      `${this.getBasePath(factoryId)}/ai-intents/confirm`,
+      `${this.getIntentBasePath(factoryId)}/confirm`,
       { matchRecordId, selectedIntentCode }
     );
   }
@@ -798,7 +929,7 @@ class AIApiClient {
    * 根据意图代码执行对应操作
    *
    * @param intentCode 意图代码
-   * @param parameters 执行参数
+   * @param parameters 执行参数（会被平铺到请求体中）
    * @param factoryId 工厂ID（可选）
    * @returns 执行结果
    */
@@ -807,9 +938,24 @@ class AIApiClient {
     parameters?: Record<string, unknown>,
     factoryId?: string
   ): Promise<IntentExecuteResponse> {
+    // 后端 IntentExecuteRequest 期望平铺的字段格式
+    // userInput, intentCode, entityType, entityId, context, previewOnly, forceExecute, sessionId, enableThinking, thinkingBudget
+    const requestBody = {
+      intentCode,
+      userInput: parameters?.userInput,
+      entityType: parameters?.entityType,
+      entityId: parameters?.entityId,
+      context: parameters?.context,
+      previewOnly: parameters?.previewOnly,
+      forceExecute: parameters?.forceExecute,
+      sessionId: parameters?.sessionId,
+      enableThinking: parameters?.enableThinking,
+      thinkingBudget: parameters?.thinkingBudget,
+    };
+
     const response = await apiClient.post<IntentExecuteResponse>(
-      `${this.getBasePath(factoryId)}/ai-intents/execute`,
-      { intentCode, parameters }
+      `${this.getIntentBasePath(factoryId)}/execute`,
+      requestBody
     );
     return response;
   }
@@ -836,7 +982,7 @@ class AIApiClient {
     callbacks: IntentSSECallbacks,
     factoryId?: string
   ): Promise<void> {
-    const url = `${this.getBasePath(factoryId)}/ai-intents/execute/stream`;
+    const url = `${this.getIntentBasePath(factoryId)}/execute/stream`;
 
     // 获取 token
     const token = await this.getAuthToken();
