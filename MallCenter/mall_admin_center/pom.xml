@@ -250,14 +250,14 @@
     </dependencyManagement>
 
     <modules>
-        <module>logistics-admin</module>
-        <module>logistics-framework</module>
+        <module>logistics-common</module>
         <module>logistics-system</module>
+        <module>logistics-framework</module>
         <module>logistics-quartz</module>
         <module>logistics-generator</module>
-        <module>logistics-common</module>
-        <module>logistics-weixin</module>
         <module>logistics-mall</module>
+        <module>logistics-weixin</module>
+        <module>logistics-admin</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -275,7 +275,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.11.0</version>
                 <configuration>
                     <parameters>true</parameters>
                     <source>${java.version}</source>

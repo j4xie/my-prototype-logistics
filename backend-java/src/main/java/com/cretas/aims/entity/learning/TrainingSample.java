@@ -139,8 +139,12 @@ public class TrainingSample {
         FUSION,
         /** LLM Fallback */
         LLM,
+        /** LLM Reranking (中置信度区间确认) */
+        LLM_RERANKING,
         /** 相似表达匹配 */
         SIMILAR_EXPRESSION,
+        /** 用户反馈 */
+        USER_FEEDBACK,
         /** 未知 */
         UNKNOWN
     }

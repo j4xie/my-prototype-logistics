@@ -23,11 +23,20 @@ interface ModulePermissions {
 }
 
 const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
-  // Level 0 - 工厂总监
+  // Level 0 - 工厂总监 (监控+配置角色，与App端一致)
   factory_super_admin: {
-    dashboard: 'rw', production: 'rw', warehouse: 'rw', quality: 'rw',
-    procurement: 'rw', sales: 'rw', hr: 'rw', equipment: 'rw',
-    finance: 'rw', system: 'rw', analytics: 'rw', scheduling: 'rw'
+    dashboard: 'rw',     // 首页仪表板 - 完全控制
+    production: 'r',     // 生产监控 - 只读
+    warehouse: 'r',      // 仓储监控 - 只读
+    quality: 'r',        // 质量监控 - 只读
+    procurement: 'r',    // 采购监控 - 只读
+    sales: 'r',          // 销售监控 - 只读
+    hr: 'rw',            // 人事管理 - 完全控制
+    equipment: 'rw',     // 设备管理 - 完全控制
+    finance: 'r',        // 财务报表 - 只读
+    system: 'rw',        // 系统配置（含AI意图）- 完全控制
+    analytics: 'rw',     // 数据分析（含AI报告）- 完全控制
+    scheduling: 'r'      // 调度监控 - 只读
   },
 
   // Level 10 - 职能部门经理

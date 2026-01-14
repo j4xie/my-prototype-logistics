@@ -165,4 +165,16 @@ public interface SchedulingService {
      * @return 更新后的设置
      */
     SchedulingSettingsDTO updateSchedulingSettings(String factoryId, SchedulingSettingsDTO settings, Long userId);
+
+    // ==================== 车间主任任务 ====================
+
+    /**
+     * 获取分配给车间主任的排程任务
+     *
+     * @param factoryId 工厂ID
+     * @param supervisorId 车间主任用户ID
+     * @param statusFilter 状态过滤（逗号分隔，如 "pending,in_progress"）
+     * @return 排程任务列表
+     */
+    List<SupervisorTaskDTO> getSupervisorTasks(String factoryId, Long supervisorId, String statusFilter);
 }

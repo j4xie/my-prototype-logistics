@@ -42,6 +42,18 @@ public interface ExpressionLearningService {
                          List<String> expressions, double confidence,
                          LearnedExpression.SourceType sourceType);
 
+    /**
+     * 学习表达（简化版，用于用户反馈学习）
+     * 使用默认置信度 0.9 和 USER_FEEDBACK 来源类型
+     *
+     * @param factoryId  工厂ID
+     * @param expression 完整表达
+     * @param intentCode 意图代码
+     */
+    default void learnExpression(String factoryId, String expression, String intentCode) {
+        learnExpression(factoryId, intentCode, expression, 0.9, LearnedExpression.SourceType.USER_FEEDBACK);
+    }
+
     // ========== 表达匹配 ==========
 
     /**
@@ -92,9 +104,22 @@ public interface ExpressionLearningService {
                                  double confidence, String sessionId);
 
     /**
-     * 记录用户反馈
+     * 记录用户反馈（基于样本ID）
      */
     boolean recordFeedback(Long sampleId, boolean isCorrect, String correctIntentCode);
+
+    /**
+     * 记录用户反馈（用于意图识别学习）
+     *
+     * @param factoryId         工厂ID
+     * @param userInput         原始用户输入
+     * @param matchedIntentCode 系统识别的意图代码
+     * @param correctIntentCode 用户认为正确的意图代码
+     * @param isCorrect         识别是否正确
+     * @param sessionId         会话ID（可选）
+     */
+    void recordFeedback(String factoryId, String userInput, String matchedIntentCode,
+                        String correctIntentCode, Boolean isCorrect, String sessionId);
 
     // ========== 清理与维护 ==========
 

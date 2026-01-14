@@ -178,6 +178,14 @@ public class IsapiConfig {
 
         // NVR 通道
         public static final String CONTENT_MGMT_INPUT = "/ISAPI/ContentMgmt/InputProxy/channels";
+
+        // 系统管理
+        public static final String REBOOT = "/ISAPI/System/reboot";
+        public static final String FACTORY_RESET = "/ISAPI/System/factoryReset";
+
+        // 用户管理
+        public static final String USERS = "/ISAPI/Security/users";
+        public static final String USER_BY_ID = "/ISAPI/Security/users/%d";
     }
 
     /**

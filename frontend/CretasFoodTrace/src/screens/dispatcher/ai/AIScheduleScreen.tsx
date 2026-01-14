@@ -289,8 +289,13 @@ export default function AIScheduleScreen() {
         }
 
         // 保存生成的计划ID用于后续确认
-        if (scheduleResult.plan?.id) {
-          setGeneratedPlanId(scheduleResult.plan.id);
+        // 后端直接返回 SchedulingPlanDTO，id 在根级别
+        const planId = scheduleResult.id || scheduleResult.plan?.id;
+        console.log('[AIScheduleScreen] Generated SchedulingPlan ID:', planId, 'Full response:', JSON.stringify(scheduleResult).slice(0, 500));
+        if (planId) {
+          setGeneratedPlanId(planId);
+        } else {
+          console.warn('[AIScheduleScreen] No SchedulingPlan ID found in response');
         }
 
         setShowResult(true);
@@ -309,25 +314,17 @@ export default function AIScheduleScreen() {
     try {
       setLoading(true);
 
-      // 根据模式确定要确认的计划
-      if (generatedPlanId) {
-        // 确认 AI 生成的调度计划
-        const response = await schedulingApiClient.confirmPlan(generatedPlanId);
-        if (!response.success) {
-          throw new Error(response.message || '确认排产计划失败');
-        }
-      } else if (scheduleMode === 'plan' && selectedPlanIds.size > 0) {
-        // 按计划模式：批量确认选中的生产计划
-        const confirmPromises = Array.from(selectedPlanIds).map(planId =>
-          schedulingApiClient.confirmPlan(planId)
-        );
-        const results = await Promise.all(confirmPromises);
-        const failed = results.filter(r => !r.success);
-        if (failed.length > 0) {
-          throw new Error(`${failed.length} 个计划确认失败`);
-        }
-      } else {
-        throw new Error('没有可确认的排产计划');
+      console.log('[AIScheduleScreen] applySchedule called, generatedPlanId:', generatedPlanId);
+
+      // 必须有 AI 生成的 SchedulingPlan ID 才能确认
+      if (!generatedPlanId) {
+        throw new Error('请先执行AI排产生成调度计划');
+      }
+
+      // 确认 AI 生成的调度计划
+      const response = await schedulingApiClient.confirmPlan(generatedPlanId);
+      if (!response.success) {
+        throw new Error(response.message || '确认排产计划失败');
       }
 
       const count = scheduleMode === 'batch' ? selectedBatches.size : selectedPlanIds.size;

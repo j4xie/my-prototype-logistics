@@ -113,7 +113,9 @@ public class SecurityConfig
                 // 对于登录login 注册register 验证码captchaImage 允许匿名访问
                 requests.requestMatchers("/login", "/register", "/captchaImage", "/weixin/portal/**", "/weixin/api/**", "/joolun-wiki/**", "/advertisement/splash", "/advertisement/banners", "/advertisement/active/**", "/advertisement/*/click", "/advertisement/*/view",
                     // 个性化推荐和行为追踪API - 允许匿名访问
-                    "/weixin/ma/recommend/popular", "/weixin/ma/recommend/similar/**", "/weixin/ma/behavior/**", "/weixin/ma/recommend/**"
+                    "/weixin/ma/recommend/popular", "/weixin/ma/recommend/similar/**", "/weixin/ma/behavior/**", "/weixin/ma/recommend/**",
+                    // 商户列表 - 下拉选择用
+                    "/merchant/list"
                 ).permitAll()
                     // 静态资源，可匿名访问
                     .requestMatchers(HttpMethod.GET, "/", "/*.html", "/**.html", "/**.css", "/**.js", "/profile/**").permitAll()

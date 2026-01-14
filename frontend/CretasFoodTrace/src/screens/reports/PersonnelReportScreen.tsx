@@ -10,11 +10,15 @@ import {
   Divider,
   Surface,
   SegmentedButtons,
+  Icon,
+  ProgressBar,
 } from 'react-native-paper';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { personnelApiClient } from '../../services/api/personnelApiClient';
+import { wageApiClient } from '../../services/api/wageApiClient';
+import type { WorkerDailyEfficiency, LaborCostAnalysis } from '../../services/api/wageApiClient';
 import { handleError , getErrorMsg} from '../../utils/errorHandler';
 import type {
   PersonnelStatistics,
@@ -52,6 +56,11 @@ export default function PersonnelReportScreen() {
   // 数据状态
   const [personnelStats, setPersonnelStats] = useState<PersonnelStatistics | null>(null);
   const [workHoursRanking, setWorkHoursRanking] = useState<WorkHoursRankingItem[]>([]);
+
+  // 计件人效数据状态
+  const [efficiencyRanking, setEfficiencyRanking] = useState<WorkerDailyEfficiency[]>([]);
+  const [laborCostAnalysis, setLaborCostAnalysis] = useState<LaborCostAnalysis | null>(null);
+  const [wageDataLoading, setWageDataLoading] = useState(false);
 
   /**
    * 加载人员统计数据
@@ -125,6 +134,42 @@ export default function PersonnelReportScreen() {
       } else {
         setWorkHoursRanking([]);
         personnelReportLogger.warn('工时排行榜数据为空', { factoryId });
+      }
+
+      // 加载计件人效数据
+      setWageDataLoading(true);
+      try {
+        const today = formatDate(new Date());
+
+        // 并行加载效率排名和人力成本分析
+        const [rankingRes, costRes] = await Promise.all([
+          wageApiClient.getEfficiencyRanking(today, undefined, factoryId)
+            .catch((err) => {
+              personnelReportLogger.warn('效率排名API失败', { error: err?.message });
+              return { data: [] };
+            }),
+          wageApiClient.analyzeLaborCost(startDateStr, endDateStr, factoryId)
+            .catch((err) => {
+              personnelReportLogger.warn('人力成本分析API失败', { error: err?.message });
+              return { data: null };
+            }),
+        ]);
+
+        // 处理嵌套的响应格式 {code, message, data}
+        const rankingData = Array.isArray(rankingRes) ? rankingRes : (rankingRes as any)?.data || [];
+        const costData = (costRes as any)?.data ?? costRes;
+
+        setEfficiencyRanking(rankingData);
+        setLaborCostAnalysis(costData);
+
+        personnelReportLogger.info('计件人效数据加载完成', {
+          efficiencyCount: rankingData.length,
+          hasCostAnalysis: !!costData,
+        });
+      } catch (err) {
+        personnelReportLogger.warn('加载计件人效数据异常', { error: err });
+      } finally {
+        setWageDataLoading(false);
       }
 
     } catch (error) {
@@ -233,7 +278,7 @@ export default function PersonnelReportScreen() {
               <View style={styles.attendanceRateContainer}>
                 <Text style={styles.attendanceRateLabel}>{t('personnel.avgAttendanceRate')}</Text>
                 <Text style={styles.attendanceRateValue}>
-                  {personnelStats.avgAttendanceRate.toFixed(1)}%
+                  {(personnelStats.avgAttendanceRate ?? 0).toFixed(1)}%
                 </Text>
               </View>
             </>
@@ -294,23 +339,196 @@ export default function PersonnelReportScreen() {
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text variant="bodySmall" style={{ color: '#2196F3', fontWeight: '600' }}>
-                      {item.totalWorkHours.toFixed(1)}h
+                      {(item.totalWorkHours ?? 0).toFixed(1)}h
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric>
                     <Text
                       variant="bodySmall"
                       style={{
-                        color: item.attendanceRate >= 95 ? '#4CAF50' : '#FF9800',
+                        color: (item.attendanceRate ?? 0) >= 95 ? '#4CAF50' : '#FF9800',
                       }}
                     >
-                      {item.attendanceRate.toFixed(0)}%
+                      {(item.attendanceRate ?? 0).toFixed(0)}%
                     </Text>
                   </DataTable.Cell>
                 </DataTable.Row>
               ))
             )}
           </DataTable>
+        </Card>
+
+        {/* 计件效率排名 */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Title
+            title="计件效率排名"
+            subtitle="今日工人效率排名"
+            titleVariant="titleMedium"
+            left={(props) => <Icon {...props} source="trophy" color="#FF9800" />}
+          />
+          <Card.Content>
+            {wageDataLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.loadingText}>加载中...</Text>
+              </View>
+            ) : !efficiencyRanking || efficiencyRanking.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Icon source="chart-line" size={48} color="#CCC" />
+                <Text variant="bodyMedium" style={styles.emptyText}>
+                  暂无效率数据
+                </Text>
+                <Text variant="bodySmall" style={styles.emptyHint}>
+                  工人完成计件后会自动记录效率
+                </Text>
+              </View>
+            ) : (
+              <>
+                {(efficiencyRanking || []).slice(0, 5).map((item, index) => (
+                  <View key={item.id || index} style={styles.efficiencyItem}>
+                    <View style={styles.efficiencyRank}>
+                      <Chip
+                        mode="flat"
+                        style={[
+                          styles.rankChip,
+                          index === 0 && { backgroundColor: '#FFD700' },
+                          index === 1 && { backgroundColor: '#C0C0C0' },
+                          index === 2 && { backgroundColor: '#CD7F32' },
+                          index > 2 && { backgroundColor: '#E0E0E0' },
+                        ]}
+                        textStyle={{ fontSize: 12, fontWeight: 'bold' }}
+                      >
+                        {index + 1}
+                      </Chip>
+                    </View>
+                    <View style={styles.efficiencyInfo}>
+                      <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                        {item.workerName || `工人${item.workerId}`}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: '#666' }}>
+                        {item.processStageType || '综合'}
+                      </Text>
+                    </View>
+                    <View style={styles.efficiencyStats}>
+                      <Text variant="titleMedium" style={{ color: '#2196F3', fontWeight: '700' }}>
+                        {item.piecesPerHour?.toFixed(1) || '0'}
+                      </Text>
+                      <Text variant="bodySmall" style={{ color: '#999' }}>
+                        件/小时
+                      </Text>
+                    </View>
+                    <View style={styles.efficiencyScore}>
+                      <Text
+                        variant="bodySmall"
+                        style={{
+                          color: (item.efficiencyScore || 0) >= 80 ? '#4CAF50' : '#FF9800',
+                          fontWeight: '600',
+                        }}
+                      >
+                        {item.efficiencyScore?.toFixed(0) || '0'}分
+                      </Text>
+                    </View>
+                  </View>
+                ))}
+              </>
+            )}
+          </Card.Content>
+        </Card>
+
+        {/* 人力成本分析 */}
+        <Card style={styles.card} mode="elevated">
+          <Card.Title
+            title="人力成本分析"
+            subtitle={`周期: ${timeRange === 'day' ? '今日' : timeRange === 'week' ? '本周' : '本月'}`}
+            titleVariant="titleMedium"
+            left={(props) => <Icon {...props} source="currency-usd" color="#4CAF50" />}
+          />
+          <Card.Content>
+            {wageDataLoading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" />
+                <Text style={styles.loadingText}>加载中...</Text>
+              </View>
+            ) : !laborCostAnalysis ? (
+              <View style={styles.emptyContainer}>
+                <Icon source="chart-bar" size={48} color="#CCC" />
+                <Text variant="bodyMedium" style={styles.emptyText}>
+                  暂无成本分析数据
+                </Text>
+                <Text variant="bodySmall" style={styles.emptyHint}>
+                  需要有工资记录才能分析
+                </Text>
+              </View>
+            ) : (
+              <>
+                {/* 总工资 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">总工资支出</Text>
+                  <Text variant="titleMedium" style={{ color: '#F44336', fontWeight: '700' }}>
+                    ¥{laborCostAnalysis.totalWage?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+                <Divider style={{ marginVertical: 8 }} />
+
+                {/* 计件工资 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">计件工资</Text>
+                  <Text variant="bodyMedium" style={{ color: '#2196F3', fontWeight: '600' }}>
+                    ¥{laborCostAnalysis.totalPieceRateWage?.toLocaleString() || '0'}
+                  </Text>
+                </View>
+
+                {/* 总计件数 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">总计件数</Text>
+                  <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                    {laborCostAnalysis.totalPieceCount?.toLocaleString() || '0'} 件
+                  </Text>
+                </View>
+
+                {/* 单件人工成本 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">单件人工成本</Text>
+                  <Text variant="bodyMedium" style={{ color: '#FF9800', fontWeight: '600' }}>
+                    ¥{laborCostAnalysis.costPerPiece?.toFixed(2) || '0.00'}/件
+                  </Text>
+                </View>
+                <Divider style={{ marginVertical: 8 }} />
+
+                {/* 效率指标 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">平均效率</Text>
+                  <Text variant="bodyMedium" style={{ color: '#9C27B0', fontWeight: '600' }}>
+                    {laborCostAnalysis.averageEfficiency?.toFixed(1) || '0'} 件/小时
+                  </Text>
+                </View>
+
+                {/* 工人数量 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">工人数量</Text>
+                  <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                    {laborCostAnalysis.workerCount || '0'} 人
+                  </Text>
+                </View>
+
+                {/* 人均产出 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">人均产出</Text>
+                  <Text variant="bodyMedium" style={{ fontWeight: '600' }}>
+                    {laborCostAnalysis.avgPiecesPerWorker?.toFixed(0) || '0'} 件
+                  </Text>
+                </View>
+
+                {/* 人均工资 */}
+                <View style={styles.costRow}>
+                  <Text variant="bodyMedium">人均工资</Text>
+                  <Text variant="bodyMedium" style={{ color: '#4CAF50', fontWeight: '600' }}>
+                    ¥{laborCostAnalysis.avgWagePerWorker?.toFixed(0) || '0'}
+                  </Text>
+                </View>
+              </>
+            )}
+          </Card.Content>
         </Card>
 
         <View style={styles.bottomPadding} />
@@ -430,5 +648,41 @@ const styles = StyleSheet.create({
   },
   bottomPadding: {
     height: 80,
+  },
+  // 计件效率排名样式
+  efficiencyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  efficiencyRank: {
+    width: 40,
+    alignItems: 'center',
+  },
+  efficiencyInfo: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  efficiencyStats: {
+    alignItems: 'flex-end',
+    marginRight: 12,
+  },
+  efficiencyScore: {
+    width: 50,
+    alignItems: 'flex-end',
+  },
+  // 人力成本分析样式
+  costRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  emptyHint: {
+    color: '#999',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

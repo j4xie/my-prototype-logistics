@@ -20,6 +20,11 @@ import ForecastReportScreen from "../../screens/reports/ForecastReportScreen";
 import AnomalyReportScreen from "../../screens/reports/AnomalyReportScreen";
 import RealtimeReportScreen from "../../screens/reports/RealtimeReportScreen";
 import DataExportScreen from "../../screens/reports/DataExportScreen";
+// 新增报表页面 (2026-01-14)
+import OeeReportScreen from "../../screens/reports/OeeReportScreen";
+import CostVarianceReportScreen from "../../screens/reports/CostVarianceReportScreen";
+import CapacityUtilizationReportScreen from "../../screens/reports/CapacityUtilizationReportScreen";
+import OnTimeDeliveryReportScreen from "../../screens/reports/OnTimeDeliveryReportScreen";
 
 const Stack = createNativeStackNavigator<ReportStackParamList>();
 
@@ -111,6 +116,34 @@ export function FAReportsStackNavigator() {
         name="DataExport"
         component={DataExportScreen}
         options={{ title: "数据导出" }}
+      />
+
+      {/* OEE设备综合效率报表 (2026-01-14) */}
+      <Stack.Screen
+        name="OeeReport"
+        component={OeeReportScreen}
+        options={{ title: "OEE报表" }}
+      />
+
+      {/* 成本差异报表 (2026-01-14) */}
+      <Stack.Screen
+        name="CostVarianceReport"
+        component={CostVarianceReportScreen}
+        options={{ title: "成本差异报表" }}
+      />
+
+      {/* 产能利用率报表 (2026-01-14) */}
+      <Stack.Screen
+        name="CapacityUtilizationReport"
+        component={CapacityUtilizationReportScreen}
+        options={{ title: "产能利用率" }}
+      />
+
+      {/* 准时交付率报表 (2026-01-14) */}
+      <Stack.Screen
+        name="OnTimeDeliveryReport"
+        component={OnTimeDeliveryReportScreen}
+        options={{ title: "准时交付率" }}
       />
     </Stack.Navigator>
   );

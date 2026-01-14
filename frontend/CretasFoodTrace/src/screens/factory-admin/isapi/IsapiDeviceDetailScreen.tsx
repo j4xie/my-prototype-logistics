@@ -1,6 +1,6 @@
 /**
  * ISAPI 摄像头设备详情页面
- * 设备信息查看、编辑、抓拍、订阅管理
+ * 设备信息查看、编辑、抓拍、订阅管理、高级管理
  */
 import React, { useEffect, useState, useCallback } from 'react';
 import {
@@ -14,6 +14,10 @@ import {
   Alert,
   Image,
   RefreshControl,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { Icon } from 'react-native-paper';
@@ -27,6 +31,7 @@ import isapiApiClient, {
   getDeviceStatusColor,
   getEventSeverityColor,
 } from '../../../services/api/isapiApiClient';
+import { IsapiVideoPlayer } from '../../../components/isapi/IsapiVideoPlayer';
 
 // AI分析结果类型
 interface AIAnalysisResult {
@@ -94,6 +99,17 @@ export function IsapiDeviceDetailScreen() {
   const [capturing, setCapturing] = useState(false);
   const [testing, setTesting] = useState(false);
   const [syncing, setSyncing] = useState(false);
+
+  // 高级管理状态
+  const [showPassword, setShowPassword] = useState(false);
+  const [devicePassword, setDevicePassword] = useState<string | null>(null);
+  const [fetchingPassword, setFetchingPassword] = useState(false);
+  const [passwordModalVisible, setPasswordModalVisible] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [rebooting, setRebooting] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -209,6 +225,131 @@ export function IsapiDeviceDetailScreen() {
     );
   };
 
+  // 高级管理: 切换密码显示
+  const handleTogglePasswordVisibility = async () => {
+    if (showPassword) {
+      // 隐藏密码
+      setShowPassword(false);
+      return;
+    }
+
+    // 显示密码 - 需要从 API 获取
+    if (devicePassword) {
+      setShowPassword(true);
+      return;
+    }
+
+    setFetchingPassword(true);
+    try {
+      const result = await isapiApiClient.getDevicePassword(deviceId);
+      setDevicePassword(result.password);
+      setShowPassword(true);
+    } catch (err) {
+      Alert.alert('获取失败', '无法获取设备密码');
+    } finally {
+      setFetchingPassword(false);
+    }
+  };
+
+  // 高级管理: 修改密码
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      Alert.alert('错误', '请输入新密码和确认密码');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      Alert.alert('错误', '两次输入的密码不一致');
+      return;
+    }
+    if (newPassword.length < 6) {
+      Alert.alert('错误', '密码长度至少6位');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      await isapiApiClient.changeDevicePassword(deviceId, newPassword);
+      Alert.alert('成功', '设备密码已修改');
+      setPasswordModalVisible(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      // 清除缓存的密码，下次显示时需要重新获取
+      setDevicePassword(null);
+      setShowPassword(false);
+    } catch (err) {
+      Alert.alert('修改失败', '修改设备密码时发生错误');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  // 高级管理: 重启设备
+  const handleReboot = () => {
+    Alert.alert(
+      '确认重启',
+      '确定要重启设备吗？设备将暂时离线约1-2分钟。',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '重启',
+          style: 'destructive',
+          onPress: async () => {
+            setRebooting(true);
+            try {
+              await isapiApiClient.rebootDevice(deviceId);
+              Alert.alert('成功', '设备重启指令已发送，请等待设备重新上线');
+            } catch (err) {
+              Alert.alert('重启失败', '发送重启指令时发生错误');
+            } finally {
+              setRebooting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // 高级管理: 恢复出厂设置
+  const handleFactoryReset = () => {
+    Alert.alert(
+      '危险操作',
+      '恢复出厂设置将清除设备所有配置，包括网络设置、用户信息等。此操作不可恢复！\n\n确定要继续吗？',
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确认恢复',
+          style: 'destructive',
+          onPress: () => {
+            // 二次确认
+            Alert.alert(
+              '最终确认',
+              '这是最后一次确认。设备将恢复出厂设置，所有配置将丢失。',
+              [
+                { text: '取消', style: 'cancel' },
+                {
+                  text: '恢复出厂设置',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setResetting(true);
+                    try {
+                      await isapiApiClient.factoryResetDevice(deviceId);
+                      Alert.alert('成功', '设备出厂设置指令已发送');
+                      navigation.goBack();
+                    } catch (err) {
+                      Alert.alert('操作失败', '发送出厂设置指令时发生错误');
+                    } finally {
+                      setResetting(false);
+                    }
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -302,9 +443,52 @@ export function IsapiDeviceDetailScreen() {
             <InfoRow label="固件版本" value={device.firmwareVersion || '-'} icon="update" />
             <InfoRow label="通道数" value={device.channelCount.toString()} icon="view-grid" />
             <InfoRow label="用户名" value={device.username} icon="account" />
+            {/* 密码行带显示/隐藏按钮 */}
+            <View style={styles.infoRow}>
+              <View style={styles.infoLabel}>
+                <Icon source="lock" size={16} color="#718096" />
+                <Text style={styles.infoLabelText}>密码</Text>
+              </View>
+              <View style={styles.passwordContainer}>
+                <Text style={styles.infoValue}>
+                  {showPassword && devicePassword ? devicePassword : '••••••'}
+                </Text>
+                <TouchableOpacity
+                  onPress={handleTogglePasswordVisibility}
+                  style={styles.passwordToggle}
+                  disabled={fetchingPassword}
+                >
+                  {fetchingPassword ? (
+                    <ActivityIndicator size="small" color="#718096" />
+                  ) : (
+                    <Icon
+                      source={showPassword ? 'eye-off' : 'eye'}
+                      size={18}
+                      color="#718096"
+                    />
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
             <InfoRow label="位置" value={device.locationDescription || '-'} icon="map-marker" />
           </View>
         </View>
+
+        {/* 视频预览 */}
+        {streams.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>视频预览</Text>
+            {streams.slice(0, 1).map((stream) => (
+              <IsapiVideoPlayer
+                key={stream.channelId}
+                channelName={stream.channelName || `通道 ${stream.channelId}`}
+                rtspUrl={stream.mainStreamUrl}
+                height={180}
+                onError={(error) => console.warn('视频加载错误:', error)}
+              />
+            ))}
+          </View>
+        )}
 
         {/* 设备能力 */}
         <View style={styles.section}>
@@ -448,6 +632,67 @@ export function IsapiDeviceDetailScreen() {
           </View>
         )}
 
+        {/* 高级管理 */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>高级管理</Text>
+          <View style={styles.advancedCard}>
+            {/* 修改密码 */}
+            <TouchableOpacity
+              style={styles.advancedBtn}
+              onPress={() => setPasswordModalVisible(true)}
+            >
+              <View style={styles.advancedBtnIcon}>
+                <Icon source="key-variant" size={20} color="#3182ce" />
+              </View>
+              <View style={styles.advancedBtnContent}>
+                <Text style={styles.advancedBtnTitle}>修改设备密码</Text>
+                <Text style={styles.advancedBtnDesc}>更改摄像头登录密码</Text>
+              </View>
+              <Icon source="chevron-right" size={20} color="#a0aec0" />
+            </TouchableOpacity>
+
+            {/* 重启设备 */}
+            <TouchableOpacity
+              style={[styles.advancedBtn, rebooting && styles.advancedBtnDisabled]}
+              onPress={handleReboot}
+              disabled={rebooting}
+            >
+              <View style={[styles.advancedBtnIcon, { backgroundColor: '#fef3c7' }]}>
+                {rebooting ? (
+                  <ActivityIndicator size="small" color="#d97706" />
+                ) : (
+                  <Icon source="restart" size={20} color="#d97706" />
+                )}
+              </View>
+              <View style={styles.advancedBtnContent}>
+                <Text style={styles.advancedBtnTitle}>重启设备</Text>
+                <Text style={styles.advancedBtnDesc}>设备将暂时离线1-2分钟</Text>
+              </View>
+              <Icon source="chevron-right" size={20} color="#a0aec0" />
+            </TouchableOpacity>
+
+            {/* 恢复出厂设置 */}
+            <TouchableOpacity
+              style={[styles.advancedBtn, styles.advancedBtnDanger, resetting && styles.advancedBtnDisabled]}
+              onPress={handleFactoryReset}
+              disabled={resetting}
+            >
+              <View style={[styles.advancedBtnIcon, { backgroundColor: '#fee2e2' }]}>
+                {resetting ? (
+                  <ActivityIndicator size="small" color="#e53e3e" />
+                ) : (
+                  <Icon source="backup-restore" size={20} color="#e53e3e" />
+                )}
+              </View>
+              <View style={styles.advancedBtnContent}>
+                <Text style={[styles.advancedBtnTitle, { color: '#e53e3e' }]}>恢复出厂设置</Text>
+                <Text style={styles.advancedBtnDesc}>清除所有配置，不可恢复</Text>
+              </View>
+              <Icon source="chevron-right" size={20} color="#fca5a5" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* 危险操作 */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>危险操作</Text>
@@ -459,6 +704,87 @@ export function IsapiDeviceDetailScreen() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      {/* 修改密码弹窗 */}
+      <Modal
+        visible={passwordModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPasswordModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>修改设备密码</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setPasswordModalVisible(false);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                style={styles.modalCloseBtn}
+              >
+                <Icon source="close" size={24} color="#718096" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>新密码</Text>
+              <TextInput
+                style={styles.textInput}
+                value={newPassword}
+                onChangeText={setNewPassword}
+                placeholder="请输入新密码"
+                placeholderTextColor="#a0aec0"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Text style={[styles.inputLabel, { marginTop: 16 }]}>确认密码</Text>
+              <TextInput
+                style={styles.textInput}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                placeholder="请再次输入新密码"
+                placeholderTextColor="#a0aec0"
+                secureTextEntry
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.passwordHint}>
+                密码长度至少6位，建议包含字母和数字
+              </Text>
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalCancelBtn}
+                onPress={() => {
+                  setPasswordModalVisible(false);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+              >
+                <Text style={styles.modalCancelBtnText}>取消</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalConfirmBtn, changingPassword && styles.modalConfirmBtnDisabled]}
+                onPress={handleChangePassword}
+                disabled={changingPassword}
+              >
+                {changingPassword ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <Text style={styles.modalConfirmBtnText}>确认修改</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -845,6 +1171,153 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 40,
+  },
+  // 密码显示/隐藏
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  passwordToggle: {
+    padding: 4,
+  },
+  // 高级管理样式
+  advancedCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  advancedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  advancedBtnDisabled: {
+    opacity: 0.6,
+  },
+  advancedBtnDanger: {
+    borderBottomWidth: 0,
+  },
+  advancedBtnIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#ebf8ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  advancedBtnContent: {
+    flex: 1,
+  },
+  advancedBtnTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#2d3748',
+  },
+  advancedBtnDesc: {
+    fontSize: 12,
+    color: '#718096',
+    marginTop: 2,
+  },
+  // 弹窗样式
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2d3748',
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalBody: {
+    padding: 20,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#4a5568',
+    marginBottom: 8,
+  },
+  textInput: {
+    backgroundColor: '#f7fafc',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#2d3748',
+  },
+  passwordHint: {
+    fontSize: 12,
+    color: '#718096',
+    marginTop: 12,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    padding: 20,
+    paddingTop: 0,
+    gap: 12,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#f7fafc',
+    alignItems: 'center',
+  },
+  modalCancelBtnText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#718096',
+  },
+  modalConfirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#3182ce',
+    alignItems: 'center',
+  },
+  modalConfirmBtnDisabled: {
+    opacity: 0.6,
+  },
+  modalConfirmBtnText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
 

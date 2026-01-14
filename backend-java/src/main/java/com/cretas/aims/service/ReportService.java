@@ -1,8 +1,13 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.report.CostVarianceReportDTO;
 import com.cretas.aims.dto.report.DashboardStatisticsDTO;
+import com.cretas.aims.dto.report.KpiMetricsDTO;
+import com.cretas.aims.dto.report.OeeReportDTO;
+import com.cretas.aims.dto.report.ProductionByProductDTO;
 import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 /**
  * 报表统计服务接口
@@ -164,4 +169,66 @@ public interface ReportService {
      * 委托 ProcessingService.getTrendAnalysis
      */
     Map<String, Object> getTrendsDashboard(String factoryId, String period, String metric, Integer days);
+
+    // ========== 生产统计报表 ==========
+
+    /**
+     * 按产品统计生产数量
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期（可选，默认本周开始）
+     * @param endDate 结束日期（可选，默认今天）
+     * @return 按产品分组的生产统计列表
+     */
+    List<ProductionByProductDTO> getProductionByProduct(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    // ========== 新增报表 (2026-01-14) ==========
+
+    /**
+     * 获取 OEE (设备综合效率) 报表
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return OEE 报表数据
+     */
+    OeeReportDTO getOeeReport(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取成本差异报表
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 成本差异报表数据
+     */
+    CostVarianceReportDTO getCostVarianceReport(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取完整 KPI 指标集
+     *
+     * @param factoryId 工厂ID
+     * @param date 指标日期
+     * @return 完整 KPI 指标
+     */
+    KpiMetricsDTO getKpiMetricsDTO(String factoryId, LocalDate date);
+
+    /**
+     * 获取产能利用率报表
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 产能利用率数据
+     */
+    Map<String, Object> getCapacityUtilizationReport(String factoryId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * 获取准时交付报表
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 准时交付数据
+     */
+    Map<String, Object> getOnTimeDeliveryReport(String factoryId, LocalDate startDate, LocalDate endDate);
 }

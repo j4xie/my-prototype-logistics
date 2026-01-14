@@ -13,6 +13,7 @@ import com.joolun.mall.entity.GoodsCategoryTree;
 import com.joolun.mall.mapper.GoodsCategoryMapper;
 import com.joolun.mall.service.GoodsCategoryService;
 import com.joolun.mall.util.TreeUtil;
+import com.joolun.common.exception.ServiceException;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
@@ -28,6 +29,26 @@ import java.util.stream.Collectors;
  */
 @Service
 public class GoodsCategoryServiceImpl extends ServiceImpl<GoodsCategoryMapper, GoodsCategory> implements GoodsCategoryService {
+
+	/**
+	 * 一级分类最大数量限制
+	 */
+	private static final int MAX_TOP_LEVEL_CATEGORIES = 7;
+
+	@Override
+	public boolean save(GoodsCategory entity) {
+		// 验证一级分类数量限制
+		if (CommonConstants.PARENT_ID.equals(entity.getParentId())) {
+			long count = this.count(Wrappers.<GoodsCategory>query()
+					.lambda()
+					.eq(GoodsCategory::getParentId, CommonConstants.PARENT_ID)
+					.eq(GoodsCategory::getDelFlag, CommonConstants.NO));
+			if (count >= MAX_TOP_LEVEL_CATEGORIES) {
+				throw new ServiceException("一级分类最多只能创建" + MAX_TOP_LEVEL_CATEGORIES + "个");
+			}
+		}
+		return super.save(entity);
+	}
 
 	@Override
 	public List<GoodsCategoryTree> selectTree(GoodsCategory goodsCategory) {

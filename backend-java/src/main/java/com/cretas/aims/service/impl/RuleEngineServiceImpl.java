@@ -787,6 +787,13 @@ public class RuleEngineServiceImpl implements RuleEngineService {
                 }
             }
 
+            // 过滤无效的 DRL 内容（配置值不是有效的 Drools 规则）
+            if (!isValidDrlContent(drlContent)) {
+                log.debug("跳过无效 DRL 规则 - ruleName={}, content={}", dbRule.getRuleName(),
+                    drlContent != null && drlContent.length() > 50 ? drlContent.substring(0, 50) + "..." : drlContent);
+                continue;
+            }
+
             rules.add(new RuleDefinition(dbRule.getRuleGroup(), dbRule.getRuleName(), drlContent));
         }
 
@@ -829,6 +836,12 @@ public class RuleEngineServiceImpl implements RuleEngineService {
                 } catch (Exception e) {
                     log.warn("决策表转换失败 - ruleName={}", dbRule.getRuleName(), e);
                 }
+            }
+
+            // 过滤无效的 DRL 内容
+            if (!isValidDrlContent(drlContent)) {
+                log.debug("跳过无效 DRL 规则 - ruleName={}", dbRule.getRuleName());
+                continue;
             }
 
             rules.add(new RuleDefinition(dbRule.getRuleGroup(), dbRule.getRuleName(), drlContent));
@@ -891,6 +904,39 @@ public class RuleEngineServiceImpl implements RuleEngineService {
     private void recordExecution(String factoryId, long executionTime) {
         executionCounts.computeIfAbsent(factoryId, k -> new AtomicLong(0)).incrementAndGet();
         totalExecutionTimes.computeIfAbsent(factoryId, k -> new AtomicLong(0)).addAndGet(executionTime);
+    }
+
+    /**
+     * 检查是否是有效的 DRL 内容
+     * 有效的 DRL 应该包含 Drools 关键字如 package, rule, when, then 等
+     * 简单的配置值（如 true, 0.85, MANUAL_CONFIRM）不是有效的 DRL
+     */
+    private boolean isValidDrlContent(String content) {
+        if (content == null || content.trim().isEmpty()) {
+            return false;
+        }
+
+        String trimmed = content.trim().toLowerCase();
+
+        // 检查是否包含 Drools DRL 关键字
+        boolean hasPackage = trimmed.contains("package ");
+        boolean hasRule = trimmed.contains("rule ");
+        boolean hasWhen = trimmed.contains("when");
+        boolean hasThen = trimmed.contains("then");
+        boolean hasEnd = trimmed.contains("end");
+
+        // 有效的 DRL 至少应该包含 rule + when + then + end
+        // 或者是一个完整的包含 package 声明的规则文件
+        if ((hasRule && hasWhen && hasThen && hasEnd) || hasPackage) {
+            return true;
+        }
+
+        // 如果内容很短（小于 50 字符），很可能只是一个配置值
+        if (content.trim().length() < 50) {
+            return false;
+        }
+
+        return false;
     }
 
     /**

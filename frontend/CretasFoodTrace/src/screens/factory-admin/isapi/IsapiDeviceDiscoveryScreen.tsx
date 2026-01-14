@@ -25,10 +25,17 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import * as Clipboard from 'expo-clipboard';
 import isapiApiClient, {
   BatchImportRequest,
+  CreateIsapiDeviceRequest,
   getDeviceTypeName,
+  IsapiDeviceType,
 } from '../../../services/api/isapiApiClient';
+import {
+  generateHikvisionPassword,
+  validateHikvisionPassword,
+} from '../../../utils/passwordGenerator';
 import { useSadpDiscovery } from '../../../hooks/useSadpDiscovery';
 import { SadpDevice } from '../../../native/SadpModule';
 import LocalDeviceDiscovery, {
@@ -127,6 +134,9 @@ export function IsapiDeviceDiscoveryScreen() {
   const [activatePassword, setActivatePassword] = useState('');
   const [activateConfirmPassword, setActivateConfirmPassword] = useState('');
   const [isActivating, setIsActivating] = useState(false);
+  // 密码模式：auto=自动生成, manual=手动输入
+  const [passwordMode, setPasswordMode] = useState<'auto' | 'manual'>('auto');
+  const [generatedPassword, setGeneratedPassword] = useState('');
 
   // 发现模式状态
   const [discoveryMode, setDiscoveryMode] = useState<DiscoveryMode>('idle');
@@ -359,6 +369,8 @@ export function IsapiDeviceDiscoveryScreen() {
   // 打开激活弹窗
   const handleOpenActivateModal = (device: DisplayDevice) => {
     setActivatingDevice(device);
+    setPasswordMode('auto');
+    setGeneratedPassword(generateHikvisionPassword());
     setActivatePassword('');
     setActivateConfirmPassword('');
     setActivateModalVisible(true);
@@ -371,38 +383,104 @@ export function IsapiDeviceDiscoveryScreen() {
       return;
     }
 
-    if (activatePassword.length < 8) {
-      Alert.alert('密码要求', '密码至少需要8个字符');
-      return;
-    }
+    // 根据模式选择密码
+    const finalPassword = passwordMode === 'auto' ? generatedPassword : activatePassword;
 
-    if (activatePassword !== activateConfirmPassword) {
-      Alert.alert('密码不匹配', '两次输入的密码不一致');
-      return;
+    // 验证密码
+    if (passwordMode === 'manual') {
+      const validation = validateHikvisionPassword(activatePassword);
+      if (!validation.valid) {
+        Alert.alert('密码不符合要求', validation.error);
+        return;
+      }
+      if (activatePassword !== activateConfirmPassword) {
+        Alert.alert('密码不匹配', '两次输入的密码不一致');
+        return;
+      }
     }
 
     try {
       setIsActivating(true);
 
-      const result = await activateDevice(activatingDevice.macAddress, activatePassword);
+      // 1. 执行 SADP 激活
+      const result = await activateDevice(activatingDevice.macAddress, finalPassword);
 
       if (result.success) {
-        Alert.alert('激活成功', '设备已激活，现在可以使用设置的密码登录', [
-          {
-            text: '确定',
-            onPress: () => {
-              // 更新设备列表中的激活状态
-              setDiscoveredDevices(prev =>
-                prev.map(d =>
-                  d.macAddress === activatingDevice.macAddress
-                    ? { ...d, isActivated: true, authRequired: true }
-                    : d
-                )
-              );
-              setActivateModalVisible(false);
-            },
-          },
-        ]);
+        // 2. 激活成功后，自动导入到后端
+        try {
+          const deviceRequest: CreateIsapiDeviceRequest = {
+            ipAddress: activatingDevice.ipAddress,
+            port: activatingDevice.port,
+            username: 'admin',
+            password: finalPassword,
+            deviceName: activatingDevice.deviceName || activatingDevice.deviceModel || `海康设备_${activatingDevice.ipAddress}`,
+            deviceType: (activatingDevice.deviceType as IsapiDeviceType) || 'IPC',
+            deviceModel: activatingDevice.deviceModel,
+            serialNumber: activatingDevice.serialNumber,
+            macAddress: activatingDevice.macAddress,
+            firmwareVersion: activatingDevice.firmwareVersion,
+          };
+
+          await isapiApiClient.createIsapiDevice(deviceRequest);
+
+          Alert.alert(
+            '激活成功',
+            passwordMode === 'auto'
+              ? `设备已激活并导入系统\n\n自动生成的密码：${finalPassword}\n\n请妥善保存此密码`
+              : '设备已激活并导入系统',
+            [
+              {
+                text: '复制密码',
+                onPress: async () => {
+                  await Clipboard.setStringAsync(finalPassword);
+                  Alert.alert('已复制', '密码已复制到剪贴板');
+                },
+              },
+              {
+                text: '确定',
+                onPress: () => {
+                  // 更新设备列表中的激活状态
+                  setDiscoveredDevices(prev =>
+                    prev.map(d =>
+                      d.macAddress === activatingDevice.macAddress
+                        ? { ...d, isActivated: true, authRequired: true }
+                        : d
+                    )
+                  );
+                  setActivateModalVisible(false);
+                },
+              },
+            ]
+          );
+        } catch (importErr) {
+          console.error('导入设备到后端失败:', importErr);
+          // 激活成功但导入失败，仍提示用户保存密码
+          Alert.alert(
+            '激活成功（导入失败）',
+            `设备已激活，但导入系统失败\n\n密码：${finalPassword}\n\n请手动导入设备或稍后重试`,
+            [
+              {
+                text: '复制密码',
+                onPress: async () => {
+                  await Clipboard.setStringAsync(finalPassword);
+                },
+              },
+              {
+                text: '确定',
+                onPress: () => {
+                  setDiscoveredDevices(prev =>
+                    prev.map(d =>
+                      d.macAddress === activatingDevice.macAddress
+                        ? { ...d, isActivated: true, authRequired: true }
+                        : d
+                    )
+                  );
+                  setActivateModalVisible(false);
+                },
+              },
+            ]
+          );
+        }
       } else {
         Alert.alert('激活失败', result.message);
       }
@@ -848,44 +926,134 @@ export function IsapiDeviceDiscoveryScreen() {
               </View>
 
               <Text style={styles.activateHint}>
-                此设备尚未激活，请设置管理员密码以完成激活
+                此设备尚未激活，请选择密码设置方式
               </Text>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>设置密码</Text>
-                <View style={styles.formInputWrapper}>
-                  <Icon source="lock" size={20} color="#718096" />
-                  <TextInput
-                    style={styles.formInput}
-                    value={activatePassword}
-                    onChangeText={setActivatePassword}
-                    placeholder="请输入密码（至少8位）"
-                    secureTextEntry
-                    editable={!isActivating}
-                  />
+              {/* 密码模式切换 */}
+              <View style={styles.passwordModeContainer}>
+                <Text style={styles.formLabel}>选择密码方式：</Text>
+                <View style={styles.passwordModeButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.passwordModeButton,
+                      passwordMode === 'auto' && styles.passwordModeButtonActive,
+                    ]}
+                    onPress={() => setPasswordMode('auto')}
+                    disabled={isActivating}
+                  >
+                    <Icon
+                      source="lock-smart"
+                      size={20}
+                      color={passwordMode === 'auto' ? '#ffffff' : '#3182ce'}
+                    />
+                    <Text
+                      style={[
+                        styles.passwordModeButtonText,
+                        passwordMode === 'auto' && styles.passwordModeButtonTextActive,
+                      ]}
+                    >
+                      自动生成（推荐）
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.passwordModeButton,
+                      passwordMode === 'manual' && styles.passwordModeButtonActive,
+                    ]}
+                    onPress={() => setPasswordMode('manual')}
+                    disabled={isActivating}
+                  >
+                    <Icon
+                      source="pencil"
+                      size={20}
+                      color={passwordMode === 'manual' ? '#ffffff' : '#3182ce'}
+                    />
+                    <Text
+                      style={[
+                        styles.passwordModeButtonText,
+                        passwordMode === 'manual' && styles.passwordModeButtonTextActive,
+                      ]}
+                    >
+                      手动输入
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
 
-              <View style={styles.formGroup}>
-                <Text style={styles.formLabel}>确认密码</Text>
-                <View style={styles.formInputWrapper}>
-                  <Icon source="lock-check" size={20} color="#718096" />
-                  <TextInput
-                    style={styles.formInput}
-                    value={activateConfirmPassword}
-                    onChangeText={setActivateConfirmPassword}
-                    placeholder="请再次输入密码"
-                    secureTextEntry
-                    editable={!isActivating}
-                  />
+              {/* 自动生成密码显示 */}
+              {passwordMode === 'auto' && (
+                <View style={styles.generatedPasswordContainer}>
+                  <Text style={styles.generatedPasswordLabel}>生成的密码：</Text>
+                  <View style={styles.generatedPasswordRow}>
+                    <Text style={styles.generatedPasswordText}>{generatedPassword}</Text>
+                    <TouchableOpacity
+                      style={styles.copyPasswordButton}
+                      onPress={async () => {
+                        await Clipboard.setStringAsync(generatedPassword);
+                        Alert.alert('已复制', '密码已复制到剪贴板');
+                      }}
+                    >
+                      <Icon source="content-copy" size={18} color="#3182ce" />
+                      <Text style={styles.copyPasswordText}>复制</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.regenerateButton}
+                    onPress={() => setGeneratedPassword(generateHikvisionPassword())}
+                    disabled={isActivating}
+                  >
+                    <Icon source="refresh" size={16} color="#3182ce" />
+                    <Text style={styles.regenerateButtonText}>重新生成</Text>
+                  </TouchableOpacity>
+                  <View style={styles.autoPasswordWarning}>
+                    <Icon source="alert-circle-outline" size={18} color="#c05621" />
+                    <Text style={styles.autoPasswordWarningText}>
+                      请保存此密码，激活后系统将自动记录，后续操作可自动填入
+                    </Text>
+                  </View>
                 </View>
-              </View>
+              )}
+
+              {/* 手动输入密码 */}
+              {passwordMode === 'manual' && (
+                <>
+                  <View style={styles.formGroup}>
+                    <Text style={styles.formLabel}>设置密码</Text>
+                    <View style={styles.formInputWrapper}>
+                      <Icon source="lock" size={20} color="#718096" />
+                      <TextInput
+                        style={styles.formInput}
+                        value={activatePassword}
+                        onChangeText={setActivatePassword}
+                        placeholder="请输入密码（8-16位）"
+                        secureTextEntry
+                        editable={!isActivating}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.formGroup}>
+                    <Text style={styles.formLabel}>确认密码</Text>
+                    <View style={styles.formInputWrapper}>
+                      <Icon source="lock-check" size={20} color="#718096" />
+                      <TextInput
+                        style={styles.formInput}
+                        value={activateConfirmPassword}
+                        onChangeText={setActivateConfirmPassword}
+                        placeholder="请再次输入密码"
+                        secureTextEntry
+                        editable={!isActivating}
+                      />
+                    </View>
+                  </View>
+                </>
+              )}
 
               <View style={styles.passwordRequirements}>
-                <Text style={styles.passwordRequirementsTitle}>密码要求：</Text>
-                <Text style={styles.passwordRequirementItem}>• 至少8个字符</Text>
-                <Text style={styles.passwordRequirementItem}>• 建议包含大小写字母和数字</Text>
-                <Text style={styles.passwordRequirementItem}>• 请妥善保管此密码</Text>
+                <Text style={styles.passwordRequirementsTitle}>海康密码要求：</Text>
+                <Text style={styles.passwordRequirementItem}>• 长度 8-16 位</Text>
+                <Text style={styles.passwordRequirementItem}>• 至少包含大写字母、小写字母、数字中的两种</Text>
+                <Text style={styles.passwordRequirementItem}>• 不能包含用户名 admin</Text>
               </View>
             </ScrollView>
 
@@ -1431,6 +1599,109 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#718096',
     lineHeight: 20,
+  },
+  // 密码模式切换样式
+  passwordModeContainer: {
+    marginBottom: 16,
+  },
+  passwordModeButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  passwordModeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#3182ce',
+    backgroundColor: '#ffffff',
+    gap: 6,
+  },
+  passwordModeButtonActive: {
+    backgroundColor: '#3182ce',
+    borderColor: '#3182ce',
+  },
+  passwordModeButtonText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#3182ce',
+  },
+  passwordModeButtonTextActive: {
+    color: '#ffffff',
+  },
+  // 自动生成密码样式
+  generatedPasswordContainer: {
+    backgroundColor: '#ebf8ff',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  generatedPasswordLabel: {
+    fontSize: 13,
+    color: '#2b6cb0',
+    marginBottom: 8,
+  },
+  generatedPasswordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ffffff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  generatedPasswordText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2d3748',
+    letterSpacing: 1,
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  copyPasswordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
+    gap: 4,
+  },
+  copyPasswordText: {
+    fontSize: 13,
+    color: '#3182ce',
+    fontWeight: '500',
+  },
+  regenerateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    gap: 4,
+  },
+  regenerateButtonText: {
+    fontSize: 13,
+    color: '#3182ce',
+    fontWeight: '500',
+  },
+  autoPasswordWarning: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#fffaf0',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 8,
+    gap: 8,
+  },
+  autoPasswordWarningText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#c05621',
+    lineHeight: 18,
   },
 });
 

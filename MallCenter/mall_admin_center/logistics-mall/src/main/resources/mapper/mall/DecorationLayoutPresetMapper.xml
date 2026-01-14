@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationLayoutPresetMapper">
+    <resultMap id="layoutPresetMap" type="com.joolun.mall.entity.DecorationLayoutPreset">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="description" column="description"/>
+        <result property="previewImage" column="preview_image"/>
+        <result property="layoutConfig" column="layout_config"/>
+        <result property="moduleTypes" column="module_types"/>
+        <result property="industryType" column="industry_type"/>
+        <result property="styleType" column="style_type"/>
+        <result property="pageType" column="page_type"/>
+        <result property="status" column="status"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="useCount" column="use_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="layoutPresetSql">
+        t.`id`, t.`name`, t.`code`, t.`description`, t.`preview_image`,
+        t.`layout_config`, t.`module_types`, t.`industry_type`, t.`style_type`,
+        t.`page_type`, t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+    </sql>
+
+    <select id="selectByIndustry" resultMap="layoutPresetMap">
+        SELECT <include refid="layoutPresetSql"/>
+        FROM decoration_layout_preset t
+        WHERE t.`status` = 1 AND t.`industry_type` = #{industryType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectByStyle" resultMap="layoutPresetMap">
+        SELECT <include refid="layoutPresetSql"/>
+        FROM decoration_layout_preset t
+        WHERE t.`status` = 1 AND t.`style_type` = #{styleType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectActiveList" resultMap="layoutPresetMap">
+        SELECT <include refid="layoutPresetSql"/>
+        FROM decoration_layout_preset t
+        WHERE t.`status` = 1
+        ORDER BY t.`sort_order` ASC
+    </select>
+</mapper>

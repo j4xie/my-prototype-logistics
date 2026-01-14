@@ -219,6 +219,11 @@ export type ReportStackParamList = {
   AnomalyReport: undefined;
   RealtimeReport: undefined;
   DataExport: { reportType?: 'production' | 'cost' | 'attendance' };
+  // 新增报表 (2026-01-14)
+  OeeReport: undefined;
+  CostVarianceReport: undefined;
+  CapacityUtilizationReport: undefined;
+  OnTimeDeliveryReport: undefined;
 };
 
 // ==================== Admin模块导航参数 ====================
@@ -268,6 +273,8 @@ export type FAHomeStackParamList = {
   CostAnalysisDashboard: { batchId?: string };
   // Formily 演示页面
   FormilyDemo: undefined;
+  // 首页布局编辑器
+  HomeLayoutEditor: undefined;
 };
 
 export type FAAIStackParamList = {

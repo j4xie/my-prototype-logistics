@@ -48,7 +48,7 @@ export default function DataExportScreen() {
   const navigation = useNavigation();
   const { user } = useAuthStore();
   const { t } = useTranslation('reports');
-  const { currentLanguage } = useLanguageStore();
+  const { language } = useLanguageStore();
 
   // 报表配置
   const [reportType, setReportType] = useState<ReportType>('production');
@@ -193,7 +193,7 @@ export default function DataExportScreen() {
         // 显示成功消息并提供分享选项
         Alert.alert(
           t('export.exportSuccess'),
-          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(currentLanguage)} - ${endDate.toLocaleDateString(currentLanguage)}\n\n${(fileSize / 1024).toFixed(2)} KB`,
+          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(language)} - ${endDate.toLocaleDateString(language)}\n\n${(fileSize / 1024).toFixed(2)} KB`,
           [
             {
               text: t('export.viewLater'),
@@ -216,7 +216,7 @@ export default function DataExportScreen() {
       } else {
         Alert.alert(
           t('export.exportSuccess'),
-          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(currentLanguage)} - ${endDate.toLocaleDateString(currentLanguage)}\n\n${downloadResult.uri}`,
+          `${reportTypeLabel} (${formatLabel})\n\n${t('export.timeRangeLabel')}${startDate.toLocaleDateString(language)} - ${endDate.toLocaleDateString(language)}\n\n${downloadResult.uri}`,
           [{ text: t('export.confirm') }]
         );
       }
@@ -314,7 +314,7 @@ export default function DataExportScreen() {
                 onPress={() => setShowStartPicker(true)}
                 style={styles.dateChip}
               >
-                {startDate.toLocaleDateString(currentLanguage)}
+                {startDate.toLocaleDateString(language)}
               </Chip>
             </View>
 
@@ -328,7 +328,7 @@ export default function DataExportScreen() {
                 onPress={() => setShowEndPicker(true)}
                 style={styles.dateChip}
               >
-                {endDate.toLocaleDateString(currentLanguage)}
+                {endDate.toLocaleDateString(language)}
               </Chip>
             </View>
 
@@ -419,7 +419,7 @@ export default function DataExportScreen() {
                 {t('export.timeRangeLabel')}
               </Text>
               <Text variant="bodyMedium">
-                {startDate.toLocaleDateString(currentLanguage)} - {endDate.toLocaleDateString(currentLanguage)}
+                {startDate.toLocaleDateString(language)} - {endDate.toLocaleDateString(language)}
                 ({Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))} {t('export.days')})
               </Text>
             </View>

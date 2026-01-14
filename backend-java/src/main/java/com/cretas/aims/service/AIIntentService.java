@@ -1,5 +1,6 @@
 package com.cretas.aims.service;
 
+import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 
@@ -342,4 +343,14 @@ public interface AIIntentService {
      */
     void recordNegativeFeedback(String factoryId, String rejectedIntentCode,
                                 String selectedIntentCode, List<String> matchedKeywords);
+
+    /**
+     * 处理意图识别反馈
+     * 用户可以纠正错误的意图识别结果，系统自动学习
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param request 反馈请求
+     */
+    void processIntentFeedback(String factoryId, Long userId, IntentFeedbackRequest request);
 }

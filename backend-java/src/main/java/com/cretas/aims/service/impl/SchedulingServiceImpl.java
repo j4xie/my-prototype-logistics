@@ -59,6 +59,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final LinUCBService linUCBService;
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
+    private final ProductionLineSupervisorRepository supervisorRepository;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -179,10 +180,30 @@ public class SchedulingServiceImpl implements SchedulingService {
                                              String status, Pageable pageable) {
         Page<SchedulingPlan> plans;
 
-        if (startDate != null && endDate != null && status != null) {
-            SchedulingPlan.PlanStatus planStatus = SchedulingPlan.PlanStatus.valueOf(status);
-            plans = planRepository.findByFactoryIdAndDateRangeAndStatusPaged(
-                factoryId, startDate, endDate, planStatus, pageable);
+        if (startDate != null && endDate != null && status != null && !status.isEmpty()) {
+            // 支持多个状态，用逗号分隔 (如 "confirmed,in_progress")
+            List<SchedulingPlan.PlanStatus> statuses = Arrays.stream(status.split(","))
+                .map(String::trim)
+                .map(s -> {
+                    try {
+                        return SchedulingPlan.PlanStatus.valueOf(s.toLowerCase());
+                    } catch (IllegalArgumentException e) {
+                        log.warn("无效的计划状态: {}", s);
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+            if (statuses.size() == 1) {
+                plans = planRepository.findByFactoryIdAndDateRangeAndStatusPaged(
+                    factoryId, startDate, endDate, statuses.get(0), pageable);
+            } else if (!statuses.isEmpty()) {
+                plans = planRepository.findByFactoryIdAndDateRangeAndStatusesPaged(
+                    factoryId, startDate, endDate, statuses, pageable);
+            } else {
+                plans = planRepository.findByFactoryIdAndDateRangePaged(factoryId, startDate, endDate, pageable);
+            }
         } else if (startDate != null && endDate != null) {
             plans = planRepository.findByFactoryIdAndDateRangePaged(factoryId, startDate, endDate, pageable);
         } else {
@@ -229,6 +250,9 @@ public class SchedulingServiceImpl implements SchedulingService {
         plan.setConfirmedAt(LocalDateTime.now());
         planRepository.save(plan);
 
+        // 自动分配车间主任
+        assignSupervisorsToSchedules(plan);
+
         // 发送调度计划确认通知
         try {
             String confirmerName = userRepository.findById(userId)
@@ -261,6 +285,26 @@ public class SchedulingServiceImpl implements SchedulingService {
         }
 
         return enrichPlanDTO(SchedulingPlanDTO.fromEntity(plan));
+    }
+
+    /**
+     * 自动为排程分配车间主任
+     * 根据产线-主任关联表，为每个排程设置对应的负责人
+     */
+    private void assignSupervisorsToSchedules(SchedulingPlan plan) {
+        if (plan.getLineSchedules() == null || plan.getLineSchedules().isEmpty()) {
+            return;
+        }
+
+        for (LineSchedule schedule : plan.getLineSchedules()) {
+            // 查找该产线的主要负责人
+            supervisorRepository.findByProductionLineIdAndIsPrimaryTrue(schedule.getProductionLineId())
+                .ifPresent(supervisor -> {
+                    schedule.setSupervisorId(supervisor.getSupervisorUserId());
+                    scheduleRepository.save(schedule);
+                    log.info("排程 {} 已分配给车间主任 {}", schedule.getId(), supervisor.getSupervisorUserId());
+                });
+        }
     }
 
     @Override
@@ -1311,14 +1355,43 @@ public class SchedulingServiceImpl implements SchedulingService {
             productionLines = List.of(defaultLine);
         }
 
-        // 3. 创建调度计划
-        SchedulingPlan plan = new SchedulingPlan();
-        plan.setFactoryId(factoryId);
-        plan.setPlanDate(request.getPlanDate());
-        plan.setPlanName("AI生成-" + request.getPlanDate());
-        plan.setCreatedBy(userId);
-        plan.setStatus(SchedulingPlan.PlanStatus.draft);
-        plan = planRepository.save(plan);
+        // 3. 创建或获取调度计划（处理唯一约束冲突）
+        SchedulingPlan plan;
+        Optional<SchedulingPlan> existingPlan = planRepository.findByFactoryIdAndPlanDateAndDeletedAtIsNull(
+            factoryId, request.getPlanDate());
+
+        if (existingPlan.isPresent()) {
+            // 如果该日期已有计划，检查状态
+            plan = existingPlan.get();
+            if (plan.getStatus() == SchedulingPlan.PlanStatus.in_progress) {
+                // 只有正在执行中的计划不能重新生成
+                log.warn("该日期排程计划正在执行中，无法重新生成: factoryId={}, planDate={}, status={}",
+                    factoryId, request.getPlanDate(), plan.getStatus());
+                throw new RuntimeException("该日期排程计划正在执行中，无法重新生成。");
+            }
+            // 如果是草稿、已确认、已取消或已完成状态，删除旧的排程记录，重新生成
+            log.info("该日期已有计划(status={})，将覆盖重新生成: planId={}", plan.getStatus(), plan.getId());
+            // 删除旧的产线排程
+            scheduleRepository.deleteByPlanId(plan.getId());
+            // 更新计划信息
+            plan.setPlanName("AI生成-" + request.getPlanDate());
+            plan.setCreatedBy(userId);
+            plan.setStatus(SchedulingPlan.PlanStatus.draft);
+            plan.setTotalBatches(0);
+            plan.setTotalWorkers(0);
+            plan.setConfirmedBy(null);
+            plan.setConfirmedAt(null);
+            plan = planRepository.save(plan);
+        } else {
+            // 创建新的调度计划
+            plan = new SchedulingPlan();
+            plan.setFactoryId(factoryId);
+            plan.setPlanDate(request.getPlanDate());
+            plan.setPlanName("AI生成-" + request.getPlanDate());
+            plan.setCreatedBy(userId);
+            plan.setStatus(SchedulingPlan.PlanStatus.draft);
+            plan = planRepository.save(plan);
+        }
 
         // 4. 调用 AI 服务获取优化的排程建议
         List<Map<String, Object>> aiScheduleResult = null;
@@ -1951,11 +2024,21 @@ public class SchedulingServiceImpl implements SchedulingService {
         Page<SchedulingAlert> alerts;
 
         if (severity != null) {
-            SchedulingAlert.Severity sev = SchedulingAlert.Severity.valueOf(severity);
-            alerts = alertRepository.findByFactoryIdAndSeverity(factoryId, sev, pageable);
+            // 支持大小写不敏感，并映射常见别名
+            SchedulingAlert.Severity sev = parseSeverity(severity);
+            if (sev != null) {
+                alerts = alertRepository.findByFactoryIdAndSeverity(factoryId, sev, pageable);
+            } else {
+                // 无效的severity值，返回空结果
+                alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
+            }
         } else if (alertType != null) {
-            SchedulingAlert.AlertType type = SchedulingAlert.AlertType.valueOf(alertType);
-            alerts = alertRepository.findByFactoryIdAndAlertType(factoryId, type, pageable);
+            try {
+                SchedulingAlert.AlertType type = SchedulingAlert.AlertType.valueOf(alertType.toLowerCase());
+                alerts = alertRepository.findByFactoryIdAndAlertType(factoryId, type, pageable);
+            } catch (IllegalArgumentException e) {
+                alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
+            }
         } else {
             alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
         }
@@ -1965,6 +2048,31 @@ public class SchedulingServiceImpl implements SchedulingService {
             .collect(Collectors.toList());
 
         return new PageImpl<>(dtos, pageable, alerts.getTotalElements());
+    }
+
+    /**
+     * 解析 severity 参数，支持大小写不敏感和别名映射
+     * 支持: critical/CRITICAL/high/HIGH -> critical
+     *       warning/WARNING/medium/MEDIUM -> warning
+     *       info/INFO/low/LOW -> info
+     */
+    private SchedulingAlert.Severity parseSeverity(String severity) {
+        if (severity == null) return null;
+        String lower = severity.toLowerCase().trim();
+        switch (lower) {
+            case "critical":
+            case "high":
+                return SchedulingAlert.Severity.critical;
+            case "warning":
+            case "medium":
+                return SchedulingAlert.Severity.warning;
+            case "info":
+            case "low":
+                return SchedulingAlert.Severity.info;
+            default:
+                log.warn("未知的severity值: {}, 将忽略此过滤条件", severity);
+                return null;
+        }
     }
 
     @Override
@@ -2980,5 +3088,116 @@ public class SchedulingServiceImpl implements SchedulingService {
 
         // 默认启用通知
         return true;
+    }
+
+    // ==================== 车间主任任务 ====================
+
+    @Override
+    public List<SupervisorTaskDTO> getSupervisorTasks(String factoryId, Long supervisorId, String statusFilter) {
+        log.info("查询车间主任排程任务: factoryId={}, supervisorId={}, statusFilter={}", factoryId, supervisorId, statusFilter);
+
+        // 1. 解析状态过滤参数
+        List<LineSchedule.ScheduleStatus> statuses = Arrays.stream(statusFilter.split(","))
+            .map(String::trim)
+            .map(s -> {
+                try {
+                    return LineSchedule.ScheduleStatus.valueOf(s.toLowerCase());
+                } catch (IllegalArgumentException e) {
+                    log.warn("无效的排程状态: {}", s);
+                    return null;
+                }
+            })
+            .filter(Objects::nonNull)
+            .collect(Collectors.toList());
+
+        if (statuses.isEmpty()) {
+            // 默认查询 pending 和 in_progress 状态
+            statuses = Arrays.asList(
+                LineSchedule.ScheduleStatus.pending,
+                LineSchedule.ScheduleStatus.in_progress
+            );
+        }
+
+        // 2. 查询分配给该车间主任的排程
+        List<LineSchedule> schedules = scheduleRepository.findBySupervisorAndStatuses(factoryId, supervisorId, statuses);
+
+        if (schedules.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 3. 批量收集需要查询的 ID
+        Set<String> productionLineIds = schedules.stream()
+            .map(LineSchedule::getProductionLineId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        Set<Long> batchIds = schedules.stream()
+            .map(LineSchedule::getBatchId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+        // 4. 批量查询产线和批次信息
+        Map<String, ProductionLine> lineMap = productionLineIds.isEmpty() ? Collections.emptyMap() :
+            lineRepository.findAllById(productionLineIds).stream()
+                .collect(Collectors.toMap(ProductionLine::getId, Function.identity()));
+
+        Map<Long, ProductionBatch> batchMap = batchIds.isEmpty() ? Collections.emptyMap() :
+            batchRepository.findAllById(batchIds).stream()
+                .collect(Collectors.toMap(ProductionBatch::getId, Function.identity()));
+
+        // 5. 转换为 DTO
+        return schedules.stream().map(schedule -> {
+            SupervisorTaskDTO dto = SupervisorTaskDTO.builder()
+                .scheduleId(schedule.getId())
+                .planId(schedule.getPlanId())
+                .productionLineId(schedule.getProductionLineId())
+                .batchId(schedule.getBatchId())
+                .plannedQuantity(schedule.getPlannedQuantity())
+                .plannedStartTime(schedule.getPlannedStartTime())
+                .plannedEndTime(schedule.getPlannedEndTime())
+                .assignedWorkers(schedule.getAssignedWorkers())
+                .status(schedule.getStatus() != null ? schedule.getStatus().name() : null)
+                .build();
+
+            // 设置产线名称和车间位置
+            ProductionLine line = lineMap.get(schedule.getProductionLineId());
+            if (line != null) {
+                dto.setProductionLineName(line.getName());
+                // 车间位置可以从产线类型或其他字段获取
+                dto.setWorkshopLocation(line.getLineType() != null ? line.getLineType() : "主车间");
+            }
+
+            // 设置批次信息
+            if (schedule.getBatchId() != null) {
+                ProductionBatch batch = batchMap.get(schedule.getBatchId());
+                if (batch != null) {
+                    dto.setBatchNumber(batch.getBatchNumber());
+                    dto.setProductName(batch.getProductName());
+                }
+            }
+
+            // 判断是否紧急：计划开始时间在2小时内或已过期
+            if (schedule.getPlannedStartTime() != null) {
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime urgentThreshold = now.plusHours(2);
+                dto.setUrgent(schedule.getPlannedStartTime().isBefore(urgentThreshold) ||
+                             schedule.getPlannedStartTime().isBefore(now));
+            }
+
+            return dto;
+        })
+        // 6. 排序：紧急任务优先，然后按开始时间排序
+        .sorted((a, b) -> {
+            // 紧急任务排在前面
+            if (a.isUrgent() != b.isUrgent()) {
+                return a.isUrgent() ? -1 : 1;
+            }
+            // 相同紧急程度按开始时间排序
+            if (a.getPlannedStartTime() != null && b.getPlannedStartTime() != null) {
+                return a.getPlannedStartTime().compareTo(b.getPlannedStartTime());
+            }
+            return 0;
+        })
+        .collect(Collectors.toList());
     }
 }

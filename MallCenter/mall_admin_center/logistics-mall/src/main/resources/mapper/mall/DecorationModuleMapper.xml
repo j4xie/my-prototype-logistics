@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationModuleMapper">
+    <resultMap id="moduleMap" type="com.joolun.mall.entity.DecorationModule">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="moduleType" column="module_type"/>
+        <result property="componentName" column="component_name"/>
+        <result property="wxmlTemplate" column="wxml_template"/>
+        <result property="wxssTemplate" column="wxss_template"/>
+        <result property="paramsSchema" column="params_schema"/>
+        <result property="defaultParams" column="default_params"/>
+        <result property="dataSourceType" column="data_source_type"/>
+        <result property="dataSourceApi" column="data_source_api"/>
+        <result property="status" column="status"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="moduleSql">
+        m.`id`, m.`name`, m.`code`, m.`module_type`, m.`component_name`,
+        m.`wxml_template`, m.`wxss_template`, m.`params_schema`, m.`default_params`,
+        m.`data_source_type`, m.`data_source_api`, m.`status`, m.`sort_order`,
+        m.`create_time`, m.`update_time`
+    </sql>
+
+    <select id="selectActiveList" resultMap="moduleMap">
+        SELECT <include refid="moduleSql"/>
+        FROM decoration_module m
+        WHERE m.`status` = 1
+        ORDER BY m.`sort_order` ASC
+    </select>
+
+    <select id="selectByCode" resultMap="moduleMap">
+        SELECT <include refid="moduleSql"/>
+        FROM decoration_module m
+        WHERE m.`code` = #{code}
+    </select>
+
+    <select id="selectByModuleType" resultMap="moduleMap">
+        SELECT <include refid="moduleSql"/>
+        FROM decoration_module m
+        WHERE m.`module_type` = #{moduleType} AND m.`status` = 1
+        ORDER BY m.`sort_order` ASC
+    </select>
+</mapper>

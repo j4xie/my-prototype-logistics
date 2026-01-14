@@ -29,9 +29,9 @@
 .price-login-hint {
   display: inline-block;
   font-size: 22rpx;
-  color: #D4AF37;
+  color: #52c41a;
   padding: 8rpx 16rpx;
-  background: rgba(212, 175, 55, 0.1);
-  border: 1rpx solid #D4AF37;
+  background: rgba(82, 196, 26, 0.1);
+  border: 1rpx solid #52c41a;
   border-radius: 20rpx;
 }

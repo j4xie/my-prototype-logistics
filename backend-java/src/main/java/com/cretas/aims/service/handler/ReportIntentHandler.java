@@ -4,6 +4,8 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.report.DashboardStatisticsDTO;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.dto.MobileDTO;
+import com.cretas.aims.service.AIEnterpriseService;
 import com.cretas.aims.service.ReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import com.cretas.aims.util.ErrorSanitizer;
 
@@ -38,6 +41,7 @@ import com.cretas.aims.util.ErrorSanitizer;
 public class ReportIntentHandler implements IntentHandler {
 
     private final ReportService reportService;
+    private final AIEnterpriseService aiEnterpriseService;
 
     @Override
     public String getSupportedCategory() {
@@ -63,6 +67,9 @@ public class ReportIntentHandler implements IntentHandler {
                 case "REPORT_KPI" -> handleKPIReport(factoryId, request, intentConfig);
                 case "REPORT_ANOMALY" -> handleAnomalyReport(factoryId, request, intentConfig);
                 case "REPORT_TRENDS" -> handleTrendsReport(factoryId, request, intentConfig);
+                // 成本查询相关意图
+                case "COST_QUERY" -> handleCostQuery(factoryId, request, intentConfig);
+                case "COST_TREND_ANALYSIS" -> handleCostTrendAnalysis(factoryId, request, intentConfig);
                 default -> {
                     log.warn("未知的REPORT意图: {}", intentCode);
                     yield IntentExecuteResponse.builder()
@@ -336,6 +343,162 @@ public class ReportIntentHandler implements IntentHandler {
                 .resultData(trends)
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * 成本查询
+     * 处理用户的成本查询请求，支持时间范围查询
+     */
+    private IntentExecuteResponse handleCostQuery(String factoryId, IntentExecuteRequest request,
+                                                   AIIntentConfig intentConfig) {
+        // 默认查询最近7天
+        LocalDate startDate = LocalDate.now().minusDays(7);
+        LocalDate endDate = LocalDate.now();
+        String dimension = "overall";
+        String question = null;
+
+        if (request.getContext() != null) {
+            if (request.getContext().get("startDate") != null) {
+                startDate = LocalDate.parse((String) request.getContext().get("startDate"));
+            }
+            if (request.getContext().get("endDate") != null) {
+                endDate = LocalDate.parse((String) request.getContext().get("endDate"));
+            }
+            if (request.getContext().get("dimension") != null) {
+                dimension = (String) request.getContext().get("dimension");
+            }
+            if (request.getContext().get("question") != null) {
+                question = (String) request.getContext().get("question");
+            }
+            // 从用户原始查询中提取问题
+            if (question == null && request.getContext().get("userQuery") != null) {
+                question = (String) request.getContext().get("userQuery");
+            }
+        }
+
+        try {
+            // 调用成本分析服务
+            MobileDTO.AICostAnalysisResponse costResponse = aiEnterpriseService.analyzeTimeRangeCost(
+                    factoryId,
+                    null, // userId 在 handler 中不可用，service 内部会处理
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    dimension,
+                    question,
+                    null // httpRequest 不可用
+            );
+
+            // 构建结果数据
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("analysis", costResponse.getAnalysis());
+            resultData.put("reportId", costResponse.getReportId());
+            resultData.put("cacheHit", costResponse.getCacheHit());
+            resultData.put("processingTimeMs", costResponse.getProcessingTimeMs());
+            resultData.put("period", startDate + " 至 " + endDate);
+            resultData.put("dimension", dimension);
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("REPORT")
+                    .status("COMPLETED")
+                    .message("成本查询完成")
+                    .resultData(resultData)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("成本查询失败: {}", e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("REPORT")
+                    .status("FAILED")
+                    .message("成本查询失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
+    /**
+     * 成本趋势分析
+     * 处理成本趋势分析请求，提供更深入的成本变化分析
+     */
+    private IntentExecuteResponse handleCostTrendAnalysis(String factoryId, IntentExecuteRequest request,
+                                                           AIIntentConfig intentConfig) {
+        // 趋势分析默认查看30天
+        LocalDate startDate = LocalDate.now().minusDays(30);
+        LocalDate endDate = LocalDate.now();
+        String dimension = "trend";
+        String question = null;
+
+        if (request.getContext() != null) {
+            if (request.getContext().get("startDate") != null) {
+                startDate = LocalDate.parse((String) request.getContext().get("startDate"));
+            }
+            if (request.getContext().get("endDate") != null) {
+                endDate = LocalDate.parse((String) request.getContext().get("endDate"));
+            }
+            if (request.getContext().get("dimension") != null) {
+                dimension = (String) request.getContext().get("dimension");
+            }
+            if (request.getContext().get("question") != null) {
+                question = (String) request.getContext().get("question");
+            }
+            if (question == null && request.getContext().get("userQuery") != null) {
+                question = (String) request.getContext().get("userQuery");
+            }
+        }
+
+        // 构建趋势分析问题
+        if (question == null) {
+            question = "请分析成本变化趋势，包括上升或下降的原因";
+        }
+
+        try {
+            MobileDTO.AICostAnalysisResponse costResponse = aiEnterpriseService.analyzeTimeRangeCost(
+                    factoryId,
+                    null,
+                    startDate.atStartOfDay(),
+                    endDate.plusDays(1).atStartOfDay(),
+                    dimension,
+                    question,
+                    null
+            );
+
+            Map<String, Object> resultData = new HashMap<>();
+            resultData.put("analysis", costResponse.getAnalysis());
+            resultData.put("reportId", costResponse.getReportId());
+            resultData.put("cacheHit", costResponse.getCacheHit());
+            resultData.put("processingTimeMs", costResponse.getProcessingTimeMs());
+            resultData.put("period", startDate + " 至 " + endDate);
+            resultData.put("analysisType", "趋势分析");
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("REPORT")
+                    .status("COMPLETED")
+                    .message("成本趋势分析完成")
+                    .resultData(resultData)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("成本趋势分析失败: {}", e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intentConfig.getIntentCode())
+                    .intentName(intentConfig.getIntentName())
+                    .intentCategory("REPORT")
+                    .status("FAILED")
+                    .message("成本趋势分析失败: " + ErrorSanitizer.sanitize(e))
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
     }
 
     @Override

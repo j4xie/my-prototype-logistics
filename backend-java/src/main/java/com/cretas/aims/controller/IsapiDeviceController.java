@@ -191,6 +191,68 @@ public class IsapiDeviceController {
         }
     }
 
+    // ==================== 高级设备管理 ====================
+
+    @GetMapping("/{deviceId}/password")
+    @Operation(summary = "获取设备密码", description = "获取设备登录密码")
+    public ApiResponse<Map<String, String>> getDevicePassword(
+            @PathVariable String factoryId,
+            @PathVariable String deviceId) {
+        try {
+            String password = deviceService.getDecryptedPassword(deviceId);
+            Map<String, String> result = new HashMap<>();
+            result.put("password", password);
+            result.put("deviceId", deviceId);
+            return ApiResponse.success(result);
+        } catch (Exception e) {
+            return ApiResponse.error("获取密码失败: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/{deviceId}/password")
+    @Operation(summary = "修改设备密码", description = "通过 ISAPI 修改设备登录密码")
+    public ApiResponse<Void> changeDevicePassword(
+            @PathVariable String factoryId,
+            @PathVariable String deviceId,
+            @RequestBody Map<String, String> request) {
+        try {
+            String newPassword = request.get("newPassword");
+            if (newPassword == null || newPassword.length() < 6) {
+                return ApiResponse.error("密码长度至少 6 位");
+            }
+            deviceService.changeDevicePassword(deviceId, newPassword);
+            return ApiResponse.successMessage("密码修改成功");
+        } catch (Exception e) {
+            return ApiResponse.error("修改密码失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{deviceId}/reboot")
+    @Operation(summary = "重启设备")
+    public ApiResponse<Void> rebootDevice(
+            @PathVariable String factoryId,
+            @PathVariable String deviceId) {
+        try {
+            deviceService.rebootDevice(deviceId);
+            return ApiResponse.successMessage("重启命令已发送，设备将在数秒后重启");
+        } catch (Exception e) {
+            return ApiResponse.error("重启失败: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{deviceId}/factory-reset")
+    @Operation(summary = "恢复出厂设置", description = "危险操作：将清除设备所有配置")
+    public ApiResponse<Void> factoryResetDevice(
+            @PathVariable String factoryId,
+            @PathVariable String deviceId) {
+        try {
+            deviceService.factoryResetDevice(deviceId);
+            return ApiResponse.successMessage("恢复出厂设置命令已发送");
+        } catch (Exception e) {
+            return ApiResponse.error("恢复出厂设置失败: " + e.getMessage());
+        }
+    }
+
     // ==================== 流媒体 ====================
 
     @GetMapping("/{deviceId}/streams")

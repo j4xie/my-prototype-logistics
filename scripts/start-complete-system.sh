@@ -1,7 +1,8 @@
 #!/bin/bash
 
 # 完整系统启动脚本
-# 用途: 一次性启动所有必需的服务 (MySQL, Python AI, Spring Boot, React Native)
+# 用途: 一次性启动所有必需的服务 (MySQL, Spring Boot, React Native)
+# 注意: AI 功能已迁移至 DashScope 直连，无需单独启动 Python 服务 (2026-01-14)
 # 使用: bash start-complete-system.sh
 
 set -e
@@ -75,55 +76,8 @@ start_mysql() {
     echo ""
 }
 
-# 启动 Python AI 服务
-start_python_ai() {
-    echo -e "${BLUE}启动 Python AI 服务 (FastAPI)...${NC}"
-
-    # 检查是否已有进程运行在 8085 端口
-    if lsof -i :8085 &> /dev/null; then
-        echo "  端口 8085 已被占用，跳过 Python AI 服务启动"
-        echo "  如需重启，请运行: pkill -f main_enhanced.py"
-        echo ""
-        return
-    fi
-
-    cd "$PROJECT_ROOT/backend-java/backend-ai-chat"
-
-    # 检查虚拟环境
-    if [ ! -d "venv" ]; then
-        echo "  创建 Python 虚拟环境..."
-        python3 -m venv venv
-    fi
-
-    # 激活虚拟环境
-    source venv/bin/activate
-
-    # 检查依赖
-    if [ -f "requirements.txt" ]; then
-        echo "  安装/更新 Python 依赖..."
-        pip install -r requirements.txt -q
-    fi
-
-    # 启动 FastAPI 服务 (后台运行)
-    echo "  启动 FastAPI 服务..."
-    nohup python main_enhanced.py > ai_service.log 2>&1 &
-    AI_PID=$!
-    echo "  AI 服务 PID: $AI_PID"
-
-    # 等待服务启动
-    sleep 3
-
-    # 验证服务
-    if curl -s http://localhost:8085/health &> /dev/null || curl -s http://127.0.0.1:8085/health &> /dev/null; then
-        echo -e "${GREEN}✅ Python AI 服务启动成功 (PID: $AI_PID)${NC}"
-    else
-        echo -e "${YELLOW}⚠️ 警告: 无法验证 AI 服务，可能尚未完全启动${NC}"
-        echo "  请检查日志: tail ai_service.log"
-    fi
-
-    cd "$PROJECT_ROOT"
-    echo ""
-}
+# [已废弃] Python AI 服务 - 2026-01-14 迁移至 DashScope 直连
+# 无需单独启动 Python 服务，AI 功能由 Spring Boot 通过 DashScope API 直接调用
 
 # 启动 Spring Boot 后端
 start_spring_boot() {
@@ -209,21 +163,20 @@ show_summary() {
     echo ""
     echo -e "${BLUE}服务地址:${NC}"
     echo "  MySQL Database:    localhost:3306"
-    echo "  Python AI Service: http://localhost:8085"
     echo "  Spring Boot API:   http://localhost:10010"
     echo "  React Native Expo: http://localhost:3010 (in new terminal)"
     echo ""
+    echo -e "${BLUE}AI 服务:${NC}"
+    echo "  已迁移至 DashScope 直连 (通过 Spring Boot 调用)"
+    echo ""
     echo -e "${BLUE}快速验证:${NC}"
     echo "  后端健康检查: curl http://localhost:10010/api/mobile/health"
-    echo "  AI 服务检查:  curl http://localhost:8085/health"
     echo ""
     echo -e "${BLUE}日志文件:${NC}"
-    echo "  后端日志:   backend-java/backend.log"
-    echo "  AI 日志:    backend-java/backend-ai-chat/ai_service.log"
+    echo "  后端日志: backend-java/backend.log"
     echo ""
     echo -e "${YELLOW}进程管理:${NC}"
-    echo "  查看运行进程: lsof -i :8085 -i :10010"
-    echo "  停止 AI 服务: pkill -f main_enhanced.py"
+    echo "  查看运行进程: lsof -i :10010"
     echo "  停止后端:    pkill -f spring-boot:run"
     echo ""
     echo "================================"
@@ -235,7 +188,6 @@ cleanup() {
     echo -e "${YELLOW}收到中断信号，准备停止所有服务...${NC}"
 
     # 尝试优雅关闭服务
-    pkill -f main_enhanced.py 2>/dev/null || true
     pkill -f spring-boot:run 2>/dev/null || true
 
     echo -e "${GREEN}✅ 所有服务已停止${NC}"
@@ -249,7 +201,7 @@ trap cleanup SIGINT SIGTERM
 main() {
     check_java
     start_mysql
-    start_python_ai
+    # [已废弃] start_python_ai - AI 功能已迁移至 DashScope 直连
     start_spring_boot
     start_react_native
     show_summary

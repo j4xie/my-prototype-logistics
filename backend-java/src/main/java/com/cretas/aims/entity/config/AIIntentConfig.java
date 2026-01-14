@@ -155,9 +155,26 @@ public class AIIntentConfig extends BaseEntity {
 
     /**
      * 意图描述
+     * 用于 LLM Reranking 时提供语义理解上下文
      */
-    @Column(name = "description", length = 500)
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    /**
+     * 示例查询列表 (JSON数组)
+     * 用于 LLM Reranking 时提供 Few-shot 示例
+     * 如: ["查看今天的成本", "这周成本多少", "分析一下成本情况"]
+     */
+    @Column(name = "example_queries", columnDefinition = "JSON")
+    private String exampleQueries;
+
+    /**
+     * 反例列表 (JSON数组)
+     * 明确不应该匹配到此意图的表达
+     * 如: ["删除成本记录", "修改成本数据"]
+     */
+    @Column(name = "negative_examples", columnDefinition = "JSON")
+    private String negativeExamples;
 
     /**
      * 处理器类名 (可选 - 旧架构)
@@ -329,6 +346,74 @@ public class AIIntentConfig extends BaseEntity {
             this.keywords = mapper.writeValueAsString(keywordList);
         } catch (Exception e) {
             this.keywords = "[\"" + String.join("\", \"", keywordList) + "\"]";
+        }
+    }
+
+    /**
+     * 获取示例查询列表
+     * 从 JSON 数组字符串解析为 List
+     */
+    public java.util.List<String> getExampleQueriesList() {
+        if (exampleQueries == null || exampleQueries.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(exampleQueries,
+                mapper.getTypeFactory().constructCollectionType(java.util.List.class, String.class));
+        } catch (Exception e) {
+            return java.util.Arrays.asList(exampleQueries.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
+        }
+    }
+
+    /**
+     * 设置示例查询列表
+     * 将 List 转换为 JSON 数组字符串
+     */
+    public void setExampleQueriesList(java.util.List<String> exampleList) {
+        if (exampleList == null || exampleList.isEmpty()) {
+            this.exampleQueries = "[]";
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            this.exampleQueries = mapper.writeValueAsString(exampleList);
+        } catch (Exception e) {
+            this.exampleQueries = "[\"" + String.join("\", \"", exampleList) + "\"]";
+        }
+    }
+
+    /**
+     * 获取反例列表
+     * 从 JSON 数组字符串解析为 List
+     */
+    public java.util.List<String> getNegativeExamplesList() {
+        if (negativeExamples == null || negativeExamples.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(negativeExamples,
+                mapper.getTypeFactory().constructCollectionType(java.util.List.class, String.class));
+        } catch (Exception e) {
+            return java.util.Arrays.asList(negativeExamples.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
+        }
+    }
+
+    /**
+     * 设置反例列表
+     * 将 List 转换为 JSON 数组字符串
+     */
+    public void setNegativeExamplesList(java.util.List<String> negativeList) {
+        if (negativeList == null || negativeList.isEmpty()) {
+            this.negativeExamples = "[]";
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            this.negativeExamples = mapper.writeValueAsString(negativeList);
+        } catch (Exception e) {
+            this.negativeExamples = "[\"" + String.join("\", \"", negativeList) + "\"]";
         }
     }
 }

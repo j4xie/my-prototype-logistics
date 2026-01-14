@@ -83,3 +83,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     statsSelector.forEach(stat => statsObserver.observe(stat));
 });
+
+// ==================== AI VISION SCENARIOS SECTION ====================
+
+// Tab Switching for Scenarios (onclick handler)
+function switchScenarioTab(tabName) {
+    // Remove active from all tabs
+    document.querySelectorAll('.scenario-tabs .scenario-tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Remove active from all panels
+    document.querySelectorAll('.scenario-panel').forEach(panel => {
+        panel.classList.remove('active');
+    });
+
+    // Add active to clicked tab
+    const activeTab = document.querySelector(`.scenario-tab[data-tab="${tabName}"]`);
+    if (activeTab) {
+        activeTab.classList.add('active');
+    }
+
+    // Show corresponding panel
+    const panel = document.getElementById('panel-' + tabName);
+    if (panel) {
+        panel.classList.add('active');
+
+        // Trigger reveal animation for cards in the panel
+        const cards = panel.querySelectorAll('.reveal-hidden');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.classList.add('reveal-active');
+            }, index * 100);
+        });
+    }
+}
+
+// Note: calculateWage() function is defined inline in index.html

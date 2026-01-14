@@ -220,4 +220,26 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
      */
     @Query("SELECT b FROM ProductionBatch b WHERE b.id IN :ids")
     java.util.List<ProductionBatch> findByIdIn(@Param("ids") Collection<Long> ids);
+
+    /**
+     * 按产品类型统计生产数量
+     * 返回: [productTypeId, productName, SUM(actualQuantity), unit]
+     *
+     * @param factoryId 工厂ID
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 统计结果列表
+     */
+    @Query("SELECT b.productTypeId, b.productName, SUM(b.actualQuantity), b.unit " +
+           "FROM ProductionBatch b " +
+           "WHERE b.factoryId = :factoryId " +
+           "AND b.status = 'COMPLETED' " +
+           "AND b.createdAt >= :startTime " +
+           "AND b.createdAt < :endTime " +
+           "GROUP BY b.productTypeId, b.productName, b.unit " +
+           "ORDER BY SUM(b.actualQuantity) DESC")
+    java.util.List<Object[]> findProductionByProduct(
+            @Param("factoryId") String factoryId,
+            @Param("startTime") LocalDateTime startTime,
+            @Param("endTime") LocalDateTime endTime);
 }

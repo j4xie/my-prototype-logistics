@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationTemplateMapper">
+    <resultMap id="templateMap" type="com.joolun.mall.entity.DecorationTemplate">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="description" column="description"/>
+        <result property="thumbnail" column="thumbnail"/>
+        <result property="previewUrl" column="preview_url"/>
+        <result property="styleType" column="style_type"/>
+        <result property="industryType" column="industry_type"/>
+        <result property="themeConfig" column="theme_config"/>
+        <result property="modulesConfig" column="modules_config"/>
+        <result property="status" column="status"/>
+        <result property="isDefault" column="is_default"/>
+        <result property="useCount" column="use_count"/>
+        <result property="createBy" column="create_by"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="deletedAt" column="deleted_at"/>
+    </resultMap>
+
+    <sql id="templateSql">
+        t.`id`, t.`name`, t.`code`, t.`description`, t.`thumbnail`, t.`preview_url`,
+        t.`style_type`, t.`industry_type`, t.`theme_config`, t.`modules_config`,
+        t.`status`, t.`is_default`, t.`use_count`, t.`create_by`, t.`create_time`, t.`update_time`
+    </sql>
+
+    <select id="selectPage1" resultMap="templateMap">
+        SELECT <include refid="templateSql"/>
+        FROM decoration_template t
+        <where>
+            t.`deleted_at` IS NULL
+            <if test="query.styleType != null and query.styleType != ''">
+                AND t.`style_type` = #{query.styleType}
+            </if>
+            <if test="query.industryType != null and query.industryType != ''">
+                AND t.`industry_type` = #{query.industryType}
+            </if>
+            <if test="query.status != null">
+                AND t.`status` = #{query.status}
+            </if>
+            <if test="query.name != null and query.name != ''">
+                AND t.`name` LIKE CONCAT('%',#{query.name},'%')
+            </if>
+        </where>
+        ORDER BY t.`is_default` DESC, t.`use_count` DESC, t.`create_time` DESC
+    </select>
+
+    <select id="selectByCode" resultMap="templateMap">
+        SELECT <include refid="templateSql"/>
+        FROM decoration_template t
+        WHERE t.`code` = #{code} AND t.`deleted_at` IS NULL
+    </select>
+
+    <select id="selectActiveList" resultMap="templateMap">
+        SELECT <include refid="templateSql"/>
+        FROM decoration_template t
+        WHERE t.`status` = 1 AND t.`deleted_at` IS NULL
+        ORDER BY t.`is_default` DESC, t.`use_count` DESC
+    </select>
+
+    <select id="selectByStyleType" resultMap="templateMap">
+        SELECT <include refid="templateSql"/>
+        FROM decoration_template t
+        WHERE t.`style_type` = #{styleType} AND t.`status` = 1 AND t.`deleted_at` IS NULL
+        ORDER BY t.`use_count` DESC
+    </select>
+
+    <select id="selectDefault" resultMap="templateMap">
+        SELECT <include refid="templateSql"/>
+        FROM decoration_template t
+        WHERE t.`is_default` = 1 AND t.`status` = 1 AND t.`deleted_at` IS NULL
+        LIMIT 1
+    </select>
+</mapper>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationComponentStyleMapper">
+    <resultMap id="componentStyleMap" type="com.joolun.mall.entity.DecorationComponentStyle">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="componentType" column="component_type"/>
+        <result property="description" column="description"/>
+        <result property="previewImage" column="preview_image"/>
+        <result property="styleConfig" column="style_config"/>
+        <result property="defaultProps" column="default_props"/>
+        <result property="styleTags" column="style_tags"/>
+        <result property="status" column="status"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="useCount" column="use_count"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="componentStyleSql">
+        t.`id`, t.`name`, t.`code`, t.`component_type`, t.`description`,
+        t.`preview_image`, t.`style_config`, t.`default_props`, t.`style_tags`,
+        t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+    </sql>
+
+    <select id="selectByComponentType" resultMap="componentStyleMap">
+        SELECT <include refid="componentStyleSql"/>
+        FROM decoration_component_style t
+        WHERE t.`status` = 1 AND t.`component_type` = #{componentType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectActiveList" resultMap="componentStyleMap">
+        SELECT <include refid="componentStyleSql"/>
+        FROM decoration_component_style t
+        WHERE t.`status` = 1
+        ORDER BY t.`sort_order` ASC
+    </select>
+</mapper>

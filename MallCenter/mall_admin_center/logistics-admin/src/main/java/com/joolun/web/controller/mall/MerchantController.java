@@ -111,6 +111,14 @@ public class MerchantController extends BaseController {
     }
 
     /**
+     * 获取商户列表（下拉框用，返回简要信息）
+     */
+    @GetMapping("/list")
+    public AjaxResult list() {
+        return AjaxResult.success(merchantService.listSimple());
+    }
+
+    /**
      * 通过id删除商户（软删除）
      */
     @DeleteMapping("/{id}")

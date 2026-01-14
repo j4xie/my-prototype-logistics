@@ -17,6 +17,7 @@ import {
   ResetPasswordResult,
   RestoreResult,
 } from '../native/SadpModule';
+import { createIsapiDevice, CreateIsapiDeviceRequest } from '../services/api/isapiApiClient';
 
 interface UseSadpDiscoveryResult {
   /** List of discovered devices */
@@ -208,7 +209,7 @@ export function useSadpDiscovery(): UseSadpDiscoveryResult {
     [isAvailable]
   );
 
-  // Activate device
+  // Activate device and auto-import to backend
   const activateDevice = useCallback(
     async (mac: string, password: string): Promise<ActivateResult> => {
       if (!isAvailable) {
@@ -231,6 +232,38 @@ export function useSadpDiscovery(): UseSadpDiscoveryResult {
               activated: true,
             });
             setDevices(Array.from(deviceMapRef.current.values()));
+
+            // Auto-import device to backend (save device + password)
+            try {
+              const importRequest: CreateIsapiDeviceRequest = {
+                deviceName: existingDevice.model || `海康设备_${existingDevice.ip}`,
+                deviceType: (existingDevice.deviceType?.toUpperCase() as 'IPC' | 'NVR' | 'DVR') || 'IPC',
+                deviceModel: existingDevice.model,
+                serialNumber: existingDevice.serialNumber || result.serialNumber,
+                macAddress: existingDevice.mac,
+                firmwareVersion: existingDevice.firmwareVersion,
+                ipAddress: existingDevice.ip,
+                port: parseInt(existingDevice.httpPort || '80', 10),
+                username: 'admin',
+                password: password,
+              };
+
+              const importedDevice = await createIsapiDevice(importRequest);
+              console.log('[useSadpDiscovery] 设备已自动导入系统:', importedDevice.id);
+
+              return {
+                ...result,
+                message: '设备激活成功并已导入系统',
+                deviceId: importedDevice.id,
+              };
+            } catch (importError) {
+              // 激活成功但导入失败，仍返回激活成功，但提示导入失败
+              console.warn('[useSadpDiscovery] 设备激活成功，但导入系统失败:', importError);
+              return {
+                ...result,
+                message: '设备激活成功，但自动导入失败，请手动添加设备',
+              };
+            }
           }
         }
 
@@ -318,17 +351,15 @@ export function useSadpDiscovery(): UseSadpDiscoveryResult {
     setDevices([]);
   }, []);
 
-  // Cleanup on unmount
+  // Cleanup on unmount only (empty dependency array)
   useEffect(() => {
     return () => {
       cleanupRef.current.forEach((cleanup) => cleanup());
-      if (isDiscovering) {
-        SadpModule.stopDiscovery().catch(() => {
-          // Ignore cleanup errors
-        });
-      }
+      SadpModule.stopDiscovery().catch(() => {
+        // Ignore cleanup errors
+      });
     };
-  }, [isDiscovering]);
+  }, []);
 
   return {
     devices,

@@ -18,6 +18,7 @@ import { Icon } from 'react-native-paper';
 type DeviceStackParamList = {
   CameraAddMethod: undefined;
   DeviceSetupWizard: undefined;
+  IsapiDeviceDiscovery: undefined;
   AIDeviceInput: { deviceType: 'CAMERA' | 'SCALE' };
 };
 
@@ -61,8 +62,8 @@ export function CameraAddMethodScreen() {
 
   const handleSelectMethod = (method: 'auto' | 'ai') => {
     if (method === 'auto') {
-      // 自动发现 -> 使用已有的设备配置向导
-      navigation.navigate('DeviceSetupWizard');
+      // 自动发现 -> SADP + HTTP 双模式设备发现
+      navigation.navigate('IsapiDeviceDiscovery');
     } else {
       // AI 识别 -> 进入 AI 输入页面
       navigation.navigate('AIDeviceInput', { deviceType: 'CAMERA' });

@@ -89,6 +89,22 @@ public class CacheConfig {
         cacheConfigurations.put("weeklySummary", defaultConfig.entryTtl(Duration.ofDays(7)));
         cacheConfigurations.put("aiToolResult", defaultConfig.entryTtl(Duration.ofMinutes(10)));
 
+        // ========== 报表缓存 (2026-01-14) ==========
+        // 实时性要求高的报表
+        cacheConfigurations.put("realtimeReport", defaultConfig.entryTtl(Duration.ofMinutes(1)));
+        // 中等实时性报表
+        cacheConfigurations.put("oeeReport", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigurations.put("kpiMetrics", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        cacheConfigurations.put("costVarianceReport", defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigurations.put("capacityUtilization", defaultConfig.entryTtl(Duration.ofMinutes(10)));
+        cacheConfigurations.put("onTimeDelivery", defaultConfig.entryTtl(Duration.ofMinutes(15)));
+        cacheConfigurations.put("productionByProduct", defaultConfig.entryTtl(Duration.ofMinutes(5)));
+        // 稳定数据报表
+        cacheConfigurations.put("monthlyReport", defaultConfig.entryTtl(Duration.ofHours(1)));
+        cacheConfigurations.put("yearlyReport", defaultConfig.entryTtl(Duration.ofHours(24)));
+        cacheConfigurations.put("inventoryReport", defaultConfig.entryTtl(Duration.ofMinutes(30)));
+        cacheConfigurations.put("financeReport", defaultConfig.entryTtl(Duration.ofHours(1)));
+
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(defaultConfig)
                 .withInitialCacheConfigurations(cacheConfigurations)
@@ -133,7 +149,19 @@ public class CacheConfig {
                 // AI 报告缓存
                 new ConcurrentMapCache("dailySummary"),
                 new ConcurrentMapCache("weeklySummary"),
-                new ConcurrentMapCache("aiToolResult")
+                new ConcurrentMapCache("aiToolResult"),
+                // 报表缓存 (2026-01-14)
+                new ConcurrentMapCache("realtimeReport"),
+                new ConcurrentMapCache("oeeReport"),
+                new ConcurrentMapCache("kpiMetrics"),
+                new ConcurrentMapCache("costVarianceReport"),
+                new ConcurrentMapCache("capacityUtilization"),
+                new ConcurrentMapCache("onTimeDelivery"),
+                new ConcurrentMapCache("productionByProduct"),
+                new ConcurrentMapCache("monthlyReport"),
+                new ConcurrentMapCache("yearlyReport"),
+                new ConcurrentMapCache("inventoryReport"),
+                new ConcurrentMapCache("financeReport")
         ));
         return cacheManager;
     }

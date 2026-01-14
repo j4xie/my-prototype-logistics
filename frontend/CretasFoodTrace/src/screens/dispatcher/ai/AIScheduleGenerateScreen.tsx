@@ -166,36 +166,36 @@ export default function AIScheduleGenerateScreen() {
       });
 
       if (response.success && response.data) {
-        // 转换 API 响应为组件所需格式
-        // AISchedulingResult 包含: plan, completionProbability, lineAssignments, workerSuggestions 等
-        const result = response.data;
-        const plan = result.plan;
+        // 后端返回 SchedulingPlanDTO，直接作为 plan 使用
+        // 注意：后端返回的是 SchedulingPlanDTO，包含 id, planDate, lineSchedules 等
+        const plan = response.data as any; // SchedulingPlanDTO
+        const lineSchedules = plan.lineSchedules || [];
 
-        // 从 lineAssignments 构建每条产线的排程详情，或使用主 plan 作为单条记录
-        const schedules: GeneratedSchedule[] = (result.lineAssignments && result.lineAssignments.length > 0)
-          ? result.lineAssignments.map((line) => ({
-              planId: plan.id,
-              planNumber: plan.batchNumber ?? '-',
-              productName: plan.productTypeName ?? '-',
-              lineName: line.lineName ?? '默认产线',
-              lineId: line.lineId ?? '',
-              workerCount: result.workerSuggestions?.filter(w => w.targetLine === line.lineName).length ?? 0,
-              startTime: plan.plannedStartTime ? new Date(plan.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
-              endTime: plan.plannedEndTime ? new Date(plan.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
-              estimatedEfficiency: Math.round(100 - (line.load || 0)),
-              completionProbability: result.completionProbability ?? 80,
+        // 从 lineSchedules 构建每条产线的排程详情
+        const schedules: GeneratedSchedule[] = lineSchedules.length > 0
+          ? lineSchedules.map((schedule: any) => ({
+              planId: plan.id, // 这是 SchedulingPlan 的 ID，用于确认
+              planNumber: schedule.batchNumber ?? plan.planName ?? '-',
+              productName: schedule.productTypeName ?? '-',
+              lineName: schedule.lineName ?? '默认产线',
+              lineId: schedule.productionLineId ?? '',
+              workerCount: schedule.assignedWorkers ?? 0,
+              startTime: schedule.plannedStartTime ? new Date(schedule.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              endTime: schedule.plannedEndTime ? new Date(schedule.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
+              estimatedEfficiency: schedule.predictedEfficiency ? Math.round(Number(schedule.predictedEfficiency)) : 85,
+              completionProbability: schedule.completionProbability ? Math.round(Number(schedule.completionProbability)) : 80,
             }))
           : [{
               planId: plan.id,
-              planNumber: plan.batchNumber ?? '-',
-              productName: plan.productTypeName ?? '-',
+              planNumber: plan.planName ?? '-',
+              productName: '-',
               lineName: '默认产线',
               lineId: '',
               workerCount: plan.totalWorkers ?? 0,
-              startTime: plan.plannedStartTime ? new Date(plan.plannedStartTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
-              endTime: plan.plannedEndTime ? new Date(plan.plannedEndTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '-',
-              estimatedEfficiency: result.efficiencyImprovement ?? 85,
-              completionProbability: result.completionProbability ?? 80,
+              startTime: '-',
+              endTime: '-',
+              estimatedEfficiency: 85,
+              completionProbability: 80,
             }];
 
         setGeneratedSchedules(schedules);
@@ -227,16 +227,18 @@ export default function AIScheduleGenerateScreen() {
     try {
       setLoading(true);
 
-      // 确认生成的排程 - 调用 API 保存
-      // 由于 generate API 已经创建了排程，这里主要是确认/保存状态
-      const planIds = generatedSchedules.map(s => s.planId);
+      // 确认生成的排程 - 所有 schedule 共享同一个 SchedulingPlan
+      // 只需要确认一次（使用第一个 schedule 的 planId）
+      if (generatedSchedules.length === 0) {
+        throw new Error('没有可确认的排程');
+      }
 
-      // 批量确认这些计划的排程
-      for (const planId of planIds) {
-        const response = await schedulingApiClient.confirmPlan(planId);
-        if (!response.success) {
-          throw new Error(response.message ?? '确认排程失败');
-        }
+      const planId = generatedSchedules[0].planId;
+      console.log('Confirming scheduling plan:', planId);
+
+      const response = await schedulingApiClient.confirmPlan(planId);
+      if (!response.success) {
+        throw new Error(response.message ?? '确认排程失败');
       }
 
       Alert.alert(
@@ -245,7 +247,7 @@ export default function AIScheduleGenerateScreen() {
         [{ text: '确定', onPress: () => navigation.goBack() }]
       );
     } catch (err) {
-      console.error('Confirm schedule failed:', err);
+      console.error('Apply schedule failed:', err);
       Alert.alert('错误', '保存排程失败，请稍后重试');
     } finally {
       setLoading(false);

@@ -3,6 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.production.ProductionPlanDTO;
 import com.cretas.aims.dto.scheduling.*;
+import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.SchedulingService;
 import com.cretas.aims.service.UrgentInsertService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +35,7 @@ public class SchedulingController {
 
     private final SchedulingService schedulingService;
     private final UrgentInsertService urgentInsertService;
+    private final LinUCBService linUCBService;
 
     // ==================== 调度计划 CRUD ====================
 
@@ -324,6 +326,28 @@ public class SchedulingController {
         log.info("获取可用工人列表: factoryId={}, date={}, scheduleId={}", factoryId, date, scheduleId);
         List<AvailableWorkerDTO> workers = schedulingService.getAvailableWorkers(factoryId, date, scheduleId);
         return ApiResponse.success("获取成功", workers);
+    }
+
+    /**
+     * AI 工人推荐
+     * 基于 LinUCB 算法推荐最优工人分配
+     */
+    @PostMapping("/workers/recommend")
+    @Operation(summary = "AI工人推荐", description = "基于LinUCB算法，根据任务特征推荐最优工人分配方案")
+    public ApiResponse<List<LinUCBService.WorkerRecommendation>> recommendWorkers(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId,
+            @RequestBody WorkerRecommendRequest request) {
+        log.info("AI工人推荐: factoryId={}, scheduleId={}", factoryId, request.getScheduleId());
+
+        // 构建任务特征
+        double[] taskFeatures = linUCBService.extractTaskFeatures(request.getTaskFeatures());
+
+        // 获取推荐
+        List<LinUCBService.WorkerRecommendation> recommendations =
+            linUCBService.recommendWorkers(factoryId, taskFeatures, request.getCandidateWorkerIds());
+
+        return ApiResponse.success("推荐成功", recommendations);
     }
 
     /**
@@ -957,6 +981,26 @@ public class SchedulingController {
         log.info("更新排产设置: factoryId={}, settings={}, userId={}", factoryId, settings, userId);
         SchedulingSettingsDTO updatedSettings = schedulingService.updateSchedulingSettings(factoryId, settings, userId);
         return ApiResponse.success("更新成功", updatedSettings);
+    }
+
+    // ==================== 车间主任任务 ====================
+
+    /**
+     * 获取分配给当前车间主任的排程任务
+     * 用于车间主任APP首页显示待执行任务
+     */
+    @GetMapping("/supervisor/tasks")
+    @Operation(summary = "获取车间主任的排程任务", description = "获取分配给当前登录车间主任的待处理排程任务")
+    public ApiResponse<List<SupervisorTaskDTO>> getSupervisorTasks(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId,
+            @Parameter(description = "状态过滤: pending, in_progress, completed")
+            @RequestParam(required = false, defaultValue = "pending,in_progress") String status,
+            HttpServletRequest httpRequest) {
+        Long userId = getUserId(httpRequest);
+        log.info("获取车间主任排程任务: factoryId={}, userId={}, status={}", factoryId, userId, status);
+        List<SupervisorTaskDTO> tasks = schedulingService.getSupervisorTasks(factoryId, userId, status);
+        return ApiResponse.success("获取成功", tasks);
     }
 
     // ==================== 辅助方法 ====================

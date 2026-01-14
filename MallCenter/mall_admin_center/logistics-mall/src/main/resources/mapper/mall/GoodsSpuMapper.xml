@@ -28,6 +28,7 @@
 		<result property="updateTime" column="update_time"/>
 		<result property="delFlag" column="del_flag"/>
 		<result property="version" column="version"/>
+		<result property="merchantId" column="merchant_id"/>
 	</resultMap>
 
 	<resultMap id="goodsSpuMap1" extends="goodsSpuMap" type="com.joolun.mall.entity.GoodsSpu">
@@ -65,7 +66,8 @@
 		goods_spu.`create_time`,
 		goods_spu.`update_time`,
 		goods_spu.`del_flag`,
-		goods_spu.`version`
+		goods_spu.`version`,
+		goods_spu.`merchant_id`
 	</sql>
 
 	<sql id="goodsSpuSql2">
@@ -87,7 +89,8 @@
 		goods_spu.`create_time`,
 		goods_spu.`update_time`,
 		goods_spu.`del_flag`,
-		goods_spu.`version`
+		goods_spu.`version`,
+		goods_spu.`merchant_id`
 	</sql>
 
 	<select id="selectPage1" resultMap="goodsSpuMap">
@@ -106,6 +109,9 @@
 			</if>
 			<if test="query.spuCode != null">
 				AND goods_spu.`spu_code` = #{query.spuCode}
+			</if>
+			<if test="query.merchantId != null">
+				AND goods_spu.`merchant_id` = #{query.merchantId}
 			</if>
 		</where>
 	</select>

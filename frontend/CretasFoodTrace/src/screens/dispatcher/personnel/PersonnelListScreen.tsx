@@ -22,6 +22,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -273,7 +274,11 @@ export default function PersonnelListScreen() {
       // 获取可用工人列表
       const workersRes = await schedulingApiClient.getAvailableWorkers({ factoryId });
       if (workersRes.success && workersRes.data) {
-        const workers = workersRes.data;
+        // 处理分页响应或直接数组响应
+        const responseData = workersRes.data as any;
+        const workers = Array.isArray(responseData)
+          ? responseData
+          : (responseData.content || responseData.users || []);
 
         // If statistics API failed or returned zeros, calculate from workers
         if (statsFromApi.total === 0) {
@@ -547,7 +552,13 @@ export default function PersonnelListScreen() {
         {stats.expiringContracts > 0 && (
           <TouchableOpacity
             style={styles.contractAlert}
-            onPress={() => navigation.navigate('ContractExpiring')}
+            onPress={() => {
+              // TODO: 合同到期页面待实现
+              Alert.alert(
+                t('personnelListScreen.contractExpiringAlert'),
+                `${stats.expiringContracts}${t('personnelListScreen.people')}${t('personnelListScreen.contractExpiringAlert')}`
+              );
+            }}
           >
             <View style={styles.contractAlertInfo}>
               <View style={styles.contractAlertIcon}>

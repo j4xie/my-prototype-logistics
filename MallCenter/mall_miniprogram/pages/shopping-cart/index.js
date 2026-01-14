@@ -5,6 +5,7 @@
  * 基于 JooLun 框架二次开发
  */
 const app = getApp()
+const util = require('../../utils/util')
 const tracker = require('../../utils/tracker')
 
 Page({
@@ -85,6 +86,10 @@ Page({
         //过滤出失效商品
         let shoppingCartDataInvalid = []
         res.data.records.forEach(function (shoppingCart, index) {
+          // 处理商品图片URL格式
+          if (shoppingCart.goodsSpu) {
+            shoppingCart.goodsSpu = util.processGoodsItem(shoppingCart.goodsSpu)
+          }
           if (!shoppingCart.goodsSpu || shoppingCart.goodsSpu.shelf == '0'){//下架或删除了
             shoppingCartDataInvalid.push(shoppingCart)
           }else{
@@ -119,7 +124,7 @@ Page({
       // P1修复: API期望对象参数，不是3个独立参数
       app.api.getCartRecommend({ wxUserId, cartProductIds, limit: 6 })
         .then(res => {
-          const products = res.data || res || []
+          const products = util.processGoodsList(res.data || res || [])
           this.setData({
             goodsListRecom: products,
             cartRecommendLoaded: true
@@ -151,7 +156,7 @@ Page({
       descs: 'sale_num'  // 按销量排序
     })
       .then(res => {
-        let goodsListRecom = res.data.records || []
+        let goodsListRecom = util.processGoodsList(res.data.records || [])
         this.setData({
           goodsListRecom: goodsListRecom
         })

@@ -116,6 +116,7 @@ public class IntentMatchResult {
      */
     public enum MatchMethod {
         EXACT,      // 精确表达匹配 (hash查表)
+        PHRASE_MATCH, // v5.0: 短语映射优先匹配 (优先于问题类型检测)
         REGEX,      // 正则表达式匹配
         KEYWORD,    // 关键词匹配
         SEMANTIC,   // 语义向量匹配（高置信度直接采用）

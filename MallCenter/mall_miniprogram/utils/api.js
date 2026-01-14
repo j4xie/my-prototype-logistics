@@ -416,5 +416,29 @@ module.exports = {
   },
   refreshRecommendCache: (wxUserId) => {//刷新推荐缓存
     return request('/weixin/ma/recommend/refresh/' + wxUserId, 'post', null, false)
+  },
+  // ========== 装修配置相关 ==========
+  /**
+   * 获取页面装修配置
+   * @param {string} pageType - 页面类型：home/category/detail
+   * @param {number} merchantId - 商户ID（可选）
+   */
+  getDecorationConfig: (pageType = 'home', merchantId = null) => {
+    let url = '/weixin/api/ma/decoration/page?pageType=' + pageType
+    if (merchantId) {
+      url += '&merchantId=' + merchantId
+    }
+    return request(url, 'get', null, false)
+  },
+  /**
+   * 获取CSS变量配置
+   * @param {number} merchantId - 商户ID（可选）
+   */
+  getDecorationCssVars: (merchantId = null) => {
+    let url = '/weixin/api/ma/decoration/css-variables'
+    if (merchantId) {
+      url += '?merchantId=' + merchantId
+    }
+    return request(url, 'get', null, false)
   }
 }

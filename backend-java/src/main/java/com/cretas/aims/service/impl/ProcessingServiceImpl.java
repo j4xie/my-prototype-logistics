@@ -1138,60 +1138,113 @@ public class ProcessingServiceImpl implements ProcessingService {
     }
     // ========== 仪表盘 ==========
     public Map<String, Object> getDashboardOverview(String factoryId) {
+        log.info("===== getDashboardOverview 开始: factoryId={} =====", factoryId);
+        long startTime = System.currentTimeMillis();
+        long lastQueryTime = startTime;
+
         Map<String, Object> overview = new HashMap<>();
         LocalDateTime todayStart = LocalDate.now().atStartOfDay();
         LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
         // ===== summary (概览) =====
         Map<String, Object> summary = new HashMap<>();
-        // 今日批次总数
+
+        // 查询1: 今日批次总数
+        log.info("[查询1] countByFactoryIdAndCreatedAtAfter 开始");
         long todayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtAfter(factoryId, todayStart);
+        log.info("[查询1] 完成: todayBatches={}, 耗时={}ms", todayBatches, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("totalBatches", todayBatches);
-        // 进行中批次数
+
+        // 查询2: 进行中批次数
+        log.info("[查询2] countByFactoryIdAndStatus 开始");
         long activeBatches = productionBatchRepository.countByFactoryIdAndStatus(
                 factoryId, ProductionBatchStatus.IN_PROGRESS);
+        log.info("[查询2] 完成: activeBatches={}, 耗时={}ms", activeBatches, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("activeBatches", activeBatches);
-        // 已完成批次数
+
+        // 查询3: 已完成批次数
+        log.info("[查询3] countByFactoryIdAndStatusAndCreatedAtAfter 开始");
         long completedBatches = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtAfter(
                 factoryId, ProductionBatchStatus.COMPLETED, todayStart);
+        log.info("[查询3] 完成: completedBatches={}, 耗时={}ms", completedBatches, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("completedBatches", completedBatches);
-        // 今日质检数
+
+        // 查询4: 今日质检数
+        log.info("[查询4] countByFactoryIdAndInspectionDateAfter 开始");
         long qualityInspections = qualityInspectionRepository.countByFactoryIdAndInspectionDateAfter(
                 factoryId, todayStart.toLocalDate());
+        log.info("[查询4] 完成: qualityInspections={}, 耗时={}ms", qualityInspections, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("qualityInspections", qualityInspections);
-        // 活跃告警数
+
+        // 查询5: 活跃告警数
+        log.info("[查询5] findByFactoryIdAndStatusOrderByTriggeredAtDesc 开始");
         List<EquipmentAlert> activeAlerts = equipmentAlertRepository.findByFactoryIdAndStatusOrderByTriggeredAtDesc(
                 factoryId, AlertStatus.ACTIVE);
+        log.info("[查询5] 完成: activeAlerts.size={}, 耗时={}ms", activeAlerts.size(), System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("activeAlerts", activeAlerts.size());
-        // 工人数量统计
+
+        // 查询6: 工人数量统计
+        log.info("[查询6] countByFactoryId(user) 开始");
         long totalWorkers = userRepository.countByFactoryId(factoryId);
+        log.info("[查询6] 完成: totalWorkers={}, 耗时={}ms", totalWorkers, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         summary.put("totalWorkers", totalWorkers);
-        summary.put("onDutyWorkers", totalWorkers); // 简化处理，实际应从考勤记录获取
+        summary.put("onDutyWorkers", totalWorkers);
         overview.put("summary", summary);
 
         // ===== todayStats (今日统计) =====
         Map<String, Object> todayStats = new HashMap<>();
         todayStats.put("productionCount", todayBatches);
         todayStats.put("qualityCheckCount", qualityInspections);
-        // 今日入库原材料数
+
+        // 查询7: 今日入库原材料数
+        log.info("[查询7] countByFactoryIdAndReceiptDateAfter 开始");
         long materialReceived = materialBatchRepository.countByFactoryIdAndReceiptDateAfter(factoryId, todayStart);
+        log.info("[查询7] 完成: materialReceived={}, 耗时={}ms", materialReceived, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         todayStats.put("materialReceived", materialReceived);
-        // 总原材料批次数（用于首页显示）
+
+        // 查询8: 总原材料批次数
+        log.info("[查询8] countByFactoryId(material) 开始");
         long totalMaterialBatches = materialBatchRepository.countByFactoryId(factoryId);
+        log.info("[查询8] 完成: totalMaterialBatches={}, 耗时={}ms", totalMaterialBatches, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         todayStats.put("totalMaterialBatches", totalMaterialBatches);
         todayStats.put("ordersCompleted", completedBatches);
-        // 生产效率
+
+        // 查询9: 生产效率
+        log.info("[查询9] calculateAverageEfficiency 开始");
         BigDecimal avgEfficiency = productionBatchRepository.calculateAverageEfficiency(factoryId, todayStart);
+        log.info("[查询9] 完成: avgEfficiency={}, 耗时={}ms", avgEfficiency, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         todayStats.put("productionEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
         todayStats.put("activeWorkers", totalWorkers);
-        // 今日产量
+
+        // 查询10: 今日产量
+        log.info("[查询10] calculateTotalOutputAfter 开始");
         BigDecimal todayOutput = productionBatchRepository.calculateTotalOutputAfter(factoryId, todayStart);
+        log.info("[查询10] 完成: todayOutput={}, 耗时={}ms", todayOutput, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         todayStats.put("todayOutputKg", todayOutput != null ? todayOutput : BigDecimal.ZERO);
         todayStats.put("totalBatches", todayBatches);
         todayStats.put("totalWorkers", totalWorkers);
-        // 设备统计
+
+        // 查询11: 设备总数
+        log.info("[查询11] countByFactoryId(equipment) 开始");
         long totalEquipment = equipmentRepository.countByFactoryId(factoryId);
+        log.info("[查询11] 完成: totalEquipment={}, 耗时={}ms", totalEquipment, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
+
+        // 查询12: 活跃设备数
+        log.info("[查询12] countByFactoryIdAndStatus(equipment) 开始");
         long activeEquipment = equipmentRepository.countByFactoryIdAndStatus(factoryId, "active");
+        log.info("[查询12] 完成: activeEquipment={}, 耗时={}ms", activeEquipment, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         todayStats.put("totalEquipment", totalEquipment);
         todayStats.put("activeEquipment", activeEquipment);
         overview.put("todayStats", todayStats);
@@ -1200,35 +1253,61 @@ public class ProcessingServiceImpl implements ProcessingService {
         LocalDateTime yesterdayStart = LocalDate.now().minusDays(1).atStartOfDay();
         LocalDateTime yesterdayEnd = LocalDate.now().atStartOfDay();
         Map<String, Object> yesterdayStats = new HashMap<>();
-        // 昨日批次总数
+
+        // 查询13: 昨日批次总数
+        log.info("[查询13] countByFactoryIdAndCreatedAtBetween 开始");
         long yesterdayBatches = productionBatchRepository.countByFactoryIdAndCreatedAtBetween(
                 factoryId, yesterdayStart, yesterdayEnd);
+        log.info("[查询13] 完成: yesterdayBatches={}, 耗时={}ms", yesterdayBatches, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         yesterdayStats.put("totalBatches", yesterdayBatches);
-        // 昨日产量
+
+        // 查询14: 昨日产量
+        log.info("[查询14] calculateTotalOutputBetween 开始");
         BigDecimal yesterdayOutput = productionBatchRepository.calculateTotalOutputBetween(
                 factoryId, yesterdayStart, yesterdayEnd);
+        log.info("[查询14] 完成: yesterdayOutput={}, 耗时={}ms", yesterdayOutput, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         yesterdayStats.put("outputKg", yesterdayOutput != null ? yesterdayOutput : BigDecimal.ZERO);
-        // 昨日完成批次
+
+        // 查询15: 昨日完成批次
+        log.info("[查询15] countByFactoryIdAndStatusAndCreatedAtBetween 开始");
         long yesterdayCompleted = productionBatchRepository.countByFactoryIdAndStatusAndCreatedAtBetween(
                 factoryId, ProductionBatchStatus.COMPLETED, yesterdayStart, yesterdayEnd);
+        log.info("[查询15] 完成: yesterdayCompleted={}, 耗时={}ms", yesterdayCompleted, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         yesterdayStats.put("completedBatches", yesterdayCompleted);
         overview.put("yesterdayStats", yesterdayStats);
 
         // ===== kpi (关键绩效指标) =====
         Map<String, Object> kpi = new HashMap<>();
         kpi.put("productionEfficiency", avgEfficiency != null ? avgEfficiency : BigDecimal.ZERO);
-        // 质量合格率
+
+        // 查询16: 质量合格率
+        log.info("[查询16] calculateAverageYieldRate 开始");
         BigDecimal monthlyYieldRate = productionBatchRepository.calculateAverageYieldRate(factoryId, monthStart);
+        log.info("[查询16] 完成: monthlyYieldRate={}, 耗时={}ms", monthlyYieldRate, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         kpi.put("qualityPassRate", monthlyYieldRate != null ? monthlyYieldRate : BigDecimal.ZERO);
-        // 设备利用率
+
+        // 设备利用率（计算，无查询）
         BigDecimal equipmentUtilization = totalEquipment > 0 ?
                 BigDecimal.valueOf(activeEquipment * 100.0 / totalEquipment).setScale(2, RoundingMode.HALF_UP) :
                 BigDecimal.ZERO;
         kpi.put("equipmentUtilization", equipmentUtilization);
 
-        // 单位成本（本月成本总和 / 本月产量总和）
+        // 查询17: 单位成本 - 本月成本总和
+        log.info("[查询17] calculateTotalCostAfter 开始");
         BigDecimal monthlyTotalCost = productionBatchRepository.calculateTotalCostAfter(factoryId, monthStart);
+        log.info("[查询17] 完成: monthlyTotalCost={}, 耗时={}ms", monthlyTotalCost, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
+
+        // 查询18: 本月产量总和
+        log.info("[查询18] calculateTotalOutputAfter(month) 开始");
         BigDecimal monthlyTotalOutput = productionBatchRepository.calculateTotalOutputAfter(factoryId, monthStart);
+        log.info("[查询18] 完成: monthlyTotalOutput={}, 耗时={}ms", monthlyTotalOutput, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
+
         BigDecimal unitCost = BigDecimal.ZERO;
         if (monthlyTotalOutput != null && monthlyTotalOutput.compareTo(BigDecimal.ZERO) > 0) {
             unitCost = (monthlyTotalCost != null ? monthlyTotalCost : BigDecimal.ZERO)
@@ -1236,9 +1315,13 @@ public class ProcessingServiceImpl implements ProcessingService {
         }
         kpi.put("unitCost", unitCost);
 
-        // 平均生产周期（小时）- 在Java中计算
+        // 查询19: 平均生产周期
+        log.info("[查询19] findCompletedBatchesWithTimes 开始");
         BigDecimal avgCycleHours = BigDecimal.ZERO;
         java.util.List<ProductionBatch> batchesWithTimes = productionBatchRepository.findCompletedBatchesWithTimes(factoryId, monthStart);
+        log.info("[查询19] 完成: batchesWithTimes.size={}, 耗时={}ms", batchesWithTimes != null ? batchesWithTimes.size() : 0, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
+
         if (batchesWithTimes != null && !batchesWithTimes.isEmpty()) {
             long totalHours = 0;
             int cycleCount = 0;
@@ -1269,12 +1352,23 @@ public class ProcessingServiceImpl implements ProcessingService {
         // ===== 保留旧字段（向后兼容） =====
         overview.put("todayBatches", todayBatches);
         overview.put("inProgressBatches", activeBatches);
+
+        // 查询20: 月产量
+        log.info("[查询20] calculateMonthlyOutput 开始");
         BigDecimal monthlyOutput = productionBatchRepository.calculateMonthlyOutput(factoryId, monthStart);
+        log.info("[查询20] 完成: monthlyOutput={}, 耗时={}ms", monthlyOutput, System.currentTimeMillis() - lastQueryTime);
+        lastQueryTime = System.currentTimeMillis();
         overview.put("monthlyOutput", monthlyOutput != null ? monthlyOutput : BigDecimal.ZERO);
         overview.put("monthlyYieldRate", monthlyYieldRate != null ? monthlyYieldRate : BigDecimal.ZERO);
+
+        // 查询21: 低库存原材料
+        log.info("[查询21] countLowStockMaterials 开始");
         Long lowStockMaterials = materialBatchRepository.countLowStockMaterials(factoryId);
+        log.info("[查询21] 完成: lowStockMaterials={}, 耗时={}ms", lowStockMaterials, System.currentTimeMillis() - lastQueryTime);
+
         overview.put("lowStockMaterials", lowStockMaterials != null ? lowStockMaterials : 0L);
 
+        log.info("===== getDashboardOverview 完成: 总耗时={}ms =====", System.currentTimeMillis() - startTime);
         return overview;
     }
     public Map<String, Object> getProductionStatistics(String factoryId, String period) {

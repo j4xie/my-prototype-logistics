@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationPromptTemplateMapper">
+    <resultMap id="promptTemplateMap" type="com.joolun.mall.entity.DecorationPromptTemplate">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="code" column="code"/>
+        <result property="industryType" column="industry_type"/>
+        <result property="imageType" column="image_type"/>
+        <result property="styleType" column="style_type"/>
+        <result property="basePrompt" column="base_prompt"/>
+        <result property="variablesDef" column="variables_def"/>
+        <result property="negativePrompt" column="negative_prompt"/>
+        <result property="recommendedSize" column="recommended_size"/>
+        <result property="exampleImage" column="example_image"/>
+        <result property="useCount" column="use_count"/>
+        <result property="status" column="status"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="promptTemplateSql">
+        t.`id`, t.`name`, t.`code`, t.`industry_type`, t.`image_type`, t.`style_type`,
+        t.`base_prompt`, t.`variables_def`, t.`negative_prompt`, t.`recommended_size`,
+        t.`example_image`, t.`use_count`, t.`status`, t.`sort_order`, t.`create_time`, t.`update_time`
+    </sql>
+
+    <select id="selectByCode" resultMap="promptTemplateMap">
+        SELECT <include refid="promptTemplateSql"/>
+        FROM decoration_prompt_template t
+        WHERE t.`code` = #{code} AND t.`status` = 1
+    </select>
+
+    <select id="selectByIndustryAndType" resultMap="promptTemplateMap">
+        SELECT <include refid="promptTemplateSql"/>
+        FROM decoration_prompt_template t
+        WHERE t.`status` = 1
+        AND t.`industry_type` = #{industryType}
+        AND t.`image_type` = #{imageType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectByIndustry" resultMap="promptTemplateMap">
+        SELECT <include refid="promptTemplateSql"/>
+        FROM decoration_prompt_template t
+        WHERE t.`status` = 1 AND t.`industry_type` = #{industryType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectByImageType" resultMap="promptTemplateMap">
+        SELECT <include refid="promptTemplateSql"/>
+        FROM decoration_prompt_template t
+        WHERE t.`status` = 1 AND t.`image_type` = #{imageType}
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <select id="selectActiveList" resultMap="promptTemplateMap">
+        SELECT <include refid="promptTemplateSql"/>
+        FROM decoration_prompt_template t
+        WHERE t.`status` = 1
+        ORDER BY t.`sort_order` ASC
+    </select>
+
+    <update id="incrementUseCount">
+        UPDATE decoration_prompt_template
+        SET use_count = use_count + 1
+        WHERE id = #{id}
+    </update>
+</mapper>

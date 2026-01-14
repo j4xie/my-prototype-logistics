@@ -1,460 +1,362 @@
-<!--
-  商户详情页
--->
-<template>
-  <div class="app-container merchant-detail">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <el-page-header @back="goBack" title="返回">
-        <template #content>
-          <span class="page-title">商户详情</span>
-        </template>
-      </el-page-header>
-    </div>
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessageBox } from "element-plus";
+import { Back, Check, Close } from "@element-plus/icons-vue";
+import { message } from "@/utils/message";
+import {
+  getMerchantById,
+  reviewMerchant,
+  updateMerchantStatus
+} from "@/api/mall/merchant";
+import type { Merchant, MerchantStatus } from "@/api/mall/types/merchant";
+import { MerchantStatusMap, MerchantStatusColor } from "@/api/mall/types/merchant";
 
-    <div v-loading="loading">
+defineOptions({
+  name: "MerchantDetail"
+});
+
+const route = useRoute();
+const router = useRouter();
+
+// 加载状态
+const loading = ref(false);
+
+// 商户详情
+const merchantInfo = ref<Merchant | null>(null);
+
+// 商户ID
+const merchantId = computed(() => Number(route.params.id));
+
+// 获取商户详情
+const fetchData = async () => {
+  if (!merchantId.value) return;
+  loading.value = true;
+  try {
+    const res = await getMerchantById(merchantId.value);
+    if (res.code === 200) {
+      merchantInfo.value = res.data;
+    } else {
+      message(res.msg || "获取商户详情失败", { type: "error" });
+    }
+  } catch (error) {
+    message("获取商户详情失败", { type: "error" });
+  } finally {
+    loading.value = false;
+  }
+};
+
+// 返回列表
+const handleBack = () => {
+  router.push("/mall/merchant/list");
+};
+
+// 格式化状态
+const formatStatus = (status: MerchantStatus) => {
+  return MerchantStatusMap[status] || "未知";
+};
+
+// 获取状态类型
+const getStatusType = (status: MerchantStatus) => {
+  return MerchantStatusColor[status] || "info";
+};
+
+// 判断是否可以审核通过（待审核状态）
+const canApprove = computed(() => merchantInfo.value?.status === 0);
+
+// 判断是否可以封禁（已认证状态）
+const canBan = computed(() => merchantInfo.value?.status === 1);
+
+// 判断是否可以解封（已封禁状态）
+const canUnban = computed(() => merchantInfo.value?.status === 2);
+
+// 审核通过
+const handleApprove = async () => {
+  if (!merchantInfo.value) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定要审核通过商户「${merchantInfo.value.merchantName}」吗？`,
+      "审核确认",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }
+    );
+    const res = await reviewMerchant(merchantInfo.value.id, "approve");
+    if (res.code === 200) {
+      message("审核通过", { type: "success" });
+      fetchData();
+    } else {
+      message(res.msg || "操作失败", { type: "error" });
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      message("操作失败", { type: "error" });
+    }
+  }
+};
+
+// 封禁商户
+const handleBan = async () => {
+  if (!merchantInfo.value) return;
+  try {
+    const { value: remark } = await ElMessageBox.prompt(
+      `确定要封禁商户「${merchantInfo.value.merchantName}」吗？`,
+      "封禁确认",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        inputPlaceholder: "请输入封禁原因（可选）",
+        type: "warning"
+      }
+    );
+    const res = await updateMerchantStatus(merchantInfo.value.id, "2");
+    if (res.code === 200) {
+      message("封禁成功", { type: "success" });
+      fetchData();
+    } else {
+      message(res.msg || "操作失败", { type: "error" });
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      message("操作失败", { type: "error" });
+    }
+  }
+};
+
+// 解封商户
+const handleUnban = async () => {
+  if (!merchantInfo.value) return;
+  try {
+    await ElMessageBox.confirm(
+      `确定要解封商户「${merchantInfo.value.merchantName}」吗？`,
+      "解封确认",
+      {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      }
+    );
+    const res = await updateMerchantStatus(merchantInfo.value.id, "1");
+    if (res.code === 200) {
+      message("解封成功", { type: "success" });
+      fetchData();
+    } else {
+      message(res.msg || "操作失败", { type: "error" });
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      message("操作失败", { type: "error" });
+    }
+  }
+};
+
+onMounted(() => {
+  fetchData();
+});
+</script>
+
+<template>
+  <div class="merchant-detail" v-loading="loading">
+    <!-- 顶部操作栏 -->
+    <el-card shadow="never" class="header-card">
+      <div class="header-content">
+        <el-button :icon="Back" @click="handleBack">返回列表</el-button>
+        <div class="actions" v-if="merchantInfo">
+          <el-button
+            v-if="canApprove"
+            type="success"
+            :icon="Check"
+            @click="handleApprove"
+          >
+            审核通过
+          </el-button>
+          <el-button
+            v-if="canBan"
+            type="danger"
+            :icon="Close"
+            @click="handleBan"
+          >
+            封禁商户
+          </el-button>
+          <el-button
+            v-if="canUnban"
+            type="warning"
+            @click="handleUnban"
+          >
+            解封商户
+          </el-button>
+        </div>
+      </div>
+    </el-card>
+
+    <template v-if="merchantInfo">
       <!-- 商户基本信息 -->
-      <el-card class="info-card">
+      <el-card shadow="never" class="info-card">
         <template #header>
           <div class="card-header">
-            <span>基本信息</span>
-            <div class="header-actions">
-              <el-tag :type="getStatusType(merchant.status)" size="large">
-                {{ getStatusLabel(merchant.status) }}
-              </el-tag>
-              <el-button
-                v-if="merchant.status === 0"
-                type="warning"
-                @click="handleReview"
-              >
-                审核
-              </el-button>
-              <el-button type="primary" @click="handleEdit">编辑</el-button>
-            </div>
+            <span class="title">商户信息</span>
+            <el-tag :type="getStatusType(merchantInfo.status)" size="large">
+              {{ formatStatus(merchantInfo.status) }}
+            </el-tag>
           </div>
-        </template>
-
-        <div class="merchant-profile">
-          <el-avatar :size="80" :src="merchant.logoUrl" icon="Shop" />
-          <div class="profile-content">
-            <h2 class="merchant-name">{{ merchant.merchantName }}</h2>
-            <p class="merchant-no">商户编号: {{ merchant.merchantNo || '-' }}</p>
-            <p class="short-name" v-if="merchant.shortName">简称: {{ merchant.shortName }}</p>
-          </div>
-        </div>
-
-        <el-descriptions :column="3" border style="margin-top: 20px">
-          <el-descriptions-item label="法人姓名">
-            {{ merchant.legalPerson || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="法人身份证">
-            {{ merchant.legalIdCard || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="营业执照号">
-            {{ merchant.licenseNo || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="联系人">
-            {{ merchant.contactName || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="联系电话">
-            {{ merchant.contactPhone || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="联系邮箱">
-            {{ merchant.contactEmail || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="经营地址" :span="3">
-            {{ merchant.address || '-' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="经营年限">
-            {{ merchant.operatingYears || 0 }} 年
-          </el-descriptions-item>
-          <el-descriptions-item label="创建时间">
-            {{ formatTime(merchant.createTime) }}
-          </el-descriptions-item>
-          <el-descriptions-item label="更新时间">
-            {{ formatTime(merchant.updateTime) }}
-          </el-descriptions-item>
-        </el-descriptions>
-      </el-card>
-
-      <!-- 证件信息 -->
-      <el-card class="info-card">
-        <template #header>
-          <span>证件信息</span>
-        </template>
-        <div class="license-images">
-          <div class="image-item">
-            <p class="image-label">营业执照</p>
-            <el-image
-              v-if="merchant.licenseImage"
-              :src="merchant.licenseImage"
-              :preview-src-list="[merchant.licenseImage]"
-              fit="cover"
-              class="license-img"
-            />
-            <el-empty v-else description="暂无图片" :image-size="60" />
-          </div>
-          <div class="image-item">
-            <p class="image-label">身份证正面</p>
-            <el-image
-              v-if="merchant.legalIdFront"
-              :src="merchant.legalIdFront"
-              :preview-src-list="[merchant.legalIdFront]"
-              fit="cover"
-              class="license-img"
-            />
-            <el-empty v-else description="暂无图片" :image-size="60" />
-          </div>
-          <div class="image-item">
-            <p class="image-label">身份证反面</p>
-            <el-image
-              v-if="merchant.legalIdBack"
-              :src="merchant.legalIdBack"
-              :preview-src-list="[merchant.legalIdBack]"
-              fit="cover"
-              class="license-img"
-            />
-            <el-empty v-else description="暂无图片" :image-size="60" />
-          </div>
-        </div>
-      </el-card>
-
-      <!-- 银行信息 -->
-      <el-card class="info-card">
-        <template #header>
-          <span>银行信息</span>
         </template>
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="开户银行">
-            {{ merchant.bankName || '-' }}
+          <el-descriptions-item label="商户编号">
+            {{ merchantInfo.merchantNo || merchantInfo.id }}
           </el-descriptions-item>
-          <el-descriptions-item label="支行名称">
-            {{ merchant.bankBranch || '-' }}
+          <el-descriptions-item label="商户名称">
+            {{ merchantInfo.merchantName }}
           </el-descriptions-item>
-          <el-descriptions-item label="银行账户">
-            {{ merchant.bankAccount || '-' }}
+          <el-descriptions-item label="商户简称">
+            {{ merchantInfo.shortName || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="联系人">
+            {{ merchantInfo.contactName || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="联系电话">
+            {{ merchantInfo.contactPhone || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="邮箱">
+            {{ merchantInfo.contactEmail || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="商品数">
+            <span class="count-value">{{ merchantInfo.productCount || 0 }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="订单数">
+            <span class="count-value">{{ merchantInfo.orderCount || 0 }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="评分">
+            <span class="count-value">{{ merchantInfo.rating || 5.00 }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="销售总额">
+            <span class="price-value">¥{{ (merchantInfo.totalSales || 0).toFixed(2) }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="创建时间">
+            {{ merchantInfo.createTime }}
+          </el-descriptions-item>
+          <el-descriptions-item label="更新时间">
+            {{ merchantInfo.updateTime || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="地址" :span="3">
+            {{ merchantInfo.address || "-" }}
           </el-descriptions-item>
         </el-descriptions>
       </el-card>
 
-      <!-- 经营数据 -->
-      <el-card class="info-card">
+      <!-- 营业执照信息 -->
+      <el-card shadow="never" class="info-card">
         <template #header>
-          <span>经营数据</span>
+          <span class="title">营业执照信息</span>
         </template>
-        <el-row :gutter="20">
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-value">{{ merchant.productCount || 0 }}</div>
-              <div class="stat-label">商品数量</div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-value">{{ merchant.orderCount || 0 }}</div>
-              <div class="stat-label">订单数量</div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-value sales">¥{{ formatMoney(merchant.totalSales) }}</div>
-              <div class="stat-label">总销售额</div>
-            </div>
-          </el-col>
-          <el-col :span="6">
-            <div class="stat-item">
-              <div class="stat-value rating">{{ merchant.rating || '-' }}</div>
-              <div class="stat-label">商户评分</div>
-              <el-rate
-                v-if="merchant.rating"
-                v-model="merchant.rating"
-                disabled
-                :max="5"
-              />
-            </div>
-          </el-col>
-        </el-row>
-      </el-card>
+        <el-descriptions :column="3" border>
+          <el-descriptions-item label="营业执照号">
+            {{ merchantInfo.licenseNo || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="法人代表">
+            {{ merchantInfo.legalPerson || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item label="公司类型">
+            {{ merchantInfo.companyType || "-" }}
+          </el-descriptions-item>
+        </el-descriptions>
 
-      <!-- 审核历史 -->
-      <el-card class="info-card">
-        <template #header>
-          <span>审核历史</span>
-        </template>
-        <el-timeline v-if="reviewHistory.length > 0">
-          <el-timeline-item
-            v-for="(item, index) in reviewHistory"
-            :key="index"
-            :timestamp="formatTime(item.createTime)"
-            :type="item.action === 1 ? 'success' : 'danger'"
-          >
-            <div>
-              <strong>{{ item.action === 1 ? '审核通过' : '审核拒绝' }}</strong>
-              <span style="margin-left: 10px; color: #909399">
-                审核人: {{ item.reviewerName }}
-              </span>
-            </div>
-            <div v-if="item.remark" style="color: #606266; margin-top: 5px">
-              备注: {{ item.remark }}
-            </div>
-          </el-timeline-item>
-        </el-timeline>
-        <el-empty v-else description="暂无审核记录" />
-      </el-card>
-    </div>
-
-    <!-- 审核对话框 -->
-    <el-dialog
-      v-model="reviewDialogVisible"
-      title="商户审核"
-      width="500px"
-      :close-on-click-modal="false"
-    >
-      <el-form :model="reviewForm" label-width="80px">
-        <el-form-item label="审核结果">
-          <el-radio-group v-model="reviewForm.action">
-            <el-radio :label="1">通过</el-radio>
-            <el-radio :label="2">拒绝</el-radio>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item label="审核备注">
-          <el-input
-            v-model="reviewForm.remark"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入审核备注（拒绝时必填）"
+        <!-- 营业执照图片 -->
+        <div class="license-image-wrapper" v-if="merchantInfo.licenseImage">
+          <div class="image-title">营业执照图片</div>
+          <el-image
+            :src="merchantInfo.licenseImage"
+            :preview-src-list="[merchantInfo.licenseImage]"
+            fit="contain"
+            class="license-image"
+            preview-teleported
           />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="reviewDialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="reviewLoading" @click="submitReview">
-          确认
-        </el-button>
-      </template>
-    </el-dialog>
+        </div>
+      </el-card>
+
+      <!-- 备注信息 -->
+      <el-card shadow="never" class="info-card" v-if="merchantInfo.remarks">
+        <template #header>
+          <span class="title">备注信息</span>
+        </template>
+        <div class="remarks-content">
+          {{ merchantInfo.remarks }}
+        </div>
+      </el-card>
+    </template>
   </div>
 </template>
 
-<script setup name="MerchantDetail">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getObj, reviewMerchant, getReviewHistory } from '@/api/mall/merchant'
-
-const router = useRouter()
-const route = useRoute()
-
-// 商户ID
-const merchantId = ref(null)
-
-// 加载状态
-const loading = ref(false)
-const reviewLoading = ref(false)
-
-// 商户数据
-const merchant = ref({})
-const reviewHistory = ref([])
-
-// 审核对话框
-const reviewDialogVisible = ref(false)
-const reviewForm = reactive({
-  action: 1,
-  remark: ''
-})
-
-// 状态映射
-const statusMap = {
-  0: { label: '待审核', type: 'warning' },
-  1: { label: '已认证', type: 'success' },
-  2: { label: '已封禁', type: 'danger' },
-  3: { label: '已注销', type: 'info' }
-}
-
-const getStatusLabel = (status) => statusMap[status]?.label || '未知'
-const getStatusType = (status) => statusMap[status]?.type || 'info'
-
-// 格式化金额
-const formatMoney = (value) => {
-  if (!value) return '0.00'
-  return Number(value).toFixed(2)
-}
-
-// 格式化时间
-const formatTime = (time) => {
-  if (!time) return '-'
-  return time.replace('T', ' ').substring(0, 19)
-}
-
-// 加载商户详情
-const loadMerchant = async () => {
-  if (!merchantId.value) return
-
-  loading.value = true
-  try {
-    const res = await getObj(merchantId.value)
-    merchant.value = res.data || res || {}
-  } catch (error) {
-    console.error('获取商户详情失败:', error)
-    ElMessage.error('获取商户详情失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 加载审核历史
-const loadReviewHistory = async () => {
-  try {
-    const res = await getReviewHistory(merchantId.value)
-    reviewHistory.value = res.data || []
-  } catch (error) {
-    console.error('获取审核历史失败:', error)
-  }
-}
-
-// 返回列表
-const goBack = () => {
-  router.push('/mall/merchant')
-}
-
-// 编辑
-const handleEdit = () => {
-  router.push(`/mall/merchant-edit/${merchantId.value}`)
-}
-
-// 审核
-const handleReview = () => {
-  reviewForm.action = 1
-  reviewForm.remark = ''
-  reviewDialogVisible.value = true
-}
-
-// 提交审核
-const submitReview = async () => {
-  if (reviewForm.action === 2 && !reviewForm.remark) {
-    ElMessage.warning('拒绝时请填写审核备注')
-    return
-  }
-
-  reviewLoading.value = true
-  try {
-    await reviewMerchant(merchantId.value, reviewForm.action, reviewForm.remark)
-    ElMessage.success('审核成功')
-    reviewDialogVisible.value = false
-    loadMerchant()
-    loadReviewHistory()
-  } catch (error) {
-    console.error('审核失败:', error)
-    ElMessage.error('审核失败')
-  } finally {
-    reviewLoading.value = false
-  }
-}
-
-// 初始化
-onMounted(() => {
-  merchantId.value = route.params.id || route.query.id
-
-  if (!merchantId.value) {
-    ElMessage.error('缺少商户ID参数')
-    goBack()
-    return
-  }
-
-  loadMerchant()
-  loadReviewHistory()
-})
-</script>
-
 <style lang="scss" scoped>
 .merchant-detail {
-  .page-header {
-    margin-bottom: 20px;
-    .page-title {
-      font-size: 18px;
-      font-weight: 600;
+  padding: 20px;
+
+  .header-card {
+    margin-bottom: 16px;
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
   }
 
   .info-card {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
 
     .card-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-
-      .header-actions {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
     }
-  }
 
-  .merchant-profile {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-
-    .profile-content {
-      .merchant-name {
-        font-size: 24px;
-        font-weight: 600;
-        margin: 0 0 8px 0;
-      }
-      .merchant-no, .short-name {
-        color: #909399;
-        margin: 4px 0;
-      }
-    }
-  }
-
-  .license-images {
-    display: flex;
-    gap: 30px;
-
-    .image-item {
-      text-align: center;
-
-      .image-label {
-        margin-bottom: 10px;
-        color: #606266;
-        font-weight: 500;
-      }
-
-      .license-img {
-        width: 200px;
-        height: 130px;
-        border-radius: 8px;
-        border: 1px solid #e4e7ed;
-      }
-    }
-  }
-
-  .stat-item {
-    text-align: center;
-    padding: 20px;
-    background: #f5f7fa;
-    border-radius: 8px;
-
-    .stat-value {
-      font-size: 28px;
+    .title {
+      font-size: 16px;
       font-weight: 600;
-      color: #303133;
+    }
+  }
 
-      &.sales {
-        color: #f56c6c;
-      }
-      &.rating {
-        color: #e6a23c;
-      }
+  .count-value {
+    font-family: "SF Mono", "Monaco", "Consolas", monospace;
+    font-weight: 600;
+    color: #409eff;
+    font-size: 16px;
+  }
+
+  .price-value {
+    font-family: "SF Mono", "Monaco", "Consolas", monospace;
+    font-weight: 600;
+    color: #f56c6c;
+    font-size: 16px;
+  }
+
+  .license-image-wrapper {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ebeef5;
+
+    .image-title {
+      font-size: 14px;
+      color: #606266;
+      margin-bottom: 12px;
+      font-weight: 500;
     }
 
-    .stat-label {
-      margin-top: 8px;
-      color: #909399;
+    .license-image {
+      max-width: 400px;
+      max-height: 300px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
     }
+  }
+
+  .remarks-content {
+    padding: 12px;
+    background: #f5f7fa;
+    border-radius: 4px;
+    color: #606266;
+    line-height: 1.6;
   }
 }
 </style>

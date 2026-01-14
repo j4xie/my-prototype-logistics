@@ -1,6 +1,10 @@
 package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
+import com.cretas.aims.dto.report.CostVarianceReportDTO;
+import com.cretas.aims.dto.report.KpiMetricsDTO;
+import com.cretas.aims.dto.report.OeeReportDTO;
+import com.cretas.aims.dto.report.ProductionByProductDTO;
 import com.cretas.aims.service.ReportService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.Operation;
@@ -12,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletResponse;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -111,6 +116,22 @@ public class ReportController {
     // ============================================================
     // 报表功能端点
     // ============================================================
+
+    /**
+     * 按产品统计生产数量
+     */
+    @GetMapping("/production-by-product")
+    @Operation(summary = "按产品统计生产数量", description = "获取指定时间范围内各产品的生产统计数据，按产量降序排序")
+    public ApiResponse<List<ProductionByProductDTO>> getProductionByProduct(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期，格式yyyy-MM-dd，默认本周一") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期，格式yyyy-MM-dd，默认今天") LocalDate endDate) {
+        log.info("按产品统计生产数量: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+        List<ProductionByProductDTO> result = reportService.getProductionByProduct(factoryId, startDate, endDate);
+        return ApiResponse.success(result);
+    }
 
     /**
      * 获取库存报表
@@ -344,5 +365,131 @@ public class ReportController {
         log.info("获取报表实时数据: factoryId={}", factoryId);
         Map<String, Object> data = reportService.getRealtimeData(factoryId);
         return ApiResponse.success(data);
+    }
+
+    // ========== 新增报表端点 (2026-01-14) ==========
+
+    /**
+     * 获取 OEE (设备综合效率) 报表
+     * OEE = 可用性 × 表现性 × 质量率
+     * 行业标准: ≥85% 为世界级水平
+     */
+    @GetMapping("/oee")
+    @Operation(summary = "获取OEE报表", description = "获取设备综合效率(OEE)报表，包含可用性、表现性、质量率分析")
+    public ApiResponse<OeeReportDTO> getOeeReport(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期，默认本周一") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期，默认今天") LocalDate endDate) {
+        log.info("获取OEE报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        // 默认日期范围：本周
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(6);
+        }
+
+        OeeReportDTO report = reportService.getOeeReport(factoryId, startDate, endDate);
+        return ApiResponse.success(report);
+    }
+
+    /**
+     * 获取成本差异报表
+     * 对比 BOM 理论成本与实际成本
+     * 行业标准: 差异率 ≤5%
+     */
+    @GetMapping("/cost-variance")
+    @Operation(summary = "获取成本差异报表", description = "获取BOM理论成本与实际成本差异分析报表")
+    public ApiResponse<CostVarianceReportDTO> getCostVarianceReport(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期，默认30天前") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期，默认今天") LocalDate endDate) {
+        log.info("获取成本差异报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        // 默认日期范围：近30天
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(30);
+        }
+
+        CostVarianceReportDTO report = reportService.getCostVarianceReport(factoryId, startDate, endDate);
+        return ApiResponse.success(report);
+    }
+
+    /**
+     * 获取完整 KPI 指标集
+     * 整合生产、质量、成本、交付、设备等多维度指标
+     */
+    @GetMapping("/kpi-metrics")
+    @Operation(summary = "获取完整KPI指标", description = "获取制造业核心KPI指标完整集合")
+    public ApiResponse<KpiMetricsDTO> getKpiMetrics(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "指标日期，默认今天") LocalDate date) {
+        log.info("获取完整KPI指标: factoryId={}, date={}", factoryId, date);
+
+        if (date == null) {
+            date = LocalDate.now();
+        }
+
+        KpiMetricsDTO metrics = reportService.getKpiMetricsDTO(factoryId, date);
+        return ApiResponse.success(metrics);
+    }
+
+    /**
+     * 获取产能利用率报表
+     */
+    @GetMapping("/capacity-utilization")
+    @Operation(summary = "获取产能利用率报表", description = "获取产能利用率分析，包含热力图数据")
+    public ApiResponse<Map<String, Object>> getCapacityUtilizationReport(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期") LocalDate endDate) {
+        log.info("获取产能利用率报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(30);
+        }
+
+        Map<String, Object> report = reportService.getCapacityUtilizationReport(factoryId, startDate, endDate);
+        return ApiResponse.success(report);
+    }
+
+    /**
+     * 获取准时交付报表
+     * OTIF (On-Time In-Full) 准时足量交付率
+     * 行业标准: ≥95%
+     */
+    @GetMapping("/on-time-delivery")
+    @Operation(summary = "获取准时交付报表", description = "获取OTIF准时足量交付率分析")
+    public ApiResponse<Map<String, Object>> getOnTimeDeliveryReport(
+            @PathVariable @Parameter(description = "工厂ID") String factoryId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "开始日期") LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @Parameter(description = "结束日期") LocalDate endDate) {
+        log.info("获取准时交付报表: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        if (endDate == null) {
+            endDate = LocalDate.now();
+        }
+        if (startDate == null) {
+            startDate = endDate.minusDays(30);
+        }
+
+        Map<String, Object> report = reportService.getOnTimeDeliveryReport(factoryId, startDate, endDate);
+        return ApiResponse.success(report);
     }
 }

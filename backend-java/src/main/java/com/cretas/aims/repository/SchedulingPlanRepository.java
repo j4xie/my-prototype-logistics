@@ -58,6 +58,17 @@ public interface SchedulingPlanRepository extends JpaRepository<SchedulingPlan, 
         Pageable pageable);
 
     @Query("SELECT sp FROM SchedulingPlan sp WHERE sp.factoryId = :factoryId " +
+           "AND sp.planDate BETWEEN :startDate AND :endDate " +
+           "AND sp.status IN :statuses " +
+           "AND sp.deletedAt IS NULL ORDER BY sp.planDate DESC")
+    Page<SchedulingPlan> findByFactoryIdAndDateRangeAndStatusesPaged(
+        @Param("factoryId") String factoryId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate,
+        @Param("statuses") List<SchedulingPlan.PlanStatus> statuses,
+        Pageable pageable);
+
+    @Query("SELECT sp FROM SchedulingPlan sp WHERE sp.factoryId = :factoryId " +
            "AND sp.status IN ('confirmed', 'in_progress') " +
            "AND sp.planDate >= :today " +
            "AND sp.deletedAt IS NULL ORDER BY sp.planDate")
