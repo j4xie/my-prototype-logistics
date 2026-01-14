@@ -1,0 +1,114 @@
+{
+  "generated_at": "2026-01-14T01:20:45.748598",
+  "total": 15,
+  "success": 15,
+  "failed": 0,
+  "results": [
+    {
+      "code": "fresh_green",
+      "name": "Fresh Green",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/fresh_green_banner_20260114_011529.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/21/20260114/15d68443/26441323-9447-4092-bdba-f2c536e0175e-1-1.png?Expires=1768410925&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=P6xE7GFsnW%2BKe30IC87CXwIJxes%3D",
+      "task_id": "2f6ad218-f61a-494a-a120-c9f7fd062f6f"
+    },
+    {
+      "code": "classic_gold",
+      "name": "Classic Gold",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/classic_gold_banner_20260114_011602.png",
+      "original_url": "https://dashscope-result-sh.oss-cn-shanghai.aliyuncs.com/1d/7b/20260114/c6e3cb4b/3684b0fa-3dff-4267-97cb-58abcee05bd4-1-1.png?Expires=1768410949&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=0Lgble9OYKD2bm45Q%2FtOfBdbr7c%3D",
+      "task_id": "f1d520bc-90e1-44e1-a3bf-0cae66cf024e"
+    },
+    {
+      "code": "ocean_blue",
+      "name": "Ocean Blue",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/ocean_blue_banner_20260114_011621.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/15/20260114/15d68443/f7275c24-e44a-4401-a9c5-0f7899293276-1-1.png?Expires=1768410978&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=lL3ZwElUd1ymGetXzLnicDWOybU%3D",
+      "task_id": "ab60501b-7b69-42da-b924-a2bfc676cd6b"
+    },
+    {
+      "code": "sweet_pink",
+      "name": "Sweet Pink",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/sweet_pink_banner_20260114_011640.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/d4/20260114/15d68443/9b0e0ce1-e289-4a2d-b5a2-6d59ecdc7513-1-1.png?Expires=1768410996&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=7soSP6reH%2B%2B9T%2B2Bctve3%2BBLGuI%3D",
+      "task_id": "e98b1cae-5346-4a2f-8b26-b6b353577a22"
+    },
+    {
+      "code": "baby_warm",
+      "name": "Baby Warm",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/baby_warm_banner_20260114_011659.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/bc/20260114/15d68443/928ccf16-bebb-499a-b14f-4411f4c82b45-1-1.png?Expires=1768411016&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=eUiSMBWrNdfdoXvGfvNWHlWA0Yw%3D",
+      "task_id": "c6a79d8e-1e5a-4dfc-9d85-3d778e6ecdb1"
+    },
+    {
+      "code": "tech_blue",
+      "name": "Tech Blue",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/tech_blue_banner_20260114_011718.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/6a/20260114/15d68443/fd7670e9-9644-49ce-ad3a-0b57bf192521-1-1.png?Expires=1768411034&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=GMoEwKFmse2%2BqiflJ3PE2KxdD9w%3D",
+      "task_id": "62a47d9b-abde-4d57-bca9-7b24d22da1e2"
+    },
+    {
+      "code": "dopamine_orange",
+      "name": "Dopamine Orange",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/dopamine_orange_banner_20260114_011737.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/17/20260114/15d68443/ef189730-9f36-4b87-8adb-46568db546e9-1-1.png?Expires=1768411054&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=c%2FeAAg3njBl3M91%2BFwFb8FwXg4Q%3D",
+      "task_id": "2826584e-377d-4dae-90ff-794367436c27"
+    },
+    {
+      "code": "minimal_white",
+      "name": "Minimal White",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/minimal_white_banner_20260114_011808.png",
+      "original_url": "https://dashscope-result-sh.oss-cn-shanghai.aliyuncs.com/1d/8e/20260114/c6e3cb4b/1f9e6fe1-424f-493c-bad9-35a83e278397-1-1.png?Expires=1768411076&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=JdYaaAw%2FwK5O%2BjEigtfbm40eR2s%3D",
+      "task_id": "709ce174-d6f1-47e4-bb49-14b96d17876b"
+    },
+    {
+      "code": "tea_brown",
+      "name": "Tea Brown",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/tea_brown_banner_20260114_011827.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/06/20260114/15d68443/bcd3de2c-e192-46f3-a667-d0fe62be30a8-1-1.png?Expires=1768411104&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=fNQRo3QNruWSL1Q0Jgw7Eqjg3hg%3D",
+      "task_id": "1c2328a7-2b29-409d-be90-9e7665f092db"
+    },
+    {
+      "code": "beauty_purple",
+      "name": "Beauty Purple",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/beauty_purple_banner_20260114_011846.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/9c/20260114/15d68443/f22d35a2-26c7-4942-acba-d55a9fd13306-1-1.png?Expires=1768411124&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=SGNrraCHBoMLpbYtLJtHy%2FZskAQ%3D",
+      "task_id": "a287775b-faa2-40e4-a386-e5511b57f6a4"
+    },
+    {
+      "code": "natural_wood",
+      "name": "Natural Wood",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/natural_wood_banner_20260114_011905.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/f0/20260114/15d68443/21625903-aedd-480d-9f45-b019ecc8707b-1-1.png?Expires=1768411142&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=%2BBDzZaqjRp%2BHenIH9tn8%2BlKpw4w%3D",
+      "task_id": "88692100-5c6f-4a25-9fd6-226f5228bcbf"
+    },
+    {
+      "code": "festival_red",
+      "name": "Festival Red",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/festival_red_banner_20260114_011936.png",
+      "original_url": "https://dashscope-result-sh.oss-cn-shanghai.aliyuncs.com/1d/05/20260114/c6e3cb4b/00d388fb-d2ca-4f7f-bd57-03b3867839ef-1-1.png?Expires=1768411165&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=l73MSzLZUFWScxmp%2BgFz9UeeDSQ%3D",
+      "task_id": "4794951d-b485-4258-abba-2c7ff8d0a8ea"
+    },
+    {
+      "code": "dark_night",
+      "name": "Dark Night",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/dark_night_banner_20260114_011955.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/e7/20260114/15d68443/8e5d36f8-3626-4904-a987-f391c828d950-1-1.png?Expires=1768411192&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=1gxaf0bHtgikRb1CrqcgvjKkLIM%3D",
+      "task_id": "ec5ab396-85a1-41d2-b04b-abb90c80b1f8"
+    },
+    {
+      "code": "farm_green",
+      "name": "Farm Green",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/farm_green_banner_20260114_012026.png",
+      "original_url": "https://dashscope-result-sh.oss-cn-shanghai.aliyuncs.com/1d/f6/20260114/c6e3cb4b/7b51dee9-7bd8-4803-ad55-31b5de410d65-1-1.png?Expires=1768411214&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=TaFExzMthczpNg1eNXzrOOVTeA4%3D",
+      "task_id": "d618614e-e532-4f38-a552-7e05e464fe67"
+    },
+    {
+      "code": "medical_blue",
+      "name": "Medical Blue",
+      "oss_url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/themes/banners/medical_blue_banner_20260114_012045.png",
+      "original_url": "https://dashscope-result-bj.oss-cn-beijing.aliyuncs.com/1d/55/20260114/15d68443/b2ebbd8b-7846-41c8-a87c-ddf3d29b9880-1-1.png?Expires=1768411241&OSSAccessKeyId=LTAI5tKPD3TMqf2Lna1fASuh&Signature=uZHRI3P2oc3h4I2Hmo%2Blaydg%2BxU%3D",
+      "task_id": "bcd14dd1-9999-4e1f-a392-0ffe9e3e8256"
+    }
+  ],
+  "failures": []
+}

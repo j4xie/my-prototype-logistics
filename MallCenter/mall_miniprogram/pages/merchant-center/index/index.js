@@ -20,6 +20,7 @@ Page({
       { icon: 'cuIcon-list', title: '订单管理', path: '/pages/merchant-center/orders/index', badge: 0 },
       { icon: 'cuIcon-goods', title: '商品管理', path: '/pages/merchant-center/product-list/index', badge: 0 },
       { icon: 'cuIcon-add', title: '发布商品', path: '/pages/merchant-center/product-edit/index', badge: 0 },
+      { icon: 'cuIcon-colorlens', title: '店铺装修', path: '/pages/merchant-center/shop-design/index', badge: 0 },
       { icon: 'cuIcon-chart', title: '数据统计', path: '/pages/merchant-center/stats/index', badge: 0 },
       { icon: 'cuIcon-people', title: '员工管理', path: '/pages/merchant-center/staff/index', badge: 0 },
       { icon: 'cuIcon-settings', title: '店铺设置', path: '/pages/merchant-center/settings/index', badge: 0 }

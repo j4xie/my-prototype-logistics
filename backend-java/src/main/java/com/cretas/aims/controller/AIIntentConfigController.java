@@ -4,6 +4,7 @@ import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.intent.CleanupRequest;
+import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.intent.KeywordEffectiveness;
@@ -435,6 +436,29 @@ public class AIIntentConfigController {
                 request.getMatchedKeywords());
 
         return ResponseEntity.ok(ApiResponse.successMessage("负向反馈已记录"));
+    }
+
+    /**
+     * 意图识别反馈接口
+     * 用户可以纠正错误的意图识别结果，系统自动学习
+     */
+    @PostMapping("/feedback")
+    @Operation(summary = "提交意图识别反馈", description = "用户可以纠正错误的意图识别结果，系统自动学习")
+    public ResponseEntity<ApiResponse<Void>> submitIntentFeedback(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentFeedbackRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+
+        log.info("提交意图反馈: factoryId={}, userId={}, input='{}', matched={}, correct={}, isCorrect={}",
+                factoryId, userId, request.getUserInput(), request.getMatchedIntentCode(),
+                request.getCorrectIntentCode(), request.getIsCorrect());
+
+        aiIntentService.processIntentFeedback(factoryId, userId, request);
+
+        return ResponseEntity.ok(ApiResponse.successMessage("反馈已记录，系统将自动学习"));
     }
 
     // ==================== 缓存管理 ====================

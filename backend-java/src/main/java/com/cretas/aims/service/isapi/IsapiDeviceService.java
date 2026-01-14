@@ -1,6 +1,7 @@
 package com.cretas.aims.service.isapi;
 
 import com.cretas.aims.client.isapi.IsapiClient;
+import com.cretas.aims.config.IsapiConfig;
 import com.cretas.aims.dto.isapi.HttpHostConfigRequest;
 import com.cretas.aims.dto.isapi.HttpHostConfigResponse;
 import com.cretas.aims.dto.isapi.IsapiCaptureDTO;
@@ -376,6 +377,95 @@ public class IsapiDeviceService {
     public int markTimeoutDevicesOffline(int timeoutSeconds) {
         LocalDateTime threshold = LocalDateTime.now().minusSeconds(timeoutSeconds);
         return deviceRepository.markTimeoutDevicesOffline(threshold);
+    }
+
+    // ==================== 高级设备管理 ====================
+
+    /**
+     * 获取设备明文密码
+     */
+    public String getDecryptedPassword(String deviceId) {
+        IsapiDevice device = getDevice(deviceId);
+        return isapiClient.decryptPassword(device.getPasswordEncrypted());
+    }
+
+    /**
+     * 修改设备密码
+     */
+    @Transactional
+    public void changeDevicePassword(String deviceId, String newPassword) {
+        IsapiDevice device = getDevice(deviceId);
+
+        try {
+            // 1. 构建修改密码的 XML (用户 ID 通常为 1)
+            String changePasswordXml = buildChangePasswordXml(1, device.getUsername(), newPassword);
+
+            // 2. 发送 PUT 请求修改设备密码
+            String url = device.getBaseUrl() + String.format(IsapiConfig.Endpoints.USER_BY_ID, 1);
+            isapiClient.executePut(device, url, changePasswordXml);
+
+            // 3. 更新数据库中保存的加密密码
+            device.setPasswordEncrypted(isapiClient.encryptPassword(newPassword));
+            deviceRepository.save(device);
+
+            // 4. 清除客户端缓存
+            isapiClient.removeDeviceClient(deviceId);
+
+            log.info("设备密码修改成功: deviceId={}", deviceId);
+        } catch (Exception e) {
+            log.error("修改设备密码失败: deviceId={}, error={}", deviceId, e.getMessage());
+            throw new RuntimeException("修改设备密码失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 重启设备
+     */
+    public void rebootDevice(String deviceId) {
+        IsapiDevice device = getDevice(deviceId);
+
+        try {
+            String url = device.getBaseUrl() + IsapiConfig.Endpoints.REBOOT;
+            isapiClient.executePut(device, url, "");
+
+            device.setStatus(DeviceStatus.CONNECTING);
+            device.setLastError("Device rebooting...");
+            deviceRepository.save(device);
+
+            log.info("设备重启命令已发送: deviceId={}", deviceId);
+        } catch (Exception e) {
+            log.error("重启设备失败: deviceId={}, error={}", deviceId, e.getMessage());
+            throw new RuntimeException("重启设备失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 恢复出厂设置
+     */
+    public void factoryResetDevice(String deviceId) {
+        IsapiDevice device = getDevice(deviceId);
+
+        try {
+            String url = device.getBaseUrl() + IsapiConfig.Endpoints.FACTORY_RESET;
+            isapiClient.executePut(device, url, "");
+
+            log.warn("设备恢复出厂设置命令已发送: deviceId={}, ip={}", deviceId, device.getIpAddress());
+        } catch (Exception e) {
+            log.error("恢复出厂设置失败: deviceId={}, error={}", deviceId, e.getMessage());
+            throw new RuntimeException("恢复出厂设置失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 构建修改密码的 XML
+     */
+    private String buildChangePasswordXml(int userId, String username, String password) {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<User version=\"2.0\" xmlns=\"http://www.isapi.org/ver20/XMLSchema\">\n" +
+                "  <id>" + userId + "</id>\n" +
+                "  <userName>" + username + "</userName>\n" +
+                "  <password>" + password + "</password>\n" +
+                "</User>";
     }
 
     // ==================== HTTP Host 配置 ====================

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.AiDecorationSessionMapper">
+    <resultMap id="sessionMap" type="com.joolun.mall.entity.AiDecorationSession">
+        <id property="id" column="id"/>
+        <result property="sessionId" column="session_id"/>
+        <result property="merchantId" column="merchant_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="pageConfigId" column="page_config_id"/>
+        <result property="title" column="title"/>
+        <result property="status" column="status"/>
+        <result property="userRequirement" column="user_prompt"/>
+        <result property="aiAnalysis" column="ai_analysis"/>
+        <result property="recommendedThemes" column="recommended_themes"/>
+        <result property="generatedConfig" column="generated_config"/>
+        <result property="conversationHistory" column="conversation_history"/>
+        <result property="userFeedback" column="feedback_comment"/>
+        <result property="userRating" column="feedback_score"/>
+        <result property="isApplied" column="is_applied"/>
+        <result property="appliedTime" column="applied_time"/>
+        <result property="expireTime" column="expire_time"/>
+        <result property="currentStep" column="current_step"/>
+        <result property="selectedIndustry" column="selected_industry"/>
+        <result property="selectedStyle" column="selected_style"/>
+        <result property="selectedThemeCode" column="selected_theme_code"/>
+        <result property="selectedLayoutId" column="selected_layout_id"/>
+        <result property="guideData" column="guide_data"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+    </resultMap>
+
+    <sql id="sessionSql">
+        s.`id`, s.`session_id`, s.`merchant_id`, s.`user_id`, s.`user_prompt`,
+        s.`ai_analysis`, s.`generated_config`, s.`feedback_score`, s.`feedback_comment`,
+        s.`status`, s.`current_step`, s.`selected_industry`, s.`selected_style`,
+        s.`selected_theme_code`, s.`selected_layout_id`, s.`guide_data`,
+        s.`create_time`, s.`update_time`
+    </sql>
+
+    <select id="selectPage1" resultMap="sessionMap">
+        SELECT <include refid="sessionSql"/>
+        FROM ai_decoration_session s
+        <where>
+            <if test="query.merchantId != null">
+                AND s.`merchant_id` = #{query.merchantId}
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND s.`status` = #{query.status}
+            </if>
+        </where>
+        ORDER BY s.`create_time` DESC
+    </select>
+
+    <select id="selectBySessionId" resultMap="sessionMap">
+        SELECT <include refid="sessionSql"/>
+        FROM ai_decoration_session s
+        WHERE s.`session_id` = #{sessionId}
+    </select>
+
+    <select id="selectByMerchantId" resultMap="sessionMap">
+        SELECT <include refid="sessionSql"/>
+        FROM ai_decoration_session s
+        WHERE s.`merchant_id` = #{merchantId}
+        ORDER BY s.`create_time` DESC
+    </select>
+
+    <select id="selectActiveByUserId" resultMap="sessionMap">
+        SELECT <include refid="sessionSql"/>
+        FROM ai_decoration_session s
+        WHERE s.`user_id` = #{userId} AND s.`status` = 'active'
+        ORDER BY s.`create_time` DESC
+    </select>
+
+    <select id="selectExpiredSessions" resultMap="sessionMap">
+        SELECT <include refid="sessionSql"/>
+        FROM ai_decoration_session s
+        WHERE s.`status` = 'active'
+        ORDER BY s.`create_time` ASC
+    </select>
+
+    <!-- 统计查询 -->
+
+    <select id="selectAvgFeedbackScore" resultType="java.lang.Double">
+        SELECT AVG(feedback_score)
+        FROM ai_decoration_session
+        WHERE feedback_score IS NOT NULL AND feedback_score > 0
+    </select>
+
+    <select id="selectTodayCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM ai_decoration_session
+        WHERE DATE(create_time) = CURDATE()
+    </select>
+
+    <select id="selectWeekCount" resultType="java.lang.Long">
+        SELECT COUNT(*)
+        FROM ai_decoration_session
+        WHERE create_time >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    </select>
+
+    <select id="selectTopIndustries" resultType="java.util.Map">
+        SELECT
+            selected_industry AS name,
+            COUNT(*) AS count
+        FROM ai_decoration_session
+        WHERE selected_industry IS NOT NULL AND selected_industry != ''
+        GROUP BY selected_industry
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectTopStyles" resultType="java.util.Map">
+        SELECT
+            selected_style AS name,
+            COUNT(*) AS count
+        FROM ai_decoration_session
+        WHERE selected_style IS NOT NULL AND selected_style != ''
+        GROUP BY selected_style
+        ORDER BY count DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectMerchantUsageStats" resultType="java.util.Map">
+        SELECT
+            s.merchant_id AS merchantId,
+            COALESCE(m.merchant_name, CONCAT('商户', s.merchant_id)) AS merchantName,
+            COUNT(*) AS totalSessions,
+            SUM(CASE WHEN s.status = 1 THEN 1 ELSE 0 END) AS completedSessions,
+            SUM(CASE WHEN s.status = 1 AND s.generated_config IS NOT NULL THEN 1 ELSE 0 END) AS appliedConfigs,
+            AVG(CASE WHEN s.feedback_score > 0 THEN s.feedback_score ELSE NULL END) AS avgFeedbackScore,
+            MAX(s.create_time) AS lastUsedTime
+        FROM ai_decoration_session s
+        LEFT JOIN merchant m ON s.merchant_id = m.id
+        WHERE s.merchant_id IS NOT NULL
+        GROUP BY s.merchant_id, m.merchant_name
+        ORDER BY totalSessions DESC
+    </select>
+</mapper>

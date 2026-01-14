@@ -398,6 +398,42 @@ public class ExpressionLearningServiceImpl implements ExpressionLearningService 
         return updated > 0;
     }
 
+    @Override
+    @Transactional
+    public void recordFeedback(String factoryId, String userInput, String matchedIntentCode,
+                               String correctIntentCode, Boolean isCorrect, String sessionId) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            log.warn("recordFeedback: userInput为空，已忽略");
+            return;
+        }
+
+        try {
+            // 先记录为训练样本
+            TrainingSample.MatchMethod matchMethod = matchedIntentCode != null ?
+                    TrainingSample.MatchMethod.USER_FEEDBACK : TrainingSample.MatchMethod.UNKNOWN;
+
+            TrainingSample sample = recordSample(
+                    factoryId,
+                    userInput,
+                    matchedIntentCode != null ? matchedIntentCode : "",
+                    matchMethod,
+                    isCorrect != null && isCorrect ? 1.0 : 0.0,
+                    sessionId
+            );
+
+            // 如果有样本ID且用户提供了反馈，更新反馈信息
+            if (sample != null && sample.getId() != null) {
+                recordFeedback(sample.getId(), Boolean.TRUE.equals(isCorrect), correctIntentCode);
+            }
+
+            log.info("记录意图反馈样本: factory={}, matched={}, correct={}, isCorrect={}, session={}",
+                    factoryId, matchedIntentCode, correctIntentCode, isCorrect, sessionId);
+
+        } catch (Exception e) {
+            log.error("记录意图反馈失败: factory={}, error={}", factoryId, e.getMessage(), e);
+        }
+    }
+
     // ========== 清理与维护 ==========
 
     @Override

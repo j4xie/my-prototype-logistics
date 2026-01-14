@@ -350,12 +350,101 @@ public class AIIntentServiceImpl implements AIIntentService {
             return noMatchResult;
         }
 
-        // ========== v4.0 并行多层评分架构 ==========
-        // 替代原有的 Layer 1.5 - Layer 4 串行瀑布式架构
-        // 并行执行: 短语匹配 + 语义匹配 + 关键词匹配，综合评分
-
         ActionType opType = knowledgeBase.detectActionType(normalizedInput);
         log.debug("检测到操作类型: {} for input: {}", opType, normalizedInput);
+
+        // ========== v6.0 语义优先架构 ==========
+        // 核心改革: 语义匹配优先 → 精确验证 → 置信度决策
+        if (matchingConfig.isSemanticFirstEnabled()) {
+            log.debug("使用v6.0语义优先架构");
+
+            // Step 1: 语义路由 - 向量相似度匹配 Top-5 候选
+            SemanticRoutingResult routingResult = semanticFirstRouting(userInput, factoryId);
+
+            if (!routingResult.isEmpty()) {
+                // Step 2: 精确验证 - 短语/关键词/粒度/域 调整分数
+                List<SemanticCandidate> verifiedCandidates =
+                        preciseVerification(userInput, factoryId, routingResult, opType);
+
+                if (!verifiedCandidates.isEmpty()) {
+                    SemanticCandidate bestCandidate = verifiedCandidates.get(0);
+                    double confidence = bestCandidate.adjustedScore;
+
+                    log.info("语义优先匹配: intent={}, semantic={:.3f}, adjusted={:.3f}",
+                            bestCandidate.intentCode, bestCandidate.semanticScore, confidence);
+
+                    // 构建候选列表
+                    List<CandidateIntent> candidates = verifiedCandidates.stream()
+                            .limit(5)
+                            .map(c -> CandidateIntent.builder()
+                                    .intentCode(c.intentCode)
+                                    .intentName(c.config.getIntentName())
+                                    .intentCategory(c.config.getIntentCategory())
+                                    .confidence(c.adjustedScore)
+                                    .matchScore((int)(c.adjustedScore * 100))
+                                    .matchedKeywords(c.matchedKeywords)
+                                    .matchMethod(c.phraseConfirmed ? MatchMethod.PHRASE_MATCH : MatchMethod.SEMANTIC)
+                                    .description(c.config.getDescription())
+                                    .build())
+                            .collect(Collectors.toList());
+
+                    // Step 3: 置信度决策
+                    double highThreshold = matchingConfig.getSemanticFirstHighThreshold();
+
+                    // 高置信度 (>= 0.85): 直接返回
+                    if (confidence >= highThreshold) {
+                        IntentMatchResult result = IntentMatchResult.builder()
+                                .bestMatch(bestCandidate.config)
+                                .topCandidates(candidates)
+                                .confidence(confidence)
+                                .matchMethod(bestCandidate.phraseConfirmed ? MatchMethod.PHRASE_MATCH : MatchMethod.SEMANTIC)
+                                .matchedKeywords(bestCandidate.matchedKeywords)
+                                .isStrongSignal(true)
+                                .requiresConfirmation(false)
+                                .userInput(userInput)
+                                .actionType(opType)
+                                .build();
+
+                        log.info("语义优先高置信度直接返回: intent={}, confidence={:.3f}",
+                                bestCandidate.intentCode, confidence);
+                        saveIntentMatchRecord(result, factoryId, null, null, false);
+                        return result;
+                    }
+
+                    // 中/低置信度: 构建结果交给后续 LLM Reranking/Fallback 处理
+                    IntentMatchResult semanticResult = IntentMatchResult.builder()
+                            .bestMatch(bestCandidate.config)
+                            .topCandidates(candidates)
+                            .confidence(confidence)
+                            .matchMethod(MatchMethod.SEMANTIC)
+                            .matchedKeywords(bestCandidate.matchedKeywords)
+                            .isStrongSignal(false)
+                            .requiresConfirmation(true)
+                            .userInput(userInput)
+                            .actionType(opType)
+                            .build();
+
+                    // 中置信度走 LLM Reranking
+                    if (matchingConfig.isInRerankingRange(confidence)) {
+                        log.info("语义优先中置信度 ({:.3f})，触发 LLM Reranking", confidence);
+                        return tryLlmReranking(userInput, factoryId, candidates, semanticResult, opType, userId, userRole);
+                    }
+
+                    // 低置信度走 LLM Fallback
+                    log.info("语义优先低置信度 ({:.3f})，触发 LLM Fallback", confidence);
+                    return tryLlmFallback(userInput, factoryId, allIntents, semanticResult, opType, userId, userRole);
+                }
+            }
+
+            // 语义路由无结果，降级到 LLM Fallback
+            log.debug("语义路由无结果，降级到 LLM Fallback");
+            return tryLlmFallback(userInput, factoryId, allIntents, null, opType, userId, userRole);
+        }
+
+        // ========== v4.0 并行多层评分架构 (向后兼容) ==========
+        // 替代原有的 Layer 1.5 - Layer 4 串行瀑布式架构
+        // 并行执行: 短语匹配 + 语义匹配 + 关键词匹配，综合评分
+        log.debug("使用v4.0并行评分架构");
 
         // 调用并行评分方法
         IntentMatchResult parallelResult = parallelScoreMatch(userInput, factoryId, allIntents, opType);
@@ -382,8 +471,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                 return parallelResult;
             }
 
-            // 置信度 0.5-0.75: 中等置信度，可以返回但标记需要确认
-            if (confidence >= 0.5) {
+            // 置信度 0.72-0.75: 中等置信度，可以返回但标记需要确认
+            if (confidence >= 0.72) {
                 IntentMatchResult confirmedResult = parallelResult.toBuilder()
                         .requiresConfirmation(true)
                         .build();
@@ -398,7 +487,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 无并行评分结果，或置信度过低
         List<IntentScoreEntry> scoredIntents = new ArrayList<>();
 
-        if (parallelResult == null || parallelResult.getConfidence() < 0.5) {
+        if (parallelResult == null || parallelResult.getConfidence() < 0.72) {
             log.debug("No intent matched by rules or semantics for input: {}", userInput);
 
             // ========== Layer 3.5: 域默认意图 (关键词失败但域检测成功) ==========
@@ -620,10 +709,33 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // 如果置信度过低，尝试 LLM Fallback 提升
-        if (bestConfidence < matchingConfig.getLlmFallbackConfidenceThreshold()) {
-            log.debug("Low confidence ({}) for intent {}, trying LLM fallback",
-                    bestConfidence, bestEntry.config.getIntentCode());
+        // ========== 置信度分层决策 ==========
+        // 高置信度区 (>= 0.85): 直接返回，语义评分已足够准确
+        // 中置信度区 (0.58-0.85): LLM Reranking，语义评分+LLM双保险
+        // 低置信度区 (< 0.58): LLM Fallback，需要完整分类
+
+        double rerankingUpperBound = matchingConfig.getLlmRerankingUpperBound();
+        double rerankingLowerBound = matchingConfig.getLlmFallbackConfidenceThreshold();
+
+        // 高置信度: 直接返回
+        if (bestConfidence >= rerankingUpperBound) {
+            log.info("High confidence ({:.2f} >= {:.2f}), direct return: intent={}",
+                    bestConfidence, rerankingUpperBound, bestEntry.config.getIntentCode());
+            saveIntentMatchRecord(result, factoryId, null, null, false);
+            return result;
+        }
+
+        // 中置信度: 尝试 LLM Reranking
+        if (matchingConfig.isLlmRerankingEnabled() && bestConfidence >= rerankingLowerBound) {
+            log.info("Medium confidence ({:.2f} in [{:.2f}, {:.2f})), trying LLM Reranking: intent={}",
+                    bestConfidence, rerankingLowerBound, rerankingUpperBound, bestEntry.config.getIntentCode());
+            return tryLlmReranking(userInput, factoryId, candidates, result, opType, userId, userRole);
+        }
+
+        // 低置信度: 尝试 LLM Fallback
+        if (bestConfidence < rerankingLowerBound) {
+            log.debug("Low confidence ({:.2f} < {:.2f}) for intent {}, trying LLM fallback",
+                    bestConfidence, rerankingLowerBound, bestEntry.config.getIntentCode());
             return tryLlmFallback(userInput, factoryId, allIntents, result, opType, userId, userRole);
         }
 
@@ -814,6 +926,178 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
             saveIntentMatchRecord(fallbackResult, factoryId, null, null, true);
             return fallbackResult;
+        }
+    }
+
+    /**
+     * 尝试使用 LLM Reranking 进行意图确认
+     *
+     * 这是两阶段检索架构的第二阶段:
+     * - 第一阶段: 语义评分系统已生成 Top-N 候选
+     * - 第二阶段: LLM 对候选进行精细化重排序确认
+     *
+     * 适用场景: 中置信度区间 (0.58-0.85)，语义评分有把握但不确定
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param candidates 语义评分的 Top-N 候选意图
+     * @param semanticResult 语义评分结果
+     * @param actionType 检测到的操作类型
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return LLM 确认后的结果，或回退到语义评分结果
+     */
+    private IntentMatchResult tryLlmReranking(String userInput, String factoryId,
+                                               List<CandidateIntent> candidates,
+                                               IntentMatchResult semanticResult,
+                                               ActionType actionType,
+                                               Long userId,
+                                               String userRole) {
+        log.info(">>> Entering tryLlmReranking: userInput='{}', candidates={}, rerankingEnabled={}",
+                userInput, candidates.size(), matchingConfig.isLlmRerankingEnabled());
+
+        // 检查是否启用 LLM Reranking
+        if (!matchingConfig.isLlmRerankingEnabled()) {
+            log.debug("LLM Reranking is disabled, returning semantic result");
+            saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+            return semanticResult;
+        }
+
+        // 检查 LLM 服务健康状态
+        if (!llmFallbackClient.isHealthy()) {
+            log.warn("LLM service is not healthy, returning semantic result");
+            saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+            return semanticResult;
+        }
+
+        try {
+            // 限制候选数量
+            int topK = matchingConfig.getLlmRerankingTopCandidates();
+            List<CandidateIntent> topCandidates = candidates.stream()
+                    .limit(topK)
+                    .collect(Collectors.toList());
+
+            // 调用 LLM Reranking
+            LlmIntentFallbackClient.RerankingResult rerankingResult =
+                    llmFallbackClient.rerankCandidates(userInput, topCandidates, factoryId);
+
+            if (!rerankingResult.isSuccess()) {
+                log.warn("LLM Reranking failed: {}, returning semantic result", rerankingResult.getErrorMessage());
+                saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+                return semanticResult;
+            }
+
+            // 查找 LLM 选中的意图配置
+            String selectedIntentCode = rerankingResult.getSelectedIntentCode();
+            Optional<AIIntentConfig> selectedConfigOpt = intentRepository.findByIntentCode(selectedIntentCode);
+
+            if (selectedConfigOpt.isEmpty()) {
+                log.warn("LLM selected unknown intent: {}, returning semantic result", selectedIntentCode);
+                saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+                return semanticResult;
+            }
+
+            AIIntentConfig selectedConfig = selectedConfigOpt.get();
+
+            // 计算调整后的置信度
+            double adjustedConfidence = rerankingResult.getAdjustedConfidence();
+            double minBoost = matchingConfig.getLlmRerankingConfig().getConfidenceBoostMin();
+
+            // 如果 LLM 确认了语义评分的第一选择，提升置信度
+            if (rerankingResult.isMatchesOriginalRanking()) {
+                adjustedConfidence = Math.min(1.0, Math.max(adjustedConfidence,
+                        semanticResult.getConfidence() + minBoost));
+                log.info("LLM confirmed semantic ranking, boosted confidence: {:.2f} -> {:.2f}",
+                        semanticResult.getConfidence(), adjustedConfidence);
+            } else {
+                log.info("LLM adjusted ranking: {} -> {}, confidence: {:.2f}",
+                        semanticResult.getBestMatch().getIntentCode(),
+                        selectedIntentCode,
+                        adjustedConfidence);
+            }
+
+            // 更新候选列表，将选中的意图移到第一位
+            List<CandidateIntent> updatedCandidates = new ArrayList<>();
+            CandidateIntent selectedCandidate = null;
+
+            for (CandidateIntent c : candidates) {
+                if (c.getIntentCode().equals(selectedIntentCode)) {
+                    selectedCandidate = CandidateIntent.builder()
+                            .intentCode(c.getIntentCode())
+                            .intentName(c.getIntentName())
+                            .intentCategory(c.getIntentCategory())
+                            .confidence(adjustedConfidence)
+                            .matchScore(c.getMatchScore())
+                            .matchedKeywords(c.getMatchedKeywords())
+                            .matchMethod(MatchMethod.LLM)
+                            .description(c.getDescription())
+                            .build();
+                } else {
+                    updatedCandidates.add(c);
+                }
+            }
+
+            if (selectedCandidate == null) {
+                // 如果找不到匹配的候选，创建新的
+                selectedCandidate = CandidateIntent.builder()
+                        .intentCode(selectedIntentCode)
+                        .intentName(selectedConfig.getIntentName())
+                        .intentCategory(selectedConfig.getIntentCategory())
+                        .confidence(adjustedConfidence)
+                        .matchMethod(MatchMethod.LLM)
+                        .description(selectedConfig.getDescription())
+                        .build();
+            }
+
+            updatedCandidates.add(0, selectedCandidate);
+
+            // 构建最终结果
+            IntentMatchResult finalResult = IntentMatchResult.builder()
+                    .bestMatch(selectedConfig)
+                    .topCandidates(updatedCandidates)
+                    .confidence(adjustedConfidence)
+                    .matchMethod(MatchMethod.LLM) // 标记为 LLM 确认
+                    .matchedKeywords(semanticResult.getMatchedKeywords())
+                    .isStrongSignal(true) // LLM 确认后视为强信号
+                    .requiresConfirmation(false) // LLM 确认后不需要用户再确认
+                    .userInput(userInput)
+                    .actionType(actionType)
+                    .build();
+
+            // 自动学习: LLM 确认的意图，学习表达
+            if (matchingConfig.isAutoLearnEnabled() && adjustedConfidence >= matchingConfig.getAutoLearnExpressionThreshold()) {
+                tryAutoLearnExpression(userInput, selectedIntentCode, factoryId, adjustedConfidence,
+                        LearnedExpression.SourceType.LLM_RERANKING);
+                log.info("LLM Reranking 学习表达: intent={}, confidence={:.2f}",
+                        selectedIntentCode, adjustedConfidence);
+            }
+
+            // 记录训练样本
+            if (matchingConfig.isSampleCollectionEnabled()) {
+                try {
+                    expressionLearningService.recordSample(
+                            factoryId, userInput, selectedIntentCode,
+                            TrainingSample.MatchMethod.LLM_RERANKING, adjustedConfidence,
+                            rerankingResult.getReasoning());
+                } catch (Exception e) {
+                    log.warn("记录训练样本失败: {}", e.getMessage());
+                }
+            }
+
+            // 记录意图匹配 (LLM Reranking)
+            saveIntentMatchRecord(finalResult, factoryId, null, null, true);
+
+            log.info("LLM Reranking success: intent={}, confidence={:.2f}, reasoning='{}'",
+                    selectedIntentCode, adjustedConfidence,
+                    truncate(rerankingResult.getReasoning(), 50));
+
+            return finalResult;
+
+        } catch (Exception e) {
+            log.error("LLM Reranking failed with exception: {}", e.getMessage(), e);
+            // 降级到语义评分结果
+            saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+            return semanticResult;
         }
     }
 
@@ -2045,6 +2329,208 @@ public class AIIntentServiceImpl implements AIIntentService {
             this.score = score;
             this.keywords = keywords;
         }
+    }
+
+    // ==================== v6.0 语义优先架构 ====================
+
+    /**
+     * 语义优先路由 - v6.0核心架构
+     *
+     * 将语义匹配从"并行评分因子"提升为"第一优先级路由"：
+     * 1. 先通过向量相似度匹配 Top-5 候选意图
+     * 2. 如果最佳置信度 >= 0.85，直接返回（高置信度）
+     * 3. 否则返回候选列表，交由精确验证层处理
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @return 语义路由结果，包含候选列表
+     */
+    private SemanticRoutingResult semanticFirstRouting(String userInput, String factoryId) {
+        try {
+            // 调用统一语义搜索 (包含意图配置 + 已学习表达)
+            List<UnifiedSemanticMatch> semanticResults =
+                    embeddingCacheService.matchIntentsWithExpressions(factoryId, userInput, 0.50);
+
+            if (semanticResults.isEmpty()) {
+                log.debug("语义路由无结果: factory={}, input='{}'", factoryId, userInput);
+                return SemanticRoutingResult.empty();
+            }
+
+            // 检测用户输入的领域和粒度
+            IntentKnowledgeBase.Domain inputDomain = knowledgeBase.detectDomain(userInput);
+            IntentKnowledgeBase.Granularity inputGranularity = knowledgeBase.detectGranularity(userInput);
+
+            log.debug("语义路由: 检测到 domain={}, granularity={}", inputDomain, inputGranularity);
+
+            // 构建候选列表
+            List<SemanticCandidate> candidates = new ArrayList<>();
+            for (UnifiedSemanticMatch match : semanticResults) {
+                if (candidates.size() >= 5) break;  // Top-5
+
+                String intentCode = match.getIntentCode();
+                AIIntentConfig config = getIntentConfigByCode(factoryId, intentCode);
+                if (config == null) continue;
+
+                SemanticCandidate candidate = new SemanticCandidate();
+                candidate.intentCode = intentCode;
+                candidate.config = config;
+                candidate.semanticScore = match.getSimilarity();
+                candidate.adjustedScore = match.getSimilarity();  // 初始分数=语义分数
+                candidate.matchSource = match.getSourceType() != null ? match.getSourceType().name() : "UNKNOWN";
+
+                candidates.add(candidate);
+            }
+
+            if (candidates.isEmpty()) {
+                return SemanticRoutingResult.empty();
+            }
+
+            // 最佳语义分数
+            double bestSemanticScore = candidates.get(0).semanticScore;
+
+            log.info("语义路由完成: 候选数={}, 最佳分数={:.3f}, 最佳意图={}",
+                    candidates.size(), bestSemanticScore, candidates.get(0).intentCode);
+
+            return SemanticRoutingResult.builder()
+                    .candidates(candidates)
+                    .bestSemanticScore(bestSemanticScore)
+                    .inputDomain(inputDomain)
+                    .inputGranularity(inputGranularity)
+                    .build();
+
+        } catch (Exception e) {
+            log.warn("语义路由异常: {}", e.getMessage());
+            return SemanticRoutingResult.empty();
+        }
+    }
+
+    /**
+     * 精确验证层 - v6.0架构
+     *
+     * 对语义路由的候选结果进行精确验证和分数调整：
+     * 1. 短语匹配验证 - 语义结果是否有短语支持? (+0.15)
+     * 2. 关键词交叉验证 - 是否命中意图特征词? (+0.10)
+     * 3. 粒度检测 - LIST/DETAIL/STATS 是否一致? (不匹配 -0.20)
+     * 4. 域隔离过滤 - 排除跨域干扰候选 (不匹配 -0.25)
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param routingResult 语义路由结果
+     * @param opType 操作类型
+     * @return 验证后的候选列表（已调整分数并排序）
+     */
+    private List<SemanticCandidate> preciseVerification(
+            String userInput,
+            String factoryId,
+            SemanticRoutingResult routingResult,
+            ActionType opType) {
+
+        if (routingResult.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String normalizedInput = userInput.toLowerCase().trim();
+        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput);
+        IntentKnowledgeBase.Granularity inputGranularity = routingResult.getInputGranularity();
+        IntentKnowledgeBase.Domain inputDomain = routingResult.getInputDomain();
+
+        for (SemanticCandidate candidate : routingResult.getCandidates()) {
+            double adjustment = 0.0;
+
+            // 1. 短语匹配验证 - 语义结果是否有短语支持?
+            if (phraseMatch.isPresent() && phraseMatch.get().equals(candidate.intentCode)) {
+                adjustment += 0.15;
+                candidate.phraseConfirmed = true;
+                log.debug("短语验证通过: {} (+0.15)", candidate.intentCode);
+            }
+
+            // 2. 关键词交叉验证 - 是否命中意图特征词?
+            List<String> matchedKeywords = getMatchedKeywords(candidate.config, normalizedInput, factoryId);
+            if (!matchedKeywords.isEmpty()) {
+                adjustment += 0.10;
+                candidate.matchedKeywords = matchedKeywords;
+                log.debug("关键词验证通过: {} (+0.10), keywords={}", candidate.intentCode, matchedKeywords);
+            }
+
+            // 3. 粒度检测 - LIST/DETAIL/STATS 是否一致?
+            IntentKnowledgeBase.Granularity intentGranularity =
+                    knowledgeBase.getIntentGranularity(candidate.intentCode);
+            if (!knowledgeBase.isGranularityCompatible(inputGranularity, intentGranularity)) {
+                adjustment -= 0.20;
+                log.debug("粒度不匹配: {} (-0.20), input={}, intent={}",
+                        candidate.intentCode, inputGranularity, intentGranularity);
+            }
+
+            // 4. 域隔离过滤 - 排除跨域干扰候选
+            IntentKnowledgeBase.Domain intentDomain =
+                    knowledgeBase.getDomainFromIntentCode(candidate.intentCode);
+            if (inputDomain != IntentKnowledgeBase.Domain.GENERAL &&
+                intentDomain != IntentKnowledgeBase.Domain.GENERAL &&
+                inputDomain != intentDomain) {
+                adjustment -= 0.25;
+                log.debug("域不匹配: {} (-0.25), input={}, intent={}",
+                        candidate.intentCode, inputDomain, intentDomain);
+            } else if (inputDomain == intentDomain && inputDomain != IntentKnowledgeBase.Domain.GENERAL) {
+                // 域匹配加分
+                adjustment += 0.05;
+            }
+
+            // 5. 操作类型匹配加分
+            double opTypeBonus = knowledgeBase.calculateOperationTypeAdjustment(
+                    candidate.intentCode, opType, 10, -3) / 100.0;
+            adjustment += opTypeBonus;
+
+            // 计算最终调整后分数
+            candidate.adjustedScore = Math.max(0.0, Math.min(1.0,
+                    candidate.semanticScore + adjustment));
+
+            log.debug("精确验证: {} semantic={:.3f} adj={:+.3f} final={:.3f}",
+                    candidate.intentCode, candidate.semanticScore, adjustment, candidate.adjustedScore);
+        }
+
+        // 按调整后分数重新排序
+        routingResult.getCandidates().sort((a, b) ->
+                Double.compare(b.adjustedScore, a.adjustedScore));
+
+        return routingResult.getCandidates();
+    }
+
+    /**
+     * 语义路由结果
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    private static class SemanticRoutingResult {
+        private List<SemanticCandidate> candidates;
+        private double bestSemanticScore;
+        private IntentKnowledgeBase.Domain inputDomain;
+        private IntentKnowledgeBase.Granularity inputGranularity;
+
+        public boolean isEmpty() {
+            return candidates == null || candidates.isEmpty();
+        }
+
+        public static SemanticRoutingResult empty() {
+            return SemanticRoutingResult.builder()
+                    .candidates(Collections.emptyList())
+                    .bestSemanticScore(0.0)
+                    .build();
+        }
+    }
+
+    /**
+     * 语义候选条目
+     */
+    private static class SemanticCandidate {
+        String intentCode;
+        AIIntentConfig config;
+        double semanticScore;      // 原始语义分数
+        double adjustedScore;      // 精确验证后调整分数
+        String matchSource;        // 匹配来源 (CONFIG/EXPRESSION)
+        boolean phraseConfirmed;   // 是否被短语匹配确认
+        List<String> matchedKeywords = Collections.emptyList();
     }
 
     // ==================== 语义匹配方法 ====================

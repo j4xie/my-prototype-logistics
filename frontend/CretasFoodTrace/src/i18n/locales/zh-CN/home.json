@@ -4,7 +4,29 @@
     "error": "错误",
     "success": "成功",
     "tip": "提示",
-    "loadFailed": "加载失败"
+    "loadFailed": "加载失败",
+    "cancel": "取消",
+    "confirm": "确定",
+    "save": "保存",
+    "delete": "删除"
+  },
+  "layout": {
+    "editTitle": "编辑布局",
+    "editDesc": "长按检测到，是否进入布局编辑模式？",
+    "enterEdit": "进入编辑",
+    "advancedEdit": "高级",
+    "done": "完成",
+    "editHint": "长按并拖动可调整模块位置",
+    "unsavedTitle": "未保存的更改",
+    "unsavedDesc": "您有未保存的更改，是否放弃？",
+    "discard": "放弃更改",
+    "saveSuccess": "保存成功",
+    "saveSuccessDesc": "布局已保存",
+    "addModule": "添加模块",
+    "hideModule": "隐藏模块",
+    "showModule": "显示模块",
+    "availableModules": "可添加的模块",
+    "noMoreModules": "没有更多可添加的模块"
   },
   "greeting": "你好",
   "greetings": {

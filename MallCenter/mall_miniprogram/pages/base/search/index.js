@@ -3,6 +3,7 @@
  * 包含搜索历史、热门关键词、搜索建议、高级筛选
  */
 const app = getApp()
+const util = require('../../../utils/util')
 const tracker = require('../../../utils/tracker')
 
 Page({
@@ -95,7 +96,7 @@ Page({
       size: 10,
       descs: 'sale_num'
     }).then(res => {
-      const goodsList = res.data.records || []
+      const goodsList = util.processGoodsList(res.data.records || [])
       this.setData({
         goodsList: goodsList,
         hotKeywords: goodsList.map(g => ({ keyword: g.name, count: g.saleNum || 0 }))

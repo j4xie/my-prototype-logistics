@@ -1,14 +1,35 @@
-/* 黑金配色变量 */
+/* 动态装修容器 - 继承内联CSS变量 */
+.decoration-container {
+  /* 当内联style设置CSS变量时，子元素可以继承使用 */
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* 都鲜来绿色主题配色 (默认值) */
 page {
-  --primary-gold: #D4AF37;
+  /* 主色系 - 清新绿 */
+  --primary-gold: #52c41a;
+  --primary-color: #52c41a;
+  --primary-light: #d7f0db;
+  --primary-dark: #389e0d;
+
+  /* 背景色 */
   --dark-bg: #1a1a1a;
   --dark-secondary: #2d2d2d;
-  --notice-bg: #FFF8E1;
-  --notice-text: #856404;
+
+  /* 通知栏 - 浅绿色 */
+  --notice-bg: #d7f0db;
+  --notice-text: #389e0d;
+
+  /* 文字色 */
   --text-primary: #333;
   --text-secondary: #666;
   --text-light: #999;
-  --border-gold: #D4AF37;
+
+  /* 边框/强调色 */
+  --border-gold: #52c41a;
+  --accent-color: #52c41a;
+
   background-color: #f5f5f5;
 }
 
@@ -36,17 +57,9 @@ page {
   align-items: center;
 }
 
-.logo-b, .logo-f {
-  font-size: 40rpx;
-  font-weight: bold;
-  color: #fff;
-}
-
-.logo-and {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: var(--primary-gold);
-  margin: 0 4rpx;
+.logo-img {
+  width: 80rpx;
+  height: 80rpx;
 }
 
 .header-search {

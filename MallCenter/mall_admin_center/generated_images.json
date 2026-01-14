@@ -1,0 +1,87 @@
+{
+  "food": [
+    {
+      "filename": "fresh_fruit_platter",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/food/fresh_fruit_platter_20260114012332_260343e5.png",
+      "prompt": "Fresh fruit platter, colorful fruits including apples oranges grapes strawberries, white background, professional food photography, high quality, 4k"
+    },
+    {
+      "filename": "organic_vegetables",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/food/organic_vegetables_20260114012353_f3dd9df0.png",
+      "prompt": "Fresh organic vegetables arrangement, green leafy vegetables broccoli carrots tomatoes, clean white background, healthy food photography, studio lighting"
+    },
+    {
+      "filename": "farm_produce",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/food/farm_produce_20260114012409_eb27dcce.png",
+      "prompt": "Farm fresh produce display, natural rustic style, wooden crate with vegetables, warm natural lighting, countryside atmosphere"
+    }
+  ],
+  "seafood": [
+    {
+      "filename": "seafood_platter",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/seafood/seafood_platter_20260114012426_12e23750.png",
+      "prompt": "Fresh seafood platter on ice, lobster shrimp crab fish, blue ocean background, luxury food photography, professional lighting"
+    },
+    {
+      "filename": "ocean_fish",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/seafood/ocean_fish_20260114012446_e852f4df.png",
+      "prompt": "Fresh ocean fish display, salmon tuna, deep blue sea background, professional food photography, clean style"
+    },
+    {
+      "filename": "shellfish_closeup",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/seafood/shellfish_closeup_20260114012503_ced43829.png",
+      "prompt": "Fresh shellfish closeup, oysters mussels clams, ice cubes, clean white background, minimalist food photography"
+    }
+  ],
+  "dessert": [
+    {
+      "filename": "decorated_cake",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/dessert/decorated_cake_20260114012523_945962af.png",
+      "prompt": "Beautiful decorated cake, strawberry cream cake, pink romantic background, bakery photography, soft lighting, dreamy atmosphere"
+    },
+    {
+      "filename": "macarons",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/dessert/macarons_20260114012540_986ad2b9.png",
+      "prompt": "Colorful macarons arrangement, pastel colors, elegant French dessert, pink background, feminine style photography"
+    },
+    {
+      "filename": "bakery_bread",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/dessert/bakery_bread_20260114012556_15a0d11c.png",
+      "prompt": "Fresh baked bread and pastries, croissants rolls, warm bakery atmosphere, golden brown, cozy morning light"
+    }
+  ],
+  "gift": [
+    {
+      "filename": "luxury_gift_box",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/gift/luxury_gift_box_20260114012613_24898e9d.png",
+      "prompt": "Elegant gift box with golden ribbon bow, luxury black background, premium present, professional product photography, studio lighting"
+    },
+    {
+      "filename": "wine_gift_set",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/gift/wine_gift_set_20260114012629_dcab8c4b.png",
+      "prompt": "Premium red wine gift set, wine bottles glasses, luxury dark background, elegant sophisticated style, product photography"
+    },
+    {
+      "filename": "tea_gift_box",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/gift/tea_gift_box_20260114012646_c793113d.png",
+      "prompt": "Traditional tea gift box, Chinese style packaging, elegant classic design, warm earth tones, premium product photography"
+    }
+  ],
+  "promotion": [
+    {
+      "filename": "sale_banner_orange",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/promotion/sale_banner_orange_20260114012703_2f32a000.png",
+      "prompt": "Shopping sale banner background, orange red gradient, festive celebration atmosphere, abstract dynamic shapes, promotional design"
+    },
+    {
+      "filename": "limited_offer_yellow",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/promotion/limited_offer_yellow_20260114012719_f45119c0.png",
+      "prompt": "Limited time offer background, bright yellow gold gradient, attention grabbing, burst effects, promotional banner design"
+    },
+    {
+      "filename": "new_arrival_green",
+      "url": "https://mall-products-shanghai.oss-cn-shanghai.aliyuncs.com/decoration/images/promotion/new_arrival_green_20260114012741_8f4d3ff3.png",
+      "prompt": "New product launch background, fresh mint green gradient, clean modern minimalist, soft abstract shapes, elegant banner design"
+    }
+  ]
+}

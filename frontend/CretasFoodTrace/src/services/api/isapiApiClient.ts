@@ -201,6 +201,8 @@ export interface CreateIsapiDeviceRequest {
   deviceType: IsapiDeviceType;
   deviceModel?: string;
   serialNumber?: string;
+  macAddress?: string;
+  firmwareVersion?: string;
   ipAddress: string;
   port?: number;
   rtspPort?: number;
@@ -964,6 +966,62 @@ export async function scanSingleHost(ip: string): Promise<DiscoveredDevice[]> {
   return response.data;
 }
 
+// ========== 高级设备管理 API ==========
+
+/**
+ * 获取设备密码
+ */
+export async function getDevicePassword(deviceId: string): Promise<{ password: string; deviceId: string }> {
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.get<ApiResponse<{ password: string; deviceId: string }>>(
+    `/api/mobile/${factoryId}/isapi/devices/${deviceId}/password`
+  );
+  if (!response.success) {
+    throw new Error(response.message || '获取密码失败');
+  }
+  return response.data;
+}
+
+/**
+ * 修改设备密码
+ */
+export async function changeDevicePassword(deviceId: string, newPassword: string): Promise<void> {
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.put<ApiResponse<void>>(
+    `/api/mobile/${factoryId}/isapi/devices/${deviceId}/password`,
+    { newPassword }
+  );
+  if (!response.success) {
+    throw new Error(response.message || '修改密码失败');
+  }
+}
+
+/**
+ * 重启设备
+ */
+export async function rebootDevice(deviceId: string): Promise<void> {
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.post<ApiResponse<void>>(
+    `/api/mobile/${factoryId}/isapi/devices/${deviceId}/reboot`
+  );
+  if (!response.success) {
+    throw new Error(response.message || '重启失败');
+  }
+}
+
+/**
+ * 恢复出厂设置
+ */
+export async function factoryResetDevice(deviceId: string): Promise<void> {
+  const factoryId = getCurrentFactoryId();
+  const response = await apiClient.post<ApiResponse<void>>(
+    `/api/mobile/${factoryId}/isapi/devices/${deviceId}/factory-reset`
+  );
+  if (!response.success) {
+    throw new Error(response.message || '恢复出厂设置失败');
+  }
+}
+
 // ========== 导出默认对象 ==========
 
 export default {
@@ -1013,6 +1071,12 @@ export default {
   discoverDevices,
   batchImportDevices,
   scanSingleHost,
+
+  // 高级设备管理
+  getDevicePassword,
+  changeDevicePassword,
+  rebootDevice,
+  factoryResetDevice,
 
   // 辅助方法
   getDeviceTypeName,

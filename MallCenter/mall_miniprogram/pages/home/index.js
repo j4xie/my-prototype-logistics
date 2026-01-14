@@ -6,10 +6,16 @@
  */
 const app = getApp()
 const tracker = require('../../utils/tracker')
+const util = require('../../utils/util')
 
 Page({
   data: {
     config: app.globalData.config,
+    // ========== 动态装修配置 ==========
+    pageConfig: null,           // 页面装修配置
+    cssVariablesStyle: '',      // CSS变量样式字符串
+    dynamicModules: [],         // 动态模块配置
+    configLoaded: false,        // 配置是否已加载
     page: {
       searchCount: false,
       current: 1,
@@ -48,6 +54,9 @@ Page({
   // 启动广告定时器
   splashAdTimer: null,
   onLoad() {
+    // 加载页面装修配置
+    this.loadPageConfig()
+
     app.initPage()
       .then(res => {
         // 检查登录状态
@@ -106,7 +115,7 @@ Page({
       descs: 'create_time'
     })
       .then(res => {
-        let goodsListNew = res.data.records
+        let goodsListNew = util.processGoodsList(res.data.records)
         this.setData({
           goodsListNew: goodsListNew
         })
@@ -121,7 +130,7 @@ Page({
       descs: 'sale_num'
     })
       .then(res => {
-        let goodsListHot = res.data.records
+        let goodsListHot = util.processGoodsList(res.data.records)
         this.setData({
           goodsListHot: goodsListHot
         })
@@ -130,7 +139,7 @@ Page({
   goodsPage(e) {
     app.api.goodsPage(this.data.page)
       .then(res => {
-        let goodsList = res.data.records
+        let goodsList = util.processGoodsList(res.data.records)
         this.setData({
           goodsList: [...this.data.goodsList, ...goodsList]
         })
@@ -210,6 +219,119 @@ Page({
         console.error('加载首页分类失败:', err)
         // 失败时不做特殊处理，页面会显示空分类或使用默认
       })
+  },
+
+  /**
+   * 加载页面装修配置
+   * 优先从页面配置API获取，如果失败则从CSS变量API获取
+   */
+  async loadPageConfig() {
+    try {
+      // 方案1：尝试获取完整的页面装修配置
+      const res = await app.api.getDecorationConfig('home')
+
+      if (res.data && res.data.theme) {
+        const config = res.data
+
+        // 生成CSS变量样式字符串
+        const cssVars = this.generateCssVariables(config.theme)
+
+        this.setData({
+          pageConfig: config,
+          cssVariablesStyle: cssVars,
+          dynamicModules: config.modules || [],
+          configLoaded: true
+        })
+
+        console.log('页面装修配置加载完成:', {
+          theme: config.theme ? 'loaded' : 'empty',
+          modulesCount: config.modules ? config.modules.length : 0
+        })
+        return
+      }
+    } catch (err) {
+      console.warn('页面装修配置加载失败，尝试获取CSS变量:', err)
+    }
+
+    // 方案2：降级获取CSS变量
+    try {
+      const cssRes = await app.api.getDecorationCssVars()
+      if (cssRes.data) {
+        // 将后端返回的CSS变量对象转为样式字符串
+        const vars = []
+        for (const [key, value] of Object.entries(cssRes.data)) {
+          vars.push(`${key}: ${value}`)
+        }
+        this.setData({
+          cssVariablesStyle: vars.join('; '),
+          configLoaded: true
+        })
+        console.log('CSS变量加载完成:', Object.keys(cssRes.data).length, '个变量')
+        return
+      }
+    } catch (err) {
+      console.warn('CSS变量加载失败:', err)
+    }
+
+    // 方案3：使用默认配置
+    this.setData({ configLoaded: true })
+    console.log('使用默认装修配置')
+  },
+
+  /**
+   * 生成CSS变量样式字符串
+   * @param {Object} theme - 主题配置对象
+   * @returns {string} CSS变量样式字符串
+   */
+  generateCssVariables(theme) {
+    if (!theme) return ''
+
+    const vars = []
+
+    // 主色调
+    if (theme.primaryColor) {
+      vars.push(`--primary-gold: ${theme.primaryColor}`)
+      vars.push(`--primary-color: ${theme.primaryColor}`)
+    }
+
+    // 次要色调/深色背景
+    if (theme.secondaryColor) {
+      vars.push(`--dark-bg: ${theme.secondaryColor}`)
+      vars.push(`--secondary-color: ${theme.secondaryColor}`)
+    }
+
+    // 背景色
+    if (theme.backgroundColor) {
+      vars.push(`--background: ${theme.backgroundColor}`)
+      vars.push(`--page-bg: ${theme.backgroundColor}`)
+    }
+
+    // 文字颜色
+    if (theme.textColor) {
+      vars.push(`--text-color: ${theme.textColor}`)
+    }
+
+    // 次要文字颜色
+    if (theme.textSecondaryColor) {
+      vars.push(`--text-secondary: ${theme.textSecondaryColor}`)
+    }
+
+    // 边框颜色
+    if (theme.borderColor) {
+      vars.push(`--border-color: ${theme.borderColor}`)
+    }
+
+    // 卡片背景色
+    if (theme.cardBackground) {
+      vars.push(`--card-bg: ${theme.cardBackground}`)
+    }
+
+    // 圆角大小
+    if (theme.borderRadius) {
+      vars.push(`--border-radius: ${theme.borderRadius}`)
+    }
+
+    return vars.join('; ')
   },
 
   // 加载AI配置（静默请求，不弹窗）
@@ -475,7 +597,7 @@ Page({
     app.api.getHomeRecommend(wxUserId, 10)
       .then(res => {
         const data = res.data || res
-        const products = data.recommendations || data || []
+        const products = util.processGoodsList(data.recommendations || data || [])
         // 添加默认值容错：后端可能未返回 coldStartState
         const coldStartState = data.coldStartState ?? 'cold_start'
 
@@ -518,7 +640,7 @@ Page({
 
     app.api.getPopularProducts(null, 10)
       .then(res => {
-        const products = res.data || res || []
+        const products = util.processGoodsList(res.data || res || [])
         this.setData({
           recommendList: products,
           usePersonalized: false,
@@ -555,7 +677,7 @@ Page({
     app.api.getYouMayLike(wxUserId, nextPage, 10)
       .then(res => {
         const data = res.data || res
-        const products = data.content || data.recommendations || data || []
+        const products = util.processGoodsList(data.content || data.recommendations || data || [])
 
         // 追踪新加载商品的曝光
         if (products.length > 0) {

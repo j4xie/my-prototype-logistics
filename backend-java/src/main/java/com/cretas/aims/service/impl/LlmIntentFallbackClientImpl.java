@@ -1119,6 +1119,212 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         }
     }
 
+    // ==================== LLM Reranking 实现 ====================
+
+    /**
+     * 对候选意图进行 LLM Reranking
+     *
+     * 这是两阶段检索架构的第二阶段:
+     * - 第一阶段: 语义评分系统生成 Top-N 候选 (已完成)
+     * - 第二阶段: LLM 对候选进行精细化重排序 (本方法)
+     *
+     * 使用场景: 中置信度区间 (0.58-0.85)，语义评分有把握但不确定
+     *
+     * @param userInput 用户输入
+     * @param candidates 候选意图列表 (已按置信度排序)
+     * @param factoryId 工厂ID
+     * @return Reranking 结果
+     */
+    @Override
+    public RerankingResult rerankCandidates(String userInput,
+                                             List<CandidateIntent> candidates,
+                                             String factoryId) {
+        log.info("[Reranking] Starting reranking for input: '{}', candidates: {}",
+                truncate(userInput, 50), candidates.size());
+
+        if (candidates == null || candidates.isEmpty()) {
+            log.warn("[Reranking] No candidates provided");
+            return RerankingResult.failure("No candidates to rerank");
+        }
+
+        try {
+            // 1. 构建 Reranking Prompt
+            String systemPrompt = buildRerankingPrompt(candidates);
+
+            // 2. 调用 LLM
+            String responseText;
+            if (shouldUseDashScopeDirect()) {
+                log.debug("[Reranking] Using DashScope direct");
+                responseText = dashScopeClient.classifyIntent(systemPrompt, userInput);
+            } else {
+                log.debug("[Reranking] Using Python service");
+                Map<String, Object> requestBody = new HashMap<>();
+                requestBody.put("system_prompt", systemPrompt);
+                requestBody.put("user_input", userInput);
+                requestBody.put("factory_id", factoryId);
+                String responseJson = callPythonEndpoint("/api/ai/chat", requestBody);
+                responseText = extractResponseText(responseJson);
+            }
+
+            // 3. 解析 Reranking 结果
+            return parseRerankingResponse(responseText, candidates);
+
+        } catch (Exception e) {
+            log.error("[Reranking] Failed: {}", e.getMessage(), e);
+            return RerankingResult.failure(e.getMessage());
+        }
+    }
+
+    /**
+     * 构建 Reranking Prompt
+     *
+     * Prompt 设计原则:
+     * 1. 告知 LLM 这是"确认"任务，不是"分类"任务
+     * 2. 提供语义评分结果作为参考信号
+     * 3. 包含意图描述和示例帮助理解
+     * 4. 要求输出 JSON 格式便于解析
+     */
+    private String buildRerankingPrompt(List<CandidateIntent> candidates) {
+        StringBuilder sb = new StringBuilder();
+
+        // v6.0 CoT (Chain-of-Thought) 增强版 Prompt
+        sb.append("你是一个意图确认助手。请按以下思考链分析用户输入，确定最准确的意图。\n\n");
+
+        sb.append("## 思考步骤 (Chain-of-Thought)\n\n");
+        sb.append("请按顺序回答以下问题来分析用户意图:\n\n");
+        sb.append("1. **理解用户意图**: 用户想做什么? (查询/操作/统计/对比?)\n");
+        sb.append("2. **识别关键实体**: 涉及什么对象? (批次/物料/设备/订单/人员?)\n");
+        sb.append("3. **判断操作粒度**: 查单个还是列表? 详情还是汇总统计?\n");
+        sb.append("4. **匹配候选意图**: 哪个候选最符合上述分析?\n\n");
+
+        sb.append("## 候选意图列表 (按语义评分排序)\n\n");
+
+        for (int i = 0; i < candidates.size(); i++) {
+            CandidateIntent candidate = candidates.get(i);
+            sb.append(String.format("%d. **%s** (语义评分: %.2f)\n",
+                    i + 1,
+                    candidate.getIntentCode(),
+                    candidate.getConfidence()));
+
+            if (candidate.getIntentName() != null) {
+                sb.append(String.format("   名称: %s\n", candidate.getIntentName()));
+            }
+            if (candidate.getDescription() != null && !candidate.getDescription().isEmpty()) {
+                sb.append(String.format("   描述: %s\n", candidate.getDescription()));
+            }
+
+            // 如果有示例查询，从数据库获取并展示
+            AIIntentConfig config = findIntentConfig(candidate.getIntentCode());
+            if (config != null) {
+                List<String> examples = config.getExampleQueriesList();
+                if (examples != null && !examples.isEmpty()) {
+                    sb.append("   示例: ");
+                    sb.append(examples.stream().limit(3).collect(Collectors.joining("; ")));
+                    sb.append("\n");
+                }
+            }
+            sb.append("\n");
+        }
+
+        sb.append("## 输出格式\n\n");
+        sb.append("请以 JSON 格式返回，reasoning 字段必须包含上述 4 个思考步骤的分析:\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"reasoning\": \"1.用户想... 2.涉及对象是... 3.操作粒度是... 4.因此选择...\",\n");
+        sb.append("  \"selected_intent\": \"选中的意图代码\",\n");
+        sb.append("  \"confidence\": 0.0-1.0 之间的置信度,\n");
+        sb.append("  \"agrees_with_ranking\": true/false (是否同意语义评分排序)\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+        sb.append("仅返回 JSON，不要包含其他文字。");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析 Reranking 响应
+     */
+    private RerankingResult parseRerankingResponse(String responseText, List<CandidateIntent> originalCandidates) {
+        if (responseText == null || responseText.trim().isEmpty()) {
+            log.warn("[Reranking] Empty response");
+            return RerankingResult.failure("Empty LLM response");
+        }
+
+        try {
+            // 提取 JSON (可能被 markdown 代码块包裹)
+            String jsonStr = extractJsonFromMarkdown(responseText);
+            JsonNode root = objectMapper.readTree(jsonStr);
+
+            final String llmSelectedIntent = root.path("selected_intent").asText();
+            double confidence = root.path("confidence").asDouble(0.0);
+            String reasoning = root.path("reasoning").asText("");
+            boolean agreesWithRanking = root.path("agrees_with_ranking").asBoolean(true);
+
+            // 验证选中的意图在候选列表中
+            boolean validIntent = originalCandidates.stream()
+                    .anyMatch(c -> c.getIntentCode().equals(llmSelectedIntent));
+
+            String selectedIntent;
+            if (!validIntent) {
+                log.warn("[Reranking] LLM selected invalid intent: {}", llmSelectedIntent);
+                // 降级到第一个候选
+                selectedIntent = originalCandidates.get(0).getIntentCode();
+                confidence = originalCandidates.get(0).getConfidence();
+                reasoning = "LLM选择无效，使用语义评分最佳结果";
+                agreesWithRanking = true;
+            } else {
+                selectedIntent = llmSelectedIntent;
+            }
+
+            // 检查是否与原排序一致
+            boolean matchesOriginal = originalCandidates.get(0).getIntentCode().equals(selectedIntent);
+
+            log.info("[Reranking] Result: intent={}, confidence={:.2f}, agreesWithRanking={}, matchesOriginal={}",
+                    selectedIntent, confidence, agreesWithRanking, matchesOriginal);
+
+            return RerankingResult.success(selectedIntent, confidence, reasoning, matchesOriginal);
+
+        } catch (Exception e) {
+            log.error("[Reranking] Failed to parse response: {}, raw: {}",
+                    e.getMessage(), truncate(responseText, 200));
+            return RerankingResult.failure("Failed to parse LLM response: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 从 markdown 代码块中提取 JSON
+     */
+    private String extractJsonFromMarkdown(String text) {
+        if (text == null) return "{}";
+
+        // 尝试提取 ```json ... ``` 代码块
+        Pattern pattern = Pattern.compile("```(?:json)?\\s*\\n?([\\s\\S]*?)\\n?```", Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(text);
+        if (matcher.find()) {
+            return matcher.group(1).trim();
+        }
+
+        // 如果没有代码块，尝试直接解析
+        String trimmed = text.trim();
+        if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+            return trimmed;
+        }
+
+        return text;
+    }
+
+    /**
+     * 根据意图代码查找配置
+     */
+    private AIIntentConfig findIntentConfig(String intentCode) {
+        try {
+            return intentConfigRepository.findByIntentCode(intentCode).orElse(null);
+        } catch (Exception e) {
+            log.warn("[Reranking] Failed to find intent config for: {}", intentCode);
+            return null;
+        }
+    }
+
     @Override
     public String generateClarificationQuestion(String userInput,
                                                   List<CandidateIntent> candidateIntents,

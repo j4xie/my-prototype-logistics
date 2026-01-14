@@ -91,6 +91,66 @@ public interface LlmIntentFallbackClient {
      */
     boolean isHealthy();
 
+    // ========== LLM Reranking 相关方法 ==========
+
+    /**
+     * 对候选意图进行 LLM Reranking
+     *
+     * 用于中置信度区间 (0.58-0.85) 的二次确认机制:
+     * - 输入: 用户查询 + 语义评分的 Top-N 候选
+     * - 输出: LLM 确认或调整后的最佳意图
+     *
+     * @param userInput 用户输入
+     * @param candidates 候选意图列表 (已按置信度排序)
+     * @param factoryId 工厂ID
+     * @return Reranking 结果
+     */
+    RerankingResult rerankCandidates(String userInput, List<IntentMatchResult.CandidateIntent> candidates, String factoryId);
+
+    /**
+     * Reranking 结果
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class RerankingResult {
+        /** 是否成功 */
+        private boolean success;
+
+        /** 选中的意图代码 */
+        private String selectedIntentCode;
+
+        /** 调整后的置信度 */
+        private double adjustedConfidence;
+
+        /** LLM 给出的理由 */
+        private String reasoning;
+
+        /** 错误信息 (如果失败) */
+        private String errorMessage;
+
+        /** 是否与原语义评分一致 */
+        private boolean matchesOriginalRanking;
+
+        public static RerankingResult success(String intentCode, double confidence, String reasoning, boolean matchesOriginal) {
+            return RerankingResult.builder()
+                    .success(true)
+                    .selectedIntentCode(intentCode)
+                    .adjustedConfidence(confidence)
+                    .reasoning(reasoning)
+                    .matchesOriginalRanking(matchesOriginal)
+                    .build();
+        }
+
+        public static RerankingResult failure(String errorMessage) {
+            return RerankingResult.builder()
+                    .success(false)
+                    .errorMessage(errorMessage)
+                    .build();
+        }
+    }
+
     // ========== 多轮对话相关方法 ==========
 
     /**

@@ -4,6 +4,8 @@ import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.dto.AIResponseDTO;
+import com.cretas.aims.dto.ai.CostAIContext;
+import com.cretas.aims.dto.ai.ProductionAIContext;
 import com.cretas.aims.entity.TimeClockRecord;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.EmployeeWorkSession;
@@ -15,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -74,6 +77,10 @@ public class AIAnalysisService {
 
     @Autowired
     private DashScopeConfig dashScopeConfig;
+
+    @Lazy
+    @Autowired(required = false)
+    private AIContextService aiContextService;
 
     public AIAnalysisService() {
         // 使用默认超时初始化（120秒读取超时，支持思考模式AI分析）
@@ -166,6 +173,13 @@ public class AIAnalysisService {
                 ? customMessage
                 : formatCostDataForAI(factoryId, batchId, costData);
 
+        // 1.1 注入预计算的上下文以减少 Token 消耗
+        String preComputedContext = buildPreComputedContext(factoryId, costData);
+        if (preComputedContext != null && !preComputedContext.isEmpty()) {
+            userMessage = preComputedContext + "\n\n" + userMessage;
+            log.info("[DashScope Direct] 已注入预计算上下文: factoryId={}", factoryId);
+        }
+
         // 2. 构建系统提示词
         String systemPrompt = buildCostAnalysisSystemPrompt();
 
@@ -252,6 +266,212 @@ public class AIAnalysisService {
     }
 
     /**
+     * 构建预计算上下文
+     *
+     * 从 AIContextService 获取预计算的成本/生产数据，注入到 Prompt 中，
+     * 减少 LLM Token 消耗（数据聚合已由后端完成）。
+     *
+     * @param factoryId 工厂ID
+     * @param costData 成本数据（用于提取产品类型ID）
+     * @return 格式化的预计算上下文字符串
+     */
+    @SuppressWarnings("unchecked")
+    private String buildPreComputedContext(String factoryId, Map<String, Object> costData) {
+        if (aiContextService == null) {
+            log.debug("[AIContext] AIContextService 未注入，跳过预计算上下文");
+            return null;
+        }
+
+        StringBuilder context = new StringBuilder();
+
+        try {
+            // 1. 尝试从 costData 提取产品类型ID
+            String productTypeId = extractProductTypeId(costData);
+
+            // 2. 如果有产品类型ID，获取成本上下文
+            if (productTypeId != null && !productTypeId.isEmpty()) {
+                CostAIContext costContext = aiContextService.buildCostContext(factoryId, productTypeId, 10);
+                if (costContext != null) {
+                    String costPrompt = aiContextService.formatCostContextForPrompt(costContext);
+                    if (costPrompt != null && !costPrompt.isEmpty()) {
+                        context.append("【预计算成本分析】\n");
+                        context.append(costPrompt);
+                        context.append("\n");
+                        log.debug("[AIContext] 已添加成本上下文: productTypeId={}", productTypeId);
+                    }
+                }
+            }
+
+            // 3. 获取生产上下文（最近30天的数据）
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate = endDate.minusDays(30);
+            ProductionAIContext productionContext = aiContextService.buildProductionContext(
+                    factoryId, startDate, endDate);
+
+            if (productionContext != null) {
+                String productionPrompt = aiContextService.formatProductionContextForPrompt(productionContext);
+                if (productionPrompt != null && !productionPrompt.isEmpty()) {
+                    context.append("【预计算生产统计】\n");
+                    context.append(productionPrompt);
+                    log.debug("[AIContext] 已添加生产上下文: factoryId={}, 产品数={}",
+                            factoryId, productionContext.getProductCount());
+                }
+            }
+
+        } catch (Exception e) {
+            log.warn("[AIContext] 构建预计算上下文失败: {}", e.getMessage());
+            // 失败不影响主流程，返回空上下文
+        }
+
+        return context.length() > 0 ? context.toString() : null;
+    }
+
+    /**
+     * 从成本数据中提取产品类型ID
+     */
+    @SuppressWarnings("unchecked")
+    private String extractProductTypeId(Map<String, Object> costData) {
+        if (costData == null) {
+            return null;
+        }
+
+        // 尝试从 batchInfo 中获取
+        Map<String, Object> batchInfo = (Map<String, Object>) costData.get("batchInfo");
+        if (batchInfo != null) {
+            Object productTypeId = batchInfo.get("productTypeId");
+            if (productTypeId != null) {
+                return productTypeId.toString();
+            }
+        }
+
+        // 尝试从 batch 中获取（兼容旧格式）
+        Map<String, Object> batch = (Map<String, Object>) costData.get("batch");
+        if (batch != null) {
+            Object productTypeId = batch.get("productTypeId");
+            if (productTypeId != null) {
+                return productTypeId.toString();
+            }
+        }
+
+        // 直接获取
+        Object productTypeId = costData.get("productTypeId");
+        return productTypeId != null ? productTypeId.toString() : null;
+    }
+
+    /**
+     * 注入生产上下文到 Prompt
+     *
+     * 用于在 LLM 调用前自动添加预计算的生产统计数据，
+     * 提供给 AI 更多上下文信息以提高分析质量。
+     *
+     * @param factoryId 工厂ID
+     * @param originalPrompt 原始 Prompt
+     * @param days 统计天数（默认30天）
+     * @return 注入上下文后的 Prompt
+     */
+    public String injectProductionContextIntoPrompt(String factoryId, String originalPrompt, Integer days) {
+        if (aiContextService == null) {
+            log.debug("[AIContext] AIContextService 未注入，返回原始 Prompt");
+            return originalPrompt;
+        }
+
+        try {
+            LocalDate endDate = LocalDate.now();
+            LocalDate startDate = endDate.minusDays(days != null ? days : 30);
+
+            ProductionAIContext context = aiContextService.buildProductionContext(factoryId, startDate, endDate);
+            if (context == null) {
+                return originalPrompt;
+            }
+
+            String contextPrompt = aiContextService.formatProductionContextForPrompt(context);
+            if (contextPrompt == null || contextPrompt.isEmpty()) {
+                return originalPrompt;
+            }
+
+            StringBuilder enhanced = new StringBuilder();
+            enhanced.append("【预计算生产数据上下文】\n");
+            enhanced.append(contextPrompt);
+            enhanced.append("\n---\n\n");
+            enhanced.append(originalPrompt);
+
+            log.info("[AIContext] 已注入生产上下文: factoryId={}, 统计天数={}, 产品数={}",
+                    factoryId, days, context.getProductCount());
+
+            return enhanced.toString();
+
+        } catch (Exception e) {
+            log.warn("[AIContext] 注入生产上下文失败: {}", e.getMessage());
+            return originalPrompt;
+        }
+    }
+
+    /**
+     * 注入成本上下文到 Prompt
+     *
+     * 用于在 LLM 调用前添加特定产品的成本分析数据。
+     *
+     * @param factoryId 工厂ID
+     * @param productTypeId 产品类型ID
+     * @param originalPrompt 原始 Prompt
+     * @return 注入上下文后的 Prompt
+     */
+    public String injectCostContextIntoPrompt(String factoryId, String productTypeId, String originalPrompt) {
+        if (aiContextService == null || productTypeId == null || productTypeId.isEmpty()) {
+            return originalPrompt;
+        }
+
+        try {
+            CostAIContext context = aiContextService.buildCostContext(factoryId, productTypeId, 10);
+            if (context == null) {
+                return originalPrompt;
+            }
+
+            String contextPrompt = aiContextService.formatCostContextForPrompt(context);
+            if (contextPrompt == null || contextPrompt.isEmpty()) {
+                return originalPrompt;
+            }
+
+            StringBuilder enhanced = new StringBuilder();
+            enhanced.append("【预计算成本分析上下文】\n");
+            enhanced.append(contextPrompt);
+            enhanced.append("\n---\n\n");
+            enhanced.append(originalPrompt);
+
+            log.info("[AIContext] 已注入成本上下文: factoryId={}, productTypeId={}, 差异状态={}",
+                    factoryId, productTypeId, context.getVarianceStatus());
+
+            return enhanced.toString();
+
+        } catch (Exception e) {
+            log.warn("[AIContext] 注入成本上下文失败: {}", e.getMessage());
+            return originalPrompt;
+        }
+    }
+
+    /**
+     * 获取成本差异汇总
+     *
+     * 便捷方法，用于获取工厂所有产品的成本差异情况。
+     *
+     * @param factoryId 工厂ID
+     * @return 成本差异明细列表
+     */
+    public List<CostAIContext.CostVarianceDetail> getCostVarianceSummary(String factoryId) {
+        if (aiContextService == null) {
+            log.warn("[AIContext] AIContextService 未注入，无法获取成本差异汇总");
+            return List.of();
+        }
+
+        try {
+            return aiContextService.getCostVarianceSummary(factoryId);
+        } catch (Exception e) {
+            log.warn("[AIContext] 获取成本差异汇总失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
      * 通过 Python 服务调用进行成本分析（原有逻辑）
      */
     private Map<String, Object> analyzeCostViaPython(String factoryId, String batchId,
@@ -265,6 +485,13 @@ public class AIAnalysisService {
             String message = customMessage != null && !customMessage.trim().isEmpty()
                 ? customMessage
                 : formatCostDataForAI(factoryId, batchId, costData);
+
+            // 1.1 注入预计算的上下文以减少 Token 消耗
+            String preComputedContext = buildPreComputedContext(factoryId, costData);
+            if (preComputedContext != null && !preComputedContext.isEmpty()) {
+                message = preComputedContext + "\n\n" + message;
+                log.info("[Python Service] 已注入预计算上下文: factoryId={}", factoryId);
+            }
 
             // 2. 构建请求
             String url = aiServiceUrl + "/api/ai/chat";

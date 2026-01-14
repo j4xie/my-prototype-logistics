@@ -68,6 +68,12 @@ export interface ModifyIpResult {
 export interface ActivateResult {
   success: boolean;
   message: string;
+  /** Device serial number (returned from native module) */
+  serialNumber?: string;
+  /** IP address (returned from native module) */
+  ipAddress?: string;
+  /** Device ID in backend (after auto-import) */
+  deviceId?: string;
 }
 
 /**

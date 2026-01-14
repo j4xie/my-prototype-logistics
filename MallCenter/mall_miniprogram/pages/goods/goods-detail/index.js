@@ -9,6 +9,7 @@ import Poster from '../../../components/wxa-plugin-canvas/poster/poster'
 const { base64src } = require('../../../utils/base64src.js')
 const app = getApp()
 const tracker = require('../../../utils/tracker')
+const util = require('../../../utils/util')
 
 Page({
   data: {
@@ -160,7 +161,7 @@ Page({
   goodsGet(id) {
     app.api.goodsGet(id)
       .then(res => {
-        let goodsSpu = res.data
+        let goodsSpu = util.processGoodsItem(res.data)
         this.setData({
           goodsSpu: goodsSpu
         })
@@ -653,7 +654,7 @@ Page({
 
     app.api.getSimilarProducts(productId, wxUserId, 6)
       .then(res => {
-        const products = res.data || res || []
+        const products = util.processGoodsList(res.data || res || [])
         this.setData({
           similarProducts: products,
           similarLoading: false

@@ -21,6 +21,7 @@ import { WSHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { processingApiClient } from '../../../services/api/processingApiClient';
+import { schedulingApiClient, SupervisorTaskDTO } from '../../../services/api/schedulingApiClient';
 import { isAxiosError } from 'axios';
 
 type NavigationProp = NativeStackNavigationProp<WSHomeStackParamList, 'WSHome'>;
@@ -102,6 +103,7 @@ export function WSHomeScreen() {
     needMaintenance: 0,
     total: 0,
   });
+  const [scheduleTasks, setScheduleTasks] = useState<SupervisorTaskDTO[]>([]);
 
   // 获取问候语
   const getGreeting = () => {
@@ -186,6 +188,16 @@ export function WSHomeScreen() {
       } else {
         // 无待处理任务
         setNextTask(null);
+      }
+
+      // 获取排程任务
+      try {
+        const tasksRes = await schedulingApiClient.getSupervisorTasks('pending,in_progress');
+        if (tasksRes.success && tasksRes.data) {
+          setScheduleTasks(tasksRes.data);
+        }
+      } catch (scheduleError) {
+        console.error('获取排程任务失败:', scheduleError);
       }
     } catch (error) {
       console.error('加载车间主管首页数据失败:', error);
@@ -302,6 +314,57 @@ export function WSHomeScreen() {
               <Text style={styles.startTaskBtnText}>{t('home.nextTask.startTask')}</Text>
               <Icon source="arrow-right" size={20} color="#667eea" />
             </TouchableOpacity>
+          </View>
+        )}
+
+        {/* 排程任务区域 */}
+        {scheduleTasks.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>待执行排程</Text>
+              <Text style={styles.viewMoreText}>{scheduleTasks.length}个任务</Text>
+            </View>
+            {scheduleTasks.slice(0, 3).map((task) => (
+              <TouchableOpacity
+                key={task.scheduleId}
+                style={[styles.scheduleTaskCard, task.isUrgent && styles.urgentScheduleCard]}
+                onPress={() => {
+                  // 跳转到任务引导
+                  if (task.batchNumber) {
+                    navigation.navigate('TaskGuide', {
+                      batchId: String(task.batchId),
+                      batchNumber: task.batchNumber
+                    });
+                  }
+                }}
+              >
+                <View style={styles.scheduleTaskHeader}>
+                  <View>
+                    <Text style={styles.scheduleLineName}>{task.productionLineName}</Text>
+                    {task.batchNumber && (
+                      <Text style={styles.scheduleBatchNo}>{task.batchNumber}</Text>
+                    )}
+                  </View>
+                  {task.isUrgent && (
+                    <View style={styles.urgentBadge}>
+                      <Text style={styles.urgentBadgeText}>紧急</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.scheduleTaskInfo}>
+                  <Text style={styles.scheduleTaskInfoText}>
+                    {task.productName || '待排产'} · 计划{task.plannedQuantity}kg
+                  </Text>
+                  <Text style={styles.scheduleTaskTime}>
+                    {new Date(task.plannedStartTime).toLocaleTimeString('zh-CN', {
+                      hour: '2-digit', minute: '2-digit'
+                    })} - {new Date(task.plannedEndTime).toLocaleTimeString('zh-CN', {
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
         )}
 
@@ -696,6 +759,47 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 12,
     color: '#666',
+    marginTop: 4,
+  },
+
+  // 排程任务卡片
+  scheduleTaskCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#667eea',
+  },
+  urgentScheduleCard: {
+    borderLeftColor: '#ff4d4f',
+  },
+  scheduleTaskHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  scheduleLineName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  scheduleBatchNo: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  scheduleTaskInfo: {
+    marginTop: 4,
+  },
+  scheduleTaskInfoText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  scheduleTaskTime: {
+    fontSize: 13,
+    color: '#999',
     marginTop: 4,
   },
 });

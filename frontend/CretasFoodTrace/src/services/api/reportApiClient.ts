@@ -136,6 +136,171 @@ export interface CustomReportParams {
   endDate?: string;
 }
 
+// ========== 新增报表类型 (2026-01-14) ==========
+
+export interface OeeReportDTO {
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  overallOee: number;
+  availability: number;
+  performance: number;
+  quality: number;
+  targetOee: number;
+  oeeByEquipment: Array<{
+    equipmentId: string;
+    equipmentName: string;
+    oee: number;
+    availability: number;
+    performance: number;
+    quality: number;
+  }>;
+  dailyOeeTrend: Array<{
+    date: string;
+    oee: number;
+  }>;
+  topLosses: Array<{
+    category: string;
+    lossType: string;
+    lossMinutes: number;
+    percentage: number;
+  }>;
+}
+
+export interface CostVarianceItem {
+  category: string;
+  itemName: string;
+  plannedCost: number;
+  actualCost: number;
+  variance: number;
+  varianceRate: number;
+}
+
+export interface CostVarianceReportDTO {
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  totalPlannedCost: number;
+  totalActualCost: number;
+  totalVariance: number;
+  totalVarianceRate: number;
+  varianceByCategory: Array<{
+    category: string;
+    plannedCost: number;
+    actualCost: number;
+    variance: number;
+    varianceRate: number;
+  }>;
+  topVarianceItems: CostVarianceItem[];
+  varianceTrend: Array<{
+    date: string;
+    plannedCost: number;
+    actualCost: number;
+    variance: number;
+  }>;
+}
+
+export interface KpiMetricsDTO {
+  factoryId: string;
+  reportDate: string;
+  updatedAt: string;
+  // 生产效率指标
+  oee: number;
+  outputCompletionRate: number;
+  capacityUtilization: number;
+  avgCycleTime: number;
+  throughput: number;
+  // 质量指标
+  fpy: number;
+  overallQualityRate: number;
+  scrapRate: number;
+  reworkRate: number;
+  customerComplaintRate: number;
+  // 成本指标
+  unitCost: number;
+  bomVarianceRate: number;
+  materialCostRatio: number;
+  laborCostRatio: number;
+  overheadCostRatio: number;
+  scrapLossRate: number;
+  // 交付指标
+  otif: number;
+  onTimeDeliveryRate: number;
+  inFullDeliveryRate: number;
+  avgLeadTime: number;
+  orderFulfillmentRate: number;
+  // 设备指标
+  equipmentAvailability: number;
+  mtbf: number;
+  mttr: number;
+  pmCompletionRate: number;
+  breakdownCount: number;
+  // 人员指标
+  outputPerWorker: number;
+  attendanceRate: number;
+  overtimeRate: number;
+  trainingCompletionRate: number;
+  safetyIncidents: number;
+  // 库存指标
+  inventoryTurnover: number;
+  inventoryAccuracy: number;
+  rawMaterialDays: number;
+  finishedGoodsDays: number;
+  // 综合评分
+  overallScore: number;
+  scoreGrade: string;
+  periodChange: number;
+}
+
+export interface CapacityUtilizationReport {
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  overallUtilization: number;
+  utilizationByLine: Array<{
+    lineId: string;
+    lineName: string;
+    utilization: number;
+    plannedCapacity: number;
+    actualOutput: number;
+  }>;
+  utilizationHeatmap: Array<{
+    date: string;
+    hour: number;
+    utilization: number;
+  }>;
+}
+
+export interface OnTimeDeliveryReport {
+  factoryId: string;
+  startDate: string;
+  endDate: string;
+  target: number;  // 95%
+  totalOrders: number;
+  onTimeOrders: number;
+  otifOrders: number;
+  inFullOrders: number;
+  onTimeRate: number;
+  inFullRate: number;
+  otifRate: number;
+  dailyTrend: Array<{
+    date: string;
+    totalOrders: number;
+    onTimeOrders: number;
+    otifRate: number;
+  }>;
+  orderDetails: Array<{
+    shipmentId: string;
+    orderNumber: string;
+    shipmentDate: string;
+    quantity: number;
+    status: string;  // pending, shipped, delivered
+    onTime: boolean;
+    inFull: boolean;
+    otif: boolean;
+  }>;
+}
+
 export interface RealtimeData {
   runningPlans: number;
   todayOutput: number;
@@ -359,6 +524,87 @@ class ReportApiClient {
   async getRealtimeData(factoryId?: string): Promise<RealtimeData> {
     return await apiClient.get<RealtimeData>(
       `${this.getPath(factoryId)}/realtime`
+    );
+  }
+
+  // ========== 新增报表API (2026-01-14) ==========
+
+  /**
+   * 14. 获取OEE报表
+   * GET /api/mobile/{factoryId}/reports/oee
+   */
+  async getOeeReport(params: {
+    startDate: string;
+    endDate: string;
+    factoryId?: string;
+  }): Promise<OeeReportDTO> {
+    const { factoryId, ...queryParams } = params;
+    return await apiClient.get<OeeReportDTO>(
+      `${this.getPath(factoryId)}/oee`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 15. 获取成本差异报表
+   * GET /api/mobile/{factoryId}/reports/cost-variance
+   */
+  async getCostVarianceReport(params: {
+    startDate: string;
+    endDate: string;
+    factoryId?: string;
+  }): Promise<CostVarianceReportDTO> {
+    const { factoryId, ...queryParams } = params;
+    return await apiClient.get<CostVarianceReportDTO>(
+      `${this.getPath(factoryId)}/cost-variance`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 16. 获取完整KPI指标
+   * GET /api/mobile/{factoryId}/reports/kpi-metrics
+   */
+  async getKpiMetrics(params?: {
+    date?: string;
+    factoryId?: string;
+  }): Promise<KpiMetricsDTO> {
+    const { factoryId, ...queryParams } = params || {};
+    return await apiClient.get<KpiMetricsDTO>(
+      `${this.getPath(factoryId)}/kpi-metrics`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 17. 获取产能利用率报表
+   * GET /api/mobile/{factoryId}/reports/capacity-utilization
+   */
+  async getCapacityUtilizationReport(params: {
+    startDate: string;
+    endDate: string;
+    factoryId?: string;
+  }): Promise<CapacityUtilizationReport> {
+    const { factoryId, ...queryParams } = params;
+    return await apiClient.get<CapacityUtilizationReport>(
+      `${this.getPath(factoryId)}/capacity-utilization`,
+      { params: queryParams }
+    );
+  }
+
+  /**
+   * 18. 获取准时交付报表
+   * GET /api/mobile/{factoryId}/reports/on-time-delivery
+   */
+  async getOnTimeDeliveryReport(params: {
+    startDate: string;
+    endDate: string;
+    factoryId?: string;
+  }): Promise<OnTimeDeliveryReport> {
+    const { factoryId, ...queryParams } = params;
+    return await apiClient.get<OnTimeDeliveryReport>(
+      `${this.getPath(factoryId)}/on-time-delivery`,
+      { params: queryParams }
     );
   }
 }

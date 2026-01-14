@@ -35,7 +35,8 @@ const menuConfig: MenuItem[] = [
     children: [
       { path: '/production/batches', title: '生产批次', icon: '', module: 'production' },
       { path: '/production/plans', title: '生产计划', icon: '', module: 'production' },
-      { path: '/production/conversions', title: '转换率配置', icon: '', module: 'production' }
+      { path: '/production/conversions', title: '转换率配置', icon: '', module: 'production' },
+      { path: '/production/bom', title: 'BOM成本管理', icon: '', module: 'production' }
     ]
   },
   {
@@ -95,7 +96,9 @@ const menuConfig: MenuItem[] = [
       { path: '/system/users', title: '用户管理', icon: '', module: 'system' },
       { path: '/system/roles', title: '角色管理', icon: '', module: 'system' },
       { path: '/system/logs', title: '操作日志', icon: '', module: 'system' },
-      { path: '/system/settings', title: '系统设置', icon: '', module: 'system' }
+      { path: '/system/settings', title: '系统设置', icon: '', module: 'system' },
+      { path: '/system/ai-intents', title: 'AI意图配置', icon: '', module: 'system' },
+      { path: '/system/products', title: '产品信息管理', icon: '', module: 'system' }
     ]
   },
   {
@@ -104,7 +107,8 @@ const menuConfig: MenuItem[] = [
       { path: '/analytics/overview', title: '分析概览', icon: '', module: 'analytics' },
       { path: '/analytics/trends', title: '趋势分析', icon: '', module: 'analytics' },
       { path: '/analytics/ai-reports', title: 'AI分析报告', icon: '', module: 'analytics' },
-      { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' }
+      { path: '/analytics/kpi', title: 'KPI看板', icon: '', module: 'analytics' },
+      { path: '/analytics/production-report', title: '车间实时生产报表', icon: '', module: 'analytics' }
     ]
   },
   {

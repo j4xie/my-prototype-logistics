@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.joolun.mall.mapper.DecorationKeywordMappingMapper">
+    <resultMap id="keywordMappingMap" type="com.joolun.mall.entity.DecorationKeywordMapping">
+        <id property="id" column="id"/>
+        <result property="keyword" column="keyword"/>
+        <result property="mappingType" column="mapping_type"/>
+        <result property="mappingValue" column="mapping_value"/>
+        <result property="themeCode" column="theme_code"/>
+        <result property="weight" column="weight"/>
+        <result property="matchCount" column="match_count"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <sql id="keywordMappingSql">
+        t.`id`, t.`keyword`, t.`mapping_type`, t.`mapping_value`, t.`theme_code`,
+        t.`weight`, t.`match_count`, t.`status`, t.`create_time`
+    </sql>
+
+    <select id="selectByKeyword" resultMap="keywordMappingMap">
+        SELECT <include refid="keywordMappingSql"/>
+        FROM decoration_keyword_mapping t
+        WHERE t.`keyword` = #{keyword} AND t.`status` = 1
+        ORDER BY t.`weight` DESC
+        LIMIT 1
+    </select>
+
+    <select id="selectByKeywordLike" resultMap="keywordMappingMap">
+        SELECT <include refid="keywordMappingSql"/>
+        FROM decoration_keyword_mapping t
+        WHERE t.`status` = 1 AND t.`keyword` LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY t.`weight` DESC
+    </select>
+
+    <select id="selectByMappingType" resultMap="keywordMappingMap">
+        SELECT <include refid="keywordMappingSql"/>
+        FROM decoration_keyword_mapping t
+        WHERE t.`status` = 1 AND t.`mapping_type` = #{mappingType}
+        ORDER BY t.`weight` DESC
+    </select>
+
+    <select id="selectActiveList" resultMap="keywordMappingMap">
+        SELECT <include refid="keywordMappingSql"/>
+        FROM decoration_keyword_mapping t
+        WHERE t.`status` = 1
+        ORDER BY t.`weight` DESC
+    </select>
+
+    <update id="incrementMatchCount">
+        UPDATE decoration_keyword_mapping
+        SET match_count = match_count + 1
+        WHERE id = #{id}
+    </update>
+</mapper>

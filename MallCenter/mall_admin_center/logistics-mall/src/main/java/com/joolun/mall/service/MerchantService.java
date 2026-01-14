@@ -62,4 +62,9 @@ public interface MerchantService extends IService<Merchant> {
      * 获取待审核商户数量
      */
     long getPendingCount();
+
+    /**
+     * 获取商户简要列表（下拉框用）
+     */
+    List<Map<String, Object>> listSimple();
 }

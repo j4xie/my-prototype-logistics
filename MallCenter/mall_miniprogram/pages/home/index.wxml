@@ -4,12 +4,13 @@
   - 注意：
   - 基于 JooLun 框架二次开发
 -->
+<!-- 动态装修容器 - 应用CSS变量 -->
+<view class="decoration-container" style="{{cssVariablesStyle}}">
+
 <!-- 顶部导航栏 - 黑底金字 -->
 <view class="header-bar">
   <view class="logo">
-    <text class="logo-b">B</text>
-    <text class="logo-and">&</text>
-    <text class="logo-f">F</text>
+    <image class="logo-img" src="/public/img/logo-duxianlai.png" mode="aspectFit"></image>
   </view>
   <view class="header-search" bindtap="goSearch">
     <text class="cuIcon-search"></text>
@@ -217,3 +218,5 @@
   show="{{showColdStartPopup}}"
   bind:complete="onColdStartComplete"
 />
+
+</view><!-- 关闭 decoration-container -->

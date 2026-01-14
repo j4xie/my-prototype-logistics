@@ -1,6 +1,6 @@
 @import "/app.wxss";
 .service{
-  background-color: #13b229 !important; 
+  background-color: #52c41a !important;
   width:160rpx;
 }
 .delete-order{

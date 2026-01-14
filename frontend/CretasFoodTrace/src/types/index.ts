@@ -65,3 +65,37 @@ export const STORAGE_KEYS = {
   USER_INFO: 'user_info',
   APP_SETTINGS: 'app_settings',
 } as const;
+
+// Decoration types - 首页装饰系统
+export type {
+  HomeModuleType,
+  HomeModule,
+  ModuleConfig,
+  StatCardConfig,
+  QuickActionConfig,
+  ThemeConfig,
+  TimeSlot,
+  LayoutStatus,
+  FactoryHomeLayout,
+  AILayoutGenerateRequest,
+  AILayoutGenerateResponse,
+  SaveLayoutRequest,
+  SaveLayoutResponse,
+  PublishLayoutRequest,
+  PublishLayoutResponse,
+  GetLayoutResponse,
+  ModuleMoveOperation,
+  ModuleResizeOperation,
+  LayoutHistoryItem,
+  LayoutValidationResult,
+} from './decoration';
+
+export {
+  UI_GRAMMAR,
+  DEFAULT_THEME_CONFIG,
+  DEFAULT_HOME_LAYOUT,
+  createDefaultFactoryLayout,
+  validateLayout,
+  getCurrentTimeSlot,
+  cloneModules,
+} from './decoration';
