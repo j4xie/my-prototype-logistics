@@ -1046,7 +1046,7 @@ INSERT INTO material_spec_config (factory_id, category, specifications, is_syste
 
 ### 功能概述
 
-实现基于DeepSeek AI的智能成本分析功能，支持：
+实现基于AI的智能成本分析功能，支持：
 1. 一键生成成本分析报告（每周自动缓存，7天过期自动重新生成）
 2. AI多轮对话（Follow-up问题）
 3. 配额管理（基于平台管理员设置）

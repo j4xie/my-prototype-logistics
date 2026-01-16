@@ -222,7 +222,7 @@ public class AiChatApi {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "ok");
         health.put("timestamp", System.currentTimeMillis());
-        // 可以添加更多健康检查，如DeepSeek API连接状态
+        // 可以添加更多健康检查，如LLM API连接状态
         return AjaxResult.success(health);
     }
 

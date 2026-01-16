@@ -84,7 +84,7 @@ Response:
     },
     "metadata": {
       "generatedAt": "2025-11-04T10:00:00Z",
-      "model": "deepseek-chat",
+      "model": "llm",
       "quotaConsumed": 1,
       "cached": false
     }
@@ -387,7 +387,7 @@ Response:
   "data": {
     "status": "healthy|degraded|down",
     "services": {
-      "deepseekAPI": {
+      "llmAPI": {
         "status": "up",
         "responseTime": 234,               # ms
         "lastChecked": "2025-11-04T10:00:00Z"

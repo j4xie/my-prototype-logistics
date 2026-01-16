@@ -133,7 +133,7 @@ AIEnterpriseService.analyzeTimeRangeCost()
   ├─ formatTimeRangePrompt() 格式化数据
   ├─ basicAIService.analyzeCost() 调用Python AI
   │  └─ HTTP POST to Python FastAPI (port 8085)
-  │     └─ DeepSeek LLM 分析
+  │     └─ LLM 分析
   ├─ 保存结果到 ai_analysis_results 表
   └─ 返回分析文本到前端
         ↓
@@ -356,7 +356,7 @@ ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
    - 后端查询时间范围内的批次数据
    - 后端格式化数据为 AI Prompt
    - 后端调用 Python FastAPI 服务
-   - Python 服务使用 DeepSeek LLM 分析
+   - Python 服务使用 LLM 分析
    - 后端保存分析结果到数据库
    - 后端返回分析结果到前端
    - 前端显示 AI 分析结果

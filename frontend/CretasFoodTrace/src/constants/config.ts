@@ -35,10 +35,10 @@ export const API_BASE_URL = getApiBaseUrl();
 // 注意: 后端数据库中使用 CRETAS_2024_001 作为测试工厂ID
 export const DEFAULT_FACTORY_ID = 'CRETAS_2024_001';
 
-// DeepSeek配置
-export const DEEPSEEK_CONFIG = {
-  API_URL: 'https://api.deepseek.com/v1/chat/completions',
-  MODEL: 'deepseek-chat',
+// LLM配置
+export const LLM_CONFIG = {
+  API_URL: '', // 由后端统一配置
+  MODEL: '', // 由后端统一配置
   MAX_TOKENS: 4000,
   TEMPERATURE: 0.3,
 };

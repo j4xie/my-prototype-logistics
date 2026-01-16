@@ -24,7 +24,7 @@
 |------|------|
 | **前端** | React Native (Expo 53+) + TypeScript |
 | **后端** | Spring Boot 2.7.15 + Java 11 + MySQL |
-| **AI** | Python + DeepSeek API |
+| **AI** | Python + LLM API |
 | **部署** | 阿里云 139.196.165.140:10010 |
 
 ---

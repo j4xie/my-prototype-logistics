@@ -457,7 +457,7 @@ function renderAICard(insight) {
         <div class="ai-icon">${Icons.brain}</div>
         <div>
           <div class="ai-title">AI 智能分析</div>
-          <div class="ai-subtitle">基于DeepSeek大模型</div>
+          <div class="ai-subtitle">基于AI大模型</div>
         </div>
       </div>
       <div class="ai-content">

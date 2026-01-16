@@ -170,7 +170,7 @@ public ApiResponse<MobileDTO.AICostAnalysisResponse> compareBatchCosts(
 ```json
 {
   "status": "healthy",
-  "deepseekAvailable": true,
+  "llmAvailable": true,
   "responseTime": 100,
   "lastCheckTime": "2025-11-05T10:30:00",
   "errorMessage": null

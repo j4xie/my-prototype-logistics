@@ -373,7 +373,7 @@ GET  /api/mobile/{factoryId}/processing/quality/trends           📅 规划中
 | 文件路径 | 说明 | 代码行数 | 状态 |
 |---------|------|---------|----|
 | `frontend/CretasFoodTrace/src/screens/processing/CostAnalysisDashboard.tsx` | 成本分析仪表盘 | ~500行 | ✅ |
-| `frontend/CretasFoodTrace/src/screens/processing/DeepSeekAnalysisScreen.tsx` | DeepSeek分析页面 | ~400行 | 🔨 |
+| `frontend/CretasFoodTrace/src/screens/processing/AIAnalysisScreen.tsx` | AI分析页面 | ~400行 | 🔨 |
 | `frontend/CretasFoodTrace/src/screens/processing/CostComparisonScreen.tsx` | 成本对比页面 | ~300行 | 🔨 |
 
 #### API端点 (✅ 已实现)
@@ -385,7 +385,7 @@ POST /api/mobile/{factoryId}/ai/analysis/cost/time-range                  📅 �
 POST /api/mobile/{factoryId}/ai/analysis/cost/compare                     📅 规划中
 ```
 
-**待完善**: DeepSeekAnalysisScreen的UI展示和交互逻辑
+**待完善**: AIAnalysisScreen的UI展示和交互逻辑
 
 ---
 
@@ -411,7 +411,7 @@ POST /api/mobile/{factoryId}/ai/analysis/cost/compare                     📅 �
 
 | 文件路径 | 说明 | 状态 |
 |---------|------|----|
-| `frontend/CretasFoodTrace/src/screens/processing/DeepSeekAnalysisScreen.tsx` | DeepSeek分析页面 | 🔨 |
+| `frontend/CretasFoodTrace/src/screens/processing/AIAnalysisScreen.tsx` | AI分析页面 | 🔨 |
 | `frontend/CretasFoodTrace/src/screens/processing/AIAnalysisDetailScreen.tsx` | AI分析详情页面 | ✅ |
 | `frontend/CretasFoodTrace/src/screens/processing/AIReportListScreen.tsx` | AI报告列表页面 | ✅ |
 | `frontend/CretasFoodTrace/src/screens/processing/AIConversationHistoryScreen.tsx` | AI对话历史页面 | ✅ |

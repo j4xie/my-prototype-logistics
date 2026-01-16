@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 工厂分析服务实现
- * 集成DeepSeek/DashScope API进行实时AI分析，使用Redis缓存
+ * 集成LLM API进行实时AI分析，使用Redis缓存
  */
 @Slf4j
 @Service
@@ -35,14 +35,14 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
     private final StringRedisTemplate redisTemplate;
     private final MerchantMapper merchantMapper;
 
-    @Value("${ai.deepseek.api-key:}")
-    private String deepseekApiKey;
+    @Value("${ai.llm.api-key:}")
+    private String llmApiKey;
 
-    @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
+    @Value("${ai.llm.base-url:}")
+    private String llmBaseUrl;
 
-    @Value("${ai.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
+    @Value("${ai.llm.model:}")
+    private String llmModel;
 
     // 缓存配置
     private static final String CACHE_KEY_PREFIX = "factory:analysis:";
@@ -144,8 +144,8 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
      */
     private FactoryAnalysisDTO generateAnalysisFromAI(Merchant merchant) {
         // 检查API Key配置
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
-            log.error("DeepSeek API Key未配置");
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
+            log.error("LLM API Key未配置");
             return buildErrorResponse("AI服务未配置，请联系管理员");
         }
 
@@ -153,7 +153,7 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
             // 构建请求
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             String currentDate = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
             String reportDate = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
@@ -186,7 +186,7 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
             );
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                     Map.of("role", "system", "content", "你是一个专业的食品供应链分析师，擅长分析工厂和商户的经营状况。"),
                     Map.of("role", "user", "content", prompt)
@@ -198,7 +198,7 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
 
             // 调用API
             ResponseEntity<String> response = restTemplate.exchange(
-                    deepseekBaseUrl + "/v1/chat/completions",
+                    llmBaseUrl + "/v1/chat/completions",
                     HttpMethod.POST,
                     request,
                     String.class
@@ -209,15 +209,15 @@ public class FactoryAnalysisServiceImpl implements FactoryAnalysisService {
                 JsonNode root = objectMapper.readTree(response.getBody());
                 String content = root.path("choices").path(0).path("message").path("content").asText();
 
-                log.info("DeepSeek API响应成功，解析工厂分析内容");
+                log.info("LLM API响应成功，解析工厂分析内容");
                 return parseAIResponse(content);
             } else {
-                log.error("DeepSeek API响应异常: {}", response.getStatusCode());
+                log.error("LLM API响应异常: {}", response.getStatusCode());
                 return buildErrorResponse("AI服务响应异常，请稍后重试");
             }
 
         } catch (Exception e) {
-            log.error("调用DeepSeek API失败", e);
+            log.error("调用LLM API失败", e);
             return buildErrorResponse("AI分析服务暂时不可用: " + e.getMessage());
         }
     }

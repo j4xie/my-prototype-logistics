@@ -31,7 +31,7 @@
 | 完成生产 | `POST /api/mobile/{factoryId}/processing/batches/{id}/complete` | 完成 | P0 |
 | 成本计算 | `GET /api/mobile/{factoryId}/time-stats/monthly` | 获取工时 | P1 |
 | **Day 9: AI分析** |
-| AI分析 | `POST /api/mobile/analysis/deepseek` | AI分析 | ⚠️ 缺失 |
+| AI分析 | `POST /api/mobile/analysis/ai` | AI分析 | ⚠️ 缺失 |
 
 ---
 
@@ -83,7 +83,7 @@
 | 原料成本 | ⚠️ 在ProcessingBatch中计算 | - |
 | 人工成本 | `GET /api/mobile/{factoryId}/time-stats/monthly` | 📋 待实现 |
 | 设备成本 | ⚠️ 手动录入，无API | - |
-| AI分析 | ⚠️ `POST /api/mobile/analysis/deepseek` | ⚠️ 缺失 |
+| AI分析 | ⚠️ `POST /api/mobile/analysis/ai` | ⚠️ 缺失 |
 
 ### PRD 4.5 - 员工打卡
 
@@ -103,7 +103,7 @@
 
 | PRD需求 | 缺失API | 影响 |
 |---------|---------|------|
-| AI智能分析 | `POST /api/mobile/analysis/deepseek` | 🔴 高 - PRD核心功能 |
+| AI智能分析 | `POST /api/mobile/analysis/ai` | 🔴 高 - PRD核心功能 |
 | 打卡历史查询 | `GET /api/mobile/{factoryId}/time-clocks/records` | 🟡 中 - 需要确认 |
 | 成本分析详情 | ⚠️ 可能在ProcessingBatch中 | 🟡 中 - 需要确认 |
 

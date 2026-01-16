@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  * AI推荐服务实现
  * 集成阿里云DashScope (通义千问Qwen) API进行语义理解和商品推荐
- * 注意: 配置变量名为 deepseek 但实际使用的是 DashScope + Qwen 模型
+ * 注意: 配置变量名保持兼容性，实际使用的是 DashScope + Qwen 模型
  */
 @Slf4j
 @Service
@@ -52,17 +52,17 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     private static final String STATE_AWAITING_EXPRESS_MATCH_CONFIRM = "awaiting_express_match_confirm";
     private static final String STATE_COLLECTING_REQUIREMENTS = "collecting_requirements";
 
-    // 实际配置为 DashScope API Key (通义千问)
-    @Value("${ai.deepseek.api-key:}")
-    private String deepseekApiKey;
+    // LLM API Key (实际配置为 DashScope API Key)
+    @Value("${ai.llm.api-key:}")
+    private String llmApiKey;
 
-    // 实际配置为 https://dashscope.aliyuncs.com/compatible-mode
-    @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
+    // LLM API Base URL (实际配置为 https://dashscope.aliyuncs.com/compatible-mode)
+    @Value("${ai.llm.base-url:}")
+    private String llmBaseUrl;
 
-    // 实际配置为 qwen-plus
-    @Value("${ai.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
+    // LLM Model (实际配置为 qwen-plus)
+    @Value("${ai.llm.model:}")
+    private String llmModel;
 
     // RAG 功能开关
     @Value("${ai.rag.enabled:true}")
@@ -123,7 +123,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 }
             }
 
-            // 2. 调用DeepSeek API分析用户意图（使用RAG增强的提示或普通提示）
+            // 2. 调用LLM API分析用户意图（使用RAG增强的提示或普通提示）
             Map<String, Object> analysis = analyzeMessageWithRag(message, enhancedPrompt);
             String intent = (String) analysis.getOrDefault("intent", "other");
             List<String> keywords = (List<String>) analysis.getOrDefault("keywords", new ArrayList<>());
@@ -563,11 +563,11 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     }
 
     /**
-     * 调用DeepSeek API分析用户消息
+     * 调用LLM API分析用户消息
      * 注意: 使用DashScope OpenAI兼容模式时，不支持 response_format 参数
      */
     private Map<String, Object> analyzeMessage(String message) {
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(message);
         }
@@ -575,10 +575,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", SYSTEM_PROMPT),
                 Map.of("role", "user", "content", message)
@@ -586,8 +586,8 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             requestBody.put("temperature", 0.7);
             // 注意: DashScope的qwen模型不支持 response_format 参数，已移除
 
-            String apiUrl = deepseekBaseUrl + "/v1/chat/completions";
-            log.debug("调用AI API: url={}, model={}", apiUrl, deepseekModel);
+            String apiUrl = llmBaseUrl + "/v1/chat/completions";
+            log.debug("调用AI API: url={}, model={}", apiUrl, llmModel);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
@@ -637,7 +637,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
      * @return 分析结果
      */
     private Map<String, Object> analyzeMessageWithRag(String message, String ragEnhancedPrompt) {
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(message);
         }
@@ -650,19 +650,19 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", message)
             ));
             requestBody.put("temperature", 0.7);
 
-            String apiUrl = deepseekBaseUrl + "/v1/chat/completions";
+            String apiUrl = llmBaseUrl + "/v1/chat/completions";
             log.debug("调用AI API (RAG模式={}): url={}, model={}",
-                    ragEnhancedPrompt != null, apiUrl, deepseekModel);
+                    ragEnhancedPrompt != null, apiUrl, llmModel);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
@@ -820,7 +820,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             result.put("generatedAt", LocalDateTime.now().toString());
 
             // 如果配置了AI，添加AI分析
-            if (deepseekApiKey != null && !deepseekApiKey.isEmpty()) {
+            if (llmApiKey != null && !llmApiKey.isEmpty()) {
                 String aiInsight = generateIndustryInsight(demandTrend, hotKeywords);
                 result.put("aiInsight", aiInsight);
             }
@@ -992,10 +992,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                 Map.of("role", "user", "content", prompt)
             ));
@@ -1003,7 +1003,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
-                    deepseekBaseUrl + "/v1/chat/completions",
+                    llmBaseUrl + "/v1/chat/completions",
                     HttpMethod.POST,
                     request,
                     String.class

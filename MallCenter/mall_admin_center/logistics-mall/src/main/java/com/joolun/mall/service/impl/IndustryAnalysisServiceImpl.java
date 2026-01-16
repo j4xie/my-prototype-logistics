@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 行业分析服务实现
- * 集成DeepSeek API进行实时AI分析，使用Redis缓存
+ * 集成LLM API进行实时AI分析，使用Redis缓存
  */
 @Slf4j
 @Service
@@ -31,14 +31,14 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
     private final RestTemplate restTemplate;
     private final StringRedisTemplate redisTemplate;
 
-    @Value("${ai.deepseek.api-key:}")
-    private String deepseekApiKey;
+    @Value("${ai.llm.api-key:}")
+    private String llmApiKey;
 
-    @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
+    @Value("${ai.llm.base-url:}")
+    private String llmBaseUrl;
 
-    @Value("${ai.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
+    @Value("${ai.llm.model:}")
+    private String llmModel;
 
     // 缓存配置
     private static final String CACHE_KEY = "industry:analysis:latest";
@@ -112,7 +112,7 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
         }
 
         // 2. 调用AI生成分析
-        log.info("开始调用DeepSeek API生成行业分析报告...");
+        log.info("开始调用LLM API生成行业分析报告...");
         IndustryAnalysisDTO result = generateAnalysisFromAI();
 
         // 3. 存入缓存
@@ -155,14 +155,14 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
     }
 
     /**
-     * 调用DeepSeek API生成行业分析
+     * 调用LLM API生成行业分析
      */
     private IndustryAnalysisDTO generateAnalysisFromAI() {
         LocalDateTime now = LocalDateTime.now();
 
         // 检查API Key配置
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
-            log.error("DeepSeek API Key未配置");
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
+            log.error("LLM API Key未配置");
             return buildErrorResponse("AI服务未配置，请联系管理员", now);
         }
 
@@ -170,13 +170,13 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
             // 构建请求
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             String currentDate = now.format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"));
             String prompt = String.format(INDUSTRY_ANALYSIS_PROMPT, currentDate);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                     Map.of("role", "system", "content", "你是一个专业的行业分析师，擅长食品溯源行业研究。"),
                     Map.of("role", "user", "content", prompt)
@@ -188,7 +188,7 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
 
             // 调用API
             ResponseEntity<String> response = restTemplate.exchange(
-                    deepseekBaseUrl + "/v1/chat/completions",
+                    llmBaseUrl + "/v1/chat/completions",
                     HttpMethod.POST,
                     request,
                     String.class
@@ -199,15 +199,15 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
                 JsonNode root = objectMapper.readTree(response.getBody());
                 String content = root.path("choices").path(0).path("message").path("content").asText();
 
-                log.info("DeepSeek API响应成功，开始解析内容");
+                log.info("LLM API响应成功，开始解析内容");
                 return parseAIResponse(content, now);
             } else {
-                log.error("DeepSeek API响应异常: {}", response.getStatusCode());
+                log.error("LLM API响应异常: {}", response.getStatusCode());
                 return buildErrorResponse("AI服务响应异常，请稍后重试", now);
             }
 
         } catch (Exception e) {
-            log.error("调用DeepSeek API失败", e);
+            log.error("调用LLM API失败", e);
             return buildErrorResponse("AI分析服务暂时不可用: " + e.getMessage(), now);
         }
     }
@@ -258,7 +258,7 @@ public class IndustryAnalysisServiceImpl implements IndustryAnalysisService {
                     .insights(insights)
                     .reportTitle("食品溯源行业分析报告")
                     .reportSubtitle(now.format(DateTimeFormatter.ofPattern("yyyy年MM月")))
-                    .aiModelVersion(deepseekModel)
+                    .aiModelVersion(llmModel)
                     .build();
 
         } catch (Exception e) {

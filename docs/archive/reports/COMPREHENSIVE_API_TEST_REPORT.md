@@ -171,7 +171,7 @@
 - Quality trend analysis
 - Equipment utilization reports
 
-#### 6. AI/DeepSeek Integration (10个端点) - 待测试
+#### 6. AI/LLM Integration (10个端点) - 待测试
 - Cost analysis with AI
 - Production optimization suggestions
 - Quality prediction

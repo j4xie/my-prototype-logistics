@@ -28,7 +28,7 @@ export const API_TIMEOUTS = {
   /** 网络健康检查超时：5秒 */
   HEALTH_CHECK: 5_000,
 
-  /** DeepSeek AI分析超时：45秒 */
+  /** LLM AI分析超时：45秒 */
   AI_ANALYSIS: 45_000,
 } as const;
 
@@ -68,7 +68,7 @@ export const CACHE_EXPIRY = {
   /** 长期缓存：2小时（如配置数据） */
   LONG: 2 * 60 * 60 * 1000,
 
-  /** DeepSeek AI分析缓存：5分钟 */
+  /** LLM AI分析缓存：5分钟 */
   AI_ANALYSIS: 5 * 60 * 1000,
 } as const;
 

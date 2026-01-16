@@ -52,7 +52,7 @@
     },
     "aiAnalysis": {
       "title": "AI智能分析",
-      "subtitle": "DeepSeek驱动的智能成本分析",
+      "subtitle": "AI驱动的智能成本分析",
       "aiReport": "AI分析报告",
       "costComparison": "成本对比",
       "timeRangeAnalysis": "时间范围分析"
@@ -1039,7 +1039,7 @@
       "copyFailed": "复制失败，请重试"
     }
   },
-  "deepSeekAnalysis": {
+  "aiAnalysisDetail": {
     "title": "AI成本分析",
     "thinkingMode": {
       "title": "深度思考模式",
@@ -1127,7 +1127,7 @@
     },
     "aiAnalysis": {
       "title": "AI智能分析",
-      "subtitle": "基于DeepSeek技术，为您提供成本优化建议",
+      "subtitle": "AI驱动，为您提供成本优化建议",
       "description": "点击下方按钮，AI将分析此批次的成本数据，为您提供专业的优化建议",
       "getAISuggestions": "获取AI优化建议",
       "quotaExhausted": "本周次数已用完",

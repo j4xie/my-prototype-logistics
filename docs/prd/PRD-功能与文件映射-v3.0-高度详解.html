@@ -782,7 +782,7 @@ INSERT INTO batch_work_sessions (
 
                     <h4>第7步: AI智能分析与优化建议 (AI分析模块)</h4>
                     <p>系统完成成本计算后,自动触发AI分析:</p>
-                    <pre><code>AI分析引擎(DeepSeek LLM)分析批次数据:
+                    <pre><code>AI分析引擎(LLM)分析批次数据:
 
 输入提示词:
 "这是一个番茄酱生产批次的完整数据:
@@ -815,7 +815,7 @@ AI返回分析结果:
 
                     <p><strong>涉及文件</strong>:</p>
                     <ul>
-                        <li>前端: <code>DeepSeekAnalysisScreen.tsx</code>, <code>TimeRangeCostAnalysisScreen.tsx</code></li>
+                        <li>前端: <code>AIAnalysisScreen.tsx</code>, <code>TimeRangeCostAnalysisScreen.tsx</code></li>
                         <li>后端: <code>AIController.java</code>, <code>AIEnterpriseService.java</code></li>
                         <li>Python AI服务: <code>backend-java/backend-ai-chat/ai_service.py</code></li>
                         <li>数据库: <code>ai_analysis_results</code> 表</li>
@@ -1089,7 +1089,7 @@ production_batches
    当批次完成 && 成本计算完成
    ├─ 调用 AIEnterpriseService.analyzeTimeRangeCost()
    ├─ 构造提示词: formatTimeRangePrompt()
-   ├─ 调用DeepSeek LLM (Python FastAPI port 8085)
+   ├─ 调用AI/LLM (Python FastAPI port 8085)
    └─ 检查缓存(7天): 相同数据范围的分析结果可复用
 
       ↓ 保存分析结果到 ai_analysis_results 表
@@ -3068,7 +3068,7 @@ CREATE TABLE quality_inspections (
                 <h1>4. AI智能分析模块</h1>
 
                 <h2>模块描述</h2>
-                <p>AI智能分析模块集成DeepSeek大语言模型,为生产管理提供智能决策支持。通过分析历史生产数据、成本构成、质量指标等,为管理者提供可操作的优化建议和成本控制方案。该模块采用配额管理制度、多层缓存机制和详细的审计日志。</p>
+                <p>AI智能分析模块集成大语言模型,为生产管理提供智能决策支持。通过分析历史生产数据、成本构成、质量指标等,为管理者提供可操作的优化建议和成本控制方案。该模块采用配额管理制度、多层缓存机制和详细的审计日志。</p>
 
                 <div class="info-box">
                     <h3>核心特性</h3>
@@ -3397,7 +3397,7 @@ CREATE TABLE ai_audit_logs (
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>DeepSeekAnalysisScreen.tsx</code></td>
+                            <td><code>AIAnalysisScreen.tsx</code></td>
                             <td>主分析界面</td>
                             <td>分析选择器、结果展示、追问输入</td>
                         </tr>
@@ -3507,7 +3507,7 @@ CREATE TABLE ai_audit_logs (
   }
 }
 
-// 场景3: DeepSeek API失败
+// 场景3: AI API失败
 {
   "code": 502,
   "message": "暂时无法进行AI分析,建议稍后重试",

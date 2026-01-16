@@ -105,7 +105,7 @@
 | CostAnalysisDashboard.tsx | `ProcessingStack → CostAnalysisDashboard` | ✅ | ✅ Dashboard | ✅ |
 | TimeRangeCostAnalysisScreen.tsx | `ProcessingStack → TimeRangeCostAnalysis` | ✅ | ✅ CostDashboard | ✅ |
 | CostComparisonScreen.tsx | `ProcessingStack → CostComparison` | ✅ | ✅ Dashboard | ✅ Phase 3 P1 |
-| DeepSeekAnalysisScreen.tsx | `ProcessingStack → DeepSeekAnalysis` | ✅ | ✅ CostDashboard | ✅ Phase 3 P1 |
+| AIAnalysisScreen.tsx | `ProcessingStack → AIAnalysis` | ✅ | ✅ CostDashboard | ✅ Phase 3 P1 |
 
 #### 4.5 AI智能分析 - ✅ 完整
 

@@ -71,7 +71,7 @@ LLM Function Calling 是一个新的架构模式，允许 LLM 主动调用预定
 | Java | 11 | 17 | 支持所有 Java 11+ |
 | Spring Boot | 2.7.x | 2.7.15+ | 当前项目版本 |
 | MySQL | 8.0 | 8.0+ | 无 schema 变更 |
-| DeepSeek API | v1 | v1 | 支持 Function Calling |
+| LLM API | v1 | v1 | 支持 Function Calling |
 
 ### 2.2 API 兼容性
 

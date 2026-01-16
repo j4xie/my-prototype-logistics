@@ -650,7 +650,7 @@ Step 4: 调用AI服务
     }
   }
 
-  response = CALL_DEEPSEEK_API(request)
+  response = CALL_LLM_API(request)
 
 Step 5: 保存结果
   INSERT INTO ai_analysis_results (

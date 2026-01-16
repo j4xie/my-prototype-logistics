@@ -1,6 +1,6 @@
 # AI Banner 图片生成提示词文档
 
-> 本文档记录15套商城主题的AI图片生成提示词，用于后续调用图片生成API（如DALL-E、Midjourney、Stable Diffusion、DeepSeek等）
+> 本文档记录15套商城主题的AI图片生成提示词，用于后续调用图片生成API（如DALL-E、Midjourney、Stable Diffusion等）
 
 ## 图片规格要求
 
@@ -540,15 +540,16 @@ def generate_image(prompt):
     return image
 ```
 
-### DeepSeek (if available)
+### Generic AI Image API
 
 ```python
 import requests
 
-def generate_with_deepseek(prompt):
+def generate_with_ai_service(prompt, api_url, api_key):
+    """Generic AI image generation API call"""
     response = requests.post(
-        "https://api.deepseek.com/v1/images/generations",
-        headers={"Authorization": f"Bearer {API_KEY}"},
+        f"{api_url}/v1/images/generations",
+        headers={"Authorization": f"Bearer {api_key}"},
         json={
             "prompt": prompt,
             "size": "750x300",

@@ -467,7 +467,7 @@ const stockRes = await productionPlanApiClient.getAvailableStock({ productTypeId
 **问题**: Swagger文档中**没有**AI分析相关的移动端API
 
 **PRD要求**:
-- Day 9: DeepSeek AI分析（5维分析）
+- Day 9: AI分析（5维分析）
 - 成本优化建议
 - 效率分析和ML预测
 

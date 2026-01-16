@@ -1,6 +1,6 @@
 /**
  * 质检专用 AI Prompt
- * Quality Inspection AI Prompt for DeepSeek
+ * Quality Inspection AI Prompt
  */
 
 import { InspectionData, InspectionBatch, AIExtractionResponse } from './types';

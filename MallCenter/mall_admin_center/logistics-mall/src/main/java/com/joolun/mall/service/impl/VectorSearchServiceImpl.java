@@ -43,7 +43,8 @@ public class VectorSearchServiceImpl implements VectorSearchService {
         this.redisTemplate = redisTemplate;
     }
 
-    @Value("${ai.dashscope.api-key:${ai.deepseek.api-key:}}")
+    // API Key - fallback to LLM API Key for compatibility
+    @Value("${ai.dashscope.api-key:${ai.llm.api-key:}}")
     private String apiKey;
 
     @Value("${ai.dashscope.embedding-url:https://dashscope.aliyuncs.com/api/v1/services/embeddings/text-embedding/text-embedding}")

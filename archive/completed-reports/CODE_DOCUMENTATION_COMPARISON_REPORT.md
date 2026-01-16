@@ -158,7 +158,7 @@
 
 **新增Screen类型**:
 - 测试Screen: ServerConnectivityTestScreen, PushNotificationTestScreen, BatchOperationsTestScreen, IntentExecutionTestScreen
-- AI功能Screen: AIConversationHistoryScreen, MaterialReceiptAIScreen, DeepSeekAnalysisScreen
+- AI功能Screen: AIConversationHistoryScreen, MaterialReceiptAIScreen, AIAnalysisScreen
 - Demo/临时Screen: FormilyDemoScreen
 - 增强功能: EnhancedLoginScreen
 

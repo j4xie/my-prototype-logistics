@@ -62,14 +62,14 @@ public class UserBehaviorTrackingServiceImpl implements UserBehaviorTrackingServ
     private static final String LINUCB_EXPLORATION_PREFIX = "linucb:exploration:";
     private static final String TS_EXPLORATION_PREFIX = "ts:exploration:";
 
-    @Value("${ai.deepseek.api-key:}")
-    private String deepseekApiKey;
+    @Value("${ai.llm.api-key:}")
+    private String llmApiKey;
 
-    @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
+    @Value("${ai.llm.base-url:}")
+    private String llmBaseUrl;
 
-    @Value("${ai.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
+    @Value("${ai.llm.model:}")
+    private String llmModel;
 
     // 权重配置
     private static final double VIEW_WEIGHT = 0.05;      // 浏览权重
@@ -458,7 +458,7 @@ public class UserBehaviorTrackingServiceImpl implements UserBehaviorTrackingServ
      * P1性能优化: 添加频率限制，每用户5分钟内只调用一次AI
      */
     private void analyzeInterestsWithAI(String wxUserId, List<UserBehaviorEvent> events) {
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.debug("AI服务未配置，跳过AI分析");
             return;
         }
@@ -519,13 +519,13 @@ public class UserBehaviorTrackingServiceImpl implements UserBehaviorTrackingServ
                 }
                 """, behaviorSummary);
 
-            // 调用DashScope API
+            // 调用LLM API
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                     Map.of("role", "system", "content", "你是一个用户行为分析专家，擅长从行为数据中提取用户兴趣标签。"),
                     Map.of("role", "user", "content", prompt)
@@ -536,7 +536,7 @@ public class UserBehaviorTrackingServiceImpl implements UserBehaviorTrackingServ
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    deepseekBaseUrl + "/v1/chat/completions",
+                    llmBaseUrl + "/v1/chat/completions",
                     HttpMethod.POST,
                     request,
                     String.class

@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 
 /**
  * AI装修服务实现类
- * 集成DeepSeek API进行装修需求分析和配置推荐
+ * 集成LLM API进行装修需求分析和配置推荐
  */
 @Slf4j
 @Service
@@ -44,14 +44,14 @@ public class DecorationAiServiceImpl implements DecorationAiService {
     private final ObjectMapper objectMapper;
     private final RestTemplate restTemplate;
 
-    @Value("${ai.deepseek.api-key:}")
-    private String deepseekApiKey;
+    @Value("${ai.llm.api-key:}")
+    private String llmApiKey;
 
-    @Value("${ai.deepseek.base-url:https://api.deepseek.com}")
-    private String deepseekBaseUrl;
+    @Value("${ai.llm.base-url:}")
+    private String llmBaseUrl;
 
-    @Value("${ai.deepseek.model:deepseek-chat}")
-    private String deepseekModel;
+    @Value("${ai.llm.model:}")
+    private String llmModel;
 
     /**
      * 装修AI助手System Prompt
@@ -151,7 +151,7 @@ public class DecorationAiServiceImpl implements DecorationAiService {
 
         try {
             // 1. 调用AI API分析用户需求
-            Map<String, Object> aiAnalysis = callDeepSeekApi(prompt, DECORATION_SYSTEM_PROMPT);
+            Map<String, Object> aiAnalysis = callLlmApi(prompt, DECORATION_SYSTEM_PROMPT);
 
             // 2. 构建分析结果
             AiDecorationResult result = buildResultFromAnalysis(sessionId, aiAnalysis);
@@ -309,7 +309,7 @@ public class DecorationAiServiceImpl implements DecorationAiService {
             );
 
             // 3. 调用AI进行微调分析
-            Map<String, Object> aiAnalysis = callDeepSeekApi(userMessage, REFINE_SYSTEM_PROMPT);
+            Map<String, Object> aiAnalysis = callLlmApi(userMessage, REFINE_SYSTEM_PROMPT);
 
             // 4. 构建新的分析结果
             AiDecorationResult result = buildResultFromAnalysis(sessionId, aiAnalysis);
@@ -428,10 +428,10 @@ public class DecorationAiServiceImpl implements DecorationAiService {
     // ==================== 私有方法 ====================
 
     /**
-     * 调用DeepSeek API
+     * 调用LLM API
      */
-    private Map<String, Object> callDeepSeekApi(String userMessage, String systemPrompt) {
-        if (deepseekApiKey == null || deepseekApiKey.isEmpty()) {
+    private Map<String, Object> callLlmApi(String userMessage, String systemPrompt) {
+        if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(userMessage);
         }
@@ -439,18 +439,18 @@ public class DecorationAiServiceImpl implements DecorationAiService {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(deepseekApiKey);
+            headers.setBearerAuth(llmApiKey);
 
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", deepseekModel);
+            requestBody.put("model", llmModel);
             requestBody.put("messages", List.of(
                     Map.of("role", "system", "content", systemPrompt),
                     Map.of("role", "user", "content", userMessage)
             ));
             requestBody.put("temperature", 0.7);
 
-            String apiUrl = deepseekBaseUrl + "/v1/chat/completions";
-            log.debug("调用装修AI API: url={}, model={}", apiUrl, deepseekModel);
+            String apiUrl = llmBaseUrl + "/v1/chat/completions";
+            log.debug("调用装修AI API: url={}, model={}", apiUrl, llmModel);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
@@ -477,7 +477,7 @@ public class DecorationAiServiceImpl implements DecorationAiService {
                 }
             }
         } catch (Exception e) {
-            log.error("DeepSeek API调用失败: {}", e.getMessage(), e);
+            log.error("LLM API调用失败: {}", e.getMessage(), e);
         }
 
         return fallbackAnalysis(userMessage);
@@ -984,7 +984,7 @@ public class DecorationAiServiceImpl implements DecorationAiService {
     /**
      * 通义万相 API Key (与 DashScope 共用)
      */
-    @Value("${ai.wanxiang.api-key:${ai.dashscope.api-key:${ai.deepseek.api-key:}}}")
+    @Value("${ai.wanxiang.api-key:${ai.dashscope.api-key:${ai.llm.api-key:}}}")
     private String wanxiangApiKey;
 
     /**

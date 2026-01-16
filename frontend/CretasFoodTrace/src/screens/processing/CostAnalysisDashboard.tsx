@@ -430,7 +430,7 @@ export default function CostAnalysisDashboard() {
                       <Button
                         mode="contained"
                         icon="file-document-outline"
-                        onPress={() => navigation.navigate('DeepSeekAnalysis', { batchId: batchId || 'current' })}
+                        onPress={() => navigation.navigate('AIAnalysis', { batchId: batchId || 'current' })}
                         compact
                       >
                         查看详细分析

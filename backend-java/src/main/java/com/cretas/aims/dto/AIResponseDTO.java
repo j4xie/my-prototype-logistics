@@ -317,8 +317,8 @@ public class AIResponseDTO {
         @Schema(description = "服务状态", allowableValues = {"healthy", "degraded", "unavailable"})
         private String status;
 
-        @Schema(description = "DeepSeek API可用性")
-        private Boolean deepseekAvailable;
+        @Schema(description = "LLM API可用性")
+        private Boolean llmAvailable;
 
         @Schema(description = "响应时间（毫秒）")
         private Long responseTime;

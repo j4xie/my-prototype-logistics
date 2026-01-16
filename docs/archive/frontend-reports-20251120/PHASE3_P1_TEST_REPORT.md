@@ -21,7 +21,7 @@
 | `MaterialBatchManagementScreen.tsx` | 20.1 KB | ✅ 正常 | 2025-11-18 16:50 |
 | `CreateQualityRecordScreen.tsx` | 21.6 KB | ✅ 正常 | 2025-11-18 15:52 |
 | `QualityInspectionDetailScreen.tsx` | 21.2 KB | ✅ 正常 | 2025-11-18 15:55 |
-| `DeepSeekAnalysisScreen.tsx` | 20.4 KB | ✅ 正常 | 2025-11-18 15:48 |
+| `AIAnalysisScreen.tsx` | 20.4 KB | ✅ 正常 | 2025-11-18 15:48 |
 
 ---
 
@@ -44,7 +44,7 @@ EquipmentAlerts: { equipmentId?: string };
 CostComparison: { batchIds: string[] };
 
 // AI分析
-DeepSeekAnalysis: { batchId: string };
+AIAnalysis: { batchId: string };
 ```
 
 ### 导航路由配置 ✅
@@ -57,7 +57,7 @@ DeepSeekAnalysis: { batchId: string };
 - ✅ `EquipmentMonitoring` - Line 108
 - ✅ `EquipmentAlerts` - Line 112
 - ✅ `EquipmentDetail` - Line 116
-- ✅ `DeepSeekAnalysis` - Line 122
+- ✅ `AIAnalysis` - Line 122
 
 ### 导航流程完整性 ✅
 

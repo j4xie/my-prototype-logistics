@@ -768,7 +768,7 @@ def generate_chapter4_html():
                 <h1>4. AI智能分析模块</h1>
 
                 <h2>模块描述</h2>
-                <p>AI智能分析模块集成DeepSeek大语言模型,为生产管理提供智能决策支持。通过分析历史生产数据、成本构成、质量指标等,为管理者提供可操作的优化建议和成本控制方案。该模块采用配额管理制度、多层缓存机制和详细的审计日志。</p>
+                <p>AI智能分析模块集成LLM大语言模型,为生产管理提供智能决策支持。通过分析历史生产数据、成本构成、质量指标等,为管理者提供可操作的优化建议和成本控制方案。该模块采用配额管理制度、多层缓存机制和详细的审计日志。</p>
 
                 <div class="info-box">
                     <h3>核心特性</h3>
@@ -1097,7 +1097,7 @@ CREATE TABLE ai_audit_logs (
                     </thead>
                     <tbody>
                         <tr>
-                            <td><code>DeepSeekAnalysisScreen.tsx</code></td>
+                            <td><code>AIAnalysisScreen.tsx</code></td>
                             <td>主分析界面</td>
                             <td>分析选择器、结果展示、追问输入</td>
                         </tr>
@@ -1207,7 +1207,7 @@ CREATE TABLE ai_audit_logs (
   }
 }
 
-// 场景3: DeepSeek API失败
+// 场景3: LLM API失败
 {
   "code": 502,
   "message": "暂时无法进行AI分析,建议稍后重试",

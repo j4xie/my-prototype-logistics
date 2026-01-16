@@ -619,7 +619,7 @@ frontend/CretasFoodTrace/
    - 批量导出支持
 
 ### Phase 3 集成计划
-- DeepSeek LLM智能分析
+- LLM智能分析
 - 成本优化建议
 - 异常检测和预警
 - 趋势分析和预测
@@ -646,7 +646,7 @@ frontend/CretasFoodTrace/
 - 内存占用：<200MB
 
 ### 成本控制目标（Phase 3）
-- DeepSeek AI分析：<¥30/月
+- AI分析：<¥30/月
 - 缓存命中率：>60%
 - 请求优化：数据预处理减少token使用
 

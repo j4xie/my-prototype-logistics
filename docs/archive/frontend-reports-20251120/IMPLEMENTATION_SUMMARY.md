@@ -89,7 +89,7 @@
 
 #### 成本分析 (3页)
 16. ⏳ **BatchCostDetailScreen** - 成本详情(P0核心)
-17. ⏳ **DeepSeekAnalysisScreen** - AI成本分析
+17. ⏳ **AIAnalysisScreen** - AI成本分析
 18. ⏳ **CostTrendScreen** - 成本趋势
 
 #### 其他 (4页)
@@ -275,7 +275,7 @@ import { BatchStatusBadge } from '../../components/processing';
 <Stack.Screen name="EquipmentDetail" component={EquipmentDetailScreen} />
 <Stack.Screen name="EquipmentAlerts" component={EquipmentAlertsScreen} />
 <Stack.Screen name="BatchCostDetail" component={BatchCostDetailScreen} />
-<Stack.Screen name="DeepSeekAnalysis" component={DeepSeekAnalysisScreen} />
+<Stack.Screen name="AIAnalysis" component={AIAnalysisScreen} />
 <Stack.Screen name="CostTrend" component={CostTrendScreen} />
 <Stack.Screen name="WorkRecord" component={WorkRecordScreen} />
 <Stack.Screen name="DataExport" component={DataExportScreen} />

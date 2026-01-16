@@ -127,11 +127,11 @@ public class ProductionProcessPromptConfig extends BaseEntity {
 
     /**
      * 使用的AI模型名称
-     * 如: gpt-4-vision-preview, deepseek-vl, qwen-vl-max
+     * 如: gpt-4-vision-preview, llm-vl, qwen-vl-max
      */
     @Column(name = "model_name", length = 100)
     @Builder.Default
-    private String modelName = "deepseek-vl";
+    private String modelName = "llm-vl";
 
     /**
      * 温度参数 (0.0-2.0)

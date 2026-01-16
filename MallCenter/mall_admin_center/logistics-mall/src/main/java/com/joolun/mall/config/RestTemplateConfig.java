@@ -7,7 +7,7 @@ import org.springframework.web.client.RestTemplate;
 
 /**
  * RestTemplate 配置
- * 用于调用外部 API（如 DeepSeek）
+ * 用于调用外部 API（如 LLM API）
  */
 @Configuration
 public class RestTemplateConfig {

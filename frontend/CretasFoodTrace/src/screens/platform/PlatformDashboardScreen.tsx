@@ -651,7 +651,7 @@ export default function PlatformDashboardScreen() {
               <View style={styles.statusLeft}>
                 <Avatar.Icon icon="robot" size={32} color="#9C27B0" style={styles.statusIcon} />
                 <Text variant="bodyMedium" style={{ fontWeight: '500' }}>
-                  {t('systemStatus.deepSeekAI')}
+                  {t('systemStatus.llmAI')}
                 </Text>
               </View>
               <Chip

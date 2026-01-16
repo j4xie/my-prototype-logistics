@@ -185,7 +185,7 @@
   "forecast": {
     "title": "预测报表",
     "aiSmartForecast": "AI智能预测",
-    "description": "基于DeepSeek AI的智能预测分析功能",
+    "description": "AI驱动的智能预测分析功能",
     "features": "预测功能",
     "demandForecast": "需求预测",
     "inventoryAlert": "库存预警",

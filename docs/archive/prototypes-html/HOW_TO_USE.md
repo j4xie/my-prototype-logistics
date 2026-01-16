@@ -81,7 +81,7 @@
 - CSS绘制饼图（成本构成）
 - 成本明细列表
 - 成本对比（目标/历史）
-- DeepSeek AI分析按钮
+- AI分析按钮
 - AI分析结果展示
 
 ---
@@ -175,7 +175,7 @@ open /Users/jietaoxie/my-prototype-logistics/prototypes/index.html
 
 8. pages/cost/batch-detail.html
    ↓ 查看成本饼图和明细
-   ↓ 点击"🤖 DeepSeek AI分析"
+   ↓ 点击"🤖 AI分析"
    ↓ 查看AI分析结果
    ↓ 底部Tab切换到其他模块
 
@@ -382,7 +382,7 @@ employee/clock.html → 选择工作类型 → 点击大圆形按钮
 
 ### 成本分析 (cost/batch-detail.html)
 **功能**: 批次成本详情+AI分析
-**亮点**: 成本饼图、DeepSeek AI、优化建议
+**亮点**: 成本饼图、AI分析、优化建议
 **流程**: 查看成本 → AI分析 → 查看趋势
 
 ---
