@@ -46,7 +46,7 @@
 | BIZ-001 | Dashboard概览 | ✅ PASS | 数据正常 |
 | BIZ-002 | 用户列表 | ✅ PASS | 获取成功 |
 | BIZ-003 | 设备告警 | ✅ PASS | 获取成功 |
-| BIZ-004 | AI服务健康 | ✅ PASS | deepseekAvailable: true |
+| BIZ-004 | AI服务健康 | ✅ PASS | llmAvailable: true |
 | BIZ-005 | 生产批次 | ✅ PASS | 获取成功 |
 | BIZ-006 | 质量Dashboard | ✅ PASS | 含 defectRate, passRate, qualityGrade |
 | BIZ-007 | 设备Dashboard | ✅ PASS | 含维护状态统计 |
@@ -92,7 +92,7 @@
 | EXT-011 | `/ai/analysis/cost/batch` | ⚠️ AI错误 | AI服务暂不可用 |
 | EXT-012 | `/ai/quota` | ✅ PASS | 返回配额信息 |
 | EXT-013 | `/ai/reports` | ✅ PASS | 返回32份报告 |
-| EXT-014 | `/ai/health` | ✅ PASS | deepseekAvailable: true |
+| EXT-014 | `/ai/health` | ✅ PASS | llmAvailable: true |
 | EXT-015 | `/equipment-maintenances` | ❌ 404 | 端点不存在，使用 `/reports/dashboard/equipment` |
 
 ---

@@ -23,7 +23,7 @@
            └─ basicAIService.analyzeCost()  (调用 Python AI)
                 ↓
             Python FastAPI 服务 (端口 8085)
-                └─ DeepSeek LLM 分析
+                └─ LLM 分析
 ```
 
 ---
@@ -132,7 +132,7 @@ AIEnterpriseService.analyzeTimeRangeCost()
     │          ↓
     │     HTTP POST to Python FastAPI (port 8085)
     │          ↓
-    │     DeepSeek LLM 分析批次数据
+    │     LLM 分析批次数据
     │          ↓
     │     返回AI分析文本
     │
@@ -475,7 +475,7 @@ AND created_at <= '2024-11-30'"
 ### Python AI 服务
 - [ ] FastAPI 服务成功启动
 - [ ] 能够接收来自 Java 后端的请求
-- [ ] DeepSeek LLM 分析返回结果
+- [ ] LLM 分析返回结果
 - [ ] 返回中文分析文本
 
 ---

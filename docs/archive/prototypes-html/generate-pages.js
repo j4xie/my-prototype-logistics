@@ -127,7 +127,7 @@ const pages = [
     {
         path: 'pages/cost/ai-analysis.html',
         title: 'AI成本分析',
-        description: 'DeepSeek AI智能分析成本异常、提供优化建议'
+        description: 'AI智能分析成本异常、提供优化建议'
     },
 
     // 生产仪表板

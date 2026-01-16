@@ -107,7 +107,7 @@
     "systemAbnormal": "System services abnormal, please handle immediately",
     "apiService": "API Service",
     "database": "Database",
-    "deepSeekAI": "DeepSeek AI",
+    "llmAI": "AI Service",
     "fileService": "File Service",
     "normal": "Normal",
     "systemMetrics": "System Metrics"

@@ -225,7 +225,7 @@ class VoiceAssistantService {
         userText
       );
 
-      // 调用 DeepSeek API (使用统一配置的 API_BASE_URL)
+      // 调用 AI API (使用统一配置的 API_BASE_URL)
       const response = await fetch(`${API_BASE_URL}/api/mobile/ai/chat`, {
         method: 'POST',
         headers: {

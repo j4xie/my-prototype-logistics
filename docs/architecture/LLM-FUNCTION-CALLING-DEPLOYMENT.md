@@ -48,7 +48,7 @@
 
 ### 1.3 网络要求
 
-- **出站**: 需要访问 LLM API 服务（如 DeepSeek API）
+- **出站**: 需要访问 LLM API 服务
 - **端口**: 默认 10010（可配置）
 - **防火墙**: 确保 LLM API 域名可访问
 
@@ -87,11 +87,11 @@ tool.execution.cache.ttl=300
 # LLM API 配置
 # ===================================
 
-# DeepSeek API 配置
-deepseek.api.key=${AI_API_KEY}
-deepseek.api.url=https://api.deepseek.com/v1
-deepseek.api.timeout=60000
-deepseek.api.model=deepseek-chat
+# LLM API 配置
+llm.api.key=${AI_API_KEY}
+llm.api.url=${LLM_API_URL}
+llm.api.timeout=60000
+llm.api.model=llm-chat
 
 # LLM Function Calling 模式
 llm.function.calling.mode=auto
@@ -198,7 +198,7 @@ SHOW CREATE DATABASE cretas_aims;
 **Linux/macOS**:
 ```bash
 # 编辑 ~/.bashrc 或 ~/.zshrc
-export AI_API_KEY="sk-your-deepseek-api-key"
+export AI_API_KEY="sk-your-llm-api-key"
 export JWT_SECRET="your-jwt-secret-key"
 export ALIBABA_ACCESSKEY_ID="your-aliyun-access-key"
 export ALIBABA_SECRET_KEY="your-aliyun-secret-key"
@@ -613,7 +613,7 @@ public class MyTool extends AbstractTool {
 **排查步骤**:
 ```bash
 # 1. 测试网络连通性
-curl -I https://api.deepseek.com
+curl -I ${LLM_API_URL}
 
 # 2. 检查 API Key
 echo $AI_API_KEY

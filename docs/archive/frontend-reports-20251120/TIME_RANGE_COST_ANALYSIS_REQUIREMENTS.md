@@ -146,7 +146,7 @@ for (ProductionBatch batch : batches) {
 
 **业务逻辑**:
 1. 获取时间范围内的成本数据（调用API 1的逻辑）
-2. 调用DeepSeek AI API生成分析报告
+2. 调用AI API生成分析报告
 3. 缓存分析结果（30分钟）
 4. 记录AI审计日志
 5. 检查配额使用情况

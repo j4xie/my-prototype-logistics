@@ -225,7 +225,7 @@ for (Object[] row : distribution) {
 
 2. **测试剩余未测端点** (~170个)
    - Advanced Reports: 30个
-   - AI/DeepSeek: 10个
+   - AI/LLM: 10个
    - System Config: 15个
    - User Management: 20个
    - 其他: ~95个

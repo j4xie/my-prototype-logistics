@@ -128,7 +128,7 @@
              ├─ formatTimeRangePrompt()
              ├─ basicAIService.analyzeCost()
              │  └─ Python FastAPI (port 8085)
-             │     └─ DeepSeek LLM 分析
+             │     └─ LLM 分析
              ├─ 保存到 ai_analysis_results
              └─ 返回分析结果
 ```
@@ -298,7 +298,7 @@ ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
 - ✅ Python 3.8+
 - ✅ FastAPI
 - ✅ Hugging Face
-- ✅ DeepSeek LLM
+- ✅ LLM
 
 ### 基础设施
 - ✅ MySQL 5.7+

@@ -52,7 +52,7 @@
     },
     "aiAnalysis": {
       "title": "AI Analysis",
-      "subtitle": "Intelligent cost analysis powered by DeepSeek",
+      "subtitle": "AI-powered intelligent cost analysis",
       "aiReport": "AI Report",
       "costComparison": "Cost Comparison",
       "timeRangeAnalysis": "Time Range Analysis"
@@ -1014,8 +1014,8 @@
       "exportFailed": "Export failed"
     }
   },
-  "deepSeekAnalysis": {
-    "title": "DeepSeek AI Analysis",
+  "aiAnalysisDetail": {
+    "title": "AI Analysis",
     "subtitle": "Intelligent production cost analysis",
     "analysisMode": "Analysis Mode",
     "modes": {
@@ -1132,7 +1132,7 @@
     },
     "aiAnalysis": {
       "title": "AI Analysis",
-      "subtitle": "Cost optimization suggestions powered by DeepSeek",
+      "subtitle": "AI-powered cost optimization suggestions",
       "description": "Click the button below, AI will analyze this batch's cost data and provide professional optimization suggestions",
       "getAISuggestions": "Get AI Optimization Advice",
       "quotaExhausted": "Weekly quota exhausted",

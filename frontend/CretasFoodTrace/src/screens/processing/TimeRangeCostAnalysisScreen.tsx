@@ -442,7 +442,7 @@ export default function TimeRangeCostAnalysisScreen() {
                         AI智能分析
                       </Text>
                       <Text variant="bodySmall" style={{ color: '#64748B', marginTop: 4 }}>
-                        基于DeepSeek技术的时间范围成本分析
+                        基于AI技术的时间范围成本分析
                       </Text>
                     </View>
 

@@ -265,7 +265,7 @@ public class AIController {
 
         log.info("获取AI对话历史列表: factoryId={}, limit={}", factoryId, limit);
 
-        // 返回空列表（DeepSeek不维护会话列表，会话是临时的）
+        // 返回空列表（LLM不维护会话列表，会话是临时的）
         List<AIResponseDTO.ConversationResponse> conversations = new java.util.ArrayList<>();
 
         return ApiResponse.success(conversations);
@@ -316,11 +316,11 @@ public class AIController {
 
         log.info("关闭AI对话会话: factoryId={}, sessionId={}", factoryId, sessionId);
 
-        // DeepSeek AI服务会自动管理会话生命周期
+        // LLM服务会自动管理会话生命周期
         // 会话超时后会自动清理，无需额外操作
         // 这里仅记录日志用于审计追踪
 
-        log.info("AI会话已标记关闭（DeepSeek自动管理）: factoryId={}, sessionId={}",
+        log.info("AI会话已标记关闭（LLM自动管理）: factoryId={}, sessionId={}",
                 factoryId, sessionId);
 
         return ApiResponse.success();
@@ -446,7 +446,7 @@ public class AIController {
      */
     @GetMapping("/health")
     @Operation(summary = "AI服务健康检查",
-               description = "检查AI服务和DeepSeek API的可用性")
+               description = "检查AI服务和LLM API的可用性")
     public ApiResponse<AIResponseDTO.HealthCheckResponse> checkHealth(
             @PathVariable @Parameter(description = "工厂ID") String factoryId) {
 
@@ -457,7 +457,7 @@ public class AIController {
 
         AIResponseDTO.HealthCheckResponse response = AIResponseDTO.HealthCheckResponse.builder()
                 .status((Boolean) healthData.get("available") ? "healthy" : "unavailable")
-                .deepseekAvailable((Boolean) healthData.get("available"))
+                .llmAvailable((Boolean) healthData.get("available"))
                 .responseTime(100L)  // 简化处理
                 .lastCheckTime(LocalDateTime.now())
                 .errorMessage(healthData.get("error") != null ?

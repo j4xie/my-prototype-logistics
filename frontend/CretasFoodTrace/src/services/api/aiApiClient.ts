@@ -379,7 +379,7 @@ export interface ReportSummary {
  */
 export interface HealthCheckResponse {
   status: 'healthy' | 'degraded' | 'unavailable';
-  deepseekAvailable: boolean;
+  llmAvailable: boolean;
   responseTime: number;
   lastCheckTime: string;
   errorMessage?: string;
@@ -1083,7 +1083,7 @@ class AIApiClient {
   /**
    * AI服务健康检查
    *
-   * 检查AI服务和DeepSeek API的可用性
+   * 检查AI服务和LLM API的可用性
    *
    * @param factoryId 工厂ID（可选）
    */

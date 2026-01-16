@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 /**
  * AI使用日志实体
- * 用于记录DeepSeek AI API的调用历史
+ * 用于记录LLM AI API的调用历史
  *
  * @author Cretas Team
  * @version 1.0.0

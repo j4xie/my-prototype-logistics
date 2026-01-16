@@ -28,8 +28,8 @@ import EquipmentMonitoringScreen from '../screens/processing/EquipmentMonitoring
 // 设备管理页面 - Phase 3 P3-设备: CRUD、搜索、状态
 import EquipmentManagementScreen from '../screens/processing/EquipmentManagementScreen';
 
-// DeepSeek AI分析详情页 - Phase 3 P1-001
-import DeepSeekAnalysisScreen from '../screens/processing/DeepSeekAnalysisScreen';
+// AI分析详情页 - Phase 3 P1-001
+import AIAnalysisScreen from '../screens/processing/AIAnalysisScreen';
 
 // 质检记录页面 - 已迁移至 QualityInspectorNavigator
 // import CreateQualityRecordScreen from '../screens/legacy/quality-inspection/CreateQualityRecordScreen';
@@ -198,10 +198,10 @@ export function ProcessingStackNavigator() {
         component={EquipmentDetailScreen}
       />
 
-      {/* DeepSeek AI分析详情 - Phase 3 P1-001 */}
+      {/* AI分析详情 - Phase 3 P1-001 */}
       <Stack.Screen
-        name="DeepSeekAnalysis"
-        component={DeepSeekAnalysisScreen}
+        name="AIAnalysis"
+        component={AIAnalysisScreen}
       />
 
       {/* Phase 3 P2 - 质检统计分析 (已迁移至 QualityInspectorNavigator) */}

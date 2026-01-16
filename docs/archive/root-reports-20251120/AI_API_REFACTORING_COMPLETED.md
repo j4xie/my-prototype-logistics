@@ -156,7 +156,7 @@
 private AIEnterpriseService aiEnterpriseService;  // 企业级AI服务（配额、缓存、审计）
 
 @Autowired
-private AIAnalysisService basicAIService;  // 基础AI服务（DeepSeek调用）
+private AIAnalysisService basicAIService;  // 基础AI服务（LLM调用）
 
 @Autowired
 private MobileService mobileService;  // 用户认证服务

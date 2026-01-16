@@ -126,7 +126,7 @@ Phase 4+ (待规划): ~25%
 ❌ EquipmentDetailScreen       (待实现)
 ❌ EquipmentAlertsScreen       (待实现)
 ❌ CostComparisonScreen        (待实现)
-❌ DeepSeekAnalysisScreen      (待实现)
+❌ AIAnalysisScreen            (待实现)
 ❌ DataExportScreen            (待实现)
 ```
 

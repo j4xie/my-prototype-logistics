@@ -185,7 +185,7 @@
   "forecast": {
     "title": "Forecast Report",
     "aiSmartForecast": "AI Smart Forecast",
-    "description": "AI-powered predictive analysis based on DeepSeek AI",
+    "description": "AI-powered predictive analysis",
     "features": "Forecast Features",
     "demandForecast": "Demand Forecast",
     "inventoryAlert": "Inventory Alert",

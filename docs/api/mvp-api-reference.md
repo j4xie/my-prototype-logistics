@@ -1281,8 +1281,8 @@ interface InventorySettings {
 }
 
 interface AISettings {
-  deepseekEnabled: boolean;
-  deepseekModel: string;
+  llmEnabled: boolean;
+  llmModel: string;
   monthlyBudget: number;  // 月度预算(元)
   cacheEnabled: boolean;
   cacheDuration: number;  // 分钟

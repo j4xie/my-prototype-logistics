@@ -92,7 +92,7 @@
 2. RegexMatch (正则表达式规则)
 3. KeywordMatch (关键词匹配 + Wilson Score)
 4. SemanticMatch (语义向量相似度 ≥ 0.72)
-5. LLM Fallback (DeepSeek API兜底)
+5. LLM Fallback (LLM API兜底)
 
 // 3级参数提取策略
 1. Context结构化参数
@@ -181,7 +181,7 @@
 
          如果全部未命中 →
          → [Layer 4: SemanticMatch] → Embedding相似度计算
-         → [Layer 5: LLM Fallback] → DeepSeek API调用
+         → [Layer 5: LLM Fallback] → LLM API调用
 ```
 
 **关键验证点**:
