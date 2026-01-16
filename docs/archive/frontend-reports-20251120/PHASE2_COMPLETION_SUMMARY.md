@@ -441,7 +441,7 @@ frontend/CretasFoodTrace/
    - 临时文件存储
    - 下载链接管理
 
-2. **DeepSeek LLM集成**
+2. **LLM集成**
    - 成本优化建议
    - 异常检测和预警
    - 趋势分析和预测
@@ -517,7 +517,7 @@ frontend/CretasFoodTrace/
 ---
 
 **Phase 2 状态**: ✅ **100% 完成**
-**下一阶段**: Phase 3 - DeepSeek LLM集成 & 高级功能
+**下一阶段**: Phase 3 - LLM集成 & 高级功能
 **预计开始**: 2025-10-04
 
 ---

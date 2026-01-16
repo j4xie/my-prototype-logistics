@@ -107,7 +107,7 @@
     "systemAbnormal": "系统服务异常，请立即处理",
     "apiService": "API服务",
     "database": "数据库",
-    "deepSeekAI": "DeepSeek AI",
+    "llmAI": "AI 服务",
     "fileService": "文件服务",
     "normal": "正常",
     "systemMetrics": "系统指标"

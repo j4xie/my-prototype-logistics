@@ -256,7 +256,7 @@
   - AI服务健康检查
 - **使用Screen**:
   - `CostAnalysisDashboard.tsx`
-  - `DeepSeekAnalysisScreen.tsx` (计划中)
+  - `AIAnalysisScreen.tsx`
 - **优先级**: P0 - 紧急实现 (AI功能核心)
 
 ---

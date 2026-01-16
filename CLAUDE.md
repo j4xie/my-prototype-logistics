@@ -10,7 +10,7 @@ This file provides guidance to Claude Code when working with this repository.
 |------|--------|
 | **后端** | Java 11 + Spring Boot 2.7.15 + MySQL + JPA |
 | **前端** | Expo 53+ + TypeScript + React Navigation 7+ |
-| **AI服务** | Python + DeepSeek API |
+| **AI服务** | Python + LLM API |
 
 **项目状态**: Phase 3 核心完成 (82-85%)
 

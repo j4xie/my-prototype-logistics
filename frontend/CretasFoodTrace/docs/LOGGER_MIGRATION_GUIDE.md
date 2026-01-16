@@ -446,7 +446,7 @@ logger.configure({
 - [x] PersonnelReportScreen.tsx (6个) - ✅ 已迁移
 - [x] FactorySettingsScreen.tsx (6个) - ✅ 已迁移
 - [x] DepartmentManagementScreen.tsx (6个) - ✅ 已迁移
-- [x] DeepSeekAnalysisScreen.tsx (6个) - ✅ 已迁移
+- [x] AIAnalysisScreen.tsx (6个) - ✅ 已迁移
 - [x] DataExportScreen.tsx (6个) - ✅ 已迁移 (Batch 19)
 - [x] AIAnalysisDetailScreen.tsx (5个) - ✅ 已迁移 (Batch 19)
 - [x] PlatformDashboardScreen.tsx (5个) - ✅ 已迁移 (Batch 19)
@@ -504,7 +504,7 @@ logger.configure({
 | `PersonnelReportScreen.tsx` | 6 | personnelReportLogger | 6e9444da | ✅ |
 | `FactorySettingsScreen.tsx` | 6 | factorySettingsLogger | 7b61d43d | ✅ |
 | `DepartmentManagementScreen.tsx` | 6 | departmentLogger | 7b61d43d | ✅ |
-| `DeepSeekAnalysisScreen.tsx` | 6 | deepSeekLogger | 7b61d43d | ✅ |
+| `AIAnalysisScreen.tsx` | 6 | aiLogger | 7b61d43d | ✅ |
 | `DataExportScreen.tsx` | 6 | dataExportLogger | 1cc833a8 | ✅ |
 | `AIAnalysisDetailScreen.tsx` | 5 | aiAnalysisLogger | 1cc833a8 | ✅ |
 | `PlatformDashboardScreen.tsx` | 5 | platformDashboardLogger | 1cc833a8 | ✅ |

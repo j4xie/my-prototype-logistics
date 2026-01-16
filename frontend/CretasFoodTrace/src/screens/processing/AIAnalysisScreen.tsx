@@ -10,13 +10,13 @@ import { logger } from '../../utils/logger';
 import { aiService, detectAnalysisMode, type AIResult, type CostAnalysisResponse, type AnalysisMode } from '../../services/ai';
 import { AIModeIndicator } from '../../components/ai';
 
-// 创建DeepSeekAnalysis专用logger
-const deepSeekLogger = logger.createContextLogger('DeepSeekAnalysis');
+// 创建AIAnalysis专用logger
+const aiAnalysisLogger = logger.createContextLogger('AIAnalysis');
 
-type DeepSeekAnalysisScreenRouteProp = RouteProp<ProcessingStackParamList, 'DeepSeekAnalysis'>;
-type DeepSeekAnalysisScreenNavigationProp = NativeStackNavigationProp<
+type AIAnalysisScreenRouteProp = RouteProp<ProcessingStackParamList, 'AIAnalysis'>;
+type AIAnalysisScreenNavigationProp = NativeStackNavigationProp<
   ProcessingStackParamList,
-  'DeepSeekAnalysis'
+  'AIAnalysis'
 >;
 
 // ========== 数据结构定义 ==========
@@ -188,7 +188,7 @@ function getPriorityColor(priority: Recommendation['priority']): string {
 }
 
 /**
- * DeepSeek AI 分析详情页
+ * AI 分析详情页
  * P1-004: AI成本分析
  *
  * 功能：
@@ -197,9 +197,9 @@ function getPriorityColor(priority: Recommendation['priority']): string {
  * - 支持追问（follow-up questions）
  * - 显示配额使用情况
  */
-export default function DeepSeekAnalysisScreen() {
-  const navigation = useNavigation<DeepSeekAnalysisScreenNavigationProp>();
-  const route = useRoute<DeepSeekAnalysisScreenRouteProp>();
+export default function AIAnalysisScreen() {
+  const navigation = useNavigation<AIAnalysisScreenNavigationProp>();
+  const route = useRoute<AIAnalysisScreenRouteProp>();
   const { batchId } = route.params;
 
   // Get user context
@@ -234,7 +234,7 @@ export default function DeepSeekAnalysisScreen() {
     try {
       setLoading(true);
 
-      deepSeekLogger.debug('加载AI批次分析', { batchId, factoryId });
+      aiAnalysisLogger.debug('加载AI批次分析', { batchId, factoryId });
 
       // Use centralized AI service - auto-detects mode based on enableThinking state
       const response = await aiService.analyzeBatchCost({
@@ -243,7 +243,7 @@ export default function DeepSeekAnalysisScreen() {
         forceMode: enableThinking ? 'deep' : undefined,
       });
 
-      deepSeekLogger.info('AI分析加载成功', {
+      aiAnalysisLogger.info('AI分析加载成功', {
         batchId,
         mode: response.mode,
         modeReason: response.modeReason,
@@ -255,7 +255,7 @@ export default function DeepSeekAnalysisScreen() {
       setCurrentMode(response.mode);
       // Note: sessionId would need to come from response if backend supports it
     } catch (error) {
-      deepSeekLogger.error('加载AI分析失败', error, {
+      aiAnalysisLogger.error('加载AI分析失败', error, {
         batchId,
         factoryId,
         errorStatus: (error as any).response?.status,
@@ -291,7 +291,7 @@ export default function DeepSeekAnalysisScreen() {
       const modeResult = detectAnalysisMode(question.trim());
       const finalForceMode = enableThinking || modeResult.enableThinking ? 'deep' as const : undefined;
 
-      deepSeekLogger.debug('AI追问', {
+      aiAnalysisLogger.debug('AI追问', {
         batchId,
         sessionId,
         questionLength: question.length,
@@ -309,7 +309,7 @@ export default function DeepSeekAnalysisScreen() {
         forceMode: finalForceMode,
       });
 
-      deepSeekLogger.info('AI追问回答成功', {
+      aiAnalysisLogger.info('AI追问回答成功', {
         batchId,
         mode: response.mode,
         hasAnalysis: !!response.data?.analysis,
@@ -321,7 +321,7 @@ export default function DeepSeekAnalysisScreen() {
       setQuestion('');
       setShowQuestionInput(false);
     } catch (error) {
-      deepSeekLogger.error('AI追问失败', error, { batchId, sessionId });
+      aiAnalysisLogger.error('AI追问失败', error, { batchId, sessionId });
       const errorMessage = getErrorMsg(error) || '追问失败，请稍后重试';
       Alert.alert('追问失败', errorMessage);
     } finally {
@@ -448,7 +448,7 @@ export default function DeepSeekAnalysisScreen() {
           <Card style={styles.card} mode="elevated">
             <Card.Title
               title="5维深度分析"
-              subtitle="DeepSeek AI 智能洞察"
+              subtitle="AI 智能洞察"
               left={(props) => <IconButton {...props} icon="chart-box-multiple" iconColor="#2196F3" />}
             />
             <Card.Content>

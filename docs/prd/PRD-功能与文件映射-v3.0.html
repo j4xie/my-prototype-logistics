@@ -927,7 +927,7 @@ POST /api/mobile/{factoryId}/material-batches/{batchId}/unfreeze     📅 规划
                 <h3>3.4 质量检验</h3>
                 <p><strong>状态:</strong> <span class="status-badge status-inprogress">🔨 部分完成 (70%)</span></p>
 
-                <h3>3.5 成本分析（DeepSeek AI）</h3>
+                <h3>3.5 成本分析（AI）</h3>
                 <p><strong>状态:</strong> <span class="status-badge status-complete">✅ 已完成 (95%)</span></p>
 
                 <h4>API端点 (✅ 已实现)</h4>
@@ -1305,7 +1305,7 @@ npm start</code></pre>
            └─ basicAIService.analyzeCost()  (调用 Python AI)
                 ↓
             Python FastAPI 服务 (端口 8085)
-                └─ DeepSeek LLM 分析</code></pre>
+                └─ AI/LLM 分析</code></pre>
 
                 <h3>✅ 已完成的实现</h3>
 
@@ -1392,7 +1392,7 @@ AIEnterpriseService.analyzeTimeRangeCost()
     │          ↓
     │     HTTP POST to Python FastAPI (port 8085)
     │          ↓
-    │     DeepSeek LLM 分析批次数据
+    │     AI/LLM 分析批次数据
     │          ↓
     │     返回AI分析文本
     │
@@ -1598,7 +1598,7 @@ mysql -u root cretas_db -e "SHOW TABLES LIKE 'production_%'"</code></pre>
                 <ul>
                     <li>FastAPI 服务成功启动</li>
                     <li>能够接收来自 Java 后端的请求</li>
-                    <li>DeepSeek LLM 分析返回结果</li>
+                    <li>AI/LLM 分析返回结果</li>
                     <li>返回中文分析文本</li>
                 </ul>
 
@@ -2080,7 +2080,7 @@ ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"</code></pre>
                     <li>✅ Python 3.8+</li>
                     <li>✅ FastAPI</li>
                     <li>✅ Hugging Face</li>
-                    <li>✅ DeepSeek LLM</li>
+                    <li>✅ AI/LLM</li>
                 </ul>
 
                 <h3>✅ 项目交接清单</h3>

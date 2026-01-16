@@ -28,7 +28,7 @@ public class AILayoutResponse {
     @Schema(description = "生成耗时(毫秒)", example = "1500")
     private Long generationTimeMs;
 
-    @Schema(description = "使用的AI模型", example = "deepseek-chat")
+    @Schema(description = "使用的AI模型", example = "llm-chat")
     private String modelUsed;
 
     @Schema(description = "备选布局方案")

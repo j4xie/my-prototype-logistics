@@ -64,7 +64,7 @@ export type ProcessingStackParamList = {
   CostAnalysisDashboard: { batchId?: string };
   TimeRangeCostAnalysis: undefined;
   CostComparison: { batchIds: string[] };
-  DeepSeekAnalysis: { batchId: string };
+  AIAnalysis: { batchId: string };
 
   // AI智能分析
   AIReportList: undefined;

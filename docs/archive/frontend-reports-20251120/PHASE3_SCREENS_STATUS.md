@@ -9,7 +9,7 @@
 ## Phase 3 P1 - 核心功能 ✅ 全部完成
 
 ### ✅ P1-001: AI智能分析详情页
-- **文件**: `DeepSeekAnalysisScreen.tsx`
+- **文件**: `AIAnalysisScreen.tsx`
 - **状态**: ✅ 已创建
 - **位置**: `src/screens/processing/`
 

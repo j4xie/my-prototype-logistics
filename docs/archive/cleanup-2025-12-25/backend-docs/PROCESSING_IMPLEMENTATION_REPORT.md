@@ -629,14 +629,14 @@ private void updateBatchQualityGrade(ProcessingBatch batch, QualityInspection in
 
 ### 2. AI成本分析为简化实现
 **严重程度**: 中
-**影响**: AI分析功能未调用真实的DeepSeek API
+**影响**: AI分析功能未调用真实的LLM API
 
 **问题描述**:
 - 当前AI分析只是简单的数据汇总 + 模板化文本
 - 未集成真实的AI模型
 
 **建议修复**:
-- 集成DeepSeek API或其他LLM服务
+- 集成LLM API或其他AI服务
 - 实现智能化的成本分析和建议生成
 
 ### 3. JSON字段没有使用专用类型
@@ -675,7 +675,7 @@ private void updateBatchQualityGrade(ProcessingBatch batch, QualityInspection in
 ### 中期计划 (2-4周)
 
 1. **集成真实AI分析**
-   - 集成DeepSeek API
+   - 集成LLM API
    - 实现智能成本分析和优化建议
    - 添加AI分析结果缓存
 

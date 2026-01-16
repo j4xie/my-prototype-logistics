@@ -1,6 +1,6 @@
 /**
  * AI智能问答页面
- * 集成DeepSeek AI服务，支持商品智能推荐
+ * 集成LLM服务，支持商品智能推荐
  */
 const app = getApp()
 const api = require('../../../utils/api')

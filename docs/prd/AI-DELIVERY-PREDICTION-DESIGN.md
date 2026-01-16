@@ -169,7 +169,7 @@ public class DeliveryPredictionService {
 
 ---
 
-## 5. DeepSeek 集成
+## 5. LLM/AI 集成
 
 ### 5.1 提示词模板
 
@@ -254,7 +254,7 @@ class DeliveryPredictionAnalyzer:
 - [ ] 集成设备、原材料、工人效率数据
 
 ### Phase 3: AI 增强 (3-4天)
-- [ ] 设计 DeepSeek 提示词
+- [ ] 设计 AI/LLM 提示词
 - [ ] 扩展 Python AI 服务
 - [ ] 实现 Java 到 AI 服务的调用
 - [ ] 添加缓存机制 (5分钟过期)
