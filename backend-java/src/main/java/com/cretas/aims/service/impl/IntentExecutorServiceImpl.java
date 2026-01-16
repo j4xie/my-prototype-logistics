@@ -5,6 +5,7 @@ import com.cretas.aims.ai.dto.ChatCompletionResponse;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
+import com.cretas.aims.config.TimeNormalizationRules;
 import com.cretas.aims.entity.AIAnalysisResult;
 import com.cretas.aims.repository.AIAnalysisResultRepository;
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
@@ -15,6 +16,7 @@ import com.cretas.aims.dto.intent.IntentSemantics;
 import com.cretas.aims.dto.intent.IntentValidationFact;
 import com.cretas.aims.dto.intent.ValidationResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.conversation.ConversationSession;
 import com.cretas.aims.exception.LlmSchemaValidationException;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.ConversationService;
@@ -23,7 +25,14 @@ import com.cretas.aims.service.IntentSemanticsParser;
 import com.cretas.aims.service.LlmIntentFallbackClient;
 import com.cretas.aims.service.RuleEngineService;
 import com.cretas.aims.service.SemanticCacheService;
+import com.cretas.aims.service.ConversationMemoryService;
+import com.cretas.aims.service.ToolRouterService;
+import com.cretas.aims.service.ResultValidatorService;
 import com.cretas.aims.service.handler.IntentHandler;
+import com.cretas.aims.dto.ai.PreprocessedQuery;
+import com.cretas.aims.dto.conversation.ConversationContext;
+import com.cretas.aims.dto.conversation.ConversationMessage;
+import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
@@ -32,6 +41,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -45,8 +55,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -76,6 +88,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private final IntentKnowledgeBase knowledgeBase;
     private final AIAnalysisResultRepository analysisResultRepository;
 
+    // 新增：对话记忆服务
+    private final ConversationMemoryService conversationMemoryService;
+
+    // 新增：工具路由服务
+    private final ToolRouterService toolRouterService;
+
+    // 新增：结果验证服务
+    private final ResultValidatorService resultValidatorService;
+
     // 处理器映射表: category -> handler
     private final Map<String, IntentHandler> handlerMap = new HashMap<>();
 
@@ -87,6 +108,14 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     // SSE 超时时间 (2分钟)
     private static final long SSE_TIMEOUT_MS = 120_000L;
+
+    // 新增：多意图执行开关
+    @Value("${cretas.ai.multi-intent.enabled:true}")
+    private boolean multiIntentEnabled;
+
+    // 新增：结果验证开关
+    @Value("${cretas.ai.validation.enabled:true}")
+    private boolean validationEnabled;
 
     @Autowired
     public IntentExecutorServiceImpl(AIIntentService aiIntentService,
@@ -101,7 +130,10 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      DashScopeClient dashScopeClient,
                                      DashScopeConfig dashScopeConfig,
                                      IntentKnowledgeBase knowledgeBase,
-                                     AIAnalysisResultRepository analysisResultRepository) {
+                                     AIAnalysisResultRepository analysisResultRepository,
+                                     ConversationMemoryService conversationMemoryService,
+                                     ToolRouterService toolRouterService,
+                                     ResultValidatorService resultValidatorService) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
         this.semanticsParser = semanticsParser;
@@ -115,6 +147,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.dashScopeConfig = dashScopeConfig;
         this.knowledgeBase = knowledgeBase;
         this.analysisResultRepository = analysisResultRepository;
+        this.conversationMemoryService = conversationMemoryService;
+        this.toolRouterService = toolRouterService;
+        this.resultValidatorService = resultValidatorService;
     }
 
     @PostConstruct
@@ -161,9 +196,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 ConversationService.ConversationResponse conversationResp =
                         conversationService.continueConversation(request.getSessionId(), request.getUserInput());
 
-                if (conversationResp == null) {
-                    log.warn("会话不存在或已失效: sessionId={}", request.getSessionId());
-                    // 会话失效,继续正常的意图识别流程
+                // 会话不存在或已取消 → 继续正常的意图识别流程（支持新建会话场景）
+                if (conversationResp == null ||
+                    conversationResp.getStatus() == ConversationSession.SessionStatus.CANCELLED) {
+                    log.info("会话不存在或已取消，继续正常意图识别: sessionId={}", request.getSessionId());
+                    // 继续正常的意图识别流程
                 } else if (conversationResp.isCompleted() && conversationResp.getIntentCode() != null) {
                     // 会话成功完成,识别出意图
                     log.info("会话完成,识别到意图: sessionId={}, intentCode={}, confidence={}",
@@ -298,10 +335,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         // 1. 识别意图 (使用带 LLM Fallback 的方法，传递userId和userRole用于Tool Calling)
         // 包含 LLM Schema 验证异常处理 (R3: 校验失败不执行，反问用户)
+        // 传递 sessionId 以启用查询预处理（时间归一化、口语标准化、上下文注入）
         IntentMatchResult matchResult;
         try {
             matchResult = aiIntentService.recognizeIntentWithConfidence(
-                    request.getUserInput(), factoryId, 3, userId, userRole);
+                    request.getUserInput(), factoryId, 3, userId, userRole, request.getSessionId());
         } catch (LlmSchemaValidationException e) {
             // LLM Schema 校验失败 → 不执行，反问用户确认
             log.warn("LLM Schema 验证失败: type={}, message={}, userInput='{}'",
@@ -500,22 +538,28 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
         log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
 
-        // 4. 路由到执行器 - Tool 优先，Handler 回退
+        // 4. 路由到执行器 - Tool 优先，动态选择，Handler 回退
         String toolName = intent.getToolName();
         IntentExecuteResponse response;
 
-        // 4a. Tool 架构优先（新架构）
+        // 4a. Tool 架构优先（新架构）- 有绑定工具时直接使用
         if (toolName != null && !toolName.isEmpty()) {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
                 log.info("使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
-                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
             } else {
                 log.warn("Tool 未找到，回退到 Handler: toolName={}", toolName);
                 response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
             }
-        } else {
-            // 4b. Handler 架构回退（旧架构）
+        }
+        // 4b. 动态工具选择（模块D）- 无绑定工具时尝试动态选择
+        else if (toolRouterService.requiresDynamicSelection(matchResult)) {
+            log.info("触发动态工具选择: intentCode={}", intent.getIntentCode());
+            response = executeWithDynamicToolSelection(factoryId, request, intent, matchResult, userId, userRole);
+        }
+        // 4c. Handler 架构回退（旧架构）
+        else {
             response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
         }
 
@@ -526,6 +570,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
         // 7. 处理缓存：标记缓存命中和写入新结果
         processResponseCaching(factoryId, request, matchResult, response);
+
+        // 8. 更新对话记忆 (实体槽位 + 消息历史)
+        if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
+            updateConversationMemory(request.getSessionId(), request, response, matchResult, factoryId, userId);
+        }
 
         return response;
     }
@@ -565,7 +614,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private IntentExecuteResponse executeWithTool(ToolExecutor tool, String factoryId,
                                                    IntentExecuteRequest request,
                                                    AIIntentConfig intent,
-                                                   Long userId, String userRole) {
+                                                   Long userId, String userRole,
+                                                   IntentMatchResult matchResult) {
         try {
             // 1. 权限检查
             if (tool.requiresPermission() && !tool.hasPermission(userRole)) {
@@ -586,9 +636,59 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             if (request.getContext() != null) {
                 params.putAll(request.getContext());
             }
-            // 添加 userInput 作为参数
-            params.put("userInput", request.getUserInput());
+            // 添加 userInput 作为参数（优先使用预处理后的查询）
+            String userInputToUse = request.getUserInput();
+            if (matchResult != null && matchResult.getPreprocessedQuery() != null) {
+                PreprocessedQuery pq = matchResult.getPreprocessedQuery();
+                if (pq.getFinalQuery() != null && !pq.getFinalQuery().isEmpty()) {
+                    userInputToUse = pq.getFinalQuery();
+                    log.info("使用预处理后的查询: '{}' -> '{}'", request.getUserInput(), userInputToUse);
+                }
+            }
+            params.put("userInput", userInputToUse);
             params.put("intentCode", intent.getIntentCode());
+
+            // 2.5. 从预处理结果中提取解析的引用（如果有）
+            if (matchResult != null && matchResult.getPreprocessedQuery() != null) {
+                PreprocessedQuery pq = matchResult.getPreprocessedQuery();
+                Map<String, PreprocessedQuery.ResolvedReference> refs = pq.getResolvedReferences();
+                if (refs != null && !refs.isEmpty()) {
+                    for (Map.Entry<String, PreprocessedQuery.ResolvedReference> entry : refs.entrySet()) {
+                        PreprocessedQuery.ResolvedReference ref = entry.getValue();
+                        if (ref != null && ref.getEntityType() != null) {
+                            switch (ref.getEntityType().toUpperCase()) {
+                                case "BATCH":
+                                    // 工具参数名为 batchId，使用实体ID（UUID或数字ID）
+                                    params.put("batchId", ref.getEntityId());
+                                    // 同时传递 batchNumber 以备其他用途
+                                    if (ref.getEntityName() != null) {
+                                        params.put("batchNumber", ref.getEntityName());
+                                    }
+                                    log.info("从上下文解析批次: id={}, number={}", ref.getEntityId(), ref.getEntityName());
+                                    break;
+                                case "SUPPLIER":
+                                    params.put("supplierId", ref.getEntityId());
+                                    log.info("从上下文解析供应商: {}", ref.getEntityId());
+                                    break;
+                                case "PRODUCT":
+                                    params.put("productId", ref.getEntityId());
+                                    log.info("从上下文解析产品: {}", ref.getEntityId());
+                                    break;
+                            }
+                        }
+                    }
+                }
+
+                // 2.6. 从预处理结果中提取时间范围（如果有）
+                if (pq.hasTimeRange()) {
+                    TimeNormalizationRules.TimeRange timeRange = pq.getPrimaryTimeRange();
+                    if (timeRange != null && timeRange.isValid()) {
+                        params.put("startDate", timeRange.getStart().toLocalDate().toString());
+                        params.put("endDate", timeRange.getEnd().toLocalDate().toString());
+                        log.info("从预处理结果提取时间范围: {} ~ {}", timeRange.getStart(), timeRange.getEnd());
+                    }
+                }
+            }
 
             String argumentsJson = objectMapper.writeValueAsString(params);
             ToolCall toolCall = ToolCall.of(
@@ -728,6 +828,180 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         return executeWithHandler(handler, factoryId, request, intent, userId, userRole);
     }
 
+    /**
+     * 动态工具选择执行（模块D）
+     *
+     * 当意图没有绑定工具，且符合动态选择条件时使用此方法：
+     * 1. 向量检索候选工具 (Top K)
+     * 2. LLM 精选最合适的工具组合
+     * 3. 执行工具链（支持并行/串行）
+     *
+     * @param factoryId   工厂ID
+     * @param request     原始请求
+     * @param intent      意图配置
+     * @param matchResult 意图匹配结果
+     * @param userId      用户ID
+     * @param userRole    用户角色
+     * @return 执行响应
+     */
+    private IntentExecuteResponse executeWithDynamicToolSelection(String factoryId,
+                                                                    IntentExecuteRequest request,
+                                                                    AIIntentConfig intent,
+                                                                    IntentMatchResult matchResult,
+                                                                    Long userId, String userRole) {
+        try {
+            // 1. 获取用户查询文本（优先使用预处理后的查询）
+            String query = request.getUserInput();
+            if (matchResult != null && matchResult.getPreprocessedQuery() != null) {
+                PreprocessedQuery pq = matchResult.getPreprocessedQuery();
+                if (pq.getFinalQuery() != null && !pq.getFinalQuery().isEmpty()) {
+                    query = pq.getFinalQuery();
+                }
+            }
+
+            // 2. 向量检索候选工具
+            List<ToolRouterService.ToolCandidate> candidates = toolRouterService.retrieveCandidateTools(query, 10);
+            if (candidates.isEmpty()) {
+                log.warn("动态工具选择: 未找到候选工具, query={}", query);
+                // 回退到 Handler
+                return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            }
+
+            log.info("动态工具选择: 找到 {} 个候选工具", candidates.size());
+            for (ToolRouterService.ToolCandidate c : candidates) {
+                log.debug("  - {}: {} (相似度: {})", c.getToolName(), c.getToolDescription(),
+                        String.format("%.2f", c.getSimilarity()));
+            }
+
+            // 3. LLM 精选工具
+            ToolRouterService.SelectedTools selectedTools = toolRouterService.selectTools(query, matchResult, candidates);
+            if (selectedTools.getTools() == null || selectedTools.getTools().isEmpty()) {
+                log.warn("动态工具选择: LLM 未选中任何工具");
+                return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+            }
+
+            log.info("动态工具选择: LLM 选中 {} 个工具, 执行顺序={}",
+                    selectedTools.getTools().size(), selectedTools.getExecutionOrder());
+            for (ToolRouterService.SelectedTools.SelectedTool t : selectedTools.getTools()) {
+                log.info("  - {}: {}", t.getToolName(), t.getReason());
+            }
+
+            // 4. 构建执行上下文
+            Map<String, Object> context = new HashMap<>();
+            context.put("factoryId", factoryId);
+            context.put("userId", userId);
+            context.put("userRole", userRole);
+            context.put("userInput", query);
+            context.put("intentCode", intent.getIntentCode());
+
+            // 添加请求上下文
+            if (request.getContext() != null) {
+                context.putAll(request.getContext());
+            }
+
+            // 添加预处理结果中的解析引用
+            if (matchResult != null && matchResult.getPreprocessedQuery() != null) {
+                PreprocessedQuery pq = matchResult.getPreprocessedQuery();
+                Map<String, PreprocessedQuery.ResolvedReference> refs = pq.getResolvedReferences();
+                if (refs != null) {
+                    for (Map.Entry<String, PreprocessedQuery.ResolvedReference> entry : refs.entrySet()) {
+                        PreprocessedQuery.ResolvedReference ref = entry.getValue();
+                        if (ref != null && ref.getEntityType() != null) {
+                            String key = ref.getEntityType().toLowerCase() + "Id";
+                            context.put(key, ref.getEntityId());
+                            if (ref.getEntityName() != null) {
+                                context.put(ref.getEntityType().toLowerCase() + "Name", ref.getEntityName());
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5. 执行工具链
+            Object result = toolRouterService.executeToolChain(selectedTools, context);
+
+            // 6. 转换结果为响应
+            return convertDynamicToolResultToResponse(result, intent, selectedTools);
+
+        } catch (Exception e) {
+            log.error("动态工具选择执行失败: {}", e.getMessage(), e);
+            // 回退到 Handler
+            return executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
+        }
+    }
+
+    /**
+     * 将动态工具执行结果转换为标准响应
+     */
+    @SuppressWarnings("unchecked")
+    private IntentExecuteResponse convertDynamicToolResultToResponse(Object result,
+                                                                       AIIntentConfig intent,
+                                                                       ToolRouterService.SelectedTools selectedTools) {
+        try {
+            Map<String, Object> resultMap;
+
+            if (result instanceof Map) {
+                resultMap = (Map<String, Object>) result;
+            } else if (result instanceof String) {
+                resultMap = objectMapper.readValue((String) result, Map.class);
+            } else {
+                resultMap = objectMapper.convertValue(result, Map.class);
+            }
+
+            // 检查是否有错误
+            boolean hasError = false;
+            StringBuilder errorMessages = new StringBuilder();
+            Map<String, Object> successData = new HashMap<>();
+
+            for (Map.Entry<String, Object> entry : resultMap.entrySet()) {
+                String toolName = entry.getKey();
+                Object toolResult = entry.getValue();
+
+                if (toolResult instanceof Map) {
+                    Map<String, Object> toolResultMap = (Map<String, Object>) toolResult;
+                    if (toolResultMap.containsKey("error")) {
+                        hasError = true;
+                        errorMessages.append(toolName).append(": ").append(toolResultMap.get("error")).append("; ");
+                    } else {
+                        successData.put(toolName, toolResult);
+                    }
+                } else {
+                    successData.put(toolName, toolResult);
+                }
+            }
+
+            String status = hasError ? "PARTIAL_SUCCESS" : "SUCCESS";
+            String message = hasError
+                    ? "部分工具执行失败: " + errorMessages.toString()
+                    : selectedTools.getToolChainDescription();
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status(status)
+                    .message(message)
+                    .resultData(successData.size() == 1
+                            ? successData.values().iterator().next()
+                            : successData)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("转换动态工具结果失败: {}", e.getMessage());
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .intentCode(intent.getIntentCode())
+                    .intentName(intent.getIntentName())
+                    .intentCategory(intent.getIntentCategory())
+                    .status("FAILED")
+                    .message("结果解析失败: " + e.getMessage())
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
     @Override
     public IntentExecuteResponse preview(String factoryId, IntentExecuteRequest request,
                                          Long userId, String userRole) {
@@ -858,7 +1132,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
             IntentMatchResult matchResult;
             try {
-                matchResult = aiIntentService.recognizeIntentWithConfidence(userInput, factoryId, 3, userId, userRole);
+                matchResult = aiIntentService.recognizeIntentWithConfidence(
+                        userInput, factoryId, 3, userId, userRole, request.getSessionId());
             } catch (LlmSchemaValidationException e) {
                 // 验证失败
                 IntentExecuteResponse validationFailureResponse = buildValidationFailureResponse(
@@ -988,7 +1263,7 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
                 log.info("[SSE] 使用 Tool 执行: intentCode={}, toolName={}", intent.getIntentCode(), toolName);
-                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, matchResult);
             } else {
                 log.warn("[SSE] Tool 未找到，回退到 Handler: toolName={}", toolName);
                 response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
@@ -1336,7 +1611,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             Optional<ToolExecutor> toolOpt = toolRegistry.getExecutor(toolName);
             if (toolOpt.isPresent()) {
                 log.info("[显式执行] 使用 Tool 执行: intentCode={}, toolName={}", intentCode, toolName);
-                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole);
+                // 显式意图执行没有 matchResult（无需预处理参数传递）
+                response = executeWithTool(toolOpt.get(), factoryId, request, intent, userId, userRole, null);
             } else {
                 log.warn("[显式执行] Tool 未找到，回退到 Handler: toolName={}", toolName);
                 response = executeWithHandlerFallback(factoryId, request, intent, userId, userRole);
@@ -2151,5 +2427,776 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             log.error("❌ 获取预计算分析失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
             return null;
         }
+    }
+
+    // ==================== 多意图执行方法 ====================
+
+    /**
+     * 多意图执行
+     *
+     * @param request       执行请求
+     * @param intentResult  意图匹配结果
+     * @param context       对话上下文
+     * @param factoryId     工厂ID
+     * @param userId        用户ID
+     * @param userRole      用户角色
+     * @return 合并后的执行响应
+     */
+    private IntentExecuteResponse executeMultiIntent(IntentExecuteRequest request,
+                                                      IntentMatchResult intentResult,
+                                                      ConversationContext context,
+                                                      String factoryId,
+                                                      Long userId,
+                                                      String userRole) {
+        List<IntentMatchResult.IntentMatch> intents = intentResult.getAdditionalIntents();
+        if (intents == null || intents.isEmpty()) {
+            // 回退到单意图执行
+            return executeSingleIntent(request, intentResult, factoryId, userId, userRole);
+        }
+
+        // 检查是否需要用户确认
+        MultiIntentResult.ExecutionStrategy strategy = intentResult.getExecutionStrategy();
+        if (strategy == MultiIntentResult.ExecutionStrategy.USER_CONFIRM
+            || intentResult.getConfidence() < 0.7) {
+            return buildMultiIntentConfirmationResponse(intentResult);
+        }
+
+        // 并行或串行执行
+        List<IntentExecuteResponse> results = new java.util.ArrayList<>();
+
+        if (strategy == MultiIntentResult.ExecutionStrategy.PARALLEL) {
+            // 并行执行
+            results = intents.parallelStream()
+                .map(intent -> executeSingleIntentByCode(request, intent.getIntentCode(),
+                        intent.getExtractedParams(), factoryId, userId, userRole))
+                .collect(java.util.stream.Collectors.toList());
+        } else {
+            // 串行执行
+            for (IntentMatchResult.IntentMatch intent : intents) {
+                IntentExecuteResponse result = executeSingleIntentByCode(
+                    request, intent.getIntentCode(), intent.getExtractedParams(),
+                    factoryId, userId, userRole);
+                results.add(result);
+            }
+        }
+
+        return mergeMultiIntentResults(results, intentResult);
+    }
+
+    /**
+     * 单意图执行（从多意图中提取）
+     */
+    private IntentExecuteResponse executeSingleIntent(IntentExecuteRequest request,
+                                                       IntentMatchResult intentResult,
+                                                       String factoryId,
+                                                       Long userId,
+                                                       String userRole) {
+        // 使用现有的执行逻辑
+        if (intentResult.getBestMatch() != null) {
+            request.setIntentCode(intentResult.getBestMatch().getIntentCode());
+            return executeWithExplicitIntent(factoryId, request, userId, userRole);
+        }
+        return IntentExecuteResponse.builder()
+                .status("FAILED")
+                .message("无法识别意图")
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 根据意图代码执行单个意图
+     */
+    private IntentExecuteResponse executeSingleIntentByCode(IntentExecuteRequest request,
+                                                             String intentCode,
+                                                             Map<String, Object> extractedParams,
+                                                             String factoryId,
+                                                             Long userId,
+                                                             String userRole) {
+        IntentExecuteRequest subRequest = IntentExecuteRequest.builder()
+                .userInput(request.getUserInput())
+                .intentCode(intentCode)
+                .context(extractedParams != null ? extractedParams : request.getContext())
+                .sessionId(request.getSessionId())
+                .previewOnly(request.getPreviewOnly())
+                .forceExecute(true)
+                .build();
+
+        return executeWithExplicitIntent(factoryId, subRequest, userId, userRole);
+    }
+
+    /**
+     * 构建多意图确认响应
+     */
+    private IntentExecuteResponse buildMultiIntentConfirmationResponse(IntentMatchResult intentResult) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new java.util.ArrayList<>();
+
+        // 主意图
+        if (intentResult.getBestMatch() != null) {
+            actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                    .actionCode(intentResult.getBestMatch().getIntentCode())
+                    .actionName(intentResult.getBestMatch().getIntentName())
+                    .description("执行: " + intentResult.getBestMatch().getDescription())
+                    .build());
+        }
+
+        // 附加意图
+        if (intentResult.getAdditionalIntents() != null) {
+            for (IntentMatchResult.IntentMatch intent : intentResult.getAdditionalIntents()) {
+                actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                        .actionCode(intent.getIntentCode())
+                        .actionName(intent.getIntentName())
+                        .description(intent.getReasoning())
+                        .build());
+            }
+        }
+
+        return IntentExecuteResponse.builder()
+                .status("NEED_CONFIRMATION")
+                .message("检测到多个意图，请确认要执行的操作")
+                .suggestedActions(actions)
+                .metadata(Map.of(
+                        "multiIntent", true,
+                        "intentCount", actions.size(),
+                        "confidence", intentResult.getConfidence()
+                ))
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 合并多意图执行结果
+     */
+    private IntentExecuteResponse mergeMultiIntentResults(List<IntentExecuteResponse> results,
+                                                           IntentMatchResult intentResult) {
+        // 检查是否全部成功
+        boolean allSuccess = results.stream()
+                .allMatch(r -> "COMPLETED".equals(r.getStatus()) || "SUCCESS".equals(r.getStatus()));
+
+        // 合并数据
+        Map<String, Object> mergedData = new java.util.LinkedHashMap<>();
+        List<IntentMatchResult.IntentMatch> intents = intentResult.getAdditionalIntents();
+
+        for (int i = 0; i < results.size() && i < (intents != null ? intents.size() : 0); i++) {
+            IntentExecuteResponse result = results.get(i);
+            String intentCode = intents.get(i).getIntentCode();
+            mergedData.put(intentCode, result.getResultData());
+        }
+
+        // 生成摘要消息
+        String summary = results.stream()
+                .map(IntentExecuteResponse::getMessage)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.joining("；"));
+
+        return IntentExecuteResponse.builder()
+                .status(allSuccess ? "COMPLETED" : "PARTIAL_SUCCESS")
+                .message(summary.isEmpty() ? "多意图执行完成" : summary)
+                .resultData(mergedData)
+                .multiIntentResult(true)
+                .metadata(Map.of(
+                        "multiIntent", true,
+                        "intentCount", results.size()
+                ))
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    // ==================== 对话记忆更新方法 ====================
+
+    /**
+     * 更新对话记忆
+     */
+    private void updateConversationMemory(String sessionId,
+                                          IntentExecuteRequest request,
+                                          IntentExecuteResponse response,
+                                          IntentMatchResult intentResult,
+                                          String factoryId,
+                                          Long userId) {
+        log.info("更新对话记忆: sessionId={}, userInput={}, status={}",
+                sessionId,
+                request.getUserInput() != null && request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                response.getStatus());
+        try {
+            // 添加用户消息
+            conversationMemoryService.addMessage(sessionId,
+                ConversationMessage.user(request.getUserInput()));
+
+            // 添加助手响应
+            String assistantMessage = response.getMessage() != null ?
+                response.getMessage() : "执行完成";
+            conversationMemoryService.addMessage(sessionId,
+                ConversationMessage.assistant(assistantMessage));
+
+            // 从响应中提取实体并更新槽位
+            extractAndUpdateEntitySlots(sessionId, response, intentResult);
+
+            // 更新最后意图
+            if (intentResult != null && intentResult.getBestMatch() != null) {
+                conversationMemoryService.updateLastIntent(sessionId,
+                        intentResult.getBestMatch().getIntentCode());
+            }
+
+        } catch (Exception e) {
+            log.warn("Failed to update conversation memory: sessionId={}, error={}",
+                    sessionId, e.getMessage());
+        }
+    }
+
+    /**
+     * 从响应中提取实体并更新槽位
+     */
+    private void extractAndUpdateEntitySlots(String sessionId,
+                                              IntentExecuteResponse response,
+                                              IntentMatchResult intentResult) {
+        // 1. 从受影响实体中提取槽位信息 (如果工具填充了)
+        if (response.getAffectedEntities() != null) {
+            for (IntentExecuteResponse.AffectedEntity entity : response.getAffectedEntities()) {
+                try {
+                    com.cretas.aims.dto.conversation.EntitySlot.SlotType slotType =
+                            mapEntityTypeToSlotType(entity.getEntityType());
+                    if (slotType != null) {
+                        com.cretas.aims.dto.conversation.EntitySlot slot =
+                                com.cretas.aims.dto.conversation.EntitySlot.builder()
+                                        .type(slotType)
+                                        .id(entity.getEntityId())
+                                        .name(entity.getEntityName())
+                                        .build();
+                        conversationMemoryService.updateEntitySlot(sessionId, slotType, slot);
+                        log.debug("Updated entity slot from affectedEntities: type={}, id={}", slotType, entity.getEntityId());
+                    }
+                } catch (Exception e) {
+                    log.debug("Failed to update entity slot: {}", e.getMessage());
+                }
+            }
+        }
+
+        // 2. 从响应数据中提取实体 (兜底逻辑)
+        extractEntitiesFromResponseData(sessionId, response, intentResult);
+    }
+
+    /**
+     * 从响应数据中提取实体并更新槽位
+     */
+    @SuppressWarnings("unchecked")
+    private void extractEntitiesFromResponseData(String sessionId,
+                                                  IntentExecuteResponse response,
+                                                  IntentMatchResult intentResult) {
+        Object data = response.getResultData();
+        if (data == null) {
+            log.debug("No resultData to extract entities from: sessionId={}", sessionId);
+            return;
+        }
+        log.info("从响应数据提取实体: sessionId={}, dataType={}", sessionId, data.getClass().getSimpleName());
+
+        try {
+            // 处理分页响应或列表响应
+            List<Map<String, Object>> items = null;
+
+            if (data instanceof Map) {
+                Map<String, Object> dataMap = (Map<String, Object>) data;
+                // 分页响应: { content: [...], totalElements: ... }
+                if (dataMap.containsKey("content") && dataMap.get("content") instanceof List) {
+                    items = (List<Map<String, Object>>) dataMap.get("content");
+                }
+            } else if (data instanceof List) {
+                items = (List<Map<String, Object>>) data;
+            }
+
+            if (items == null || items.isEmpty()) {
+                log.info("No items found in response data");
+                return;
+            }
+
+            // 只取第一个结果作为当前上下文的实体
+            Object firstItemObj = items.get(0);
+            if (firstItemObj == null) {
+                log.info("First item is null");
+                return;
+            }
+
+            log.info("First item type: {}", firstItemObj.getClass().getName());
+            Map<String, Object> firstItem;
+            if (firstItemObj instanceof Map) {
+                firstItem = (Map<String, Object>) firstItemObj;
+            } else {
+                // Convert DTO to Map using Jackson
+                try {
+                    com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                    firstItem = mapper.convertValue(firstItemObj, new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+                } catch (Exception e) {
+                    log.warn("Failed to convert first item to Map: {}", e.getMessage());
+                    return;
+                }
+            }
+
+            // 提取批次信息
+            extractBatchSlot(sessionId, firstItem);
+
+            // 提取供应商信息
+            extractSupplierSlot(sessionId, firstItem);
+
+            // 提取产品信息
+            extractProductSlot(sessionId, firstItem);
+
+        } catch (Exception e) {
+            log.debug("Failed to extract entities from response data: {}", e.getMessage());
+        }
+    }
+
+    private void extractBatchSlot(String sessionId, Map<String, Object> item) {
+        log.info("提取批次槽位: sessionId={}, itemKeys={}", sessionId, item.keySet());
+        // 尝试多种字段名
+        String batchId = getStringValue(item, "id", "batchId", "batch_id");
+        String batchNumber = getStringValue(item, "batchNumber", "batch_number", "batchCode");
+        log.info("提取结果: batchId={}, batchNumber={}", batchId, batchNumber);
+
+        if (batchNumber != null || batchId != null) {
+            com.cretas.aims.dto.conversation.EntitySlot slot =
+                    com.cretas.aims.dto.conversation.EntitySlot.builder()
+                            .type(com.cretas.aims.dto.conversation.EntitySlot.SlotType.BATCH)
+                            .id(batchId != null ? batchId : batchNumber)
+                            .name(batchNumber)
+                            .build();
+            conversationMemoryService.updateEntitySlot(sessionId,
+                    com.cretas.aims.dto.conversation.EntitySlot.SlotType.BATCH, slot);
+            log.debug("Extracted batch slot from response data: id={}, name={}", slot.getId(), slot.getName());
+        }
+    }
+
+    private void extractSupplierSlot(String sessionId, Map<String, Object> item) {
+        String supplierId = getStringValue(item, "supplierId", "supplier_id");
+        String supplierName = getStringValue(item, "supplierName", "supplier_name", "supplier");
+
+        if (supplierId != null || supplierName != null) {
+            com.cretas.aims.dto.conversation.EntitySlot slot =
+                    com.cretas.aims.dto.conversation.EntitySlot.builder()
+                            .type(com.cretas.aims.dto.conversation.EntitySlot.SlotType.SUPPLIER)
+                            .id(supplierId)
+                            .name(supplierName)
+                            .build();
+            conversationMemoryService.updateEntitySlot(sessionId,
+                    com.cretas.aims.dto.conversation.EntitySlot.SlotType.SUPPLIER, slot);
+            log.debug("Extracted supplier slot from response data: id={}, name={}", slot.getId(), slot.getName());
+        }
+    }
+
+    private void extractProductSlot(String sessionId, Map<String, Object> item) {
+        String productId = getStringValue(item, "productTypeId", "productId", "product_id", "materialTypeId");
+        String productName = getStringValue(item, "productName", "product_name", "materialTypeName", "productTypeName");
+
+        if (productId != null || productName != null) {
+            com.cretas.aims.dto.conversation.EntitySlot slot =
+                    com.cretas.aims.dto.conversation.EntitySlot.builder()
+                            .type(com.cretas.aims.dto.conversation.EntitySlot.SlotType.PRODUCT)
+                            .id(productId)
+                            .name(productName)
+                            .build();
+            conversationMemoryService.updateEntitySlot(sessionId,
+                    com.cretas.aims.dto.conversation.EntitySlot.SlotType.PRODUCT, slot);
+            log.debug("Extracted product slot from response data: id={}, name={}", slot.getId(), slot.getName());
+        }
+    }
+
+    private String getStringValue(Map<String, Object> map, String... keys) {
+        for (String key : keys) {
+            Object value = map.get(key);
+            if (value != null) {
+                return value.toString();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 实体类型映射到槽位类型
+     */
+    private com.cretas.aims.dto.conversation.EntitySlot.SlotType mapEntityTypeToSlotType(String entityType) {
+        if (entityType == null) return null;
+
+        switch (entityType.toUpperCase()) {
+            case "BATCH":
+            case "MATERIAL_BATCH":
+                return com.cretas.aims.dto.conversation.EntitySlot.SlotType.BATCH;
+            case "SUPPLIER":
+                return com.cretas.aims.dto.conversation.EntitySlot.SlotType.SUPPLIER;
+            case "CUSTOMER":
+                return com.cretas.aims.dto.conversation.EntitySlot.SlotType.CUSTOMER;
+            case "PRODUCT":
+            case "PRODUCT_TYPE":
+                return com.cretas.aims.dto.conversation.EntitySlot.SlotType.PRODUCT;
+            case "WAREHOUSE":
+            case "LOCATION":
+                return com.cretas.aims.dto.conversation.EntitySlot.SlotType.WAREHOUSE;
+            default:
+                return null;
+        }
+    }
+
+    // ==================== 验证失败处理方法 ====================
+
+    /**
+     * 处理验证失败
+     */
+    private IntentExecuteResponse handleValidationFailure(IntentExecuteResponse originalResponse,
+                                                           ResultValidatorService.ValidationResult validationResult,
+                                                           IntentExecuteRequest request,
+                                                           String factoryId,
+                                                           Long userId,
+                                                           String userRole) {
+        log.warn("Result validation failed: issues={}", validationResult.getIssues());
+
+        // 如果建议重试，尝试使用不同策略
+        if (validationResult.isShouldRetry()) {
+            log.info("Attempting retry with different strategy");
+            // 可以在这里实现重试逻辑
+        }
+
+        // 返回带有验证信息的响应
+        Map<String, Object> metadata = originalResponse.getMetadata() != null ?
+                new HashMap<>(originalResponse.getMetadata()) : new HashMap<>();
+        metadata.put("validationFailed", true);
+        metadata.put("validationIssues", validationResult.getIssues());
+        metadata.put("validationSuggestion", validationResult.getSuggestion());
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(originalResponse.getIntentRecognized())
+                .intentCode(originalResponse.getIntentCode())
+                .intentName(originalResponse.getIntentName())
+                .status("VALIDATION_WARNING")
+                .message(originalResponse.getMessage() + " (验证警告: " + validationResult.getSuggestion() + ")")
+                .resultData(originalResponse.getResultData())
+                .metadata(metadata)
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    // ==================== 多意图执行公共方法 ====================
+
+    /**
+     * 执行多意图请求（公共方法）
+     *
+     * 该方法使用 AIIntentService.recognizeMultiIntent() 识别复合意图，
+     * 并根据执行策略（PARALLEL/SEQUENTIAL/USER_CONFIRM）执行所有匹配的意图。
+     *
+     * 执行策略说明：
+     * - PARALLEL: 使用 CompletableFuture 并行执行所有意图
+     * - SEQUENTIAL: 按执行顺序依次执行意图
+     * - USER_CONFIRM: 不执行，返回需要用户确认的响应
+     *
+     * @param factoryId 工厂ID
+     * @param request 执行请求（包含 userInput）
+     * @param userId 当前用户ID
+     * @param userRole 当前用户角色
+     * @return 合并后的执行响应
+     */
+    public IntentExecuteResponse executeMultiIntent(String factoryId, IntentExecuteRequest request,
+                                                     Long userId, String userRole) {
+        log.info("执行多意图识别: factoryId={}, userInput='{}'",
+                factoryId,
+                request.getUserInput() != null && request.getUserInput().length() > 50 ?
+                        request.getUserInput().substring(0, 50) + "..." : request.getUserInput());
+
+        // 检查多意图功能是否启用
+        if (!multiIntentEnabled) {
+            log.info("多意图功能已禁用，回退到单意图执行");
+            return execute(factoryId, request, userId, userRole);
+        }
+
+        String userInput = request.getUserInput();
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("FAILED")
+                    .message("用户输入不能为空")
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 1. 调用多意图识别
+        MultiIntentResult multiResult;
+        try {
+            multiResult = aiIntentService.recognizeMultiIntent(userInput, factoryId);
+        } catch (Exception e) {
+            log.error("多意图识别失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            // 回退到单意图执行
+            return execute(factoryId, request, userId, userRole);
+        }
+
+        // 2. 如果不是多意图或识别失败，回退到单意图执行
+        if (multiResult == null || !multiResult.isMultiIntent()
+                || multiResult.getIntents() == null || multiResult.getIntents().isEmpty()) {
+            log.info("非多意图请求，回退到单意图执行");
+            return execute(factoryId, request, userId, userRole);
+        }
+
+        log.info("识别到多意图: intentCount={}, strategy={}, confidence={}",
+                multiResult.getIntents().size(),
+                multiResult.getExecutionStrategy(),
+                multiResult.getOverallConfidence());
+
+        // 3. 检查是否需要用户确认
+        if (multiResult.requiresUserConfirmation()) {
+            log.info("多意图需要用户确认: strategy={}, confidence={}",
+                    multiResult.getExecutionStrategy(), multiResult.getOverallConfidence());
+            return buildMultiIntentUserConfirmationResponse(multiResult, factoryId);
+        }
+
+        // 4. 根据执行策略执行
+        MultiIntentResult.ExecutionStrategy strategy = multiResult.getExecutionStrategy();
+        List<IntentExecuteResponse> results;
+
+        try {
+            if (strategy == MultiIntentResult.ExecutionStrategy.PARALLEL) {
+                // 并行执行
+                results = executeMultiIntentParallel(multiResult, request, factoryId, userId, userRole);
+            } else {
+                // 串行执行（SEQUENTIAL 或默认）
+                results = executeMultiIntentSequential(multiResult, request, factoryId, userId, userRole);
+            }
+        } catch (Exception e) {
+            log.error("多意图执行失败: strategy={}, error={}", strategy, e.getMessage(), e);
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .status("FAILED")
+                    .message("多意图执行失败: " + e.getMessage())
+                    .multiIntentResult(true)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 5. 合并执行结果
+        return mergeMultiIntentExecutionResults(results, multiResult);
+    }
+
+    /**
+     * 并行执行多个意图
+     */
+    private List<IntentExecuteResponse> executeMultiIntentParallel(MultiIntentResult multiResult,
+                                                                     IntentExecuteRequest originalRequest,
+                                                                     String factoryId,
+                                                                     Long userId,
+                                                                     String userRole) {
+        log.info("并行执行 {} 个意图", multiResult.getIntents().size());
+
+        List<CompletableFuture<IntentExecuteResponse>> futures = multiResult.getIntents().stream()
+                .map(intent -> CompletableFuture.supplyAsync(() ->
+                        executeSingleIntentFromMultiResult(intent, originalRequest, factoryId, userId, userRole),
+                        sseExecutor
+                ))
+                .collect(Collectors.toList());
+
+        // 等待所有任务完成
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        // 收集结果
+        return futures.stream()
+                .map(CompletableFuture::join)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 串行执行多个意图（按 executionOrder 排序）
+     */
+    private List<IntentExecuteResponse> executeMultiIntentSequential(MultiIntentResult multiResult,
+                                                                       IntentExecuteRequest originalRequest,
+                                                                       String factoryId,
+                                                                       Long userId,
+                                                                       String userRole) {
+        log.info("串行执行 {} 个意图", multiResult.getIntents().size());
+
+        // 按执行顺序排序
+        List<MultiIntentResult.SingleIntentMatch> sortedIntents = multiResult.getIntents().stream()
+                .sorted((a, b) -> Integer.compare(a.getExecutionOrder(), b.getExecutionOrder()))
+                .collect(Collectors.toList());
+
+        List<IntentExecuteResponse> results = new ArrayList<>();
+        for (MultiIntentResult.SingleIntentMatch intent : sortedIntents) {
+            IntentExecuteResponse result = executeSingleIntentFromMultiResult(
+                    intent, originalRequest, factoryId, userId, userRole);
+            results.add(result);
+
+            // 如果某个意图执行失败，可以选择是否继续
+            if ("FAILED".equals(result.getStatus())) {
+                log.warn("意图执行失败，继续执行下一个: intentCode={}", intent.getIntentCode());
+            }
+        }
+        return results;
+    }
+
+    /**
+     * 从多意图结果中执行单个意图
+     */
+    private IntentExecuteResponse executeSingleIntentFromMultiResult(MultiIntentResult.SingleIntentMatch intent,
+                                                                       IntentExecuteRequest originalRequest,
+                                                                       String factoryId,
+                                                                       Long userId,
+                                                                       String userRole) {
+        log.debug("执行单个意图: intentCode={}, order={}", intent.getIntentCode(), intent.getExecutionOrder());
+
+        // 构建子请求
+        Map<String, Object> context = new HashMap<>();
+        if (originalRequest.getContext() != null) {
+            context.putAll(originalRequest.getContext());
+        }
+        if (intent.getExtractedParams() != null) {
+            context.putAll(intent.getExtractedParams());
+        }
+
+        IntentExecuteRequest subRequest = IntentExecuteRequest.builder()
+                .userInput(originalRequest.getUserInput())
+                .intentCode(intent.getIntentCode())
+                .context(context)
+                .sessionId(originalRequest.getSessionId())
+                .previewOnly(originalRequest.getPreviewOnly())
+                .forceExecute(true)
+                .build();
+
+        return executeWithExplicitIntent(factoryId, subRequest, userId, userRole);
+    }
+
+    /**
+     * 构建多意图用户确认响应
+     */
+    private IntentExecuteResponse buildMultiIntentUserConfirmationResponse(MultiIntentResult multiResult,
+                                                                             String factoryId) {
+        List<IntentExecuteResponse.SuggestedAction> actions = new ArrayList<>();
+
+        // 为每个意图创建确认选项
+        for (MultiIntentResult.SingleIntentMatch intent : multiResult.getIntents()) {
+            Map<String, Object> params = new HashMap<>();
+            params.put("intentCode", intent.getIntentCode());
+            params.put("forceExecute", true);
+            if (intent.getExtractedParams() != null) {
+                params.putAll(intent.getExtractedParams());
+            }
+
+            actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                    .actionCode(intent.getIntentCode())
+                    .actionName(intent.getIntentName())
+                    .description(String.format("置信度: %.0f%% - %s",
+                            intent.getConfidence() * 100,
+                            intent.getReasoning() != null ? intent.getReasoning() : ""))
+                    .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute")
+                    .parameters(params)
+                    .build());
+        }
+
+        // 添加"全部执行"选项
+        Map<String, Object> allParams = new HashMap<>();
+        allParams.put("executeAll", true);
+        allParams.put("intents", multiResult.getIntents().stream()
+                .map(MultiIntentResult.SingleIntentMatch::getIntentCode)
+                .collect(Collectors.toList()));
+
+        actions.add(IntentExecuteResponse.SuggestedAction.builder()
+                .actionCode("EXECUTE_ALL")
+                .actionName("全部执行")
+                .description("依次执行所有识别到的意图")
+                .endpoint("/api/mobile/" + factoryId + "/ai-intents/execute-multi")
+                .parameters(allParams)
+                .build());
+
+        String message = multiResult.getReasoning() != null ?
+                multiResult.getReasoning() :
+                String.format("检测到 %d 个意图，请确认要执行的操作", multiResult.getIntents().size());
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .status("NEED_CONFIRMATION")
+                .message(message)
+                .suggestedActions(actions)
+                .multiIntentResult(true)
+                .metadata(Map.of(
+                        "multiIntent", true,
+                        "intentCount", multiResult.getIntents().size(),
+                        "executionStrategy", multiResult.getExecutionStrategy().name(),
+                        "overallConfidence", multiResult.getOverallConfidence(),
+                        "requiresConfirmation", true
+                ))
+                .executedAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * 合并多意图执行结果
+     */
+    private IntentExecuteResponse mergeMultiIntentExecutionResults(List<IntentExecuteResponse> results,
+                                                                     MultiIntentResult multiResult) {
+        if (results == null || results.isEmpty()) {
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(true)
+                    .status("FAILED")
+                    .message("没有意图被执行")
+                    .multiIntentResult(true)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+
+        // 统计执行结果
+        long successCount = results.stream()
+                .filter(r -> "SUCCESS".equals(r.getStatus()) || "COMPLETED".equals(r.getStatus()))
+                .count();
+        long failedCount = results.stream()
+                .filter(r -> "FAILED".equals(r.getStatus()))
+                .count();
+
+        // 合并执行数据
+        Map<String, Object> mergedData = new HashMap<>();
+        List<Map<String, Object>> intentResults = new ArrayList<>();
+
+        for (int i = 0; i < results.size(); i++) {
+            IntentExecuteResponse result = results.get(i);
+            Map<String, Object> intentResultMap = new HashMap<>();
+            intentResultMap.put("intentCode", result.getIntentCode());
+            intentResultMap.put("intentName", result.getIntentName());
+            intentResultMap.put("status", result.getStatus());
+            intentResultMap.put("message", result.getMessage());
+            intentResultMap.put("data", result.getResultData());
+
+            // 关联原始意图信息
+            if (i < multiResult.getIntents().size()) {
+                MultiIntentResult.SingleIntentMatch originalIntent = multiResult.getIntents().get(i);
+                intentResultMap.put("confidence", originalIntent.getConfidence());
+                intentResultMap.put("executionOrder", originalIntent.getExecutionOrder());
+            }
+
+            intentResults.add(intentResultMap);
+        }
+        mergedData.put("intentResults", intentResults);
+
+        // 生成摘要消息
+        String summary = results.stream()
+                .map(IntentExecuteResponse::getMessage)
+                .filter(msg -> msg != null && !msg.isEmpty())
+                .collect(Collectors.joining("；"));
+
+        // 确定整体状态
+        String overallStatus;
+        if (successCount == results.size()) {
+            overallStatus = "COMPLETED";
+        } else if (failedCount == results.size()) {
+            overallStatus = "FAILED";
+        } else {
+            overallStatus = "PARTIAL_SUCCESS";
+        }
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(true)
+                .status(overallStatus)
+                .message(summary.isEmpty() ?
+                        String.format("多意图执行完成: %d 成功, %d 失败", successCount, failedCount) :
+                        summary)
+                .resultData(mergedData)
+                .multiIntentResult(true)
+                .metadata(Map.of(
+                        "multiIntent", true,
+                        "intentCount", results.size(),
+                        "successCount", successCount,
+                        "failedCount", failedCount,
+                        "executionStrategy", multiResult.getExecutionStrategy().name()
+                ))
+                .executedAt(LocalDateTime.now())
+                .build();
     }
 }
