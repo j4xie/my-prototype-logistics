@@ -1,0 +1,1355 @@
+{
+  "testSuite": "AI Intent Recognition - Phase 1 Validation",
+  "version": "1.0.0",
+  "phase": "Phase 1",
+  "totalCases": 30,
+  "generatedAt": "2026-01-16",
+  "testCases": [
+    {
+      "id": "TC-P0-MATERIAL-001",
+      "priority": "P0",
+      "category": "MATERIAL",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "QUERY",
+      "description": "验证原料批次查询意图识别及数据准确性",
+      "userInput": "查询所有带鱼原材料批次",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_FISH_001', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_001', 'BATCH-20260115-001', 'MT_FISH_001', 'F001', 500.00, 'kg', 0.00, 0.00, 'AVAILABLE', 1, '2026-01-15 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id LIKE 'MB_TEST_%'; DELETE FROM raw_material_types WHERE id = 'MT_FISH_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "MATERIAL_BATCH_QUERY"
+        },
+        "dataVerification": {
+          "method": "DATABASE_COMPARE",
+          "expectedFields": [
+            "batchNumber",
+            "receiptQuantity",
+            "quantityUnit",
+            "status"
+          ],
+          "expectedCount": 2,
+          "expectedTotalQuantity": 800.0
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户问题: 查询所有带鱼原材料批次\n系统返回: {响应内容}\n\n判断: 返回的数据是否包含了所有带鱼批次信息?数据是否准确完整?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "查询成功.*2.*批次"
+      }
+    },
+    {
+      "id": "TC-P0-MATERIAL-002",
+      "priority": "P0",
+      "category": "MATERIAL",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "QUERY",
+      "description": "验证口语化原料查询意图识别",
+      "userInput": "看看还剩多少带鱼",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_FISH_002', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_003', 'BATCH-20260115-003', 'MT_FISH_002', 'F001', 200.00, 'kg', 50.00, 0.00, 'AVAILABLE', 1, '2026-01-15 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_003'; DELETE FROM raw_material_types WHERE id = 'MT_FISH_002';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "MATERIAL_BATCH_QUERY"
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "expectedCurrentQuantity": 150.0,
+          "verifyFormula": "receiptQuantity - usedQuantity - reservedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化询问: 看看还剩多少带鱼\n系统返回: {响应内容}\n\n判断: 系统是否正确理解了'看看还剩多少'的含义并返回了剩余库存?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "剩余|库存|可用"
+      }
+    },
+    {
+      "id": "TC-P0-MATERIAL-003",
+      "priority": "P0",
+      "category": "MATERIAL",
+      "intentCode": "MATERIAL_BATCH_USE",
+      "testType": "OPERATION",
+      "description": "验证原料使用操作的库存扣减",
+      "userInput": "使用批次BATCH-20260115-004的带鱼100公斤",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_USE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_FISH_003', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_004', 'BATCH-20260115-004', 'MT_FISH_003', 'F001', 500.00, 'kg', 0.00, 0.00, 'AVAILABLE', 1, '2026-01-15 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_004'; DELETE FROM raw_material_types WHERE id = 'MT_FISH_003';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "MATERIAL_BATCH_USE"
+        },
+        "operationVerification": {
+          "type": "QUANTITY_DECREASE",
+          "checkSql": "SELECT used_quantity FROM material_batches WHERE id = 'MB_TEST_004'",
+          "expectedChange": 100.0,
+          "expectedNewValue": 100.0
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 使用批次BATCH-20260115-004的带鱼100公斤\n系统返回: {响应内容}\n\n判断: 系统是否成功执行了扣减操作并正确反馈?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "使用成功|扣减成功"
+      }
+    },
+    {
+      "id": "TC-P0-MATERIAL-004",
+      "priority": "P0",
+      "category": "MATERIAL",
+      "intentCode": "MATERIAL_BATCH_USE",
+      "testType": "OPERATION",
+      "description": "验证原料使用操作的边界检查",
+      "userInput": "用掉批次BATCH-20260115-005的虾仁600公斤",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_USE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_SHRIMP_001', 'F001', '虾仁', '海鲜类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_005', 'BATCH-20260115-005', 'MT_SHRIMP_001', 'F001', 500.00, 'kg', 0.00, 0.00, 'AVAILABLE', 1, '2026-01-15 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_005'; DELETE FROM raw_material_types WHERE id = 'MT_SHRIMP_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false,
+          "intentCode": "MATERIAL_BATCH_USE"
+        },
+        "operationVerification": {
+          "type": "NO_CHANGE",
+          "checkSql": "SELECT used_quantity FROM material_batches WHERE id = 'MB_TEST_005'",
+          "expectedChange": 0.0,
+          "expectedNewValue": 0.0
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 用掉批次BATCH-20260115-005的虾仁600公斤(库存只有500公斤)\n系统返回: {响应内容}\n\n判断: 系统是否正确拒绝了超量使用并给出了清晰的错误提示?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "库存不足|超出可用数量|不足"
+      }
+    },
+    {
+      "id": "TC-P0-QUALITY-001",
+      "priority": "P0",
+      "category": "QUALITY",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "OPERATION",
+      "description": "验证质检执行操作",
+      "userInput": "对生产批次PB-20260115-001进行质检,抽检100个,合格95个",
+      "expectedIntent": {
+        "intentCode": "QUALITY_CHECK_EXECUTE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, start_time, created_at, updated_at) VALUES (9001, 'PB-20260115-001', 'F001', 'PT_001', '冷冻带鱼段', 1000.00, 'kg', 'IN_PROGRESS', '2026-01-15 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id LIKE 'QI_TEST_%'; DELETE FROM production_batches WHERE id = 9001;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "QUALITY_CHECK_EXECUTE"
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM quality_inspections WHERE production_batch_id = 9001",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT sample_size, pass_count, fail_count, pass_rate FROM quality_inspections WHERE production_batch_id = 9001 ORDER BY created_at DESC LIMIT 1",
+          "expectedValues": {
+            "sample_size": 100.0,
+            "pass_count": 95.0,
+            "fail_count": 5.0,
+            "pass_rate": 95.0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 对生产批次PB-20260115-001进行质检,抽检100个,合格95个\n系统返回: {响应内容}\n\n判断: 系统是否成功创建了质检记录并正确计算了合格率?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "质检完成|合格率.*95"
+      }
+    },
+    {
+      "id": "TC-P0-QUALITY-002",
+      "priority": "P0",
+      "category": "QUALITY",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "QUERY",
+      "description": "验证质检结果查询(口语化)",
+      "userInput": "这批货能用吗",
+      "expectedIntent": {
+        "intentCode": "QUALITY_CHECK_EXECUTE",
+        "confidence": 0.8,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, quality_status, start_time, created_at, updated_at) VALUES (9002, 'PB-20260115-002', 'F001', 'PT_002', '冷冻虾仁', 500.00, 'kg', 'COMPLETED', 'PASSED', '2026-01-15 08:00:00', NOW(), NOW()); INSERT INTO quality_inspections (id, factory_id, production_batch_id, inspector_id, inspection_date, sample_size, pass_count, fail_count, pass_rate, result, created_at, updated_at) VALUES ('QI_TEST_001', 'F001', 9002, 1, '2026-01-15 10:00:00', 100, 98, 2, 98.00, 'PASS', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id = 'QI_TEST_001'; DELETE FROM production_batches WHERE id = 9002;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "QUALITY_CHECK_EXECUTE"
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "expectedFields": [
+            "result",
+            "passRate"
+          ],
+          "expectedValues": {
+            "result": "PASS",
+            "passRate": 98.0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化询问: 这批货能用吗\n系统返回: {响应内容}\n\n判断: 系统是否理解了用户想查询质检结果,并返回了明确的质量状态?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "合格|通过|可以使用"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-001",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建出货记录操作",
+      "userInput": "给客户C001发货,产品冷冻带鱼段,数量200公斤",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, factory_id, name, contact_name, contact_phone, type, is_active, created_at, updated_at) VALUES ('C001', 'F001', '海鲜批发商A', '张三', '13800138000', 'WHOLESALE', 1, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_%'; DELETE FROM customers WHERE id = 'C001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "SHIPMENT_CREATE"
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM shipment_records WHERE customer_id = 'C001' AND product_name = '冷冻带鱼段'",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT quantity, unit, customer_id FROM shipment_records WHERE customer_id = 'C001' ORDER BY created_at DESC LIMIT 1",
+          "expectedValues": {
+            "quantity": 200.0,
+            "unit": "kg",
+            "customer_id": "C001"
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 给客户C001发货,产品冷冻带鱼段,数量200公斤\n系统返回: {响应内容}\n\n判断: 系统是否成功创建了出货记录并包含了正确的客户、产品和数量信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货成功|发货成功"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-002",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "QUERY",
+      "description": "验证出货状态查询(口语化)",
+      "userInput": "东西发出去了吗",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 0.8,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, factory_id, name, contact_name, contact_phone, type, is_active, created_at, updated_at) VALUES ('C002', 'F001', '餐饮企业B', '李四', '13900139000', 'RETAIL', 1, NOW(), NOW()); INSERT INTO shipment_records (id, factory_id, shipment_number, customer_id, product_name, quantity, unit, shipment_date, status, recorded_by, created_at, updated_at) VALUES ('SR_TEST_001', 'F001', 'SN-20260115-001', 'C002', '冷冻虾仁', 300.00, 'kg', '2026-01-15 14:00:00', 'shipped', 1, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id = 'SR_TEST_001'; DELETE FROM customers WHERE id = 'C002';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "STATUS_CHECK",
+          "expectedFields": [
+            "status"
+          ],
+          "expectedValues": {
+            "status": "shipped"
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化询问: 东西发出去了吗\n系统返回: {响应内容}\n\n判断: 系统是否理解了发货状态查询的意图并返回了出货状态?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "已发货|已出货|shipped"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-001",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "验证批次溯源查询",
+      "userInput": "溯源批次PB-20260115-003",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_SQUID_001', 'F001', '鱿鱼', '海鲜类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_006', 'BATCH-20260115-006', 'MT_SQUID_001', 'F001', 1000.00, 'kg', 800.00, 0.00, 'AVAILABLE', 1, '2026-01-10 00:00:00', NOW(), NOW()); INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, start_time, created_at, updated_at) VALUES (9003, 'PB-20260115-003', 'F001', 'PT_003', '冷冻鱿鱼圈', 800.00, 'kg', 'COMPLETED', '2026-01-15 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9003; DELETE FROM material_batches WHERE id = 'MB_TEST_006'; DELETE FROM raw_material_types WHERE id = 'MT_SQUID_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "TRACE_BATCH"
+        },
+        "dataVerification": {
+          "method": "TRACE_CHAIN",
+          "expectedFields": [
+            "batchNumber",
+            "productName",
+            "materialBatches"
+          ],
+          "expectedBatchNumber": "PB-20260115-003"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源批次PB-20260115-003\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源链,包括生产批次信息和原料批次信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-002",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "验证溯源查询(口语化)",
+      "userInput": "这批是什么原料做的",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 0.85,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_SCALLOP_001', 'F001', '扇贝', '贝类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_007', 'BATCH-20260115-007', 'MT_SCALLOP_001', 'F001', 500.00, 'kg', 400.00, 0.00, 'AVAILABLE', 1, '2026-01-12 00:00:00', NOW(), NOW()); INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, start_time, created_at, updated_at) VALUES (9004, 'PB-20260115-004', 'F001', 'PT_004', '冷冻扇贝肉', 400.00, 'kg', 'COMPLETED', '2026-01-15 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9004; DELETE FROM material_batches WHERE id = 'MB_TEST_007'; DELETE FROM raw_material_types WHERE id = 'MT_SCALLOP_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化询问: 这批是什么原料做的\n系统返回: {响应内容}\n\n判断: 系统是否理解了溯源意图并返回了原料信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "原料|材料|扇贝"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-001",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+      "testType": "QUERY",
+      "description": "验证仪表盘总览数据查询",
+      "userInput": "显示今日生产概况",
+      "expectedIntent": {
+        "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, actual_quantity, status, start_time, created_at, updated_at) VALUES (9005, 'PB-20260116-001', 'F001', 'PT_005', '冷冻带鱼段', 1000.00, 'kg', 950.00, 'COMPLETED', '2026-01-16 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id IN (9005, 9006);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "REPORT_DASHBOARD_OVERVIEW"
+        },
+        "dataVerification": {
+          "method": "AGGREGATED_DATA",
+          "expectedFields": [
+            "totalBatches",
+            "completedBatches",
+            "totalProduction"
+          ],
+          "expectedValues": {
+            "totalBatches": 2,
+            "completedBatches": 1
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 显示今日生产概况\n系统返回: {响应内容}\n\n判断: 系统是否返回了今日的生产统计数据,包括批次数、完成情况等?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|批次|概况"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-002",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+      "testType": "QUERY",
+      "description": "验证仪表盘多维度数据聚合",
+      "userInput": "今天的生产情况怎么样",
+      "expectedIntent": {
+        "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, actual_quantity, good_quantity, defect_quantity, status, start_time, end_time, created_at, updated_at) VALUES (9007, 'PB-20260116-003', 'F001', 'PT_007', '冷冻鱿鱼圈', 600.00, 'kg', 580.00, 570.00, 10.00, 'COMPLETED', '2026-01-16 08:00:00', '2026-01-16 12:00:00', NOW(), NOW()); INSERT INTO quality_inspections (id, factory_id, production_batch_id, inspector_id, inspection_date, sample_size, pass_count, fail_count, pass_rate, result, created_at, updated_at) VALUES ('QI_TEST_002', 'F001', 9007, 1, '2026-01-16 13:00:00', 100, 98, 2, 98.00, 'PASS', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id = 'QI_TEST_002'; DELETE FROM production_batches WHERE id = 9007;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "MULTI_DIMENSION",
+          "expectedFields": [
+            "production",
+            "quality",
+            "efficiency"
+          ],
+          "dimensions": [
+            "productionVolume",
+            "qualityRate",
+            "completionRate"
+          ]
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户询问: 今天的生产情况怎么样\n系统返回: {响应内容}\n\n判断: 系统是否返回了全面的生产情况,包括产量、质量、效率等多个维度?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|产量|质量|良品率"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-003",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_PRODUCTION",
+      "testType": "QUERY",
+      "description": "验证生产报表数据聚合",
+      "userInput": "查询本周生产报表",
+      "expectedIntent": {
+        "intentCode": "REPORT_PRODUCTION",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, actual_quantity, status, start_time, created_at, updated_at) VALUES (9008, 'PB-20260113-001', 'F001', 'PT_008', '冷冻带鱼段', 800.00, 'kg', 780.00, 'COMPLETED', '2026-01-13 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id IN (9008, 9009, 9010);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "REPORT_PRODUCTION"
+        },
+        "dataVerification": {
+          "method": "TIME_RANGE_AGGREGATION",
+          "expectedFields": [
+            "totalBatches",
+            "totalPlannedQuantity",
+            "totalActualQuantity"
+          ],
+          "expectedValues": {
+            "totalBatches": 3,
+            "totalPlannedQuantity": 2100.0,
+            "totalActualQuantity": 2050.0
+          },
+          "timeRange": "WEEK"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周生产报表\n系统返回: {响应内容}\n\n判断: 系统是否正确聚合了本周的生产数据,包括批次数、计划产量、实际产量等?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "本周|生产|批次.*3"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-004",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_PRODUCTION",
+      "testType": "QUERY",
+      "description": "验证生产报表按产品类型分组",
+      "userInput": "按产品分类统计本月生产情况",
+      "expectedIntent": {
+        "intentCode": "REPORT_PRODUCTION",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, actual_quantity, status, start_time, created_at, updated_at) VALUES (9011, 'PB-20260105-001', 'F001', 'PT_FISH', '冷冻带鱼段', 1000.00, 'kg', 980.00, 'COMPLETED', '2026-01-05 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id IN (9011, 9012, 9013);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "GROUP_BY_AGGREGATION",
+          "expectedFields": [
+            "productType",
+            "totalQuantity",
+            "batchCount"
+          ],
+          "groupBy": "productName",
+          "expectedGroups": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 按产品分类统计本月生产情况\n系统返回: {响应内容}\n\n判断: 系统是否按产品类型正确分组并统计了各类产品的生产数据?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "产品|分类|统计"
+      }
+    },
+    {
+      "id": "TC-P1-INVENTORY-001",
+      "priority": "P1",
+      "category": "INVENTORY",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "QUERY",
+      "description": "验证库存查询(低库存预警)",
+      "userInput": "查询库存低于100公斤的原料",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_LOW_001', 'F001', '盐', '调料', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_008', 'BATCH-20260116-008', 'MT_LOW_001', 'F001', 150.00, 'kg', 80.00, 0.00, 'AVAILABLE', 1, '2026-01-10 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id IN ('MB_TEST_008', 'MB_TEST_009'); DELETE FROM raw_material_types WHERE id IN ('MT_LOW_001', 'MT_LOW_002');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CONDITIONAL_FILTER",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "filterCondition": "currentQuantity < 100",
+          "expectedCount": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询库存低于100公斤的原料\n系统返回: {响应内容}\n\n判断: 系统是否正确筛选出了剩余库存低于100公斤的原料批次?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "库存|低于|2.*批次"
+      }
+    },
+    {
+      "id": "TC-P1-INVENTORY-002",
+      "priority": "P1",
+      "category": "INVENTORY",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "QUERY",
+      "description": "验证库存按状态筛选",
+      "userInput": "查询所有可用状态的原料批次",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_STATUS_001', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_010', 'BATCH-20260116-010', 'MT_STATUS_001', 'F001', 500.00, 'kg', 0.00, 0.00, 'AVAILABLE', 1, '2026-01-15 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id IN ('MB_TEST_010', 'MB_TEST_011'); DELETE FROM raw_material_types WHERE id IN ('MT_STATUS_001', 'MT_STATUS_002');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "STATUS_FILTER",
+          "expectedFields": [
+            "status"
+          ],
+          "filterCondition": "status = 'AVAILABLE'",
+          "expectedCount": 1
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询所有可用状态的原料批次\n系统返回: {响应内容}\n\n判断: 系统是否只返回了状态为AVAILABLE的批次?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "可用|AVAILABLE"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-001",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备列表查询",
+      "userInput": "查询所有生产设备",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, equipment_type, status, created_at, updated_at) VALUES (8001, 'F001', 'EQ-001', '冷冻生产线A', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW()), (8002, 'F001', 'EQ-002', '包装机B', 'PACKAGING', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id IN (8001, 8002);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "equipmentName",
+            "status"
+          ],
+          "expectedCount": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询所有生产设备\n系统返回: {响应内容}\n\n判断: 系统是否返回了设备列表,包括设备名称、状态等信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|生产线|2.*台"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-002",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备状态查询(口语化)",
+      "userInput": "机器都正常吗",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 0.8,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, equipment_type, status, created_at, updated_at) VALUES (8003, 'F001', 'EQ-003', '冷冻生产线C', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW()), (8004, 'F001', 'EQ-004', '切割机D', 'PROCESSING', 'MAINTENANCE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id IN (8003, 8004);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "STATUS_SUMMARY",
+          "expectedFields": [
+            "status"
+          ],
+          "expectedStatusCounts": {
+            "RUNNING": 1,
+            "MAINTENANCE": 1
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化询问: 机器都正常吗\n系统返回: {响应内容}\n\n判断: 系统是否理解了设备状态查询的意图并返回了各设备的运行状态?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "运行|维护|状态"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-001",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警列表查询",
+      "userInput": "查询最近的告警信息",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, severity, message, status, created_at, updated_at) VALUES (7001, 'F001', 8001, 'TEMPERATURE_HIGH', 'WARNING', '温度超标', 'ACTIVE', NOW(), NOW()), (7002, 'F001', 8002, 'MAINTENANCE_DUE', 'INFO', '需要维护', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id IN (7001, 7002);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "severity",
+            "message",
+            "status"
+          ],
+          "expectedCount": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询最近的告警信息\n系统返回: {响应内容}\n\n判断: 系统是否返回了告警列表,包括告警类型、严重程度、状态等?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|2.*条"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-002",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警按严重程度筛选",
+      "userInput": "查询所有严重告警",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, severity, message, status, created_at, updated_at) VALUES (7003, 'F001', 8001, 'EQUIPMENT_FAILURE', 'CRITICAL', '设备故障', 'ACTIVE', NOW(), NOW()), (7004, 'F001', 8002, 'LOW_STOCK', 'WARNING', '库存不足', 'ACTIVE', NOW(), NOW()), (7005, 'F001', 8003, 'SYSTEM_ERROR', 'CRITICAL', '系统错误', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id IN (7003, 7004, 7005);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "SEVERITY_FILTER",
+          "expectedFields": [
+            "severity"
+          ],
+          "filterCondition": "severity = 'CRITICAL'",
+          "expectedCount": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询所有严重告警\n系统返回: {响应内容}\n\n判断: 系统是否只返回了严重程度为CRITICAL的告警?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "严重|CRITICAL|2.*条"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-001",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证签到操作",
+      "userInput": "我要签到",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 1,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 1 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "CLOCK_IN"
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 1 AND clock_date = CURDATE() AND clock_in_time IS NOT NULL",
+          "expectedCount": 1
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 我要签到\n系统返回: {响应内容}\n\n判断: 系统是否成功记录了签到时间?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功|打卡成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-002",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证签退操作(口语化表达)",
+      "userInput": "我先撤了",
+      "inputVariants": [
+        "我先撤了",
+        "今天干完了",
+        "下班了"
+      ],
+      "allShouldRecognizeAs": "CLOCK_OUT",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 0.8,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6001, 'F001', 1, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 1,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6001;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "CLOCK_OUT"
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT clock_out_time, status FROM time_clock_records WHERE id = 6001",
+          "expectedFieldNotNull": "clock_out_time",
+          "expectedStatus": "OFF_WORK"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户口语化表达: 我先撤了\n系统返回: {响应内容}\n\n判断: 系统是否理解了下班的意图并成功记录了签退时间?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|下班成功|打卡成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-001",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建用户操作",
+      "userInput": "创建新用户,用户名zhangsan,姓名张三,角色为操作员",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'zhangsan_test';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "USER_CREATE"
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM users WHERE username LIKE '%zhangsan%' AND full_name = '张三'",
+          "expectedCount": 1
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 创建新用户,用户名zhangsan,姓名张三,角色为操作员\n系统返回: {响应内容}\n\n判断: 系统是否成功创建了用户并正确设置了用户名、姓名和角色?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|用户.*创建"
+      }
+    },
+    {
+      "id": "TC-P2-ALERT-003",
+      "priority": "P2",
+      "category": "ALERT",
+      "intentCode": "ALERT_ACKNOWLEDGE",
+      "testType": "OPERATION",
+      "description": "验证确认告警操作",
+      "userInput": "确认告警7006",
+      "expectedIntent": {
+        "intentCode": "ALERT_ACKNOWLEDGE",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, severity, message, status, created_at, updated_at) VALUES (7006, 'F001', 8001, 'TEMPERATURE_HIGH', 'WARNING', '温度超标', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7006;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "ALERT_ACKNOWLEDGE"
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM equipment_alerts WHERE id = 7006",
+          "expectedStatus": "ACKNOWLEDGED"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 确认告警7006\n系统返回: {响应内容}\n\n判断: 系统是否成功将告警状态更新为已确认?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "确认成功|已确认"
+      }
+    },
+    {
+      "id": "TC-P2-SCALE-001",
+      "priority": "P2",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤列表查询",
+      "userInput": "查询所有电子秤设备",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1.0,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, equipment_type, status, created_at, updated_at) VALUES (8005, 'F001', 'SCALE-001', '电子秤A', 'SCALE', 'IDLE', NOW(), NOW()), (8006, 'F001', 'SCALE-002', '电子秤B', 'SCALE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id IN (8005, 8006);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType",
+            "equipmentName",
+            "status"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 2
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询所有电子秤设备\n系统返回: {响应内容}\n\n判断: 系统是否返回了所有类型为电子秤的设备?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|2.*台"
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-001",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "TRACE_BATCH",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少参数澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "帮我查一下那个批次",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|哪个批次|批次号"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "PB-20260115-005",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "TRACE_BATCH",
+            "dataNotNull": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, start_time, created_at, updated_at) VALUES (9014, 'PB-20260115-005', 'F001', 'PT_011', '冷冻带鱼段', 900.00, 'kg', 'COMPLETED', '2026-01-15 08:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9014;"
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话: 帮我查一下那个批次\n系统响应: {响应1}\n第二轮对话: PB-20260115-005\n系统响应: {响应2}\n\n判断: 系统是否正确识别了缺失参数,通过多轮对话获取了批次号,并最终返回了正确的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-002",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "MATERIAL_BATCH_USE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-数量确认",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "使用批次BATCH-20260116-012的带鱼",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "使用多少|数量"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "150公斤",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "MATERIAL_BATCH_USE",
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_FISH_004', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_012', 'BATCH-20260116-012', 'MT_FISH_004', 'F001', 500.00, 'kg', 0.00, 0.00, 'AVAILABLE', 1, '2026-01-16 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_012'; DELETE FROM raw_material_types WHERE id = 'MT_FISH_004';"
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "operationVerification": {
+          "type": "QUANTITY_DECREASE",
+          "checkSql": "SELECT used_quantity FROM material_batches WHERE id = 'MB_TEST_012'",
+          "expectedChange": 150.0
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话: 使用批次BATCH-20260116-012的带鱼\n系统响应: {响应1}\n第二轮对话: 150公斤\n系统响应: {响应2}\n\n判断: 系统是否正确识别了缺失的数量参数,通过多轮对话获取后成功执行了扣减操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-001",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "验证口语化识别-库存查询变体",
+      "inputVariants": [
+        "还有多少",
+        "库存多少",
+        "剩多少",
+        "还剩多少",
+        "有多少存货"
+      ],
+      "allShouldRecognizeAs": "MATERIAL_BATCH_QUERY",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO raw_material_types (id, factory_id, name, category, unit, created_at, updated_at) VALUES ('MT_FISH_005', 'F001', '带鱼', '鱼类', 'kg', NOW(), NOW()); INSERT INTO material_batches (id, batch_number, material_type_id, factory_id, receipt_quantity, quantity_unit, used_quantity, reserved_quantity, status, created_by, inbound_date, created_at, updated_at) VALUES ('MB_TEST_013', 'BATCH-20260116-013', 'MT_FISH_005', 'F001', 400.00, 'kg', 100.00, 0.00, 'AVAILABLE', 1, '2026-01-16 00:00:00', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_013'; DELETE FROM raw_material_types WHERE id = 'MT_FISH_005';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "MATERIAL_BATCH_QUERY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达询问库存(还有多少/库存多少/剩多少/还剩多少/有多少存货)\n系统返回: {响应内容}\n\n判断: 系统是否对所有变体都正确识别为库存查询意图并返回了库存数据?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "库存|剩余|可用.*300"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-002",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "验证口语化识别-质检查询变体",
+      "inputVariants": [
+        "这批行不行",
+        "合格吗",
+        "检测过了没",
+        "质量怎么样",
+        "能用吗"
+      ],
+      "allShouldRecognizeAs": "QUALITY_CHECK_EXECUTE",
+      "expectedIntent": {
+        "intentCode": "QUALITY_CHECK_EXECUTE",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, batch_number, factory_id, product_type_id, product_name, quantity, unit, status, quality_status, start_time, created_at, updated_at) VALUES (9015, 'PB-20260116-006', 'F001', 'PT_012', '冷冻虾仁', 600.00, 'kg', 'COMPLETED', 'PASSED', '2026-01-16 08:00:00', NOW(), NOW()); INSERT INTO quality_inspections (id, factory_id, production_batch_id, inspector_id, inspection_date, sample_size, pass_count, fail_count, pass_rate, result, created_at, updated_at) VALUES ('QI_TEST_003', 'F001', 9015, 1, '2026-01-16 14:00:00', 100, 97, 3, 97.00, 'PASS', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id = 'QI_TEST_003'; DELETE FROM production_batches WHERE id = 9015;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "QUALITY_CHECK_EXECUTE"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达询问质检(这批行不行/合格吗/检测过了没/质量怎么样/能用吗)\n系统返回: {响应内容}\n\n判断: 系统是否对所有变体都正确识别为质检查询意图并返回了质检结果?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "合格|通过|PASS|97"
+      }
+    },
+    {
+      "id": "TC-P3-BOUNDARY-001",
+      "priority": "P3",
+      "category": "BOUNDARY",
+      "intentCode": "UNKNOWN",
+      "testType": "BOUNDARY",
+      "description": "验证边界场景-空输入处理",
+      "userInput": "",
+      "expectedIntent": {
+        "intentCode": "UNKNOWN",
+        "confidence": 0.0,
+        "matchMethod": "NONE",
+        "questionType": "INVALID"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": false,
+          "messageNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户输入为空\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了空输入并给出了友好的错误提示?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "输入不能为空|请输入|无效输入"
+      }
+    }
+  ]
+}

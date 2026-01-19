@@ -1,0 +1,1668 @@
+{
+  "testSuite": "AI Intent Recognition - P1 Complete Test Cases",
+  "version": "1.0.0",
+  "phase": "Phase 2 - P1 Priority",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "description": "P1优先级测试用例,主要覆盖查询统计类功能,重点验证数据准确性",
+  "testCases": [
+    {
+      "id": "TC-P1-REPORT-040",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_QUALITY",
+      "testType": "QUERY",
+      "description": "验证质量报表-测试场景40",
+      "userInput": "查询质量数据40",
+      "expectedIntent": {
+        "intentCode": "REPORT_QUALITY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO quality_inspections (id, created_at, updated_at, factory_id, fail_count, inspection_date, inspector_id, pass_count, production_batch_id, sample_size, pass_rate, result) VALUES ('QI_TEST_040', NOW(), NOW(), 'F001', 5.00, CURDATE(), 1, 95.00, 9040, 100.00, 95.00, 'PASS');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id = 'QI_TEST_040';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "AGGREGATED_DATA",
+          "expectedFields": [
+            "passRate",
+            "totalInspections"
+          ],
+          "aggregationValidation": {
+            "avgPassRate": 95,
+            "totalSamples": 100
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的质量报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-041",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_QUALITY",
+      "testType": "QUERY",
+      "description": "验证质量报表-测试场景41",
+      "userInput": "查询质量数据41",
+      "expectedIntent": {
+        "intentCode": "REPORT_QUALITY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO quality_inspections (id, created_at, updated_at, factory_id, fail_count, inspection_date, inspector_id, pass_count, production_batch_id, sample_size, pass_rate, result) VALUES ('QI_TEST_041', NOW(), NOW(), 'F001', 5.00, CURDATE(), 1, 95.00, 9041, 100.00, 95.00, 'PASS');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM quality_inspections WHERE id = 'QI_TEST_041';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "AGGREGATED_DATA",
+          "expectedFields": [
+            "passRate",
+            "totalInspections"
+          ],
+          "aggregationValidation": {
+            "avgPassRate": 95,
+            "totalSamples": 100
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的质量报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-042",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景42",
+      "userInput": "查询库存数据42",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_042', NOW(), NOW(), 'BATCH-042', 1, 'F001', 'MT_042', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_042';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-043",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景43",
+      "userInput": "查询库存数据43",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_043', NOW(), NOW(), 'BATCH-043', 1, 'F001', 'MT_043', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_043';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-044",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景44",
+      "userInput": "查询库存数据44",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_044', NOW(), NOW(), 'BATCH-044', 1, 'F001', 'MT_044', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_044';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-045",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景45",
+      "userInput": "查询库存数据45",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_045', NOW(), NOW(), 'BATCH-045', 1, 'F001', 'MT_045', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_045';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-046",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景46",
+      "userInput": "查询库存数据46",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_046', NOW(), NOW(), 'BATCH-046', 1, 'F001', 'MT_046', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_046';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-047",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景47",
+      "userInput": "查询库存数据47",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_047', NOW(), NOW(), 'BATCH-047', 1, 'F001', 'MT_047', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_047';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-048",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景48",
+      "userInput": "查询库存数据48",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_048', NOW(), NOW(), 'BATCH-048', 1, 'F001', 'MT_048', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_048';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-049",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景49",
+      "userInput": "查询库存数据49",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_049', NOW(), NOW(), 'BATCH-049', 1, 'F001', 'MT_049', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_049';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-050",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景50",
+      "userInput": "查询库存数据50",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_050', NOW(), NOW(), 'BATCH-050', 1, 'F001', 'MT_050', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_050';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-051",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_INVENTORY",
+      "testType": "QUERY",
+      "description": "验证库存报表-测试场景51",
+      "userInput": "查询库存数据51",
+      "expectedIntent": {
+        "intentCode": "REPORT_INVENTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO material_batches (id, created_at, updated_at, batch_number, created_by, factory_id, material_type_id, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, used_quantity) VALUES ('MB_TEST_051', NOW(), NOW(), 'BATCH-051', 1, 'F001', 'MT_051', 'kg', CURDATE(), 1000.00, 0.00, 'AVAILABLE', 200.00);",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM material_batches WHERE id = 'MB_TEST_051';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "currentQuantity"
+          ],
+          "aggregationValidation": {
+            "totalReceipt": 1000,
+            "totalUsed": 200,
+            "available": 800
+          },
+          "verifyFormula": "receiptQuantity - usedQuantity"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的库存报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-052",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景52",
+      "userInput": "查询效率数据52",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8052, 'F001', 'EQ-052', '设备52', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8052;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-053",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景53",
+      "userInput": "查询效率数据53",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8053, 'F001', 'EQ-053', '设备53', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8053;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-054",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景54",
+      "userInput": "查询效率数据54",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8054, 'F001', 'EQ-054', '设备54', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8054;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-055",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景55",
+      "userInput": "查询效率数据55",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8055, 'F001', 'EQ-055', '设备55', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8055;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-056",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景56",
+      "userInput": "查询效率数据56",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8056, 'F001', 'EQ-056', '设备56', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8056;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-057",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景57",
+      "userInput": "查询效率数据57",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8057, 'F001', 'EQ-057', '设备57', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8057;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-058",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景58",
+      "userInput": "查询效率数据58",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8058, 'F001', 'EQ-058', '设备58', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8058;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-059",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景59",
+      "userInput": "查询效率数据59",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8059, 'F001', 'EQ-059', '设备59', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8059;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-REPORT-060",
+      "priority": "P1",
+      "category": "REPORT",
+      "intentCode": "REPORT_EFFICIENCY",
+      "testType": "QUERY",
+      "description": "验证效率报表-测试场景60",
+      "userInput": "查询效率数据60",
+      "expectedIntent": {
+        "intentCode": "REPORT_EFFICIENCY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, total_runtime_hours, created_at, updated_at) VALUES (8060, 'F001', 'EQ-060', '设备60', 'PRODUCTION_LINE', 'RUNNING', 100.00, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8060;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "utilizationRate"
+          ],
+          "aggregationValidation": {
+            "totalRuntime": 100,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的效率报表数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "生产|报表|统计"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-003",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景3",
+      "userInput": "查询告警3",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7003, 'F001', 8003, 'TEMPERATURE_HIGH', 'WARNING', '告警3', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7003;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-004",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_ACTIVE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景4",
+      "userInput": "查询告警4",
+      "expectedIntent": {
+        "intentCode": "ALERT_ACTIVE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7004, 'F001', 8004, 'TEMPERATURE_HIGH', 'WARNING', '告警4', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7004;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_ACTIVE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-005",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_DIAGNOSE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景5",
+      "userInput": "查询告警5",
+      "expectedIntent": {
+        "intentCode": "ALERT_DIAGNOSE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7005, 'F001', 8005, 'TEMPERATURE_HIGH', 'WARNING', '告警5', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7005;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_DIAGNOSE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-006",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_STATS",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景6",
+      "userInput": "查询告警6",
+      "expectedIntent": {
+        "intentCode": "ALERT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7006, 'F001', 8006, 'TEMPERATURE_HIGH', 'WARNING', '告警6', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7006;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-007",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景7",
+      "userInput": "查询告警7",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7007, 'F001', 8007, 'TEMPERATURE_HIGH', 'WARNING', '告警7', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7007;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-008",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_ACTIVE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景8",
+      "userInput": "查询告警8",
+      "expectedIntent": {
+        "intentCode": "ALERT_ACTIVE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7008, 'F001', 8008, 'TEMPERATURE_HIGH', 'WARNING', '告警8', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7008;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_ACTIVE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-009",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_DIAGNOSE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景9",
+      "userInput": "查询告警9",
+      "expectedIntent": {
+        "intentCode": "ALERT_DIAGNOSE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7009, 'F001', 8009, 'TEMPERATURE_HIGH', 'WARNING', '告警9', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7009;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_DIAGNOSE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-010",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_STATS",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景10",
+      "userInput": "查询告警10",
+      "expectedIntent": {
+        "intentCode": "ALERT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7010, 'F001', 8010, 'TEMPERATURE_HIGH', 'WARNING', '告警10', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7010;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-011",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景11",
+      "userInput": "查询告警11",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7011, 'F001', 8011, 'TEMPERATURE_HIGH', 'WARNING', '告警11', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7011;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-012",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_ACTIVE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景12",
+      "userInput": "查询告警12",
+      "expectedIntent": {
+        "intentCode": "ALERT_ACTIVE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7012, 'F001', 8012, 'TEMPERATURE_HIGH', 'WARNING', '告警12', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7012;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_ACTIVE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-013",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_DIAGNOSE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景13",
+      "userInput": "查询告警13",
+      "expectedIntent": {
+        "intentCode": "ALERT_DIAGNOSE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7013, 'F001', 8013, 'TEMPERATURE_HIGH', 'WARNING', '告警13', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7013;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_DIAGNOSE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-014",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_STATS",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景14",
+      "userInput": "查询告警14",
+      "expectedIntent": {
+        "intentCode": "ALERT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7014, 'F001', 8014, 'TEMPERATURE_HIGH', 'WARNING', '告警14', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7014;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-015",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景15",
+      "userInput": "查询告警15",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7015, 'F001', 8015, 'TEMPERATURE_HIGH', 'WARNING', '告警15', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7015;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    },
+    {
+      "id": "TC-P1-ALERT-016",
+      "priority": "P1",
+      "category": "ALERT",
+      "intentCode": "ALERT_ACTIVE",
+      "testType": "QUERY",
+      "description": "验证告警查询-测试场景16",
+      "userInput": "查询告警16",
+      "expectedIntent": {
+        "intentCode": "ALERT_ACTIVE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO equipment_alerts (id, factory_id, equipment_id, alert_type, level, message, status, created_at, updated_at) VALUES (7016, 'F001', 8016, 'TEMPERATURE_HIGH', 'WARNING', '告警16', 'ACTIVE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM equipment_alerts WHERE id = 7016;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "ALERT_ACTIVE"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "alertType",
+            "level"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalAlerts": 1,
+            "activeCount": 1,
+            "criticalCount": 0
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的告警数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "告警|查询"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 2,
+    "startIndex": 35,
+    "chunkSize": 35
+  }
+}

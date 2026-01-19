@@ -10,6 +10,7 @@
 
 import { aiApiClient } from '../api/aiApiClient';
 import { formAssistantApiClient } from '../api/formAssistantApiClient';
+import type { EntityType } from '../api/formTemplateApiClient';
 import { detectAnalysisMode, createModeConfig } from './modeDetector';
 import type {
   AnalysisMode,
@@ -28,6 +29,17 @@ import type {
   AIServiceConfig,
 } from './types';
 import type { SSECallbacks as ApiSSECallbacks } from '../api/aiApiClient';
+
+/**
+ * Helper function to extract modeReason from mode result
+ * Handles both full AnalysisModeResult and partial mode config
+ */
+function getModeReason(modeResult: AnalysisModeResult | Pick<AnalysisModeResult, 'enableThinking' | 'thinkingBudget' | 'mode'>): string {
+  if ('reason' in modeResult && typeof modeResult.reason === 'string') {
+    return modeResult.reason;
+  }
+  return `${modeResult.mode} mode`;
+}
 
 // ============ 默认配置 ============
 
@@ -59,7 +71,7 @@ const DEFAULT_CONFIG: AIServiceConfig = {
  *   question: '为什么成本上升了？',
  * });
  */
-class AIService {
+export class AIService {
   private config: AIServiceConfig;
 
   constructor(config?: Partial<AIServiceConfig>) {
@@ -136,7 +148,7 @@ class AIService {
         success: response.success,
         data: response,
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
       };
     } catch (error) {
@@ -148,7 +160,7 @@ class AIService {
           message: error instanceof Error ? error.message : 'AI 服务调用失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -222,8 +234,10 @@ class AIService {
 
       // 如果有执行结果，合并到响应中
       if (response.executionResult) {
+        // Type assertion needed because data is typed as unknown in IntentExecuteResponse
+        const currentData = executeResponse.data as Record<string, unknown> | undefined;
         executeResponse.data = {
-          ...executeResponse.data,
+          ...(currentData ?? {}),
           ...response.executionResult,
         };
       }
@@ -232,7 +246,7 @@ class AIService {
         success: executeResponse.success,
         data: executeResponse,
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
       };
     } catch (error) {
@@ -244,7 +258,7 @@ class AIService {
           message: error instanceof Error ? error.message : 'AI 服务调用失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -303,7 +317,7 @@ class AIService {
           message: response.errorMessage,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: response.responseTimeMs || (Date.now() - startTime),
       };
     } catch (error) {
@@ -315,7 +329,7 @@ class AIService {
           message: error instanceof Error ? error.message : 'AI 分析失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -356,7 +370,7 @@ class AIService {
           message: response.errorMessage,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: response.responseTimeMs || (Date.now() - startTime),
       };
     } catch (error) {
@@ -368,7 +382,7 @@ class AIService {
           message: error instanceof Error ? error.message : 'AI 分析失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -408,7 +422,7 @@ class AIService {
           message: response.errorMessage,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: response.responseTimeMs || (Date.now() - startTime),
       };
     } catch (error) {
@@ -420,7 +434,7 @@ class AIService {
           message: error instanceof Error ? error.message : 'AI 对比分析失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -505,7 +519,7 @@ class AIService {
 
     return {
       mode: modeResult.mode,
-      modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+      modeReason: getModeReason(modeResult),
     };
   }
 
@@ -541,7 +555,8 @@ class AIService {
     try {
       const response = await formAssistantApiClient.generateSchema({
         userInput: request.userInput,
-        entityType: request.entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: request.entityType as EntityType,
         existingFields: request.existingFields,
         // TODO: 后端需要支持 enableThinking/thinkingBudget
       });
@@ -561,7 +576,7 @@ class AIService {
           message: response.message,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
       };
     } catch (error) {
@@ -573,7 +588,7 @@ class AIService {
           message: error instanceof Error ? error.message : '表单助手调用失败',
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -612,7 +627,8 @@ class AIService {
     try {
       const response = await formAssistantApiClient.parseFormInput({
         userInput,
-        entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: entityType as EntityType,
         context,
         formFields: formFields as Parameters<typeof formAssistantApiClient.parseFormInput>[0]['formFields'],
       });
@@ -628,7 +644,7 @@ class AIService {
           followUpQuestion: response.followUpQuestion,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
       };
     } catch (error) {
@@ -640,7 +656,7 @@ class AIService {
           confidence: 0,
         },
         mode: modeResult.mode,
-        modeReason: 'reason' in modeResult ? modeResult.reason : `${modeResult.mode} mode`,
+        modeReason: getModeReason(modeResult),
         responseTimeMs: Date.now() - startTime,
         errorMessage: error instanceof Error ? error.message : 'Unknown error',
       };
@@ -676,7 +692,8 @@ class AIService {
     try {
       const response = await formAssistantApiClient.parseFormOCR({
         imageBase64,
-        entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: entityType as EntityType,
         formFields: formFields as Parameters<typeof formAssistantApiClient.parseFormOCR>[0]['formFields'],
       });
 
@@ -747,7 +764,8 @@ class AIService {
 
     try {
       const response = await formAssistantApiClient.submitValidationFeedback({
-        entityType: request.entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: request.entityType as EntityType,
         submittedValues: request.submittedValues,
         validationErrors: request.validationErrors,
         formFields: request.formFields as Parameters<typeof formAssistantApiClient.submitValidationFeedback>[0]['formFields'],
@@ -823,7 +841,8 @@ class AIService {
 
     try {
       const response = await formAssistantApiClient.analyzeSchema({
-        entityType: request.entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: request.entityType as EntityType,
         schemaJson: request.schemaJson,
         focusAreas: request.focusAreas,
         businessContext: request.businessContext,
@@ -892,7 +911,8 @@ class AIService {
 
     try {
       const response = await formAssistantApiClient.optimizeSchema({
-        entityType: request.entityType,
+        // Cast FormEntityType to EntityType - they share common values
+        entityType: request.entityType as EntityType,
         schemaJson: request.schemaJson,
         suggestionIds: request.suggestionIds,
         userInstruction: request.userInstruction,

@@ -576,7 +576,10 @@ class AIApiClient {
 
       es.addEventListener('error', (event) => {
         console.error('SSE 流式请求失败:', event);
-        const errorMessage = event.message || '流式请求失败';
+        // Type guard for event.message since error event types vary
+        const errorMessage = ('message' in event && typeof event.message === 'string')
+          ? event.message
+          : '流式请求失败';
         callbacks.onError?.(errorMessage);
         es.close();
         reject(new Error(errorMessage));
@@ -1070,7 +1073,10 @@ class AIApiClient {
 
       es.addEventListener('error', (event) => {
         console.error('Intent SSE 流式请求失败:', event);
-        const errorMessage = event.message || '流式请求失败';
+        // Type guard for event.message since error event types vary
+        const errorMessage = ('message' in event && typeof event.message === 'string')
+          ? event.message
+          : '流式请求失败';
         callbacks.onError?.(errorMessage);
         es.close();
         reject(new Error(errorMessage));

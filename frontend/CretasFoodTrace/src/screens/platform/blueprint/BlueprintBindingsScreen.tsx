@@ -39,7 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isAxiosError } from 'axios';
 import { blueprintVersionApiClient, FactoryBinding as ApiFactoryBinding } from '../../../services/api/blueprintVersionApiClient';
-import { platformApiClient } from '../../../services/api/platformApiClient';
+import platformAPI from '../../../services/api/platformApiClient';
 
 // Types
 interface BoundFactory {
@@ -71,16 +71,22 @@ interface SyncHistory {
 
 // Transform API data to screen interface
 const transformBindingData = (apiBindings: ApiFactoryBinding[]): BoundFactory[] => {
-  return apiBindings.map((binding) => ({
-    id: binding.factoryId,
-    name: binding.factoryName,
-    code: binding.factoryId,
-    boundDate: binding.boundAt?.split('T')[0] || new Date().toISOString().split('T')[0],
-    currentVersion: `v${binding.currentVersion}.0`,
-    status: binding.syncStatus === 'UP_TO_DATE' ? 'synced' :
-            binding.syncStatus === 'PENDING' ? 'pending' : 'failed',
-    factoryStatus: binding.isActive ? 'running' : 'stopped',
-  }));
+  return apiBindings.map((binding): BoundFactory => {
+    const defaultDate = new Date().toISOString().split('T')[0] || '';
+    const appliedDate = binding.lastAppliedAt?.split('T')[0];
+    const boundDate: string = appliedDate ?? defaultDate;
+    const status: 'synced' | 'pending' | 'failed' = binding.needsUpgrade ? 'pending' :
+            binding.notificationStatus === 'PENDING' ? 'pending' : 'synced';
+    return {
+      id: binding.factoryId,
+      name: binding.factoryName || binding.factoryId,
+      code: binding.factoryId,
+      boundDate,
+      currentVersion: `v${binding.appliedVersion}.0`,
+      status,
+      factoryStatus: 'running', // Default to running since FactoryBinding doesn't have this field
+    };
+  });
 };
 
 const transformFactoryToAvailable = (factory: any): AvailableFactory => ({
@@ -137,7 +143,7 @@ export function BlueprintBindingsScreen() {
       setBoundFactories(transformBindingData(bindings));
 
       // Load available factories (unbound)
-      const factoriesResponse = await platformApiClient.getFactories();
+      const factoriesResponse = await platformAPI.getFactories();
       const boundIds = new Set(bindings.map(b => b.factoryId));
       const available = (factoriesResponse.data || [])
         .filter((f: any) => !boundIds.has(f.factoryId || f.id))
@@ -146,15 +152,15 @@ export function BlueprintBindingsScreen() {
 
       // Sync history - derive from bindings (no separate API)
       const history: SyncHistory[] = bindings
-        .filter(b => b.lastSyncAt)
+        .filter(b => b.lastAppliedAt)
         .map(b => ({
           id: b.factoryId,
-          factoryName: b.factoryName,
-          fromVersion: `v${(b.currentVersion || 1) - 1}.0`,
-          toVersion: `v${b.currentVersion}.0`,
-          status: b.syncStatus === 'UP_TO_DATE' ? 'success' as const : 'failed' as const,
-          timestamp: b.lastSyncAt?.replace('T', ' ').slice(0, 16) || '',
-          message: b.syncStatus !== 'UP_TO_DATE' ? b.lastSyncError : undefined,
+          factoryName: b.factoryName || b.factoryId,
+          fromVersion: `v${(b.appliedVersion || 1) - 1}.0`,
+          toVersion: `v${b.appliedVersion}.0`,
+          status: b.needsUpgrade ? 'failed' as const : 'success' as const,
+          timestamp: b.lastAppliedAt?.replace('T', ' ').slice(0, 16) || '',
+          message: b.needsUpgrade ? 'Needs upgrade' : undefined,
         }));
       setSyncHistory(history);
     } catch (error) {
@@ -181,10 +187,11 @@ export function BlueprintBindingsScreen() {
   const handleSync = async (factory: BoundFactory) => {
     setSyncing(true);
     try {
+      const versionStr = currentVersion.replace('v', '').split('.')[0] ?? '1';
       const result = await blueprintVersionApiClient.upgradeFactory(factory.id, {
-        blueprintId,
-        targetVersion: parseInt(currentVersion.replace('v', '').split('.')[0]) || 1,
-        syncOptions: { fullSync: true },
+        targetVersion: parseInt(versionStr, 10) || 1,
+        force: true,
+        reason: 'Manual sync from bindings screen',
       });
       if (result) {
         Alert.alert(t('success.title'), t('blueprint.syncSuccess', { name: factory.name }));
@@ -210,11 +217,12 @@ export function BlueprintBindingsScreen() {
       const pendingFactories = boundFactories.filter(f => f.status === 'pending');
       let successCount = 0;
 
+      const versionStr = currentVersion.replace('v', '').split('.')[0] ?? '1';
       for (const factory of pendingFactories) {
         const result = await blueprintVersionApiClient.upgradeFactory(factory.id, {
-          blueprintId,
-          targetVersion: parseInt(currentVersion.replace('v', '').split('.')[0]) || 1,
-          syncOptions: { fullSync: true },
+          targetVersion: parseInt(versionStr, 10) || 1,
+          force: true,
+          reason: 'Batch sync from bindings screen',
         });
         if (result) successCount++;
       }

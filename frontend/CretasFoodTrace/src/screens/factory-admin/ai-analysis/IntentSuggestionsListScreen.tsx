@@ -15,7 +15,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon, Chip, Badge } from 'react-native-paper';
-import { useTranslation, TFunction } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
+
+// Use a generic translation function type that works with any namespace
+type TranslateFunction = (key: string, options?: Record<string, unknown>) => string;
 import { FAAIStackParamList } from '../../../types/navigation';
 import {
   intentAnalysisApiClient,
@@ -52,7 +55,7 @@ function FilterChip({ label, selected, count, onPress }: FilterChipProps) {
   );
 }
 
-function getSuggestionTypeLabel(type: SuggestionType, t: TFunction): string {
+function getSuggestionTypeLabel(type: SuggestionType, t: TranslateFunction): string {
   switch (type) {
     case 'CREATE_INTENT':
       return t('intentSuggestions.createIntent');
@@ -81,7 +84,7 @@ function getSuggestionTypeColor(type: SuggestionType): string {
 interface SuggestionItemProps {
   item: IntentOptimizationSuggestion;
   onPress: () => void;
-  t: TFunction;
+  t: TranslateFunction;
   locale: string;
 }
 

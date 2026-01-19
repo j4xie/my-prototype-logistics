@@ -793,6 +793,7 @@ export type DispatcherTabParamList = {
   HomeTab: undefined;
   PlanTab: undefined;
   AITab: undefined;
+  SmartBITab: undefined;
   PersonnelTab: undefined;
   ProfileTab: undefined;
 };

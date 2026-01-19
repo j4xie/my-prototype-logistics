@@ -1,5 +1,6 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.config.ArenaRLConfig;
 import com.cretas.aims.config.IntentKnowledgeBase;
 import com.cretas.aims.config.IntentKnowledgeBase.ActionType;
 import com.cretas.aims.config.IntentMatchingConfig;
@@ -26,11 +27,18 @@ import com.cretas.aims.service.KeywordLearningService;
 import com.cretas.aims.service.KeywordPromotionService;
 import com.cretas.aims.service.LlmIntentFallbackClient;
 import com.cretas.aims.service.AIIntentDomainDefaultService;
+import com.cretas.aims.service.ConversationMemoryService;
+import com.cretas.aims.service.MultiLabelIntentClassifier;
+import com.cretas.aims.service.QueryPreprocessorService;
 import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.dto.intent.MultiIntentResult;
+import com.cretas.aims.dto.ai.PreprocessedQuery;
+import com.cretas.aims.dto.conversation.ConversationContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -73,6 +81,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final SemanticCacheConfigRepository semanticCacheConfigRepository;
     private final ConversationService conversationService;
     private final AIIntentDomainDefaultService domainDefaultService;
+    private final QueryPreprocessorService queryPreprocessorService;
+    private final ConversationMemoryService conversationMemoryService;
+    private final MultiLabelIntentClassifier multiLabelIntentClassifier;
 
     /**
      * 意图匹配统一配置
@@ -80,9 +91,20 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final IntentMatchingConfig matchingConfig;
 
     /**
+     * ArenaRL 锦标赛配置
+     */
+    private final ArenaRLConfig arenaRLConfig;
+
+    /**
      * 意图识别知识库
      */
     private final IntentKnowledgeBase knowledgeBase;
+
+    /**
+     * 是否启用查询预处理
+     */
+    @Value("${cretas.ai.preprocess.enabled:true}")
+    private boolean preprocessEnabled;
 
     // ==================== 意图识别 ====================
 
@@ -220,13 +242,132 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, int topN) {
-        return recognizeIntentWithConfidence(userInput, null, topN, null, null);
+        return recognizeIntentWithConfidence(userInput, null, topN, null, null, null);
     }
 
     @Override
     public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN, Long userId, String userRole) {
+        return recognizeIntentWithConfidence(userInput, factoryId, topN, userId, userRole, null);
+    }
+
+    @Override
+    public IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN,
+                                                           Long userId, String userRole, String sessionId) {
         if (userInput == null || userInput.trim().isEmpty()) {
             return IntentMatchResult.empty(userInput);
+        }
+
+        // === 新增：查询预处理 ===
+        String processedInput = userInput;
+        PreprocessedQuery preprocessedQuery = null;
+        QueryPreprocessorService.EnhancedPreprocessResult enhancedResult = null;
+        IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult = null;
+
+        if (preprocessEnabled) {
+            try {
+                // Step 1: 增强预处理（语气词过滤、口语标准化、核心提取）
+                enhancedResult = queryPreprocessorService.enhancedPreprocess(userInput);
+                if (enhancedResult != null && enhancedResult.getProcessedInput() != null) {
+                    processedInput = enhancedResult.getProcessedInput();
+                    log.debug("Enhanced preprocess: '{}' -> '{}', features={}",
+                            userInput, processedInput, enhancedResult.getQueryFeatures());
+                }
+
+                // Step 2: 动词+名词消歧（在 IntentKnowledgeBase 中进行）
+                verbNounResult = knowledgeBase.disambiguateByVerbNoun(processedInput);
+                if (verbNounResult != null && verbNounResult.isDisambiguated()) {
+                    log.info("VerbNoun disambiguation: '{}' -> intent={} (verb={}, noun={}, conf={})",
+                            processedInput, verbNounResult.getRecommendedIntent(),
+                            verbNounResult.getVerb(), verbNounResult.getNoun(),
+                            verbNounResult.getConfidence());
+                }
+
+                // Step 3: 如果有会话上下文，执行完整预处理（指代消解等）
+                if (sessionId != null) {
+                    ConversationContext context = conversationMemoryService
+                        .getOrCreateContext(factoryId, userId, sessionId);
+                    preprocessedQuery = queryPreprocessorService.preprocess(processedInput, context);
+                    if (preprocessedQuery != null && preprocessedQuery.getFinalQuery() != null) {
+                        processedInput = preprocessedQuery.getFinalQuery();
+                    }
+                }
+
+                log.info("Query preprocessed: '{}' -> '{}'", userInput, processedInput);
+            } catch (Exception e) {
+                log.warn("Query preprocessing failed, using original input", e);
+            }
+        }
+
+        // 使用处理后的输入进行意图识别
+        IntentMatchResult result = doRecognizeIntentWithConfidence(
+                processedInput, userInput, factoryId, topN, userId, userRole,
+                enhancedResult, verbNounResult);
+
+        // 附加预处理结果到匹配结果（如果有）
+        if (preprocessedQuery != null && result != null) {
+            result.setPreprocessedQuery(preprocessedQuery);
+        }
+
+        return result;
+    }
+
+    /**
+     * 内部意图识别核心逻辑
+     *
+     * @param processedInput 预处理后的输入
+     * @param originalInput 原始用户输入
+     * @param factoryId 工厂ID
+     * @param topN 返回候选数量
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @param enhancedResult 增强预处理结果（可为 null）
+     * @param verbNounResult 动词+名词消歧结果（可为 null）
+     * @return 意图匹配结果
+     */
+    private IntentMatchResult doRecognizeIntentWithConfidence(String processedInput, String originalInput,
+                                                              String factoryId, int topN,
+                                                              Long userId, String userRole,
+                                                              QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
+                                                              IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult) {
+        String userInput = processedInput; // 使用处理后的输入进行匹配
+
+        // ========== Layer 0.5: 动词+名词消歧快速路径 ==========
+        // 如果动词+名词消歧成功且置信度足够高，直接返回该意图
+        if (verbNounResult != null && verbNounResult.isDisambiguated()
+                && verbNounResult.getConfidence() >= 0.80) {
+            String recommendedIntent = verbNounResult.getRecommendedIntent();
+            List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+
+            Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                    .filter(i -> i.getIntentCode().equals(recommendedIntent))
+                    .findFirst();
+
+            if (intentOpt.isPresent()) {
+                AIIntentConfig intent = intentOpt.get();
+                ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+
+                log.info("动词+名词消歧快速匹配: input='{}', intent={}, verb={}, noun={}",
+                        originalInput, recommendedIntent, verbNounResult.getVerb(), verbNounResult.getNoun());
+
+                IntentMatchResult result = IntentMatchResult.builder()
+                        .bestMatch(intent)
+                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                intent, verbNounResult.getConfidence(), 95,
+                                List.of(verbNounResult.getVerb(), verbNounResult.getNoun()),
+                                MatchMethod.SEMANTIC)))
+                        .confidence(verbNounResult.getConfidence())
+                        .matchMethod(MatchMethod.SEMANTIC)
+                        .matchedKeywords(List.of(verbNounResult.getVerb(), verbNounResult.getNoun()))
+                        .isStrongSignal(true)
+                        .requiresConfirmation(verbNounResult.getConfidence() < 0.85)
+                        .userInput(originalInput)
+                        .actionType(detectedActionType)
+                        .build();
+
+                // 记录匹配
+                saveIntentMatchRecord(result, factoryId, null, null, false);
+                return result;
+            }
         }
 
         // ========== Layer 1: 精确表达匹配 (hash查表, O(1)) ==========
@@ -279,59 +420,21 @@ public class AIIntentServiceImpl implements AIIntentService {
         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
         String normalizedInput = userInput.toLowerCase().trim();
 
-        // ========== v5.0优化: 短语映射优先检查 (在问题类型检测之前) ==========
-        // 修复v4.0回归: 避免"品质怎么样"等业务短语被错误分类为GENERAL_QUESTION
-        Optional<String> phraseMatch = knowledgeBase.matchPhrase(userInput);
-        if (phraseMatch.isPresent()) {
-            String intentCode = phraseMatch.get();
-            AIIntentConfig matchedConfig = allIntents.stream()
-                    .filter(c -> intentCode.equals(c.getIntentCode()))
-                    .findFirst()
-                    .orElse(null);
+        // ========== v7.0架构优化: 移除短语映射优先检查 ==========
+        // 短语匹配现在作为 preciseVerification() 中的评分项，而不是跳过语义识别
+        // 这修复了 "创建原料批次" 被短语匹配到 MATERIAL_BATCH_QUERY 的问题
+        // 因为语义识别能正确检测到 "创建" 动词
 
-            if (matchedConfig != null) {
-                log.debug("短语映射优先命中: '{}' -> {}", userInput, intentCode);
-
-                IntentMatchResult result = IntentMatchResult.builder()
-                        .bestMatch(matchedConfig)
-                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
-                                matchedConfig, 1.0, 100, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
-                        .confidence(1.0)
-                        .matchMethod(MatchMethod.PHRASE_MATCH)
-                        .matchedKeywords(Collections.singletonList(userInput))
-                        .isStrongSignal(true)
-                        .requiresConfirmation(false)
-                        .userInput(userInput)
-                        .actionType(knowledgeBase.detectActionType(normalizedInput))
-                        .build();
-
-                // 记录训练样本
-                if (matchingConfig.isSampleCollectionEnabled()) {
-                    expressionLearningService.recordSample(factoryId, userInput,
-                            matchedConfig.getIntentCode(), TrainingSample.MatchMethod.EXACT,
-                            1.0, null);
-                }
-
-                saveIntentMatchRecord(result, factoryId, null, null, false);
-                return result;
-            }
-        }
-
-        // ========== Layer 0: 问题类型分类（在关键词匹配之前）==========
+        // ========== Layer 0: 问题类型分类 ==========
         // 判断是操作指令、通用咨询问题还是闲聊
         IntentKnowledgeBase.QuestionType questionType = knowledgeBase.detectQuestionType(userInput);
         log.debug("检测到问题类型: {} for input: '{}'", questionType, userInput);
 
-        // 如果是通用咨询问题或闲聊，直接路由到LLM（跳过关键词匹配）
-        if (questionType == IntentKnowledgeBase.QuestionType.GENERAL_QUESTION ||
-            questionType == IntentKnowledgeBase.QuestionType.CONVERSATIONAL) {
-
-            log.info("问题类型为{}，直接路由到LLM对话: input='{}'", questionType, userInput);
-
-            // v4.2: 生成澄清问题，帮助用户明确需求
-            String clarification = generateGeneralQuestionClarification(userInput, questionType);
-
-            // 返回空匹配结果，让后续流程走LLM fallback，但携带clarification问题
+        // v6.3架构改进：
+        // - CONVERSATIONAL（闲聊）直接拒绝，不尝试业务匹配
+        // - GENERAL_QUESTION（通用问题）使用更高置信度阈值
+        if (questionType == IntentKnowledgeBase.QuestionType.CONVERSATIONAL) {
+            log.info("检测到闲聊类型，直接拒绝: input='{}'", userInput);
             IntentMatchResult noMatchResult = IntentMatchResult.builder()
                     .bestMatch(null)
                     .topCandidates(Collections.emptyList())
@@ -339,15 +442,18 @@ public class AIIntentServiceImpl implements AIIntentService {
                     .matchMethod(MatchMethod.NONE)
                     .matchedKeywords(Collections.emptyList())
                     .isStrongSignal(false)
-                    .requiresConfirmation(true)  // v4.2: 需要确认
-                    .clarificationQuestion(clarification)  // v4.2: 澄清问题
+                    .requiresConfirmation(false)
                     .userInput(userInput)
                     .actionType(ActionType.UNKNOWN)
-                    .questionType(questionType) // 携带问题类型信息
+                    .questionType(questionType)
                     .build();
-
             saveIntentMatchRecord(noMatchResult, factoryId, null, null, false);
             return noMatchResult;
+        }
+
+        boolean isAmbiguousQuery = (questionType == IntentKnowledgeBase.QuestionType.GENERAL_QUESTION);
+        if (isAmbiguousQuery) {
+            log.info("问题类型为GENERAL_QUESTION，将使用更高置信度阈值: input='{}'", userInput);
         }
 
         ActionType opType = knowledgeBase.detectActionType(normalizedInput);
@@ -391,24 +497,86 @@ public class AIIntentServiceImpl implements AIIntentService {
                     // Step 3: 置信度决策
                     double highThreshold = matchingConfig.getSemanticFirstHighThreshold();
 
-                    // 高置信度 (>= 0.85): 直接返回
-                    if (confidence >= highThreshold) {
-                        IntentMatchResult result = IntentMatchResult.builder()
-                                .bestMatch(bestCandidate.config)
-                                .topCandidates(candidates)
-                                .confidence(confidence)
-                                .matchMethod(bestCandidate.phraseConfirmed ? MatchMethod.PHRASE_MATCH : MatchMethod.SEMANTIC)
-                                .matchedKeywords(bestCandidate.matchedKeywords)
-                                .isStrongSignal(true)
-                                .requiresConfirmation(false)
-                                .userInput(userInput)
-                                .actionType(opType)
-                                .build();
+                    // v6.3: 对于模糊查询（如"xxx怎么样"），使用更高的置信度阈值
+                    // 确保只有真正高置信度的业务查询才会被识别，避免误判
+                    if (isAmbiguousQuery) {
+                        highThreshold = Math.max(highThreshold, 0.90);
+                        log.debug("模糊查询使用更高阈值: {}", highThreshold);
+                    }
 
-                        log.info("语义优先高置信度直接返回: intent={}, confidence={:.3f}",
-                                bestCandidate.intentCode, confidence);
-                        saveIntentMatchRecord(result, factoryId, null, null, false);
-                        return result;
+                    // 高置信度: 检查是否需要强制 LLM 验证
+                    if (confidence >= highThreshold) {
+                        // v7.1: 操作类意图即使高置信度也需要 ArenaRL 验证
+                        // 原因: 操作有风险，短语冲突可能导致误匹配
+                        boolean isWriteOperation = isWriteOperationType(opType, bestCandidate.intentCode);
+                        boolean hasCloseCompetitor = candidates.size() >= 2 &&
+                                (candidates.get(0).getConfidence() - candidates.get(1).getConfidence()) < 0.12;
+
+                        // v7.1.1: 强短语匹配豁免 ArenaRL
+                        // 如果用户输入包含某个强短语，找到对应的候选并直接返回
+                        CandidateIntent strongPhraseCandidate = findStrongPhraseCandidate(userInput, candidates);
+
+                        if (strongPhraseCandidate != null) {
+                            // 找到强短语匹配，直接返回该候选，跳过 ArenaRL
+                            log.info("v7.1.1: 强短语匹配豁免 ArenaRL: intent={}, 原最佳={}",
+                                    strongPhraseCandidate.getIntentCode(), bestCandidate.intentCode);
+
+                            // 重新构建候选列表，将强短语候选放在首位
+                            List<CandidateIntent> reorderedCandidates = new ArrayList<>();
+                            reorderedCandidates.add(strongPhraseCandidate);
+                            for (CandidateIntent c : candidates) {
+                                if (!c.getIntentCode().equals(strongPhraseCandidate.getIntentCode())) {
+                                    reorderedCandidates.add(c);
+                                }
+                            }
+
+                            // 查找强短语候选的配置
+                            AIIntentConfig strongPhraseConfig = getAllIntents(factoryId).stream()
+                                    .filter(c -> c.getIntentCode().equals(strongPhraseCandidate.getIntentCode()))
+                                    .findFirst()
+                                    .orElse(bestCandidate.config);
+
+                            IntentMatchResult result = IntentMatchResult.builder()
+                                    .bestMatch(strongPhraseConfig)
+                                    .topCandidates(reorderedCandidates)
+                                    .confidence(strongPhraseCandidate.getConfidence())
+                                    .matchMethod(MatchMethod.PHRASE_MATCH)
+                                    .matchedKeywords(strongPhraseCandidate.getMatchedKeywords())
+                                    .isStrongSignal(true)
+                                    .requiresConfirmation(false)
+                                    .userInput(userInput)
+                                    .actionType(opType)
+                                    .questionType(questionType)
+                                    .build();
+                            saveIntentMatchRecord(result, factoryId, null, null, false);
+                            return result;
+                        }
+
+                        if (isWriteOperation && hasCloseCompetitor) {
+                            log.info("v7.1: 操作类意图强制 ArenaRL 验证: intent={}, opType={}, gap={:.3f}",
+                                    bestCandidate.intentCode, opType,
+                                    candidates.get(0).getConfidence() - candidates.get(1).getConfidence());
+                            // 继续执行，进入 ArenaRL/LLM Reranking 流程
+                        } else {
+                            // 查询类意图或差距足够大，直接返回
+                            IntentMatchResult result = IntentMatchResult.builder()
+                                    .bestMatch(bestCandidate.config)
+                                    .topCandidates(candidates)
+                                    .confidence(confidence)
+                                    .matchMethod(bestCandidate.phraseConfirmed ? MatchMethod.PHRASE_MATCH : MatchMethod.SEMANTIC)
+                                    .matchedKeywords(bestCandidate.matchedKeywords)
+                                    .isStrongSignal(true)
+                                    .requiresConfirmation(false)
+                                    .userInput(userInput)
+                                    .actionType(opType)
+                                    .questionType(questionType)
+                                    .build();
+
+                            log.info("语义优先高置信度直接返回: intent={}, confidence={:.3f}",
+                                    bestCandidate.intentCode, confidence);
+                            saveIntentMatchRecord(result, factoryId, null, null, false);
+                            return result;
+                        }
                     }
 
                     // 中/低置信度: 构建结果交给后续 LLM Reranking/Fallback 处理
@@ -421,8 +589,29 @@ public class AIIntentServiceImpl implements AIIntentService {
                             .isStrongSignal(false)
                             .requiresConfirmation(true)
                             .userInput(userInput)
+                            .questionType(questionType)
                             .actionType(opType)
                             .build();
+
+                    // v6.3: 对于模糊查询，如果置信度低于阈值，直接拒绝匹配
+                    // 避免 "天气怎么样" 这类非业务查询被错误匹配
+                    if (isAmbiguousQuery && confidence < 0.88) {
+                        log.info("模糊查询置信度过低 ({:.3f} < 0.88)，拒绝匹配: input='{}'", confidence, userInput);
+                        IntentMatchResult noMatch = IntentMatchResult.builder()
+                                .bestMatch(null)
+                                .topCandidates(Collections.emptyList())
+                                .confidence(0.0)
+                                .matchMethod(MatchMethod.NONE)
+                                .matchedKeywords(Collections.emptyList())
+                                .isStrongSignal(false)
+                                .requiresConfirmation(false)
+                                .userInput(userInput)
+                                .actionType(opType)
+                                .questionType(questionType)
+                                .build();
+                        saveIntentMatchRecord(noMatch, factoryId, null, null, false);
+                        return noMatch;
+                    }
 
                     // 中置信度走 LLM Reranking
                     if (matchingConfig.isInRerankingRange(confidence)) {
@@ -963,13 +1152,6 @@ public class AIIntentServiceImpl implements AIIntentService {
             return semanticResult;
         }
 
-        // 检查 LLM 服务健康状态
-        if (!llmFallbackClient.isHealthy()) {
-            log.warn("LLM service is not healthy, returning semantic result");
-            saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
-            return semanticResult;
-        }
-
         try {
             // 限制候选数量
             int topK = matchingConfig.getLlmRerankingTopCandidates();
@@ -977,7 +1159,86 @@ public class AIIntentServiceImpl implements AIIntentService {
                     .limit(topK)
                     .collect(Collectors.toList());
 
-            // 调用 LLM Reranking
+            // ========== ArenaRL 歧义裁决 (使用 DashScope，不依赖外部 AI 服务) ==========
+            // 检查是否满足 ArenaRL 触发条件 (top1-top2 < 0.15 且 top1 < 0.85)
+            log.info("[ArenaRL] 检查触发条件: configExists={}, enabled={}, candidates={}",
+                    arenaRLConfig != null,
+                    arenaRLConfig != null ? arenaRLConfig.isIntentDisambiguationEnabled() : "N/A",
+                    topCandidates.size());
+            if (arenaRLConfig != null && arenaRLConfig.isIntentDisambiguationEnabled() && topCandidates.size() >= 2) {
+                double top1Conf = topCandidates.get(0).getConfidence();
+                double top2Conf = topCandidates.get(1).getConfidence();
+                double gap = top1Conf - top2Conf;
+                double threshold = arenaRLConfig.getIntentDisambiguation().getAmbiguityThreshold();
+                double minTrigger = arenaRLConfig.getIntentDisambiguation().getMinTriggerConfidence();
+
+                if (gap < threshold && top1Conf < minTrigger) {
+                    log.info("[ArenaRL] 触发意图歧义裁决: top1={:.3f}, top2={:.3f}, gap={:.3f} < threshold={:.3f}",
+                            top1Conf, top2Conf, gap, threshold);
+
+                    // 调用 ArenaRL 锦标赛裁决
+                    LlmIntentFallbackClient.ArenaRLResult arenaResult =
+                            llmFallbackClient.disambiguateWithArenaRL(userInput, topCandidates, factoryId);
+
+                    if (arenaResult.isSuccess()) {
+                        log.info("[ArenaRL] 裁决完成: winner={}, confidence={:.3f}, comparisons={}",
+                                arenaResult.getWinnerIntentCode(),
+                                arenaResult.getWinnerConfidence(),
+                                arenaResult.getComparisonCount());
+
+                        // 使用 ArenaRL 结果
+                        String winnerCode = arenaResult.getWinnerIntentCode();
+                        Optional<AIIntentConfig> winnerConfigOpt = intentRepository.findByIntentCode(winnerCode);
+
+                        if (winnerConfigOpt.isPresent()) {
+                            AIIntentConfig winnerConfig = winnerConfigOpt.get();
+
+                            // 构建 ArenaRL 裁决结果
+                            CandidateIntent winnerCandidate = CandidateIntent.builder()
+                                    .intentCode(winnerCode)
+                                    .intentName(winnerConfig.getIntentName())
+                                    .intentCategory(winnerConfig.getIntentCategory())
+                                    .confidence(arenaResult.getWinnerConfidence())
+                                    .matchMethod(MatchMethod.LLM) // 使用 LLM 方法标记
+                                    .description(winnerConfig.getDescription())
+                                    .build();
+
+                            List<CandidateIntent> arenaRankedCandidates = new ArrayList<>();
+                            arenaRankedCandidates.add(winnerCandidate);
+                            for (CandidateIntent c : topCandidates) {
+                                if (!c.getIntentCode().equals(winnerCode)) {
+                                    arenaRankedCandidates.add(c);
+                                }
+                            }
+
+                            IntentMatchResult arenaResult2 = IntentMatchResult.builder()
+                                    .bestMatch(winnerConfig)
+                                    .topCandidates(arenaRankedCandidates)
+                                    .confidence(arenaResult.getWinnerConfidence())
+                                    .matchMethod(MatchMethod.LLM)
+                                    .build();
+
+                            saveIntentMatchRecord(arenaResult2, factoryId, null, null, false);
+                            return arenaResult2;
+                        }
+                    } else {
+                        log.warn("[ArenaRL] 裁决失败，回退到 LLM Reranking: {}", arenaResult.getErrorMessage());
+                    }
+                } else {
+                    log.info("[ArenaRL] 未触发: top1={}, top2={}, gap={} (threshold={}), minTrigger={}",
+                            top1Conf, top2Conf, gap, threshold, minTrigger);
+                }
+            }
+
+            // ========== LLM Reranking 回退 (需要检查外部 AI 服务健康状态) ==========
+            // 检查 LLM 服务健康状态 (仅在 ArenaRL 未触发或失败时检查)
+            if (!llmFallbackClient.isHealthy()) {
+                log.warn("LLM service is not healthy, returning semantic result");
+                saveIntentMatchRecord(semanticResult, factoryId, null, null, false);
+                return semanticResult;
+            }
+
+            // 调用 LLM Reranking (ArenaRL 未触发或失败时的回退)
             LlmIntentFallbackClient.RerankingResult rerankingResult =
                     llmFallbackClient.rerankCandidates(userInput, topCandidates, factoryId);
 
@@ -1165,6 +1426,184 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return false;
+    }
+
+    /**
+     * v7.1: 判断是否为写入/操作类意图
+     *
+     * 写入操作风险较高，需要更严格的验证
+     *
+     * @param opType 检测到的操作类型
+     * @param intentCode 意图代码
+     * @return 是否为写入操作类型
+     */
+    private boolean isWriteOperationType(ActionType opType, String intentCode) {
+        // 基于操作类型判断
+        if (opType != null) {
+            switch (opType) {
+                case CREATE:
+                case UPDATE:
+                case DELETE:
+                    // 注意: ActionType 枚举没有 EXECUTE，操作类判断通过 intentCode 后缀实现
+                    return true;
+                default:
+                    break;
+            }
+        }
+
+        // 基于意图代码后缀判断
+        if (intentCode != null) {
+            String upper = intentCode.toUpperCase();
+            return upper.contains("_CREATE") ||
+                   upper.contains("_UPDATE") ||
+                   upper.contains("_DELETE") ||
+                   upper.contains("_START") ||
+                   upper.contains("_STOP") ||
+                   upper.contains("_PAUSE") ||
+                   upper.contains("_RESUME") ||
+                   upper.contains("_COMPLETE") ||
+                   upper.contains("_EXECUTE") ||
+                   upper.contains("_CONSUME") ||
+                   upper.contains("_RELEASE") ||
+                   upper.contains("_RESERVE") ||
+                   upper.contains("_ACKNOWLEDGE") ||
+                   upper.contains("_RESOLVE") ||
+                   upper.contains("CLOCK_IN") ||
+                   upper.contains("CLOCK_OUT");
+        }
+
+        return false;
+    }
+
+    /**
+     * v7.1.1: 查找强短语匹配的候选
+     *
+     * 强短语匹配是指用户输入完全包含某个已知会被 ArenaRL 误判的关键短语，
+     * 且该短语唯一指向某个意图。这些短语应该绕过 ArenaRL，直接使用短语映射结果。
+     *
+     * @param userInput 用户输入
+     * @param candidates 候选列表
+     * @return 强短语匹配的候选，如果没有则返回 null
+     */
+    private CandidateIntent findStrongPhraseCandidate(String userInput, List<CandidateIntent> candidates) {
+        String input = userInput.toLowerCase().trim();
+
+        // 定义强短语映射（这些短语被 ArenaRL 经常误判）
+        // 格式: 输入短语 -> 正确意图
+        Map<String, String> strongPhrases = new LinkedHashMap<>();
+
+        // 打卡类 - "下班" 系列容易被误判为 CLOCK_IN
+        strongPhrases.put("下班打卡", "CLOCK_OUT");
+        strongPhrases.put("下班签退", "CLOCK_OUT");
+        strongPhrases.put("下班", "CLOCK_OUT");
+        strongPhrases.put("签退", "CLOCK_OUT");
+
+        // 生产控制类 - "暂停" 容易被误判为 SCHEDULING_SET_MANUAL
+        strongPhrases.put("暂停生产", "PROCESSING_BATCH_PAUSE");
+        strongPhrases.put("暂停批次", "PROCESSING_BATCH_PAUSE");
+        strongPhrases.put("生产暂停", "PROCESSING_BATCH_PAUSE");
+
+        // 质检类 - "记录" 容易被误判为执行操作
+        strongPhrases.put("质检记录", "QUALITY_CHECK_QUERY");
+        strongPhrases.put("检验记录", "QUALITY_CHECK_QUERY");
+        strongPhrases.put("质量记录", "QUALITY_CHECK_QUERY");
+
+        // v7.2: 原料创建类 - "添加" 容易被误判为 MATERIAL_UPDATE
+        strongPhrases.put("添加新原料", "MATERIAL_BATCH_CREATE");
+        strongPhrases.put("新增原料", "MATERIAL_BATCH_CREATE");
+        strongPhrases.put("录入原料", "MATERIAL_BATCH_CREATE");
+        strongPhrases.put("原料入库", "MATERIAL_BATCH_CREATE");
+
+        // v7.2: 客户统计类 - "客户统计" 容易被误判为 REPORT_DASHBOARD_OVERVIEW
+        strongPhrases.put("客户统计", "CUSTOMER_STATS");
+        strongPhrases.put("客户数据统计", "CUSTOMER_STATS");
+        strongPhrases.put("客户分析", "CUSTOMER_STATS");
+
+        // v7.2: 原料批次详情 - 消除"批次详情"歧义
+        strongPhrases.put("原料批次详情", "MATERIAL_BATCH_QUERY");
+        strongPhrases.put("原材料批次", "MATERIAL_BATCH_QUERY");
+        strongPhrases.put("原料批次", "MATERIAL_BATCH_QUERY");
+
+        // 检查用户输入是否包含强短语
+        for (Map.Entry<String, String> entry : strongPhrases.entrySet()) {
+            String phrase = entry.getKey();
+            String expectedIntent = entry.getValue();
+
+            if (input.contains(phrase)) {
+                // 在候选列表中查找对应的意图
+                for (CandidateIntent candidate : candidates) {
+                    if (candidate.getIntentCode().equals(expectedIntent)) {
+                        log.debug("v7.1.1 强短语匹配: '{}' 包含 '{}' -> {} (在候选列表中找到)",
+                                input, phrase, expectedIntent);
+                        return candidate;
+                    }
+                }
+                // 短语匹配但候选中没有对应意图
+                log.debug("v7.1.1 强短语匹配: '{}' 包含 '{}' -> {} (但候选列表中没有该意图)",
+                        input, phrase, expectedIntent);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * v7.1: 计算时态语义调整分数
+     *
+     * 时态线索通常表示查询状态而非执行动作:
+     * - "正在xxx" → 查询当前状态
+     * - "今天的xxx" → 查询今日数据
+     * - "最近的xxx" → 查询近期记录
+     * - "当前xxx" → 查询当前状态
+     *
+     * @param userInput 用户输入
+     * @param intentCode 意图代码
+     * @return 调整分数 (正数表示加分，负数表示减分)
+     */
+    private double calculateTemporalSemanticAdjustment(String userInput, String intentCode) {
+        String input = userInput.toLowerCase();
+        String intentUpper = intentCode.toUpperCase();
+
+        // 时态查询词
+        boolean hasTemporalQueryMarker = input.contains("正在") ||
+                input.contains("今天的") ||
+                input.contains("今日") ||
+                input.contains("最近的") ||
+                input.contains("最近") ||
+                input.contains("当前") ||
+                input.contains("目前");
+
+        if (!hasTemporalQueryMarker) {
+            return 0.0; // 无时态标记，不调整
+        }
+
+        // 检查意图是查询类还是操作类
+        boolean isQueryIntent = intentUpper.contains("_LIST") ||
+                intentUpper.contains("_QUERY") ||
+                intentUpper.contains("_DETAIL") ||
+                intentUpper.contains("_STATS") ||
+                intentUpper.contains("_HISTORY") ||
+                intentUpper.contains("_TIMELINE") ||
+                intentUpper.contains("_ACTIVE") ||
+                intentUpper.contains("_STATUS");
+
+        boolean isActionIntent = intentUpper.contains("_START") ||
+                intentUpper.contains("_CREATE") ||
+                intentUpper.contains("_UPDATE") ||
+                intentUpper.contains("_DELETE") ||
+                intentUpper.contains("_EXECUTE");
+
+        if (isQueryIntent && !isActionIntent) {
+            // 时态标记 + 查询意图 = 正确匹配，加分
+            log.debug("v7.1时态语义: {} 检测到时态查询词 + 查询意图 (+0.08)", intentCode);
+            return 0.08;
+        } else if (isActionIntent && !isQueryIntent) {
+            // 时态标记 + 操作意图 = 可能错误，减分
+            log.debug("v7.1时态语义: {} 检测到时态查询词但是操作意图 (-0.12)", intentCode);
+            return -0.12;
+        }
+
+        return 0.0;
     }
 
     /**
@@ -1897,6 +2336,81 @@ public class AIIntentServiceImpl implements AIIntentService {
         intentRepository.save(existing);
     }
 
+    // ==================== 多意图识别 ====================
+
+    @Override
+    public MultiIntentResult recognizeMultiIntent(String userInput, String factoryId) {
+        return recognizeMultiIntent(userInput, factoryId, multiLabelIntentClassifier.getDefaultThreshold());
+    }
+
+    @Override
+    public MultiIntentResult recognizeMultiIntent(String userInput, String factoryId, double threshold) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return MultiIntentResult.builder()
+                    .isMultiIntent(false)
+                    .intents(Collections.emptyList())
+                    .executionStrategy(MultiIntentResult.ExecutionStrategy.PARALLEL)
+                    .overallConfidence(0.0)
+                    .reasoning("输入为空")
+                    .build();
+        }
+
+        // 检查服务可用性
+        if (!multiLabelIntentClassifier.isAvailable()) {
+            log.warn("多标签意图分类器不可用，降级为单意图识别");
+            // 降级处理：使用现有的单意图识别
+            IntentMatchResult singleResult = recognizeIntentWithConfidence(userInput, factoryId, 1, null, null, null);
+            if (singleResult != null && singleResult.getBestMatch() != null) {
+                return MultiIntentResult.builder()
+                        .isMultiIntent(false)
+                        .intents(Collections.singletonList(
+                                MultiIntentResult.SingleIntentMatch.builder()
+                                        .intentCode(singleResult.getBestMatch().getIntentCode())
+                                        .intentName(singleResult.getBestMatch().getIntentName())
+                                        .confidence(singleResult.getConfidence())
+                                        .extractedParams(new HashMap<>())
+                                        .reasoning("降级为单意图识别")
+                                        .executionOrder(1)
+                                        .build()
+                        ))
+                        .executionStrategy(MultiIntentResult.ExecutionStrategy.PARALLEL)
+                        .overallConfidence(singleResult.getConfidence())
+                        .reasoning("Embedding服务不可用，降级为单意图")
+                        .build();
+            }
+            return MultiIntentResult.builder()
+                    .isMultiIntent(false)
+                    .intents(Collections.emptyList())
+                    .executionStrategy(MultiIntentResult.ExecutionStrategy.PARALLEL)
+                    .overallConfidence(0.0)
+                    .reasoning("无法识别意图")
+                    .build();
+        }
+
+        try {
+            // 使用多标签分类器
+            MultiIntentResult result = multiLabelIntentClassifier.classifyMultiLabel(userInput, factoryId, threshold);
+
+            log.info("多意图识别完成: isMulti={}, intents={}, strategy={}, confidence={:.3f}",
+                    result.isMultiIntent(),
+                    result.getIntents() != null ? result.getIntents().size() : 0,
+                    result.getExecutionStrategy(),
+                    result.getOverallConfidence());
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("多意图识别失败: {}", e.getMessage(), e);
+            return MultiIntentResult.builder()
+                    .isMultiIntent(false)
+                    .intents(Collections.emptyList())
+                    .executionStrategy(MultiIntentResult.ExecutionStrategy.PARALLEL)
+                    .overallConfidence(0.0)
+                    .reasoning("识别过程异常: " + e.getMessage())
+                    .build();
+        }
+    }
+
     // ==================== 缓存管理 ====================
 
     @Override
@@ -2434,23 +2948,67 @@ public class AIIntentServiceImpl implements AIIntentService {
         IntentKnowledgeBase.Granularity inputGranularity = routingResult.getInputGranularity();
         IntentKnowledgeBase.Domain inputDomain = routingResult.getInputDomain();
 
-        for (SemanticCandidate candidate : routingResult.getCandidates()) {
+        // v7.0优化: 如果短语匹配的意图不在语义候选中，注入该意图
+        // 这确保短语匹配的意图有机会参与评分竞争
+        List<SemanticCandidate> candidates = new ArrayList<>(routingResult.getCandidates());
+        if (phraseMatch.isPresent()) {
+            String phraseMatchedIntent = phraseMatch.get();
+            boolean alreadyInCandidates = candidates.stream()
+                    .anyMatch(c -> c.intentCode.equals(phraseMatchedIntent));
+
+            if (!alreadyInCandidates) {
+                // 从意图配置中查找该意图
+                List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                AIIntentConfig phraseIntentConfig = allIntents.stream()
+                        .filter(c -> c.getIntentCode().equals(phraseMatchedIntent))
+                        .findFirst()
+                        .orElse(null);
+
+                if (phraseIntentConfig != null) {
+                    SemanticCandidate injectedCandidate = new SemanticCandidate();
+                    injectedCandidate.intentCode = phraseMatchedIntent;
+                    // v7.0: 短语完全匹配给予高基础分数（0.80）
+                    // 加上短语加分（0.15）后为0.95，确保短语匹配的意图能竞争胜出
+                    injectedCandidate.semanticScore = 0.80;
+                    injectedCandidate.config = phraseIntentConfig;
+                    injectedCandidate.phraseConfirmed = true; // 标记为短语确认
+                    candidates.add(injectedCandidate);
+                    log.info("v7.0短语注入: 将 {} 注入候选列表 (基础分0.80 + 短语加分0.15 = 0.95)", phraseMatchedIntent);
+                }
+            }
+        }
+
+        for (SemanticCandidate candidate : candidates) {
             double adjustment = 0.0;
 
-            // 1. 短语匹配验证 - 语义结果是否有短语支持?
+            // v7.0优化: 短语/关键词匹配互斥 - 取最高分避免过拟合
+            // 原实现叠加可能导致过度加分 (+0.25)，改为互斥取最高
+            double textMatchBonus = 0.0;
+
+            // 1. 短语匹配验证 - 语义结果是否有短语支持? (+0.15)
             if (phraseMatch.isPresent() && phraseMatch.get().equals(candidate.intentCode)) {
-                adjustment += 0.15;
+                textMatchBonus = 0.15;
                 candidate.phraseConfirmed = true;
                 log.debug("短语验证通过: {} (+0.15)", candidate.intentCode);
             }
 
-            // 2. 关键词交叉验证 - 是否命中意图特征词?
+            // 2. 关键词交叉验证 - 是否命中意图特征词? (+0.10)
+            // 仅在短语未匹配时使用关键词加分（互斥逻辑）
             List<String> matchedKeywords = getMatchedKeywords(candidate.config, normalizedInput, factoryId);
             if (!matchedKeywords.isEmpty()) {
-                adjustment += 0.10;
                 candidate.matchedKeywords = matchedKeywords;
-                log.debug("关键词验证通过: {} (+0.10), keywords={}", candidate.intentCode, matchedKeywords);
+                if (textMatchBonus < 0.10) {
+                    // 短语未匹配，使用关键词加分
+                    textMatchBonus = 0.10;
+                    log.debug("关键词验证通过: {} (+0.10), keywords={}", candidate.intentCode, matchedKeywords);
+                } else {
+                    // 短语已匹配，关键词不额外加分，但记录日志
+                    log.debug("关键词验证通过(短语优先，不叠加): {} keywords={}", candidate.intentCode, matchedKeywords);
+                }
             }
+
+            // 应用文本匹配加分（上限 0.15）
+            adjustment += textMatchBonus;
 
             // 3. 粒度检测 - LIST/DETAIL/STATS 是否一致?
             IntentKnowledgeBase.Granularity intentGranularity =
@@ -2462,14 +3020,21 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
 
             // 4. 域隔离过滤 - 排除跨域干扰候选
+            // v7.0优化: 短语确认的候选不受域惩罚（短语匹配是强信号）
             IntentKnowledgeBase.Domain intentDomain =
                     knowledgeBase.getDomainFromIntentCode(candidate.intentCode);
             if (inputDomain != IntentKnowledgeBase.Domain.GENERAL &&
                 intentDomain != IntentKnowledgeBase.Domain.GENERAL &&
                 inputDomain != intentDomain) {
-                adjustment -= 0.25;
-                log.debug("域不匹配: {} (-0.25), input={}, intent={}",
-                        candidate.intentCode, inputDomain, intentDomain);
+                if (candidate.phraseConfirmed) {
+                    // 短语确认的候选跳过域惩罚
+                    log.debug("域不匹配但短语已确认，跳过惩罚: {} (无惩罚), input={}, intent={}",
+                            candidate.intentCode, inputDomain, intentDomain);
+                } else {
+                    adjustment -= 0.25;
+                    log.debug("域不匹配: {} (-0.25), input={}, intent={}",
+                            candidate.intentCode, inputDomain, intentDomain);
+                }
             } else if (inputDomain == intentDomain && inputDomain != IntentKnowledgeBase.Domain.GENERAL) {
                 // 域匹配加分
                 adjustment += 0.05;
@@ -2480,6 +3045,11 @@ public class AIIntentServiceImpl implements AIIntentService {
                     candidate.intentCode, opType, 10, -3) / 100.0;
             adjustment += opTypeBonus;
 
+            // 6. v7.1: 时态语义检测 - 区分查询状态 vs 执行动作
+            // "正在xxx" / "今天的xxx" / "最近的xxx" 通常是查询状态，不是执行动作
+            double temporalAdjustment = calculateTemporalSemanticAdjustment(normalizedInput, candidate.intentCode);
+            adjustment += temporalAdjustment;
+
             // 计算最终调整后分数
             candidate.adjustedScore = Math.max(0.0, Math.min(1.0,
                     candidate.semanticScore + adjustment));
@@ -2489,10 +3059,10 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         // 按调整后分数重新排序
-        routingResult.getCandidates().sort((a, b) ->
+        candidates.sort((a, b) ->
                 Double.compare(b.adjustedScore, a.adjustedScore));
 
-        return routingResult.getCandidates();
+        return candidates;
     }
 
     /**

@@ -1,0 +1,1599 @@
+{
+  "testSuite": "AI Intent Recognition - P2+P3 Complete Test Cases",
+  "version": "2.0.0",
+  "phase": "Phase 2 - P2+P3 Priority",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "distribution": {
+    "P2_CLOCK": 28,
+    "P2_USER": 24,
+    "P2_CRM": 20,
+    "P2_CONFIG": 15,
+    "P2_CAMERA": 9,
+    "P3_CONVERSATION": 18,
+    "P3_COLLOQUIAL": 23,
+    "P3_BOUNDARY": 19,
+    "P3_EXCEPTION": 10
+  },
+  "testCases": [
+    {
+      "id": "TC-P3-CONVERSATION-012",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "PROCESSING_BATCH_CREATE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少数量澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "生产冷冻虾仁",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|数量"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "计划1000kg",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "PROCESSING_BATCH_CREATE",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少数量,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-013",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "USER_UPDATE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少用户名澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "修改用户信息",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|用户名"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "用户test_user",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "USER_UPDATE",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少用户名,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-014",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "CUSTOMER_CREATE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少联系人澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "新建客户美团",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|联系人"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "联系人李明",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "CUSTOMER_CREATE",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少联系人,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-015",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少多参数澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "创建发货",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|多参数"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "客户C002,产品带鱼,数量300kg",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "SHIPMENT_CREATE",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少多参数,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-016",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少多参数澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "质检",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|多参数"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "批次PB-003,抽检50个,合格45个",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "QUALITY_CHECK_EXECUTE",
+            "dataNotNull": null,
+            "operationSuccess": null
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少多参数,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-017",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "PROCESSING_BATCH_START",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少批次澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "开始生产",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|批次"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "批次PB-004",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "PROCESSING_BATCH_START",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少批次,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-018",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "MATERIAL_ADJUST_QUANTITY",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少调整量澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "调整库存BATCH-003",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|调整量"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "增加50kg",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "MATERIAL_ADJUST_QUANTITY",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少调整量,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-019",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "USER_DISABLE",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少用户名澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "禁用用户",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|用户名"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "用户test_user_10",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "USER_DISABLE",
+            "dataNotNull": null,
+            "operationSuccess": true
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少用户名,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-CONVERSATION-020",
+      "priority": "P3",
+      "category": "CONVERSATION",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "MULTI_TURN",
+      "description": "验证多轮对话-缺少搜索条件澄清",
+      "conversationRounds": [
+        {
+          "round": 1,
+          "userInput": "查找客户",
+          "expectedResponse": {
+            "status": "CONVERSATION_CONTINUE",
+            "sessionIdNotNull": true,
+            "messagePattern": "请提供|搜索条件"
+          }
+        },
+        {
+          "round": 2,
+          "userInput": "名称包含超市",
+          "sessionIdRequired": true,
+          "expectedResponse": {
+            "status": "COMPLETED",
+            "intentCode": "CUSTOMER_SEARCH",
+            "dataNotNull": null,
+            "operationSuccess": null
+          }
+        }
+      ],
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "multiTurnValidation": {
+          "enabled": true,
+          "checkSessionContinuity": true,
+          "checkParameterExtraction": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "第一轮对话缺少搜索条件,系统是否正确识别并要求补充?第二轮补充后是否成功执行?"
+        }
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-003",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "库存查询口语化",
+      "inputVariants": [
+        "还有多少货",
+        "库存够不够",
+        "剩多少了",
+        "仓库里还有啥",
+        "存货情况"
+      ],
+      "allShouldRecognizeAs": "MATERIAL_BATCH_QUERY",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "MATERIAL_BATCH_QUERY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为MATERIAL_BATCH_QUERY意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-004",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "库存查询口语化-补充",
+      "inputVariants": [
+        "东西还有吗",
+        "原料够用吗",
+        "缺不缺货",
+        "要不要补货"
+      ],
+      "allShouldRecognizeAs": "MATERIAL_BATCH_QUERY",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_QUERY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "MATERIAL_BATCH_QUERY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为MATERIAL_BATCH_QUERY意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-005",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "生产查询口语化",
+      "inputVariants": [
+        "今天忙不忙",
+        "生产怎么样",
+        "做了多少",
+        "产量如何",
+        "生产情况"
+      ],
+      "allShouldRecognizeAs": "PROCESSING_BATCH_LIST",
+      "expectedIntent": {
+        "intentCode": "PROCESSING_BATCH_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "PROCESSING_BATCH_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为PROCESSING_BATCH_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-006",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "生产查询口语化-补充",
+      "inputVariants": [
+        "车间在干啥",
+        "生产线开工了吗",
+        "今天做什么",
+        "加工进度"
+      ],
+      "allShouldRecognizeAs": "PROCESSING_BATCH_LIST",
+      "expectedIntent": {
+        "intentCode": "PROCESSING_BATCH_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "PROCESSING_BATCH_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为PROCESSING_BATCH_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-007",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "质检查询口语化",
+      "inputVariants": [
+        "这批行不行",
+        "能用吗",
+        "合格吗",
+        "质量可以吗",
+        "检测过了没"
+      ],
+      "allShouldRecognizeAs": "QUALITY_CHECK_EXECUTE",
+      "expectedIntent": {
+        "intentCode": "QUALITY_CHECK_EXECUTE",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "QUALITY_CHECK_EXECUTE"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为QUALITY_CHECK_EXECUTE意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-008",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "QUALITY_CHECK_EXECUTE",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "质检查询口语化-补充",
+      "inputVariants": [
+        "这货咋样",
+        "质量怎么样",
+        "有没有问题",
+        "能不能发货"
+      ],
+      "allShouldRecognizeAs": "QUALITY_CHECK_EXECUTE",
+      "expectedIntent": {
+        "intentCode": "QUALITY_CHECK_EXECUTE",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "QUALITY_CHECK_EXECUTE"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为QUALITY_CHECK_EXECUTE意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-009",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "设备查询口语化",
+      "inputVariants": [
+        "机器正常吗",
+        "设备咋样",
+        "有问题吗",
+        "设备都好吗",
+        "机械状态"
+      ],
+      "allShouldRecognizeAs": "EQUIPMENT_LIST",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "EQUIPMENT_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为EQUIPMENT_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-010",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "设备查询口语化-补充",
+      "inputVariants": [
+        "机器能用吗",
+        "设备运转正常不",
+        "有没有故障"
+      ],
+      "allShouldRecognizeAs": "EQUIPMENT_LIST",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "EQUIPMENT_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为EQUIPMENT_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-011",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "CLOCK_IN",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "签到口语化",
+      "inputVariants": [
+        "我来了",
+        "开工了",
+        "到了",
+        "上工",
+        "报到"
+      ],
+      "allShouldRecognizeAs": "CLOCK_IN",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "CLOCK_IN"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为CLOCK_IN意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-012",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "CLOCK_IN",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "签到口语化-补充",
+      "inputVariants": [
+        "签个到",
+        "打个卡",
+        "登记一下"
+      ],
+      "allShouldRecognizeAs": "CLOCK_IN",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "CLOCK_IN"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为CLOCK_IN意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-013",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "CLOCK_OUT",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "签退口语化",
+      "inputVariants": [
+        "撤了",
+        "收工",
+        "下班了",
+        "走了",
+        "回家了"
+      ],
+      "allShouldRecognizeAs": "CLOCK_OUT",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "CLOCK_OUT"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为CLOCK_OUT意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-014",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "CLOCK_OUT",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "签退口语化-补充",
+      "inputVariants": [
+        "今天干完了",
+        "可以走了吗",
+        "下工"
+      ],
+      "allShouldRecognizeAs": "CLOCK_OUT",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "CLOCK_OUT"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为CLOCK_OUT意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-015",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "发货查询口语化",
+      "inputVariants": [
+        "东西发出去了吗",
+        "货走了没",
+        "发货了吗",
+        "出货情况",
+        "物流怎么样"
+      ],
+      "allShouldRecognizeAs": "SHIPMENT_QUERY",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "SHIPMENT_QUERY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为SHIPMENT_QUERY意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-016",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "发货查询口语化-补充",
+      "inputVariants": [
+        "送出去了没",
+        "客户收到了吗",
+        "发走了吗"
+      ],
+      "allShouldRecognizeAs": "SHIPMENT_QUERY",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "SHIPMENT_QUERY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为SHIPMENT_QUERY意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-017",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "TRACE_BATCH",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "溯源查询口语化",
+      "inputVariants": [
+        "这是哪来的",
+        "原料从哪来",
+        "批次来源",
+        "这批是什么做的"
+      ],
+      "allShouldRecognizeAs": "TRACE_BATCH",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "TRACE_BATCH"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为TRACE_BATCH意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-018",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "TRACE_BATCH",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "溯源查询口语化-补充",
+      "inputVariants": [
+        "用的什么料",
+        "材料信息",
+        "这是啥原料"
+      ],
+      "allShouldRecognizeAs": "TRACE_BATCH",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "TRACE_BATCH"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为TRACE_BATCH意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-019",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "报表查询口语化",
+      "inputVariants": [
+        "今天咋样",
+        "情况如何",
+        "最近怎么样",
+        "给我看看数据"
+      ],
+      "allShouldRecognizeAs": "REPORT_DASHBOARD_OVERVIEW",
+      "expectedIntent": {
+        "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "REPORT_DASHBOARD_OVERVIEW"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为REPORT_DASHBOARD_OVERVIEW意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-020",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "报表查询口语化-补充",
+      "inputVariants": [
+        "厂里什么情况",
+        "今天忙不忙",
+        "整体情况"
+      ],
+      "allShouldRecognizeAs": "REPORT_DASHBOARD_OVERVIEW",
+      "expectedIntent": {
+        "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "REPORT_DASHBOARD_OVERVIEW"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为REPORT_DASHBOARD_OVERVIEW意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-021",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "ALERT_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "告警查询口语化",
+      "inputVariants": [
+        "有啥问题吗",
+        "出事了没",
+        "有没有异常",
+        "告警信息"
+      ],
+      "allShouldRecognizeAs": "ALERT_LIST",
+      "expectedIntent": {
+        "intentCode": "ALERT_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "ALERT_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为ALERT_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-022",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "客户查询口语化",
+      "inputVariants": [
+        "客户有哪些",
+        "都有谁",
+        "客户信息"
+      ],
+      "allShouldRecognizeAs": "CUSTOMER_LIST",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "CUSTOMER_LIST"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为CUSTOMER_LIST意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-023",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "考勤查询口语化",
+      "inputVariants": [
+        "今天谁来了",
+        "考勤情况",
+        "出勤怎么样"
+      ],
+      "allShouldRecognizeAs": "ATTENDANCE_TODAY",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "ATTENDANCE_TODAY"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为ATTENDANCE_TODAY意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-024",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "MATERIAL_BATCH_USE",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "原料使用口语化",
+      "inputVariants": [
+        "用一下",
+        "拿点货",
+        "领料"
+      ],
+      "allShouldRecognizeAs": "MATERIAL_BATCH_USE",
+      "expectedIntent": {
+        "intentCode": "MATERIAL_BATCH_USE",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "MATERIAL_BATCH_USE"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为MATERIAL_BATCH_USE意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-COLLOQUIAL-025",
+      "priority": "P3",
+      "category": "COLLOQUIAL",
+      "intentCode": "PROCESSING_BATCH_CREATE",
+      "testType": "COLLOQUIAL_VARIANTS",
+      "description": "生产创建口语化",
+      "inputVariants": [
+        "安排生产",
+        "做一批",
+        "开始加工"
+      ],
+      "allShouldRecognizeAs": "PROCESSING_BATCH_CREATE",
+      "expectedIntent": {
+        "intentCode": "PROCESSING_BATCH_CREATE",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": null
+        },
+        "variantValidation": {
+          "enabled": true,
+          "allVariantsShouldRecognize": true,
+          "expectedIntentCode": "PROCESSING_BATCH_CREATE"
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户使用多种口语化表达,系统是否都正确识别为PROCESSING_BATCH_CREATE意图?"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": ".*"
+      }
+    },
+    {
+      "id": "TC-P3-BOUNDARY-002",
+      "priority": "P3",
+      "category": "BOUNDARY",
+      "intentCode": "UNKNOWN",
+      "testType": "BOUNDARY",
+      "description": "验证边界场景-空输入",
+      "userInput": "",
+      "expectedIntent": {
+        "intentCode": "UNKNOWN",
+        "confidence": 0,
+        "matchMethod": "NONE",
+        "questionType": "INVALID"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": false,
+          "messageNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "边界输入场景:空输入,系统是否正确处理并给出友好提示?"
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "输入不能为空"
+      }
+    },
+    {
+      "id": "TC-P3-BOUNDARY-003",
+      "priority": "P3",
+      "category": "BOUNDARY",
+      "intentCode": "UNKNOWN",
+      "testType": "BOUNDARY",
+      "description": "验证边界场景-纯空格输入",
+      "userInput": "   ",
+      "expectedIntent": {
+        "intentCode": "UNKNOWN",
+        "confidence": 0,
+        "matchMethod": "NONE",
+        "questionType": "INVALID"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": false,
+          "messageNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "边界输入场景:纯空格输入,系统是否正确处理并给出友好提示?"
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "输入不能为空"
+      }
+    },
+    {
+      "id": "TC-P3-BOUNDARY-004",
+      "priority": "P3",
+      "category": "BOUNDARY",
+      "intentCode": "UNKNOWN",
+      "testType": "BOUNDARY",
+      "description": "验证边界场景-超长输入-500字符",
+      "userInput": "查询这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入这是一个非常长的输入",
+      "expectedIntent": {
+        "intentCode": "UNKNOWN",
+        "confidence": 0,
+        "matchMethod": "NONE",
+        "questionType": "INVALID"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": false,
+          "messageNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "边界输入场景:超长输入-500字符,系统是否正确处理并给出友好提示?"
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "输入过长"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 4,
+    "startIndex": 105,
+    "chunkSize": 35
+  }
+}

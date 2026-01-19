@@ -143,8 +143,8 @@ export function BlueprintEditScreen() {
         };
       }>(`/api/platform/blueprints/${blueprintId}`);
 
-      if (response.data.success && response.data.data) {
-        const data = response.data.data;
+      if (response.success && response.data) {
+        const data = response.data;
         setName(data.name || '');
         setIndustryType(data.industryType || '');
         setCurrentVersion(data.currentVersion || 'v1.0.0');

@@ -5,7 +5,8 @@ import { useAppStore } from '@/store/modules/app';
 import { usePermissionStore, ModuleName } from '@/store/modules/permission';
 import {
   House, Operation, Box, Checked, ShoppingCart, Goods,
-  User, Monitor, Money, Setting, DataAnalysis, Calendar
+  User, Monitor, Money, Setting, DataAnalysis, Calendar,
+  TrendCharts, Sell, Upload, ChatDotRound, Aim
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
@@ -16,7 +17,8 @@ const permissionStore = usePermissionStore();
 // 图标映射
 const iconMap: Record<string, any> = {
   House, Operation, Box, Checked, ShoppingCart, Goods,
-  User, Monitor, Money, Setting, DataAnalysis, Calendar
+  User, Monitor, Money, Setting, DataAnalysis, Calendar,
+  TrendCharts, Sell, Upload, ChatDotRound, Aim
 };
 
 // 菜单配置
@@ -25,6 +27,7 @@ interface MenuItem {
   title: string;
   icon: string;
   module: ModuleName;
+  roles?: string[];  // 可选：限制特定角色可见
   children?: MenuItem[];
 }
 
@@ -63,7 +66,8 @@ const menuConfig: MenuItem[] = [
   {
     path: '/sales', title: '销售管理', icon: 'Goods', module: 'sales',
     children: [
-      { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' }
+      { path: '/sales/customers', title: '客户管理', icon: '', module: 'sales' },
+      { path: '/sales/smart-analysis', title: '智能销售分析', icon: 'TrendCharts', module: 'sales' }
     ]
   },
   {
@@ -87,7 +91,8 @@ const menuConfig: MenuItem[] = [
     path: '/finance', title: '财务管理', icon: 'Money', module: 'finance',
     children: [
       { path: '/finance/costs', title: '成本分析', icon: '', module: 'finance' },
-      { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' }
+      { path: '/finance/reports', title: '财务报表', icon: '', module: 'finance' },
+      { path: '/finance/smart-analysis', title: '智能财务分析', icon: 'TrendCharts', module: 'finance' }
     ]
   },
   {
@@ -120,12 +125,41 @@ const menuConfig: MenuItem[] = [
       { path: '/scheduling/workers', title: '人员分配', icon: '', module: 'scheduling' },
       { path: '/scheduling/alerts', title: '告警管理', icon: '', module: 'scheduling' }
     ]
+  },
+  {
+    path: '/smart-bi', title: '智能分析', icon: 'TrendCharts', module: 'analytics',
+    children: [
+      { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics' },
+      { path: '/smart-bi/sales', title: '智能销售分析', icon: 'Sell', module: 'analytics' },
+      { path: '/smart-bi/finance', title: '智能财务分析', icon: 'Money', module: 'analytics' },
+      { path: '/smart-bi/upload', title: 'Excel上传', icon: 'Upload', module: 'analytics' },
+      { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
+      { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
+    ]
   }
 ];
 
+// 检查菜单项是否可见（基于角色限制）
+function canSeeMenuItem(item: MenuItem): boolean {
+  // 如果没有 roles 限制，只检查模块权限
+  if (!item.roles || item.roles.length === 0) {
+    return permissionStore.canAccess(item.module);
+  }
+  // 有 roles 限制时，检查当前角色是否在允许列表中
+  return item.roles.includes(permissionStore.currentRole) && permissionStore.canAccess(item.module);
+}
+
 // 过滤有权限的菜单
 const filteredMenu = computed(() => {
-  return menuConfig.filter(item => permissionStore.canAccess(item.module));
+  return menuConfig
+    .filter(item => permissionStore.canAccess(item.module))
+    .map(item => {
+      if (!item.children) return item;
+      // 过滤子菜单中有角色限制的项
+      const filteredChildren = item.children.filter(child => canSeeMenuItem(child));
+      return { ...item, children: filteredChildren };
+    })
+    .filter(item => !item.children || item.children.length > 0);  // 移除没有可见子菜单的父菜单
 });
 
 // 当前激活的菜单

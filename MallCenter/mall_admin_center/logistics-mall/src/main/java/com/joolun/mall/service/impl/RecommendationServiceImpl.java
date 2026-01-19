@@ -10,6 +10,13 @@ import com.joolun.mall.service.BanditExplorer;
 import com.joolun.mall.service.ThompsonSamplingExplorer;
 import com.joolun.mall.service.LinUCBExplorer;
 import com.joolun.mall.service.TriggerInterestBooster;
+import com.joolun.mall.service.StrategyInterventionService;
+import com.joolun.mall.service.MMRDiversityService;
+import com.joolun.mall.service.CollaborativeFilteringService;
+import com.joolun.mall.service.MultiRecallService;
+import com.joolun.mall.service.CTRPredictionService;
+import com.joolun.mall.service.FrequencyCapService;
+import com.joolun.mall.service.ColdStartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -45,6 +52,14 @@ public class RecommendationServiceImpl implements RecommendationService {
     private final ThompsonSamplingExplorer thompsonSamplingExplorer;
     private final LinUCBExplorer linUCBExplorer;
     private final TriggerInterestBooster triggerInterestBooster;
+    private final StrategyInterventionService strategyInterventionService;
+    private final MMRDiversityService mmrDiversityService;
+    // 新增高级推荐服务
+    private final CollaborativeFilteringService collaborativeFilteringService;
+    private final MultiRecallService multiRecallService;
+    private final CTRPredictionService ctrPredictionService;
+    private final FrequencyCapService frequencyCapService;
+    private final ColdStartService coldStartService;
 
     // A/B 测试随机器
     private final Random abTestRandom = new Random();
@@ -86,12 +101,32 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         List<GoodsSpu> recommendations;
         // P0修复: profile为null或cold_start时走冷启动
-        if (profile == null || "cold_start".equals(profile.getProfileStatus())) {
-            // 冷启动策略
-            recommendations = getColdStartRecommendations(profile, limit);
+        if (profile == null || "cold_start".equals(profile.getProfileStatus())
+                || coldStartService.isNewUser(wxUserId)) {
+            // 冷启动策略 - 使用增强的冷启动服务
+            recommendations = coldStartService.getNewUserRecommendations(wxUserId, limit * 3);
+            log.info("使用冷启动推荐: wxUserId={}, 候选数={}", wxUserId, recommendations.size());
         } else {
-            // 混合推荐策略
-            recommendations = getHybridRecommendations(wxUserId, limit);
+            // 混合推荐策略 - 使用多路召回 + CTR排序
+            recommendations = getAdvancedHybridRecommendations(wxUserId, limit);
+        }
+
+        // 频控过滤 - 过滤已经高频曝光的商品
+        recommendations = frequencyCapService.filterByFrequencyCap(wxUserId, recommendations);
+        log.debug("频控过滤后: {}件", recommendations.size());
+
+        // 统一应用MMR多样性控制 (确保所有路径都经过商户配额限制)
+        if (recommendations != null && recommendations.size() > limit) {
+            recommendations = mmrDiversityService.applyMMRReranking(recommendations, limit);
+            log.debug("应用MMR多样性控制: 输入{}件，输出{}件", recommendations.size(), limit);
+        }
+
+        // 记录曝光用于频控
+        if (recommendations != null && !recommendations.isEmpty()) {
+            List<String> productIds = recommendations.stream()
+                    .map(GoodsSpu::getId)
+                    .collect(Collectors.toList());
+            frequencyCapService.recordExposures(wxUserId, productIds);
         }
 
         // 缓存结果 (仅对已登录用户缓存)
@@ -247,6 +282,9 @@ public class RecommendationServiceImpl implements RecommendationService {
     public List<GoodsSpu> getPopularProducts(String category, int limit) {
         log.info("获取热门商品: category={}, limit={}", category, limit);
 
+        // 获取更多候选商品用于MMR多样性筛选
+        int candidateLimit = limit * 3;
+
         LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(GoodsSpu::getShelf, "1");
 
@@ -255,9 +293,17 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         wrapper.orderByDesc(GoodsSpu::getSaleNum)
-                .last("LIMIT " + limit);
+                .last("LIMIT " + candidateLimit);
 
-        return goodsSpuMapper.selectList(wrapper);
+        List<GoodsSpu> candidates = goodsSpuMapper.selectList(wrapper);
+
+        // 应用MMR多样性控制，确保商户分布均匀
+        if (candidates != null && candidates.size() > limit) {
+            candidates = mmrDiversityService.applyMMRReranking(candidates, limit);
+            log.debug("热门商品应用MMR多样性: 候选{}件，输出{}件", candidateLimit, candidates.size());
+        }
+
+        return candidates;
     }
 
     @Override
@@ -294,6 +340,78 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     /**
+     * 高级混合推荐策略 (V2.0)
+     *
+     * 流程:
+     * 1. 多路召回 - 6种策略并行召回候选集
+     * 2. 协同过滤增强 - Item-Based CF 补充
+     * 3. CTR预测排序 - LR模型精排
+     * 4. 策略干预 - 新商家/促销加权
+     * 5. MMR多样性控制 - 最终重排
+     */
+    private List<GoodsSpu> getAdvancedHybridRecommendations(String wxUserId, int limit) {
+        long startTime = System.currentTimeMillis();
+
+        // 1. 多路召回 - 并行执行6种召回策略
+        List<GoodsSpu> recallCandidates = multiRecallService.multiRecall(wxUserId, limit * 5);
+        log.debug("多路召回完成: {}件候选", recallCandidates.size());
+
+        // 2. 协同过滤增强 - 使用Item-Based CF补充候选
+        List<String> recentViewed = behaviorTrackingService.getRecentViewedProducts(wxUserId, 10);
+        if (!recentViewed.isEmpty()) {
+            for (String productId : recentViewed.subList(0, Math.min(3, recentViewed.size()))) {
+                List<GoodsSpu> cfProducts = collaborativeFilteringService.findSimilarProducts(productId, 10);
+                for (GoodsSpu cfProduct : cfProducts) {
+                    if (!containsProduct(recallCandidates, cfProduct.getId())) {
+                        recallCandidates.add(cfProduct);
+                    }
+                }
+            }
+            log.debug("协同过滤增强后: {}件候选", recallCandidates.size());
+        }
+
+        // 3. CTR预测排序 - 使用LR模型精排
+        UserRecommendationProfile profile = null;
+        try {
+            profile = behaviorTrackingService.getUserProfile(wxUserId);
+        } catch (Exception e) {
+            log.warn("获取用户画像失败", e);
+        }
+        List<GoodsSpu> rankedCandidates = ctrPredictionService.predictAndRank(
+                wxUserId, profile, recallCandidates, limit * 2);
+        log.debug("CTR精排完成: {}件", rankedCandidates.size());
+
+        // 4. 策略干预重排序 (新商家/促销/库存加权)
+        Map<String, Double> baseScores = new HashMap<>();
+        for (int i = 0; i < rankedCandidates.size(); i++) {
+            baseScores.put(rankedCandidates.get(i).getId(), 1.0 - (double) i / rankedCandidates.size());
+        }
+        rankedCandidates = strategyInterventionService.applyStrategyReranking(rankedCandidates, baseScores);
+
+        // 5. 注入冷启动新品 (15%配额)
+        int newProductQuota = coldStartService.getNewProductQuota(limit);
+        List<GoodsSpu> coldStartProducts = coldStartService.getColdStartProducts(newProductQuota * 2);
+        rankedCandidates = coldStartService.injectColdStartProducts(rankedCandidates, coldStartProducts, newProductQuota);
+
+        // 6. MMR多样性控制
+        List<GoodsSpu> finalResults = mmrDiversityService.applyMMRReranking(rankedCandidates, limit);
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("高级混合推荐完成: wxUserId={}, 召回={}, 精排={}, 最终={}, 耗时={}ms",
+                wxUserId, recallCandidates.size(), rankedCandidates.size(), finalResults.size(), duration);
+
+        return finalResults;
+    }
+
+    /**
+     * 检查列表是否包含指定商品
+     */
+    private boolean containsProduct(List<GoodsSpu> products, String productId) {
+        if (products == null || productId == null) return false;
+        return products.stream().anyMatch(p -> p != null && productId.equals(p.getId()));
+    }
+
+    /**
      * 混合推荐策略（集成 Thompson Sampling + LinUCB 双探索器 A/B 测试）
      *
      * 策略分配:
@@ -307,7 +425,10 @@ public class RecommendationServiceImpl implements RecommendationService {
      * - 50% 用户使用 LinUCB，50% 使用 Thompson Sampling
      * - 两种算法的探索率均为 20%
      * - 便于对比两种算法的实际效果 (CTR, CVR)
+     *
+     * @deprecated 使用 {@link #getAdvancedHybridRecommendations} 代替
      */
+    @Deprecated
     private List<GoodsSpu> getHybridRecommendations(String wxUserId, int limit) {
         Set<String> recommendedIds = new HashSet<>();
         List<GoodsSpu> results = new ArrayList<>();
@@ -364,6 +485,19 @@ public class RecommendationServiceImpl implements RecommendationService {
                 recommendedIds.add(product.getId());
             }
         }
+
+        // 5. 应用策略干预重排序 (P0: 新商家/促销/库存加权)
+        Map<String, Double> baseScores = new HashMap<>();
+        for (int i = 0; i < results.size(); i++) {
+            // 原始位置分数 (越靠前分数越高)
+            baseScores.put(results.get(i).getId(), 1.0 - (double) i / results.size());
+        }
+        results = strategyInterventionService.applyStrategyReranking(results, baseScores);
+        log.debug("策略干预重排序完成: {} 件商品", results.size());
+
+        // 6. 应用MMR多样性控制 (P1: 避免同分类聚集)
+        results = mmrDiversityService.applyMMRReranking(results, limit);
+        log.debug("MMR多样性重排序完成: {} 件商品", results.size());
 
         return results;
     }

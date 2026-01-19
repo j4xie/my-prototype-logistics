@@ -1,6 +1,7 @@
 package com.cretas.aims.service;
 
 import com.cretas.aims.dto.intent.IntentMatchResult;
+import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -151,6 +152,87 @@ public interface LlmIntentFallbackClient {
         }
     }
 
+    // ========== ArenaRL 锦标赛裁决方法 ==========
+
+    /**
+     * 使用 ArenaRL 锦标赛进行意图歧义裁决
+     *
+     * 当 top1-top2 置信度差 < 0.15 时触发:
+     * - 输入: 用户查询 + 歧义候选列表
+     * - 输出: 锦标赛裁决的最佳意图
+     *
+     * 锦标赛算法:
+     * - 种子单淘汰制 (Seeded Single Elimination)
+     * - 两两比较使用 LLM Judge
+     * - 复杂度: O(N-1) 次比较
+     *
+     * @param userInput 用户输入
+     * @param candidates 歧义候选意图列表 (已按置信度排序)
+     * @param factoryId 工厂ID
+     * @return ArenaRL 裁决结果
+     */
+    default ArenaRLResult disambiguateWithArenaRL(String userInput,
+                                                   List<IntentMatchResult.CandidateIntent> candidates,
+                                                   String factoryId) {
+        // 默认实现: 返回 top1 候选
+        if (candidates == null || candidates.isEmpty()) {
+            return ArenaRLResult.failure("No candidates provided");
+        }
+        IntentMatchResult.CandidateIntent top = candidates.get(0);
+        return ArenaRLResult.success(top.getIntentCode(), top.getConfidence(),
+                "ArenaRL not enabled, using top candidate", 0);
+    }
+
+    /**
+     * ArenaRL 裁决结果
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    class ArenaRLResult {
+        /** 是否成功 */
+        private boolean success;
+
+        /** 获胜意图代码 */
+        private String winnerIntentCode;
+
+        /** 获胜意图的最终置信度 */
+        private double winnerConfidence;
+
+        /** 裁决理由 */
+        private String reasoning;
+
+        /** 错误信息 (如果失败) */
+        private String errorMessage;
+
+        /** 锦标赛比较次数 */
+        private int comparisonCount;
+
+        /** 锦标赛总耗时 (毫秒) */
+        private long totalLatencyMs;
+
+        /** 锦标赛ID (用于追踪) */
+        private String tournamentId;
+
+        public static ArenaRLResult success(String intentCode, double confidence, String reasoning, int comparisons) {
+            return ArenaRLResult.builder()
+                    .success(true)
+                    .winnerIntentCode(intentCode)
+                    .winnerConfidence(confidence)
+                    .reasoning(reasoning)
+                    .comparisonCount(comparisons)
+                    .build();
+        }
+
+        public static ArenaRLResult failure(String errorMessage) {
+            return ArenaRLResult.builder()
+                    .success(false)
+                    .errorMessage(errorMessage)
+                    .build();
+        }
+    }
+
     // ========== 多轮对话相关方法 ==========
 
     /**
@@ -176,6 +258,31 @@ public interface LlmIntentFallbackClient {
      */
     default double getConversationThreshold() {
         return 0.3;
+    }
+
+    // ========== 多意图识别方法 (模块C) ==========
+
+    /**
+     * 多意图识别 - 识别用户输入中的一个或多个意图
+     *
+     * 支持识别:
+     * - 连接词: "顺便"、"还有"、"另外"、"以及"、"同时"
+     * - 并列结构: "A和B"、"既要A又要B"
+     * - 区分多意图 vs 复合查询
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param contextSummary 对话上下文摘要 (可选)
+     * @return 多意图识别结果
+     */
+    default MultiIntentResult classifyMultiIntent(String userInput, String factoryId, String contextSummary) {
+        // 默认实现: 返回单意图结果
+        return MultiIntentResult.builder()
+                .isMultiIntent(false)
+                .intents(List.of())
+                .executionStrategy(MultiIntentResult.ExecutionStrategy.SEQUENTIAL)
+                .overallConfidence(0.0)
+                .build();
     }
 
     // ========== 增强结果类 ==========

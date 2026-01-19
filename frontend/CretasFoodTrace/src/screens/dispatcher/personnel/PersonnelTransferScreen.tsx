@@ -158,18 +158,30 @@ export default function PersonnelTransferScreen() {
       // Load workshops
       const workshopResponse = await schedulingApiClient.getWorkshopList();
       if (workshopResponse.success && workshopResponse.data) {
-        const workshopList = Array.isArray(workshopResponse.data)
-          ? workshopResponse.data
-          : workshopResponse.data.workshops || workshopResponse.data.content || [];
+        // Type assertion to handle both array and object response formats
+        const responseData = workshopResponse.data as unknown;
+        let workshopList: unknown[];
+        if (Array.isArray(responseData)) {
+          workshopList = responseData;
+        } else {
+          const wrappedData = responseData as Record<string, unknown>;
+          workshopList = (wrappedData.workshops || wrappedData.content || []) as unknown[];
+        }
         setWorkshops(workshopList.map(transformWorkshop));
       }
 
       // Load available workers
       const workersResponse = await schedulingApiClient.getAvailableWorkers();
       if (workersResponse.success && workersResponse.data) {
-        const workerList = Array.isArray(workersResponse.data)
-          ? workersResponse.data
-          : workersResponse.data.workers || workersResponse.data.content || [];
+        // Type assertion to handle both array and object response formats
+        const responseData = workersResponse.data as unknown;
+        let workerList: unknown[];
+        if (Array.isArray(responseData)) {
+          workerList = responseData;
+        } else {
+          const wrappedData = responseData as Record<string, unknown>;
+          workerList = (wrappedData.workers || wrappedData.content || []) as unknown[];
+        }
         setWorkers(workerList.map(transformWorker));
       }
     } catch (error) {
