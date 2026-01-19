@@ -64,6 +64,9 @@ const ENTITY_TYPE_ICONS: Record<EntityType, string> = {
   DISPOSAL_RECORD: 'delete-outline',
   PRODUCT_TYPE: 'barcode',
   PRODUCTION_PLAN: 'calendar-clock',
+  SCALE_DEVICE: 'scale',
+  SCALE_PROTOCOL: 'file-document-outline',
+  ISAPI_DEVICE: 'video',
 };
 
 // 实体类型颜色映射
@@ -76,6 +79,9 @@ const ENTITY_TYPE_COLORS: Record<EntityType, string> = {
   DISPOSAL_RECORD: '#f5222d',
   PRODUCT_TYPE: '#2196f3',
   PRODUCTION_PLAN: '#ff9800',
+  SCALE_DEVICE: '#607d8b',
+  SCALE_PROTOCOL: '#795548',
+  ISAPI_DEVICE: '#9c27b0',
 };
 
 interface FieldPreviewProps {
@@ -112,6 +118,9 @@ const getEntityTypeKey = (entityType: EntityType): string => {
     DISPOSAL_RECORD: 'schemaConfig.entityTypes.disposalRecord',
     PRODUCT_TYPE: 'schemaConfig.entityTypes.productType',
     PRODUCTION_PLAN: 'schemaConfig.entityTypes.productionPlan',
+    SCALE_DEVICE: 'schemaConfig.entityTypes.scaleDevice',
+    SCALE_PROTOCOL: 'schemaConfig.entityTypes.scaleProtocol',
+    ISAPI_DEVICE: 'schemaConfig.entityTypes.isapiDevice',
   };
   return keys[entityType] || 'schemaConfig.entityTypes.unknown';
 };
@@ -165,7 +174,8 @@ export function SchemaConfigScreen() {
 
   // AI 分析状态
   const [analyzing, setAnalyzing] = useState(false);
-  const [analyzeResult, setAnalyzeResult] = useState<SchemaAnalyzeResponse | null>(null);
+  // Note: aiService.analyzeSchema returns AIResult<T> where data doesn't include 'success'
+  const [analyzeResult, setAnalyzeResult] = useState<Omit<SchemaAnalyzeResponse, 'success' | 'message'> | null>(null);
   const [optimizing, setOptimizing] = useState(false);
   const [selectedSuggestions, setSelectedSuggestions] = useState<string[]>([]);
 
@@ -517,13 +527,16 @@ export function SchemaConfigScreen() {
     setSelectedSuggestions([]);
 
     try {
-      const request: SchemaAnalyzeRequest = {
-        entityType: previewEntityType,
+      const aiResult = await aiService.analyzeSchema({
+        entityType: previewEntityType as 'MATERIAL_BATCH' | 'PRODUCT_TYPE' | 'QUALITY_CHECK',
         schemaJson: JSON.stringify(currentSchema),
-      };
-
-      const aiResult = await aiService.analyzeSchema(request);
-      setAnalyzeResult(aiResult.data);
+      });
+      if (aiResult.success && aiResult.data) {
+        // Cast to match the state type (aiService returns data without 'success' and 'message')
+        setAnalyzeResult(aiResult.data as Omit<SchemaAnalyzeResponse, 'success' | 'message'>);
+      } else {
+        Alert.alert(t('schemaConfig.analyze.failed'), aiResult.errorMessage || t('schemaConfig.analyze.failedMessage'));
+      }
     } catch (error) {
       console.error('AI 分析失败:', error);
       Alert.alert(t('schemaConfig.analyze.failed'), t('schemaConfig.analyze.failedMessage'));
@@ -541,22 +554,19 @@ export function SchemaConfigScreen() {
     setOptimizing(true);
 
     try {
-      const request: SchemaOptimizeRequest = {
-        entityType: previewEntityType,
+      const aiResult = await aiService.optimizeSchema({
+        entityType: previewEntityType as 'MATERIAL_BATCH' | 'PRODUCT_TYPE' | 'QUALITY_CHECK',
         schemaJson: JSON.stringify(currentSchema),
         suggestionIds: selectedSuggestions,
-      };
+      });
 
-      const aiResult = await aiService.optimizeSchema(request);
-      const result = aiResult.data;
-
-      if (result.success && result.optimizedSchema) {
+      if (aiResult.success && aiResult.data.optimizedSchema) {
         // 保存优化后的 Schema
-        const optimizedSchema = JSON.parse(result.optimizedSchema);
+        const optimizedSchema = JSON.parse(aiResult.data.optimizedSchema);
 
         await formTemplateApiClient.createOrUpdateTemplate(previewEntityType, {
           name: t(getEntityTypeKey(previewEntityType)) + ' (AI优化)',
-          schemaJson: result.optimizedSchema,
+          schemaJson: aiResult.data.optimizedSchema,
           description: `AI优化: 应用了 ${selectedSuggestions.length} 条建议`,
         });
 
@@ -582,7 +592,7 @@ export function SchemaConfigScreen() {
         }));
         setCurrentSchemaFields(fields);
       } else {
-        Alert.alert(t('schemaConfig.analyze.optimizeFailed'), result.message || t('schemaConfig.analyze.optimizeFailedMessage'));
+        Alert.alert(t('schemaConfig.analyze.optimizeFailed'), aiResult.errorMessage || t('schemaConfig.analyze.optimizeFailedMessage'));
       }
     } catch (error) {
       console.error('应用优化失败:', error);
@@ -1927,6 +1937,21 @@ const styles = StyleSheet.create({
   },
   analyzeResultScroll: {
     padding: 16,
+  },
+  analyzeLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  analyzeLoadingText: {
+    fontSize: 14,
+    color: '#667eea',
+    marginTop: 12,
+  },
+  analyzeScoreMain: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
   analyzeScoreCard: {
     backgroundColor: '#fff',

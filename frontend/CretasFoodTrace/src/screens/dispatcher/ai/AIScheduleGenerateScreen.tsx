@@ -229,11 +229,12 @@ export default function AIScheduleGenerateScreen() {
 
       // 确认生成的排程 - 所有 schedule 共享同一个 SchedulingPlan
       // 只需要确认一次（使用第一个 schedule 的 planId）
-      if (generatedSchedules.length === 0) {
+      const firstSchedule = generatedSchedules[0];
+      if (!firstSchedule) {
         throw new Error('没有可确认的排程');
       }
 
-      const planId = generatedSchedules[0].planId;
+      const planId = firstSchedule.planId;
       console.log('Confirming scheduling plan:', planId);
 
       const response = await schedulingApiClient.confirmPlan(planId);

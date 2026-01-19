@@ -1,14 +1,15 @@
 /**
  * 调度员 Tab 导航器
  *
- * 5个主要标签页:
+ * 6个主要标签页:
  * - 首页 (HomeTab) - 调度工作台
  * - 计划 (PlanTab) - 生产计划管理
  * - AI调度 (AITab) - AI智能调度中心
+ * - 智能分析 (SmartBITab) - SmartBI智能分析
  * - 人员 (PersonnelTab) - 人员管理
  * - 我的 (ProfileTab) - 个人中心
  *
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2025-12-28
  */
 
@@ -21,6 +22,7 @@ import { DispatcherTabParamList, DISPATCHER_THEME } from '../types/dispatcher';
 import DSHomeStackNavigator from './dispatcher/DSHomeStackNavigator';
 import DSPlanStackNavigator from './dispatcher/DSPlanStackNavigator';
 import DSAIStackNavigator from './dispatcher/DSAIStackNavigator';
+import SmartBIStackNavigator from './SmartBIStackNavigator';
 import DSPersonnelStackNavigator from './dispatcher/DSPersonnelStackNavigator';
 import DSProfileStackNavigator from './dispatcher/DSProfileStackNavigator';
 
@@ -73,6 +75,16 @@ export function DispatcherTabNavigator() {
           tabBarLabel: 'AI调度',
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="robot" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="SmartBITab"
+        component={SmartBIStackNavigator}
+        options={{
+          tabBarLabel: '智能分析',
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="chart-timeline-variant" size={size} color={color} />
           ),
         }}
       />

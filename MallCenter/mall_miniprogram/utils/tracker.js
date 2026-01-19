@@ -22,7 +22,7 @@ const api = require('./api')
 
 // 配置
 const CONFIG = {
-  batchInterval: 5000,       // 批量上报间隔(ms)
+  batchInterval: 2000,       // 批量上报间隔(ms) - P3优化: 从5秒降到2秒，提升实时性
   maxQueueSize: 20,          // 队列最大长度
   maxOfflineQueueSize: 100,  // P0修复: 离线队列最大长度，防止内存溢出
   viewThreshold: 10000,      // 有效浏览时长阈值(ms) - 10秒
@@ -30,6 +30,14 @@ const CONFIG = {
   offlineStorageKey: 'tracker_offline_queue',  // 离线缓存key
   sessionStorageKey: 'tracker_session_id',     // 会话ID缓存key
   exposedStorageKey: 'tracker_exposed_map',    // 曝光去重缓存key (改为Map)
+  // P3新增: 滚动速度分类阈值 (px/s)
+  scrollSpeedThresholds: {
+    slow: 200,    // <200 px/s 视为仔细阅读
+    medium: 500,  // 200-500 px/s 视为正常浏览
+    fast: 1000    // >1000 px/s 视为快速滑过
+  },
+  // P3新增: 图片停留时间阈值(ms)
+  imageDwellThreshold: 1500,  // 在某张图片停留超过1.5秒视为感兴趣
 }
 
 // 事件队列（用于批量上报）
@@ -343,9 +351,33 @@ const tracker = {
    * @param {number} options.duration - 停留时长(ms)
    * @param {number} options.scrollDepth - 滚动深度(0-100)
    * @param {string} options.source - 来源页面
+   * @param {number} options.scrollSpeed - P3新增: 平均滚动速度(px/s)
+   * @param {Array} options.imageDwellTimes - P3新增: 各图片停留时间[{index, time}]
    */
-  trackView({ productId, productName, duration = 0, scrollDepth = 0, source = '' }) {
+  trackView({ productId, productName, duration = 0, scrollDepth = 0, source = '', scrollSpeed = 0, imageDwellTimes = [] }) {
     const isValidView = duration >= CONFIG.viewThreshold
+
+    // P3新增: 计算滚动速度分类
+    let scrollBehavior = 'normal'
+    if (scrollSpeed > 0) {
+      if (scrollSpeed < CONFIG.scrollSpeedThresholds.slow) {
+        scrollBehavior = 'careful'  // 仔细阅读
+      } else if (scrollSpeed > CONFIG.scrollSpeedThresholds.fast) {
+        scrollBehavior = 'skimming' // 快速滑过
+      }
+    }
+
+    // P3新增: 找出用户最感兴趣的图片
+    let interestedImageIndex = -1
+    let maxDwellTime = 0
+    if (imageDwellTimes && imageDwellTimes.length > 0) {
+      imageDwellTimes.forEach(item => {
+        if (item.time > maxDwellTime && item.time >= CONFIG.imageDwellThreshold) {
+          maxDwellTime = item.time
+          interestedImageIndex = item.index
+        }
+      })
+    }
 
     const event = {
       eventType: 'view',
@@ -356,7 +388,12 @@ const tracker = {
         duration,
         scrollDepth,
         source,
-        isValid: isValidView
+        isValid: isValidView,
+        // P3新增字段
+        scrollSpeed: Math.round(scrollSpeed),
+        scrollBehavior,
+        interestedImageIndex,
+        imageDwellTimes: imageDwellTimes.length > 0 ? imageDwellTimes : undefined
       })
     }
 
@@ -367,6 +404,74 @@ const tracker = {
       // 无效浏览批量上报
       addToQueue(event)
     }
+  },
+
+  /**
+   * P3新增: 追踪列表滚动行为
+   * 用于区分"快速浏览"和"仔细阅读"
+   * @param {Object} options
+   * @param {string} options.listType - 列表类型 (home/category/search/recommend)
+   * @param {number} options.scrollDistance - 滚动距离(px)
+   * @param {number} options.scrollDuration - 滚动耗时(ms)
+   * @param {number} options.viewedCount - 可见商品数量
+   */
+  trackListScroll({ listType, scrollDistance = 0, scrollDuration = 0, viewedCount = 0 }) {
+    if (scrollDuration <= 0) return
+
+    const scrollSpeed = scrollDistance / (scrollDuration / 1000)  // px/s
+
+    // 分类滚动行为
+    let scrollBehavior = 'normal'
+    if (scrollSpeed < CONFIG.scrollSpeedThresholds.slow) {
+      scrollBehavior = 'careful'
+    } else if (scrollSpeed > CONFIG.scrollSpeedThresholds.fast) {
+      scrollBehavior = 'skimming'
+    }
+
+    addToQueue({
+      eventType: 'list_scroll',
+      targetType: 'list',
+      targetId: listType,
+      targetName: listType,
+      eventData: JSON.stringify({
+        scrollDistance: Math.round(scrollDistance),
+        scrollDuration,
+        scrollSpeed: Math.round(scrollSpeed),
+        scrollBehavior,
+        viewedCount
+      })
+    })
+  },
+
+  /**
+   * P3新增: 追踪图片轮播行为
+   * 用于识别用户对哪张商品图最感兴趣
+   * @param {Object} options
+   * @param {string} options.productId - 商品ID
+   * @param {number} options.imageIndex - 当前图片索引
+   * @param {number} options.dwellTime - 在该图片停留时间(ms)
+   * @param {number} options.totalImages - 总图片数
+   * @param {boolean} options.isManualSwipe - 是否手动滑动
+   */
+  trackImageDwell({ productId, imageIndex, dwellTime, totalImages, isManualSwipe = false }) {
+    // 只有停留时间超过阈值才记录
+    if (dwellTime < CONFIG.imageDwellThreshold) {
+      return
+    }
+
+    addToQueue({
+      eventType: 'image_dwell',
+      targetType: 'product_image',
+      targetId: productId,
+      targetName: `图片${imageIndex + 1}`,
+      eventData: JSON.stringify({
+        imageIndex,
+        dwellTime,
+        totalImages,
+        isManualSwipe,
+        isInterested: dwellTime >= CONFIG.imageDwellThreshold
+      })
+    })
   },
 
   /**

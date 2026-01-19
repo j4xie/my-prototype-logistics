@@ -193,28 +193,29 @@ public class LinUCBExplorer implements BanditExplorer {
     }
 
     /**
-     * 计算 UCB 值
+     * 计算 UCB 值 (使用缓存的 A^{-1})
      * UCB = x^T * theta + alpha * sqrt(x^T * A^{-1} * x)
+     *
+     * 优化: 使用缓存的 A_inv 避免重复计算矩阵逆
      */
     private double computeUCB(double[] context, LinUCBArmParameter armParam) {
         try {
             double[][] A = parseMatrix(armParam.getAMatrix(), armParam.getFeatureDimension());
-            double[] b = parseVector(armParam.getBVector());
             double[] theta = parseVector(armParam.getThetaVector());
 
             // 确保维度一致
             int d = Math.min(context.length, armParam.getFeatureDimension());
 
-            // 计算预期奖励: x^T * theta
+            // 计算预期奖励: x^T * theta (O(d))
             double expectedReward = 0;
             for (int i = 0; i < d; i++) {
                 expectedReward += context[i] * theta[i];
             }
 
-            // 计算 A 的逆矩阵
-            double[][] AInv = invertMatrix(A);
+            // 获取缓存的 A^{-1} (避免 O(d³) 的矩阵求逆)
+            double[][] AInv = getOrComputeAInverse(armParam, A, d);
 
-            // 计算探索奖励: alpha * sqrt(x^T * A^{-1} * x)
+            // 计算探索奖励: alpha * sqrt(x^T * A^{-1} * x) (O(d²))
             double uncertainty = 0;
             for (int i = 0; i < d; i++) {
                 double temp = 0;
@@ -275,10 +276,17 @@ public class LinUCBExplorer implements BanditExplorer {
     }
 
     /**
-     * 更新臂参数
-     * A = A + x * x^T
-     * b = b + r * x
-     * theta = A^{-1} * b
+     * 更新臂参数 (使用 Sherman-Morrison 优化)
+     *
+     * Sherman-Morrison 公式实现 O(d²) 的增量更新，替代 O(d³) 的完整矩阵求逆
+     *
+     * 公式: (A + x*x^T)^{-1} = A^{-1} - (A^{-1} * x * x^T * A^{-1}) / (1 + x^T * A^{-1} * x)
+     *
+     * 更新规则:
+     * - A = A + x * x^T
+     * - A_inv = A_inv - (A_inv * x * x^T * A_inv) / (1 + x^T * A_inv * x)  [Sherman-Morrison]
+     * - b = b + r * x
+     * - theta = A^{-1} * b
      */
     private void updateArmParameters(String armId, String armType, double[] context, double reward) {
         LinUCBArmParameter armParam = getOrCreateArmParameter(armId, armType);
@@ -288,20 +296,53 @@ public class LinUCBExplorer implements BanditExplorer {
             double[][] A = parseMatrix(armParam.getAMatrix(), d);
             double[] b = parseVector(armParam.getBVector());
 
-            // A = A + x * x^T (外积)
+            // 获取或计算 A^{-1}（首次需要完整求逆，之后使用 Sherman-Morrison 增量更新）
+            double[][] AInv = getOrComputeAInverse(armParam, A, d);
+
+            // ========== Sherman-Morrison 增量更新 ==========
+            // Step 1: 计算 A_inv * x (O(d²))
+            double[] AInvX = new double[d];
+            for (int i = 0; i < d; i++) {
+                AInvX[i] = 0;
+                for (int j = 0; j < d; j++) {
+                    AInvX[i] += AInv[i][j] * context[j];
+                }
+            }
+
+            // Step 2: 计算 x^T * A_inv * x (标量, O(d))
+            double xTAInvX = 0;
+            for (int i = 0; i < d; i++) {
+                xTAInvX += context[i] * AInvX[i];
+            }
+
+            // Step 3: 计算分母 1 + x^T * A_inv * x
+            double denominator = 1.0 + xTAInvX;
+            if (Math.abs(denominator) < 1e-10) {
+                denominator = 1e-10;  // 防止除零
+            }
+
+            // Step 4: 更新 A_inv 使用 Sherman-Morrison (O(d²))
+            // A_inv_new = A_inv - (A_inv * x * x^T * A_inv) / denominator
+            //           = A_inv - (AInvX * AInvX^T) / denominator
+            for (int i = 0; i < d; i++) {
+                for (int j = 0; j < d; j++) {
+                    AInv[i][j] -= (AInvX[i] * AInvX[j]) / denominator;
+                }
+            }
+
+            // Step 5: 更新 A (仍需保存用于持久化，但不需要求逆)
             for (int i = 0; i < d; i++) {
                 for (int j = 0; j < d; j++) {
                     A[i][j] += context[i] * context[j];
                 }
             }
 
-            // b = b + r * x
+            // Step 6: 更新 b = b + r * x
             for (int i = 0; i < d; i++) {
                 b[i] += reward * context[i];
             }
 
-            // theta = A^{-1} * b
-            double[][] AInv = invertMatrix(A);
+            // Step 7: 计算 theta = A^{-1} * b (使用更新后的 A_inv, O(d²))
             double[] theta = new double[d];
             for (int i = 0; i < d; i++) {
                 theta[i] = 0;
@@ -310,7 +351,7 @@ public class LinUCBExplorer implements BanditExplorer {
                 }
             }
 
-            // 保存更新后的参数
+            // 保存更新后的参数（包括 A_inv 用于下次增量更新）
             armParameterMapper.updateParameters(
                     armId, armType,
                     serializeMatrix(A),
@@ -318,12 +359,57 @@ public class LinUCBExplorer implements BanditExplorer {
                     serializeVector(theta)
             );
 
-            // 清除缓存
+            // 缓存 A_inv 到 Redis (避免下次重新计算)
+            cacheAInverse(armId, armType, AInv);
+
+            // 清除参数缓存
             String cacheKey = LINUCB_PARAM_CACHE_PREFIX + armType + ":" + armId;
             redisTemplate.delete(cacheKey);
 
+            log.debug("Sherman-Morrison 更新完成: armId={}, d={}, denominator={}", armId, d, denominator);
+
         } catch (Exception e) {
             log.error("更新臂参数失败: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取或计算 A 的逆矩阵
+     * 优先从缓存获取，否则计算并缓存
+     */
+    private double[][] getOrComputeAInverse(LinUCBArmParameter armParam, double[][] A, int d) {
+        String cacheKey = "linucb:ainv:" + armParam.getArmType() + ":" + armParam.getArmId();
+
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null && !cached.isEmpty()) {
+                double[][] cachedAInv = parseMatrix(cached, d);
+                if (cachedAInv != null && cachedAInv.length == d) {
+                    return cachedAInv;
+                }
+            }
+        } catch (Exception e) {
+            log.debug("读取 A_inv 缓存失败: {}", e.getMessage());
+        }
+
+        // 缓存未命中，计算完整逆矩阵 (仅首次需要 O(d³))
+        log.info("首次计算 A_inv: armId={}, d={}", armParam.getArmId(), d);
+        double[][] AInv = invertMatrix(A);
+        cacheAInverse(armParam.getArmId(), armParam.getArmType(), AInv);
+
+        return AInv;
+    }
+
+    /**
+     * 缓存 A 的逆矩阵
+     */
+    private void cacheAInverse(String armId, String armType, double[][] AInv) {
+        String cacheKey = "linucb:ainv:" + armType + ":" + armId;
+        try {
+            String serialized = serializeMatrix(AInv);
+            redisTemplate.opsForValue().set(cacheKey, serialized, 24, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("缓存 A_inv 失败: {}", e.getMessage());
         }
     }
 
@@ -829,6 +915,9 @@ public class LinUCBExplorer implements BanditExplorer {
 
     // ==================== 矩阵运算工具 ====================
 
+    // L2正则化系数 (防止矩阵奇异)
+    private static final double REGULARIZATION_LAMBDA = 0.1;
+
     /**
      * 创建单位矩阵
      */
@@ -841,41 +930,72 @@ public class LinUCBExplorer implements BanditExplorer {
     }
 
     /**
-     * 矩阵求逆 (Gauss-Jordan 消元法)
-     * 注意: 这是简化版实现，实际生产环境建议使用 Apache Commons Math
+     * 创建正则化单位矩阵 (λI)
+     * 用于初始化LinUCB的A矩阵，提高数值稳定性
+     */
+    private double[][] regularizedIdentityMatrix(int d) {
+        double[][] I = new double[d][d];
+        for (int i = 0; i < d; i++) {
+            I[i][i] = REGULARIZATION_LAMBDA;
+        }
+        return I;
+    }
+
+    /**
+     * 矩阵求逆 (带Tikhonov正则化的Gauss-Jordan消元法)
+     *
+     * 优化内容:
+     * 1. 添加L2正则化: A_reg = A + λI, 防止奇异矩阵
+     * 2. 条件数检查: 检测病态矩阵
+     * 3. 数值稳定性增强: 更大的正则化阈值
      */
     private double[][] invertMatrix(double[][] matrix) {
         int n = matrix.length;
+
+        // 复制矩阵并添加正则化项 (Tikhonov regularization)
+        double[][] regularized = new double[n][n];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(matrix[i], 0, regularized[i], 0, n);
+            regularized[i][i] += REGULARIZATION_LAMBDA;  // A_reg = A + λI
+        }
+
         double[][] augmented = new double[n][2 * n];
 
-        // 构建增广矩阵 [A | I]
+        // 构建增广矩阵 [A_reg | I]
         for (int i = 0; i < n; i++) {
-            System.arraycopy(matrix[i], 0, augmented[i], 0, n);
+            System.arraycopy(regularized[i], 0, augmented[i], 0, n);
             augmented[i][n + i] = 1.0;
         }
 
-        // Gauss-Jordan 消元
+        // Gauss-Jordan 消元 (带列主元选取)
         for (int i = 0; i < n; i++) {
-            // 找主元
+            // 列主元选取 (Partial Pivoting)
             int maxRow = i;
+            double maxVal = Math.abs(augmented[i][i]);
             for (int k = i + 1; k < n; k++) {
-                if (Math.abs(augmented[k][i]) > Math.abs(augmented[maxRow][i])) {
+                if (Math.abs(augmented[k][i]) > maxVal) {
+                    maxVal = Math.abs(augmented[k][i]);
                     maxRow = k;
                 }
             }
 
             // 交换行
-            double[] temp = augmented[i];
-            augmented[i] = augmented[maxRow];
-            augmented[maxRow] = temp;
+            if (maxRow != i) {
+                double[] temp = augmented[i];
+                augmented[i] = augmented[maxRow];
+                augmented[maxRow] = temp;
+            }
 
-            // 主元为0时添加正则化
-            if (Math.abs(augmented[i][i]) < 1e-10) {
-                augmented[i][i] = 1e-10;
+            // 数值稳定性检查 (增强阈值)
+            double pivot = augmented[i][i];
+            if (Math.abs(pivot) < 1e-8) {
+                log.warn("矩阵接近奇异，增加正则化: pivot={}, row={}", pivot, i);
+                pivot = Math.signum(pivot) * 1e-6;  // 保持符号，使用更大阈值
+                if (pivot == 0) pivot = 1e-6;
+                augmented[i][i] = pivot;
             }
 
             // 归一化主行
-            double pivot = augmented[i][i];
             for (int j = 0; j < 2 * n; j++) {
                 augmented[i][j] /= pivot;
             }

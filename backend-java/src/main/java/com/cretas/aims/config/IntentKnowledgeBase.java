@@ -228,9 +228,12 @@ public class IntentKnowledgeBase {
         }
 
         // 初始化创建指示词
+        // v4.3优化：扩展创建指示词，包含入库、发货等操作类动词
         if (createIndicators.isEmpty()) {
             createIndicators.addAll(Set.of(
-                    "创建", "新建", "添加", "新增", "录入", "登记", "建立", "生成"
+                    "创建", "新建", "添加", "新增", "录入", "登记", "建立", "生成",
+                    // v4.3新增：操作类动词
+                    "入库", "发货", "出货", "发给", "到货"
             ));
         }
 
@@ -484,10 +487,46 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("不合格品处理", "QUALITY_DISPOSITION_EXECUTE");
 
         // === 原料/物料相关 ===
-        phraseToIntentMapping.put("原料入库", "MATERIAL_BATCH_QUERY");
-        phraseToIntentMapping.put("物料入库", "MATERIAL_BATCH_QUERY");
+        // v4.3优化：入库操作应映射到CREATE而非QUERY
+        phraseToIntentMapping.put("原料入库", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("物料入库", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("入库原料", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("新到原料", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("原料到货", "MATERIAL_BATCH_CREATE");
+        // v7.0新增：创建/新建/添加/录入类短语
+        phraseToIntentMapping.put("创建原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("新建原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("添加原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("录入原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("创建物料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("新建物料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("添加物料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("录入物料批次", "MATERIAL_BATCH_CREATE");
+        // v7.0新增：更多变体短语
+        phraseToIntentMapping.put("新建一个原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("帮我录入原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("帮我创建原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("帮我新建原料批次", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("帮我添加原料批次", "MATERIAL_BATCH_CREATE");
+        // v4.3.1优化：添加更长的入库短语以满足覆盖率要求
+        phraseToIntentMapping.put("入库一批", "MATERIAL_BATCH_CREATE");  // 匹配 "入库一批带鱼"
+        phraseToIntentMapping.put("新到一批", "MATERIAL_BATCH_CREATE");  // 匹配 "新到一批原料"
+        phraseToIntentMapping.put("到货一批", "MATERIAL_BATCH_CREATE");  // 匹配 "到货一批xxx"
+        // v4.3优化：发货操作映射
+        phraseToIntentMapping.put("发货给", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("给客户发货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("出货给", "SHIPMENT_CREATE");
+        // v4.3.1优化：添加更长的发货短语
+        phraseToIntentMapping.put("发货给客户", "SHIPMENT_CREATE");  // 匹配 "发货给客户xxx"
+        phraseToIntentMapping.put("出货给客户", "SHIPMENT_CREATE");  // 匹配 "出货给客户xxx"
         phraseToIntentMapping.put("原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原材料批次", "MATERIAL_BATCH_QUERY");  // v7.1: 修复 "原材料批次MB001" 未匹配问题
         phraseToIntentMapping.put("原料列表", "MATERIAL_BATCH_QUERY");
+        // v7.0新增：查询类短语
+        phraseToIntentMapping.put("查询原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查看原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("显示原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查询物料批次", "MATERIAL_BATCH_QUERY");
         // === v4.2优化：原料类短语映射补充 ===
         phraseToIntentMapping.put("原料有哪些", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("物料批次", "MATERIAL_BATCH_QUERY");
@@ -641,6 +680,12 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("追踪这个批次", "TRACE_BATCH");
         phraseToIntentMapping.put("消费者可查的溯源", "TRACE_PUBLIC");
         phraseToIntentMapping.put("可查溯源", "TRACE_PUBLIC");
+        // === v4.4优化：发货+追溯组合 ===
+        phraseToIntentMapping.put("发货的批次追溯", "TRACE_BATCH");
+        phraseToIntentMapping.put("发货批次追溯", "TRACE_BATCH");
+        phraseToIntentMapping.put("发货追溯", "TRACE_BATCH");
+        phraseToIntentMapping.put("出货追溯", "TRACE_BATCH");
+        phraseToIntentMapping.put("发货的追溯", "TRACE_BATCH");
 
         // === v4.1优化：告警类短语映射（解决ALERT混淆）===
         phraseToIntentMapping.put("活跃告警", "ALERT_ACTIVE");
@@ -852,6 +897,15 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货数量统计", "SHIPMENT_STATS");
         phraseToIntentMapping.put("出货量分析", "SHIPMENT_STATS");
         phraseToIntentMapping.put("本月出货统计", "SHIPMENT_STATS");
+        // === v4.4优化：时间+出货统计模式 ===
+        phraseToIntentMapping.put("这个月的出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("这个月出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("上月出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("上个月出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("今天出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("今天的出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("本周出货统计", "SHIPMENT_STATS");
+        phraseToIntentMapping.put("这周出货统计", "SHIPMENT_STATS");
         // === v4.2优化：出货类短语映射补充 ===
         phraseToIntentMapping.put("查一下出货", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("出货订单", "SHIPMENT_QUERY");
@@ -1197,6 +1251,16 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("原料信息", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("查原料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("看原料", "MATERIAL_BATCH_QUERY");
+        // === v4.4优化：时间+入库+原料模式 (查询而非创建) ===
+        phraseToIntentMapping.put("上周入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("本周入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("今天入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("昨天入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("本月入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("上月入库的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("入库的原料", "MATERIAL_BATCH_QUERY");  // 通用查询
+        phraseToIntentMapping.put("已入库原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("已入库的原料", "MATERIAL_BATCH_QUERY");
 
         // === v5.0优化：A类-秤相关映射 ===
         phraseToIntentMapping.put("称重记录查询", "SCALE_LIST_DEVICES");
@@ -1538,6 +1602,54 @@ public class IntentKnowledgeBase {
 
         // 交接班相关
         phraseToIntentMapping.put("交接班要注意什么", "PROCESSING_BATCH_LIST");
+
+        // === v7.1优化：修复测试失败的短语映射 ===
+        // 原料操作类
+        phraseToIntentMapping.put("过期原料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("已过期原料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("消耗原料", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("原料消耗", "MATERIAL_BATCH_CONSUME");
+        phraseToIntentMapping.put("释放原料", "MATERIAL_BATCH_RELEASE");
+        phraseToIntentMapping.put("原料释放", "MATERIAL_BATCH_RELEASE");
+        phraseToIntentMapping.put("添加新原料", "MATERIAL_BATCH_CREATE");
+        phraseToIntentMapping.put("新增原料批次", "MATERIAL_BATCH_CREATE");
+
+        // 生产控制类
+        phraseToIntentMapping.put("结束生产", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("生产结束", "PROCESSING_BATCH_COMPLETE");
+        phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("生产暂停", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("批次时间线", "PROCESSING_BATCH_TIMELINE");
+        phraseToIntentMapping.put("生产时间线", "PROCESSING_BATCH_TIMELINE");
+        phraseToIntentMapping.put("正在生产的批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("今天的生产批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("当前生产批次", "PROCESSING_BATCH_LIST");
+
+        // 发货类
+        phraseToIntentMapping.put("按日期发货", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("日期发货", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("发货日期", "SHIPMENT_BY_DATE");
+        phraseToIntentMapping.put("最近的发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("最近发货", "SHIPMENT_QUERY");
+
+        // 质检类
+        phraseToIntentMapping.put("关键检验项", "QUALITY_CRITICAL_ITEMS");
+        phraseToIntentMapping.put("关键检验", "QUALITY_CRITICAL_ITEMS");
+        phraseToIntentMapping.put("重要检验项", "QUALITY_CRITICAL_ITEMS");
+        phraseToIntentMapping.put("质量检查", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("质检记录", "QUALITY_CHECK_QUERY");
+
+        // 考勤类
+        phraseToIntentMapping.put("部门考勤", "ATTENDANCE_DEPARTMENT");
+        phraseToIntentMapping.put("下班打卡", "CLOCK_OUT");
+        phraseToIntentMapping.put("下班", "CLOCK_OUT");
+        phraseToIntentMapping.put("签退", "CLOCK_OUT");
+
+        // 客户/供应商统计类
+        phraseToIntentMapping.put("客户统计", "CUSTOMER_STATS");
+        phraseToIntentMapping.put("按品类供应商", "SUPPLIER_BY_CATEGORY");
+        phraseToIntentMapping.put("供应商品类", "SUPPLIER_BY_CATEGORY");
+        phraseToIntentMapping.put("品类供应商", "SUPPLIER_BY_CATEGORY");
 
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
@@ -1982,6 +2094,54 @@ public class IntentKnowledgeBase {
     }
 
     /**
+     * 判断是否为分析请求
+     *
+     * 条件：
+     * 1. 问题类型为 GENERAL_QUESTION
+     * 2. 包含业务关键词（产品、库存、质检等）
+     * 3. 包含分析类词汇（怎么样、状态、情况等）
+     *
+     * @param input 用户输入
+     * @param questionType 问题类型
+     * @return true 如果是分析请求
+     */
+    public boolean isAnalysisRequest(String input, QuestionType questionType) {
+        if (questionType != QuestionType.GENERAL_QUESTION) {
+            return false;
+        }
+
+        if (input == null || input.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedInput = input.toLowerCase().trim();
+
+        // 业务关键词
+        List<String> businessKeywords = Arrays.asList(
+                "产品", "生产", "批次", "库存", "原料", "物料", "质检", "质量",
+                "出货", "发货", "订单", "人员", "考勤", "排班", "整体", "总体"
+        );
+
+        // 分析指示词
+        List<String> analysisIndicators = Arrays.asList(
+                "怎么样", "状态", "情况", "分析", "报告", "总结", "概况", "概览"
+        );
+
+        boolean hasBusinessKeyword = businessKeywords.stream()
+                .anyMatch(normalizedInput::contains);
+
+        boolean hasAnalysisIndicator = analysisIndicators.stream()
+                .anyMatch(normalizedInput::contains);
+
+        boolean isAnalysis = hasBusinessKeyword && hasAnalysisIndicator;
+
+        log.debug("isAnalysisRequest检测: input='{}', hasBusinessKeyword={}, hasAnalysisIndicator={}, result={}",
+                input, hasBusinessKeyword, hasAnalysisIndicator, isAnalysis);
+
+        return isAnalysis;
+    }
+
+    /**
      * 检查输入是否包含操作指示词
      */
     private boolean containsOperationalIndicator(String input) {
@@ -2007,6 +2167,7 @@ public class IntentKnowledgeBase {
 
         // v6.1新增：业务关键词 - 这些词表示用户在询问具体业务数据，而非通用咨询
         // 例如："合格率怎么样" 应匹配 QUALITY_STATS，而非 GENERAL_QUESTION
+        // v6.2新增：添加通用货物/商品术语和状态词汇，解决"今天所有这货品情况怎么样"被误判问题
         Set<String> businessKeywords = Set.of(
                 // 质量相关
                 "合格率", "不合格率", "良品率", "次品率", "质量", "品质", "质检", "检验",
@@ -2014,6 +2175,8 @@ public class IntentKnowledgeBase {
                 "产量", "产出", "生产", "加工", "批次", "进度", "效率",
                 // 库存相关
                 "库存", "存货", "原料", "物料", "材料",
+                // 货物/商品通用术语 (v6.2新增)
+                "货品", "商品", "产品", "物品",
                 // 发货相关
                 "发货", "出货", "发货量", "配送", "物流",
                 // 设备相关
@@ -2021,7 +2184,9 @@ public class IntentKnowledgeBase {
                 // 告警相关
                 "告警", "报警", "异常", "故障",
                 // 报表/数据相关
-                "报表", "数据", "报告", "成本", "周转"
+                "报表", "数据", "报告", "成本", "周转",
+                // 状态查询词 (v6.2新增)
+                "情况", "状态", "状况"
         );
 
         return strongIndicators.stream().anyMatch(input::contains) ||
@@ -2041,6 +2206,23 @@ public class IntentKnowledgeBase {
 
         String lowerInput = input.toLowerCase();
 
+        // === v4.3优化：优先检查明确的操作短语 ===
+        // 这些短语即使包含查询类词汇（如"数量"），也应识别为CREATE
+        // v4.4修正：如果包含时间词，可能是查询"过去入库的"而非"执行入库"
+        boolean hasTimeContext = TIME_QUERY_INDICATORS.stream().anyMatch(lowerInput::contains);
+        boolean hasQueryStructure = lowerInput.contains("的原料") || lowerInput.contains("的物料") ||
+                lowerInput.contains("的批次") || lowerInput.contains("的发货");
+
+        if (!hasTimeContext && !hasQueryStructure) {
+            if (lowerInput.contains("入库") || lowerInput.contains("到货") || lowerInput.contains("新到")) {
+                return ActionType.CREATE;
+            }
+            if (lowerInput.contains("发货给") || lowerInput.contains("出货给") || lowerInput.contains("发给")) {
+                return ActionType.CREATE;
+            }
+        }
+
+        // === 原有逻辑 ===
         boolean hasQuery = queryIndicators.stream().anyMatch(lowerInput::contains);
         boolean hasUpdate = updateIndicators.stream().anyMatch(lowerInput::contains);
         boolean hasCreate = createIndicators.stream().anyMatch(lowerInput::contains);
@@ -2062,8 +2244,12 @@ public class IntentKnowledgeBase {
             return ActionType.UPDATE;
         }
 
-        // 混合情况
-        if ((hasQuery && hasUpdate) || (hasQuery && hasCreate) || (hasUpdate && hasDelete)) {
+        // 混合情况 - v4.3优化：如果包含CREATE指示词，优先返回CREATE而非AMBIGUOUS
+        if (hasCreate && hasQuery) {
+            // "入库一批带鱼,数量500公斤" 应该是CREATE，而非AMBIGUOUS
+            return ActionType.CREATE;
+        }
+        if ((hasQuery && hasUpdate) || (hasUpdate && hasDelete)) {
             return ActionType.AMBIGUOUS;
         }
 
@@ -2249,6 +2435,293 @@ public class IntentKnowledgeBase {
             phraseToIntentMapping.put(phrase.trim(), intentCode.trim());
             log.debug("添加短语映射: '{}' -> '{}'", phrase, intentCode);
         }
+    }
+
+    // ==================== 阶段二扩展：动词+名词组合消歧 ====================
+
+    /**
+     * 动词+名词组合到意图的映射
+     * 用于解决动作歧义问题，例如 "处理+原料" vs "查询+原料"
+     */
+    private static final Map<String, String> VERB_NOUN_INTENT_MAPPINGS = new LinkedHashMap<>();
+
+    /**
+     * 核心动词集合
+     */
+    private static final Set<String> CORE_VERBS_FOR_DISAMBIGUATION = Set.of(
+            "查询", "查看", "查", "看", "显示", "统计", "分析", "计算", "获取", "导出",
+            "添加", "新增", "创建", "修改", "更新", "删除", "入库", "出库", "发货", "收货",
+            "处理", "提交", "执行", "确认", "开始", "启动", "停止", "暂停", "恢复", "完成", "结束",
+            "安排", "调整", "设置", "录入", "做", "弄"
+    );
+
+    /**
+     * 核心名词集合
+     */
+    private static final Set<String> CORE_NOUNS_FOR_DISAMBIGUATION = Set.of(
+            "原料", "物料", "批次", "库存", "发货", "收货", "告警", "预警", "设备", "机器",
+            "质检", "检测", "检验", "客户", "供应商", "订单", "记录", "数据", "报表", "统计",
+            "生产", "加工", "产量", "效率", "状态", "信息", "列表", "详情", "考勤", "出勤"
+    );
+
+    static {
+        // 处理类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+原料", "MATERIAL_BATCH_CONSUME");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+物料", "MATERIAL_BATCH_CONSUME");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+告警", "ALERT_ACKNOWLEDGE");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+预警", "ALERT_ACKNOWLEDGE");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+异常", "ALERT_ACKNOWLEDGE");
+
+        // 提交/执行类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("提交+质检", "QUALITY_CHECK_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("执行+质检", "QUALITY_CHECK_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("做+质检", "QUALITY_CHECK_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("做+检测", "QUALITY_CHECK_EXECUTE");
+
+        // 确认类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+收货", "SHIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+发货", "SHIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+入库", "MATERIAL_BATCH_CREATE");
+
+        // 更新/修改类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("更新+发货", "SHIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+发货", "SHIPMENT_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("更新+状态", "SHIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+库存", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("调整+库存", "MATERIAL_ADJUST_QUANTITY");
+
+        // 开始/启动类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("开始+生产", "PROCESSING_BATCH_START");
+        VERB_NOUN_INTENT_MAPPINGS.put("启动+生产", "PROCESSING_BATCH_START");
+        VERB_NOUN_INTENT_MAPPINGS.put("启动+批次", "PROCESSING_BATCH_START");
+        VERB_NOUN_INTENT_MAPPINGS.put("开始+加工", "PROCESSING_BATCH_START");
+
+        // 停止/暂停类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("停止+生产", "PROCESSING_BATCH_CANCEL");
+        VERB_NOUN_INTENT_MAPPINGS.put("暂停+生产", "PROCESSING_BATCH_PAUSE");
+        VERB_NOUN_INTENT_MAPPINGS.put("暂停+批次", "PROCESSING_BATCH_PAUSE");
+        VERB_NOUN_INTENT_MAPPINGS.put("恢复+生产", "PROCESSING_BATCH_RESUME");
+        VERB_NOUN_INTENT_MAPPINGS.put("恢复+批次", "PROCESSING_BATCH_RESUME");
+
+        // 完成类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("完成+生产", "PROCESSING_BATCH_COMPLETE");
+        VERB_NOUN_INTENT_MAPPINGS.put("完成+批次", "PROCESSING_BATCH_COMPLETE");
+        VERB_NOUN_INTENT_MAPPINGS.put("结束+生产", "PROCESSING_BATCH_COMPLETE");
+
+        // 创建/新建类动作
+        VERB_NOUN_INTENT_MAPPINGS.put("创建+批次", "PROCESSING_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("新建+批次", "PROCESSING_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("创建+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("新建+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("添加+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("录入+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("入库+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("创建+发货", "SHIPMENT_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("新建+发货", "SHIPMENT_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("安排+发货", "SHIPMENT_CREATE");
+
+        // 查询类动作（用于消歧）
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("看+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("看+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("看+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("看+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("看+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+客户", "CUSTOMER_SEARCH");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+客户", "CUSTOMER_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查+客户", "CUSTOMER_SEARCH");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+质检", "QUALITY_STATS");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+检测", "QUALITY_STATS");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+客户", "CUSTOMER_STATS");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+生产", "REPORT_PRODUCTION");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+库存", "REPORT_INVENTORY");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+产量", "REPORT_PRODUCTION");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+效率", "REPORT_EFFICIENCY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+报表", "REPORT_DASHBOARD_OVERVIEW");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+数据", "REPORT_DASHBOARD_OVERVIEW");
+        VERB_NOUN_INTENT_MAPPINGS.put("查询+考勤", "ATTENDANCE_TODAY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查看+考勤", "ATTENDANCE_TODAY");
+        VERB_NOUN_INTENT_MAPPINGS.put("统计+考勤", "ATTENDANCE_STATS");
+    }
+
+    /**
+     * 动词+名词组合消歧 - 阶段二扩展方法
+     *
+     * <p>从用户输入中提取动词和名词，根据组合推断最可能的意图</p>
+     * <p>这种方法可以解决动作歧义问题，例如 "处理原料" vs "查询原料"</p>
+     *
+     * @param input 用户输入
+     * @return 消歧结果，包含推荐意图代码
+     */
+    // 时间表达词 - 用于检测查询上下文，避免将"上周入库的原料"误判为入库动作
+    private static final Set<String> TIME_QUERY_INDICATORS = Set.of(
+            "今天", "昨天", "前天", "明天", "后天",
+            "本周", "上周", "下周", "这周",
+            "本月", "上月", "下月", "这个月", "上个月",
+            "今年", "去年", "明年",
+            "最近", "近期", "刚才", "刚刚",
+            "上午", "下午", "早上", "晚上", "今早", "今晚",
+            "月底", "季度", "年底"
+    );
+
+    // 查询态模式 - 带"的"结构通常是查询而非执行
+    private static final java.util.regex.Pattern QUERY_CONTEXT_PATTERN = java.util.regex.Pattern.compile(
+            ".*(了多少|了几|过的|的记录|的情况|的状态|的批次|的原料|的发货|的生产|的统计).*"
+    );
+
+    public VerbNounDisambiguationResult disambiguateByVerbNoun(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return VerbNounDisambiguationResult.builder()
+                    .disambiguated(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        String normalized = input.toLowerCase().trim();
+
+        // ========== 查询上下文检测 ==========
+        // 包含时间词或查询态结构时，跳过动作消歧，让语义匹配层处理
+        boolean hasTimeContext = TIME_QUERY_INDICATORS.stream().anyMatch(normalized::contains);
+        boolean hasQueryContext = QUERY_CONTEXT_PATTERN.matcher(normalized).matches();
+
+        if (hasTimeContext || hasQueryContext) {
+            log.debug("检测到查询上下文，跳过动词+名词消歧: input='{}', hasTimeContext={}, hasQueryContext={}",
+                    input, hasTimeContext, hasQueryContext);
+            return VerbNounDisambiguationResult.builder()
+                    .disambiguated(false)
+                    .confidence(0.3)
+                    .build();
+        }
+
+        // 提取动词
+        String detectedVerb = null;
+        for (String verb : CORE_VERBS_FOR_DISAMBIGUATION) {
+            if (normalized.contains(verb)) {
+                detectedVerb = verb;
+                break;
+            }
+        }
+
+        // 提取名词（从后向前找，通常核心对象在句尾）
+        String detectedNoun = null;
+        for (String noun : CORE_NOUNS_FOR_DISAMBIGUATION) {
+            if (normalized.contains(noun)) {
+                detectedNoun = noun;
+                // 不 break，继续找更靠后的名词
+            }
+        }
+
+        if (detectedVerb == null || detectedNoun == null) {
+            return VerbNounDisambiguationResult.builder()
+                    .verb(detectedVerb)
+                    .noun(detectedNoun)
+                    .disambiguated(false)
+                    .confidence(0.3)
+                    .build();
+        }
+
+        // 查找动词+名词组合映射
+        String actionKey = detectedVerb + "+" + detectedNoun;
+        String recommendedIntent = VERB_NOUN_INTENT_MAPPINGS.get(actionKey);
+
+        if (recommendedIntent != null) {
+            log.debug("动词+名词消歧成功: input='{}', verb='{}', noun='{}', intent='{}'",
+                    input, detectedVerb, detectedNoun, recommendedIntent);
+            return VerbNounDisambiguationResult.builder()
+                    .verb(detectedVerb)
+                    .noun(detectedNoun)
+                    .recommendedIntent(recommendedIntent)
+                    .confidence(0.85)
+                    .disambiguated(true)
+                    .build();
+        }
+
+        // 没有精确匹配，尝试同义词模糊匹配
+        String fuzzyIntent = fuzzyMatchVerbNoun(detectedVerb, detectedNoun);
+        if (fuzzyIntent != null) {
+            log.debug("动词+名词模糊消歧: input='{}', verb='{}', noun='{}', intent='{}'",
+                    input, detectedVerb, detectedNoun, fuzzyIntent);
+            return VerbNounDisambiguationResult.builder()
+                    .verb(detectedVerb)
+                    .noun(detectedNoun)
+                    .recommendedIntent(fuzzyIntent)
+                    .confidence(0.65)
+                    .disambiguated(true)
+                    .build();
+        }
+
+        return VerbNounDisambiguationResult.builder()
+                .verb(detectedVerb)
+                .noun(detectedNoun)
+                .disambiguated(false)
+                .confidence(0.4)
+                .build();
+    }
+
+    /**
+     * 同义动词组
+     */
+    private static final List<Set<String>> SYNONYM_VERB_GROUPS = List.of(
+            Set.of("查询", "查看", "查", "看", "显示", "获取"),
+            Set.of("添加", "新增", "创建", "新建", "录入"),
+            Set.of("修改", "更新", "编辑", "调整"),
+            Set.of("删除", "移除", "取消", "作废"),
+            Set.of("开始", "启动", "启用"),
+            Set.of("停止", "暂停", "中止"),
+            Set.of("完成", "结束", "完结")
+    );
+
+    /**
+     * 尝试使用同义动词进行模糊匹配
+     */
+    private String fuzzyMatchVerbNoun(String verb, String noun) {
+        for (Set<String> synonymGroup : SYNONYM_VERB_GROUPS) {
+            if (synonymGroup.contains(verb)) {
+                // 尝试组内的其他同义词
+                for (String synonym : synonymGroup) {
+                    String key = synonym + "+" + noun;
+                    String intent = VERB_NOUN_INTENT_MAPPINGS.get(key);
+                    if (intent != null) {
+                        return intent;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 动词+名词消歧结果
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class VerbNounDisambiguationResult {
+        /** 检测到的动词 */
+        private String verb;
+        /** 检测到的名词 */
+        private String noun;
+        /** 推荐的意图代码 */
+        private String recommendedIntent;
+        /** 置信度 */
+        private double confidence;
+        /** 是否成功消歧 */
+        private boolean disambiguated;
     }
 
     // ==================== 阶段三：领域优先级方法 ====================

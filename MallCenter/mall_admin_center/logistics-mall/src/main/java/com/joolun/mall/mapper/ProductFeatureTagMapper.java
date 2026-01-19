@@ -37,4 +37,10 @@ public interface ProductFeatureTagMapper extends BaseMapper<ProductFeatureTag> {
             " GROUP BY product_id ORDER BY total_weight DESC LIMIT #{limit}" +
             "</script>")
     List<String> selectProductIdsByTags(@Param("tagValues") List<String> tagValues, @Param("limit") int limit);
+
+    /**
+     * 查询商品的指定类型标签
+     */
+    @Select("SELECT * FROM product_feature_tags WHERE product_id = #{productId} AND tag_type = #{tagType}")
+    List<ProductFeatureTag> selectByProductIdAndType(@Param("productId") String productId, @Param("tagType") String tagType);
 }

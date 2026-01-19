@@ -35,6 +35,28 @@ public interface LinUCBService {
             List<Long> candidateWorkerIds);
 
     /**
+     * 获取带多样性调整的工人推荐
+     * 在LinUCB打分基础上应用公平性、技能维护、重复惩罚
+     *
+     * 调整公式:
+     * FinalScore = 0.6 × LinUCB_Score
+     *            + 0.15 × FairnessBonus
+     *            + 0.15 × SkillMaintenanceBonus
+     *            - 0.1 × RepetitionPenalty
+     *
+     * @param factoryId 工厂ID
+     * @param taskInfo 任务信息 (包含 taskType/processType/stageType)
+     * @param candidateWorkerIds 候选工人ID列表
+     * @param enableDiversity 是否启用多样性调整
+     * @return 推荐列表 (已按调整后分数排序)
+     */
+    List<WorkerRecommendation> getRecommendationsWithDiversity(
+            String factoryId,
+            Map<String, Object> taskInfo,
+            List<Long> candidateWorkerIds,
+            boolean enableDiversity);
+
+    /**
      * 计算单个工人的UCB值
      * UCB = θ^T * x + α * sqrt(x^T * A^(-1) * x)
      *
@@ -138,6 +160,27 @@ public interface LinUCBService {
      * @return 计算的奖励值
      */
     BigDecimal completeFeedback(
+            String feedbackId,
+            BigDecimal actualQuantity,
+            BigDecimal actualHours,
+            BigDecimal qualityScore);
+
+    /**
+     * 完成分配反馈并立即更新模型 (实时反馈闭环)
+     * 基于抖音推荐系统"实时反馈闭环飞轮"设计
+     *
+     * 相比于批量更新的优势:
+     * - 模型能够立即学习到最新的工人表现
+     * - 下一次推荐立即反映最新数据
+     * - 适用于对实时性要求高的场景
+     *
+     * @param feedbackId 反馈记录ID
+     * @param actualQuantity 实际产量
+     * @param actualHours 实际工时
+     * @param qualityScore 质量分数 (0-1)
+     * @return 计算的奖励值
+     */
+    BigDecimal completeFeedbackWithImmediateUpdate(
             String feedbackId,
             BigDecimal actualQuantity,
             BigDecimal actualHours,

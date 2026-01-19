@@ -257,14 +257,16 @@ export default function PersonnelListScreen() {
         const statsRes = await personnelApiClient.getPersonnelStatistics(factoryId ?? '', startDate, endDate);
         if (statsRes.success && statsRes.data) {
           const apiStats = statsRes.data;
+          // PersonnelStatistics type has: totalEmployees, totalPresent, totalAbsent, avgAttendanceRate
+          // Map available fields to our local stats structure
           statsFromApi = {
             total: apiStats.totalEmployees ?? 0,
-            tempWorkers: apiStats.temporaryCount ?? 0,
-            working: apiStats.workingCount ?? 0,
-            workingTemp: apiStats.workingTemporaryCount ?? 0,
-            idle: apiStats.idleCount ?? 0,
-            leave: apiStats.onLeaveCount ?? 0,
-            expiringContracts: apiStats.expiringContractsCount ?? 0,
+            tempWorkers: 0, // Not provided by API, will calculate from workers
+            working: apiStats.totalPresent ?? 0,
+            workingTemp: 0, // Not provided by API, will calculate from workers
+            idle: 0, // Not provided by API, will calculate from workers
+            leave: apiStats.totalAbsent ?? 0,
+            expiringContracts: 0, // Not provided by API
           };
         }
       } catch (statsError) {
@@ -280,30 +282,48 @@ export default function PersonnelListScreen() {
           ? responseData
           : (responseData.content || responseData.users || []);
 
+        // Define worker type for type safety
+        type WorkerData = {
+          id?: number;
+          status?: string;
+          hireType?: string;
+          fullName?: string;
+          username?: string;
+          employeeCode?: string;
+          position?: string;
+          workshopId?: string;
+          workshopName?: string;
+          departmentName?: string;
+          skillLevels?: Record<string, number>;
+          efficiency?: number;
+          todayWorkHours?: number;
+          currentTaskId?: string;
+        };
+
         // If statistics API failed or returned zeros, calculate from workers
         if (statsFromApi.total === 0) {
           // Use lowercase comparison to handle both API response formats
-          const workingCount = workers.filter(w => {
+          const workingCount = workers.filter((w: WorkerData) => {
             const status = w.status?.toLowerCase();
             return status === 'working' || status === 'on_duty';
           }).length;
-          const idleCount = workers.filter(w => {
+          const idleCount = workers.filter((w: WorkerData) => {
             const status = w.status?.toLowerCase();
             return status === 'idle' || status === 'available';
           }).length;
-          const tempCount = workers.filter(w => w.hireType?.toLowerCase() === 'temporary').length;
+          const tempCount = workers.filter((w: WorkerData) => w.hireType?.toLowerCase() === 'temporary').length;
 
           statsFromApi = {
             total: workers.length,
             tempWorkers: tempCount,
             working: workingCount,
-            workingTemp: workers.filter(w => {
+            workingTemp: workers.filter((w: WorkerData) => {
               const status = w.status?.toLowerCase();
               const hireType = w.hireType?.toLowerCase();
               return (status === 'working' || status === 'on_duty') && hireType === 'temporary';
             }).length,
             idle: idleCount,
-            leave: workers.filter(w => {
+            leave: workers.filter((w: WorkerData) => {
               const status = w.status?.toLowerCase();
               return status === 'on_leave' || status === 'leave';
             }).length,
@@ -314,7 +334,7 @@ export default function PersonnelListScreen() {
         setStats(statsFromApi);
 
         // Transform workers to Personnel format
-        const personnelList: Personnel[] = workers.map((worker): Personnel => {
+        const personnelList: Personnel[] = workers.map((worker: WorkerData): Personnel => {
           const hireType: HireType = (worker.hireType?.toLowerCase() as HireType) || 'full_time';
           let status: 'working' | 'idle' | 'leave' = 'idle';
           const workerStatus = worker.status?.toLowerCase();

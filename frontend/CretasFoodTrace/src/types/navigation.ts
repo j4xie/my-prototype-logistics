@@ -5,6 +5,7 @@
 
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { SmartBIStackParamList } from './smartbi';
 
 // ==================== Root导航参数 ====================
 
@@ -254,6 +255,7 @@ export type FactoryAdminTabParamList = {
   FAHomeTab: NavigatorScreenParams<FAHomeStackParamList>;
   FAAITab: NavigatorScreenParams<FAAIStackParamList>;
   FAReportsTab: NavigatorScreenParams<ReportStackParamList>;
+  FASmartBITab: NavigatorScreenParams<SmartBIStackParamList>;
   FAManagementTab: NavigatorScreenParams<FAManagementStackParamList>;
   FAProfileTab: NavigatorScreenParams<FAProfileStackParamList>;
 };

@@ -83,4 +83,21 @@ public interface IntentExecutorService {
      */
     SseEmitter executeStream(String factoryId, IntentExecuteRequest request,
                               Long userId, String userRole);
+
+    /**
+     * 执行多意图 (Multi-Label Classification)
+     *
+     * 使用 Sigmoid-based 多标签分类识别并执行多个意图:
+     * 1. 使用 MultiLabelIntentClassifier 识别多个意图
+     * 2. 根据执行策略 (PARALLEL/SEQUENTIAL/USER_CONFIRM) 执行
+     * 3. 合并多个意图的执行结果
+     *
+     * @param factoryId 工厂ID
+     * @param request 执行请求
+     * @param userId 当前用户ID
+     * @param userRole 当前用户角色
+     * @return 执行响应（包含多意图结果）
+     */
+    IntentExecuteResponse executeMultiIntent(String factoryId, IntentExecuteRequest request,
+                                              Long userId, String userRole);
 }

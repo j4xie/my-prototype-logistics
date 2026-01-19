@@ -3,6 +3,7 @@
  */
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { setupRouterGuards } from './guards';
+import smartBIRoutes, { smartBIRedirects } from './modules/smartbi';
 
 // 基础路由 - 不需要权限
 const baseRoutes: RouteRecordRaw[] = [
@@ -390,9 +391,15 @@ const businessRoutes: RouteRecordRaw[] = [
             meta: { requiresAuth: true, title: '告警管理', module: 'scheduling' }
           }
         ]
-      }
+      },
+
+      // SmartBI 智能分析 (导入自模块)
+      ...smartBIRoutes
     ]
   },
+
+  // SmartBI 快捷入口重定向
+  ...smartBIRedirects,
 
   // 404 兜底
   {

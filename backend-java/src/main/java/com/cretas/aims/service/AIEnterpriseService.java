@@ -648,9 +648,28 @@ public class AIEnterpriseService {
                     .getTimeRangeBatchesCostAnalysis(factoryId, startDate, endDate);
 
             if (batchesData.isEmpty()) {
-                log.warn("时间范围内无批次数据: factoryId={}, startDate={}, endDate={}",
+                // 无数据时返回友好提示，而不是抛出异常
+                log.info("时间范围内无批次数据，返回友好提示: factoryId={}, startDate={}, endDate={}",
                         factoryId, startDate, endDate);
-                throw new RuntimeException("该时间范围内无生产批次数据");
+
+                String noDataMessage = String.format(
+                    "在 %s 至 %s 期间，系统未检索到任何生产批次记录。\n\n" +
+                    "**可能的原因：**\n" +
+                    "- 该时间段内工厂没有进行生产活动\n" +
+                    "- 生产数据尚未录入系统\n\n" +
+                    "**建议：**\n" +
+                    "- 尝试选择其他时间范围进行查询\n" +
+                    "- 确认生产记录是否已完整录入",
+                    startDate.toLocalDate(), endDate.toLocalDate());
+
+                return MobileDTO.AICostAnalysisResponse.builder()
+                    .success(true)
+                    .analysis(noDataMessage)
+                    .sessionId(java.util.UUID.randomUUID().toString())
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .cacheHit(false)
+                    .quotaConsumed(0)
+                    .build();
             }
 
             // 4. 格式化为AI Prompt
@@ -778,10 +797,27 @@ public class AIEnterpriseService {
                         .getTimeRangeBatchesCostAnalysis(factoryId, startDate, endDate);
 
                 if (batchesData.isEmpty()) {
+                    // 无数据时返回友好提示，而不是错误
+                    String noDataMessage = String.format(
+                        "在 %s 至 %s 期间，系统未检索到任何生产批次记录。\n\n" +
+                        "**可能的原因：**\n" +
+                        "- 该时间段内工厂没有进行生产活动\n" +
+                        "- 生产数据尚未录入系统\n\n" +
+                        "**建议：**\n" +
+                        "- 尝试选择其他时间范围进行查询\n" +
+                        "- 确认生产记录是否已完整录入",
+                        startDate.toLocalDate(), endDate.toLocalDate());
+
                     emitter.send(SseEmitter.event()
-                            .name("error")
-                            .data("{\"type\":\"error\",\"message\":\"该时间范围内无生产批次数据\"}"));
+                            .name("content")
+                            .data("{\"type\":\"content\",\"content\":\"" + noDataMessage.replace("\n", "\\n").replace("\"", "\\\"") + "\"}"));
+                    emitter.send(SseEmitter.event()
+                            .name("done")
+                            .data("{\"type\":\"done\"}"));
                     emitter.complete();
+
+                    log.info("时间范围内无数据，已返回友好提示: factoryId={}, startDate={}, endDate={}",
+                            factoryId, startDate, endDate);
                     return;
                 }
 

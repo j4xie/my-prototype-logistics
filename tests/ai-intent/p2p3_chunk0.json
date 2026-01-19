@@ -1,0 +1,1347 @@
+{
+  "testSuite": "AI Intent Recognition - P2+P3 Complete Test Cases",
+  "version": "2.0.0",
+  "phase": "Phase 2 - P2+P3 Priority",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "distribution": {
+    "P2_CLOCK": 28,
+    "P2_USER": 24,
+    "P2_CRM": 20,
+    "P2_CONFIG": 15,
+    "P2_CAMERA": 9,
+    "P3_CONVERSATION": 18,
+    "P3_COLLOQUIAL": 23,
+    "P3_BOUNDARY": 19,
+    "P3_EXCEPTION": 10
+  },
+  "testCases": [
+    {
+      "id": "TC-P2-CLOCK-003",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证正常签到操作-上午时段",
+      "userInput": "签到上班",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 2,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 2 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true,
+          "intentCode": "CLOCK_IN"
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 2 AND clock_date = CURDATE() AND clock_in_time IS NOT NULL",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功|打卡成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-004",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证正常签到操作-准时签到",
+      "userInput": "员工签到",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 3,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 3 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 3 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-005",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证口语化签到-我来了",
+      "userInput": "我来了",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 0.8,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 4,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 4 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 4 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功|欢迎"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-006",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证迟到签到操作",
+      "userInput": "帮我打卡",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 5,
+        "currentTime": "10:30:00",
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 5 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count, status FROM time_clock_records WHERE user_id = 5 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功|迟到"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-007",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证迟到签到-带时间说明",
+      "userInput": "上工签到",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 6,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 6 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 6 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-008",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证重复签到拒绝-已签到提示",
+      "userInput": "我要签到",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6010, 'F001', 7, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 7,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6010;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false
+        },
+        "operationVerification": {
+          "type": "NO_CHANGE",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 7 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "已签到|重复签到|已打卡"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-009",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证重复签到拒绝-提示已打卡时间",
+      "userInput": "签到",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6011, 'F001', 8, CURDATE(), CONCAT(CURDATE(), ' 07:50:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 8,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6011;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false
+        },
+        "operationVerification": {
+          "type": "NO_CHANGE",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 8 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "已签到|07:50|已打卡"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-010",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_IN",
+      "testType": "OPERATION",
+      "description": "验证口语化签到-开工了",
+      "userInput": "开工了",
+      "expectedIntent": {
+        "intentCode": "CLOCK_IN",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 9,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 9 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 9 AND clock_date = CURDATE()",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签到成功|打卡成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-011",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证正常签退操作-下午时段",
+      "userInput": "签退下班",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6012, 'F001', 10, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 10,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6012;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT clock_out_time, status FROM time_clock_records WHERE id = 6012",
+          "expectedFieldNotNull": "clock_out_time",
+          "expectedStatus": "OFF_WORK"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|下班成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-012",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证正常签退操作-正常下班",
+      "userInput": "员工签退",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6013, 'F001', 11, CURDATE(), CONCAT(CURDATE(), ' 08:15:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 11,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6013;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM time_clock_records WHERE id = 6013",
+          "expectedStatus": "OFF_WORK"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-013",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证正常签退操作-计算工时",
+      "userInput": "下班打卡",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6014, 'F001', 12, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 12,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6014;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT clock_out_time, work_hours FROM time_clock_records WHERE id = 6014",
+          "expectedFieldNotNull": "work_hours"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|工时"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-014",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证早退签退操作-下午早退",
+      "userInput": "我要签退",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6015, 'F001', 13, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 13,
+        "currentTime": "15:30:00",
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6015;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM time_clock_records WHERE id = 6015",
+          "expectedStatus": "OFF_WORK"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|早退"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-015",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证早退签退操作-提示工时不足",
+      "userInput": "下工签退",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6016, 'F001', 14, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 14,
+        "currentTime": "14:00:00",
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6016;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT work_hours FROM time_clock_records WHERE id = 6016",
+          "expectedFieldNotNull": "work_hours"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|工时.*6"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-016",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证未签到直接签退拒绝-提示先签到",
+      "userInput": "签退",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 15,
+        "cleanup": "DELETE FROM time_clock_records WHERE user_id = 15 AND clock_date = CURDATE();"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false
+        },
+        "operationVerification": {
+          "type": "NO_CHANGE",
+          "checkSql": "SELECT COUNT(*) as count FROM time_clock_records WHERE user_id = 15 AND clock_date = CURDATE()",
+          "expectedCount": 0
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "未签到|请先签到|未打卡"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-017",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证未签到直接签退拒绝-提示无考勤记录",
+      "userInput": "帮我签退",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "userId": 16,
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "未签到|无考勤记录|请先打卡"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-018",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "CLOCK_OUT",
+      "testType": "OPERATION",
+      "description": "验证口语化签退-收工",
+      "userInput": "收工了",
+      "expectedIntent": {
+        "intentCode": "CLOCK_OUT",
+        "confidence": 0.75,
+        "matchMethod": "COLLOQUIAL",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6017, 'F001', 17, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 17,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6017;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM time_clock_records WHERE id = 6017",
+          "expectedStatus": "OFF_WORK"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "签退成功|下班成功"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-019",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-完整记录",
+      "userInput": "查询今日考勤",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, work_hours, status, created_at, updated_at) VALUES (6018, 'F001', 18, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), CONCAT(CURDATE(), ' 17:00:00'), 9.0, 'OFF_WORK', NOW(), NOW()), (6019, 'F001', 19, CURDATE(), CONCAT(CURDATE(), ' 08:15:00'), NULL, NULL, 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6018, 6019);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "userId",
+            "clockInTime",
+            "status"
+          ],
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "今日考勤|2.*条"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-020",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-统计数据",
+      "userInput": "今天考勤情况",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, status, created_at, updated_at) VALUES (6020, 'F001', 20, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), CONCAT(CURDATE(), ' 17:00:00'), 'OFF_WORK', NOW(), NOW()), (6021, 'F001', 21, CURDATE(), CONCAT(CURDATE(), ' 09:30:00'), NULL, 'WORKING', NOW(), NOW()), (6022, 'F001', 22, CURDATE(), CONCAT(CURDATE(), ' 08:05:00'), CONCAT(CURDATE(), ' 17:00:00'), 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6020, 6021, 6022);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "AGGREGATED_DATA",
+          "expectedFields": [
+            "totalCount",
+            "onTimeCount",
+            "lateCount"
+          ],
+          "expectedValues": {
+            "totalCount": 3,
+            "lateCount": 1
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤|3.*人|迟到.*1"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-021",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-按部门筛选",
+      "userInput": "查看今天的打卡记录",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6023, 'F001', 23, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6023;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤|打卡"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-022",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-空结果处理",
+      "userInput": "今日考勤",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F999",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true
+        },
+        "dataVerification": {
+          "method": "EMPTY_RESULT",
+          "expectedCount": 0
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "暂无考勤记录|无打卡记录"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-023",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-口语化表达",
+      "userInput": "今天谁来了",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 0.8,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, created_at, updated_at) VALUES (6024, 'F001', 24, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', NOW(), NOW()), (6025, 'F001', 25, CURDATE(), CONCAT(CURDATE(), ' 08:10:00'), 'WORKING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6024, 6025);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "2.*人|签到"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-024",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_TODAY",
+      "testType": "QUERY",
+      "description": "验证今日考勤查询-包含异常状态",
+      "userInput": "考勤情况",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_TODAY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, is_late, created_at, updated_at) VALUES (6026, 'F001', 26, CURDATE(), CONCAT(CURDATE(), ' 08:00:00'), 'WORKING', 0, NOW(), NOW()), (6027, 'F001', 27, CURDATE(), CONCAT(CURDATE(), ' 09:45:00'), 'WORKING', 1, NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6026, 6027);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "STATUS_SUMMARY",
+          "expectedFields": [
+            "isLate"
+          ],
+          "expectedAnomalies": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤|正常.*1|迟到.*1"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-025",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-本周记录",
+      "userInput": "查询本周考勤记录",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, status, created_at, updated_at) VALUES (6028, 'F001', 28, DATE_SUB(CURDATE(), INTERVAL 1 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW()), (6029, 'F001', 28, DATE_SUB(CURDATE(), INTERVAL 2 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 08:15:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 28,
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6028, 6029);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "TIME_RANGE_FILTER",
+          "expectedFields": [
+            "clockDate",
+            "clockInTime",
+            "clockOutTime"
+          ],
+          "timeRange": "WEEK",
+          "expectedMinCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "本周|考勤|2.*条"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-026",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-上月记录",
+      "userInput": "历史考勤查询",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, status, created_at, updated_at) VALUES (6030, 'F001', 29, DATE_SUB(CURDATE(), INTERVAL 15 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 15 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 15 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 29,
+        "cleanup": "DELETE FROM time_clock_records WHERE id = 6030;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤记录|历史"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-027",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-指定日期范围",
+      "userInput": "查询最近7天的打卡记录",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, status, created_at, updated_at) VALUES (6031, 'F001', 30, DATE_SUB(CURDATE(), INTERVAL 3 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW()), (6032, 'F001', 30, DATE_SUB(CURDATE(), INTERVAL 5 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 5 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 30,
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6031, 6032);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "TIME_RANGE_FILTER",
+          "expectedFields": [
+            "clockDate"
+          ],
+          "timeRange": "LAST_7_DAYS",
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "7天|2.*条"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-028",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-按用户筛选",
+      "userInput": "查看我的考勤历史",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, status, created_at, updated_at) VALUES (6033, 'F001', 31, DATE_SUB(CURDATE(), INTERVAL 1 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW()), (6034, 'F001', 31, DATE_SUB(CURDATE(), INTERVAL 2 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 17:00:00'), 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 31,
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6033, 6034);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "USER_FILTER",
+          "expectedUserId": 31,
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤历史|2.*条"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-029",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-统计迟到次数",
+      "userInput": "考勤记录",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, status, is_late, created_at, updated_at) VALUES (6035, 'F001', 32, DATE_SUB(CURDATE(), INTERVAL 1 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), 'OFF_WORK', 0, NOW(), NOW()), (6036, 'F001', 32, DATE_SUB(CURDATE(), INTERVAL 2 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 09:30:00'), 'OFF_WORK', 1, NOW(), NOW()), (6037, 'F001', 32, DATE_SUB(CURDATE(), INTERVAL 3 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 3 DAY), ' 09:15:00'), 'OFF_WORK', 1, NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 32,
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6035, 6036, 6037);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "AGGREGATED_DATA",
+          "expectedFields": [
+            "totalCount",
+            "lateCount"
+          ],
+          "expectedValues": {
+            "totalCount": 3,
+            "lateCount": 2
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤|3.*条|迟到.*2"
+      }
+    },
+    {
+      "id": "TC-P2-CLOCK-030",
+      "priority": "P2",
+      "category": "ATTENDANCE",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "testType": "QUERY",
+      "description": "验证历史考勤查询-计算平均工时",
+      "userInput": "打卡记录查询",
+      "expectedIntent": {
+        "intentCode": "ATTENDANCE_HISTORY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO time_clock_records (id, factory_id, user_id, clock_date, clock_in_time, clock_out_time, work_hours, status, created_at, updated_at) VALUES (6038, 'F001', 33, DATE_SUB(CURDATE(), INTERVAL 1 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 1 DAY), ' 17:00:00'), 9.0, 'OFF_WORK', NOW(), NOW()), (6039, 'F001', 33, DATE_SUB(CURDATE(), INTERVAL 2 DAY), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 08:00:00'), CONCAT(DATE_SUB(CURDATE(), INTERVAL 2 DAY), ' 18:00:00'), 10.0, 'OFF_WORK', NOW(), NOW());",
+        "factoryId": "F001",
+        "userId": 33,
+        "cleanup": "DELETE FROM time_clock_records WHERE id IN (6038, 6039);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CALCULATED_FIELD",
+          "expectedFields": [
+            "avgWorkHours"
+          ],
+          "expectedAvgWorkHours": 9.5
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "考勤|平均工时.*9.5"
+      }
+    },
+    {
+      "id": "TC-P2-USER-002",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建工厂管理员用户",
+      "userInput": "创建工厂管理员,用户名factory_admin_001,姓名李明",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'factory_admin_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count, role FROM users WHERE username = 'factory_admin_001' AND full_name = '李明'",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT role FROM users WHERE username = 'factory_admin_001'",
+          "expectedValues": {
+            "role": "factory_admin"
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|用户.*创建"
+      }
+    },
+    {
+      "id": "TC-P2-USER-003",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建工厂管理员-带权限说明",
+      "userInput": "新建管理员账号,用户名admin_zhang,姓名张伟,给所有权限",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.95,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'admin_zhang';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM users WHERE username = 'admin_zhang'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|管理员"
+      }
+    },
+    {
+      "id": "TC-P2-USER-004",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建车间主管用户",
+      "userInput": "添加车间主管,用户名supervisor_001,姓名王强",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'supervisor_001';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count, role FROM users WHERE username = 'supervisor_001'",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT role FROM users WHERE username = 'supervisor_001'",
+          "expectedValues": {
+            "role": "workshop_supervisor"
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|主管"
+      }
+    },
+    {
+      "id": "TC-P2-USER-005",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建车间主管-带部门信息",
+      "userInput": "创建用户,用户名ws_liu,姓名刘芳,角色是车间主管,负责生产车间",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.95,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'ws_liu';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM users WHERE username = 'ws_liu' AND full_name = '刘芳'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|车间主管"
+      }
+    },
+    {
+      "id": "TC-P2-USER-006",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建质检员用户",
+      "userInput": "新增质检员,用户名qc_chen,姓名陈丽",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'qc_chen';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count, role FROM users WHERE username = 'qc_chen'",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT role FROM users WHERE username = 'qc_chen'",
+          "expectedValues": {
+            "role": "quality_inspector"
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|质检员"
+      }
+    },
+    {
+      "id": "TC-P2-USER-007",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建质检员-带联系方式",
+      "userInput": "添加质检人员,用户名inspector_zhao,姓名赵敏,手机13800138001",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'inspector_zhao';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM users WHERE username = 'inspector_zhao' AND phone = '13800138001'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|质检"
+      }
+    },
+    {
+      "id": "TC-P2-USER-008",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建操作员用户",
+      "userInput": "创建操作工,用户名worker_sun,姓名孙华",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'worker_sun';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count, role FROM users WHERE username = 'worker_sun'",
+          "expectedCount": 1
+        },
+        "dataVerification": {
+          "method": "FIELD_VALUES",
+          "checkSql": "SELECT role FROM users WHERE username = 'worker_sun'",
+          "expectedValues": {
+            "role": "operator"
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|操作"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 1,
+    "startIndex": 0,
+    "chunkSize": 35
+  }
+}

@@ -68,6 +68,15 @@ export function setupRouterGuards(router: Router) {
       }
     }
 
+    // 检查角色权限（如果路由指定了 roles）
+    const allowedRoles = to.meta.roles as string[] | undefined;
+    if (allowedRoles && allowedRoles.length > 0) {
+      if (!allowedRoles.includes(authStore.currentRole)) {
+        next('/403');
+        return;
+      }
+    }
+
     next();
   });
 }

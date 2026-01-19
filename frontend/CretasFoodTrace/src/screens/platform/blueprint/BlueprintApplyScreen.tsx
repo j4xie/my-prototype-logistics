@@ -38,7 +38,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { isAxiosError } from 'axios';
-import { platformApiClient } from '../../../services/api/platformApiClient';
+import platformAPI from '../../../services/api/platformApiClient';
 import { blueprintVersionApiClient } from '../../../services/api/blueprintVersionApiClient';
 
 // Types
@@ -167,7 +167,7 @@ export function BlueprintApplyScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const response = await platformApiClient.getFactories();
+      const response = await platformAPI.getFactories();
       const transformedFactories = (response.data || []).map(transformFactoryData);
       setFactories(transformedFactories);
     } catch (error) {
@@ -277,17 +277,14 @@ export function BlueprintApplyScreen() {
 
       for (let i = 0; i < totalFactories; i++) {
         const factoryId = selectedFactories[i];
+        if (!factoryId) continue;
         setApplyProgress((i + 0.5) / totalFactories);
 
+        const versionStr = currentVersion.replace('v', '').split('.')[0] ?? '1';
         const result = await blueprintVersionApiClient.upgradeFactory(factoryId, {
-          blueprintId,
-          targetVersion: parseInt(currentVersion.replace('v', '').split('.')[0]) || 1,
-          syncOptions: {
-            fullSync: true,
-            autoSync,
-            notifyAdmin,
-            components: checkedOptions.map(opt => opt.key),
-          },
+          targetVersion: parseInt(versionStr, 10) || 1,
+          force: true,
+          reason: `Apply blueprint ${blueprintId} with options: ${checkedOptions.map(opt => opt.key).join(', ')}`,
         });
 
         if (result) {

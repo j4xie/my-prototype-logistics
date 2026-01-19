@@ -87,6 +87,13 @@ public class IntentExecuteResponse {
     private String message;
 
     /**
+     * 格式化的自然语言响应文本
+     * 将 resultData 转换为用户友好的文本摘要
+     * 例如: "查询到 25 条出货记录，今日发货 3 单，总金额 ¥55,000"
+     */
+    private String formattedText;
+
+    /**
      * 澄清问题列表 (当 status=NEED_MORE_INFO 时返回)
      * 用于引导用户提供缺失的必需参数
      * LLM生成的自然语言问题，比硬编码消息更友好
@@ -207,6 +214,26 @@ public class IntentExecuteResponse {
      */
     private Integer maxConversationRounds;
 
+    // ==================== 多意图执行结果 ====================
+
+    /**
+     * 是否为多意图执行结果
+     * 当执行请求包含多个意图时为 true
+     */
+    private Boolean multiIntentResult;
+
+    /**
+     * 子意图执行结果列表
+     * 当 multiIntentResult 为 true 时，包含每个子意图的执行结果
+     */
+    private List<SingleIntentResponse> subResults;
+
+    /**
+     * 结果验证结果
+     * 包含验证是否通过、验证问题列表、建议等
+     */
+    private ValidationResultInfo validationResultInfo;
+
     // ==================== 嵌套类 ====================
 
     /**
@@ -296,5 +323,124 @@ public class IntentExecuteResponse {
          * 验证规则提示（如：必须大于0，长度不超过20）
          */
         private String validationHint;
+    }
+
+    /**
+     * 单意图执行响应
+     * 用于多意图执行时记录每个子意图的执行结果
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class SingleIntentResponse {
+        /**
+         * 意图代码
+         */
+        private String intentCode;
+
+        /**
+         * 意图名称
+         */
+        private String intentName;
+
+        /**
+         * 执行状态
+         */
+        private String status;
+
+        /**
+         * 执行结果数据
+         */
+        private Object data;
+
+        /**
+         * 状态消息
+         */
+        private String message;
+
+        /**
+         * 执行顺序
+         */
+        private Integer executionOrder;
+    }
+
+    /**
+     * 验证结果信息
+     * 简化版的验证结果，用于响应传递
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ValidationResultInfo {
+        /**
+         * 是否验证通过
+         */
+        private boolean valid;
+
+        /**
+         * 验证状态
+         */
+        private String status;
+
+        /**
+         * 验证问题列表
+         */
+        private List<ValidationIssueInfo> issues;
+
+        /**
+         * 建议信息
+         */
+        private String suggestion;
+
+        /**
+         * 规则验证分数 (0-1)
+         */
+        private double ruleScore;
+
+        /**
+         * 语义验证分数 (0-1)
+         */
+        private Double semanticScore;
+
+        /**
+         * 是否建议重试
+         */
+        private boolean shouldRetry;
+    }
+
+    /**
+     * 验证问题信息
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ValidationIssueInfo {
+        /**
+         * 问题类型
+         */
+        private String type;
+
+        /**
+         * 相关字段
+         */
+        private String field;
+
+        /**
+         * 期望值
+         */
+        private String expected;
+
+        /**
+         * 实际值
+         */
+        private String actual;
+
+        /**
+         * 问题描述
+         */
+        private String message;
     }
 }

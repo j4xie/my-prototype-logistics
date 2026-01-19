@@ -19,11 +19,11 @@
     <description>白垩纪食品溯源系统后端服务</description>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>11</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lombok.version>1.18.34</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
     </properties>
 
     <dependencies>
@@ -88,6 +88,21 @@
             <artifactId>mockito-inline</artifactId>
             <version>4.11.0</version>
             <scope>test</scope>
+        </dependency>
+
+        <!-- Fastjson for test JSON parsing -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>2.0.43</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Alibaba DashScope SDK for Arena RL -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.16.4</version>
         </dependency>
 
         <!-- Swagger/OpenAPI for API Documentation -->
@@ -252,26 +267,68 @@
             <version>0.30.0</version>
         </dependency>
 
-        <!-- ONNX Runtime Engine for DJL -->
+        <!-- ONNX Runtime Engine for DJL (外置到服务器 /www/wwwroot/cretas/lib) -->
         <dependency>
             <groupId>ai.djl.onnxruntime</groupId>
             <artifactId>onnxruntime-engine</artifactId>
             <version>0.30.0</version>
-            <scope>runtime</scope>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.microsoft.onnxruntime</groupId>
+                    <artifactId>onnxruntime</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
-        <!-- HuggingFace Tokenizer (JNI binding) for DJL -->
+        <!-- HuggingFace Tokenizer (JNI binding) for DJL (外置到服务器) -->
         <dependency>
             <groupId>ai.djl.huggingface</groupId>
             <artifactId>tokenizers</artifactId>
             <version>0.30.0</version>
+            <scope>provided</scope>
         </dependency>
 
-        <!-- JAVE2 for Audio Format Conversion (Android audio to PCM for iFlytek) -->
+        <!-- JAVE2 for Audio Format Conversion (外置到服务器，仅保留 linux64) -->
         <dependency>
             <groupId>ws.schild</groupId>
             <artifactId>jave-all-deps</artifactId>
             <version>3.3.1</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-win32</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-win64</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux32</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux64</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-osx64</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-osxm1</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux-arm32</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ws.schild</groupId>
+                    <artifactId>jave-nativebin-linux-arm64</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 

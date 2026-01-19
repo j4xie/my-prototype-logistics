@@ -2,6 +2,7 @@ package com.cretas.aims.service;
 
 import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.dto.intent.IntentMatchResult;
+import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 
 import java.util.List;
@@ -72,6 +73,52 @@ public interface AIIntentService {
      * @return 完整的匹配结果
      */
     IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN, Long userId, String userRole);
+
+    /**
+     * 识别用户输入的意图（增强版，支持会话上下文）
+     *
+     * 在原有功能基础上增加：
+     * - 查询预处理（规则预处理、口语标准化、时间归一化）
+     * - 上下文注入（实体槽位、指代消解）
+     * - 多轮对话支持
+     *
+     * @param userInput 用户输入文本
+     * @param factoryId 工厂ID（用于LLM上下文）
+     * @param topN 返回的候选意图数量
+     * @param userId 用户ID（用于Tool Calling权限验证）
+     * @param userRole 用户角色（用于Tool Calling权限验证）
+     * @param sessionId 会话ID（用于对话上下文管理，可选）
+     * @return 完整的匹配结果
+     */
+    IntentMatchResult recognizeIntentWithConfidence(String userInput, String factoryId, int topN,
+                                                    Long userId, String userRole, String sessionId);
+
+    // ==================== 多意图识别 ====================
+
+    /**
+     * 多标签意图识别（支持复合请求）
+     *
+     * 使用 Sigmoid-based Multi-Label Classification 方法：
+     * 1. 将用户输入转为向量
+     * 2. 与所有意图向量计算余弦相似度
+     * 3. Sigmoid 归一化为 0-1 概率
+     * 4. 阈值筛选返回多个意图
+     *
+     * @param userInput 用户输入文本
+     * @param factoryId 工厂ID
+     * @return 多意图识别结果
+     */
+    MultiIntentResult recognizeMultiIntent(String userInput, String factoryId);
+
+    /**
+     * 多标签意图识别（自定义阈值）
+     *
+     * @param userInput 用户输入文本
+     * @param factoryId 工厂ID
+     * @param threshold 置信度阈值 (0.0 - 1.0)
+     * @return 多意图识别结果
+     */
+    MultiIntentResult recognizeMultiIntent(String userInput, String factoryId, double threshold);
 
     /**
      * 识别所有可能的意图（租户隔离）

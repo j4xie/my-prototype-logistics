@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 技术中心 - 白垩纪食品溯源</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       白垩纪 Design System V4
+       ============================================ */
+    :root {
+      --bg-base: #FAFAF8;
+      --bg-surface: #FFFFFF;
+      --bg-warm: #F5F3EF;
+      --bg-muted: #EDEBE7;
+      --text-primary: #1A1A1A;
+      --text-secondary: #5C5C5C;
+      --text-tertiary: #8A8A8A;
+      --accent: #C45C26;
+      --accent-hover: #A84D1F;
+      --accent-light: #FDF8F5;
+      --accent-glow: rgba(196, 92, 38, 0.15);
+      --success: #2D6A4F;
+      --success-light: #E8F5E9;
+      --warning: #D4A574;
+      --warning-light: #FFF8E1;
+      --error: #BC4749;
+      --error-light: #FFEBEE;
+      --info: #4A90A4;
+      --info-light: #E3F2FD;
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-medium: rgba(0, 0, 0, 0.1);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans SC', sans-serif;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      min-height: 100vh;
+    }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-content { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px;
+    }
+    .logo-text { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+    .logo-text span { color: var(--accent); }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 80px 0 60px;
+    }
+    .hero-title {
+      font-size: 48px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0 0 16px;
+      letter-spacing: -0.02em;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-subtitle {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin: 0;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Main */
+    main { padding: 0 0 80px; }
+
+    /* Section */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-title {
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Navigation Cards Grid */
+    .nav-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    @media (max-width: 768px) {
+      .nav-cards-grid { grid-template-columns: 1fr; }
+    }
+
+    .nav-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 32px;
+      text-decoration: none;
+      color: inherit;
+      transition: all var(--duration-normal) var(--ease-out);
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .nav-card:hover {
+      transform: translateY(-6px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--accent);
+    }
+    .nav-card:hover .nav-card-icon { transform: scale(1.05); }
+    .nav-card:hover .nav-card-title { color: var(--accent); }
+    .nav-card:hover .nav-card-arrow { transform: translateX(4px); opacity: 1; }
+
+    .nav-card-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      transition: transform var(--duration-normal) var(--ease-out);
+    }
+    .nav-card-icon.correction { background: linear-gradient(135deg, #E8F5E9, #C8E6C9); }
+    .nav-card-icon.intent { background: linear-gradient(135deg, #E3F2FD, #BBDEFB); }
+    .nav-card-icon.smartbi { background: linear-gradient(135deg, #FFF3E0, #FFE0B2); }
+    .nav-card-icon.scheduling { background: linear-gradient(135deg, #F3E5F5, #E1BEE7); }
+
+    .nav-card-content { flex: 1; }
+    .nav-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .nav-card-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--text-primary);
+      transition: color var(--duration-fast);
+    }
+    .nav-card-arrow {
+      font-size: 20px;
+      color: var(--accent);
+      opacity: 0;
+      transition: all var(--duration-fast);
+    }
+    .nav-card-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    /* Stats Section */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    .stat-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+    }
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 24px 0;
+      text-align: center;
+    }
+    .footer-text {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      margin: 0;
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    .animate-in {
+      animation: fadeInUp 0.6s var(--ease-out) forwards;
+    }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
+    .delay-4 { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="./" class="logo">
+          <div class="logo-icon">CJ</div>
+          <div class="logo-text"><span>白垩纪</span></div>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <h1 class="hero-title"><span>AI</span> 技术中心</h1>
+      <p class="hero-subtitle">探索白垩纪智能系统的核心技术架构</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      <!-- Navigation Cards Section -->
+      <section class="section">
+        <h2 class="section-title">核心系统</h2>
+        <div class="nav-cards-grid">
+          <!-- Card 1: Correction System -->
+          <a href="./correction/" class="nav-card animate-in delay-1">
+            <div class="nav-card-icon correction">
+              <span>🔧</span>
+            </div>
+            <div class="nav-card-content">
+              <div class="nav-card-header">
+                <h3 class="nav-card-title">纠错系统</h3>
+                <span class="nav-card-arrow">→</span>
+              </div>
+              <p class="nav-card-desc">ET-Agent 行为校准，自动错误分类与纠正</p>
+            </div>
+          </a>
+
+          <!-- Card 2: Intent Architecture -->
+          <a href="./ai-architecture/" class="nav-card animate-in delay-2">
+            <div class="nav-card-icon intent">
+              <span>🧠</span>
+            </div>
+            <div class="nav-card-content">
+              <div class="nav-card-header">
+                <h3 class="nav-card-title">意图架构</h3>
+                <span class="nav-card-arrow">→</span>
+              </div>
+              <p class="nav-card-desc">AI 意图识别系统，自然语言理解引擎</p>
+            </div>
+          </a>
+
+          <!-- Card 3: Intelligent Scheduling -->
+          <a href="./ai-scheduling/" class="nav-card animate-in delay-3">
+            <div class="nav-card-icon scheduling">
+              <span>📅</span>
+            </div>
+            <div class="nav-card-content">
+              <div class="nav-card-header">
+                <h3 class="nav-card-title">智能调度</h3>
+                <span class="nav-card-arrow">→</span>
+              </div>
+              <p class="nav-card-desc">AI 排产系统，多目标优化算法</p>
+            </div>
+          </a>
+        </div>
+      </section>
+
+      <!-- Stats Section -->
+      <section class="section">
+        <h2 class="section-title">系统概览</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">3</div>
+            <div class="stat-label">大核心系统</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">15+</div>
+            <div class="stat-label">AI 意图</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">99.2%</div>
+            <div class="stat-label">识别准确率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">&lt;200ms</div>
+            <div class="stat-label">响应时间</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-text">白垩纪食品溯源系统 &copy; 2026</p>
+    </div>
+  </footer>
+</body>
+</html>

@@ -93,4 +93,13 @@ public class IntentExecuteRequest {
      */
     @Builder.Default
     private Integer thinkingBudget = 20;
+
+    /**
+     * 预处理后的查询 (内部使用)
+     * 由查询预处理服务填充，包含：
+     * - 归一化的时间范围
+     * - 解析的实体引用
+     * - 质量评估分数
+     */
+    private PreprocessedQuery preprocessedQuery;
 }

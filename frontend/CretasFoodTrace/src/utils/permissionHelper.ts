@@ -480,3 +480,67 @@ export function getPermissionDebugInfo(user: User | null | undefined) {
     accessibleModules: getAccessibleModules(user),
   };
 }
+
+// ==================== SmartBI 权限检查 ====================
+
+/**
+ * 检查用户是否可以访问 SmartBI 模块
+ */
+export function canAccessSmartBI(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'analytics', 'read') ||
+         hasModulePermission(user, 'sales', 'read') ||
+         hasModulePermission(user, 'finance', 'read');
+}
+
+/**
+ * 检查用户是否可以上传 Excel
+ */
+export function canUploadExcel(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'analytics', 'write');
+}
+
+/**
+ * 检查用户是否可以访问销售分析
+ */
+export function canAccessSalesAnalysis(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'sales', 'read') ||
+         hasModulePermission(user, 'analytics', 'read');
+}
+
+/**
+ * 检查用户是否可以访问财务分析
+ */
+export function canAccessFinanceAnalysis(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'finance', 'read') ||
+         hasModulePermission(user, 'analytics', 'read');
+}
+
+/**
+ * 检查用户是否可以访问经营驾驶舱
+ */
+export function canAccessExecutiveDashboard(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'analytics', 'read');
+}
+
+/**
+ * 检查用户是否可以使用 AI 问答
+ */
+export function canUseAIQuery(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'analytics', 'read');
+}
+
+/**
+ * 检查用户是否可以查看预警和建议
+ */
+export function canViewAlerts(user: User | null): boolean {
+  if (!user) return false;
+  return hasModulePermission(user, 'analytics', 'read') ||
+         hasModulePermission(user, 'sales', 'read') ||
+         hasModulePermission(user, 'finance', 'read');
+}
