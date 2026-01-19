@@ -113,6 +113,8 @@ export interface WorkerSuggestion {
 
 /** AI 排产结果（扩展 SchedulingPlan） */
 export interface AISchedulingResult {
+  /** 后端有时直接返回 SchedulingPlanDTO，id 在根级别 */
+  id?: string;
   plan: SchedulingPlan;
   completionProbability: number;
   simulationRuns: number;

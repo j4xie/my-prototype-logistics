@@ -1,0 +1,1730 @@
+{
+  "testSuite": "AI Intent Recognition - P1 Complete Test Cases",
+  "version": "1.0.0",
+  "phase": "Phase 2 - P1 Priority",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "description": "P1优先级测试用例,主要覆盖查询统计类功能,重点验证数据准确性",
+  "testCases": [
+    {
+      "id": "TC-P1-EQUIPMENT-014",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景14",
+      "userInput": "查询设备14",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8014, 'F001', 'EQ-014', '设备14', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8014;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-015",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景15",
+      "userInput": "查询设备15",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8015, 'F001', 'EQ-015', '设备15', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8015;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-016",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_STATS",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景16",
+      "userInput": "查询设备16",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8016, 'F001', 'EQ-016', '设备16', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8016;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-017",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_DETAIL",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景17",
+      "userInput": "查询设备17",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8017, 'F001', 'EQ-017', '设备17', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8017;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_DETAIL"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-018",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景18",
+      "userInput": "查询设备18",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8018, 'F001', 'EQ-018', '设备18', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8018;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-019",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景19",
+      "userInput": "查询设备19",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8019, 'F001', 'EQ-019', '设备19', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8019;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-020",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_STATS",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景20",
+      "userInput": "查询设备20",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8020, 'F001', 'EQ-020', '设备20', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8020;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-021",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_DETAIL",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景21",
+      "userInput": "查询设备21",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8021, 'F001', 'EQ-021', '设备21', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8021;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_DETAIL"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-022",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景22",
+      "userInput": "查询设备22",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8022, 'F001', 'EQ-022', '设备22', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8022;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-023",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景23",
+      "userInput": "查询设备23",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8023, 'F001', 'EQ-023', '设备23', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8023;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-024",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_STATS",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景24",
+      "userInput": "查询设备24",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8024, 'F001', 'EQ-024', '设备24', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8024;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-025",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_DETAIL",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景25",
+      "userInput": "查询设备25",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8025, 'F001', 'EQ-025', '设备25', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8025;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_DETAIL"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-026",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景26",
+      "userInput": "查询设备26",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8026, 'F001', 'EQ-026', '设备26', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8026;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-027",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景27",
+      "userInput": "查询设备27",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8027, 'F001', 'EQ-027', '设备27', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8027;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-028",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_STATS",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景28",
+      "userInput": "查询设备28",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8028, 'F001', 'EQ-028', '设备28', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8028;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-029",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_DETAIL",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景29",
+      "userInput": "查询设备29",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8029, 'F001', 'EQ-029', '设备29', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8029;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_DETAIL"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-030",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景30",
+      "userInput": "查询设备30",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8030, 'F001', 'EQ-030', '设备30', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8030;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-031",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景31",
+      "userInput": "查询设备31",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8031, 'F001', 'EQ-031', '设备31', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8031;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-032",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_STATS",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景32",
+      "userInput": "查询设备32",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_STATS",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8032, 'F001', 'EQ-032', '设备32', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8032;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_STATS"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-033",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_DETAIL",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景33",
+      "userInput": "查询设备33",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8033, 'F001', 'EQ-033', '设备33', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8033;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_DETAIL"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-034",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_ALERT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景34",
+      "userInput": "查询设备34",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_ALERT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8034, 'F001', 'EQ-034', '设备34', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8034;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_ALERT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-EQUIPMENT-035",
+      "priority": "P1",
+      "category": "EQUIPMENT",
+      "intentCode": "EQUIPMENT_LIST",
+      "testType": "QUERY",
+      "description": "验证设备查询-测试场景35",
+      "userInput": "查询设备35",
+      "expectedIntent": {
+        "intentCode": "EQUIPMENT_LIST",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8035, 'F001', 'EQ-035', '设备35', 'PRODUCTION_LINE', 'RUNNING', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8035;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "EQUIPMENT_LIST"
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "equipmentCode",
+            "status"
+          ],
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalEquipment": 1,
+            "runningCount": 1,
+            "utilizationRate": 80
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的设备数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "设备|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-002",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景2",
+      "userInput": "查询电子秤2",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8002, 'F001', 'SCALE-002', '电子秤2', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8002;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-003",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_DEVICE_DETAIL",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景3",
+      "userInput": "查询电子秤3",
+      "expectedIntent": {
+        "intentCode": "SCALE_DEVICE_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8003, 'F001', 'SCALE-003', '电子秤3', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8003;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_DEVICE_DETAIL"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-004",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_READING_HISTORY",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景4",
+      "userInput": "查询电子秤4",
+      "expectedIntent": {
+        "intentCode": "SCALE_READING_HISTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8004, 'F001', 'SCALE-004', '电子秤4', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8004;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_READING_HISTORY"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-005",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景5",
+      "userInput": "查询电子秤5",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8005, 'F001', 'SCALE-005', '电子秤5', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8005;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-006",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_DEVICE_DETAIL",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景6",
+      "userInput": "查询电子秤6",
+      "expectedIntent": {
+        "intentCode": "SCALE_DEVICE_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8006, 'F001', 'SCALE-006', '电子秤6', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8006;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_DEVICE_DETAIL"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-007",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_READING_HISTORY",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景7",
+      "userInput": "查询电子秤7",
+      "expectedIntent": {
+        "intentCode": "SCALE_READING_HISTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8007, 'F001', 'SCALE-007', '电子秤7', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8007;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_READING_HISTORY"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-008",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景8",
+      "userInput": "查询电子秤8",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8008, 'F001', 'SCALE-008', '电子秤8', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8008;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-009",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_DEVICE_DETAIL",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景9",
+      "userInput": "查询电子秤9",
+      "expectedIntent": {
+        "intentCode": "SCALE_DEVICE_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8009, 'F001', 'SCALE-009', '电子秤9', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8009;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_DEVICE_DETAIL"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-010",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_READING_HISTORY",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景10",
+      "userInput": "查询电子秤10",
+      "expectedIntent": {
+        "intentCode": "SCALE_READING_HISTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8010, 'F001', 'SCALE-010', '电子秤10', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8010;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_READING_HISTORY"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-011",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景11",
+      "userInput": "查询电子秤11",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8011, 'F001', 'SCALE-011', '电子秤11', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8011;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-012",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_DEVICE_DETAIL",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景12",
+      "userInput": "查询电子秤12",
+      "expectedIntent": {
+        "intentCode": "SCALE_DEVICE_DETAIL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8012, 'F001', 'SCALE-012', '电子秤12', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8012;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_DEVICE_DETAIL"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-013",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_READING_HISTORY",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景13",
+      "userInput": "查询电子秤13",
+      "expectedIntent": {
+        "intentCode": "SCALE_READING_HISTORY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8013, 'F001', 'SCALE-013', '电子秤13', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8013;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_READING_HISTORY"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    },
+    {
+      "id": "TC-P1-SCALE-014",
+      "priority": "P1",
+      "category": "SCALE",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "testType": "QUERY",
+      "description": "验证电子秤查询-测试场景14",
+      "userInput": "查询电子秤14",
+      "expectedIntent": {
+        "intentCode": "SCALE_LIST_DEVICES",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO factory_equipment (id, factory_id, equipment_code, equipment_name, type, status, created_at, updated_at) VALUES (8014, 'F001', 'SCALE-014', '电子秤14', 'SCALE', 'IDLE', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM factory_equipment WHERE id = 8014;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true,
+          "intentCode": "SCALE_LIST_DEVICES"
+        },
+        "dataVerification": {
+          "method": "TYPE_FILTER",
+          "expectedFields": [
+            "equipmentType"
+          ],
+          "filterCondition": "equipment_type = 'SCALE'",
+          "expectedCount": 1,
+          "aggregationValidation": {
+            "totalScales": 1,
+            "onlineCount": 1,
+            "avgAccuracy": 99.9
+          }
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "判断系统是否返回了正确的电子秤数据"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "电子秤|查询"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 4,
+    "startIndex": 105,
+    "chunkSize": 35
+  }
+}

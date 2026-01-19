@@ -1,0 +1,46 @@
+# SQL Templates for Common Tables
+# Generated: Fri Jan 16 14:37:18 CST 2026
+# Database: creats-test @ 139.196.165.140
+
+==================================================
+
+-- Insert template for material_batches
+-- Usage: Fill in the VALUES(...) section with your test data
+
+INSERT INTO material_batches (id, created_at, deleted_at, updated_at, batch_number, created_by, expire_date, factory_id, last_used_at, material_type_id, notes, production_date, purchase_date, quality_certificate, quantity_unit, inbound_date, receipt_quantity, reserved_quantity, status, storage_location, supplier_id, unit_price, used_quantity, weight_per_unit)
+VALUES ('TEST_VALUE', NOW(), '2026-01-16 08:00:00', NOW(), 'TEST_VALUE', 100, '2026-01-16', 'TEST_REF_ID', '2026-01-16 08:00:00', 'TEST_REF_ID', 'TEST_VALUE', '2026-01-16', '2026-01-16', 'TEST_VALUE', 'TEST_VALUE', '2026-01-16', 100.00, 100.00, 'TEST_VALUE', 'TEST_VALUE', 'TEST_REF_ID', 100.00, 100.00, 100.00);
+
+==================================================
+
+-- Insert template for raw_material_types
+-- Usage: Fill in the VALUES(...) section with your test data
+
+INSERT INTO raw_material_types (id, created_at, deleted_at, updated_at, category, code, created_by, factory_id, is_active, max_stock, min_stock, name, notes, shelf_life_days, storage_type, unit, unit_price)
+VALUES ('TEST_VALUE', NOW(), '2026-01-16 08:00:00', NOW(), 'TEST_VALUE', 'TEST_VALUE', 100, 'TEST_REF_ID', 'TEST_VALUE', 100.00, 100.00, 'TEST_VALUE', 'TEST_VALUE', 100, 'TEST_VALUE', 'TEST_VALUE', 100.00);
+
+==================================================
+
+-- Insert template for production_batches
+-- Usage: Fill in the VALUES(...) section with your test data
+
+INSERT INTO production_batches (id, created_at, deleted_at, updated_at, actual_quantity, batch_number, created_by, defect_quantity, efficiency, end_time, equipment_cost, equipment_id, equipment_name, factory_id, good_quantity, labor_cost, material_cost, notes, other_cost, planned_quantity, product_name, product_type_id, production_plan_id, quality_status, quantity, start_time, status, supervisor_id, supervisor_name, total_cost, unit, unit_cost, work_duration_minutes, worker_count, yield_rate, photo_completed_stages, photo_required, sop_config_id)
+VALUES (100, NOW(), '2026-01-16 08:00:00', NOW(), 100.00, 'TEST_VALUE', 100, 100.00, 100.00, '2026-01-16 08:00:00', 100.00, 1, 'TEST_VALUE', 'TEST_REF_ID', 100.00, 100.00, 100.00, 'TEST_VALUE', 100.00, 100.00, 'TEST_VALUE', 'TEST_REF_ID', 1, 'TEST_VALUE', 100.00, '2026-01-16 08:00:00', 'TEST_VALUE', 1, 'TEST_VALUE', 100.00, 'TEST_VALUE', 100.00, 100, 100, 100.00, 'TEST_VALUE', 'TEST_VALUE', 'TEST_REF_ID');
+
+==================================================
+
+-- Insert template for quality_inspections
+-- Usage: Fill in the VALUES(...) section with your test data
+
+INSERT INTO quality_inspections (id, created_at, deleted_at, updated_at, factory_id, fail_count, inspection_date, inspector_id, notes, pass_count, pass_rate, production_batch_id, result, sample_size)
+VALUES ('TEST_VALUE', NOW(), '2026-01-16 08:00:00', NOW(), 'TEST_REF_ID', 100.00, '2026-01-16', 1, 'TEST_VALUE', 100.00, 100.00, 1, 'TEST_VALUE', 100.00);
+
+==================================================
+
+-- Insert template for customers
+-- Usage: Fill in the VALUES(...) section with your test data
+
+INSERT INTO customers (id, created_at, deleted_at, updated_at, billing_address, business_license, code, contact_email, contact_name, contact_person, contact_phone, created_by, credit_limit, current_balance, customer_code, email, factory_id, industry, is_active, name, notes, payment_terms, phone, rating, rating_notes, shipping_address, tax_number, type)
+VALUES ('TEST_VALUE', NOW(), '2026-01-16 08:00:00', NOW(), 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 100, 100.00, 100.00, 'TEST_VALUE', 'TEST_VALUE', 'TEST_REF_ID', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 100, 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE', 'TEST_VALUE');
+
+==================================================
+

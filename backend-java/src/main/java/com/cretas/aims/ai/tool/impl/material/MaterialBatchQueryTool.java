@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 
 /**
@@ -91,6 +93,20 @@ public class MaterialBatchQueryTool extends AbstractBusinessTool {
         size.put("maximum", 100);
         properties.put("size", size);
 
+        // startDate: 入库日期开始（可选，格式 YYYY-MM-DD）
+        Map<String, Object> startDate = new HashMap<>();
+        startDate.put("type", "string");
+        startDate.put("format", "date");
+        startDate.put("description", "入库日期开始（含），格式：YYYY-MM-DD");
+        properties.put("startDate", startDate);
+
+        // endDate: 入库日期结束（可选，格式 YYYY-MM-DD）
+        Map<String, Object> endDate = new HashMap<>();
+        endDate.put("type", "string");
+        endDate.put("format", "date");
+        endDate.put("description", "入库日期结束（含），格式：YYYY-MM-DD");
+        properties.put("endDate", endDate);
+
         schema.put("properties", properties);
 
         // 查询类Tool无必需参数
@@ -119,6 +135,15 @@ public class MaterialBatchQueryTool extends AbstractBusinessTool {
         String batchNumber = getString(params, "batchNumber");
         String materialTypeId = getString(params, "materialTypeId");
         String status = getString(params, "status");
+        String startDateStr = getString(params, "startDate");
+        String endDateStr = getString(params, "endDate");
+
+        // 解析日期参数
+        LocalDate startDate = parseDate(startDateStr);
+        LocalDate endDate = parseDate(endDateStr);
+        if (startDate != null || endDate != null) {
+            log.info("日期过滤条件: {} ~ {}", startDate, endDate);
+        }
 
         // 构建分页请求
         PageRequest pageRequest = new PageRequest();
@@ -136,10 +161,17 @@ public class MaterialBatchQueryTool extends AbstractBusinessTool {
         // 调用服务获取数据
         PageResponse<MaterialBatchDTO> pageResponse = materialBatchService.getMaterialBatchList(factoryId, pageRequest);
 
-        // 如果指定了materialTypeId，需要在结果中过滤（因为PageRequest不支持materialTypeId）
+        // 在结果中过滤（因为PageRequest不支持部分筛选条件）
         List<MaterialBatchDTO> content = pageResponse.getContent();
-        if (materialTypeId != null && !materialTypeId.trim().isEmpty() && content != null) {
-            content = filterByMaterialTypeId(content, materialTypeId);
+        if (content != null) {
+            // 按原料类型过滤
+            if (materialTypeId != null && !materialTypeId.trim().isEmpty()) {
+                content = filterByMaterialTypeId(content, materialTypeId);
+            }
+            // 按日期范围过滤（入库日期）
+            if (startDate != null || endDate != null) {
+                content = filterByDateRange(content, startDate, endDate);
+            }
         }
 
         // 构建返回结果
@@ -155,7 +187,12 @@ public class MaterialBatchQueryTool extends AbstractBusinessTool {
         if (batchNumber != null) queryConditions.put("batchNumber", batchNumber);
         if (materialTypeId != null) queryConditions.put("materialTypeId", materialTypeId);
         if (status != null) queryConditions.put("status", status);
+        if (startDate != null) queryConditions.put("startDate", startDate.toString());
+        if (endDate != null) queryConditions.put("endDate", endDate.toString());
         result.put("queryConditions", queryConditions);
+
+        // 更新过滤后的记录数
+        result.put("totalElements", content != null ? content.size() : 0L);
 
         log.info("原料批次查询完成 - 总记录数: {}, 当前页: {}",
                 pageResponse.getTotalElements(), page);
@@ -177,6 +214,49 @@ public class MaterialBatchQueryTool extends AbstractBusinessTool {
                 filtered.add(batch);
             }
         }
+        return filtered;
+    }
+
+    /**
+     * 解析日期字符串
+     *
+     * @param dateStr 日期字符串 (YYYY-MM-DD)
+     * @return LocalDate 或 null
+     */
+    private LocalDate parseDate(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(dateStr.trim());
+        } catch (DateTimeParseException e) {
+            log.warn("无法解析日期: {}", dateStr);
+            return null;
+        }
+    }
+
+    /**
+     * 按入库日期范围过滤批次列表
+     *
+     * @param batches 批次列表
+     * @param startDate 开始日期（含）
+     * @param endDate 结束日期（含）
+     * @return 过滤后的列表
+     */
+    private List<MaterialBatchDTO> filterByDateRange(List<MaterialBatchDTO> batches, LocalDate startDate, LocalDate endDate) {
+        List<MaterialBatchDTO> filtered = new ArrayList<>();
+        for (MaterialBatchDTO batch : batches) {
+            LocalDate receiptDate = batch.getReceiptDate();
+            if (receiptDate == null) {
+                continue; // 没有入库日期的记录跳过
+            }
+            boolean afterStart = (startDate == null) || !receiptDate.isBefore(startDate);
+            boolean beforeEnd = (endDate == null) || !receiptDate.isAfter(endDate);
+            if (afterStart && beforeEnd) {
+                filtered.add(batch);
+            }
+        }
+        log.info("日期过滤: {} 条 -> {} 条", batches.size(), filtered.size());
         return filtered;
     }
 }

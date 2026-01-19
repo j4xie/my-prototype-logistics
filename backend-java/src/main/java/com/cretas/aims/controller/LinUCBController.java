@@ -417,6 +417,64 @@ public class LinUCBController {
         }
     }
 
+    // ==================== 多样性推荐 ====================
+
+    /**
+     * 获取带多样性调整的工人推荐
+     *
+     * POST /api/mobile/{factoryId}/scheduling/linucb/recommend-with-diversity
+     *
+     * 在LinUCB打分基础上应用公平性、技能维护、重复惩罚
+     * FinalScore = 0.6 × LinUCB + 0.15 × FairnessBonus + 0.15 × SkillMaintenance - 0.1 × RepetitionPenalty
+     */
+    @Operation(summary = "获取带多样性调整的工人推荐",
+            description = "在LinUCB打分基础上应用公平性、技能维护、重复惩罚。" +
+                    "FinalScore = 0.6 × LinUCB + 0.15 × FairnessBonus + 0.15 × SkillMaintenance - 0.1 × RepetitionPenalty")
+    @PostMapping("/recommend-with-diversity")
+    public ResponseEntity<Map<String, Object>> recommendWithDiversity(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId,
+            @RequestBody Map<String, Object> request) {
+
+        Map<String, Object> response = new HashMap<>();
+
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> taskInfo = (Map<String, Object>) request.get("taskInfo");
+            @SuppressWarnings("unchecked")
+            List<Number> candidateIds = (List<Number>) request.get("candidateWorkerIds");
+            Boolean enableDiversity = (Boolean) request.getOrDefault("enableDiversity", true);
+
+            if (taskInfo == null || candidateIds == null || candidateIds.isEmpty()) {
+                response.put("success", false);
+                response.put("message", "缺少必要参数: taskInfo 或 candidateWorkerIds");
+                return ResponseEntity.badRequest().body(response);
+            }
+
+            // 转换工人ID列表
+            List<Long> workerIds = new ArrayList<>();
+            for (Number id : candidateIds) {
+                workerIds.add(id.longValue());
+            }
+
+            // 获取带多样性调整的推荐
+            List<WorkerRecommendation> recommendations =
+                    linUCBService.getRecommendationsWithDiversity(factoryId, taskInfo, workerIds, enableDiversity);
+
+            response.put("success", true);
+            response.put("data", recommendations);
+            response.put("diversityEnabled", enableDiversity);
+            response.put("message", enableDiversity ? "获取多样性推荐成功" : "获取推荐成功(未启用多样性)");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("获取多样性推荐失败: {}", e.getMessage(), e);
+            response.put("success", false);
+            response.put("message", "获取推荐失败: " + ErrorSanitizer.sanitize(e));
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
     // ==================== 统计分析 ====================
 
     /**

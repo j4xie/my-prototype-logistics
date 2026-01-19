@@ -86,6 +86,9 @@ const ENTITY_TYPE_INFO: Record<EntityType, { name: string; description: string; 
   DISPOSAL_RECORD: { name: '处置记录', description: '废弃处置相关字段', icon: 'delete' },
   PRODUCT_TYPE: { name: '产品类型', description: '产品类型配置字段', icon: 'barcode' },
   PRODUCTION_PLAN: { name: '生产计划', description: '生产计划相关字段', icon: 'calendar-clock' },
+  SCALE_DEVICE: { name: '电子秤设备', description: 'IoT电子秤设备相关字段', icon: 'scale' },
+  SCALE_PROTOCOL: { name: '电子秤协议', description: '电子秤协议文档相关字段', icon: 'file-document-outline' },
+  ISAPI_DEVICE: { name: 'ISAPI设备', description: 'ISAPI摄像头设备相关字段', icon: 'video' },
 };
 
 // 默认 Schema 模板
@@ -308,6 +311,94 @@ const DEFAULT_SCHEMAS: Record<EntityType, object> = {
         type: 'string',
         title: '优先级',
         enum: ['高', '中', '低'],
+        'x-component': 'Select',
+      },
+    },
+  },
+  SCALE_DEVICE: {
+    type: 'object',
+    properties: {
+      deviceName: {
+        type: 'string',
+        title: '设备名称',
+        'x-component': 'Input',
+      },
+      deviceCode: {
+        type: 'string',
+        title: '设备编号',
+        'x-component': 'Input',
+      },
+      ipAddress: {
+        type: 'string',
+        title: 'IP地址',
+        'x-component': 'Input',
+      },
+      port: {
+        type: 'number',
+        title: '端口',
+        'x-component': 'NumberPicker',
+      },
+      status: {
+        type: 'string',
+        title: '状态',
+        enum: ['在线', '离线', '故障'],
+        'x-component': 'Select',
+      },
+    },
+  },
+  SCALE_PROTOCOL: {
+    type: 'object',
+    properties: {
+      protocolName: {
+        type: 'string',
+        title: '协议名称',
+        'x-component': 'Input',
+      },
+      protocolVersion: {
+        type: 'string',
+        title: '协议版本',
+        'x-component': 'Input',
+      },
+      dataFormat: {
+        type: 'string',
+        title: '数据格式',
+        enum: ['ASCII', 'HEX', 'Binary'],
+        'x-component': 'Select',
+      },
+      baudRate: {
+        type: 'number',
+        title: '波特率',
+        'x-component': 'NumberPicker',
+      },
+    },
+  },
+  ISAPI_DEVICE: {
+    type: 'object',
+    properties: {
+      deviceName: {
+        type: 'string',
+        title: '设备名称',
+        'x-component': 'Input',
+      },
+      deviceIp: {
+        type: 'string',
+        title: 'IP地址',
+        'x-component': 'Input',
+      },
+      username: {
+        type: 'string',
+        title: '用户名',
+        'x-component': 'Input',
+      },
+      channelNumber: {
+        type: 'number',
+        title: '通道号',
+        'x-component': 'NumberPicker',
+      },
+      status: {
+        type: 'string',
+        title: '状态',
+        enum: ['在线', '离线', '故障'],
         'x-component': 'Select',
       },
     },

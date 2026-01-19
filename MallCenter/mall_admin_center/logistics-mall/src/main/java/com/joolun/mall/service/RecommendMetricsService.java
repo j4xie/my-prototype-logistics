@@ -68,4 +68,55 @@ public interface RecommendMetricsService {
      * @return 各来源的指标对比
      */
     Map<String, Object> getSourceAnalysis(int days);
+
+    /**
+     * 获取A/B测试对比数据
+     * @param experimentName 实验名称
+     * @param days 天数
+     * @return 各组的转化率对比
+     */
+    Map<String, Object> getABTestComparison(String experimentName, int days);
+
+    /**
+     * 获取推荐多样性评分
+     * 多样性 = 推荐结果中不同类目数 / 总推荐数
+     * @param days 天数
+     * @return 多样性指标
+     */
+    Map<String, Object> getDiversityScore(int days);
+
+    /**
+     * 获取用户留存率
+     * 计算通过推荐访问的用户在后续几天的回访率
+     * @param days 统计天数
+     * @return 留存率数据
+     */
+    Map<String, Object> getRetentionRate(int days);
+
+    /**
+     * 获取推荐深度分析
+     * 用户点击推荐商品的平均位置
+     * @param days 天数
+     * @return 点击深度分析
+     */
+    Map<String, Object> getClickDepthAnalysis(int days);
+
+    /**
+     * 记录商品曝光（带类目和位置信息，用于多样性和深度分析）
+     * @param userId 用户ID
+     * @param productIds 曝光的商品ID列表
+     * @param categoryIds 对应的类目ID列表
+     * @param source 曝光来源
+     */
+    void recordImpressionsWithCategory(Long userId, java.util.List<String> productIds,
+                                       java.util.List<String> categoryIds, String source);
+
+    /**
+     * 记录商品点击（带位置信息）
+     * @param userId 用户ID
+     * @param productId 点击的商品ID
+     * @param position 商品在推荐列表中的位置（从1开始）
+     * @param source 点击来源
+     */
+    void recordClickWithPosition(Long userId, String productId, int position, String source);
 }

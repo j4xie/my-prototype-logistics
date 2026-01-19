@@ -83,6 +83,40 @@ export interface IntentRecognizeRequest {
 }
 
 /**
+ * 意图执行请求
+ *
+ * 对应后端 IntentExecuteRequest.java
+ */
+export interface IntentExecuteRequest {
+  /** 用户输入 */
+  userInput: string;
+  /** 意图代码 (可选，不提供时由后端识别) */
+  intentCode?: string;
+  /** 设备ID */
+  deviceId?: string;
+  /** 实体类型 */
+  entityType?: string;
+  /** 实体ID */
+  entityId?: string | number;
+  /** 上下文信息 */
+  context?: Record<string, unknown>;
+  /** 执行参数 */
+  parameters?: Record<string, unknown>;
+  /** 是否仅预览 */
+  previewOnly?: boolean;
+  /** 强制执行 */
+  forceExecute?: boolean;
+  /** 会话ID */
+  sessionId?: string;
+  /** 启用思考模式 */
+  enableThinking?: boolean;
+  /** 思考预算 */
+  thinkingBudget?: number;
+  /** 工厂ID */
+  factoryId?: string;
+}
+
+/**
  * 意图识别响应
  */
 export interface IntentRecognizeResponse {

@@ -28,15 +28,32 @@ import com.cretas.aims.service.SemanticCacheService;
 import com.cretas.aims.service.ConversationMemoryService;
 import com.cretas.aims.service.ToolRouterService;
 import com.cretas.aims.service.ResultValidatorService;
+import com.cretas.aims.service.ParameterExtractionLearningService;
+import com.cretas.aims.service.AnalysisRouterService;
+import com.cretas.aims.service.ComplexityRouter;
+import com.cretas.aims.service.AgentOrchestrator;
+import com.cretas.aims.dto.ai.AnalysisContext;
+import com.cretas.aims.dto.ai.AnalysisResult;
+import com.cretas.aims.dto.ai.AnalysisTopic;
+import com.cretas.aims.dto.ai.ProcessingMode;
 import com.cretas.aims.service.handler.IntentHandler;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.conversation.ConversationContext;
 import com.cretas.aims.dto.conversation.ConversationMessage;
 import com.cretas.aims.dto.intent.MultiIntentResult;
+import com.cretas.aims.ai.dto.Tool;
 import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
 import com.cretas.aims.util.ErrorSanitizer;
+import com.cretas.aims.service.calibration.ToolCallRedundancyService;
+import com.cretas.aims.service.calibration.BehaviorCalibrationService;
+import com.cretas.aims.service.calibration.SelfCorrectionService;
+import com.cretas.aims.service.calibration.CorrectionAgentService;
+import com.cretas.aims.service.calibration.ExternalVerifierService;
+import com.cretas.aims.service.calibration.ToolResultValidatorService;
+import com.cretas.aims.entity.calibration.ToolCallRecord;
+import com.cretas.aims.entity.calibration.CorrectionRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -97,6 +114,30 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     // 新增：结果验证服务
     private final ResultValidatorService resultValidatorService;
 
+    // 新增：参数提取规则学习服务
+    private final ParameterExtractionLearningService parameterExtractionLearningService;
+
+    // 新增：分析路由服务 (v7.0)
+    private final AnalysisRouterService analysisRouterService;
+
+    // 新增：复杂度路由服务 (v7.0 Agentic RAG)
+    private final ComplexityRouter complexityRouter;
+
+    // 新增：多Agent编排服务 (v7.0 Agentic RAG)
+    private final AgentOrchestrator agentOrchestrator;
+
+    // 新增：行为校准服务 (ET-Agent)
+    private final ToolCallRedundancyService redundancyService;
+    private final BehaviorCalibrationService calibrationService;
+    private final SelfCorrectionService selfCorrectionService;
+
+    // 新增：CRITIC-style 纠错 Agent
+    private final CorrectionAgentService correctionAgentService;
+    private final ExternalVerifierService externalVerifierService;
+
+    // 新增：工具结果验证器（扩展纠错触发条件）
+    private final ToolResultValidatorService toolResultValidatorService;
+
     // 处理器映射表: category -> handler
     private final Map<String, IntentHandler> handlerMap = new HashMap<>();
 
@@ -133,7 +174,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      AIAnalysisResultRepository analysisResultRepository,
                                      ConversationMemoryService conversationMemoryService,
                                      ToolRouterService toolRouterService,
-                                     ResultValidatorService resultValidatorService) {
+                                     ResultValidatorService resultValidatorService,
+                                     ParameterExtractionLearningService parameterExtractionLearningService,
+                                     AnalysisRouterService analysisRouterService,
+                                     ComplexityRouter complexityRouter,
+                                     AgentOrchestrator agentOrchestrator,
+                                     ToolCallRedundancyService redundancyService,
+                                     BehaviorCalibrationService calibrationService,
+                                     SelfCorrectionService selfCorrectionService,
+                                     CorrectionAgentService correctionAgentService,
+                                     ExternalVerifierService externalVerifierService,
+                                     ToolResultValidatorService toolResultValidatorService) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
         this.semanticsParser = semanticsParser;
@@ -150,6 +201,16 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.conversationMemoryService = conversationMemoryService;
         this.toolRouterService = toolRouterService;
         this.resultValidatorService = resultValidatorService;
+        this.parameterExtractionLearningService = parameterExtractionLearningService;
+        this.analysisRouterService = analysisRouterService;
+        this.complexityRouter = complexityRouter;
+        this.agentOrchestrator = agentOrchestrator;
+        this.redundancyService = redundancyService;
+        this.calibrationService = calibrationService;
+        this.selfCorrectionService = selfCorrectionService;
+        this.correctionAgentService = correctionAgentService;
+        this.externalVerifierService = externalVerifierService;
+        this.toolResultValidatorService = toolResultValidatorService;
     }
 
     @PostConstruct
@@ -282,6 +343,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             // 对于通用咨询问题和闲聊，直接跳过缓存，路由到LLM
             if (earlyQuestionType == QuestionType.GENERAL_QUESTION ||
                 earlyQuestionType == QuestionType.CONVERSATIONAL) {
+
+                // v7.0新增：检查是否为分析请求 (GENERAL_QUESTION + 业务关键词 + 分析指示词)
+                if (earlyQuestionType == QuestionType.GENERAL_QUESTION &&
+                    analysisRouterService.isAnalysisRequest(userInput, earlyQuestionType)) {
+
+                    log.info("🔍 检测到分析请求，路由到分析服务: input='{}'",
+                            userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+                    return executeAnalysisFlow(factoryId, userInput, request, userId, userRole);
+                }
+
                 log.info("问题类型为{}，跳过缓存直接路由到LLM: input='{}'", earlyQuestionType,
                         userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
 
@@ -690,6 +762,48 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 }
             }
 
+            // 2.7. 优先使用已学习的规则提取参数（不调用 LLM）
+            Map<String, Object> parametersSchema = tool.getParametersSchema();
+            @SuppressWarnings("unchecked")
+            List<String> requiredParams = parametersSchema != null ?
+                    (List<String>) parametersSchema.get("required") : null;
+
+            Map<String, Object> ruleExtractedParams = new HashMap<>();
+            if (requiredParams != null && !requiredParams.isEmpty()) {
+                // 找出缺失的参数
+                List<String> missingParams = requiredParams.stream()
+                        .filter(p -> !params.containsKey(p) ||
+                                     params.get(p) == null ||
+                                     (params.get(p) instanceof String && ((String) params.get(p)).trim().isEmpty()))
+                        .collect(Collectors.toList());
+
+                if (!missingParams.isEmpty()) {
+                    // 尝试使用学习的规则提取
+                    ruleExtractedParams = parameterExtractionLearningService.extractWithLearnedRules(
+                            factoryId, intent.getIntentCode(), userInputToUse, missingParams);
+
+                    if (!ruleExtractedParams.isEmpty()) {
+                        params.putAll(ruleExtractedParams);
+                        log.info("使用学习规则提取参数: {} (无需调用 LLM)", ruleExtractedParams.keySet());
+                    }
+                }
+            }
+
+            // 2.8. 如果规则未能提取所有参数，使用 LLM 提取剩余参数
+            Map<String, Object> llmExtractedParams = extractParametersWithLLM(userInputToUse, tool, params);
+            if (!llmExtractedParams.isEmpty()) {
+                params.putAll(llmExtractedParams);
+                log.info("合并 LLM 提取的参数: {}", llmExtractedParams.keySet());
+
+                // 2.9. 从 LLM 提取结果中学习规则（异步）
+                try {
+                    parameterExtractionLearningService.learnFromLLMExtraction(
+                            factoryId, intent.getIntentCode(), userInputToUse, llmExtractedParams);
+                } catch (Exception e) {
+                    log.warn("参数提取规则学习失败: {}", e.getMessage());
+                }
+            }
+
             String argumentsJson = objectMapper.writeValueAsString(params);
             ToolCall toolCall = ToolCall.of(
                     java.util.UUID.randomUUID().toString(),
@@ -705,12 +819,288 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             context.put("intentConfig", intent);
             context.put("request", request);
 
-            // 4. 执行 Tool
-            log.debug("执行 Tool: name={}, arguments={}", tool.getToolName(), argumentsJson);
-            String resultJson = tool.execute(toolCall, context);
+            // 4. 冗余检查 (ET-Agent 行为校准)
+            String sessionId = request.getSessionId() != null ? request.getSessionId() : "default";
+            if (redundancyService.isRedundant(sessionId, tool.getToolName(), params)) {
+                log.info("检测到冗余调用，跳过执行: tool={}, session={}", tool.getToolName(), sessionId);
+                // 返回缓存的结果
+                Optional<String> cachedResult = redundancyService.getCachedResult(sessionId, tool.getToolName(), params);
+                if (cachedResult.isPresent()) {
+                    return IntentExecuteResponse.builder()
+                            .intentRecognized(true)
+                            .intentCode(intent.getIntentCode())
+                            .intentName(intent.getIntentName())
+                            .intentCategory(intent.getIntentCategory())
+                            .status("SUCCESS")
+                            .message("(缓存结果) " + cachedResult.get())
+                            .metadata(Map.of("cached", true))
+                            .executedAt(LocalDateTime.now())
+                            .build();
+                }
+            }
 
-            // 5. 解析 Tool 结果并转换为 IntentExecuteResponse
-            return parseToolResultToResponse(resultJson, intent);
+            // 5. 执行 Tool（带自动重试）
+            final int MAX_RETRIES = 3;
+            String resultJson = null;
+            Exception lastException = null;
+            int retryCount = 0;
+            long totalExecutionTime = 0;
+
+            for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+                try {
+                    log.debug("执行 Tool (尝试 {}/{}): name={}, arguments={}",
+                            attempt, MAX_RETRIES, tool.getToolName(), argumentsJson);
+
+                    long startTime = System.currentTimeMillis();
+                    resultJson = tool.execute(toolCall, context);
+                    long executionTime = System.currentTimeMillis() - startTime;
+                    totalExecutionTime += executionTime;
+
+                    // 执行成功，记录并跳出循环
+                    try {
+                        ToolCallRecord record = ToolCallRecord.builder()
+                                .sessionId(sessionId)
+                                .factoryId(factoryId)
+                                .toolName(tool.getToolName())
+                                .toolParameters(argumentsJson)
+                                .parametersHash(redundancyService.computeParametersHash(params))
+                                .executionStatus(ToolCallRecord.ExecutionStatus.SUCCESS)
+                                .executionTimeMs((int) executionTime)
+                                .retryCount(attempt - 1)
+                                .recovered(attempt > 1)
+                                .build();
+                        ToolCallRecord savedRecord = redundancyService.recordToolCall(record);
+                        if (savedRecord != null && resultJson != null) {
+                            String summary = resultJson.length() > 200 ? resultJson.substring(0, 200) + "..." : resultJson;
+                            redundancyService.cacheResult(sessionId, tool.getToolName(), params, summary, savedRecord.getId());
+                        }
+                        if (attempt > 1) {
+                            log.info("工具调用在第 {} 次尝试后恢复成功: tool={}", attempt, tool.getToolName());
+                        }
+                    } catch (Exception recordEx) {
+                        log.warn("记录工具调用失败: {}", recordEx.getMessage());
+                    }
+
+                    // === 扩展触发条件：结果验证 ===
+                    // 即使工具执行成功，也检查结果是否符合用户意图
+                    if (resultJson != null && attempt < MAX_RETRIES) {
+                        try {
+                            ToolResultValidatorService.ValidationResult validationResult =
+                                    toolResultValidatorService.validate(
+                                            request.getUserInput(),
+                                            tool.getToolName(),
+                                            params,
+                                            resultJson
+                                    );
+
+                            if (!validationResult.isValid()) {
+                                log.info("结果验证失败: issue={}, description={}, matchScore={}",
+                                        validationResult.issue(),
+                                        validationResult.issueDescription(),
+                                        validationResult.matchScore());
+
+                                // 触发纠错 Agent
+                                String pseudoError = String.format(
+                                        "[%s] %s",
+                                        validationResult.issue(),
+                                        validationResult.issueDescription()
+                                );
+
+                                // 外部验证
+                                ExternalVerifierService.VerificationResult externalVerification = null;
+                                try {
+                                    externalVerification = externalVerifierService.verifyToolCall(
+                                            factoryId, tool.getToolName(), params, pseudoError);
+                                } catch (Exception verifyEx) {
+                                    log.warn("外部验证失败: {}", verifyEx.getMessage());
+                                }
+
+                                // 纠错 Agent 分析
+                                CorrectionAgentService.CorrectionResult correctionResult =
+                                        correctionAgentService.analyzeAndCorrect(
+                                                request.getUserInput(),
+                                                tool.getToolName(),
+                                                params,
+                                                pseudoError,
+                                                externalVerification,
+                                                attempt
+                                        );
+
+                                log.info("纠错 Agent 结果（结果验证触发）: shouldRetry={}, strategy={}, confidence={}",
+                                        correctionResult.shouldRetry(),
+                                        correctionResult.correctionStrategy(),
+                                        correctionResult.confidence());
+
+                                if (correctionResult.shouldRetry() && correctionResult.correctedParams() != null) {
+                                    // 使用修正后的参数重试
+                                    params.clear();
+                                    params.putAll(correctionResult.correctedParams());
+                                    params.put("_correctionStrategy", correctionResult.correctionStrategy());
+                                    params.put("_retryAttempt", attempt);
+                                    params.put("_validationIssue", validationResult.issue().name());
+
+                                    // 重新构建 ToolCall
+                                    argumentsJson = objectMapper.writeValueAsString(params);
+                                    toolCall = ToolCall.of(
+                                            java.util.UUID.randomUUID().toString(),
+                                            tool.getToolName(),
+                                            argumentsJson
+                                    );
+
+                                    log.info("结果验证纠错: 准备第 {} 次重试, strategy={}, hint={}",
+                                            attempt + 1,
+                                            correctionResult.correctionStrategy(),
+                                            validationResult.correctionHint());
+
+                                    // 清空结果，继续重试
+                                    resultJson = null;
+                                    continue;
+                                }
+                            }
+                        } catch (Exception validationEx) {
+                            log.warn("结果验证过程出错: {}", validationEx.getMessage());
+                            // 验证出错不影响正常流程
+                        }
+                    }
+
+                    // 成功，跳出重试循环
+                    break;
+
+                } catch (Exception e) {
+                    lastException = e;
+                    retryCount = attempt;
+
+                    // CRITIC-style 纠错：使用外部验证 + LLM 分析
+                    String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                    log.warn("Tool 执行失败 (尝试 {}/{}): tool={}, error={}",
+                            attempt, MAX_RETRIES, tool.getToolName(), errorMsg);
+
+                    // Phase 2: 外部验证（CRITIC 核心 - 收集可靠的外部反馈）
+                    ExternalVerifierService.VerificationResult verificationResult = null;
+                    try {
+                        verificationResult = externalVerifierService.verifyToolCall(
+                                factoryId, tool.getToolName(), params, errorMsg);
+                        log.info("外部验证结果: hasData={}, status={}, suggestion={}",
+                                verificationResult.hasData(), verificationResult.dataStatus(), verificationResult.suggestion());
+                    } catch (Exception verifyEx) {
+                        log.warn("外部验证失败: {}", verifyEx.getMessage());
+                    }
+
+                    // Phase 3: 纠错 Agent 分析（CRITIC + Reflexion）
+                    CorrectionAgentService.CorrectionResult correctionResult = null;
+                    try {
+                        correctionResult = correctionAgentService.analyzeAndCorrect(
+                                request.getUserInput(),
+                                tool.getToolName(),
+                                params,
+                                errorMsg,
+                                verificationResult,
+                                attempt
+                        );
+                        log.info("纠错 Agent 结果: shouldRetry={}, strategy={}, confidence={}",
+                                correctionResult.shouldRetry(), correctionResult.correctionStrategy(), correctionResult.confidence());
+                    } catch (Exception agentEx) {
+                        log.warn("纠错 Agent 调用失败: {}", agentEx.getMessage());
+                    }
+
+                    // Phase 4: 根据纠错结果决定是否重试
+                    boolean shouldRetry = correctionResult != null && correctionResult.shouldRetry() && attempt < MAX_RETRIES;
+
+                    if (shouldRetry && correctionResult.correctedParams() != null) {
+                        // 使用 LLM 修正后的参数重新执行
+                        params.clear();
+                        params.putAll(correctionResult.correctedParams());
+                        params.put("_correctionStrategy", correctionResult.correctionStrategy());
+                        params.put("_retryAttempt", attempt);
+                        params.put("_confidence", correctionResult.confidence());
+
+                        // 重新构建 ToolCall
+                        try {
+                            argumentsJson = objectMapper.writeValueAsString(params);
+                            toolCall = ToolCall.of(
+                                    java.util.UUID.randomUUID().toString(),
+                                    tool.getToolName(),
+                                    argumentsJson
+                            );
+                        } catch (JsonProcessingException je) {
+                            log.error("重试时参数序列化失败: {}", je.getMessage());
+                            break;
+                        }
+
+                        log.info("CRITIC 纠错: 准备第 {} 次重试, strategy={}, confidence={}",
+                                attempt + 1, correctionResult.correctionStrategy(), correctionResult.confidence());
+
+                        // 记录纠错尝试
+                        try {
+                            CorrectionRecord.ErrorCategory errorCategory = selfCorrectionService.classifyError(errorMsg, null);
+                            selfCorrectionService.createCorrectionRecord(
+                                    null, factoryId, sessionId,
+                                    errorCategory.name(), errorMsg, correctionResult.errorAnalysis());
+                        } catch (Exception recordEx) {
+                            log.warn("记录纠错尝试失败: {}", recordEx.getMessage());
+                        }
+                    } else {
+                        // 纠错 Agent 判断不应重试
+                        String reason = correctionResult != null ? correctionResult.errorAnalysis() : "纠错 Agent 不可用";
+                        log.info("纠错 Agent 判断不重试: {}", reason);
+                        break;
+                    }
+                }
+            }
+
+            // 如果所有重试都失败了
+            if (resultJson == null && lastException != null) {
+                // 记录最终失败
+                try {
+                    ToolCallRecord failedRecord = ToolCallRecord.builder()
+                            .sessionId(sessionId)
+                            .factoryId(factoryId)
+                            .toolName(tool.getToolName())
+                            .toolParameters(argumentsJson)
+                            .executionStatus(ToolCallRecord.ExecutionStatus.FAILED)
+                            .errorMessage(lastException.getMessage())
+                            .retryCount(retryCount)
+                            .build();
+                    redundancyService.recordToolCall(failedRecord);
+                } catch (Exception recordEx) {
+                    log.warn("记录失败调用时出错: {}", recordEx.getMessage());
+                }
+
+                // 返回失败响应
+                String errorMessage = lastException.getMessage() != null ? lastException.getMessage() : lastException.getClass().getSimpleName();
+                CorrectionRecord.ErrorCategory errorCategory = selfCorrectionService.classifyError(errorMessage, null);
+                CorrectionRecord.CorrectionStrategy strategy = selfCorrectionService.determineStrategy(errorCategory);
+
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(true)
+                        .intentCode(intent.getIntentCode())
+                        .intentName(intent.getIntentName())
+                        .intentCategory(intent.getIntentCategory())
+                        .status("FAILED")
+                        .message("执行失败 (已重试 " + retryCount + " 次): " + ErrorSanitizer.sanitize(lastException))
+                        .metadata(Map.of(
+                                "errorCategory", errorCategory.name(),
+                                "correctionStrategy", strategy.name(),
+                                "retryCount", retryCount,
+                                "autoRetryExhausted", true
+                        ))
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+            // 6. 解析 Tool 结果并转换为 IntentExecuteResponse
+            IntentExecuteResponse response = parseToolResultToResponse(resultJson, intent);
+
+            // 如果是重试后成功的，添加恢复信息
+            if (retryCount > 0 && response != null && "SUCCESS".equals(response.getStatus())) {
+                Map<String, Object> metadata = response.getMetadata() != null ?
+                        new HashMap<>(response.getMetadata()) : new HashMap<>();
+                metadata.put("recoveredAfterRetries", retryCount);
+                metadata.put("totalExecutionTimeMs", totalExecutionTime);
+                response.setMetadata(metadata);
+            }
+
+            return response;
 
         } catch (JsonProcessingException e) {
             log.error("Tool 参数序列化失败: tool={}, error={}", tool.getToolName(), e.getMessage());
@@ -725,6 +1115,32 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .build();
         } catch (Exception e) {
             log.error("Tool 执行失败: tool={}, error={}", tool.getToolName(), e.getMessage(), e);
+
+            // 记录失败的工具调用 (ET-Agent 行为校准)
+            String sessionId = request.getSessionId() != null ? request.getSessionId() : "default";
+            try {
+                ToolCallRecord failedRecord = ToolCallRecord.builder()
+                        .sessionId(sessionId)
+                        .factoryId(factoryId)
+                        .toolName(tool.getToolName())
+                        .executionStatus(ToolCallRecord.ExecutionStatus.FAILED)
+                        .errorMessage(e.getMessage())
+                        .build();
+                redundancyService.recordToolCall(failedRecord);
+            } catch (Exception recordEx) {
+                log.warn("记录失败调用时出错: {}", recordEx.getMessage());
+            }
+
+            // 自我纠错分析 (ET-Agent 行为校准)
+            String errorMessage = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            CorrectionRecord.ErrorCategory errorCategory = selfCorrectionService.classifyError(errorMessage, null);
+            CorrectionRecord.CorrectionStrategy strategy = selfCorrectionService.determineStrategy(errorCategory);
+
+            log.info("错误分类: category={}, strategy={}", errorCategory, strategy);
+
+            // 生成纠错提示（可用于下次重试）
+            String correctionPrompt = selfCorrectionService.generateCorrectionPrompt(errorCategory, errorMessage);
+
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
                     .intentCode(intent.getIntentCode())
@@ -732,6 +1148,11 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .intentCategory(intent.getIntentCategory())
                     .status("FAILED")
                     .message("执行失败: " + ErrorSanitizer.sanitize(e))
+                    .metadata(Map.of(
+                            "errorCategory", errorCategory.name(),
+                            "correctionStrategy", strategy.name(),
+                            "correctionHint", correctionPrompt.substring(0, Math.min(200, correctionPrompt.length()))
+                    ))
                     .executedAt(LocalDateTime.now())
                     .build();
         }
@@ -792,6 +1213,134 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .executedAt(LocalDateTime.now())
                     .build();
         }
+    }
+
+    /**
+     * 使用 LLM Tool Calling 从用户输入中提取参数
+     *
+     * 当意图匹配成功但缺少必需参数时，调用此方法从自然语言中提取参数。
+     *
+     * @param userInput 用户输入
+     * @param tool 目标工具
+     * @param existingParams 已有参数
+     * @return 提取的参数 Map
+     */
+    private Map<String, Object> extractParametersWithLLM(String userInput, ToolExecutor tool,
+                                                          Map<String, Object> existingParams) {
+        Map<String, Object> extractedParams = new HashMap<>();
+
+        try {
+            // 1. 获取工具的参数 schema
+            Map<String, Object> parametersSchema = tool.getParametersSchema();
+            if (parametersSchema == null || parametersSchema.isEmpty()) {
+                log.debug("工具 {} 没有参数 schema，跳过参数提取", tool.getToolName());
+                return extractedParams;
+            }
+
+            // 2. 从 schema 中获取必需参数列表
+            @SuppressWarnings("unchecked")
+            List<String> requiredParams = (List<String>) parametersSchema.get("required");
+            if (requiredParams == null || requiredParams.isEmpty()) {
+                log.debug("工具 {} 没有必需参数，跳过参数提取", tool.getToolName());
+                return extractedParams;
+            }
+
+            // 3. 检查哪些必需参数缺失
+            List<String> missingParams = requiredParams.stream()
+                    .filter(p -> !existingParams.containsKey(p) ||
+                                 existingParams.get(p) == null ||
+                                 (existingParams.get(p) instanceof String &&
+                                  ((String) existingParams.get(p)).trim().isEmpty()))
+                    .collect(Collectors.toList());
+
+            if (missingParams.isEmpty()) {
+                log.debug("工具 {} 所有必需参数已存在，跳过参数提取", tool.getToolName());
+                return extractedParams;
+            }
+
+            log.info("工具 {} 缺少参数 {}，启动 LLM 参数提取", tool.getToolName(), missingParams);
+
+            // 4. 构建参数提取工具定义
+            Tool extractionTool = buildParameterExtractionTool(tool.getToolName(), parametersSchema);
+
+            // 5. 构建提示词
+            String systemPrompt = buildParameterExtractionPrompt(tool.getToolName(), tool.getDescription());
+
+            // 6. 调用 LLM 提取参数
+            ChatCompletionResponse response = dashScopeClient.chatWithTools(
+                    systemPrompt,
+                    userInput,
+                    List.of(extractionTool)
+            );
+
+            // 7. 解析 LLM 返回的工具调用
+            if (dashScopeClient.hasToolCalls(response)) {
+                ToolCall toolCall = dashScopeClient.getFirstToolCall(response);
+                if (toolCall != null && toolCall.getFunction() != null) {
+                    String argumentsJson = toolCall.getFunction().getArguments();
+                    if (argumentsJson != null && !argumentsJson.isEmpty()) {
+                        try {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> args = objectMapper.readValue(argumentsJson, Map.class);
+                            // 只提取非空参数
+                            for (Map.Entry<String, Object> entry : args.entrySet()) {
+                                if (entry.getValue() != null &&
+                                    !(entry.getValue() instanceof String && ((String) entry.getValue()).isEmpty())) {
+                                    extractedParams.put(entry.getKey(), entry.getValue());
+                                }
+                            }
+                            log.info("LLM 参数提取成功: tool={}, extracted={}", tool.getToolName(), extractedParams.keySet());
+                        } catch (JsonProcessingException e) {
+                            log.warn("解析 LLM 返回的参数失败: {}", e.getMessage());
+                        }
+                    }
+                }
+            } else {
+                log.debug("LLM 未返回工具调用，可能输入中没有足够的参数信息");
+            }
+
+        } catch (Exception e) {
+            log.error("LLM 参数提取异常: tool={}, error={}", tool.getToolName(), e.getMessage(), e);
+        }
+
+        return extractedParams;
+    }
+
+    /**
+     * 构建参数提取工具定义
+     */
+    private Tool buildParameterExtractionTool(String toolName, Map<String, Object> parametersSchema) {
+        return Tool.of(
+                "extract_parameters",
+                "从用户输入中提取 " + toolName + " 操作所需的参数",
+                parametersSchema
+        );
+    }
+
+    /**
+     * 构建参数提取提示词
+     */
+    private String buildParameterExtractionPrompt(String toolName, String toolDescription) {
+        return String.format("""
+            你是一个参数提取助手。你的任务是从用户的自然语言输入中提取操作所需的参数。
+
+            当前操作: %s
+            操作描述: %s
+
+            请仔细分析用户输入，提取其中包含的参数值。
+            - 如果用户明确提供了某个参数的值，请提取它
+            - 如果用户没有提供某个参数，不要猜测或编造，直接忽略该参数
+            - 参数值应该是用户原文中的信息，不要修改或翻译
+
+            常见的参数表达方式：
+            - "用户名xxx" → username: "xxx"
+            - "姓名xxx" → realName/fullName: "xxx"
+            - "角色为xxx" → role: "xxx"
+            - "数量xxx" → quantity: xxx
+            - "批次xxx" → batchNumber: "xxx"
+
+            请使用 extract_parameters 工具返回提取的参数。
+            """, toolName, toolDescription != null ? toolDescription : "执行业务操作");
     }
 
     /**
@@ -2357,6 +2906,119 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     }
 
     /**
+     * 执行分析流程 (v7.0新增 - 集成 Agentic RAG)
+     *
+     * 当检测到用户输入是分析请求时（如"产品状态怎么样"），
+     * 调用分析路由服务执行完整的分析流程：
+     * 1. 确定分析主题
+     * 2. 评估查询复杂度，决定处理模式
+     * 3. 根据处理模式选择执行路径:
+     *    - FAST/ANALYSIS: 使用 AnalysisRouterService
+     *    - MULTI_AGENT/DEEP_REASONING: 使用 AgentOrchestrator 多Agent协作
+     * 4. 结合行业知识生成分析报告
+     *
+     * @param factoryId 工厂ID
+     * @param userInput 用户输入
+     * @param request 原始请求
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @return 分析结果响应
+     */
+    private IntentExecuteResponse executeAnalysisFlow(String factoryId, String userInput,
+                                                       IntentExecuteRequest request,
+                                                       Long userId, String userRole) {
+        try {
+            // 1. 检测分析主题
+            AnalysisTopic topic = analysisRouterService.detectAnalysisTopic(userInput);
+            log.info("📊 分析主题: topic={}, userInput='{}'", topic,
+                    userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+            // 2. 构建分析上下文
+            AnalysisContext analysisContext = AnalysisContext.builder()
+                    .userInput(userInput)
+                    .topic(topic)
+                    .factoryId(factoryId)
+                    .userId(userId)
+                    .userRole(userRole)
+                    .sessionId(request.getSessionId())
+                    .enableThinking(request.getEnableThinking())
+                    .thinkingBudget(request.getThinkingBudget())
+                    .build();
+
+            // 3. 评估查询复杂度，决定处理模式 (v7.0 Agentic RAG)
+            ProcessingMode processingMode = complexityRouter.route(userInput, analysisContext);
+            double complexityScore = complexityRouter.estimateComplexity(userInput, analysisContext);
+            log.info("🎯 复杂度路由: mode={}, score={}, userInput='{}'",
+                    processingMode, String.format("%.2f", complexityScore),
+                    userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
+
+            // 4. 根据处理模式选择执行路径
+            AnalysisResult analysisResult;
+            if (processingMode == ProcessingMode.MULTI_AGENT ||
+                processingMode == ProcessingMode.DEEP_REASONING) {
+                // 复杂查询: 使用多Agent协作 (检索→评估→分析→审核)
+                log.info("🤖 启动多Agent协作分析: mode={}", processingMode);
+                analysisResult = agentOrchestrator.executeCollaborativeAnalysis(analysisContext);
+            } else {
+                // 简单/中等查询: 使用单Agent分析路由
+                log.info("📝 使用分析路由: mode={}", processingMode);
+                analysisResult = analysisRouterService.executeAnalysis(analysisContext);
+            }
+
+            // 5. 构建响应
+            if (analysisResult.isSuccess()) {
+                Map<String, Object> metadata = new HashMap<>();
+                metadata.put("analysisTopic", topic.name());
+                metadata.put("topicDisplayName", topic.getDisplayName());
+                metadata.put("toolsUsed", analysisResult.getToolsUsed());
+                metadata.put("processingMode", processingMode.name());
+                metadata.put("complexityScore", complexityScore);
+                metadata.put("requiresHumanReview", analysisResult.isRequiresHumanReview());
+
+                String status = analysisResult.isRequiresHumanReview()
+                        ? "ANALYSIS_PENDING_REVIEW"
+                        : "ANALYSIS_COMPLETED";
+
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(false)  // 不是业务意图，是分析请求
+                        .status(status)
+                        .message(analysisResult.getFormattedAnalysis())
+                        .metadata(metadata)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            } else {
+                log.warn("分析执行失败: topic={}, mode={}, error={}",
+                        topic, processingMode, analysisResult.getErrorMessage());
+
+                // 分析失败时，降级到普通对话回复
+                String fallbackResponse = generateConversationalResponse(factoryId, userInput,
+                        QuestionType.GENERAL_QUESTION, request.getEnableThinking(), request.getThinkingBudget());
+
+                return IntentExecuteResponse.builder()
+                        .intentRecognized(false)
+                        .status("COMPLETED")
+                        .message(fallbackResponse)
+                        .executedAt(LocalDateTime.now())
+                        .build();
+            }
+
+        } catch (Exception e) {
+            log.error("❌ 分析流程执行异常: userInput='{}', error={}", userInput, e.getMessage(), e);
+
+            // 异常时降级到普通对话回复
+            String fallbackResponse = generateConversationalResponse(factoryId, userInput,
+                    QuestionType.GENERAL_QUESTION, request.getEnableThinking(), request.getThinkingBudget());
+
+            return IntentExecuteResponse.builder()
+                    .intentRecognized(false)
+                    .status("COMPLETED")
+                    .message(fallbackResponse)
+                    .executedAt(LocalDateTime.now())
+                    .build();
+        }
+    }
+
+    /**
      * 获取工厂的预计算分析上下文
      *
      * 优先级：日报 > 周报 > 月报
@@ -3198,5 +3860,34 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                 ))
                 .executedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * 判断错误类型是否适合自动重试
+     *
+     * 自动重试策略说明：
+     * - DATA_INSUFFICIENT: 适合重试，可能是时间范围问题或查询条件问题
+     * - FORMAT_ERROR: 适合重试，通常可以通过调整参数格式解决
+     * - ANALYSIS_ERROR: 适合重试，重新分析可能得到正确结果
+     * - LOGIC_ERROR: 适合重试，注入纠正提示后可能修正逻辑
+     * - UNKNOWN: 不适合重试，未知错误重试意义不大
+     *
+     * @param errorCategory 错误分类
+     * @return 是否适合重试
+     */
+    private boolean isRetryableError(CorrectionRecord.ErrorCategory errorCategory) {
+        if (errorCategory == null) {
+            return false;
+        }
+        switch (errorCategory) {
+            case DATA_INSUFFICIENT:
+            case FORMAT_ERROR:
+            case ANALYSIS_ERROR:
+            case LOGIC_ERROR:
+                return true;
+            case UNKNOWN:
+            default:
+                return false;
+        }
     }
 }

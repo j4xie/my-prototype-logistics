@@ -151,4 +151,190 @@ public interface WorkerAllocationFeedbackRepository extends JpaRepository<Worker
             @Param("factoryId") String factoryId,
             @Param("workerId") Long workerId,
             @Param("stageType") ProcessingStageType stageType);
+
+    // ==================== 策略干预查询方法 ====================
+
+    /**
+     * 计算工人指定日期后的实际工时总和
+     */
+    @Query("SELECT SUM(f.actualHours) FROM WorkerAllocationFeedback f " +
+           "WHERE f.workerId = :workerId AND f.factoryId = :factoryId " +
+           "AND f.assignedAt >= :startTime AND f.completedAt IS NOT NULL")
+    Double sumActualHoursByWorkerAndDate(
+            @Param("workerId") Long workerId,
+            @Param("factoryId") String factoryId,
+            @Param("startTime") LocalDateTime startTime);
+
+    /**
+     * 查找工人指定日期后的工作日期列表 (去重)
+     */
+    @Query("SELECT DISTINCT CAST(f.assignedAt AS LocalDate) FROM WorkerAllocationFeedback f " +
+           "WHERE f.workerId = :workerId AND f.factoryId = :factoryId " +
+           "AND f.assignedAt >= :startTime AND f.completedAt IS NOT NULL " +
+           "ORDER BY CAST(f.assignedAt AS LocalDate) DESC")
+    List<java.time.LocalDate> findDistinctWorkDatesByWorker(
+            @Param("workerId") Long workerId,
+            @Param("factoryId") String factoryId,
+            @Param("startTime") LocalDateTime startTime);
+
+    /**
+     * 统计工人指定工序类型在指定日期后的执行次数
+     */
+    @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f " +
+           "WHERE f.workerId = :workerId AND f.factoryId = :factoryId " +
+           "AND f.taskType = :processType AND f.assignedAt >= :startTime")
+    Integer countByWorkerAndProcessType(
+            @Param("workerId") Long workerId,
+            @Param("factoryId") String factoryId,
+            @Param("processType") String processType,
+            @Param("startTime") LocalDateTime startTime);
+
+    /**
+     * 统计工人指定日期后的任务数
+     */
+    @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f " +
+           "WHERE f.workerId = :workerId AND f.factoryId = :factoryId " +
+           "AND f.assignedAt >= :startTime")
+    Integer countByWorkerAndDateAfter(
+            @Param("workerId") Long workerId,
+            @Param("factoryId") String factoryId,
+            @Param("startTime") LocalDateTime startTime);
+
+    // ==================== 指标计算查询方法 ====================
+
+    /**
+     * 每日指标聚合
+     * 返回: [日期, 任务数, 平均效率, 平均预测误差率, 不同工人数, 不同任务类型数]
+     */
+    @Query("SELECT DATE(f.assignedAt), COUNT(f), AVG(f.actualEfficiency), " +
+           "AVG(ABS(f.predictedScore - f.actualEfficiency) / NULLIF(f.predictedScore, 0)), " +
+           "COUNT(DISTINCT f.workerId), COUNT(DISTINCT f.taskType) " +
+           "FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
+           "AND f.assignedAt >= :startDate GROUP BY DATE(f.assignedAt) ORDER BY DATE(f.assignedAt)")
+    List<Object[]> getDailyMetrics(@Param("factoryId") String factoryId, @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 整体指标汇总
+     * 返回: [总任务数, 平均效率, 不同工人数, 已完成任务数]
+     */
+    @Query("SELECT COUNT(f), AVG(f.actualEfficiency), COUNT(DISTINCT f.workerId), " +
+           "SUM(CASE WHEN f.completedAt IS NOT NULL THEN 1 ELSE 0 END) " +
+           "FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
+           "AND f.assignedAt >= :startDate")
+    Object[] getOverallMetrics(@Param("factoryId") String factoryId, @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 按工艺阶段类型统计预测准确率
+     * 返回: [工艺类型, 准确率, 样本数]
+     */
+    @Query("SELECT f.stageType, AVG(1.0 - ABS(f.predictedScore - f.actualEfficiency) / NULLIF(f.predictedScore, 0)), COUNT(f) " +
+           "FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
+           "AND f.actualEfficiency IS NOT NULL AND f.predictedScore IS NOT NULL " +
+           "AND f.assignedAt >= :startDate GROUP BY f.stageType")
+    List<Object[]> getPredictionAccuracyByStageType(@Param("factoryId") String factoryId, @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 统计工人执行的不同任务类型数量
+     */
+    @Query("SELECT COUNT(DISTINCT f.taskType) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.workerId = :workerId " +
+           "AND f.assignedAt >= :startDate")
+    Integer countDistinctTaskTypesByWorker(@Param("factoryId") String factoryId,
+                                           @Param("workerId") Long workerId,
+                                           @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 获取工厂内所有不同的工人ID
+     */
+    @Query("SELECT DISTINCT f.workerId FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.assignedAt >= :startDate")
+    List<Long> findDistinctWorkerIds(@Param("factoryId") String factoryId, @Param("startDate") LocalDateTime startDate);
+
+    /**
+     * 获取工人最近一次执行指定任务类型的时间
+     */
+    @Query("SELECT MAX(f.assignedAt) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.workerId = :workerId AND f.taskType = :taskType")
+    LocalDateTime findLastTaskDateByWorkerAndType(@Param("factoryId") String factoryId,
+                                                   @Param("workerId") Long workerId,
+                                                   @Param("taskType") String taskType);
+
+    // ==================== 公平性与技能维护查询方法 ====================
+
+    /**
+     * 统计工厂指定时间段内所有工人的分配数
+     * 返回每个工人的分配数量 [workerId, count]
+     */
+    @Query("SELECT f.workerId, COUNT(f) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.assignedAt >= :startTime " +
+           "GROUP BY f.workerId")
+    List<Object[]> countAllocationsByWorkerInPeriod(
+            @Param("factoryId") String factoryId,
+            @Param("startTime") LocalDateTime startTime);
+
+    /**
+     * 获取工厂所有有分配记录的工人ID列表（不限时间）
+     */
+    @Query("SELECT DISTINCT f.workerId FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId")
+    List<Long> findAllDistinctWorkerIdsByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 查找在指定时间段内执行过特定工序的工人
+     */
+    @Query("SELECT DISTINCT f.workerId FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.taskType = :taskType " +
+           "AND f.assignedAt >= :startTime")
+    List<Long> findWorkersWhoDidTaskTypeInPeriod(
+            @Param("factoryId") String factoryId,
+            @Param("taskType") String taskType,
+            @Param("startTime") LocalDateTime startTime);
+
+    /**
+     * 检查工人是否在指定时间段内执行过特定工序
+     */
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.workerId = :workerId " +
+           "AND f.taskType = :taskType AND f.assignedAt >= :startTime")
+    boolean existsByWorkerAndTaskTypeInPeriod(
+            @Param("factoryId") String factoryId,
+            @Param("workerId") Long workerId,
+            @Param("taskType") String taskType,
+            @Param("startTime") LocalDateTime startTime);
+
+    // ==================== 临时工管理查询方法 ====================
+
+    /**
+     * 统计工人在指定时间之后的分配次数
+     * 用于临时工最低分配数保证检查
+     */
+    @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.workerId = :workerId " +
+           "AND f.createdAt > :since")
+    long countByFactoryIdAndWorkerIdAndCreatedAtAfter(
+            @Param("factoryId") String factoryId,
+            @Param("workerId") Long workerId,
+            @Param("since") LocalDateTime since);
+
+    /**
+     * 统计工厂在指定时间之后的总分配次数
+     * 用于自适应学习的样本数统计
+     */
+    @Query("SELECT COUNT(f) FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.createdAt > :since")
+    long countByFactoryIdAndCreatedAtAfter(
+            @Param("factoryId") String factoryId,
+            @Param("since") LocalDateTime since);
+
+    // ==================== Fair-MAB 公平性调度查询方法 ====================
+
+    /**
+     * 查找指定时间段内活跃的工人ID列表 (用于Fair-MAB公平性计算)
+     * 基于createdAt字段筛选，返回有分配记录的工人
+     */
+    @Query("SELECT DISTINCT f.workerId FROM WorkerAllocationFeedback f " +
+           "WHERE f.factoryId = :factoryId AND f.createdAt > :since")
+    List<Long> findDistinctWorkerIdsByFactoryIdAndCreatedAtAfter(
+            @Param("factoryId") String factoryId,
+            @Param("since") LocalDateTime since);
 }

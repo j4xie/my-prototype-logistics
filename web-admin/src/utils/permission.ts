@@ -12,11 +12,18 @@ const PERMISSION_MATRIX: Record<string, Record<string, string>> = {
   factory_super_admin: {
     dashboard: 'read_write', production: 'read_write', warehouse: 'read_write',
     quality: 'read_write', procurement: 'read_write', sales: 'read_write',
-    hr: 'read_write', equipment: 'read_write', finance: 'read_write', system: 'read_write'
+    hr: 'read_write', equipment: 'read_write', finance: 'read_write', system: 'read_write',
+    analytics: 'read_write'  // SmartBI 完整权限
   },
   production_manager: {
     dashboard: 'read_write', production: 'read_write', warehouse: 'read',
-    quality: 'read', procurement: 'read', hr: 'read', equipment: 'read', system: 'read'
+    quality: 'read', procurement: 'read', hr: 'read', equipment: 'read', system: 'read',
+    analytics: 'read_write'  // SmartBI 完整权限 (已重命名为 dispatcher)
+  },
+  dispatcher: {
+    dashboard: 'read_write', production: 'read_write', warehouse: 'read',
+    quality: 'read', procurement: 'read', sales: 'read', hr: 'read', equipment: 'read',
+    finance: 'read', system: 'read', analytics: 'read_write', scheduling: 'read_write'
   },
   quality_manager: { dashboard: 'read', production: 'read', quality: 'read_write' },
   workshop_supervisor: {
@@ -30,24 +37,31 @@ const PERMISSION_MATRIX: Record<string, Record<string, string>> = {
   hr_admin: { dashboard: 'read', hr: 'read_write' },
   equipment_admin: { dashboard: 'read', equipment: 'read_write' },
   procurement_manager: { dashboard: 'read', procurement: 'read_write', warehouse: 'read' },
-  sales_manager: { dashboard: 'read', sales: 'read_write', warehouse: 'read' },
+  sales_manager: {
+    dashboard: 'read', sales: 'read_write', warehouse: 'read',
+    analytics: 'read'  // SmartBI 只读访问
+  },
   finance_manager: {
     dashboard: 'read', finance: 'read_write',
-    production: 'read', procurement: 'read', sales: 'read'
+    production: 'read', procurement: 'read', sales: 'read',
+    analytics: 'read'  // SmartBI 只读访问
   },
   viewer: {
     dashboard: 'read', production: 'read', warehouse: 'read', quality: 'read',
-    procurement: 'read', sales: 'read', hr: 'read', equipment: 'read'
+    procurement: 'read', sales: 'read', hr: 'read', equipment: 'read',
+    analytics: 'read'  // SmartBI 只读访问
   },
   // 向后兼容
   permission_admin: {
     dashboard: 'read_write', production: 'read_write', warehouse: 'read_write',
     quality: 'read_write', procurement: 'read_write', sales: 'read_write',
-    hr: 'read_write', equipment: 'read_write', finance: 'read_write', system: 'read_write'
+    hr: 'read_write', equipment: 'read_write', finance: 'read_write', system: 'read_write',
+    analytics: 'read_write'
   },
   department_admin: {
     dashboard: 'read_write', production: 'read_write', warehouse: 'read',
-    quality: 'read', procurement: 'read', hr: 'read', equipment: 'read', system: 'read'
+    quality: 'read', procurement: 'read', hr: 'read', equipment: 'read', system: 'read',
+    analytics: 'read_write'
   }
 };
 
@@ -159,7 +173,7 @@ export function getAccessibleModules(user: User | null | undefined): string[] {
 
   if (isPlatformAdmin(user)) {
     return ['dashboard', 'production', 'warehouse', 'quality', 'procurement',
-            'sales', 'hr', 'equipment', 'finance', 'system'];
+            'sales', 'hr', 'equipment', 'finance', 'system', 'analytics'];
   }
 
   const roleCode = getRoleCode(user);
@@ -227,4 +241,33 @@ export function getRoleName(user: User | null | undefined): string {
 export function getFactoryId(user: User | null | undefined): string | undefined {
   if (!user || user.userType !== 'factory') return undefined;
   return user.factoryUser?.factoryId;
+}
+
+/**
+ * 检查用户是否可以访问 SmartBI 模块
+ * SmartBI 访问权限: 有 analytics/sales/finance 任一读权限即可
+ */
+export function canAccessSmartBI(user: User | null | undefined): boolean {
+  if (!user) return false;
+
+  // 平台管理员拥有所有权限
+  if (isPlatformAdmin(user)) return true;
+
+  // 检查 analytics、sales、finance 任一模块的读权限
+  return hasModulePermission(user, 'analytics', 'read') ||
+         hasModulePermission(user, 'sales', 'read') ||
+         hasModulePermission(user, 'finance', 'read');
+}
+
+/**
+ * 检查用户是否有 SmartBI 写权限 (上传数据等)
+ */
+export function canWriteSmartBI(user: User | null | undefined): boolean {
+  if (!user) return false;
+
+  // 平台管理员拥有所有权限
+  if (isPlatformAdmin(user)) return true;
+
+  // 只有 analytics 模块的写权限才能上传数据
+  return hasModulePermission(user, 'analytics', 'write');
 }

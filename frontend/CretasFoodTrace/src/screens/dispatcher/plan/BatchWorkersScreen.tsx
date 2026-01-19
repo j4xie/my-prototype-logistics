@@ -143,19 +143,25 @@ export default function BatchWorkersScreen() {
 
     try {
       const response = await schedulingApiClient.getBatchWorkers(batchId);
-      if (response.success && response.data) {
-        // Transform batch info if included
-        if (response.data.batch || response.data.schedule) {
-          setBatchInfo(transformBatchInfo(response.data.batch || response.data.schedule));
-        }
-
-        // Transform workers list
-        const workersList = response.data.workers || response.data.availableWorkers || [];
+      // getBatchWorkers returns { content, totalElements } directly
+      if (response.content && response.content.length > 0) {
+        // Transform workers list from response.content
+        const workersList = response.content.map((w: {
+          id: number;
+          userId: number;
+          userName: string;
+          workType: string;
+          workMinutes: number;
+          status: string;
+        }) => ({
+          id: w.userId || w.id,
+          name: w.userName,
+          workerName: w.userName,
+          status: w.status,
+          departmentName: w.workType,
+          workMinutes: w.workMinutes,
+        }));
         setWorkers(transformWorkers(workersList));
-
-        // Set pre-assigned workers if any
-        const assignedIds = (response.data.assignedWorkerIds || response.data.selectedWorkerIds || []);
-        setSelectedWorkerIds(assignedIds.map((id: any) => String(id)));
       }
     } catch (error) {
       if (isAxiosError(error)) {
@@ -212,6 +218,7 @@ export default function BatchWorkersScreen() {
   };
 
   const handleConfirm = () => {
+    if (!batchInfo) return;
     const selectedCount = selectedWorkerIds.length;
     const parts = batchInfo.suggestedWorkers.split('-').map(Number);
     const min = parts[0] ?? 0;
@@ -231,6 +238,7 @@ export default function BatchWorkersScreen() {
   };
 
   const confirmAssignment = () => {
+    if (!batchInfo) return;
     Alert.alert(
       '分配成功',
       `已为批次 ${batchInfo.batchNumber} 分配 ${selectedWorkerIds.length} 名员工`,
@@ -275,6 +283,9 @@ export default function BatchWorkersScreen() {
 
   const getMatchStatus = () => {
     const count = selectedWorkerIds.length;
+    if (!batchInfo) {
+      return { text: '未知', color: DISPATCHER_THEME.info };
+    }
     const parts = batchInfo.suggestedWorkers.split('-').map(Number);
     const min = parts[0] ?? 0;
     const max = parts[1] ?? min;

@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>AI 智能纠错 | 白垩纪AI智能体</title>
+    <meta name="description" content="说错了？AI帮你自动改。意图自动识别，错误自动修复，让AI助手越用越聪明。">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ai-bi.css">
+
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        /* Pain Points Section */
+        .pain-points {
+            background: #0D0D0F;
+            padding: 100px 0;
+        }
+
+        .pain-card {
+            background: #161618;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 32px;
+            height: 100%;
+            transition: all 0.3s;
+        }
+
+        .pain-card:hover {
+            border-color: rgba(188, 71, 73, 0.5);
+            transform: translateY(-4px);
+        }
+
+        .pain-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(188, 71, 73, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .pain-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #FAFAFA;
+            margin-bottom: 12px;
+        }
+
+        .pain-desc {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        /* Solution Section */
+        .solution-section {
+            background: linear-gradient(180deg, #0D0D0F 0%, #161618 100%);
+            padding: 100px 0;
+        }
+
+        .solution-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            max-width: 800px;
+            margin: 60px auto 0;
+        }
+
+        .flow-step {
+            display: flex;
+            gap: 24px;
+            align-items: flex-start;
+            padding: 32px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            transition: all 0.3s;
+        }
+
+        .flow-step:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(196, 92, 38, 0.3);
+        }
+
+        .step-number {
+            width: 56px;
+            height: 56px;
+            background: linear-gradient(135deg, #C45C26, #2D6A4F);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #FAFAFA;
+            margin-bottom: 8px;
+        }
+
+        .step-content p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            line-height: 1.6;
+        }
+
+        .step-example {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(45, 106, 79, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #2D6A4F;
+        }
+
+        .step-example-label {
+            font-size: 12px;
+            color: #2D6A4F;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .step-example-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: var(--font-mono);
+        }
+
+        /* Benefits Section */
+        .benefits-section {
+            background: #0D0D0F;
+            padding: 100px 0;
+        }
+
+        .benefit-card {
+            text-align: center;
+            padding: 40px 24px;
+        }
+
+        .benefit-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(196, 92, 38, 0.15), rgba(45, 106, 79, 0.15));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+        }
+
+        .benefit-stat {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #C45C26, #2D6A4F);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .benefit-label {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Scenarios Section */
+        .scenarios-section {
+            background: linear-gradient(180deg, #0D0D0F 0%, #161618 100%);
+            padding: 100px 0;
+        }
+
+        .scenario-card {
+            background: #161618;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 24px;
+            transition: all 0.3s;
+        }
+
+        .scenario-card:hover {
+            border-color: rgba(196, 92, 38, 0.3);
+        }
+
+        .scenario-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .scenario-icon {
+            width: 56px;
+            height: 56px;
+            background: rgba(196, 92, 38, 0.15);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scenario-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #FAFAFA;
+        }
+
+        .scenario-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .scenario-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .comparison-box {
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .comparison-box.before {
+            background: rgba(188, 71, 73, 0.1);
+            border: 1px solid rgba(188, 71, 73, 0.2);
+        }
+
+        .comparison-box.after {
+            background: rgba(45, 106, 79, 0.1);
+            border: 1px solid rgba(45, 106, 79, 0.2);
+        }
+
+        .comparison-label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .comparison-box.before .comparison-label {
+            color: #BC4749;
+        }
+
+        .comparison-box.after .comparison-label {
+            color: #2D6A4F;
+        }
+
+        .comparison-text {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, rgba(196, 92, 38, 0.1) 0%, rgba(45, 106, 79, 0.1) 100%);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .cta-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: #FAFAFA;
+            margin-bottom: 16px;
+        }
+
+        .cta-desc {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 32px;
+        }
+
+        /* Responsive Grid */
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        @media (max-width: 640px) {
+            .grid-3 { grid-template-columns: 1fr; }
+            .grid-4 { grid-template-columns: 1fr; }
+            .flow-step { flex-direction: column; }
+        }
+
+        /* Section Titles */
+        .section-eyebrow {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #C45C26;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: clamp(1.75rem, 4vw, 2.5rem);
+            font-weight: 700;
+            color: #FAFAFA;
+            margin-bottom: 16px;
+        }
+
+        .section-desc {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.6);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Enhanced Pain Card with better hover */
+        .pain-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pain-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #BC4749, transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .pain-card:hover::before {
+            opacity: 1;
+        }
+
+        /* Enhanced Flow Step */
+        .flow-step {
+            position: relative;
+        }
+
+        .flow-step::after {
+            content: '';
+            position: absolute;
+            left: 28px;
+            bottom: -24px;
+            width: 2px;
+            height: 24px;
+            background: linear-gradient(180deg, rgba(196, 92, 38, 0.3), transparent);
+        }
+
+        .flow-step:last-child::after {
+            display: none;
+        }
+
+        /* Enhanced Benefit Card */
+        .benefit-card {
+            position: relative;
+        }
+
+        .benefit-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(196, 92, 38, 0.5), transparent);
+        }
+
+        /* Scenario Card Enhancement */
+        .scenario-card {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scenario-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #C45C26, #2D6A4F);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scenario-card:hover::before {
+            opacity: 1;
+        }
+
+        /* CTA Section Enhancement */
+        .cta-section {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(196, 92, 38, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+    </style>
+</head>
+
+<body class="smartbi-page ai-bi-page">
+    <!-- Navigation -->
+    <nav class="nav" style="background: rgba(13, 13, 15, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <div class="nav-inner">
+            <a href="index.html" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#C45C26" />
+                        <path d="M12 28V12h6l6 8-6 8h-6z" fill="white" />
+                        <circle cx="26" cy="20" r="4" fill="white" />
+                    </svg>
+                </div>
+                <span class="logo-text" style="color: #FAFAFA;">CRETAS AI</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features" class="nav-link" style="color: rgba(255,255,255,0.7);">产品功能</a>
+                <a href="index.html#solutions" class="nav-link" style="color: rgba(255,255,255,0.7);">解决方案</a>
+                <a href="index.html#pricing" class="nav-link" style="color: rgba(255,255,255,0.7);">定价</a>
+                <a href="index.html#contact" class="nav-link" style="color: rgba(255,255,255,0.7);">联系我们</a>
+                <a href="#cta" class="btn btn-accent">立即体验</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" style="color: #FAFAFA;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="smartbi-hero">
+        <!-- Floating Orbs -->
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+
+        <div class="container">
+            <div class="grid-asymmetric">
+                <div class="hero-content">
+                    <div class="hero-eyebrow">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/zpxybbhl.json"
+                            trigger="loop"
+                            delay="2000"
+                            colors="primary:#C45C26"
+                            style="width:16px;height:16px">
+                        </lord-icon>
+                        AI驱动 · 智能纠错
+                    </div>
+                    <h1 class="hero-title">说错了？<br><span>AI 帮你自动改</span></h1>
+                    <p class="hero-desc">不用担心说不准确、记不住参数。我们的 AI 能理解你的真实意图，即使查询出错也能自动修正，确保每次都返回你真正想要的结果。</p>
+                    <div class="hero-actions">
+                        <a href="#cta" class="btn btn-accent">立即体验</a>
+                        <a href="#how-it-works" class="btn btn-secondary">工作原理</a>
+                    </div>
+                    <div class="hero-stats-inline">
+                        <div class="stat-item">
+                            <span class="stat-value">95%+</span>
+                            <span class="stat-label">查询准确率</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">85%</span>
+                            <span class="stat-label">错误自动修复</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">&lt;2s</span>
+                            <span class="stat-label">纠正响应</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">持续</span>
+                            <span class="stat-label">自我学习</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-dashboard-preview">
+                        <div class="dashboard-header">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="dashboard-body">
+                            <svg viewBox="0 0 400 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Background -->
+                                <rect width="400" height="280" fill="#0D0D0F"/>
+
+                                <!-- User Input Section -->
+                                <rect x="16" y="16" width="368" height="50" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <circle cx="40" cy="41" r="12" fill="#2D6A4F"/>
+                                <text x="40" y="45" text-anchor="middle" fill="white" font-size="10" font-weight="600">U</text>
+                                <rect x="60" y="33" width="120" height="8" rx="2" fill="rgba(255,255,255,0.6)"/>
+                                <rect x="60" y="45" width="80" height="6" rx="2" fill="rgba(255,255,255,0.3)"/>
+
+                                <!-- Error Detection -->
+                                <rect x="16" y="76" width="176" height="80" rx="8" fill="#161618" stroke="rgba(188,71,73,0.3)"/>
+                                <rect x="24" y="84" width="60" height="6" rx="2" fill="#BC4749"/>
+                                <text x="24" y="106" fill="rgba(255,255,255,0.5)" font-size="9">执行结果</text>
+                                <rect x="24" y="114" width="140" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="24" y="124" width="100" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="24" y="134" width="120" height="6" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <!-- Error badge -->
+                                <rect x="130" y="82" width="54" height="16" rx="8" fill="rgba(188,71,73,0.2)"/>
+                                <text x="157" y="93" text-anchor="middle" fill="#BC4749" font-size="8">条件丢失</text>
+
+                                <!-- Calibration Process -->
+                                <rect x="208" y="76" width="176" height="80" rx="8" fill="#161618" stroke="rgba(196,92,38,0.3)"/>
+                                <rect x="216" y="84" width="60" height="6" rx="2" fill="#C45C26"/>
+                                <text x="216" y="106" fill="rgba(255,255,255,0.5)" font-size="9">智能纠错中</text>
+
+                                <!-- Sync animation icon placeholder -->
+                                <circle cx="296" cy="120" r="20" fill="rgba(196,92,38,0.1)" stroke="rgba(196,92,38,0.3)" stroke-width="2"/>
+                                <path d="M288 120 L296 112 L304 120" stroke="#C45C26" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                <path d="M304 120 L296 128 L288 120" stroke="#C45C26" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.5"/>
+
+                                <!-- Arrow -->
+                                <path d="M200 116 L204 120 L200 124" stroke="rgba(196,92,38,0.5)" stroke-width="2" fill="none"/>
+
+                                <!-- Success Result -->
+                                <rect x="16" y="166" width="368" height="98" rx="8" fill="#161618" stroke="rgba(45,106,79,0.3)"/>
+                                <rect x="24" y="174" width="80" height="6" rx="2" fill="#2D6A4F"/>
+
+                                <!-- Result cards -->
+                                <rect x="24" y="190" width="168" height="60" rx="6" fill="rgba(45,106,79,0.1)"/>
+                                <text x="32" y="208" fill="#2D6A4F" font-size="9" font-weight="600">MB-001 批次详情</text>
+                                <rect x="32" y="216" width="100" height="5" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="32" y="226" width="80" height="5" rx="2" fill="rgba(255,255,255,0.2)"/>
+                                <rect x="32" y="236" width="60" height="5" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+                                <rect x="208" y="190" width="168" height="60" rx="6" fill="rgba(255,255,255,0.03)"/>
+                                <text x="216" y="208" fill="rgba(255,255,255,0.5)" font-size="9">纠错记录</text>
+                                <rect x="216" y="218" width="60" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="280" y="218" width="40" height="4" rx="2" fill="#2D6A4F"/>
+                                <rect x="216" y="228" width="50" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="270" y="228" width="50" height="4" rx="2" fill="#C45C26"/>
+                                <rect x="216" y="238" width="70" height="4" rx="2" fill="rgba(255,255,255,0.15)"/>
+                                <rect x="290" y="238" width="30" height="4" rx="2" fill="#2D6A4F"/>
+
+                                <!-- Success badge -->
+                                <rect x="310" y="172" width="66" height="16" rx="8" fill="rgba(45,106,79,0.2)"/>
+                                <text x="343" y="183" text-anchor="middle" fill="#2D6A4F" font-size="8">已自动修正</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gradient Transition -->
+    <div class="section-gradient-transition dark-to-light">
+        <div class="noise-overlay"></div>
+        <div class="gradient-line"></div>
+    </div>
+
+    <!-- Pain Points Section -->
+    <section class="pain-points">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <div class="section-eyebrow">您是否遇到过这些问题？</div>
+                <h2 class="section-title">传统 AI 助手的痛点</h2>
+                <p class="section-desc">这些场景是不是很熟悉？</p>
+            </div>
+
+            <div class="grid-3">
+                <div class="pain-card">
+                    <div class="pain-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/vfzqittk.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#BC4749"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="pain-title">查询条件被忽略</h3>
+                    <p class="pain-desc">
+                        明明说了"查批次 MB-001"，结果返回了所有批次的数据。
+                        AI 听懂了，但执行时把关键条件丢了。
+                    </p>
+                </div>
+
+                <div class="pain-card">
+                    <div class="pain-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/usownftb.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#BC4749"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="pain-title">参数格式不对</h3>
+                    <p class="pain-desc">
+                        说"上周的数据"，AI 不知道怎么转成日期。
+                        说"带鱼库存"，AI 找不到对应的物料编码。
+                    </p>
+                </div>
+
+                <div class="pain-card">
+                    <div class="pain-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/gjjvytyq.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#BC4749"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="pain-title">同样的问题反复问</h3>
+                    <p class="pain-desc">
+                        刚问完"查一下库存"，换个说法"看下存货"，AI 又要重新理解。
+                        没有记忆，不会学习。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="solution-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <div class="section-eyebrow">智能纠错引擎</div>
+                <h2 class="section-title">三步自动修正，确保结果准确</h2>
+                <p class="section-desc">无需人工干预，AI 自动检测问题并修复</p>
+            </div>
+
+            <div class="solution-flow">
+                <div class="flow-step">
+                    <div class="step-number">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/kbtmbyzy.json"
+                            trigger="hover"
+                            colors="primary:#FAFAFA,secondary:#FAFAFA"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <div class="step-content">
+                        <h3>理解你的真实意图</h3>
+                        <p>
+                            AI 不只是听你说了什么，更能理解你想要什么。
+                            即使表达不准确，也能提取出关键信息。
+                        </p>
+                        <div class="step-example">
+                            <div class="step-example-label">示例</div>
+                            <div class="step-example-text">
+                                你说: "看下那个批次的东西"<br>
+                                AI 理解: 查询最近操作的批次详情
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/nocovwne.json"
+                            trigger="hover"
+                            colors="primary:#FAFAFA,secondary:#FAFAFA"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <div class="step-content">
+                        <h3>执行后自动验证</h3>
+                        <p>
+                            每次查询执行后，AI 会自动检查结果是否符合你的意图。
+                            如果发现条件被忽略或结果不对，立即触发修正。
+                        </p>
+                        <div class="step-example">
+                            <div class="step-example-label">自动检测</div>
+                            <div class="step-example-text">
+                                用户要求: 批次 MB-001<br>
+                                返回结果: MB-100, MB-101, MB-102<br>
+                                检测结果: 条件被忽略，需要纠正
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flow-step">
+                    <div class="step-number">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/zpxybbhl.json"
+                            trigger="hover"
+                            colors="primary:#FAFAFA,secondary:#FAFAFA"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <div class="step-content">
+                        <h3>智能修正，返回正确结果</h3>
+                        <p>
+                            发现问题后，AI 会自动调整查询条件重新执行，
+                            直到返回符合你意图的结果。整个过程无需你干预。
+                        </p>
+                        <div class="step-example">
+                            <div class="step-example-label">最终结果</div>
+                            <div class="step-example-text">
+                                返回: 批次 MB-001 的完整信息<br>
+                                耗时: 自动修正 + 返回，用户无感知
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <div class="section-eyebrow">效果数据</div>
+                <h2 class="section-title">让 AI 助手真正可靠</h2>
+            </div>
+
+            <div class="grid-4">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/lupuorrc.json"
+                            trigger="loop"
+                            delay="1500"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:48px;height:48px">
+                        </lord-icon>
+                    </div>
+                    <div class="benefit-stat">95%+</div>
+                    <div class="benefit-label">查询准确率</div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/zpxybbhl.json"
+                            trigger="loop"
+                            delay="1800"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:48px;height:48px">
+                        </lord-icon>
+                    </div>
+                    <div class="benefit-stat">85%</div>
+                    <div class="benefit-label">错误自动修复率</div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/kkvxgpti.json"
+                            trigger="loop"
+                            delay="2100"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:48px;height:48px">
+                        </lord-icon>
+                    </div>
+                    <div class="benefit-stat">&lt;2s</div>
+                    <div class="benefit-label">纠正响应时间</div>
+                </div>
+
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/yxyampao.json"
+                            trigger="loop"
+                            delay="2400"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:48px;height:48px">
+                        </lord-icon>
+                    </div>
+                    <div class="benefit-stat">持续</div>
+                    <div class="benefit-label">自我学习优化</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Scenarios Section -->
+    <section class="scenarios-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 60px;">
+                <div class="section-eyebrow">真实场景</div>
+                <h2 class="section-title">智能纠错实战案例</h2>
+                <p class="section-desc">看看 AI 如何在实际工作中帮你自动修正</p>
+            </div>
+
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/fpmskzsv.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="scenario-title">批次查询：条件被忽略</h3>
+                </div>
+                <div class="scenario-comparison">
+                    <div class="comparison-box before">
+                        <div class="comparison-label">传统 AI 助手</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 查一下批次 MB-2026-001<br><br>
+                            <strong>返回:</strong> 所有 100 个批次的列表<br><br>
+                            <strong>问题:</strong> 批次条件被忽略，需要用户自己筛选
+                        </div>
+                    </div>
+                    <div class="comparison-box after">
+                        <div class="comparison-label">白垩纪 AI</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 查一下批次 MB-2026-001<br><br>
+                            <strong>返回:</strong> MB-2026-001 的详细信息<br><br>
+                            <strong>过程:</strong> 自动检测到条件被忽略，重新查询后返回正确结果
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/slkvcfos.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="scenario-title">库存查询：物料名称模糊</h3>
+                </div>
+                <div class="scenario-comparison">
+                    <div class="comparison-box before">
+                        <div class="comparison-label">传统 AI 助手</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 带鱼还有多少？<br><br>
+                            <strong>返回:</strong> "未找到物料"<br><br>
+                            <strong>问题:</strong> 无法将口语"带鱼"映射到物料编码
+                        </div>
+                    </div>
+                    <div class="comparison-box after">
+                        <div class="comparison-label">白垩纪 AI</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 带鱼还有多少？<br><br>
+                            <strong>返回:</strong> 冷冻带鱼(M-001) 库存 500kg<br><br>
+                            <strong>过程:</strong> 自动关联物料名称，返回准确库存
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scenario-card">
+                <div class="scenario-header">
+                    <div class="scenario-icon">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/abfverha.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h3 class="scenario-title">日期查询：时间表述不清</h3>
+                </div>
+                <div class="scenario-comparison">
+                    <div class="comparison-box before">
+                        <div class="comparison-label">传统 AI 助手</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 上周的生产数据<br><br>
+                            <strong>返回:</strong> "请输入开始日期和结束日期"<br><br>
+                            <strong>问题:</strong> 需要用户手动计算日期范围
+                        </div>
+                    </div>
+                    <div class="comparison-box after">
+                        <div class="comparison-label">白垩纪 AI</div>
+                        <div class="comparison-text">
+                            <strong>用户:</strong> 上周的生产数据<br><br>
+                            <strong>返回:</strong> 1月13日-1月19日生产报表<br><br>
+                            <strong>过程:</strong> 自动转换"上周"为具体日期范围
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="cta" class="cta-section">
+        <div class="container" style="position: relative; z-index: 1;">
+            <div style="margin-bottom: 24px;">
+                <lord-icon
+                    src="https://cdn.lordicon.com/zpxybbhl.json"
+                    trigger="loop"
+                    delay="2000"
+                    colors="primary:#C45C26,secondary:#2D6A4F"
+                    style="width:64px;height:64px">
+                </lord-icon>
+            </div>
+            <h2 class="cta-title">让 AI 助手真正懂你</h2>
+            <p class="cta-desc">不再为表达不准确而烦恼，立即体验智能纠错</p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="index.html#contact" class="btn btn-accent btn-lg">预约演示</a>
+                <a href="index.html" class="btn btn-secondary btn-lg">返回首页</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer style="background: #0D0D0F; border-top: 1px solid rgba(255,255,255,0.06); padding: 48px 0;">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
+                        <rect width="40" height="40" rx="8" fill="#C45C26" />
+                        <path d="M12 28V12h6l6 8-6 8h-6z" fill="white" />
+                        <circle cx="26" cy="20" r="4" fill="white" />
+                    </svg>
+                    <span style="font-weight: 600; color: #FAFAFA;">CRETAS AI</span>
+                </div>
+                <div style="font-size: 14px; color: rgba(255,255,255,0.4);">
+                    © 2026 白垩纪科技. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('open');
+        }
+    </script>
+</body>
+
+</html>

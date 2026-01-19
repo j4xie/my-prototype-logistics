@@ -53,7 +53,7 @@ const PERMISSION_MATRIX: Record<string, ModulePermissions> = {
   sales_manager: {
     dashboard: 'r', production: 'r', warehouse: 'r', quality: '-',
     procurement: '-', sales: 'rw', hr: '-', equipment: '-',
-    finance: 'r', system: '-', analytics: '-', scheduling: '-'
+    finance: 'r', system: '-', analytics: 'r', scheduling: '-'  // SmartBI 只读访问
   },
   // 调度 (dispatcher) - 生产调度、数据分析、趋势监控
   dispatcher: {
@@ -179,6 +179,21 @@ export const usePermissionStore = defineStore('permission', () => {
     return modules.filter(m => canAccess(m));
   }
 
+  /**
+   * 检查是否可以访问 SmartBI 模块
+   * SmartBI 访问权限: 有 analytics/sales/finance 任一读权限即可
+   */
+  function canAccessSmartBI(): boolean {
+    return canAccess('analytics') || canAccess('sales') || canAccess('finance');
+  }
+
+  /**
+   * 检查是否有 SmartBI 写权限 (上传数据等)
+   */
+  function canWriteSmartBI(): boolean {
+    return canWrite('analytics');
+  }
+
   function addLoadedRoute(routeName: string) {
     if (!loadedRoutes.value.includes(routeName)) {
       loadedRoutes.value.push(routeName);
@@ -199,6 +214,8 @@ export const usePermissionStore = defineStore('permission', () => {
     hasFullAccess,
     getPermissionLevel,
     getAccessibleModules,
+    canAccessSmartBI,
+    canWriteSmartBI,
     addLoadedRoute,
     clearLoadedRoutes
   };

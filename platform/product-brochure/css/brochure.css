@@ -1,0 +1,706 @@
+/* 白垩纪产品手册样式 */
+/* 复用官网色彩系统和设计语言 */
+
+:root {
+  /* 色彩系统 */
+  --accent: #C45C26;              /* 陶土橙 - 强调色 */
+  --bg-base: #FAFAF8;             /* 温暖纸质背景 */
+  --bg-surface: #FFFFFF;          /* 表面白色 */
+  --bg-warm: #F5F3EF;             /* 温暖灰 */
+  --text-primary: #1A1A1A;        /* 主文字 */
+  --text-secondary: #5C5C5C;      /* 次要文字 */
+  --text-tertiary: #8A8A8A;       /* 三级文字 */
+  --success: #2D6A4F;             /* 成功绿 */
+  --warning: #D4A574;             /* 警告麦色 */
+  --error: #BC4749;               /* 错误红 */
+  --border: #E5E5E5;              /* 边框灰 */
+
+  /* 间距系统 (基于8px) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+  --space-10: 128px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  color: var(--text-primary);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 页面基础 - PPT横向格式 严格分页控制 */
+.page {
+  width: 297mm;   /* 横向宽度 */
+  height: 210mm;  /* 横向高度 */
+  background: white;
+  page-break-after: always;
+  page-break-inside: avoid;
+  break-inside: avoid;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.page:last-child {
+  page-break-after: auto;
+}
+
+.page-content {
+  padding: 15mm 25mm;
+  max-height: 180mm;  /* 210mm - 30mm padding */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* 防止内容被切断 */
+.page-content > * {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* 文本分页控制 */
+p, li, td, th {
+  orphans: 3;
+  widows: 3;
+}
+
+/* 封面 */
+.page-cover {
+  background: var(--bg-base);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40mm 30mm;
+}
+
+.cover-title {
+  font-size: 60px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+}
+
+.cover-subtitle {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-9);
+  max-width: 600px;
+}
+
+.cover-stats {
+  display: flex;
+  gap: var(--space-7);
+  margin-top: var(--space-8);
+}
+
+.cover-stat {
+  text-align: center;
+}
+
+.cover-stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+.cover-stat-label {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+/* 排版 */
+.section-title {
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin-bottom: var(--space-6);
+}
+
+.section-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-7);
+}
+
+.heading-lg {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.heading-md {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.body-lg {
+  font-size: 18px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.body-md {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin-bottom: var(--space-2);
+}
+
+/* 色彩工具类 */
+.accent { color: var(--accent); }
+.text-primary { color: var(--text-primary); }
+.text-secondary { color: var(--text-secondary); }
+.bg-warm { background: var(--bg-warm); }
+.bg-base { background: var(--bg-base); }
+.bg-accent-light { background: rgba(196, 92, 38, 0.08); }
+
+/* 痛点卡片 */
+.pain-points {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.pain-point {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.pain-point-icon {
+  font-size: 40px;
+  color: var(--error);
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pain-point-content {
+  flex: 1;
+}
+
+.pain-point-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.pain-point-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.pain-point-cost {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--error);
+}
+
+/* 对比表格 */
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-5) 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.comparison-table th {
+  background: var(--bg-warm);
+  padding: var(--space-4);
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--border);
+}
+
+.comparison-table td {
+  padding: var(--space-4);
+  font-size: 16px;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+}
+
+.comparison-table .before {
+  background: #F5F5F5;
+}
+
+.comparison-table .after {
+  background: var(--bg-accent-light);
+  font-weight: 500;
+}
+
+.comparison-table .highlight {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* 能力卡片 */
+.capability-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.capability-header {
+  text-align: center;
+}
+
+.capability-icon {
+  font-size: 64px;
+  color: var(--accent);
+  margin-bottom: var(--space-4);
+}
+
+.capability-value {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-primary);
+  margin-bottom: var(--space-5);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.capability-barrier {
+  background: var(--bg-warm);
+  padding: var(--space-5);
+  border-radius: 12px;
+  border-left: 4px solid var(--accent);
+}
+
+.barrier-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+
+.barrier-content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.barrier-content ul {
+  margin: var(--space-3) 0;
+  padding-left: var(--space-5);
+}
+
+.barrier-content li {
+  margin-bottom: var(--space-2);
+}
+
+/* 场景示例 */
+.scenario-box {
+  background: var(--bg-accent-light);
+  border: 1px solid rgba(196, 92, 38, 0.2);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.scenario-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-bottom: var(--space-3);
+}
+
+.scenario-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+}
+
+.scenario-content p {
+  margin-bottom: var(--space-3);
+}
+
+.scenario-content strong {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* 对比卡片网格 */
+.comparison-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+
+.comparison-card {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-4);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.comparison-card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.comparison-card-icon {
+  font-size: 24px;
+}
+
+.comparison-card-content {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.comparison-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+.comparison-cell {
+  padding: var(--space-3);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.comparison-cell.before {
+  background: #F5F5F5;
+  color: var(--text-secondary);
+}
+
+.comparison-cell.after {
+  background: var(--bg-accent-light);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* 行业方案 */
+.industry-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+
+.industry-card {
+  background: white;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: var(--space-4);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.industry-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.industry-icon {
+  font-size: 40px;
+}
+
+.industry-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.industry-challenge {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-4);
+}
+
+.industry-features {
+  list-style: none;
+}
+
+.industry-features li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+  padding-left: var(--space-5);
+  position: relative;
+}
+
+.industry-features li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success);
+  font-weight: 700;
+}
+
+/* 流程时间轴 */
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: var(--space-4);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.timeline-marker {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-top: var(--space-2);
+}
+
+.timeline-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.timeline-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.timeline-desc ul {
+  margin: var(--space-2) 0;
+  padding-left: var(--space-5);
+}
+
+.timeline-desc li {
+  margin-bottom: var(--space-1);
+}
+
+/* CTA区域 */
+.cta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+
+.cta-card {
+  background: white;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  padding: var(--space-5);
+  text-align: center;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.cta-number {
+  display: inline-block;
+  width: 40px;
+  height: 40px;
+  background: var(--accent);
+  color: white;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 40px;
+  margin-bottom: var(--space-4);
+}
+
+.cta-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.cta-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.cta-desc ul {
+  list-style: none;
+  margin: var(--space-3) 0;
+}
+
+.cta-desc li {
+  margin-bottom: var(--space-2);
+}
+
+/* 联系信息 */
+.contact-info {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-5);
+  margin: var(--space-6) 0;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 16px;
+}
+
+.contact-icon {
+  font-size: 24px;
+  color: var(--accent);
+}
+
+/* 统计数字 */
+.stat-number {
+  font-size: 72px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-top: var(--space-2);
+}
+
+/* 检查标记 */
+.checkmark {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.crossmark {
+  color: var(--error);
+  font-weight: 700;
+}
+
+/* 引用块 */
+blockquote {
+  border-left: 4px solid var(--accent);
+  padding-left: var(--space-4);
+  margin: var(--space-5) 0;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+
+/* 突出框 */
+.highlight-box {
+  background: var(--bg-warm);
+  border-radius: 8px;
+  padding: var(--space-4);
+  margin: var(--space-4) 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.highlight-box strong {
+  color: var(--accent);
+}
+
+/* 底部标注 */
+.footer-note {
+  position: absolute;
+  bottom: 15mm;
+  left: 20mm;
+  right: 20mm;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-tertiary);
+}
+
+/* 打印优化 */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    page-break-after: always;
+    page-break-inside: avoid;
+  }
+
+  .page:last-child {
+    page-break-after: auto;
+  }
+}

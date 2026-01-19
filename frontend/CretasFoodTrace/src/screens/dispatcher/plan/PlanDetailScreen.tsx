@@ -177,21 +177,29 @@ export default function PlanDetailScreen() {
       // Fetch plan details
       const planResponse = await schedulingApiClient.getPlan(planId);
       if (planResponse.success && planResponse.data) {
-        setPlan(transformPlanToDetail(planResponse.data));
+        // Cast to extended type that may include additional fields from API
+        const planData = planResponse.data as typeof planResponse.data & {
+          materials?: unknown[];
+          workers?: unknown[];
+          assignedWorkers?: unknown[];
+          batches?: unknown[];
+          schedules?: unknown[];
+        };
+        setPlan(transformPlanToDetail(planData));
 
         // Extract materials from plan if available
-        if (planResponse.data.materials) {
-          setMaterials(transformMaterials(planResponse.data.materials));
+        if (planData.materials) {
+          setMaterials(transformMaterials(planData.materials));
         }
 
         // Extract workers from plan if available
-        if (planResponse.data.workers || planResponse.data.assignedWorkers) {
-          setWorkers(transformWorkers(planResponse.data.workers || planResponse.data.assignedWorkers));
+        if (planData.workers || planData.assignedWorkers) {
+          setWorkers(transformWorkers(planData.workers || planData.assignedWorkers || []));
         }
 
-        // Extract batches from plan if available
-        if (planResponse.data.batches || planResponse.data.schedules) {
-          setBatches(transformBatches(planResponse.data.batches || planResponse.data.schedules));
+        // Extract batches from plan if available (may come from lineSchedules)
+        if (planData.batches || planData.schedules || planData.lineSchedules) {
+          setBatches(transformBatches(planData.batches || planData.schedules || planData.lineSchedules || []));
         }
       }
     } catch (error) {
@@ -338,6 +346,10 @@ export default function PlanDetailScreen() {
 
   // 重新排程
   const handleReschedule = async () => {
+    if (!plan) {
+      Alert.alert('错误', '计划信息不存在');
+      return;
+    }
     if (!rescheduleReason.trim()) {
       Alert.alert('提示', '请输入重排原因');
       return;

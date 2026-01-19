@@ -2,6 +2,7 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.ai.IntentExecuteRequest;
 import com.cretas.aims.dto.ai.IntentExecuteResponse;
+import com.cretas.aims.dto.ai.ParameterConfirmationRequest;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.intent.CleanupRequest;
 import com.cretas.aims.dto.intent.IntentFeedbackRequest;
@@ -12,7 +13,9 @@ import com.cretas.aims.utils.JwtUtil;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentExecutorService;
 import com.cretas.aims.service.KeywordEffectivenessService;
+import com.cretas.aims.service.ParameterExtractionLearningService;
 import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.entity.learning.ParameterExtractionRule;
 import com.cretas.aims.entity.config.AIIntentConfigHistory;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,6 +54,7 @@ public class AIIntentConfigController {
     private final IntentExecutorService intentExecutorService;
     private final KeywordEffectivenessService keywordEffectivenessService;
     private final IntentConfigRollbackService rollbackService;
+    private final ParameterExtractionLearningService parameterExtractionLearningService;
     private final JwtUtil jwtUtil;
 
     // ==================== 意图查询 ====================
@@ -210,6 +214,29 @@ public class AIIntentConfigController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @PostMapping("/execute/multi")
+    @Operation(summary = "执行多意图 (Multi-Label Classification)",
+               description = "使用 Sigmoid-based 多标签分类识别并执行多个意图")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeMultiIntent(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody IntentExecuteRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        // 从JWT获取用户信息
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("执行多意图: factoryId={}, userInput={}, userId={}, role={}",
+                factoryId,
+                request.getUserInput().length() > 30 ?
+                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userId, userRole);
+
+        IntentExecuteResponse response = intentExecutorService.executeMultiIntent(factoryId, request, userId, userRole);
+        return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
     @PostMapping(value = "/execute/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @Operation(summary = "流式执行AI意图 (SSE)", description = "通过 Server-Sent Events 实时返回执行进度")
     public SseEmitter executeIntentStream(
@@ -263,6 +290,82 @@ public class AIIntentConfigController {
 
         IntentExecuteResponse response = intentExecutorService.confirm(factoryId, confirmToken, userId, userRole);
         return ResponseEntity.ok(ApiResponse.success(response));
+    }
+
+    // ==================== 参数确认和规则学习 ====================
+
+    @PostMapping("/params/confirm")
+    @Operation(summary = "确认参数并学习规则",
+               description = "用户确认 LLM 提取的参数后，系统学习提取规则，下次可直接使用规则提取（无需调用 LLM）")
+    public ResponseEntity<ApiResponse<IntentExecuteResponse>> confirmParameters(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody ParameterConfirmationRequest request,
+            @RequestHeader("Authorization") String authorization) {
+
+        String token = authorization.replace("Bearer ", "");
+        Long userId = jwtUtil.getUserIdFromToken(token);
+        String userRole = jwtUtil.getRoleFromToken(token);
+
+        log.info("确认参数并学习规则: factoryId={}, intentCode={}, params={}",
+                factoryId, request.getIntentCode(), request.getConfirmedParams().keySet());
+
+        // 1. 学习提取规则
+        parameterExtractionLearningService.learnAndConfirm(
+                factoryId,
+                request.getIntentCode(),
+                request.getUserInput(),
+                request.getConfirmedParams());
+
+        // 2. 如果需要执行，构建执行请求
+        if (Boolean.TRUE.equals(request.getExecuteAfterConfirm())) {
+            IntentExecuteRequest executeRequest = IntentExecuteRequest.builder()
+                    .userInput(request.getUserInput())
+                    .intentCode(request.getIntentCode())
+                    .context(request.getConfirmedParams())
+                    .build();
+
+            IntentExecuteResponse response = intentExecutorService.execute(factoryId, executeRequest, userId, userRole);
+            return ResponseEntity.ok(ApiResponse.success("参数已确认并执行", response));
+        }
+
+        // 只学习规则，不执行
+        return ResponseEntity.ok(ApiResponse.success("参数已确认，规则已学习", null));
+    }
+
+    @GetMapping("/params/rules/{intentCode}")
+    @Operation(summary = "获取意图的参数提取规则", description = "获取指定意图的所有活跃参数提取规则")
+    public ResponseEntity<ApiResponse<List<ParameterExtractionRule>>> getExtractionRules(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "意图代码") @PathVariable String intentCode) {
+
+        List<ParameterExtractionRule> rules = parameterExtractionLearningService.getActiveRules(factoryId, intentCode);
+        return ResponseEntity.ok(ApiResponse.success(rules));
+    }
+
+    @DeleteMapping("/params/rules/{ruleId}")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "删除参数提取规则", description = "删除指定的参数提取规则（仅管理员）")
+    public ResponseEntity<ApiResponse<Void>> deleteExtractionRule(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "规则ID") @PathVariable String ruleId) {
+
+        log.info("删除参数提取规则: factoryId={}, ruleId={}", factoryId, ruleId);
+        parameterExtractionLearningService.deleteRule(ruleId);
+        return ResponseEntity.ok(ApiResponse.success("规则已删除", null));
+    }
+
+    @PostMapping("/params/rules/cleanup")
+    @PreAuthorize("hasAnyRole('FACTORY_SUPER_ADMIN', 'FACTORY_ADMIN')")
+    @Operation(summary = "清理低成功率规则", description = "清理成功率低于阈值的参数提取规则")
+    public ResponseEntity<ApiResponse<Integer>> cleanupLowSuccessRules(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "最小命中次数") @RequestParam(defaultValue = "10") int minHitCount,
+            @Parameter(description = "最大成功率阈值") @RequestParam(defaultValue = "0.3") double maxSuccessRate) {
+
+        log.info("清理低成功率规则: factoryId={}, minHitCount={}, maxSuccessRate={}",
+                factoryId, minHitCount, maxSuccessRate);
+        int count = parameterExtractionLearningService.cleanupLowSuccessRules(minHitCount, maxSuccessRate);
+        return ResponseEntity.ok(ApiResponse.success("已清理 " + count + " 条规则", count));
     }
 
     // ==================== 权限查询 ====================

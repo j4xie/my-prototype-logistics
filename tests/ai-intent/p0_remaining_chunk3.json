@@ -1,0 +1,1240 @@
+{
+  "testSuite": "AI Intent Recognition - P0 Remaining Cases",
+  "version": "1.0.0",
+  "phase": "Phase 2",
+  "priority": "P0",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "testCases": [
+    {
+      "id": "TC-P0-SHIPMENT-007",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "OPERATION",
+      "description": "出货create操作",
+      "userInput": "给客户C007发货,产品冷冻带鱼段,数量400公斤",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C007', NOW(), NOW(), 'CUST_CODE_007', 1, 'CC_007', 'F001', 1, '客户7', '联系人7', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_107%'; DELETE FROM customers WHERE id = 'C007';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 给客户C007发货,产品冷冻带鱼段,数量400公斤\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CREATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-008",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "OPERATION",
+      "description": "出货create操作",
+      "userInput": "给客户C008发货,产品冷冻带鱼段,数量450公斤",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C008', NOW(), NOW(), 'CUST_CODE_008', 1, 'CC_008', 'F001', 1, '客户8', '联系人8', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_108%'; DELETE FROM customers WHERE id = 'C008';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 给客户C008发货,产品冷冻带鱼段,数量450公斤\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CREATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-009",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "OPERATION",
+      "description": "出货create操作",
+      "userInput": "给客户C009发货,产品冷冻带鱼段,数量500公斤",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C009', NOW(), NOW(), 'CUST_CODE_009', 1, 'CC_009', 'F001', 1, '客户9', '联系人9', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_109%'; DELETE FROM customers WHERE id = 'C009';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 给客户C009发货,产品冷冻带鱼段,数量500公斤\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CREATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-010",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CREATE",
+      "testType": "OPERATION",
+      "description": "出货create操作",
+      "userInput": "给客户C010发货,产品冷冻带鱼段,数量550公斤",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CREATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C010', NOW(), NOW(), 'CUST_CODE_010', 1, 'CC_010', 'F001', 1, '客户10', '联系人10', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_110%'; DELETE FROM customers WHERE id = 'C010';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 给客户C010发货,产品冷冻带鱼段,数量550公斤\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CREATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-011",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询客户C011的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C011', NOW(), NOW(), 'CUST_CODE_011', 1, 'CC_011', 'F001', 1, '客户11', '联系人11', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_111%'; DELETE FROM customers WHERE id = 'C011';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询客户C011的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-012",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询本周的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C012', NOW(), NOW(), 'CUST_CODE_012', 1, 'CC_012', 'F001', 1, '客户12', '联系人12', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_112%'; DELETE FROM customers WHERE id = 'C012';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-013",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询客户C013的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C013', NOW(), NOW(), 'CUST_CODE_013', 1, 'CC_013', 'F001', 1, '客户13', '联系人13', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_113%'; DELETE FROM customers WHERE id = 'C013';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询客户C013的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-014",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询本周的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C014', NOW(), NOW(), 'CUST_CODE_014', 1, 'CC_014', 'F001', 1, '客户14', '联系人14', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_114%'; DELETE FROM customers WHERE id = 'C014';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-015",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询客户C015的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C015', NOW(), NOW(), 'CUST_CODE_015', 1, 'CC_015', 'F001', 1, '客户15', '联系人15', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_115%'; DELETE FROM customers WHERE id = 'C015';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询客户C015的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-016",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询本周的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C016', NOW(), NOW(), 'CUST_CODE_016', 1, 'CC_016', 'F001', 1, '客户16', '联系人16', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_116%'; DELETE FROM customers WHERE id = 'C016';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-017",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询客户C017的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C017', NOW(), NOW(), 'CUST_CODE_017', 1, 'CC_017', 'F001', 1, '客户17', '联系人17', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_117%'; DELETE FROM customers WHERE id = 'C017';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询客户C017的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-018",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询本周的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C018', NOW(), NOW(), 'CUST_CODE_018', 1, 'CC_018', 'F001', 1, '客户18', '联系人18', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_118%'; DELETE FROM customers WHERE id = 'C018';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-019",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询客户C019的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C019', NOW(), NOW(), 'CUST_CODE_019', 1, 'CC_019', 'F001', 1, '客户19', '联系人19', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_119%'; DELETE FROM customers WHERE id = 'C019';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询客户C019的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-020",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_QUERY",
+      "testType": "QUERY",
+      "description": "出货query操作",
+      "userInput": "查询本周的出货记录",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C020', NOW(), NOW(), 'CUST_CODE_020', 1, 'CC_020', 'F001', 1, '客户20', '联系人20', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_120%'; DELETE FROM customers WHERE id = 'C020';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": null
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询本周的出货记录\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货QUERY操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "出货|发货"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-021",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_UPDATE",
+      "testType": "OPERATION",
+      "description": "出货update操作",
+      "userInput": "更新出货单SR_TEST_121的状态为已发货",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_UPDATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C021', NOW(), NOW(), 'CUST_CODE_021', 1, 'CC_021', 'F001', 1, '客户21', '联系人21', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_121%'; DELETE FROM customers WHERE id = 'C021';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 更新出货单SR_TEST_121的状态为已发货\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货UPDATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-022",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_UPDATE",
+      "testType": "OPERATION",
+      "description": "出货update操作",
+      "userInput": "更新出货单SR_TEST_122的状态为已发货",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_UPDATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C022', NOW(), NOW(), 'CUST_CODE_022', 1, 'CC_022', 'F001', 1, '客户22', '联系人22', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_122%'; DELETE FROM customers WHERE id = 'C022';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 更新出货单SR_TEST_122的状态为已发货\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货UPDATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-023",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_UPDATE",
+      "testType": "OPERATION",
+      "description": "出货update操作",
+      "userInput": "更新出货单SR_TEST_123的状态为已发货",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_UPDATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C023', NOW(), NOW(), 'CUST_CODE_023', 1, 'CC_023', 'F001', 1, '客户23', '联系人23', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_123%'; DELETE FROM customers WHERE id = 'C023';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 更新出货单SR_TEST_123的状态为已发货\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货UPDATE操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-024",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CANCEL",
+      "testType": "OPERATION",
+      "description": "出货cancel操作",
+      "userInput": "取消出货单SR_TEST_124",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CANCEL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C024', NOW(), NOW(), 'CUST_CODE_024', 1, 'CC_024', 'F001', 1, '客户24', '联系人24', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_124%'; DELETE FROM customers WHERE id = 'C024';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 取消出货单SR_TEST_124\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CANCEL操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-SHIPMENT-025",
+      "priority": "P0",
+      "category": "SHIPMENT",
+      "intentCode": "SHIPMENT_CANCEL",
+      "testType": "OPERATION",
+      "description": "出货cancel操作",
+      "userInput": "取消出货单SR_TEST_125",
+      "expectedIntent": {
+        "intentCode": "SHIPMENT_CANCEL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C025', NOW(), NOW(), 'CUST_CODE_025', 1, 'CC_025', 'F001', 1, '客户25', '联系人25', '13800138000');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM shipment_records WHERE id LIKE 'SR_TEST_125%'; DELETE FROM customers WHERE id = 'C025';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 取消出货单SR_TEST_125\n系统返回: {响应内容}\n\n判断: 系统是否正确处理了出货CANCEL操作?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "成功|完成"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-003",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "原料批次溯源",
+      "userInput": "溯源原料批次BATCH-TRACE-9303",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9303, NOW(), NOW(), 'PB-TRACE-9303', 'F001', 'PT_T003', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9303;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源原料批次BATCH-TRACE-9303\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-004",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "原料批次溯源",
+      "userInput": "溯源原料批次BATCH-TRACE-9304",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9304, NOW(), NOW(), 'PB-TRACE-9304', 'F001', 'PT_T004', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9304;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源原料批次BATCH-TRACE-9304\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-005",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "原料批次溯源",
+      "userInput": "溯源原料批次BATCH-TRACE-9305",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9305, NOW(), NOW(), 'PB-TRACE-9305', 'F001', 'PT_T005', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9305;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源原料批次BATCH-TRACE-9305\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-006",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "生产批次溯源",
+      "userInput": "溯源生产批次PB-TRACE-9306",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9306, NOW(), NOW(), 'PB-TRACE-9306', 'F001', 'PT_T006', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9306;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源生产批次PB-TRACE-9306\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-007",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "生产批次溯源",
+      "userInput": "溯源生产批次PB-TRACE-9307",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9307, NOW(), NOW(), 'PB-TRACE-9307', 'F001', 'PT_T007', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9307;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源生产批次PB-TRACE-9307\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-008",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "生产批次溯源",
+      "userInput": "溯源生产批次PB-TRACE-9308",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9308, NOW(), NOW(), 'PB-TRACE-9308', 'F001', 'PT_T008', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9308;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 溯源生产批次PB-TRACE-9308\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-009",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "成品批次溯源",
+      "userInput": "查询成品批次PB-TRACE-9309的溯源信息",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9309, NOW(), NOW(), 'PB-TRACE-9309', 'F001', 'PT_T009', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9309;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询成品批次PB-TRACE-9309的溯源信息\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-010",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "成品批次溯源",
+      "userInput": "查询成品批次PB-TRACE-9310的溯源信息",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9310, NOW(), NOW(), 'PB-TRACE-9310', 'F001', 'PT_T010', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9310;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 查询成品批次PB-TRACE-9310的溯源信息\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-011",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "完整链路溯源",
+      "userInput": "从原料到成品溯源批次PB-TRACE-9311",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9311, NOW(), NOW(), 'PB-TRACE-9311', 'F001', 'PT_T011', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9311;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 从原料到成品溯源批次PB-TRACE-9311\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-012",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_BATCH",
+      "testType": "QUERY",
+      "description": "完整链路溯源",
+      "userInput": "从原料到成品溯源批次PB-TRACE-9312",
+      "expectedIntent": {
+        "intentCode": "TRACE_BATCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9312, NOW(), NOW(), 'PB-TRACE-9312', 'F001', 'PT_T012', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9312;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 从原料到成品溯源批次PB-TRACE-9312\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-013",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_FULL",
+      "testType": "QUERY",
+      "description": "端到端完整溯源",
+      "userInput": "完整溯源批次PB-TRACE-9313,包括原料、生产、质检、出货",
+      "expectedIntent": {
+        "intentCode": "TRACE_FULL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9313, NOW(), NOW(), 'PB-TRACE-9313', 'F001', 'PT_T013', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9313;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 完整溯源批次PB-TRACE-9313,包括原料、生产、质检、出货\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-014",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_FULL",
+      "testType": "QUERY",
+      "description": "端到端完整溯源",
+      "userInput": "完整溯源批次PB-TRACE-9314,包括原料、生产、质检、出货",
+      "expectedIntent": {
+        "intentCode": "TRACE_FULL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9314, NOW(), NOW(), 'PB-TRACE-9314', 'F001', 'PT_T014', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9314;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 完整溯源批次PB-TRACE-9314,包括原料、生产、质检、出货\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-015",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_FULL",
+      "testType": "QUERY",
+      "description": "端到端完整溯源",
+      "userInput": "完整溯源批次PB-TRACE-9315,包括原料、生产、质检、出货",
+      "expectedIntent": {
+        "intentCode": "TRACE_FULL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9315, NOW(), NOW(), 'PB-TRACE-9315', 'F001', 'PT_T015', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9315;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 完整溯源批次PB-TRACE-9315,包括原料、生产、质检、出货\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-016",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_FULL",
+      "testType": "QUERY",
+      "description": "端到端完整溯源",
+      "userInput": "完整溯源批次PB-TRACE-9316,包括原料、生产、质检、出货",
+      "expectedIntent": {
+        "intentCode": "TRACE_FULL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9316, NOW(), NOW(), 'PB-TRACE-9316', 'F001', 'PT_T016', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9316;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 完整溯源批次PB-TRACE-9316,包括原料、生产、质检、出货\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-017",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_FULL",
+      "testType": "QUERY",
+      "description": "端到端完整溯源",
+      "userInput": "完整溯源批次PB-TRACE-9317,包括原料、生产、质检、出货",
+      "expectedIntent": {
+        "intentCode": "TRACE_FULL",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9317, NOW(), NOW(), 'PB-TRACE-9317', 'F001', 'PT_T017', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9317;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 完整溯源批次PB-TRACE-9317,包括原料、生产、质检、出货\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    },
+    {
+      "id": "TC-P0-TRACE-018",
+      "priority": "P0",
+      "category": "TRACE",
+      "intentCode": "TRACE_PUBLIC",
+      "testType": "QUERY",
+      "description": "公开溯源码生成",
+      "userInput": "为批次PB-TRACE-9318生成公开溯源码",
+      "expectedIntent": {
+        "intentCode": "TRACE_PUBLIC",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO production_batches (id, created_at, updated_at, batch_number, factory_id, product_type_id, quantity, status, unit, product_name) VALUES (9318, NOW(), NOW(), 'PB-TRACE-9318', 'F001', 'PT_T018', 800.00, 'COMPLETED', 'kg', '冷冻产品');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM production_batches WHERE id = 9318;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "semanticCheck": {
+          "enabled": true,
+          "llmPrompt": "用户请求: 为批次PB-TRACE-9318生成公开溯源码\n系统返回: {响应内容}\n\n判断: 系统是否返回了完整的溯源信息?返回JSON: {\"correct\": true/false, \"reason\": \"原因\"}"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "溯源|原料|批次"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 4,
+    "startIndex": 105,
+    "chunkSize": 35
+  }
+}

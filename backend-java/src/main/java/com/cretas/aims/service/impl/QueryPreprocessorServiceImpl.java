@@ -1,0 +1,1226 @@
+package com.cretas.aims.service.impl;
+
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.config.ColloquialMappings;
+import com.cretas.aims.config.TimeNormalizationRules;
+import com.cretas.aims.config.TimeNormalizationRules.TimeRange;
+import com.cretas.aims.dto.ai.PreprocessedQuery;
+import com.cretas.aims.dto.ai.PreprocessedQuery.QualityAssessment;
+import com.cretas.aims.dto.conversation.ConversationContext;
+import com.cretas.aims.dto.conversation.EntitySlot;
+import com.cretas.aims.service.ConversationMemoryService;
+import com.cretas.aims.service.QueryPreprocessorService;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * 查询预处理服务实现
+ *
+ * 实现模块B的完整处理流程：
+ * 1. 规则预处理（空白符、口语、时间）
+ * 2. 上下文注入（实体槽位、指代消解）
+ * 3. 质量评估
+ * 4. 条件 LLM 改写
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2026-01-15
+ */
+@Slf4j
+@Service
+public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
+
+    private final TimeNormalizationRules timeNormalizationRules;
+    private final ColloquialMappings colloquialMappings;
+    private final ConversationMemoryService conversationMemoryService;
+    private final DashScopeClient dashScopeClient;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * 是否启用预处理服务
+     */
+    @Value("${cretas.ai.preprocess.enabled:true}")
+    private boolean enabled;
+
+    /**
+     * 是否启用 LLM 改写
+     */
+    @Value("${cretas.ai.preprocess.llm-rewrite-enabled:true}")
+    private boolean llmRewriteEnabled;
+
+    /**
+     * LLM 改写触发阈值（质量分数低于此值触发）
+     */
+    @Value("${cretas.ai.preprocess.llm-rewrite-threshold:0.6}")
+    private double llmRewriteThreshold;
+
+    /**
+     * 指代词模式（用于检测未解析的指代）
+     */
+    private static final Pattern REFERENCE_PATTERN = Pattern.compile(
+            "(这个|那个|这批|那批|这家|那家|该|它|他们|它们|前面的|刚才的|之前的|上次的)"
+    );
+
+    /**
+     * 模糊时间词模式
+     */
+    private static final Pattern VAGUE_TIME_PATTERN = Pattern.compile(
+            "(最近|近期|前段时间|之前|以前|那段时间)"
+    );
+
+    /**
+     * 动词模式（用于结构完整性评估）
+     */
+    private static final Pattern VERB_PATTERN = Pattern.compile(
+            "(查询|查看|查|看|显示|统计|分析|计算|获取|导出|添加|新增|创建|修改|更新|删除|入库|出库|发货|收货)"
+    );
+
+    /**
+     * 名词模式（用于结构完整性评估）
+     */
+    private static final Pattern NOUN_PATTERN = Pattern.compile(
+            "(批次|库存|供应商|客户|产品|设备|订单|记录|数据|信息|状态|数量|金额|重量|质检|检测)"
+    );
+
+    @Autowired
+    public QueryPreprocessorServiceImpl(
+            TimeNormalizationRules timeNormalizationRules,
+            ColloquialMappings colloquialMappings,
+            @Autowired(required = false) ConversationMemoryService conversationMemoryService,
+            @Autowired(required = false) DashScopeClient dashScopeClient,
+            ObjectMapper objectMapper) {
+        this.timeNormalizationRules = timeNormalizationRules;
+        this.colloquialMappings = colloquialMappings;
+        this.conversationMemoryService = conversationMemoryService;
+        this.dashScopeClient = dashScopeClient;
+        this.objectMapper = objectMapper;
+    }
+
+    @Override
+    public PreprocessedQuery preprocess(String input, ConversationContext context) {
+        if (!enabled || input == null || input.trim().isEmpty()) {
+            return PreprocessedQuery.passThrough(input);
+        }
+
+        long startTime = System.currentTimeMillis();
+        List<PreprocessedQuery.ProcessingStep> steps = new ArrayList<>();
+
+        // 收集处理结果的变量
+        List<String> foundColloquials = new ArrayList<>();
+        List<String> standardizedExpressions = new ArrayList<>();
+        List<TimeRange> extractedTimeRanges = new ArrayList<>();
+        TimeRange primaryTimeRange = null;
+        Map<String, PreprocessedQuery.ResolvedReference> resolvedReferences = new HashMap<>();
+        List<String> unresolvedReferences = new ArrayList<>();
+        String rewrittenText = null;
+        List<String> rewriteChanges = new ArrayList<>();
+        List<String> rewriteAssumptions = new ArrayList<>();
+        Double rewriteConfidence = null;
+        boolean llmRewriteTriggered = false;
+
+        try {
+            String processedText = input;
+            LocalDateTime now = LocalDateTime.now();
+
+            // ==================== Step 1: 规则预处理 ====================
+            long stepStart = System.currentTimeMillis();
+
+            // 1.1 空白符规范化
+            processedText = normalizeWhitespace(processedText);
+
+            // 1.2 口语标准化
+            ColloquialMappings.StandardizationResult colloquialResult =
+                    colloquialMappings.findAndReplace(processedText);
+            if (colloquialResult.hasReplacements()) {
+                processedText = colloquialResult.getProcessedText();
+                foundColloquials = colloquialResult.getFoundColloquials();
+                standardizedExpressions = colloquialResult.getStandardizedTerms();
+            }
+
+            // 1.3 时间表达归一化
+            TimeNormalizationRules.NormalizationResult timeResult =
+                    timeNormalizationRules.extractAndReplace(processedText, now);
+            if (timeResult.hasTimeRange()) {
+                processedText = timeResult.getProcessedText();
+                extractedTimeRanges = timeResult.getExtractedRanges();
+                primaryTimeRange = timeResult.getFirstRange().orElse(null);
+            }
+
+            steps.add(PreprocessedQuery.ProcessingStep.of(
+                    "rule_preprocess",
+                    "规则预处理完成",
+                    System.currentTimeMillis() - stepStart
+            ));
+
+            String normalizedText = processedText;
+
+            // ==================== Step 2: 上下文注入 ====================
+            stepStart = System.currentTimeMillis();
+
+            // 2.1 指代消解
+            ReferenceResolutionResult refResult = resolveReferences(processedText, context);
+            if (refResult.isHasResolutions()) {
+                processedText = refResult.getResolvedText();
+                for (Map.Entry<String, ResolvedEntity> entry : refResult.getResolvedEntities().entrySet()) {
+                    resolvedReferences.put(entry.getKey(), PreprocessedQuery.ResolvedReference.of(
+                            entry.getValue().getEntityType(),
+                            entry.getValue().getEntityId(),
+                            entry.getValue().getEntityName(),
+                            entry.getKey()
+                    ));
+                }
+            }
+            if (refResult.getUnresolvedReferences() != null && !refResult.getUnresolvedReferences().isEmpty()) {
+                unresolvedReferences = refResult.getUnresolvedReferences();
+            }
+
+            steps.add(PreprocessedQuery.ProcessingStep.of(
+                    "context_injection",
+                    "上下文注入完成",
+                    System.currentTimeMillis() - stepStart
+            ));
+
+            // ==================== Step 3: 质量评估 ====================
+            stepStart = System.currentTimeMillis();
+
+            QualityAssessment assessment = assessQuality(processedText, context, refResult);
+
+            steps.add(PreprocessedQuery.ProcessingStep.of(
+                    "quality_assessment",
+                    String.format("质量评估完成 (score=%.2f)", assessment.getTotalScore()),
+                    System.currentTimeMillis() - stepStart
+            ));
+
+            // ==================== Step 4: 条件 LLM 改写 ====================
+            String finalQuery = processedText;
+
+            if (llmRewriteEnabled && assessment.getTotalScore() < llmRewriteThreshold) {
+                stepStart = System.currentTimeMillis();
+
+                LlmRewriteResult llmResult = rewriteWithLLM(input, context);
+                if (llmResult.isSuccess()) {
+                    llmRewriteTriggered = true;
+                    rewrittenText = llmResult.getRewrittenQuery();
+                    rewriteChanges = llmResult.getChangesMade();
+                    rewriteAssumptions = llmResult.getAssumptions();
+                    rewriteConfidence = llmResult.getConfidence();
+                    finalQuery = llmResult.getRewrittenQuery();
+
+                    steps.add(PreprocessedQuery.ProcessingStep.of(
+                            "llm_rewrite",
+                            "LLM 改写完成",
+                            llmResult.getProcessingTimeMs()
+                    ));
+                } else {
+                    log.warn("LLM 改写失败: {}", llmResult.getErrorMessage());
+                    steps.add(PreprocessedQuery.ProcessingStep.of(
+                            "llm_rewrite",
+                            "LLM 改写失败: " + llmResult.getErrorMessage(),
+                            System.currentTimeMillis() - stepStart
+                    ));
+                }
+            }
+
+            PreprocessedQuery result = PreprocessedQuery.builder()
+                    .originalInput(input)
+                    .normalizedText(normalizedText)
+                    .rewrittenText(rewrittenText)
+                    .finalQuery(finalQuery)
+                    .extractedTimeRanges(extractedTimeRanges)
+                    .primaryTimeRange(primaryTimeRange)
+                    .foundColloquials(foundColloquials)
+                    .standardizedExpressions(standardizedExpressions)
+                    .resolvedReferences(resolvedReferences)
+                    .unresolvedReferences(unresolvedReferences)
+                    .qualityScore(assessment.getTotalScore())
+                    .qualityAssessment(assessment)
+                    .llmRewriteTriggered(llmRewriteTriggered)
+                    .rewriteChanges(rewriteChanges)
+                    .rewriteAssumptions(rewriteAssumptions)
+                    .rewriteConfidence(rewriteConfidence)
+                    .processedAt(now)
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .processingSteps(steps)
+                    .build();
+
+            log.debug("查询预处理完成: '{}' -> '{}' (score={}, time={}ms)",
+                    truncate(input, 30), truncate(result.getFinalQuery(), 30),
+                    result.getQualityScore(), result.getProcessingTimeMs());
+
+            return result;
+
+        } catch (Exception e) {
+            log.error("查询预处理异常: input={}, error={}", truncate(input, 50), e.getMessage(), e);
+            return PreprocessedQuery.passThrough(input);
+        }
+    }
+
+    @Override
+    public PreprocessedQuery preprocessRulesOnly(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return PreprocessedQuery.passThrough(input);
+        }
+
+        long startTime = System.currentTimeMillis();
+        String processedText = input;
+        LocalDateTime now = LocalDateTime.now();
+
+        // 空白符规范化
+        processedText = normalizeWhitespace(processedText);
+
+        // 口语标准化
+        ColloquialMappings.StandardizationResult colloquialResult =
+                colloquialMappings.findAndReplace(processedText);
+        if (colloquialResult.hasReplacements()) {
+            processedText = colloquialResult.getProcessedText();
+        }
+
+        // 时间归一化
+        TimeNormalizationRules.NormalizationResult timeResult =
+                timeNormalizationRules.extractAndReplace(processedText, now);
+        if (timeResult.hasTimeRange()) {
+            processedText = timeResult.getProcessedText();
+        }
+
+        return PreprocessedQuery.builder()
+                .originalInput(input)
+                .normalizedText(processedText)
+                .finalQuery(processedText)
+                .foundColloquials(colloquialResult.getFoundColloquials())
+                .standardizedExpressions(colloquialResult.getStandardizedTerms())
+                .extractedTimeRanges(timeResult.getExtractedRanges())
+                .primaryTimeRange(timeResult.getFirstRange().orElse(null))
+                .qualityScore(1.0) // 不评估质量
+                .processedAt(now)
+                .processingTimeMs(System.currentTimeMillis() - startTime)
+                .build();
+    }
+
+    @Override
+    public double assessQueryQuality(String input, ConversationContext context) {
+        if (input == null || input.trim().isEmpty()) {
+            return 0.0;
+        }
+
+        ReferenceResolutionResult refResult = resolveReferences(input, context);
+        QualityAssessment assessment = assessQuality(input, context, refResult);
+        return assessment.getTotalScore();
+    }
+
+    @Override
+    public LlmRewriteResult rewriteWithLLM(String input, ConversationContext context) {
+        long startTime = System.currentTimeMillis();
+
+        if (dashScopeClient == null || !dashScopeClient.isAvailable()) {
+            return LlmRewriteResult.builder()
+                    .originalInput(input)
+                    .success(false)
+                    .errorMessage("DashScope 服务不可用")
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .build();
+        }
+
+        try {
+            // 构建系统提示词
+            String systemPrompt = buildRewriteSystemPrompt(context);
+
+            // 调用 LLM
+            String response = dashScopeClient.chatLowTemp(systemPrompt, input);
+
+            // 解析响应
+            return parseRewriteResponse(input, response, startTime);
+
+        } catch (Exception e) {
+            log.error("LLM 改写失败: input={}, error={}", truncate(input, 50), e.getMessage(), e);
+            return LlmRewriteResult.builder()
+                    .originalInput(input)
+                    .success(false)
+                    .errorMessage(e.getMessage())
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .build();
+        }
+    }
+
+    @Override
+    public ReferenceResolutionResult resolveReferences(String input, ConversationContext context) {
+        if (input == null || input.trim().isEmpty()) {
+            return ReferenceResolutionResult.builder()
+                    .originalInput(input)
+                    .resolvedText(input)
+                    .resolvedEntities(Collections.emptyMap())
+                    .unresolvedReferences(Collections.emptyList())
+                    .hasResolutions(false)
+                    .build();
+        }
+
+        String resolvedText = input;
+        Map<String, ResolvedEntity> resolvedEntities = new HashMap<>();
+        List<String> unresolvedReferences = new ArrayList<>();
+
+        // 尝试使用 ConversationMemoryService 进行指代消解
+        if (conversationMemoryService != null && context != null && context.getSessionId() != null) {
+            resolvedText = conversationMemoryService.resolveReference(context.getSessionId(), input);
+            // 如果文本有变化，说明有解析
+            if (!resolvedText.equals(input)) {
+                // 解析成功，但我们需要确定解析了什么
+                // 通过比较原文和解析后文本来推断
+                detectResolvedReferences(input, resolvedText, context, resolvedEntities);
+            }
+        }
+
+        // 检测未解析的指代词
+        Matcher matcher = REFERENCE_PATTERN.matcher(resolvedText);
+        while (matcher.find()) {
+            String ref = matcher.group();
+            if (!resolvedEntities.containsKey(ref)) {
+                unresolvedReferences.add(ref);
+            }
+        }
+
+        return ReferenceResolutionResult.builder()
+                .originalInput(input)
+                .resolvedText(resolvedText)
+                .resolvedEntities(resolvedEntities)
+                .unresolvedReferences(unresolvedReferences)
+                .hasResolutions(!resolvedEntities.isEmpty())
+                .build();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public boolean isLlmRewriteEnabled() {
+        return llmRewriteEnabled;
+    }
+
+    @Override
+    public double getLlmRewriteThreshold() {
+        return llmRewriteThreshold;
+    }
+
+    // ==================== 私有方法 ====================
+
+    /**
+     * 空白符规范化
+     */
+    private String normalizeWhitespace(String text) {
+        if (text == null) return null;
+        // Trim 前后空白
+        String result = text.trim();
+        // 合并多个空格为一个
+        result = result.replaceAll("\\s+", " ");
+        // 移除标点符号后的多余空格
+        result = result.replaceAll("([,，.。!！?？;；:：])\\s+", "$1");
+        return result;
+    }
+
+    /**
+     * 评估查询质量
+     */
+    private QualityAssessment assessQuality(String input, ConversationContext context,
+                                            ReferenceResolutionResult refResult) {
+        QualityAssessment.QualityAssessmentBuilder builder = QualityAssessment.builder();
+        List<String> deductions = new ArrayList<>();
+        List<String> suggestions = new ArrayList<>();
+
+        double lengthScore = 1.0;
+        double referenceScore = 1.0;
+        double timeScore = 1.0;
+        double structureScore = 1.0;
+
+        // 1. 长度评分
+        int length = input.trim().length();
+        if (length < 3) {
+            lengthScore = 0.2;
+            deductions.add("输入过短 (<3字)");
+            suggestions.add("请提供更详细的查询描述");
+        } else if (length < 5) {
+            lengthScore = 0.5;
+            deductions.add("输入较短 (<5字)");
+            suggestions.add("建议补充更多信息");
+        } else if (length < 8) {
+            lengthScore = 0.8;
+        }
+
+        // 2. 指代完整性评分
+        if (refResult != null && refResult.getUnresolvedReferences() != null) {
+            int unresolvedCount = refResult.getUnresolvedReferences().size();
+            if (unresolvedCount > 0) {
+                // 检查上下文是否有对应槽位
+                boolean hasContext = context != null && !context.getEntitySlots().isEmpty();
+                if (!hasContext) {
+                    referenceScore = Math.max(0.3, 1.0 - unresolvedCount * 0.3);
+                    deductions.add("包含未解析指代词: " + String.join(", ", refResult.getUnresolvedReferences()));
+                    suggestions.add("请指定具体的批次/供应商/客户名称");
+                } else {
+                    // 有上下文但仍有未解析引用，扣分较少
+                    referenceScore = Math.max(0.5, 1.0 - unresolvedCount * 0.15);
+                }
+            }
+        }
+
+        // 3. 时间明确性评分
+        if (VAGUE_TIME_PATTERN.matcher(input).find()) {
+            // 检查是否已经被时间归一化处理过
+            boolean hasTimeRange = timeNormalizationRules.containsTimeExpression(input);
+            if (!hasTimeRange) {
+                timeScore = 0.7;
+                deductions.add("包含模糊时间表述");
+                suggestions.add("建议指定具体时间范围，如\"最近7天\"或\"本月\"");
+            }
+        }
+
+        // 4. 结构完整性评分 (动词+名词)
+        boolean hasVerb = VERB_PATTERN.matcher(input).find();
+        boolean hasNoun = NOUN_PATTERN.matcher(input).find();
+
+        if (!hasVerb && !hasNoun) {
+            structureScore = 0.4;
+            deductions.add("缺少操作动词和对象名词");
+            suggestions.add("请描述要执行的操作和对象");
+        } else if (!hasVerb) {
+            structureScore = 0.6;
+            deductions.add("缺少操作动词");
+            suggestions.add("建议添加操作说明（如查询、添加等）");
+        } else if (!hasNoun) {
+            structureScore = 0.7;
+            deductions.add("缺少明确对象");
+            suggestions.add("建议明确操作对象");
+        }
+
+        // 计算总分（加权平均）
+        double totalScore = (lengthScore * 0.2 + referenceScore * 0.3 +
+                            timeScore * 0.2 + structureScore * 0.3);
+        totalScore = Math.max(0.0, Math.min(1.0, totalScore));
+
+        return builder
+                .totalScore(totalScore)
+                .lengthScore(lengthScore)
+                .referenceScore(referenceScore)
+                .timeScore(timeScore)
+                .structureScore(structureScore)
+                .deductionReasons(deductions)
+                .improvementSuggestions(suggestions)
+                .build();
+    }
+
+    /**
+     * 构建 LLM 改写系统提示词
+     */
+    private String buildRewriteSystemPrompt(ConversationContext context) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("## 角色\n");
+        sb.append("你是查询改写助手。将用户的口语化、模糊查询改写为清晰、具体的标准查询。\n\n");
+
+        sb.append("## 改写原则\n");
+        sb.append("1. 保持用户的原始意图\n");
+        sb.append("2. 补充缺失的上下文信息\n");
+        sb.append("3. 将口语表达转换为正式表达\n");
+        sb.append("4. 明确模糊的时间/数量表述\n");
+        sb.append("5. 不要添加用户未提及的限制条件\n\n");
+
+        sb.append("## 上下文信息\n");
+        sb.append("当前时间: ").append(LocalDateTime.now().format(
+                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n");
+
+        if (context != null) {
+            // 添加实体槽位信息
+            if (context.getEntitySlots() != null && !context.getEntitySlots().isEmpty()) {
+                sb.append("用户最近查询的实体:\n");
+                for (Map.Entry<EntitySlot.SlotType, EntitySlot> entry : context.getEntitySlots().entrySet()) {
+                    EntitySlot slot = entry.getValue();
+                    sb.append("- ").append(entry.getKey().name().toLowerCase())
+                      .append(": ").append(slot.getName());
+                    if (slot.getId() != null) {
+                        sb.append(" (ID: ").append(slot.getId()).append(")");
+                    }
+                    sb.append("\n");
+                }
+            }
+
+            // 添加对话摘要
+            if (context.getConversationSummary() != null && !context.getConversationSummary().isEmpty()) {
+                sb.append("\n对话摘要: ").append(context.getConversationSummary()).append("\n");
+            }
+
+            // 最后意图
+            if (context.getLastIntentCode() != null) {
+                sb.append("上次操作: ").append(context.getLastIntentCode()).append("\n");
+            }
+        }
+
+        sb.append("\n## 输出格式 (JSON)\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"rewritten_query\": \"改写后的查询\",\n");
+        sb.append("  \"changes_made\": [\"变更说明1\", \"变更说明2\"],\n");
+        sb.append("  \"assumptions\": [\"假设说明1\"],\n");
+        sb.append("  \"confidence\": 0.85\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+        sb.append("仅返回 JSON，不要包含其他文字。\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析 LLM 改写响应
+     */
+    private LlmRewriteResult parseRewriteResponse(String originalInput, String response, long startTime) {
+        try {
+            // 提取 JSON
+            Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
+            Matcher matcher = pattern.matcher(response);
+
+            if (!matcher.find()) {
+                log.warn("无法从 LLM 响应中提取 JSON: {}", truncate(response, 100));
+                return LlmRewriteResult.builder()
+                        .originalInput(originalInput)
+                        .rewrittenQuery(originalInput) // 返回原文
+                        .success(false)
+                        .errorMessage("无法解析 LLM 响应")
+                        .processingTimeMs(System.currentTimeMillis() - startTime)
+                        .build();
+            }
+
+            JsonNode json = objectMapper.readTree(matcher.group());
+
+            String rewrittenQuery = json.has("rewritten_query")
+                    ? json.get("rewritten_query").asText()
+                    : originalInput;
+
+            List<String> changesMade = new ArrayList<>();
+            if (json.has("changes_made") && json.get("changes_made").isArray()) {
+                for (JsonNode node : json.get("changes_made")) {
+                    changesMade.add(node.asText());
+                }
+            }
+
+            List<String> assumptions = new ArrayList<>();
+            if (json.has("assumptions") && json.get("assumptions").isArray()) {
+                for (JsonNode node : json.get("assumptions")) {
+                    assumptions.add(node.asText());
+                }
+            }
+
+            double confidence = json.has("confidence")
+                    ? json.get("confidence").asDouble()
+                    : 0.8;
+
+            return LlmRewriteResult.builder()
+                    .originalInput(originalInput)
+                    .rewrittenQuery(rewrittenQuery)
+                    .changesMade(changesMade)
+                    .assumptions(assumptions)
+                    .confidence(confidence)
+                    .success(true)
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("解析 LLM 改写响应失败: {}", e.getMessage(), e);
+            return LlmRewriteResult.builder()
+                    .originalInput(originalInput)
+                    .success(false)
+                    .errorMessage("解析响应失败: " + e.getMessage())
+                    .processingTimeMs(System.currentTimeMillis() - startTime)
+                    .build();
+        }
+    }
+
+    /**
+     * 检测已解析的引用（通过比较原文和解析后文本）
+     */
+    private void detectResolvedReferences(String original, String resolved,
+                                          ConversationContext context,
+                                          Map<String, ResolvedEntity> resolvedEntities) {
+        if (context == null || context.getEntitySlots() == null) {
+            return;
+        }
+
+        // 遍历上下文中的槽位，检查是否被使用
+        for (Map.Entry<EntitySlot.SlotType, EntitySlot> entry : context.getEntitySlots().entrySet()) {
+            EntitySlot slot = entry.getValue();
+            if (slot.getName() != null && resolved.contains(slot.getName())) {
+                // 检查原文中是否有对应的指代词
+                String[] referencePatterns = getReferencePatterns(entry.getKey());
+                for (String pattern : referencePatterns) {
+                    if (original.contains(pattern) && !resolved.contains(pattern)) {
+                        resolvedEntities.put(pattern, ResolvedEntity.builder()
+                                .entityType(entry.getKey().name().toLowerCase())
+                                .entityId(slot.getId())
+                                .entityName(slot.getName())
+                                .resolvedFrom("context")
+                                .build());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 获取槽位类型对应的指代词模式
+     */
+    private String[] getReferencePatterns(EntitySlot.SlotType type) {
+        switch (type) {
+            case BATCH:
+                return new String[]{"这批", "那批", "该批次", "这个批次"};
+            case SUPPLIER:
+                return new String[]{"这家", "那家", "那个供应商", "他们"};
+            case CUSTOMER:
+                return new String[]{"这个客户", "那个客户", "对方"};
+            case PRODUCT:
+                return new String[]{"这个产品", "那个产品", "这种货"};
+            case EQUIPMENT:
+                return new String[]{"这台设备", "那台设备", "这台机器"};
+            default:
+                return new String[]{};
+        }
+    }
+
+    /**
+     * 截断字符串
+     */
+    private String truncate(String s, int maxLen) {
+        if (s == null) return "";
+        return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
+    }
+
+    // ==================== 复杂语义预处理方法实现 ====================
+
+    /**
+     * 语气词正则模式
+     */
+    private static final Pattern MODAL_PARTICLE_PATTERN = Pattern.compile(
+            "[吧啊吗呢呀嘛哦哇啦嘞咯呗哈嗯]$"
+    );
+
+    /**
+     * 语气词组合模式（句尾多个语气词）
+     */
+    private static final Pattern MODAL_PARTICLE_COMBO_PATTERN = Pattern.compile(
+            "[吧啊吗呢呀嘛哦哇啦嘞咯呗哈嗯]{1,3}$"
+    );
+
+    /**
+     * 排序关键词映射
+     */
+    private static final Map<String, String> RANKING_KEYWORDS = new LinkedHashMap<>();
+    static {
+        // MAX 类型
+        RANKING_KEYWORDS.put("最多", "MAX");
+        RANKING_KEYWORDS.put("最高", "MAX");
+        RANKING_KEYWORDS.put("最大", "MAX");
+        RANKING_KEYWORDS.put("最快", "MAX");
+        RANKING_KEYWORDS.put("最好", "MAX");
+        RANKING_KEYWORDS.put("最贵", "MAX");
+        RANKING_KEYWORDS.put("最重", "MAX");
+        RANKING_KEYWORDS.put("最长", "MAX");
+        // MIN 类型
+        RANKING_KEYWORDS.put("最少", "MIN");
+        RANKING_KEYWORDS.put("最低", "MIN");
+        RANKING_KEYWORDS.put("最小", "MIN");
+        RANKING_KEYWORDS.put("最慢", "MIN");
+        RANKING_KEYWORDS.put("最差", "MIN");
+        RANKING_KEYWORDS.put("最便宜", "MIN");
+        RANKING_KEYWORDS.put("最轻", "MIN");
+        RANKING_KEYWORDS.put("最短", "MIN");
+        // TOP 类型
+        RANKING_KEYWORDS.put("前几", "TOP");
+        RANKING_KEYWORDS.put("top", "TOP");
+        RANKING_KEYWORDS.put("排名前", "TOP");
+        RANKING_KEYWORDS.put("排行前", "TOP");
+        // BOTTOM 类型
+        RANKING_KEYWORDS.put("后几", "BOTTOM");
+        RANKING_KEYWORDS.put("排名后", "BOTTOM");
+        RANKING_KEYWORDS.put("倒数", "BOTTOM");
+    }
+
+    /**
+     * 动词+名词组合到意图的映射
+     */
+    private static final Map<String, String> ACTION_INTENT_MAPPINGS = new LinkedHashMap<>();
+    static {
+        // 处理类动作
+        ACTION_INTENT_MAPPINGS.put("处理+原料", "MATERIAL_BATCH_CONSUME");
+        ACTION_INTENT_MAPPINGS.put("处理+物料", "MATERIAL_BATCH_CONSUME");
+        ACTION_INTENT_MAPPINGS.put("处理+告警", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("处理+预警", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("处理+异常", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("处理+不合格", "QUALITY_DISPOSITION_EXECUTE");
+
+        // 提交/执行类动作
+        ACTION_INTENT_MAPPINGS.put("提交+质检", "QUALITY_CHECK_EXECUTE");
+        ACTION_INTENT_MAPPINGS.put("执行+质检", "QUALITY_CHECK_EXECUTE");
+        ACTION_INTENT_MAPPINGS.put("做+质检", "QUALITY_CHECK_EXECUTE");
+
+        // 确认类动作
+        ACTION_INTENT_MAPPINGS.put("确认+收货", "SHIPMENT_STATUS_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("确认+发货", "SHIPMENT_STATUS_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("确认+入库", "MATERIAL_BATCH_CREATE");
+
+        // 更新/修改类动作
+        ACTION_INTENT_MAPPINGS.put("更新+发货", "SHIPMENT_STATUS_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("修改+发货", "SHIPMENT_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("更新+状态", "SHIPMENT_STATUS_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("修改+库存", "MATERIAL_ADJUST_QUANTITY");
+        ACTION_INTENT_MAPPINGS.put("调整+库存", "MATERIAL_ADJUST_QUANTITY");
+
+        // 开始/启动类动作
+        ACTION_INTENT_MAPPINGS.put("开始+生产", "PROCESSING_BATCH_START");
+        ACTION_INTENT_MAPPINGS.put("启动+生产", "PROCESSING_BATCH_START");
+        ACTION_INTENT_MAPPINGS.put("启动+批次", "PROCESSING_BATCH_START");
+        ACTION_INTENT_MAPPINGS.put("开始+加工", "PROCESSING_BATCH_START");
+
+        // 停止/暂停类动作
+        ACTION_INTENT_MAPPINGS.put("停止+生产", "PROCESSING_BATCH_CANCEL");
+        ACTION_INTENT_MAPPINGS.put("暂停+生产", "PROCESSING_BATCH_PAUSE");
+        ACTION_INTENT_MAPPINGS.put("暂停+批次", "PROCESSING_BATCH_PAUSE");
+        ACTION_INTENT_MAPPINGS.put("恢复+生产", "PROCESSING_BATCH_RESUME");
+        ACTION_INTENT_MAPPINGS.put("恢复+批次", "PROCESSING_BATCH_RESUME");
+
+        // 完成类动作
+        ACTION_INTENT_MAPPINGS.put("完成+生产", "PROCESSING_BATCH_COMPLETE");
+        ACTION_INTENT_MAPPINGS.put("完成+批次", "PROCESSING_BATCH_COMPLETE");
+        ACTION_INTENT_MAPPINGS.put("结束+生产", "PROCESSING_BATCH_COMPLETE");
+
+        // 创建/新建类动作
+        ACTION_INTENT_MAPPINGS.put("创建+批次", "PROCESSING_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("新建+批次", "PROCESSING_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("创建+原料", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("新建+原料", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("添加+原料", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("录入+原料", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("入库+原料", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("创建+发货", "SHIPMENT_CREATE");
+        ACTION_INTENT_MAPPINGS.put("新建+发货", "SHIPMENT_CREATE");
+        ACTION_INTENT_MAPPINGS.put("安排+发货", "SHIPMENT_CREATE");
+
+        // 查询类动作（用于消歧）
+        ACTION_INTENT_MAPPINGS.put("查询+原料", "MATERIAL_BATCH_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查看+原料", "MATERIAL_BATCH_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查询+批次", "PROCESSING_BATCH_LIST");
+        ACTION_INTENT_MAPPINGS.put("查看+批次", "PROCESSING_BATCH_LIST");
+        ACTION_INTENT_MAPPINGS.put("查询+发货", "SHIPMENT_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查看+发货", "SHIPMENT_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查询+告警", "ALERT_LIST");
+        ACTION_INTENT_MAPPINGS.put("查看+告警", "ALERT_LIST");
+        ACTION_INTENT_MAPPINGS.put("查询+设备", "EQUIPMENT_LIST");
+        ACTION_INTENT_MAPPINGS.put("查看+设备", "EQUIPMENT_LIST");
+        ACTION_INTENT_MAPPINGS.put("查询+客户", "CUSTOMER_SEARCH");
+        ACTION_INTENT_MAPPINGS.put("查看+客户", "CUSTOMER_LIST");
+        ACTION_INTENT_MAPPINGS.put("统计+质量", "QUALITY_STATS");
+        ACTION_INTENT_MAPPINGS.put("统计+客户", "CUSTOMER_STATS");
+        ACTION_INTENT_MAPPINGS.put("统计+生产", "REPORT_PRODUCTION");
+        ACTION_INTENT_MAPPINGS.put("统计+库存", "REPORT_INVENTORY");
+
+        // 追溯相关 - 专门用于溯源查询
+        ACTION_INTENT_MAPPINGS.put("追溯+批次", "TRACE_BATCH");
+        ACTION_INTENT_MAPPINGS.put("追溯+发货", "TRACE_BATCH");
+        ACTION_INTENT_MAPPINGS.put("追溯+原料", "TRACE_MATERIAL");
+        ACTION_INTENT_MAPPINGS.put("溯源+批次", "TRACE_BATCH");
+        ACTION_INTENT_MAPPINGS.put("溯源+发货", "TRACE_BATCH");
+        ACTION_INTENT_MAPPINGS.put("查询+溯源", "TRACE_BATCH");
+        ACTION_INTENT_MAPPINGS.put("查看+溯源", "TRACE_BATCH");
+    }
+
+    /**
+     * 核心动词集合
+     */
+    private static final Set<String> CORE_VERBS = Set.of(
+            "查询", "查看", "查", "看", "显示", "统计", "分析", "计算", "获取", "导出",
+            "添加", "新增", "创建", "修改", "更新", "删除", "入库", "出库", "发货", "收货",
+            "处理", "提交", "执行", "确认", "开始", "启动", "停止", "暂停", "恢复", "完成", "结束",
+            "安排", "调整", "设置", "录入", "追溯", "溯源"
+    );
+
+    /**
+     * 核心名词集合
+     */
+    private static final Set<String> CORE_NOUNS = Set.of(
+            "原料", "物料", "批次", "库存", "发货", "收货", "告警", "预警", "设备", "机器",
+            "质检", "检测", "检验", "客户", "供应商", "订单", "记录", "数据", "报表", "统计",
+            "生产", "加工", "产量", "效率", "状态", "信息", "列表", "详情"
+    );
+
+    /**
+     * 冗余前缀模式
+     */
+    private static final Pattern REDUNDANT_PREFIX_PATTERN = Pattern.compile(
+            "^(我想|我要|请|请帮我|帮我|麻烦|能不能|可以|可不可以|能否|请问)+"
+    );
+
+    /**
+     * 冗余后缀模式
+     */
+    private static final Pattern REDUNDANT_SUFFIX_PATTERN = Pattern.compile(
+            "(一下|一下子|看看|看一看|试试|来着)?$"
+    );
+
+    @Override
+    public String filterModalParticles(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return input;
+        }
+
+        String result = input.trim();
+
+        // 移除句尾语气词组合（先处理多个连续的）
+        result = MODAL_PARTICLE_COMBO_PATTERN.matcher(result).replaceAll("");
+
+        // 移除单个句尾语气词
+        result = MODAL_PARTICLE_PATTERN.matcher(result).replaceAll("");
+
+        return result.trim();
+    }
+
+    @Override
+    public CoreExtractionResult extractCore(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return CoreExtractionResult.builder()
+                    .originalInput(input)
+                    .coreQuery(input)
+                    .extracted(false)
+                    .modifiers(Collections.emptyList())
+                    .build();
+        }
+
+        String processed = input.trim();
+        List<String> modifiers = new ArrayList<>();
+
+        // Step 1: 移除冗余前缀
+        Matcher prefixMatcher = REDUNDANT_PREFIX_PATTERN.matcher(processed);
+        if (prefixMatcher.find()) {
+            modifiers.add("prefix:" + prefixMatcher.group());
+            processed = prefixMatcher.replaceFirst("");
+        }
+
+        // Step 2: 移除冗余后缀
+        processed = REDUNDANT_SUFFIX_PATTERN.matcher(processed).replaceAll("");
+
+        // Step 3: 过滤语气词
+        processed = filterModalParticles(processed);
+
+        // Step 4: 提取核心动词和名词
+        String verb = null;
+        String object = null;
+
+        // 查找动词
+        for (String v : CORE_VERBS) {
+            if (processed.contains(v)) {
+                verb = v;
+                break;
+            }
+        }
+
+        // 查找名词（从后向前找，通常核心对象在句尾）
+        for (String n : CORE_NOUNS) {
+            if (processed.contains(n)) {
+                object = n;
+                // 不 break，继续找更靠后的名词
+            }
+        }
+
+        // Step 5: 提取时间/条件修饰语
+        Pattern timeModifierPattern = Pattern.compile("(今天|昨天|本周|本月|最近|上周|上月|这几天|那几天)");
+        Matcher timeMatcher = timeModifierPattern.matcher(input);
+        while (timeMatcher.find()) {
+            modifiers.add("time:" + timeMatcher.group());
+        }
+
+        // Step 6: 构建核心查询
+        String coreQuery = processed.trim();
+        if (verb != null && object != null) {
+            coreQuery = verb + object;
+        }
+
+        boolean extracted = !coreQuery.equals(input.trim()) || verb != null || object != null;
+
+        return CoreExtractionResult.builder()
+                .originalInput(input)
+                .coreQuery(coreQuery)
+                .verb(verb)
+                .object(object)
+                .modifiers(modifiers)
+                .extracted(extracted)
+                .build();
+    }
+
+    @Override
+    public RankingQueryResult detectRankingQuery(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return RankingQueryResult.builder()
+                    .isRankingQuery(false)
+                    .build();
+        }
+
+        String normalized = input.toLowerCase().trim();
+
+        for (Map.Entry<String, String> entry : RANKING_KEYWORDS.entrySet()) {
+            if (normalized.contains(entry.getKey())) {
+                // 尝试提取排序维度
+                String dimension = extractRankingDimension(normalized, entry.getKey());
+
+                return RankingQueryResult.builder()
+                        .isRankingQuery(true)
+                        .rankingType(entry.getValue())
+                        .rankingKeyword(entry.getKey())
+                        .rankingDimension(dimension)
+                        .build();
+            }
+        }
+
+        return RankingQueryResult.builder()
+                .isRankingQuery(false)
+                .build();
+    }
+
+    /**
+     * 提取排序维度
+     */
+    private String extractRankingDimension(String input, String rankingKeyword) {
+        int idx = input.indexOf(rankingKeyword);
+        if (idx < 0) return null;
+
+        // 取排序关键词后的文本作为维度
+        String afterKeyword = input.substring(idx + rankingKeyword.length()).trim();
+
+        // 常见维度关键词
+        Map<String, String> dimensionKeywords = Map.of(
+                "数量", "quantity",
+                "金额", "amount",
+                "重量", "weight",
+                "产量", "output",
+                "效率", "efficiency",
+                "合格率", "pass_rate",
+                "库存", "stock"
+        );
+
+        for (Map.Entry<String, String> dim : dimensionKeywords.entrySet()) {
+            if (afterKeyword.contains(dim.getKey()) || input.contains(dim.getKey())) {
+                return dim.getValue();
+            }
+        }
+
+        return null;
+    }
+
+    // 时间表达词（用于检测查询上下文）
+    private static final Set<String> TIME_QUERY_INDICATORS = Set.of(
+            "今天", "昨天", "前天", "明天", "后天",
+            "本周", "上周", "下周", "这周",
+            "本月", "上月", "下月", "这个月", "上个月",
+            "今年", "去年", "明年",
+            "最近", "近期", "刚才", "刚刚",
+            "上午", "下午", "早上", "晚上", "今早", "今晚"
+    );
+
+    // 过去时态/查询态词（带"了"、"过"、"的"等表示查询而非动作）
+    private static final Pattern QUERY_CONTEXT_PATTERN = Pattern.compile(
+            ".*(了多少|了几|过的|的记录|的情况|的状态|的批次|的原料|的发货).*"
+    );
+
+    @Override
+    public ActionDisambiguationResult disambiguateAction(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return ActionDisambiguationResult.builder()
+                    .disambiguated(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        String normalized = input.toLowerCase().trim();
+
+        // ========== 查询上下文检测 ==========
+        // 如果包含时间词或过去时态，这很可能是查询而非执行动作
+        boolean hasTimeContext = TIME_QUERY_INDICATORS.stream().anyMatch(normalized::contains);
+        boolean hasQueryContext = QUERY_CONTEXT_PATTERN.matcher(normalized).matches();
+        boolean isLikelyQuery = hasTimeContext || hasQueryContext;
+
+        // 对于明确的查询上下文，跳过动作消歧，交给其他匹配层处理
+        if (isLikelyQuery) {
+            log.debug("检测到查询上下文，跳过动作消歧: input={}, hasTimeContext={}, hasQueryContext={}",
+                    input, hasTimeContext, hasQueryContext);
+            return ActionDisambiguationResult.builder()
+                    .disambiguated(false)
+                    .confidence(0.3)
+                    .build();
+        }
+
+        // 提取动词
+        String detectedVerb = null;
+        for (String verb : CORE_VERBS) {
+            if (normalized.contains(verb)) {
+                detectedVerb = verb;
+                break;
+            }
+        }
+
+        // 提取名词
+        String detectedObject = null;
+        for (String noun : CORE_NOUNS) {
+            if (normalized.contains(noun)) {
+                detectedObject = noun;
+            }
+        }
+
+        if (detectedVerb == null || detectedObject == null) {
+            return ActionDisambiguationResult.builder()
+                    .verb(detectedVerb)
+                    .object(detectedObject)
+                    .disambiguated(false)
+                    .confidence(0.3)
+                    .build();
+        }
+
+        // 查找动词+名词组合映射
+        String actionKey = detectedVerb + "+" + detectedObject;
+        String recommendedIntent = ACTION_INTENT_MAPPINGS.get(actionKey);
+
+        if (recommendedIntent != null) {
+            return ActionDisambiguationResult.builder()
+                    .verb(detectedVerb)
+                    .object(detectedObject)
+                    .recommendedIntent(recommendedIntent)
+                    .confidence(0.85)
+                    .disambiguated(true)
+                    .build();
+        }
+
+        // 没有精确匹配，尝试模糊匹配（只匹配名词部分）
+        for (Map.Entry<String, String> entry : ACTION_INTENT_MAPPINGS.entrySet()) {
+            String[] parts = entry.getKey().split("\\+");
+            if (parts.length == 2 && parts[1].equals(detectedObject)) {
+                // 检查动词是否相似
+                if (isSimilarVerb(detectedVerb, parts[0])) {
+                    return ActionDisambiguationResult.builder()
+                            .verb(detectedVerb)
+                            .object(detectedObject)
+                            .recommendedIntent(entry.getValue())
+                            .confidence(0.65)
+                            .disambiguated(true)
+                            .build();
+                }
+            }
+        }
+
+        return ActionDisambiguationResult.builder()
+                .verb(detectedVerb)
+                .object(detectedObject)
+                .disambiguated(false)
+                .confidence(0.4)
+                .build();
+    }
+
+    /**
+     * 检查两个动词是否相似
+     */
+    private boolean isSimilarVerb(String verb1, String verb2) {
+        if (verb1 == null || verb2 == null) return false;
+        if (verb1.equals(verb2)) return true;
+
+        // 同义动词组
+        Set<Set<String>> synonymGroups = Set.of(
+                Set.of("查询", "查看", "查", "看", "显示", "获取"),
+                Set.of("添加", "新增", "创建", "新建", "录入"),
+                Set.of("修改", "更新", "编辑", "调整"),
+                Set.of("删除", "移除", "取消", "作废"),
+                Set.of("开始", "启动", "启用"),
+                Set.of("停止", "暂停", "中止"),
+                Set.of("完成", "结束", "完结")
+        );
+
+        for (Set<String> group : synonymGroups) {
+            if (group.contains(verb1) && group.contains(verb2)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
+    public EnhancedPreprocessResult enhancedPreprocess(String input) {
+        long startTime = System.currentTimeMillis();
+
+        if (input == null || input.trim().isEmpty()) {
+            return EnhancedPreprocessResult.builder()
+                    .originalInput(input)
+                    .processedInput(input)
+                    .modalParticlesFiltered(false)
+                    .queryFeatures(Collections.emptySet())
+                    .processingTimeMs(0)
+                    .build();
+        }
+
+        Set<String> features = new HashSet<>();
+        String processed = input;
+
+        // Step 1: 过滤语气词
+        String afterModalFilter = filterModalParticles(processed);
+        boolean modalFiltered = !afterModalFilter.equals(processed);
+        if (modalFiltered) {
+            features.add("MODAL_PARTICLES_FILTERED");
+            processed = afterModalFilter;
+        }
+
+        // Step 2: 口语标准化
+        ColloquialMappings.StandardizationResult colloquialResult =
+                colloquialMappings.findAndReplace(processed);
+        if (colloquialResult.hasReplacements()) {
+            features.add("COLLOQUIAL_STANDARDIZED");
+            processed = colloquialResult.getProcessedText();
+        }
+
+        // Step 3: 核心提取
+        CoreExtractionResult coreResult = extractCore(processed);
+        if (coreResult.isExtracted()) {
+            features.add("CORE_EXTRACTED");
+            // 使用核心查询继续处理（但保留原处理文本用于后续步骤）
+        }
+
+        // Step 4: 排序检测
+        RankingQueryResult rankingResult = detectRankingQuery(input);
+        if (rankingResult.isRankingQuery()) {
+            features.add("RANKING_QUERY_" + rankingResult.getRankingType());
+        }
+
+        // Step 5: 动作消歧
+        ActionDisambiguationResult disambiguationResult = disambiguateAction(processed);
+        if (disambiguationResult.isDisambiguated()) {
+            features.add("ACTION_DISAMBIGUATED");
+        }
+
+        // 决定最终处理结果
+        String finalProcessed = processed;
+        if (coreResult.isExtracted() && coreResult.getCoreQuery() != null
+                && coreResult.getCoreQuery().length() >= 2) {
+            // 如果核心提取有效且不太短，使用核心查询
+            finalProcessed = coreResult.getCoreQuery();
+        }
+
+        return EnhancedPreprocessResult.builder()
+                .originalInput(input)
+                .processedInput(finalProcessed)
+                .modalParticlesFiltered(modalFiltered)
+                .coreExtraction(coreResult)
+                .rankingQuery(rankingResult)
+                .actionDisambiguation(disambiguationResult)
+                .queryFeatures(features)
+                .processingTimeMs(System.currentTimeMillis() - startTime)
+                .build();
+    }
+}

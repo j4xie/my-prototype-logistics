@@ -433,7 +433,7 @@ export function AILayoutAssistant({
             msg.id === assistantMessageId
               ? {
                   ...msg,
-                  content: aiResponse.explanation,
+                  content: aiResponse.explanation || '布局已生成，请查看预览。',
                   isLoading: false,
                   layout: aiResponse.layout,
                   theme: aiResponse.theme,

@@ -227,6 +227,80 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
                 "库存情况", "库存量", "存货", "库存分析", "库存数据",
                 "还有多少货", "库存多少", "缺货"));
 
+        // 生产查询类
+        intentKeywords.put(SmartBIIntent.QUERY_OEE_OVERVIEW, Arrays.asList(
+                "OEE", "oee", "设备效率", "综合效率", "产线效率", "设备综合效率",
+                "OEE是多少", "今日OEE", "本月OEE", "设备效率怎么样"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_PRODUCTION_EFFICIENCY, Arrays.asList(
+                "生产效率", "产能", "产量", "生产情况", "生产数据",
+                "产了多少", "生产了多少", "日产量", "月产量"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_EQUIPMENT_UTILIZATION, Arrays.asList(
+                "设备利用率", "设备使用", "开机率", "运行时长",
+                "设备运行", "设备状态", "稼动率"));
+
+        // 质量查询类
+        intentKeywords.put(SmartBIIntent.QUERY_QUALITY_SUMMARY, Arrays.asList(
+                "质量情况", "质量概览", "合格率", "质量分析", "质量数据",
+                "良品率", "质量怎么样", "质量报告"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_DEFECT_ANALYSIS, Arrays.asList(
+                "缺陷分析", "不良品", "缺陷率", "质量问题",
+                "不合格品", "缺陷类型", "不良原因"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_REWORK_COST, Arrays.asList(
+                "返工成本", "返工率", "报废", "质量损失",
+                "返工情况", "报废成本", "质量成本"));
+
+        // 库存健康类
+        intentKeywords.put(SmartBIIntent.QUERY_INVENTORY_HEALTH, Arrays.asList(
+                "库存健康", "库存状况", "周转率", "库存周转",
+                "库存效率", "库存管理"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_EXPIRY_RISK, Arrays.asList(
+                "过期风险", "即将过期", "效期预警", "保质期",
+                "临期商品", "近效期", "效期管理"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_LOSS_ANALYSIS, Arrays.asList(
+                "损耗分析", "库存损失", "报损", "损耗率",
+                "损耗情况", "库存损耗", "损失分析"));
+
+        // 销售深化类
+        intentKeywords.put(SmartBIIntent.QUERY_SALES_FUNNEL, Arrays.asList(
+                "销售漏斗", "转化率", "销售管道", "成交漏斗",
+                "漏斗分析", "转化漏斗", "销售转化"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_CUSTOMER_RFM, Arrays.asList(
+                "RFM", "rfm", "客户分群", "客户价值", "客户分析",
+                "客户分层", "客户画像", "高价值客户"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_PRODUCT_ABC, Arrays.asList(
+                "ABC分析", "abc分析", "产品分类", "产品贡献", "二八法则",
+                "产品ABC", "SKU分类", "销量分类"));
+
+        // 采购查询类
+        intentKeywords.put(SmartBIIntent.QUERY_PROCUREMENT_OVERVIEW, Arrays.asList(
+                "采购情况", "采购概览", "采购分析", "进货情况",
+                "采购数据", "采购报表", "进货分析"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_SUPPLIER_EVALUATION, Arrays.asList(
+                "供应商评估", "供应商表现", "供应商排名", "供应商分析",
+                "供应商考核", "供应商评分", "供应商管理"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_PURCHASE_COST, Arrays.asList(
+                "采购成本", "进货成本", "采购价格", "成本趋势",
+                "采购支出", "进货价格", "采购费用"));
+
+        // 财务深化类
+        intentKeywords.put(SmartBIIntent.QUERY_CASH_FLOW, Arrays.asList(
+                "现金流", "资金流向", "资金情况", "现金情况",
+                "资金流", "现金流量", "资金分析"));
+
+        intentKeywords.put(SmartBIIntent.QUERY_FINANCIAL_RATIOS, Arrays.asList(
+                "财务比率", "财务指标", "ROE", "ROA", "流动比率",
+                "财务健康", "财务分析", "盈利能力"));
+
         // 对比类
         intentKeywords.put(SmartBIIntent.COMPARE_PERIOD, Arrays.asList(
                 "环比", "同比", "对比", "去年同期", "上个月对比",

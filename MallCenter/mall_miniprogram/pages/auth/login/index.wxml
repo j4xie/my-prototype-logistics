@@ -1,5 +1,5 @@
 <!--
-  登录页面
+  登录页面 - 整合微信一键登录和手机号验证码登录
 -->
 <view class="login-container">
   <!-- Logo区域 -->
@@ -15,23 +15,85 @@
 
   <!-- 登录卡片 -->
   <view class="login-card">
-    <!-- 微信一键登录 -->
-    <button class="wechat-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
-      <text class="cuIcon-weixin"></text>
-      <text>微信一键登录</text>
-    </button>
-
-    <!-- 分隔线 -->
-    <view class="divider">
-      <view class="divider-line"></view>
-      <text class="divider-text">其他登录方式</text>
-      <view class="divider-line"></view>
+    <!-- 登录方式切换 Tab -->
+    <view class="login-tabs">
+      <view class="login-tab {{loginType === 'wechat' ? 'active' : ''}}" bindtap="switchLoginType" data-type="wechat">
+        <text class="cuIcon-weixin tab-icon"></text>
+        <text>微信登录</text>
+      </view>
+      <view class="login-tab {{loginType === 'phone' ? 'active' : ''}}" bindtap="switchLoginType" data-type="phone">
+        <text class="cuIcon-phone tab-icon"></text>
+        <text>手机号登录</text>
+      </view>
     </view>
 
-    <!-- 手机号登录 -->
-    <button class="phone-btn" bindtap="goPhoneLogin">
-      手机号登录
-    </button>
+    <!-- 微信一键登录 -->
+    <view class="login-form" wx:if="{{loginType === 'wechat'}}">
+      <view class="wechat-hint">
+        <text class="cuIcon-infofill hint-icon"></text>
+        <text>使用微信绑定的手机号快速登录</text>
+      </view>
+
+      <!-- 开发环境提示 -->
+      <view class="dev-hint" wx:if="{{isDevTools}}">
+        <text class="cuIcon-warnfill"></text>
+        <text>开发者工具中无法测试微信登录，请使用真机预览或切换到手机号登录</text>
+      </view>
+
+      <button class="wechat-btn" open-type="getPhoneNumber" bindgetphonenumber="onGetPhoneNumber">
+        <text class="cuIcon-weixin"></text>
+        <text>微信一键登录</text>
+      </button>
+    </view>
+
+    <!-- 手机号验证码登录 -->
+    <view class="login-form" wx:if="{{loginType === 'phone'}}">
+      <!-- 手机号输入 -->
+      <view class="input-group">
+        <view class="input-wrapper">
+          <text class="input-prefix">+86</text>
+          <input
+            class="input"
+            type="number"
+            maxlength="11"
+            placeholder="请输入手机号"
+            value="{{phone}}"
+            bindinput="onPhoneInput"
+          />
+          <text class="clear-btn" wx:if="{{phone}}" bindtap="clearPhone">×</text>
+        </view>
+      </view>
+
+      <!-- 验证码输入 -->
+      <view class="input-group">
+        <view class="input-wrapper code-wrapper">
+          <input
+            class="input code-input"
+            type="number"
+            maxlength="6"
+            placeholder="请输入验证码"
+            value="{{code}}"
+            bindinput="onCodeInput"
+          />
+          <button
+            class="send-code-btn {{canSendCode && countdown === 0 ? '' : 'disabled'}}"
+            disabled="{{!canSendCode || countdown > 0}}"
+            bindtap="sendCode"
+          >
+            {{countdown > 0 ? countdown + 's' : '获取验证码'}}
+          </button>
+        </view>
+      </view>
+
+      <!-- 登录按钮 -->
+      <button
+        class="phone-login-btn {{canLogin ? '' : 'disabled'}}"
+        disabled="{{!canLogin || loading}}"
+        bindtap="doPhoneLogin"
+      >
+        {{loading ? '登录中...' : '登录'}}
+      </button>
+    </view>
 
     <!-- 用户协议 -->
     <view class="agreement">

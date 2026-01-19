@@ -49,6 +49,14 @@ public class DashScopeConfig {
     private String model = "qwen-plus";
 
     /**
+     * 纠错 Agent 模型 (CRITIC-style correction)
+     * 使用轻量模型以降低成本，基于论文:
+     * - CRITIC (ICLR 2024): 工具交互式批评
+     * - Reflexion (NeurIPS 2023): 语言反思学习
+     */
+    private String correctionModel = "qwen-turbo";
+
+    /**
      * 视觉模型
      * 用于图片识别 (设备铭牌、产品、标签等)
      */
@@ -130,6 +138,7 @@ public class DashScopeConfig {
         log.info("  - enabled: {}", enabled);
         log.info("  - baseUrl: {}", baseUrl);
         log.info("  - model: {}", model);
+        log.info("  - correctionModel: {}", correctionModel);
         log.info("  - visionModel: {}", visionModel);
         log.info("  - apiKey configured: {}", apiKey != null && !apiKey.isEmpty());
         log.info("  - migration.useDirect: {}", migration.useDirect);

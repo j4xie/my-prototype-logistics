@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>AI智能排班 | 白垩纪AI</title>
+    <meta name="description" content="基于Fair-MAB算法的智能排班系统，解决临时工管理、SKU复杂度匹配、公平性分配三大难题。">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/ai-bi.css">
+
+    <!-- Lordicon Animated Icons -->
+    <script src="https://cdn.lordicon.com/lordicon.js"></script>
+
+    <style>
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 80px;
+        }
+
+        /* ============================================
+           PAIN POINTS SECTION - Dramatic Dark Cards
+           ============================================ */
+        .pain-section {
+            background: var(--dark-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pain-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(188, 71, 73, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(196, 92, 38, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .pain-section .eyebrow {
+            color: #BC4749;
+        }
+
+        .pain-section .h1 {
+            color: var(--dark-text);
+        }
+
+        .pain-section .body-lg {
+            color: var(--dark-text-secondary);
+        }
+
+        .pain-point-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+            margin-top: 64px;
+            position: relative;
+            z-index: 1;
+        }
+
+        @media (max-width: 768px) {
+            .pain-point-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        .pain-point-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 24px;
+            padding: 36px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            animation: card-fade-in 0.6s ease-out backwards;
+        }
+
+        .pain-point-card:nth-child(1) { animation-delay: 0.1s; }
+        .pain-point-card:nth-child(2) { animation-delay: 0.2s; }
+        .pain-point-card:nth-child(3) { animation-delay: 0.3s; }
+        .pain-point-card:nth-child(4) { animation-delay: 0.4s; }
+
+        @keyframes card-fade-in {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .pain-point-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #BC4749 0%, #E07B3A 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .pain-point-card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, rgba(188, 71, 73, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .pain-point-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(188, 71, 73, 0.4);
+            box-shadow:
+                0 24px 48px rgba(0, 0, 0, 0.3),
+                0 0 0 1px rgba(188, 71, 73, 0.2);
+        }
+
+        .pain-point-card:hover::before {
+            opacity: 1;
+        }
+
+        .pain-point-card:hover::after {
+            opacity: 1;
+        }
+
+        .pain-icon-wrap {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(188, 71, 73, 0.15) 0%, rgba(188, 71, 73, 0.05) 100%);
+            border: 1px solid rgba(188, 71, 73, 0.2);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .pain-point-card:hover .pain-icon-wrap {
+            background: linear-gradient(135deg, #BC4749 0%, #D4574A 100%);
+            border-color: transparent;
+            box-shadow: 0 8px 24px rgba(188, 71, 73, 0.4);
+            transform: scale(1.05);
+        }
+
+        .pain-point-card h4 {
+            font-family: var(--font-display);
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--dark-text);
+            letter-spacing: -0.01em;
+        }
+
+        .pain-point-card p {
+            font-family: var(--font-body);
+            font-size: 15px;
+            color: var(--dark-text-secondary);
+            line-height: 1.7;
+        }
+
+        /* ============================================
+           SOLUTION SECTION - Premium Flow & Cards
+           ============================================ */
+        .solution-section {
+            background: var(--bg-base);
+            position: relative;
+        }
+
+        /* Solution Flow - Enhanced Timeline */
+        .solution-flow-container {
+            position: relative;
+            padding: 60px 0;
+            margin: 48px 0 64px;
+        }
+
+        .solution-flow-line {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: linear-gradient(90deg,
+                rgba(196, 92, 38, 0.1) 0%,
+                rgba(196, 92, 38, 0.4) 25%,
+                rgba(196, 92, 38, 0.4) 75%,
+                rgba(196, 92, 38, 0.1) 100%);
+            transform: translateY(-50%);
+        }
+
+        .solution-flow-line::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                rgba(196, 92, 38, 0.3) 50%,
+                transparent 100%);
+            filter: blur(4px);
+        }
+
+        .solution-flow {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 2;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .solution-flow-container {
+                padding: 40px 0;
+            }
+
+            .solution-flow {
+                flex-direction: column;
+                gap: 32px;
+            }
+
+            .solution-flow-line {
+                display: none;
+            }
+        }
+
+        .flow-step {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 20px;
+            padding: 28px 24px;
+            text-align: center;
+            min-width: 180px;
+            max-width: 200px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+        }
+
+        .flow-step::before {
+            content: '';
+            position: absolute;
+            inset: -1px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(196, 92, 38, 0.3), transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+        }
+
+        .flow-step:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--accent);
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.08),
+                0 0 40px rgba(196, 92, 38, 0.1);
+        }
+
+        .flow-step:hover::before {
+            opacity: 1;
+        }
+
+        .flow-step .step-num {
+            width: 44px;
+            height: 44px;
+            background: var(--gradient-accent);
+            color: white;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 16px;
+            margin: 0 auto 16px;
+            box-shadow: 0 4px 16px var(--glow-accent);
+            transition: all 0.3s ease;
+        }
+
+        .flow-step:hover .step-num {
+            transform: scale(1.1);
+            box-shadow: 0 8px 24px var(--glow-accent);
+        }
+
+        .flow-step h5 {
+            font-family: var(--font-display);
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .flow-step p {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-tertiary);
+        }
+
+        .flow-connector {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            opacity: 0.6;
+        }
+
+        .flow-connector svg {
+            width: 24px;
+            height: 24px;
+            animation: arrow-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes arrow-pulse {
+            0%, 100% { transform: translateX(0); opacity: 0.6; }
+            50% { transform: translateX(4px); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .flow-connector {
+                transform: rotate(90deg);
+            }
+        }
+
+        /* Feature Detail Cards - Bento Style */
+        .feature-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-top: 48px;
+        }
+
+        @media (max-width: 1024px) {
+            .feature-detail-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .feature-detail-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .feature-detail-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 24px;
+            padding: 32px;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-detail-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--gradient-accent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .feature-detail-card::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            right: -100%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(196, 92, 38, 0.04) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            pointer-events: none;
+        }
+
+        .feature-detail-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(196, 92, 38, 0.3);
+            box-shadow:
+                0 24px 48px rgba(0, 0, 0, 0.08),
+                0 0 0 1px rgba(196, 92, 38, 0.1);
+        }
+
+        .feature-detail-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-detail-card:hover::after {
+            opacity: 1;
+        }
+
+        .feature-detail-card .icon-wrap {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, rgba(196, 92, 38, 0.12) 0%, rgba(196, 92, 38, 0.04) 100%);
+            border: 1px solid rgba(196, 92, 38, 0.15);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-detail-card:hover .icon-wrap {
+            background: var(--gradient-accent);
+            border-color: transparent;
+            box-shadow: 0 8px 24px var(--glow-accent);
+        }
+
+        .feature-detail-card h4 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+
+        .feature-detail-card p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+        }
+
+        .feature-detail-card ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .feature-detail-card li {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--text-tertiary);
+            padding: 10px 0;
+            border-top: 1px solid var(--border-subtle);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .feature-detail-card li:hover {
+            color: var(--text-secondary);
+        }
+
+        .feature-detail-card li::before {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background: rgba(45, 106, 79, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%232D6A4F' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            transition: all 0.2s ease;
+        }
+
+        .feature-detail-card li:hover::before {
+            background-color: rgba(45, 106, 79, 0.2);
+            transform: scale(1.1);
+        }
+
+        /* ============================================
+           CASE STUDY SECTION - Premium Testimonial
+           ============================================ */
+        .case-study-section {
+            background: var(--dark-bg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .case-study-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-mesh);
+            pointer-events: none;
+        }
+
+        .case-study-section .eyebrow {
+            color: var(--accent);
+        }
+
+        .case-study-section .h1 {
+            color: var(--dark-text);
+        }
+
+        .case-study-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 32px;
+            padding: 56px 64px;
+            margin-top: 56px;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+        }
+
+        .case-study-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-accent);
+        }
+
+        .case-study-card::after {
+            content: '';
+            position: absolute;
+            top: -150px;
+            right: -150px;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle at center, rgba(196, 92, 38, 0.1) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .case-study-card {
+                padding: 40px 28px;
+            }
+        }
+
+        .case-study-content {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 64px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .case-study-content {
+                grid-template-columns: 1fr;
+                gap: 48px;
+            }
+        }
+
+        .case-study-quote-wrap {
+            position: relative;
+        }
+
+        .quote-mark {
+            position: absolute;
+            top: -20px;
+            left: -10px;
+            font-family: Georgia, serif;
+            font-size: 120px;
+            color: var(--accent);
+            opacity: 0.15;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .case-study-quote {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 500;
+            color: var(--dark-text);
+            line-height: 1.5;
+            margin-bottom: 32px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.01em;
+        }
+
+        @media (max-width: 768px) {
+            .case-study-quote {
+                font-size: 20px;
+            }
+        }
+
+        .case-study-author {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .case-study-author .avatar {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-accent);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 20px;
+            box-shadow: 0 8px 24px var(--glow-accent);
+        }
+
+        .case-study-author .info h5 {
+            font-family: var(--font-display);
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 4px;
+        }
+
+        .case-study-author .info p {
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--dark-text-secondary);
+        }
+
+        .case-study-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 500px) {
+            .case-study-metrics {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 16px;
+            }
+        }
+
+        .case-metric {
+            background: var(--dark-elevated);
+            border: 1px solid var(--dark-border);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .case-metric:hover {
+            transform: translateY(-4px);
+            border-color: rgba(196, 92, 38, 0.3);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .case-metric .value {
+            font-family: var(--font-mono);
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+            text-shadow: 0 0 40px var(--glow-accent);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 768px) {
+            .case-metric .value {
+                font-size: 28px;
+            }
+        }
+
+        .case-metric .label {
+            font-family: var(--font-body);
+            font-size: 13px;
+            color: var(--dark-text-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        /* ============================================
+           CTA SECTION - Premium Dark with Glow
+           ============================================ */
+        .scheduling-cta-section {
+            background: var(--bg-base);
+            padding: 120px 0;
+            position: relative;
+        }
+
+        .scheduling-cta {
+            background: var(--dark-bg);
+            border-radius: 40px;
+            padding: 80px 64px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scheduling-cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: var(--gradient-mesh);
+            pointer-events: none;
+        }
+
+        .scheduling-cta::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(196, 92, 38, 0.12) 0%, transparent 60%);
+            transform: translate(-50%, -50%);
+            animation: cta-glow 6s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes cta-glow {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.15); }
+        }
+
+        @media (max-width: 768px) {
+            .scheduling-cta {
+                padding: 56px 32px;
+                border-radius: 28px;
+            }
+        }
+
+        .scheduling-cta .eyebrow {
+            color: var(--accent);
+            position: relative;
+            z-index: 1;
+        }
+
+        .scheduling-cta .cta-title {
+            font-family: var(--font-display);
+            font-size: clamp(32px, 5vw, 44px);
+            font-weight: 600;
+            color: var(--dark-text);
+            margin: 16px 0 20px;
+            position: relative;
+            z-index: 1;
+            letter-spacing: -0.02em;
+        }
+
+        .scheduling-cta .cta-desc {
+            font-family: var(--font-body);
+            font-size: 18px;
+            color: var(--dark-text-secondary);
+            max-width: 500px;
+            margin: 0 auto 40px;
+            line-height: 1.6;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta-buttons .btn-accent {
+            background: var(--gradient-accent);
+            padding: 18px 40px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 14px;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: 0 4px 24px var(--glow-accent);
+        }
+
+        .cta-buttons .btn-accent:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px var(--glow-accent);
+        }
+
+        .cta-buttons .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--dark-border);
+            padding: 18px 40px;
+            font-family: var(--font-body);
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 14px;
+            color: var(--dark-text);
+            text-decoration: none;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .cta-buttons .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Section transitions for this page */
+        .pain-section,
+        .solution-section,
+        .case-study-section,
+        .scheduling-cta-section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        /* Gradient transition from hero to pain points (dark to dark - subtle) */
+        .section-gradient-transition.dark-to-light {
+            display: block !important;
+            height: 200px;
+            background: linear-gradient(to bottom,
+                rgba(13, 13, 15, 1) 0%,
+                rgba(13, 13, 15, 1) 100%);
+            margin-top: -100px;
+            position: relative;
+            z-index: 6;
+        }
+
+        .section-gradient-transition.dark-to-light .noise-overlay,
+        .section-gradient-transition.dark-to-light .gradient-line {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="smartbi-page ai-bi-page">
+    <!-- Navigation -->
+    <nav class="nav" style="background: rgba(13, 13, 15, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.06);">
+        <div class="nav-inner">
+            <a href="index.html" class="logo">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="40" height="40" rx="8" fill="#C45C26" />
+                        <path d="M12 28V12h6l6 8-6 8h-6z" fill="white" />
+                        <circle cx="26" cy="20" r="4" fill="white" />
+                    </svg>
+                </div>
+                <span class="logo-text" style="color: #FAFAFA;">CRETAS AI</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html#features" class="nav-link" style="color: rgba(255,255,255,0.7);">产品功能</a>
+                <a href="index.html#solutions" class="nav-link" style="color: rgba(255,255,255,0.7);">解决方案</a>
+                <a href="index.html#pricing" class="nav-link" style="color: rgba(255,255,255,0.7);">定价</a>
+                <a href="index.html#contact" class="nav-link" style="color: rgba(255,255,255,0.7);">联系我们</a>
+                <a href="#demo" class="btn btn-accent">预约演示</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" style="color: #FAFAFA;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="mobile-menu" id="mobileMenu" style="background: #161618;">
+            <a href="index.html#features" class="mobile-nav-link" style="color: rgba(255,255,255,0.7);">产品功能</a>
+            <a href="index.html#solutions" class="mobile-nav-link" style="color: rgba(255,255,255,0.7);">解决方案</a>
+            <a href="index.html#pricing" class="mobile-nav-link" style="color: rgba(255,255,255,0.7);">定价</a>
+            <a href="index.html#contact" class="mobile-nav-link" style="color: rgba(255,255,255,0.7);">联系我们</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="smartbi-hero">
+        <!-- Floating Orbs -->
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
+        <div class="hero-orb hero-orb-3"></div>
+
+        <div class="container">
+            <div class="grid-asymmetric">
+                <div class="hero-content">
+                    <div class="hero-eyebrow">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        AI驱动 · 智能排班
+                    </div>
+                    <h1 class="hero-title">让每个工人，<br><span>都被公平对待</span></h1>
+                    <p class="hero-desc">基于学术研究的 Fair-MAB 算法，自动平衡效率与公平，解决食品加工厂排班三大难题。</p>
+                    <div class="hero-actions">
+                        <a href="#demo" class="btn btn-accent">预约演示</a>
+                        <a href="#features" class="btn btn-secondary">了解更多</a>
+                    </div>
+                    <div class="hero-stats-inline">
+                        <div class="stat-item">
+                            <span class="stat-value">+23%</span>
+                            <span class="stat-label">效率提升</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">-35%</span>
+                            <span class="stat-label">人员流失</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">2x</span>
+                            <span class="stat-label">新人上手</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">100%</span>
+                            <span class="stat-label">公平透明</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <div class="hero-dashboard-preview">
+                        <div class="dashboard-header">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="dashboard-body">
+                            <svg viewBox="0 0 400 250" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <!-- Scheduling Dashboard mockup -->
+                                <rect width="400" height="250" fill="#0D0D0F"/>
+
+                                <!-- Title -->
+                                <rect x="16" y="12" width="100" height="10" rx="2" fill="rgba(255,255,255,0.4)"/>
+
+                                <!-- Worker Cards Row -->
+                                <rect x="16" y="32" width="88" height="65" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <circle cx="36" cy="52" r="12" fill="#C45C26"/>
+                                <rect x="52" y="46" width="40" height="6" rx="2" fill="#FAFAFA"/>
+                                <rect x="52" y="56" width="30" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <!-- Fairness Bar -->
+                                <rect x="24" y="74" width="72" height="6" rx="3" fill="rgba(255,255,255,0.1)"/>
+                                <rect x="24" y="74" width="50" height="6" rx="3" fill="#2D6A4F"/>
+                                <rect x="24" y="84" width="30" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+                                <rect x="112" y="32" width="88" height="65" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <circle cx="132" cy="52" r="12" fill="#2D6A4F"/>
+                                <rect x="148" y="46" width="40" height="6" rx="2" fill="#FAFAFA"/>
+                                <rect x="148" y="56" width="35" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="120" y="74" width="72" height="6" rx="3" fill="rgba(255,255,255,0.1)"/>
+                                <rect x="120" y="74" width="65" height="6" rx="3" fill="#C45C26"/>
+                                <rect x="120" y="84" width="25" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+                                <rect x="208" y="32" width="88" height="65" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <circle cx="228" cy="52" r="12" fill="#D4A574"/>
+                                <rect x="244" y="46" width="40" height="6" rx="2" fill="#FAFAFA"/>
+                                <rect x="244" y="56" width="28" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="216" y="74" width="72" height="6" rx="3" fill="rgba(255,255,255,0.1)"/>
+                                <rect x="216" y="74" width="35" height="6" rx="3" fill="#BC4749"/>
+                                <rect x="216" y="84" width="35" height="4" rx="2" fill="rgba(255,255,255,0.2)"/>
+
+                                <rect x="304" y="32" width="80" height="65" rx="8" fill="#161618" stroke="rgba(196,92,38,0.3)"/>
+                                <text x="312" y="48" fill="#C45C26" font-size="8" font-weight="600">临时工</text>
+                                <circle cx="324" cy="62" r="10" fill="#C45C26"/>
+                                <rect x="340" y="56" width="36" height="5" rx="2" fill="#FAFAFA"/>
+                                <rect x="340" y="64" width="24" height="4" rx="2" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="312" y="80" width="64" height="5" rx="2" fill="rgba(255,255,255,0.1)"/>
+                                <rect x="312" y="80" width="20" height="5" rx="2" fill="#C45C26"/>
+
+                                <!-- Task Assignment Section -->
+                                <rect x="16" y="108" width="180" height="130" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <rect x="24" y="116" width="60" height="8" rx="2" fill="rgba(255,255,255,0.4)"/>
+
+                                <!-- Task rows -->
+                                <rect x="24" y="132" width="164" height="24" rx="4" fill="rgba(45,106,79,0.1)" stroke="rgba(45,106,79,0.3)"/>
+                                <circle cx="36" cy="144" r="6" fill="#2D6A4F"/>
+                                <rect x="48" y="140" width="60" height="4" rx="2" fill="#FAFAFA"/>
+                                <rect x="48" y="148" width="40" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="150" y="140" width="30" height="8" rx="4" fill="#2D6A4F"/>
+
+                                <rect x="24" y="162" width="164" height="24" rx="4" fill="rgba(196,92,38,0.1)" stroke="rgba(196,92,38,0.3)"/>
+                                <circle cx="36" cy="174" r="6" fill="#C45C26"/>
+                                <rect x="48" y="170" width="55" height="4" rx="2" fill="#FAFAFA"/>
+                                <rect x="48" y="178" width="35" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="150" y="170" width="30" height="8" rx="4" fill="#C45C26"/>
+
+                                <rect x="24" y="192" width="164" height="24" rx="4" fill="rgba(212,165,116,0.1)" stroke="rgba(212,165,116,0.3)"/>
+                                <circle cx="36" cy="204" r="6" fill="#D4A574"/>
+                                <rect x="48" y="200" width="50" height="4" rx="2" fill="#FAFAFA"/>
+                                <rect x="48" y="208" width="30" height="3" rx="1" fill="rgba(255,255,255,0.3)"/>
+                                <rect x="150" y="200" width="30" height="8" rx="4" fill="#D4A574"/>
+
+                                <!-- Fairness Gauge -->
+                                <rect x="204" y="108" width="180" height="130" rx="8" fill="#161618" stroke="rgba(255,255,255,0.08)"/>
+                                <rect x="212" y="116" width="50" height="8" rx="2" fill="rgba(255,255,255,0.4)"/>
+
+                                <!-- Gauge -->
+                                <circle cx="294" cy="178" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="10"/>
+                                <circle cx="294" cy="178" r="45" fill="none" stroke="#2D6A4F" stroke-width="10" stroke-dasharray="212 283" stroke-linecap="round" transform="rotate(-90 294 178)"/>
+                                <text x="294" y="178" text-anchor="middle" fill="#FAFAFA" font-size="20" font-weight="700" dy="6">87%</text>
+                                <text x="294" y="195" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="8">公平性指数</text>
+
+                                <!-- Legend -->
+                                <rect x="220" y="225" width="6" height="6" rx="1" fill="#2D6A4F"/>
+                                <text x="230" y="231" fill="rgba(255,255,255,0.5)" font-size="7">高效</text>
+                                <rect x="260" y="225" width="6" height="6" rx="1" fill="#C45C26"/>
+                                <text x="270" y="231" fill="rgba(255,255,255,0.5)" font-size="7">培训中</text>
+                                <rect x="310" y="225" width="6" height="6" rx="1" fill="#BC4749"/>
+                                <text x="320" y="231" fill="rgba(255,255,255,0.5)" font-size="7">需关注</text>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gradient Transition -->
+    <div class="section-gradient-transition dark-to-light">
+        <div class="noise-overlay"></div>
+        <div class="gradient-line"></div>
+    </div>
+
+    <!-- Pain Points Section -->
+    <section class="pain-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: var(--space-4); position: relative; z-index: 1;">
+                <div class="eyebrow" style="font-family: var(--font-mono);">行业痛点</div>
+                <h2 class="h1" style="margin-top: var(--space-3); font-family: var(--font-display); letter-spacing: -0.02em;">您是否遇到这些问题？</h2>
+                <p class="body-lg" style="max-width: 600px; margin: var(--space-4) auto 0; font-family: var(--font-body);">
+                    传统排班依赖人工经验，效率低、不透明、难以适应变化。
+                </p>
+            </div>
+
+            <div class="pain-point-grid">
+                <div class="pain-point-card">
+                    <div class="pain-icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/usownftb.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#E07B3A"
+                            style="width:44px;height:44px">
+                        </lord-icon>
+                    </div>
+                    <h4>老员工总做简单活</h4>
+                    <p>老师傅习惯把简单任务留给自己，新人抱怨没机会学习新技能，技能传承断层严重。</p>
+                </div>
+                <div class="pain-point-card">
+                    <div class="pain-icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/vfzqittk.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#E07B3A"
+                            style="width:44px;height:44px">
+                        </lord-icon>
+                    </div>
+                    <h4>临时工来了不知怎么安排</h4>
+                    <p>旺季招了一批临时工，不知道该分配什么任务，走了也没留下数据，下次还是从头开始。</p>
+                </div>
+                <div class="pain-point-card">
+                    <div class="pain-icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/gjjvytyq.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#E07B3A"
+                            style="width:44px;height:44px">
+                        </lord-icon>
+                    </div>
+                    <h4>SKU太多排班全靠经验</h4>
+                    <p>几百个SKU复杂度不同，哪个产品该给谁做全凭老师傅记忆，人一走排班就乱。</p>
+                </div>
+                <div class="pain-point-card">
+                    <div class="pain-icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/rjzlnunf.json"
+                            trigger="hover"
+                            colors="primary:#BC4749,secondary:#E07B3A"
+                            style="width:44px;height:44px">
+                        </lord-icon>
+                    </div>
+                    <h4>工人觉得分配不公平</h4>
+                    <p>有人天天加班，有人闲着没活。工人私下抱怨偏心，影响团队士气和生产积极性。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solution Section -->
+    <section id="features" class="solution-section section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: var(--space-4);">
+                <div class="eyebrow" style="font-family: var(--font-mono);">解决方案</div>
+                <h2 class="h1" style="margin-top: var(--space-3); font-family: var(--font-display); letter-spacing: -0.02em;">三层智能优化架构</h2>
+                <p class="body-lg text-secondary" style="max-width: 650px; margin: var(--space-4) auto 0; font-family: var(--font-body);">
+                    基于学术研究的 Fair-MAB 算法，结合自适应学习，实现效率与公平的完美平衡。
+                </p>
+            </div>
+
+            <!-- Solution Flow - Enhanced Timeline -->
+            <div class="solution-flow-container">
+                <div class="solution-flow-line"></div>
+                <div class="solution-flow">
+                    <div class="flow-step">
+                        <div class="step-num">1</div>
+                        <h5>LinUCB 打分</h5>
+                        <p>能力匹配评估</p>
+                    </div>
+                    <div class="flow-connector">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-num">2</div>
+                        <h5>公平性调整</h5>
+                        <p>虚拟队列平衡</p>
+                    </div>
+                    <div class="flow-connector">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-num">3</div>
+                        <h5>多样性重排</h5>
+                        <p>技能维护+去重复</p>
+                    </div>
+                    <div class="flow-connector">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </div>
+                    <div class="flow-step">
+                        <div class="step-num">4</div>
+                        <h5>最优推荐</h5>
+                        <p>输出分配方案</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Cards -->
+            <div class="feature-detail-grid">
+                <!-- Feature 1: 公平性算法 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/kbtmbyzy.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>Fair-MAB 公平性算法</h4>
+                    <p>基于学术论文的虚拟队列机制，自动追踪每个工人的"公平性债务"，确保任务分配长期均衡。</p>
+                    <ul>
+                        <li>虚拟队列自动平衡</li>
+                        <li>Gini系数实时监控</li>
+                        <li>公平性违规预警</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 2: 临时工培养 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/zpxybbhl.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>临时工智能培养</h4>
+                    <p>针对临时工的特殊参数配置，降低能力权重、提高学习机会，加速新人成长。</p>
+                    <ul>
+                        <li>入职30天学习加分</li>
+                        <li>简单任务优先分配</li>
+                        <li>转正候选自动识别</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 3: SKU复杂度匹配 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/nocovwne.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>SKU复杂度智能匹配</h4>
+                    <p>自动学习每个SKU的处理难度，结合工人技能等级，实现人岗精准匹配。</p>
+                    <ul>
+                        <li>5级复杂度自动识别</li>
+                        <li>技能等级门槛设置</li>
+                        <li>复杂度漂移检测</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 4: 技能维护 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/nocovwne.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>技能遗忘防护</h4>
+                    <p>监控工人技能使用频率，长期未做的工序自动加分，防止技能退化。</p>
+                    <ul>
+                        <li>30天技能遗忘检测</li>
+                        <li>多技能轮换调度</li>
+                        <li>团队能力均衡</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 5: 动态配置 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/yxyampao.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>工厂级动态配置</h4>
+                    <p>每个工厂可独立配置权重参数，适应不同的生产特点和管理风格。</p>
+                    <ul>
+                        <li>4维权重可调</li>
+                        <li>临时工策略独立</li>
+                        <li>实时生效无需重启</li>
+                    </ul>
+                </div>
+
+                <!-- Feature 6: 自适应学习 -->
+                <div class="feature-detail-card">
+                    <div class="icon-wrap">
+                        <lord-icon
+                            src="https://cdn.lordicon.com/gqdnbnwt.json"
+                            trigger="hover"
+                            colors="primary:#C45C26,secondary:#2D6A4F"
+                            style="width:32px;height:32px">
+                        </lord-icon>
+                    </div>
+                    <h4>自适应学习引擎</h4>
+                    <p>系统根据实际反馈自动调整参数，越用越精准，实现"经验数字化"。</p>
+                    <ul>
+                        <li>效率/多样性双目标</li>
+                        <li>异常自动检测校准</li>
+                        <li>调整历史完整记录</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Case Study Section -->
+    <section class="case-study-section">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: var(--space-4); position: relative; z-index: 1;">
+                <div class="eyebrow" style="font-family: var(--font-mono);">客户案例</div>
+                <h2 class="h1" style="margin-top: var(--space-3); font-family: var(--font-display); letter-spacing: -0.02em;">他们已经在用</h2>
+            </div>
+
+            <div class="case-study-card">
+                <div class="case-study-content">
+                    <div class="case-study-quote-wrap">
+                        <span class="quote-mark">"</span>
+                        <div class="case-study-quote">
+                            以前排班要花2小时，现在10分钟搞定。更重要的是，工人再也不抱怨分配不公了，临时工也能快速上手，整体士气提升明显。
+                        </div>
+                        <div class="case-study-author">
+                            <div class="avatar">张</div>
+                            <div class="info">
+                                <h5>张厂长</h5>
+                                <p>某肉制品加工厂 · 200+员工</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="case-study-metrics">
+                        <div class="case-metric">
+                            <div class="value">+23%</div>
+                            <div class="label">生产效率提升</div>
+                        </div>
+                        <div class="case-metric">
+                            <div class="value">-35%</div>
+                            <div class="label">人员流失降低</div>
+                        </div>
+                        <div class="case-metric">
+                            <div class="value">2x</div>
+                            <div class="label">新人上手速度</div>
+                        </div>
+                        <div class="case-metric">
+                            <div class="value">10min</div>
+                            <div class="label">每日排班时间</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section id="demo" class="scheduling-cta-section">
+        <div class="container">
+            <div class="scheduling-cta">
+                <div class="eyebrow" style="font-family: var(--font-mono);">开始使用</div>
+                <h2 class="cta-title">让智能排班改变您的工厂</h2>
+                <p class="cta-desc">
+                    预约一对一演示，了解AI智能排班如何帮助您提升效率、降低流失、实现公平。
+                </p>
+                <div class="cta-buttons">
+                    <a href="index.html#contact" class="btn-accent">预约演示</a>
+                    <a href="index.html#pricing" class="btn-secondary">查看定价</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" style="background: var(--bg-base); padding: 48px 0 32px; border-top: 1px solid var(--border-subtle);">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px;">
+                        <rect width="40" height="40" rx="8" fill="#C45C26" />
+                        <path d="M12 28V12h6l6 8-6 8h-6z" fill="white" />
+                        <circle cx="26" cy="20" r="4" fill="white" />
+                    </svg>
+                    <span style="font-family: var(--font-display); font-weight: 600; color: var(--text-primary);">CRETAS AI</span>
+                </div>
+                <div style="font-family: var(--font-body); font-size: 14px; color: var(--text-tertiary);">
+                    © 2026 白垩纪科技. All rights reserved.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('active');
+        }
+    </script>
+</body>
+
+</html>

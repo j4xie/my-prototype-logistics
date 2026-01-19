@@ -1,0 +1,14 @@
+id	varchar	NO	NULL	PRI
+created_at	datetime	NO	NULL	
+deleted_at	datetime	YES	NULL	
+updated_at	datetime	NO	NULL	
+factory_id	varchar	NO	NULL	MUL
+fail_count	decimal	NO	NULL	
+inspection_date	date	NO	NULL	MUL
+inspector_id	bigint	NO	NULL	MUL
+notes	text	YES	NULL	
+pass_count	decimal	NO	NULL	
+pass_rate	decimal	YES	NULL	
+production_batch_id	bigint	NO	NULL	MUL
+result	varchar	YES	NULL	
+sample_size	decimal	NO	NULL	

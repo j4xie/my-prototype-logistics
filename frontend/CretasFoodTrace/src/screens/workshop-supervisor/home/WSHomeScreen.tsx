@@ -174,17 +174,21 @@ export function WSHomeScreen() {
       const pendingRes = await processingApiClient.getBatches({ status: 'PENDING', page: 1, size: 1 });
       if (pendingRes.success && pendingRes.data?.content?.length > 0) {
         const batch = pendingRes.data.content[0];
-        setNextTask({
-          batchId: String(batch.id),
-          batchNumber: batch.batchNumber,
-          productName: batch.productType,
-          targetQuantity: batch.targetQuantity,
-          plannedStartTime: batch.startTime ? new Date(batch.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
-          workshopLocation: 'A区', // Note: Workshop location not in ProcessingBatch, using default
-          assignedWorkers: 0, // Note: Assigned workers not in ProcessingBatch
-          equipment: '', // Note: Equipment not in ProcessingBatch
-          isUrgent: false, // Note: Urgency not in ProcessingBatch
-        });
+        if (batch) {
+          setNextTask({
+            batchId: String(batch.id),
+            batchNumber: batch.batchNumber,
+            productName: batch.productType,
+            targetQuantity: batch.targetQuantity,
+            plannedStartTime: batch.startTime ? new Date(batch.startTime).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : '--:--',
+            workshopLocation: 'A区', // Note: Workshop location not in ProcessingBatch, using default
+            assignedWorkers: 0, // Note: Assigned workers not in ProcessingBatch
+            equipment: '', // Note: Equipment not in ProcessingBatch
+            isUrgent: false, // Note: Urgency not in ProcessingBatch
+          });
+        } else {
+          setNextTask(null);
+        }
       } else {
         // 无待处理任务
         setNextTask(null);

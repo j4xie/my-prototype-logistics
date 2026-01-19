@@ -4,7 +4,6 @@
     "pages/base/search/index",
     "pages/base/webview/index",
     "pages/auth/login/index",
-    "pages/auth/phone-login/index",
     "pages/auth/register/index",
     "pages/auth/bind-merchant/index",
     "pages/goods/goods-category/index",

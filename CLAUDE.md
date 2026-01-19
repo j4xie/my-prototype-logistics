@@ -27,7 +27,11 @@ This file provides guidance to Claude Code when working with this repository.
 | MySQL | 3306 | `localhost:3306` |
 
 ### 测试账号
-- **Admin**: `admin` / `Admin@123456`
+| 角色 | 用户名 | 密码 | factoryId |
+|------|--------|------|-----------|
+| 工厂超级管理员 | `factory_admin1` | `123456` | F001 |
+| 平台管理员 | `platform_admin` | `123456` | - |
+| 车间主管 | `workshop_sup1` | `123456` | F001 |
 
 ---
 

@@ -1,0 +1,72 @@
+/* 打印优化样式 - PPT式分页 */
+
+@media print {
+  /* 确保颜色正确打印 */
+  *,
+  *:before,
+  *:after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* PPT式严格分页 */
+  .page {
+    page-break-after: always !important;
+    page-break-inside: avoid !important;
+    page-break-before: auto !important;
+    display: block !important;
+  }
+
+  .page:last-child {
+    page-break-after: auto !important;
+  }
+
+  /* 严格避免元素跨页 */
+  .pain-point,
+  .capability-section,
+  .comparison-card,
+  .industry-card,
+  .timeline-item,
+  .cta-card,
+  .comparison-table,
+  .scenario-box,
+  .capability-barrier,
+  .highlight-box {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 避免表格跨页 */
+  table,
+  tr,
+  td,
+  th {
+    page-break-inside: avoid !important;
+  }
+
+  /* 超链接不显示URL */
+  a[href]:after {
+    content: none !important;
+  }
+
+  /* 确保图标正确打印 */
+  svg {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* PDF生成优化 - PPT横向页面设置 */
+@page {
+  size: A4 landscape;
+  margin: 0;
+}
+
+/* 强制每页独立渲染 - 横向 */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 297mm;  /* 横向宽度 */
+  height: auto;
+}

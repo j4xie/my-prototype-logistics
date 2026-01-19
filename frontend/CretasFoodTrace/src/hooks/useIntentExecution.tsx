@@ -93,8 +93,24 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
     try {
       console.log('[useIntentExecution] 执行意图:', request);
 
-      // 调用 API
-      const response = await aiApiClient.executeIntent(request);
+      // 调用 API - 提取字段传递给 executeIntent(intentCode, parameters)
+      const { intentCode, userInput, deviceId, entityType, entityId, context, previewOnly, forceExecute, sessionId, enableThinking, thinkingBudget, parameters } = request;
+      const response = await aiApiClient.executeIntent(
+        intentCode || '',
+        {
+          userInput,
+          deviceId,
+          entityType,
+          entityId,
+          context,
+          previewOnly,
+          forceExecute,
+          sessionId,
+          enableThinking,
+          thinkingBudget,
+          ...parameters,
+        }
+      );
       setLastResponse(response);
 
       console.log('[useIntentExecution] 响应状态:', response.status);

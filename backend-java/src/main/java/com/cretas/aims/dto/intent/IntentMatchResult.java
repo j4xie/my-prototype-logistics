@@ -2,6 +2,7 @@ package com.cretas.aims.dto.intent;
 
 import com.cretas.aims.config.IntentKnowledgeBase.ActionType;
 import com.cretas.aims.config.IntentKnowledgeBase.QuestionType;
+import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +10,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 意图匹配结果 DTO
@@ -111,6 +113,34 @@ public class IntentMatchResult {
      */
     private String conversationMessage;
 
+    // ==================== 多意图支持字段 (模块C) ====================
+
+    /**
+     * 是否为多意图输入
+     * 当用户输入包含多个独立意图时为 true
+     */
+    private Boolean isMultiIntent;
+
+    /**
+     * 附加意图列表
+     * 当 isMultiIntent 为 true 时，包含除 bestMatch 外的其他意图
+     */
+    private List<IntentMatch> additionalIntents;
+
+    /**
+     * 多意图执行策略
+     * 决定多个意图的执行方式
+     */
+    private MultiIntentResult.ExecutionStrategy executionStrategy;
+
+    // ==================== 查询预处理结果 (模块B) ====================
+
+    /**
+     * 预处理后的查询结果
+     * 包含时间归一化、口语标准化、指代消解等结果
+     */
+    private PreprocessedQuery preprocessedQuery;
+
     /**
      * 匹配方法枚举
      */
@@ -192,6 +222,46 @@ public class IntentMatchResult {
                     .description(config.getDescription())
                     .build();
         }
+    }
+
+    /**
+     * 多意图匹配结果内部类 (模块C)
+     * 用于存储多意图识别中的单个意图匹配信息
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IntentMatch {
+        /**
+         * 意图代码
+         */
+        private String intentCode;
+
+        /**
+         * 意图名称
+         */
+        private String intentName;
+
+        /**
+         * 置信度 (0.0 - 1.0)
+         */
+        private double confidence;
+
+        /**
+         * 提取的参数
+         */
+        private Map<String, Object> extractedParams;
+
+        /**
+         * 执行顺序 (多意图时的执行优先级)
+         */
+        private int executionOrder;
+
+        /**
+         * 推理说明
+         */
+        private String reasoning;
     }
 
     /**

@@ -1,0 +1,1326 @@
+{
+  "testSuite": "AI Intent Recognition - P2+P3 Complete Test Cases",
+  "version": "2.0.0",
+  "phase": "Phase 2 - P2+P3 Priority",
+  "totalCases": 35,
+  "generatedAt": "2026-01-16",
+  "distribution": {
+    "P2_CLOCK": 28,
+    "P2_USER": 24,
+    "P2_CRM": 20,
+    "P2_CONFIG": 15,
+    "P2_CAMERA": 9,
+    "P3_CONVERSATION": 18,
+    "P3_COLLOQUIAL": 23,
+    "P3_BOUNDARY": 19,
+    "P3_EXCEPTION": 10
+  },
+  "testCases": [
+    {
+      "id": "TC-P2-USER-009",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建操作员-带工号",
+      "userInput": "新建员工,用户名op_zhou,姓名周杰,工号W20260116001,角色操作员",
+      "expectedIntent": {
+        "intentCode": "USER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE username = 'op_zhou';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM users WHERE username = 'op_zhou' AND employee_code = 'W20260116001'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|W20260116001"
+      }
+    },
+    {
+      "id": "TC-P2-USER-010",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-修改姓名",
+      "userInput": "更新用户test_user_01,修改姓名为李四",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10001, 'F001', 'test_user_01', 'hash', '张三', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10001;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT full_name FROM users WHERE id = 10001",
+          "expectedNewValue": "李四"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "更新成功|修改成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-011",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-修改手机号",
+      "userInput": "修改用户test_user_02的手机号为13900139001",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 0.95,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, phone, role, status, created_at, updated_at) VALUES (10002, 'F001', 'test_user_02', 'hash', '王五', '13800138000', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10002;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT phone FROM users WHERE id = 10002",
+          "expectedNewValue": "13900139001"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "更新成功|手机号.*修改"
+      }
+    },
+    {
+      "id": "TC-P2-USER-012",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-修改角色",
+      "userInput": "把用户test_user_03的角色改为质检员",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10003, 'F001', 'test_user_03', 'hash', '赵六', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10003;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT role FROM users WHERE id = 10003",
+          "expectedNewValue": "quality_inspector"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "更新成功|角色.*质检员"
+      }
+    },
+    {
+      "id": "TC-P2-USER-013",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-修改邮箱",
+      "userInput": "更新test_user_04的邮箱为test04@example.com",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, email, role, status, created_at, updated_at) VALUES (10004, 'F001', 'test_user_04', 'hash', '孙七', 'old@example.com', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10004;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_UPDATED",
+          "checkSql": "SELECT email FROM users WHERE id = 10004",
+          "expectedNewValue": "test04@example.com"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "更新成功|邮箱"
+      }
+    },
+    {
+      "id": "TC-P2-USER-014",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-修改密码",
+      "userInput": "重置用户test_user_05的密码",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10005, 'F001', 'test_user_05', 'old_hash', '周八', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10005;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "FIELD_CHANGED",
+          "checkSql": "SELECT password_hash FROM users WHERE id = 10005",
+          "fieldChanged": "password_hash"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "重置成功|密码.*修改"
+      }
+    },
+    {
+      "id": "TC-P2-USER-015",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_UPDATE",
+      "testType": "OPERATION",
+      "description": "验证更新用户信息-批量修改",
+      "userInput": "更新用户test_user_06,姓名改为吴九,手机号13700137000",
+      "expectedIntent": {
+        "intentCode": "USER_UPDATE",
+        "confidence": 0.95,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, phone, role, status, created_at, updated_at) VALUES (10006, 'F001', 'test_user_06', 'hash', '郑十', '13800138000', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10006;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "MULTIPLE_FIELDS_UPDATED",
+          "checkSql": "SELECT full_name, phone FROM users WHERE id = 10006",
+          "expectedValues": {
+            "full_name": "吴九",
+            "phone": "13700137000"
+          }
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "更新成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-016",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_DISABLE",
+      "testType": "OPERATION",
+      "description": "验证禁用用户-停用账号",
+      "userInput": "禁用用户test_user_07",
+      "expectedIntent": {
+        "intentCode": "USER_DISABLE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10007, 'F001', 'test_user_07', 'hash', '冯一', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10007;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM users WHERE id = 10007",
+          "expectedStatus": "disabled"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "禁用成功|已停用"
+      }
+    },
+    {
+      "id": "TC-P2-USER-017",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_DISABLE",
+      "testType": "OPERATION",
+      "description": "验证禁用用户-停用账号并记录原因",
+      "userInput": "停用用户test_user_08,原因是离职",
+      "expectedIntent": {
+        "intentCode": "USER_DISABLE",
+        "confidence": 0.95,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10008, 'F001', 'test_user_08', 'hash', '陈二', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10008;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM users WHERE id = 10008",
+          "expectedStatus": "disabled"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "停用成功|禁用成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-018",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_DISABLE",
+      "testType": "OPERATION",
+      "description": "验证禁用用户-锁定账号",
+      "userInput": "锁定test_user_09的账号",
+      "expectedIntent": {
+        "intentCode": "USER_DISABLE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10009, 'F001', 'test_user_09', 'hash', '楚三', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10009;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM users WHERE id = 10009",
+          "expectedStatus": "disabled"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "锁定成功|禁用成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-019",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_DISABLE",
+      "testType": "OPERATION",
+      "description": "验证禁用用户-暂停使用",
+      "userInput": "暂停test_user_10的账号使用权限",
+      "expectedIntent": {
+        "intentCode": "USER_DISABLE",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10010, 'F001', 'test_user_10', 'hash', '卫四', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10010;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM users WHERE id = 10010",
+          "expectedStatus": "disabled"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "暂停成功|禁用成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-020",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_DISABLE",
+      "testType": "OPERATION",
+      "description": "验证禁用用户-验证已禁用用户无法登录",
+      "userInput": "禁用test_user_11",
+      "expectedIntent": {
+        "intentCode": "USER_DISABLE",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10011, 'F001', 'test_user_11', 'hash', '蒋五', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id = 10011;"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "STATUS_CHANGED",
+          "checkSql": "SELECT status FROM users WHERE id = 10011",
+          "expectedStatus": "disabled"
+        },
+        "additionalValidation": {
+          "loginShouldFail": true,
+          "username": "test_user_11"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "禁用成功"
+      }
+    },
+    {
+      "id": "TC-P2-USER-021",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_QUERY",
+      "testType": "QUERY",
+      "description": "验证查询用户列表-所有用户",
+      "userInput": "查询所有用户",
+      "expectedIntent": {
+        "intentCode": "USER_QUERY",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10012, 'F001', 'test_user_12', 'hash', '沈六', 'operator', 'active', NOW(), NOW()), (10013, 'F001', 'test_user_13', 'hash', '韩七', 'quality_inspector', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id IN (10012, 10013);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "username",
+            "fullName",
+            "role",
+            "status"
+          ],
+          "expectedMinCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "用户列表|查询.*用户"
+      }
+    },
+    {
+      "id": "TC-P2-USER-022",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_QUERY",
+      "testType": "QUERY",
+      "description": "验证查询用户列表-按角色筛选",
+      "userInput": "查询所有质检员",
+      "expectedIntent": {
+        "intentCode": "USER_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10014, 'F001', 'qc_01', 'hash', '杨八', 'quality_inspector', 'active', NOW(), NOW()), (10015, 'F001', 'qc_02', 'hash', '朱九', 'quality_inspector', 'active', NOW(), NOW()), (10016, 'F001', 'op_01', 'hash', '秦十', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id IN (10014, 10015, 10016);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "ROLE_FILTER",
+          "expectedFields": [
+            "role"
+          ],
+          "filterCondition": "role = 'quality_inspector'",
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "质检员|2.*人"
+      }
+    },
+    {
+      "id": "TC-P2-USER-023",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_QUERY",
+      "testType": "QUERY",
+      "description": "验证查询用户列表-按状态筛选",
+      "userInput": "查询所有活跃用户",
+      "expectedIntent": {
+        "intentCode": "USER_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10017, 'F001', 'active_01', 'hash', '尤一', 'operator', 'active', NOW(), NOW()), (10018, 'F001', 'disabled_01', 'hash', '许二', 'operator', 'disabled', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id IN (10017, 10018);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "STATUS_FILTER",
+          "expectedFields": [
+            "status"
+          ],
+          "filterCondition": "status = 'active'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "活跃|active"
+      }
+    },
+    {
+      "id": "TC-P2-USER-024",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_QUERY",
+      "testType": "QUERY",
+      "description": "验证查询用户列表-按姓名搜索",
+      "userInput": "查找姓张的用户",
+      "expectedIntent": {
+        "intentCode": "USER_QUERY",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10019, 'F001', 'zhang_01', 'hash', '张明', 'operator', 'active', NOW(), NOW()), (10020, 'F001', 'zhang_02', 'hash', '张丽', 'operator', 'active', NOW(), NOW()), (10021, 'F001', 'li_01', 'hash', '李强', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id IN (10019, 10020, 10021);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "NAME_SEARCH",
+          "expectedFields": [
+            "fullName"
+          ],
+          "searchPattern": "张%",
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "张.*2.*人"
+      }
+    },
+    {
+      "id": "TC-P2-USER-025",
+      "priority": "P2",
+      "category": "USER",
+      "intentCode": "USER_QUERY",
+      "testType": "QUERY",
+      "description": "验证查询用户列表-分页查询",
+      "userInput": "用户列表,每页10条,第1页",
+      "expectedIntent": {
+        "intentCode": "USER_QUERY",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO users (id, factory_id, username, password_hash, full_name, role, status, created_at, updated_at) VALUES (10022, 'F001', 'page_user_01', 'hash', '何三', 'operator', 'active', NOW(), NOW()), (10023, 'F001', 'page_user_02', 'hash', '吕四', 'operator', 'active', NOW(), NOW()), (10024, 'F001', 'page_user_03', 'hash', '施五', 'operator', 'active', NOW(), NOW());",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM users WHERE id IN (10022, 10023, 10024);"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "PAGINATION",
+          "expectedFields": [
+            "content",
+            "totalElements",
+            "totalPages"
+          ],
+          "pageSize": 10,
+          "pageNumber": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "用户列表|第1页"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-001",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-所有客户",
+      "userInput": "查询所有客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C_TEST_001', NOW(), NOW(), 'CUST_CODE_001', 1, 'CC_001', 'F001', 1, '沃尔玛', '张经理', '13800001111');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id LIKE 'C_TEST_%';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "LIST_COUNT",
+          "expectedFields": [
+            "customerName",
+            "contactPerson",
+            "phone"
+          ],
+          "expectedMinCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "客户|2.*个"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-002",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-分页",
+      "userInput": "客户列表",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 1,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C_TEST_003', NOW(), NOW(), 'CUST_CODE_002', 1, 'CC_002', 'F001', 1, '大润发', '王经理', '13800003333');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_003', 'C_TEST_004', 'C_TEST_005');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "PAGINATION",
+          "expectedFields": [
+            "content",
+            "totalElements"
+          ],
+          "expectedMinCount": 3
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "客户|3.*个"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-003",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-口语化",
+      "userInput": "客户有哪些",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_006', NOW(), NOW(), 'CUST_CODE_003', 1, 'CC_003', 'F001', 1, '盒马鲜生', '陈经理');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id = 'C_TEST_006';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "客户"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-004",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-按地区筛选",
+      "userInput": "查询上海地区的客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, address) VALUES ('C_TEST_007', NOW(), NOW(), 'CUST_CODE_004', 1, 'CC_004', 'F001', 1, '上海商超A', '周经理', '上海市浦东新区');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_007', 'C_TEST_008');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "REGION_FILTER",
+          "expectedFields": [
+            "address"
+          ],
+          "filterPattern": "上海%",
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "上海|2.*个"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-005",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-按创建时间排序",
+      "userInput": "最新的客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_009', DATE_SUB(NOW(), NOW(), 'CUST_CODE_005', 1, 'CC_005', 'F001', 1, '新客户A', '郑经理');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_009', 'C_TEST_010');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "ORDER_BY",
+          "expectedFields": [
+            "createdAt"
+          ],
+          "orderBy": "created_at DESC"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "客户|新客户B"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-006",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_LIST",
+      "testType": "QUERY",
+      "description": "验证客户列表查询-空结果处理",
+      "userInput": "客户资料",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_LIST",
+        "confidence": 0.9,
+        "matchMethod": "PHRASE",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F999",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true
+        },
+        "dataVerification": {
+          "method": "EMPTY_RESULT",
+          "expectedCount": 0
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "暂无客户|无客户数据"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-007",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "QUERY",
+      "description": "验证客户搜索-按名称搜索",
+      "userInput": "查询客户沃尔玛",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_SEARCH",
+        "confidence": 1,
+        "matchMethod": "FUSION",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C_TEST_011', NOW(), NOW(), 'CUST_CODE_007', 1, 'CC_007', 'F001', 1, '沃尔玛北京店', '韩经理', '13800006666');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id = 'C_TEST_011';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "NAME_SEARCH",
+          "expectedFields": [
+            "customerName"
+          ],
+          "searchPattern": "%沃尔玛%"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "沃尔玛"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-008",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "QUERY",
+      "description": "验证客户搜索-按联系人搜索",
+      "userInput": "找张经理的客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_SEARCH",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C_TEST_012', NOW(), NOW(), 'CUST_CODE_008', 1, 'CC_008', 'F001', 1, '客户X', '张经理', '13800007777');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id = 'C_TEST_012';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "CONTACT_SEARCH",
+          "expectedFields": [
+            "contactPerson"
+          ],
+          "searchPattern": "%张经理%"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "张经理"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-009",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "QUERY",
+      "description": "验证客户搜索-模糊搜索",
+      "userInput": "搜索名字包含超市的客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_SEARCH",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_013', NOW(), NOW(), 'CUST_CODE_009', 1, 'CC_009', 'F001', 1, '乐购超市', '杨经理');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_013', 'C_TEST_014');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "FUZZY_SEARCH",
+          "expectedFields": [
+            "customerName"
+          ],
+          "searchPattern": "%超市%",
+          "expectedCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "超市|2.*个"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-010",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "QUERY",
+      "description": "验证客户搜索-按手机号搜索",
+      "userInput": "客户信息,手机号13800008888",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_SEARCH",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, phone) VALUES ('C_TEST_015', NOW(), NOW(), 'CUST_CODE_010', 1, 'CC_010', 'F001', 1, '客户Y', '秦经理', '13800008888');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id = 'C_TEST_015';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "PHONE_SEARCH",
+          "expectedFields": [
+            "phone"
+          ],
+          "expectedValue": "13800008888"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "13800008888|客户Y"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-011",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_SEARCH",
+      "testType": "QUERY",
+      "description": "验证客户搜索-无结果处理",
+      "userInput": "查找客户不存在的公司",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_SEARCH",
+        "confidence": 0.8,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": ""
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true
+        },
+        "dataVerification": {
+          "method": "EMPTY_RESULT",
+          "expectedCount": 0
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "未找到|无匹配客户"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-012",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建客户-完整信息",
+      "userInput": "创建客户,名称美团,联系人李明,手机13900009999",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_CREATE",
+        "confidence": 0.95,
+        "matchMethod": "FUSION",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE customer_name = '美团';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM customers WHERE customer_name = '美团' AND contact_person = '李明'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|新增客户"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-013",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建客户-带地址信息",
+      "userInput": "新建客户饿了么,联系人王强,地址北京朝阳区",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE customer_name = '饿了么';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM customers WHERE customer_name = '饿了么' AND address LIKE '%北京%'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-014",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建客户-最小信息",
+      "userInput": "添加客户京东生鲜",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_CREATE",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE customer_name = '京东生鲜';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "operationSuccess": true
+        },
+        "operationVerification": {
+          "type": "RECORD_CREATED",
+          "checkSql": "SELECT COUNT(*) as count FROM customers WHERE customer_name = '京东生鲜'",
+          "expectedCount": 1
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "创建成功|添加成功"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-015",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_CREATE",
+      "testType": "OPERATION",
+      "description": "验证创建客户-重复名称处理",
+      "userInput": "创建客户沃尔玛",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_CREATE",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "OPERATIONAL_COMMAND"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_016', NOW(), NOW(), 'CUST_CODE_015', 1, 'CC_015', 'F001', 1, '沃尔玛', '张经理');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id = 'C_TEST_016';"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "ERROR",
+          "intentRecognized": true,
+          "operationSuccess": false
+        }
+      },
+      "expectedResponse": {
+        "status": "ERROR",
+        "messagePattern": "客户已存在|重复"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-016",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_STATS",
+      "testType": "QUERY",
+      "description": "验证客户统计-总数统计",
+      "userInput": "统计客户数量",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_STATS",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_017', NOW(), NOW(), 'CUST_CODE_016', 1, 'CC_016', 'F001', 1, '客户A', '联系人A');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_017', 'C_TEST_018', 'C_TEST_019');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "COUNT_AGGREGATION",
+          "expectedFields": [
+            "totalCount"
+          ],
+          "expectedMinCount": 3
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "客户.*3.*个"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-017",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_STATS",
+      "testType": "QUERY",
+      "description": "验证客户统计-按地区分组",
+      "userInput": "客户地区分布",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_STATS",
+        "confidence": 0.85,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person, address) VALUES ('C_TEST_020', NOW(), NOW(), 'CUST_CODE_017', 1, 'CC_017', 'F001', 1, '客户D', '联系人D', '上海');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_020', 'C_TEST_021', 'C_TEST_022');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "GROUP_BY_AGGREGATION",
+          "expectedFields": [
+            "region",
+            "count"
+          ],
+          "groupBy": "address"
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "上海.*2|北京.*1"
+      }
+    },
+    {
+      "id": "TC-P2-CRM-018",
+      "priority": "P2",
+      "category": "CRM",
+      "intentCode": "CUSTOMER_STATS",
+      "testType": "QUERY",
+      "description": "验证客户统计-新增客户统计",
+      "userInput": "本月新增客户",
+      "expectedIntent": {
+        "intentCode": "CUSTOMER_STATS",
+        "confidence": 0.9,
+        "matchMethod": "SEMANTIC",
+        "questionType": "INFORMATION_QUERY"
+      },
+      "testDataSetup": {
+        "sql": "INSERT INTO customers (id, created_at, updated_at, code, created_by, customer_code, factory_id, is_active, name, contact_person) VALUES ('C_TEST_023', NOW(), NOW(), 'CUST_CODE_018', 1, 'CC_018', 'F001', 1, '新客户1', '联系人1');",
+        "factoryId": "F001",
+        "cleanup": "DELETE FROM customers WHERE id IN ('C_TEST_023', 'C_TEST_024');"
+      },
+      "validation": {
+        "responseAssertion": {
+          "status": "COMPLETED",
+          "intentRecognized": true,
+          "dataNotNull": true
+        },
+        "dataVerification": {
+          "method": "TIME_RANGE_COUNT",
+          "expectedFields": [
+            "newCustomerCount"
+          ],
+          "timeRange": "MONTH",
+          "expectedMinCount": 2
+        }
+      },
+      "expectedResponse": {
+        "status": "COMPLETED",
+        "messagePattern": "新增.*2.*个"
+      }
+    }
+  ],
+  "chunkInfo": {
+    "chunkNumber": 2,
+    "startIndex": 35,
+    "chunkSize": 35
+  }
+}

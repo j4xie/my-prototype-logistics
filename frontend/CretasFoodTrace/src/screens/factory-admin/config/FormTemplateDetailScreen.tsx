@@ -42,6 +42,9 @@ const ENTITY_TYPE_LABELS: Record<EntityType, { zh: string; en: string; icon: str
   DISPOSAL_RECORD: { zh: '报废记录', en: 'Disposal Record', icon: 'delete', color: '#f5222d' },
   PRODUCT_TYPE: { zh: '产品类型', en: 'Product Type', icon: 'barcode', color: '#2196f3' },
   PRODUCTION_PLAN: { zh: '生产计划', en: 'Production Plan', icon: 'calendar-clock', color: '#ff9800' },
+  SCALE_DEVICE: { zh: '电子秤设备', en: 'Scale Device', icon: 'scale', color: '#607d8b' },
+  SCALE_PROTOCOL: { zh: '电子秤协议', en: 'Scale Protocol', icon: 'file-document-outline', color: '#795548' },
+  ISAPI_DEVICE: { zh: 'ISAPI设备', en: 'ISAPI Device', icon: 'video', color: '#9c27b0' },
 };
 
 type TabType = 'fields' | 'preview' | 'history';

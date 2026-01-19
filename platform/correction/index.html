@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ET-Agent 行为校准系统 - 白垩纪食品溯源</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       白垩纪 Design System V4 (Light Theme)
+       ============================================ */
+    :root {
+      --bg-base: #FAFAF8;
+      --bg-surface: #FFFFFF;
+      --bg-warm: #F5F3EF;
+      --bg-muted: #EDEBE7;
+      --text-primary: #1A1A1A;
+      --text-secondary: #5C5C5C;
+      --text-tertiary: #8A8A8A;
+      --accent: #C45C26;
+      --accent-hover: #A84D1F;
+      --accent-light: #FDF8F5;
+      --accent-glow: rgba(196, 92, 38, 0.15);
+      --success: #2D6A4F;
+      --success-light: #E8F5E9;
+      --warning: #D4A574;
+      --warning-light: #FFF8E1;
+      --error: #BC4749;
+      --error-light: #FFEBEE;
+      --info: #4A90A4;
+      --info-light: #E3F2FD;
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-medium: rgba(0, 0, 0, 0.1);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans SC', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--bg-base);
+    }
+
+    /* Layout */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-content { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px;
+    }
+    .logo-text { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+    .logo-text span { color: var(--accent); }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-warm);
+      border: none;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .back-link:hover { color: var(--accent); background: var(--accent-light); }
+
+    /* Main */
+    main { padding: 32px 0 64px; }
+
+    /* Page Title */
+    .page-title {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-title h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin: 0 0 12px;
+    }
+    .page-title p {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+    .paper-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 8px 16px;
+      background: var(--info-light);
+      color: var(--info);
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      text-decoration: none;
+    }
+    .paper-ref:hover { background: var(--info); color: white; }
+
+    /* Section */
+    .section {
+      background: var(--bg-surface);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Feature Grid */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .feature-card {
+      background: var(--bg-warm);
+      border-radius: 12px;
+      padding: 20px;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: var(--accent-light);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 12px;
+    }
+    .feature-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .feature-desc { font-size: 14px; color: var(--text-secondary); }
+
+    /* Module Cards */
+    .module-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .module-grid { grid-template-columns: 1fr; }
+    }
+    .module-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all var(--duration-fast);
+    }
+    .module-card:hover { border-color: var(--accent); box-shadow: var(--shadow-md); }
+    .module-header {
+      padding: 16px 20px;
+      background: var(--bg-warm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .module-name {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 15px;
+    }
+    .module-badge {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      padding: 4px 8px;
+      background: var(--accent-light);
+      color: var(--accent);
+      border-radius: 4px;
+    }
+    .module-expand {
+      width: 24px; height: 24px;
+      display: flex; align-items: center; justify-content: center;
+      transition: transform var(--duration-fast);
+    }
+    .module-card.expanded .module-expand { transform: rotate(180deg); }
+    .module-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s var(--ease-out);
+    }
+    .module-card.expanded .module-content { max-height: 800px; }
+    .module-body { padding: 20px; }
+
+    /* Code Table */
+    .code-table {
+      width: 100%;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .code-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--bg-warm);
+      color: var(--text-secondary);
+      font-weight: 500;
+      font-family: var(--font-sans);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .code-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+    .code-table tr:last-child td { border-bottom: none; }
+    .code-table tr:hover td { background: var(--bg-warm); }
+    .code-table .type { color: var(--accent); font-weight: 500; }
+    .code-table .strategy { color: var(--success); }
+    .code-table .keyword { color: var(--info); }
+
+    /* Architecture Diagram */
+    .architecture-diagram {
+      background: var(--bg-warm);
+      border-radius: 12px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+    .ascii-diagram {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.4;
+      white-space: pre;
+      color: var(--text-primary);
+      overflow-x: auto;
+    }
+    .ascii-diagram .highlight { color: var(--accent); font-weight: 600; }
+    .ascii-diagram .success { color: var(--success); }
+    .ascii-diagram .error { color: var(--error); }
+    .ascii-diagram .info { color: var(--info); }
+
+    /* API Table */
+    .api-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .api-table th {
+      text-align: left;
+      padding: 14px 16px;
+      background: var(--bg-warm);
+      color: var(--text-secondary);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .api-table td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table tr:hover td { background: var(--bg-warm); }
+    .api-endpoint {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--accent);
+    }
+    .api-method {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 4px;
+      background: var(--success-light);
+      color: var(--success);
+    }
+    .api-method.post { background: var(--info-light); color: var(--info); }
+
+    /* Info Box */
+    .info-box {
+      padding: 16px 20px;
+      background: var(--info-light);
+      border-left: 4px solid var(--info);
+      border-radius: 0 8px 8px 0;
+      margin: 16px 0;
+    }
+    .info-box p { margin: 0; font-size: 14px; color: var(--text-secondary); }
+    .info-box strong { color: var(--text-primary); }
+
+    /* Metric Formula */
+    .metric-formula {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--bg-muted);
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* Cache Info */
+    .cache-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .cache-item {
+      padding: 16px;
+      background: var(--bg-warm);
+      border-radius: 8px;
+      text-align: center;
+    }
+    .cache-item-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+    .cache-item-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-subtle);
+      padding: 32px 0;
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+    .footer-link {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color var(--duration-fast);
+    }
+    .footer-link:hover { color: var(--accent); }
+    .footer-copy {
+      font-size: 13px;
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <a href="../index.html" class="logo">
+          <div class="logo-icon">BJ</div>
+          <div class="logo-text"><span>白垩纪</span> 技术中心</div>
+        </a>
+        <a href="../index.html" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          返回技术中心
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      <!-- Page Title -->
+      <div class="page-title">
+        <h1>ET-Agent 行为校准系统</h1>
+        <p>基于自我纠正与行为监控的智能Agent错误处理框架</p>
+        <a href="https://arxiv.org/abs/2601.06860" target="_blank" class="paper-ref">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+          基于论文 arXiv:2601.06860
+        </a>
+      </div>
+
+      <!-- 系统概览 Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">系统概览</h2>
+        </div>
+        <p style="font-size: 15px; color: var(--text-secondary); margin-bottom: 24px;">
+          ET-Agent 行为校准系统是一套面向AI智能体的<strong>自动化错误检测与纠正框架</strong>。
+          系统通过持续监控工具调用行为，自动识别失败模式，并根据错误类型选择最优纠正策略，
+          实现Agent行为的实时优化与可靠性提升。
+        </p>
+
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-icon">A</div>
+            <div class="feature-title">错误分类</div>
+            <div class="feature-desc">基于关键词匹配的智能错误类型识别，支持5种核心错误模式</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">B</div>
+            <div class="feature-title">自动纠正</div>
+            <div class="feature-desc">根据错误类型自动选择纠正策略，支持最多3次重试机制</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">C</div>
+            <div class="feature-title">冗余检测</div>
+            <div class="feature-desc">SHA-256参数哈希与双层缓存，消除重复工具调用</div>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">D</div>
+            <div class="feature-title">指标监控</div>
+            <div class="feature-desc">多维度行为指标实时计算，综合健康分数评估</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 四大核心模块 Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">四大核心模块</h2>
+        </div>
+
+        <div class="module-grid">
+          <!-- Module A: 错误分类系统 -->
+          <div class="module-card expanded">
+            <div class="module-header" onclick="toggleModule(this)">
+              <div class="module-name">
+                <span style="font-size: 18px;">A</span>
+                错误分类系统
+                <span class="module-badge">SelfCorrectionService</span>
+              </div>
+              <div class="module-expand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
+            <div class="module-content">
+              <div class="module-body">
+                <div class="info-box">
+                  <p>根据工具调用返回的错误信息，通过<strong>关键词匹配</strong>自动识别错误类型，为后续纠正策略选择提供依据。</p>
+                </div>
+                <table class="code-table">
+                  <thead>
+                    <tr>
+                      <th>错误类型</th>
+                      <th>匹配关键词</th>
+                      <th>示例</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="type">DATA_INSUFFICIENT</td>
+                      <td>数据不完整 / 未找到 / 为空</td>
+                      <td>"查询结果为空"</td>
+                    </tr>
+                    <tr>
+                      <td class="type">FORMAT_ERROR</td>
+                      <td>格式错误 / 解析失败 / JSON无效</td>
+                      <td>"JSON解析异常"</td>
+                    </tr>
+                    <tr>
+                      <td class="type">ANALYSIS_ERROR</td>
+                      <td>分析失败 / 计算错误</td>
+                      <td>"统计计算异常"</td>
+                    </tr>
+                    <tr>
+                      <td class="type">LOGIC_ERROR</td>
+                      <td>逻辑错误 / 规则冲突</td>
+                      <td>"业务规则不匹配"</td>
+                    </tr>
+                    <tr>
+                      <td class="type">UNKNOWN</td>
+                      <td>无法匹配</td>
+                      <td>其他错误</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module B: 纠正策略映射 -->
+          <div class="module-card expanded">
+            <div class="module-header" onclick="toggleModule(this)">
+              <div class="module-name">
+                <span style="font-size: 18px;">B</span>
+                纠正策略映射
+                <span class="module-badge">PromptInjectionService</span>
+              </div>
+              <div class="module-expand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
+            <div class="module-content">
+              <div class="module-body">
+                <div class="info-box">
+                  <p>每种错误类型对应一种<strong>最优纠正策略</strong>，系统自动注入修复提示并发起重试，最多支持3次纠正尝试。</p>
+                </div>
+                <table class="code-table">
+                  <thead>
+                    <tr>
+                      <th>错误类别</th>
+                      <th>纠正策略</th>
+                      <th>描述</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="type">DATA_INSUFFICIENT</td>
+                      <td class="strategy">RE_RETRIEVE</td>
+                      <td>重新获取数据，扩大搜索范围</td>
+                    </tr>
+                    <tr>
+                      <td class="type">FORMAT_ERROR</td>
+                      <td class="strategy">FORMAT_FIX</td>
+                      <td>格式修复，尝试不同解析方式</td>
+                    </tr>
+                    <tr>
+                      <td class="type">ANALYSIS_ERROR</td>
+                      <td class="strategy">RE_ANALYZE</td>
+                      <td>重新分析，调整分析参数</td>
+                    </tr>
+                    <tr>
+                      <td class="type">LOGIC_ERROR</td>
+                      <td class="strategy">PROMPT_INJECTION</td>
+                      <td>提示注入，补充上下文约束</td>
+                    </tr>
+                    <tr>
+                      <td class="type">UNKNOWN</td>
+                      <td class="strategy">FULL_RETRY</td>
+                      <td>完全重试，全流程重跑</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module C: 工具调用冗余检测 -->
+          <div class="module-card expanded">
+            <div class="module-header" onclick="toggleModule(this)">
+              <div class="module-name">
+                <span style="font-size: 18px;">C</span>
+                工具调用冗余检测
+                <span class="module-badge">ToolCallRedundancyService</span>
+              </div>
+              <div class="module-expand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
+            <div class="module-content">
+              <div class="module-body">
+                <div class="info-box">
+                  <p>通过<strong>参数哈希</strong>识别相同的工具调用，避免重复执行，提升系统效率并降低资源消耗。</p>
+                </div>
+                <div class="cache-info">
+                  <div class="cache-item">
+                    <div class="cache-item-value">SHA-256</div>
+                    <div class="cache-item-label">参数哈希算法</div>
+                  </div>
+                  <div class="cache-item">
+                    <div class="cache-item-value">2层</div>
+                    <div class="cache-item-label">缓存架构</div>
+                  </div>
+                  <div class="cache-item">
+                    <div class="cache-item-value">5分钟</div>
+                    <div class="cache-item-label">TTL 过期时间</div>
+                  </div>
+                  <div class="cache-item">
+                    <div class="cache-item-value">实时</div>
+                    <div class="cache-item-label">命中率统计</div>
+                  </div>
+                </div>
+                <table class="code-table" style="margin-top: 20px;">
+                  <thead>
+                    <tr>
+                      <th>缓存层级</th>
+                      <th>存储介质</th>
+                      <th>特点</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="keyword">L1 Cache</td>
+                      <td>内存 (ConcurrentHashMap)</td>
+                      <td>毫秒级响应，容量有限</td>
+                    </tr>
+                    <tr>
+                      <td class="keyword">L2 Cache</td>
+                      <td>数据库 (ToolCallCache)</td>
+                      <td>持久化存储，跨实例共享</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Module D: 行为指标监控 -->
+          <div class="module-card expanded">
+            <div class="module-header" onclick="toggleModule(this)">
+              <div class="module-name">
+                <span style="font-size: 18px;">D</span>
+                行为指标监控
+                <span class="module-badge">BehaviorCalibrationService</span>
+              </div>
+              <div class="module-expand">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </div>
+            </div>
+            <div class="module-content">
+              <div class="module-body">
+                <div class="info-box">
+                  <p>多维度<strong>行为指标</strong>实时计算，综合评估Agent健康状态，支持趋势分析与异常预警。</p>
+                </div>
+                <table class="code-table">
+                  <thead>
+                    <tr>
+                      <th>指标名称</th>
+                      <th>计算公式</th>
+                      <th>说明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="keyword">successRate</td>
+                      <td><span class="metric-formula">成功数 / 总调用数</span></td>
+                      <td>工具调用成功率</td>
+                    </tr>
+                    <tr>
+                      <td class="keyword">redundancyRate</td>
+                      <td><span class="metric-formula">冗余数 / 总调用数</span></td>
+                      <td>重复调用占比</td>
+                    </tr>
+                    <tr>
+                      <td class="keyword">correctionRate</td>
+                      <td><span class="metric-formula">纠正数 / 失败数</span></td>
+                      <td>自动纠正比例</td>
+                    </tr>
+                    <tr>
+                      <td class="keyword">recoveryRate</td>
+                      <td><span class="metric-formula">恢复数 / 纠正数</span></td>
+                      <td>纠正后恢复率</td>
+                    </tr>
+                    <tr>
+                      <td class="keyword">compositeScore</td>
+                      <td><span class="metric-formula">0.4*成功 + 0.2*纠正 + ...</span></td>
+                      <td>综合健康分数</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 技术架构图 Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">技术架构图</h2>
+        </div>
+        <div class="architecture-diagram">
+          <div class="ascii-diagram">
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                              ET-Agent 行为校准系统架构                                     │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────┐     ┌─────────────────────────────────────────────────────────────────────────┐
+│          │     │                     <span class="highlight">ToolCallRedundancyService</span>                          │
+│   用户   │────▶│  ┌────────────┐    ┌────────────┐    ┌────────────┐                     │
+│   查询   │     │  │ 参数提取   │───▶│ SHA-256    │───▶│ 缓存检查   │                     │
+│          │     │  │            │    │ Hash       │    │ L1 + L2    │                     │
+└──────────┘     │  └────────────┘    └────────────┘    └─────┬──────┘                     │
+                 │                                            │                            │
+                 │                         ┌──────────────────┴──────────────────┐         │
+                 │                         ▼                                     ▼         │
+                 │                  <span class="success">[ 缓存命中 ]</span>                       <span class="info">[ 缓存未命中 ]</span>   │
+                 │                         │                                     │         │
+                 │                         ▼                                     ▼         │
+                 │                  ┌────────────┐                        ┌────────────┐   │
+                 │                  │ 返回缓存   │                        │ 执行工具   │   │
+                 │                  │ 结果       │                        │ 调用       │   │
+                 │                  └────────────┘                        └─────┬──────┘   │
+                 └─────────────────────────────────────────────────────────────────────────┘
+                                                                               │
+                                        ┌──────────────────────────────────────┴─────────────────────────────┐
+                                        ▼                                                                    ▼
+                                 <span class="success">[ 执行成功 ]</span>                                                    <span class="error">[ 执行失败 ]</span>
+                                        │                                                                    │
+                                        ▼                                                                    ▼
+                                 ┌────────────┐                                       ┌─────────────────────────────────────┐
+                                 │ 缓存结果   │                                       │     <span class="highlight">SelfCorrectionService</span>            │
+                                 │ 返回响应   │                                       │  ┌──────────┐    ┌──────────┐       │
+                                 └─────┬──────┘                                       │  │ 错误分类 │───▶│ 策略选择 │       │
+                                       │                                              │  └──────────┘    └─────┬────┘       │
+                                       │                                              │                        ▼            │
+                                       │                                              │                 ┌──────────┐        │
+                                       │                                              │                 │ 提示注入 │        │
+                                       │                                              │                 └─────┬────┘        │
+                                       │                                              │                       ▼             │
+                                       │                                              │  ┌─────────────────────────────────┐│
+                                       │                                              │  │  重试 (最多3次)                 ││
+                                       │                                              │  │  ┌─────┐  ┌─────┐  ┌─────┐     ││
+                                       │                                              │  │  │ #1  │─▶│ #2  │─▶│ #3  │     ││
+                                       │                                              │  │  └─────┘  └─────┘  └─────┘     ││
+                                       │                                              │  └─────────────────────────────────┘│
+                                       │                                              └─────────────────────────────────────┘
+                                       │                                                               │
+                                       └───────────────────────────┬───────────────────────────────────┘
+                                                                   ▼
+                                       ┌─────────────────────────────────────────────────────────────────┐
+                                       │                  <span class="highlight">BehaviorCalibrationService</span>                    │
+                                       │  ┌───────────────────────────────────────────────────────────┐  │
+                                       │  │  指标计算:                                                │  │
+                                       │  │  • successRate    = 成功数 / 总调用数                     │  │
+                                       │  │  • redundancyRate = 冗余数 / 总调用数                     │  │
+                                       │  │  • correctionRate = 纠正数 / 失败数                       │  │
+                                       │  │  • recoveryRate   = 恢复数 / 纠正数                       │  │
+                                       │  │  • compositeScore = 加权综合分                            │  │
+                                       │  └───────────────────────────────────────────────────────────┘  │
+                                       │                             │                                   │
+                                       │                             ▼                                   │
+                                       │  ┌───────────────────────────────────────────────────────────┐  │
+                                       │  │  存储: BehaviorCalibrationMetrics (每日快照)               │  │
+                                       │  └───────────────────────────────────────────────────────────┘  │
+                                       └─────────────────────────────────────────────────────────────────┘</div>
+        </div>
+      </section>
+
+      <!-- API 接口文档 Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">API 接口文档</h2>
+        </div>
+        <table class="api-table">
+          <thead>
+            <tr>
+              <th style="width: 340px;">端点</th>
+              <th style="width: 80px;">方法</th>
+              <th>描述</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="api-endpoint">/api/calibration/metrics/daily</span></td>
+              <td><span class="api-method">GET</span></td>
+              <td>获取日指标数据，包含成功率、冗余率、纠正率等核心指标</td>
+            </tr>
+            <tr>
+              <td><span class="api-endpoint">/api/calibration/metrics/trend</span></td>
+              <td><span class="api-method">GET</span></td>
+              <td>获取指标趋势数据，支持按日期范围查询历史变化</td>
+            </tr>
+            <tr>
+              <td><span class="api-endpoint">/api/calibration/dashboard</span></td>
+              <td><span class="api-method">GET</span></td>
+              <td>获取仪表盘聚合数据，包含概览统计、工具可靠性排行等</td>
+            </tr>
+            <tr>
+              <td><span class="api-endpoint">/api/calibration/tool-calls</span></td>
+              <td><span class="api-method">GET</span></td>
+              <td>获取工具调用记录，支持分页与状态筛选</td>
+            </tr>
+            <tr>
+              <td><span class="api-endpoint">/api/calibration/tool-reliability</span></td>
+              <td><span class="api-method">GET</span></td>
+              <td>获取各工具可靠性统计，按成功率排序</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-links">
+        <a href="../index.html" class="footer-link">技术中心首页</a>
+        <a href="../ai-architecture/index.html" class="footer-link">AI 意图识别系统</a>
+        <a href="https://arxiv.org/abs/2601.06860" target="_blank" class="footer-link">参考论文</a>
+      </div>
+      <p class="footer-copy">白垩纪食品溯源系统 &copy; 2024-2026 Cretas Technology</p>
+    </div>
+  </footer>
+
+  <script>
+    // Toggle module card expansion
+    function toggleModule(header) {
+      const card = header.closest('.module-card');
+      card.classList.toggle('expanded');
+    }
+  </script>
+</body>
+</html>

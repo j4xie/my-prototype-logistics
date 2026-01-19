@@ -8,11 +8,15 @@ import com.cretas.aims.ai.dto.Tool;
 import com.cretas.aims.ai.dto.ToolCall;
 import com.cretas.aims.ai.tool.ToolExecutor;
 import com.cretas.aims.ai.tool.ToolRegistry;
+import com.cretas.aims.config.ArenaRLConfig;
 import com.cretas.aims.config.DashScopeConfig;
 import com.cretas.aims.config.IntentMatchingConfig;
+import com.cretas.aims.dto.arena.TournamentResult;
+import com.cretas.aims.service.arena.ArenaRLTournamentService;
 import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.intent.IntentMatchResult.CandidateIntent;
 import com.cretas.aims.dto.intent.IntentMatchResult.MatchMethod;
+import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.intent.LlmIntentClassifyResponse;
 import com.cretas.aims.dto.intent.LlmIntentClassifyResponse.CandidateResponse;
 import com.cretas.aims.entity.config.AIIntentConfig;
@@ -81,6 +85,17 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     @Value("${cretas.ai.intent.auto-create.factory-auto-approve:true}")
     private boolean factoryAutoApproveEnabled;
 
+    // ==================== 多意图识别配置 (模块C) ====================
+
+    @Value("${cretas.ai.multi-intent.enabled:true}")
+    private boolean multiIntentEnabled;
+
+    @Value("${cretas.ai.multi-intent.max-intents:3}")
+    private int maxIntents;
+
+    @Value("${cretas.ai.multi-intent.user-confirm-threshold:0.7}")
+    private double userConfirmThreshold;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private final OkHttpClient httpClient;
@@ -98,6 +113,10 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     private final ToolRegistry toolRegistry;
 
     private final IntentMatchingConfig intentMatchingConfig;
+
+    private final ArenaRLTournamentService arenaRLTournamentService;
+
+    private final ArenaRLConfig arenaRLConfig;
 
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
@@ -163,7 +182,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             @Autowired(required = false) AIIntentConfigRepository intentConfigRepository,
             @Autowired(required = false) ConversationService conversationService,
             @Autowired(required = false) ToolRegistry toolRegistry,
-            @Autowired(required = false) IntentMatchingConfig intentMatchingConfig) {
+            @Autowired(required = false) IntentMatchingConfig intentMatchingConfig,
+            @Autowired(required = false) ArenaRLTournamentService arenaRLTournamentService,
+            @Autowired(required = false) ArenaRLConfig arenaRLConfig) {
         // OkHttp 客户端
         if (aiServiceHttpClient != null) {
             this.httpClient = aiServiceHttpClient;
@@ -226,6 +247,17 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
         if (conversationService != null) {
             log.info("Multi-turn conversation support ENABLED (threshold={})", 0.3);
+        }
+
+        // ArenaRL 锦标赛服务
+        this.arenaRLTournamentService = arenaRLTournamentService;
+        this.arenaRLConfig = arenaRLConfig;
+
+        if (arenaRLConfig != null && arenaRLConfig.isIntentDisambiguationEnabled()) {
+            log.info("ArenaRL intent disambiguation ENABLED (ambiguity threshold={})",
+                    arenaRLConfig.getIntentDisambiguation().getAmbiguityThreshold());
+        } else {
+            log.info("ArenaRL intent disambiguation DISABLED");
         }
     }
 
@@ -2644,5 +2676,536 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         context.put("userId", userId);
         context.put("userRole", userRole);
         return context;
+    }
+
+    // ==================== 多意图识别实现 (模块C) ====================
+
+    /**
+     * 多意图识别 - 识别用户输入中的一个或多个意图
+     *
+     * 支持识别:
+     * - 连接词: "顺便"、"还有"、"另外"、"以及"、"同时"
+     * - 并列结构: "A和B"、"既要A又要B"
+     * - 区分多意图 vs 复合查询
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param contextSummary 对话上下文摘要 (可选)
+     * @return 多意图识别结果
+     */
+    @Override
+    public MultiIntentResult classifyMultiIntent(String userInput, String factoryId, String contextSummary) {
+        log.info("[Multi-Intent] Classifying multi-intent for input: '{}', factoryId: {}",
+                truncate(userInput, 50), factoryId);
+
+        // 检查是否启用多意图识别
+        if (!multiIntentEnabled) {
+            log.debug("[Multi-Intent] Multi-intent classification is disabled");
+            return buildSingleIntentFallback(userInput, factoryId);
+        }
+
+        // 检查 DashScope 客户端是否可用
+        if (dashScopeClient == null) {
+            log.warn("[Multi-Intent] DashScope client not available, falling back to single intent");
+            return buildSingleIntentFallback(userInput, factoryId);
+        }
+
+        try {
+            // 获取可用意图列表
+            List<AIIntentConfig> availableIntents = getAvailableIntents(factoryId);
+
+            if (availableIntents == null || availableIntents.isEmpty()) {
+                log.warn("[Multi-Intent] No available intents for factoryId: {}", factoryId);
+                return MultiIntentResult.builder()
+                        .isMultiIntent(false)
+                        .intents(List.of())
+                        .executionStrategy(MultiIntentResult.ExecutionStrategy.SEQUENTIAL)
+                        .overallConfidence(0.0)
+                        .reasoning("No available intents found")
+                        .build();
+            }
+
+            // 构建多意图识别 Prompt
+            String systemPrompt = buildMultiIntentClassifyPrompt(availableIntents, contextSummary);
+
+            // 调用 DashScope 进行多意图识别
+            String responseJson = dashScopeClient.classifyIntent(systemPrompt, userInput);
+
+            // 解析响应
+            return parseMultiIntentResponse(responseJson, availableIntents);
+
+        } catch (Exception e) {
+            log.error("[Multi-Intent] Classification failed: {}", e.getMessage(), e);
+            return buildSingleIntentFallback(userInput, factoryId);
+        }
+    }
+
+    /**
+     * 构建多意图分类系统提示词
+     *
+     * @param intents 可用意图列表
+     * @param contextSummary 对话上下文摘要
+     * @return 系统提示词
+     */
+    private String buildMultiIntentClassifyPrompt(List<AIIntentConfig> intents, String contextSummary) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("## 系统角色\n");
+        sb.append("你是一个意图识别助手。分析用户输入，识别一个或多个意图。\n\n");
+
+        sb.append("## 多意图识别规则\n");
+        sb.append("1. 识别连接词: \"顺便\"、\"还有\"、\"另外\"、\"以及\"、\"同时\"\n");
+        sb.append("2. 识别并列结构: \"A和B\"、\"既要A又要B\"\n");
+        sb.append("3. 区分真正多意图 vs 复合查询:\n");
+        sb.append("   - 多意图: \"查库存，顺便看看发货\" → 2个独立意图\n");
+        sb.append("   - 复合查询: \"对比A和B的库存\" → 1个对比意图\n\n");
+
+        // 上下文
+        if (contextSummary != null && !contextSummary.isEmpty()) {
+            sb.append("## 对话上下文\n");
+            sb.append(contextSummary).append("\n\n");
+        }
+
+        // 意图列表
+        sb.append("## 可用意图列表\n");
+        for (AIIntentConfig intent : intents) {
+            sb.append("- **").append(intent.getIntentCode()).append("**");
+            sb.append(" (").append(intent.getIntentName()).append("): ");
+            sb.append(intent.getDescription() != null ? intent.getDescription() : "").append("\n");
+
+            // 添加关键词参考
+            if (intent.getKeywords() != null && !intent.getKeywords().isEmpty()) {
+                sb.append("  关键词: ").append(String.join(", ", intent.getKeywords())).append("\n");
+            }
+        }
+
+        sb.append("\n## 执行策略说明\n");
+        sb.append("- **PARALLEL**: 意图之间无依赖，可并行执行\n");
+        sb.append("- **SEQUENTIAL**: 意图之间有先后顺序依赖\n");
+        sb.append("- **USER_CONFIRM**: 需要用户确认后执行（风险操作或置信度不足）\n\n");
+
+        sb.append("## 输出格式 (严格JSON)\n");
+        sb.append("```json\n");
+        sb.append("{\n");
+        sb.append("  \"intents\": [\n");
+        sb.append("    {\n");
+        sb.append("      \"intent_code\": \"意图代码\",\n");
+        sb.append("      \"confidence\": 0.85,\n");
+        sb.append("      \"extracted_params\": {\"param1\": \"value1\"},\n");
+        sb.append("      \"reasoning\": \"判断理由\"\n");
+        sb.append("    }\n");
+        sb.append("  ],\n");
+        sb.append("  \"is_multi_intent\": false,\n");
+        sb.append("  \"execution_strategy\": \"parallel\",\n");
+        sb.append("  \"overall_confidence\": 0.85,\n");
+        sb.append("  \"overall_reasoning\": \"整体判断理由\"\n");
+        sb.append("}\n");
+        sb.append("```\n\n");
+
+        sb.append("## 重要规则\n");
+        sb.append("1. **最多识别 ").append(maxIntents).append(" 个意图**\n");
+        sb.append("2. **只返回置信度 >= 0.5 的意图**\n");
+        sb.append("3. **仅返回 JSON，不要包含其他文字**\n");
+
+        return sb.toString();
+    }
+
+    /**
+     * 解析多意图识别响应
+     *
+     * @param responseJson LLM 响应 JSON
+     * @param availableIntents 可用意图列表
+     * @return 多意图识别结果
+     */
+    private MultiIntentResult parseMultiIntentResponse(String responseJson,
+                                                        List<AIIntentConfig> availableIntents) {
+        try {
+            // 1. 提取 JSON
+            Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}");
+            Matcher matcher = pattern.matcher(responseJson);
+
+            if (!matcher.find()) {
+                log.warn("[Multi-Intent] Could not extract JSON from response: {}",
+                        truncate(responseJson, 100));
+                return buildEmptyMultiIntentResult("Could not extract JSON from response");
+            }
+
+            // 2. 解析 JSON
+            JsonNode json = objectMapper.readTree(matcher.group());
+
+            boolean isMultiIntent = json.has("is_multi_intent") && json.get("is_multi_intent").asBoolean();
+
+            List<MultiIntentResult.SingleIntentMatch> intents = new ArrayList<>();
+            JsonNode intentsNode = json.get("intents");
+
+            if (intentsNode != null && intentsNode.isArray()) {
+                int order = 0;
+                for (JsonNode intentNode : intentsNode) {
+                    String intentCode = intentNode.has("intent_code") ?
+                            intentNode.get("intent_code").asText() : null;
+                    double confidence = intentNode.has("confidence") ?
+                            intentNode.get("confidence").asDouble() : 0.5;
+
+                    if (intentCode == null || intentCode.isEmpty()) {
+                        continue;
+                    }
+
+                    // 限制意图数量
+                    if (intents.size() >= maxIntents) {
+                        log.debug("[Multi-Intent] Reached max intents limit ({}), skipping remaining", maxIntents);
+                        break;
+                    }
+
+                    // 验证意图存在
+                    AIIntentConfig config = findIntentConfig(intentCode, availableIntents);
+                    if (config != null) {
+                        // 提取参数
+                        Map<String, Object> extractedParams = new HashMap<>();
+                        if (intentNode.has("extracted_params") && intentNode.get("extracted_params").isObject()) {
+                            extractedParams = parseParams(intentNode.get("extracted_params"));
+                        }
+
+                        intents.add(MultiIntentResult.SingleIntentMatch.builder()
+                                .intentCode(intentCode)
+                                .intentName(config.getIntentName())
+                                .confidence(Math.max(0.0, Math.min(1.0, confidence)))
+                                .extractedParams(extractedParams)
+                                .reasoning(getTextOrNull(intentNode, "reasoning"))
+                                .executionOrder(order++)
+                                .build());
+                    } else {
+                        log.warn("[Multi-Intent] Intent code not found in available intents: {}", intentCode);
+                    }
+                }
+            }
+
+            // 如果没有识别到任何意图，返回空结果
+            if (intents.isEmpty()) {
+                return buildEmptyMultiIntentResult("No valid intents recognized");
+            }
+
+            // 3. 确定执行策略
+            String strategyStr = json.has("execution_strategy") ?
+                    json.get("execution_strategy").asText().toUpperCase() : "PARALLEL";
+            MultiIntentResult.ExecutionStrategy strategy;
+            try {
+                strategy = MultiIntentResult.ExecutionStrategy.valueOf(strategyStr);
+            } catch (IllegalArgumentException e) {
+                log.warn("[Multi-Intent] Invalid execution strategy '{}', defaulting to PARALLEL", strategyStr);
+                strategy = MultiIntentResult.ExecutionStrategy.PARALLEL;
+            }
+
+            // 4. 计算总体置信度
+            double overallConfidence = json.has("overall_confidence") ?
+                    json.get("overall_confidence").asDouble() : calculateOverallConfidence(intents);
+            overallConfidence = Math.max(0.0, Math.min(1.0, overallConfidence));
+
+            // 5. 根据置信度决定是否需要用户确认
+            if (overallConfidence < userConfirmThreshold) {
+                strategy = MultiIntentResult.ExecutionStrategy.USER_CONFIRM;
+            }
+
+            String overallReasoning = getTextOrNull(json, "overall_reasoning");
+
+            log.info("[Multi-Intent] Classification result: isMultiIntent={}, intentCount={}, strategy={}, confidence={}",
+                    isMultiIntent || intents.size() > 1, intents.size(), strategy, overallConfidence);
+
+            return MultiIntentResult.builder()
+                    .isMultiIntent(isMultiIntent || intents.size() > 1)
+                    .intents(intents)
+                    .executionStrategy(strategy)
+                    .overallConfidence(overallConfidence)
+                    .reasoning(overallReasoning)
+                    .build();
+
+        } catch (Exception e) {
+            log.error("[Multi-Intent] Failed to parse response: {}", e.getMessage(), e);
+            return buildEmptyMultiIntentResult("Failed to parse response: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 从 JsonNode 中提取参数 Map
+     */
+    private Map<String, Object> parseParams(JsonNode paramsNode) {
+        Map<String, Object> params = new HashMap<>();
+        if (paramsNode == null || !paramsNode.isObject()) {
+            return params;
+        }
+
+        paramsNode.fields().forEachRemaining(entry -> {
+            JsonNode value = entry.getValue();
+            if (value.isTextual()) {
+                params.put(entry.getKey(), value.asText());
+            } else if (value.isNumber()) {
+                params.put(entry.getKey(), value.numberValue());
+            } else if (value.isBoolean()) {
+                params.put(entry.getKey(), value.asBoolean());
+            } else if (value.isArray() || value.isObject()) {
+                params.put(entry.getKey(), value.toString());
+            }
+        });
+
+        return params;
+    }
+
+    /**
+     * 从 JsonNode 中安全获取文本值
+     */
+    private String getTextOrNull(JsonNode node, String fieldName) {
+        if (node == null || !node.has(fieldName)) {
+            return null;
+        }
+        JsonNode field = node.get(fieldName);
+        return field.isTextual() ? field.asText() : null;
+    }
+
+    /**
+     * 查找意图配置
+     */
+    private AIIntentConfig findIntentConfig(String intentCode, List<AIIntentConfig> availableIntents) {
+        if (intentCode == null || availableIntents == null) {
+            return null;
+        }
+        return availableIntents.stream()
+                .filter(c -> intentCode.equalsIgnoreCase(c.getIntentCode()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 计算总体置信度
+     */
+    private double calculateOverallConfidence(List<MultiIntentResult.SingleIntentMatch> intents) {
+        if (intents == null || intents.isEmpty()) {
+            return 0.0;
+        }
+        // 使用几何平均
+        double product = 1.0;
+        for (MultiIntentResult.SingleIntentMatch intent : intents) {
+            product *= intent.getConfidence();
+        }
+        return Math.pow(product, 1.0 / intents.size());
+    }
+
+    /**
+     * 构建空的多意图结果
+     */
+    private MultiIntentResult buildEmptyMultiIntentResult(String reasoning) {
+        return MultiIntentResult.builder()
+                .isMultiIntent(false)
+                .intents(List.of())
+                .executionStrategy(MultiIntentResult.ExecutionStrategy.SEQUENTIAL)
+                .overallConfidence(0.0)
+                .reasoning(reasoning)
+                .build();
+    }
+
+    /**
+     * 构建单意图回退结果
+     */
+    private MultiIntentResult buildSingleIntentFallback(String userInput, String factoryId) {
+        try {
+            // 尝试使用单意图识别
+            List<AIIntentConfig> availableIntents = getAvailableIntents(factoryId);
+            IntentMatchResult singleResult = classifyIntent(userInput, availableIntents, factoryId, null, null);
+
+            if (singleResult != null && singleResult.getBestMatch() != null) {
+                return MultiIntentResult.builder()
+                        .isMultiIntent(false)
+                        .intents(List.of(MultiIntentResult.SingleIntentMatch.builder()
+                                .intentCode(singleResult.getBestMatch().getIntentCode())
+                                .intentName(singleResult.getBestMatch().getIntentName())
+                                .confidence(singleResult.getConfidence())
+                                .extractedParams(new HashMap<>())
+                                .reasoning(singleResult.getClarificationQuestion())
+                                .executionOrder(0)
+                                .build()))
+                        .executionStrategy(MultiIntentResult.ExecutionStrategy.SEQUENTIAL)
+                        .overallConfidence(singleResult.getConfidence())
+                        .reasoning("Single intent fallback")
+                        .build();
+            }
+        } catch (Exception e) {
+            log.warn("[Multi-Intent] Single intent fallback failed: {}", e.getMessage());
+        }
+
+        return buildEmptyMultiIntentResult("Fallback to empty result");
+    }
+
+    /**
+     * 获取可用意图列表
+     * 使用工厂级隔离查询，返回工厂级意图 + 平台级意图
+     */
+    private List<AIIntentConfig> getAvailableIntents(String factoryId) {
+        if (intentConfigRepository == null) {
+            log.warn("[Multi-Intent] Intent config repository not available");
+            return List.of();
+        }
+
+        try {
+            // 使用工厂级隔离查询方法，获取工厂级意图和平台级意图
+            List<AIIntentConfig> allIntents = intentConfigRepository.findByFactoryIdOrPlatformLevel(factoryId);
+
+            log.debug("[Multi-Intent] Found {} intents for factoryId: {}", allIntents.size(), factoryId);
+            return allIntents;
+
+        } catch (Exception e) {
+            log.error("[Multi-Intent] Failed to get available intents: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    // ==================== ArenaRL 锦标赛裁决实现 ====================
+
+    /**
+     * 使用 ArenaRL 锦标赛进行意图歧义裁决
+     *
+     * 触发条件: top1-top2 置信度差 < 0.15 且 top1 < 0.85
+     *
+     * 算法流程:
+     * 1. 检查 ArenaRL 是否启用
+     * 2. 验证候选数量 >= 2
+     * 3. 执行种子单淘汰锦标赛
+     * 4. 返回冠军意图
+     *
+     * @param userInput 用户输入
+     * @param candidates 歧义候选意图列表 (已按置信度排序)
+     * @param factoryId 工厂ID
+     * @return ArenaRL 裁决结果
+     */
+    @Override
+    public ArenaRLResult disambiguateWithArenaRL(String userInput,
+                                                  List<CandidateIntent> candidates,
+                                                  String factoryId) {
+        log.info("[ArenaRL] Starting disambiguation for input: '{}', candidates: {}",
+                truncate(userInput, 50), candidates.size());
+
+        // 1. 检查 ArenaRL 是否启用
+        if (arenaRLConfig == null || !arenaRLConfig.isIntentDisambiguationEnabled()) {
+            log.debug("[ArenaRL] Not enabled, falling back to top candidate");
+            if (candidates == null || candidates.isEmpty()) {
+                return ArenaRLResult.failure("No candidates provided");
+            }
+            CandidateIntent top = candidates.get(0);
+            return ArenaRLResult.success(top.getIntentCode(), top.getConfidence(),
+                    "ArenaRL disabled, using top candidate", 0);
+        }
+
+        // 2. 检查 ArenaRL 服务可用性
+        if (arenaRLTournamentService == null) {
+            log.warn("[ArenaRL] Tournament service not available, falling back to top candidate");
+            CandidateIntent top = candidates.get(0);
+            return ArenaRLResult.success(top.getIntentCode(), top.getConfidence(),
+                    "ArenaRL service unavailable, using top candidate", 0);
+        }
+
+        // 3. 验证候选数量
+        if (candidates == null || candidates.size() < 2) {
+            log.debug("[ArenaRL] Not enough candidates (<2), using top candidate");
+            if (candidates != null && !candidates.isEmpty()) {
+                CandidateIntent top = candidates.get(0);
+                return ArenaRLResult.success(top.getIntentCode(), top.getConfidence(),
+                        "Only one candidate, no tournament needed", 0);
+            }
+            return ArenaRLResult.failure("No candidates provided");
+        }
+
+        // 4. 检查是否需要触发锦标赛
+        if (!arenaRLTournamentService.shouldTriggerIntentTournament(candidates)) {
+            log.debug("[ArenaRL] Trigger conditions not met, using top candidate");
+            CandidateIntent top = candidates.get(0);
+            return ArenaRLResult.success(top.getIntentCode(), top.getConfidence(),
+                    "Ambiguity threshold not met, using top candidate", 0);
+        }
+
+        try {
+            // 5. 执行锦标赛
+            log.info("[ArenaRL] Executing tournament with {} candidates", candidates.size());
+            long startTime = System.currentTimeMillis();
+
+            TournamentResult tournamentResult = arenaRLTournamentService.runIntentTournament(
+                    userInput, candidates);
+
+            long latencyMs = System.currentTimeMillis() - startTime;
+
+            // 6. 处理锦标赛结果
+            if (tournamentResult == null || !Boolean.TRUE.equals(tournamentResult.getSuccess())) {
+                log.warn("[ArenaRL] Tournament failed: {}",
+                        tournamentResult != null ? tournamentResult.getErrorMessage() : "null result");
+                CandidateIntent top = candidates.get(0);
+                return ArenaRLResult.builder()
+                        .success(true)
+                        .winnerIntentCode(top.getIntentCode())
+                        .winnerConfidence(top.getConfidence())
+                        .reasoning("Tournament failed, falling back to top candidate: " +
+                                (tournamentResult != null ? tournamentResult.getErrorMessage() : "null result"))
+                        .comparisonCount(0)
+                        .totalLatencyMs(latencyMs)
+                        .build();
+            }
+
+            // 7. 构建成功结果
+            log.info("[ArenaRL] Tournament completed: winner={}, confidence={:.2f}, comparisons={}, latency={}ms",
+                    tournamentResult.getWinnerId(),
+                    tournamentResult.getWinnerConfidence(),
+                    tournamentResult.getTotalComparisons(),
+                    latencyMs);
+
+            // 构建推理说明
+            String reasoning = buildArenaRLReasoning(tournamentResult, candidates);
+
+            return ArenaRLResult.builder()
+                    .success(true)
+                    .winnerIntentCode(tournamentResult.getWinnerId())
+                    .winnerConfidence(tournamentResult.getWinnerConfidence())
+                    .reasoning(reasoning)
+                    .comparisonCount(tournamentResult.getTotalComparisons())
+                    .totalLatencyMs(latencyMs)
+                    .tournamentId(tournamentResult.getTournamentId())
+                    .build();
+
+        } catch (Exception e) {
+            log.error("[ArenaRL] Tournament execution failed", e);
+            CandidateIntent top = candidates.get(0);
+            return ArenaRLResult.builder()
+                    .success(true)
+                    .winnerIntentCode(top.getIntentCode())
+                    .winnerConfidence(top.getConfidence())
+                    .reasoning("Tournament exception, falling back to top candidate: " + e.getMessage())
+                    .comparisonCount(0)
+                    .build();
+        }
+    }
+
+    /**
+     * 构建 ArenaRL 推理说明
+     */
+    private String buildArenaRLReasoning(TournamentResult result, List<CandidateIntent> originalCandidates) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ArenaRL 锦标赛裁决结果：\n");
+
+        // 原始排名
+        sb.append("原始候选排名：");
+        for (int i = 0; i < Math.min(3, originalCandidates.size()); i++) {
+            CandidateIntent c = originalCandidates.get(i);
+            sb.append(String.format("%s(%.2f)", c.getIntentCode(), c.getConfidence()));
+            if (i < Math.min(3, originalCandidates.size()) - 1) sb.append(" > ");
+        }
+        sb.append("\n");
+
+        // 锦标赛结果
+        sb.append(String.format("锦标赛冠军：%s (置信度提升至 %.2f)\n",
+                result.getWinnerId(), result.getWinnerConfidence()));
+        sb.append(String.format("比较次数：%d，总耗时：%dms",
+                result.getTotalComparisons(), result.getTotalLatencyMs()));
+
+        // 如果冠军与原始 top1 不同，标注
+        if (!originalCandidates.isEmpty() &&
+                !originalCandidates.get(0).getIntentCode().equals(result.getWinnerId())) {
+            sb.append("\n[注意] 锦标赛结果与原始排名不同，已调整意图选择");
+        }
+
+        return sb.toString();
     }
 }

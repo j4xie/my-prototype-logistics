@@ -7,8 +7,10 @@ import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.repository.LinUCBModelRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.repository.WorkerAllocationFeedbackRepository;
+import com.cretas.aims.service.DispatcherStrategyService;
 import com.cretas.aims.service.FeatureEngineeringService;
 import com.cretas.aims.service.LinUCBService;
+import com.cretas.aims.service.TaskDiversityService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -50,6 +52,8 @@ public class LinUCBServiceImpl implements LinUCBService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final FeatureEngineeringService featureEngineeringService;
+    private final DispatcherStrategyService dispatcherStrategyService;
+    private final TaskDiversityService taskDiversityService;
 
     // LinUCB 超参数
     private static final double ALPHA = 0.5;           // 探索参数
@@ -117,7 +121,120 @@ public class LinUCBServiceImpl implements LinUCBService {
         // 按UCB分数降序排序
         recommendations.sort((a, b) -> b.getUcbScore().compareTo(a.getUcbScore()));
 
+        // 应用调度策略干预重排序 (新人培训/公平轮换/疲劳控制/紧急任务加权)
+        try {
+            Map<String, Object> taskInfo = buildTaskInfoFromFeatures(taskFeatures);
+            recommendations = dispatcherStrategyService.applyStrategyReranking(
+                    recommendations, factoryId, taskInfo);
+            log.debug("策略干预重排序完成: {} 个工人", recommendations.size());
+        } catch (Exception e) {
+            log.warn("策略干预重排序失败，使用原始排序: {}", e.getMessage());
+        }
+
         return recommendations;
+    }
+
+    /**
+     * 从任务特征数组构建任务信息Map
+     */
+    private Map<String, Object> buildTaskInfoFromFeatures(double[] taskFeatures) {
+        Map<String, Object> taskInfo = new HashMap<>();
+        if (taskFeatures != null && taskFeatures.length >= 6) {
+            taskInfo.put("quantity", taskFeatures[0]);
+            taskInfo.put("deadlineHours", taskFeatures[1]);
+            taskInfo.put("complexity", (int) taskFeatures[2]);
+            taskInfo.put("priority", (int) taskFeatures[3]);
+            // taskFeatures[4] = productTypeEncoded
+            // taskFeatures[5] = workshopEncoded
+        }
+        return taskInfo;
+    }
+
+    @Override
+    public List<WorkerRecommendation> getRecommendationsWithDiversity(
+            String factoryId,
+            Map<String, Object> taskInfo,
+            List<Long> candidateWorkerIds,
+            boolean enableDiversity) {
+
+        if (candidateWorkerIds == null || candidateWorkerIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 1. 提取任务特征并获取基础推荐
+        double[] taskFeatures = extractTaskFeatures(taskInfo);
+        List<WorkerRecommendation> baseRecs = recommendWorkers(factoryId, taskFeatures, candidateWorkerIds);
+
+        if (!enableDiversity || baseRecs.isEmpty()) {
+            log.debug("多样性调整已禁用或无推荐结果，返回原始推荐列表");
+            return baseRecs;
+        }
+
+        // 2. 提取任务类型
+        String taskType = extractTaskType(taskInfo);
+
+        // 3. 对每个推荐应用多样性调整
+        for (WorkerRecommendation rec : baseRecs) {
+            double originalScore = rec.getUcbScore() != null ? rec.getUcbScore().doubleValue() : 0.0;
+
+            // 调用TaskDiversityService计算调整后分数
+            double adjustedScore = taskDiversityService.calculateDiversityAdjustedScore(
+                    factoryId, rec.getWorkerId(), taskType, originalScore);
+
+            // 计算分数变化
+            double scoreDelta = adjustedScore - originalScore;
+
+            // 更新推荐说明
+            String originalReason = rec.getRecommendation() != null ? rec.getRecommendation() : "";
+            if (Math.abs(scoreDelta) > 0.05) {
+                if (scoreDelta > 0) {
+                    rec.setRecommendation(originalReason +
+                            String.format("多样性加分(+%.2f): 公平性/技能维护优先; ", scoreDelta));
+                } else {
+                    rec.setRecommendation(originalReason +
+                            String.format("多样性降权(%.2f): 近期重复任务惩罚; ", scoreDelta));
+                }
+            }
+
+            // 更新分数
+            rec.setUcbScore(BigDecimal.valueOf(adjustedScore).setScale(4, RoundingMode.HALF_UP));
+        }
+
+        // 4. 按调整后分数重新排序
+        List<WorkerRecommendation> sortedRecs = baseRecs.stream()
+                .sorted((a, b) -> b.getUcbScore().compareTo(a.getUcbScore()))
+                .collect(Collectors.toList());
+
+        log.info("多样性调整完成: factoryId={}, taskType={}, 候选工人数={}", factoryId, taskType, sortedRecs.size());
+
+        return sortedRecs;
+    }
+
+    /**
+     * 从任务信息中提取任务类型
+     * 按优先级查找: taskType -> processType -> stageType
+     */
+    private String extractTaskType(Map<String, Object> taskInfo) {
+        if (taskInfo == null) {
+            return null;
+        }
+
+        Object taskType = taskInfo.get("taskType");
+        if (taskType != null && !taskType.toString().isEmpty()) {
+            return taskType.toString();
+        }
+
+        Object processType = taskInfo.get("processType");
+        if (processType != null && !processType.toString().isEmpty()) {
+            return processType.toString();
+        }
+
+        Object stageType = taskInfo.get("stageType");
+        if (stageType != null && !stageType.toString().isEmpty()) {
+            return stageType.toString();
+        }
+
+        return null;
     }
 
     @Override
@@ -317,6 +434,46 @@ public class LinUCBServiceImpl implements LinUCBService {
 
         log.debug("Completed feedback {}: efficiency={}, quality={}, reward={}",
                 feedbackId, efficiency, qualityScore, reward);
+
+        return reward;
+    }
+
+    @Override
+    @Transactional
+    public BigDecimal completeFeedbackWithImmediateUpdate(
+            String feedbackId,
+            BigDecimal actualQuantity,
+            BigDecimal actualHours,
+            BigDecimal qualityScore) {
+
+        // 1. 完成反馈记录
+        BigDecimal reward = completeFeedback(feedbackId, actualQuantity, actualHours, qualityScore);
+
+        // 2. 立即更新模型 (实时反馈闭环)
+        WorkerAllocationFeedback feedback = feedbackRepository.findById(feedbackId)
+                .orElse(null);
+
+        if (feedback != null && feedback.getContextFeatures() != null) {
+            try {
+                double[] context = parseVector(feedback.getContextFeatures());
+                double rewardValue = reward != null ? reward.doubleValue() : 0.5;
+
+                // 立即更新模型
+                updateModel(feedback.getFactoryId(), feedback.getWorkerId(), context, rewardValue);
+
+                // 标记为已处理
+                feedback.setIsProcessed(true);
+                feedback.setProcessedAt(LocalDateTime.now());
+                feedbackRepository.save(feedback);
+
+                log.info("实时更新LinUCB模型: workerId={}, reward={}", feedback.getWorkerId(), reward);
+
+            } catch (Exception e) {
+                log.warn("实时模型更新失败，将在批量处理时更新: feedbackId={}, error={}",
+                        feedbackId, e.getMessage());
+                // 失败时不影响反馈记录，后续批量处理会补充更新
+            }
+        }
 
         return reward;
     }

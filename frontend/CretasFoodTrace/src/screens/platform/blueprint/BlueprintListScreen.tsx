@@ -95,7 +95,8 @@ export function BlueprintListScreen() {
       );
       if (response.success && response.data) {
         // Transform backend data to match frontend Blueprint interface
-        const transformedBlueprints = response.data.map((bp: Record<string, unknown>) => ({
+        const rawData = response.data as unknown as Array<Record<string, unknown>>;
+        const transformedBlueprints = rawData.map((bp) => ({
           id: (bp.id as string) || '',
           name: (bp.blueprintName as string) || (bp.name as string) || '',
           description: (bp.description as string) || '',
