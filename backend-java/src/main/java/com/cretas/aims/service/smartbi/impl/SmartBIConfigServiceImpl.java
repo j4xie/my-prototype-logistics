@@ -108,7 +108,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult updateIntent(Long id, AiIntentConfig config) {
+    public ConfigOperationResult updateIntent(String id, AiIntentConfig config) {
         try {
             Optional<AiIntentConfig> existingOpt = intentConfigRepository.findById(id);
             if (existingOpt.isEmpty()) {
@@ -139,7 +139,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     @Override
     @Transactional
-    public ConfigOperationResult deleteIntent(Long id) {
+    public ConfigOperationResult deleteIntent(String id) {
         try {
             Optional<AiIntentConfig> existingOpt = intentConfigRepository.findById(id);
             if (existingOpt.isEmpty()) {

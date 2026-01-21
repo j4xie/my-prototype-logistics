@@ -84,7 +84,7 @@ public class SmartBIConfigController {
     @PutMapping("/intents/{id}")
     @Operation(summary = "更新意图配置", description = "更新指定的意图配置")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> updateIntent(
-            @Parameter(description = "配置ID") @PathVariable Long id,
+            @Parameter(description = "配置ID") @PathVariable String id,
             @RequestBody @Valid AiIntentConfig config) {
 
         log.info("更新意图配置: id={}", id);
@@ -104,7 +104,7 @@ public class SmartBIConfigController {
     @DeleteMapping("/intents/{id}")
     @Operation(summary = "删除意图配置", description = "删除指定的意图配置（软删除）")
     public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteIntent(
-            @Parameter(description = "配置ID") @PathVariable Long id) {
+            @Parameter(description = "配置ID") @PathVariable String id) {
 
         log.info("删除意图配置: id={}", id);
         try {
