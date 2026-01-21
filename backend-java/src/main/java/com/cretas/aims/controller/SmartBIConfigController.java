@@ -650,6 +650,23 @@ public class SmartBIConfigController {
         }
     }
 
+    @PostMapping("/chart-templates/{code}/build-with-analysis")
+    @Operation(summary = "构建带AI分析的图表", description = "根据模板代码和数据构建图表配置，并生成AI分析文本")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> buildChartWithAnalysis(
+            @Parameter(description = "模板代码") @PathVariable String code,
+            @Parameter(description = "图表数据") @RequestBody Map<String, Object> data,
+            @Parameter(description = "工厂ID（可选）") @RequestParam(required = false) String factoryId) {
+
+        log.info("构建带AI分析的图表: code={}, factoryId={}", code, factoryId);
+        try {
+            Map<String, Object> result = configService.buildChartWithAnalysis(code, data, factoryId);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("构建图表失败: code={}, error={}", code, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("构建失败: " + e.getMessage()));
+        }
+    }
+
     // ==================== 全局操作 ====================
 
     @PostMapping("/reload-all")
