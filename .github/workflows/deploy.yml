@@ -13,12 +13,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: 139.196.165.140
-          username: root
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /www/wwwroot/cretas
-            ./deploy.sh ${{ github.ref_name }}
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 139.196.165.140 >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        run: |
+          ssh -o StrictHostKeyChecking=no root@139.196.165.140 "cd /www/wwwroot/cretas && ./deploy.sh ${{ github.ref_name }}"
