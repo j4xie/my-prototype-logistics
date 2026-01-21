@@ -9,9 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -81,6 +84,7 @@ public class TwoStageIntentClassifier {
 
     /**
      * Result of two-stage classification
+     * v9.0: Extended with modifiers for multi-dimensional intent mapping
      */
     @Data
     @Builder
@@ -93,6 +97,11 @@ public class TwoStageIntentClassifier {
         private boolean successful;
         private String domainKeyword;
         private String actionContext;
+
+        // v9.0: Multi-dimensional classification fields
+        private Set<String> modifiers;      // e.g., ["STATS", "ANOMALY", "FUTURE"]
+        private String timeScope;           // "PAST", "PRESENT", "FUTURE"
+        private String targetScope;         // "PERSONAL", "DEPARTMENTAL", "ALL"
     }
 
     // ==================== Domain Keywords ====================
@@ -110,7 +119,8 @@ public class TwoStageIntentClassifier {
                 "发货", "出货", "配送", "物流", "运输", "出库", "送货", "发运"
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.ATTENDANCE, Arrays.asList(
-                "考勤", "打卡", "出勤", "签到", "签退", "上班", "下班", "请假"
+                "考勤", "打卡", "出勤", "签到", "签退", "上班", "下班", "请假",
+                "没来", "缺勤", "迟到", "早退", "来了", "打个卡"  // v9.0: 扩展考勤语义
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.EQUIPMENT, Arrays.asList(
                 "设备", "机器", "机台", "机械", "仪器", "设施", "工具"
@@ -119,7 +129,8 @@ public class TwoStageIntentClassifier {
                 "质检", "质量", "检测", "检验", "品控", "品质", "合格", "不合格"
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.PROCESSING, Arrays.asList(
-                "生产", "加工", "批次", "工序", "产线", "车间", "生产线", "加工单"
+                "生产", "加工", "批次", "工序", "产线", "车间", "生产线", "加工单",
+                "产量", "产能", "工单"  // v9.0: 扩展生产关键词
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.ALERT, Arrays.asList(
                 "告警", "预警", "报警", "警报", "异常", "故障", "警告"
@@ -136,10 +147,15 @@ public class TwoStageIntentClassifier {
 
     /**
      * Time-related words that indicate QUERY action
+     * v9.0: Extended with future tense words
      */
     private static final List<String> TIME_WORDS = Arrays.asList(
+            // Past/Present (existing)
             "今天", "昨天", "最近", "上周", "本周", "这周", "上个月", "本月",
-            "天内", "周内", "月内", "年内", "过去", "之前", "以来", "期间"
+            "天内", "周内", "月内", "年内", "过去", "之前", "以来", "期间",
+            // Future tense (v9.0 new)
+            "明天", "后天", "下周", "下个月", "将来", "接下来",
+            "即将", "要到", "预计", "计划", "后续"
     );
 
     /**
@@ -166,34 +182,100 @@ public class TwoStageIntentClassifier {
     );
 
     /**
+     * v9.0: Attendance action patterns (for clock in/sign in)
+     * These are only CREATE when used with imperative words
+     */
+    private static final List<String> ATTENDANCE_ACTION_WORDS = Arrays.asList(
+            "签到", "打卡", "打个卡", "签退"
+    );
+
+    /**
      * Action/Update words that indicate UPDATE action
      */
     private static final List<String> ACTION_WORDS = Arrays.asList(
             "启动", "停止", "执行", "修改", "更新", "编辑", "变更", "调整",
-            "启用", "禁用", "开始", "结束", "完成", "取消"
+            "启用", "禁用", "开始", "结束", "完成", "取消", "处理", "解决"  // v9.0: 扩展
     );
 
     /**
      * Imperative words (need context to determine action)
      */
     private static final List<String> IMPERATIVE_WORDS = Arrays.asList(
-            "帮我", "请", "给我", "麻烦", "帮忙", "需要"
+            "帮我", "请", "给我", "麻烦", "帮忙", "需要", "我要", "想要"  // v9.0: 扩展祈使词
     );
 
     /**
-     * Pattern for matching "N天内", "N周内" etc.
+     * Pattern for matching "N天内", "N周内", "N天后" etc.
+     * v9.0: Extended with future patterns
      */
     private static final Pattern TIME_RANGE_PATTERN = Pattern.compile(
-            "\\d+[天周月年]内|\\d+[天周月年]前"
+            "\\d+[天周月年]内|\\d+[天周月年]前|\\d+[天周月年]后"
+    );
+
+    // ==================== v9.0 Modifier Keywords ====================
+
+    /**
+     * v9.0: Stats/aggregation words that indicate STATS modifier
+     */
+    private static final List<String> STATS_WORDS = Arrays.asList(
+            "统计", "汇总", "合计", "总数", "数量", "平均", "最大", "最小",
+            "多少", "几个", "几条", "几批", "有几"
+    );
+
+    /**
+     * v9.0: Anomaly words that indicate ANOMALY modifier
+     */
+    private static final List<String> ANOMALY_WORDS = Arrays.asList(
+            "没来", "缺勤", "缺席", "没有来", "谁没", "没打卡", "未打卡",
+            "异常", "问题", "故障", "不正常", "缺", "漏",
+            "迟到", "早退", "旷工"  // v9.0: 扩展考勤异常词
+    );
+
+    /**
+     * v9.0: Future tense words for FUTURE modifier
+     */
+    private static final List<String> FUTURE_WORDS = Arrays.asList(
+            "明天", "后天", "下周", "下个月", "将要", "即将", "要到",
+            "预计", "计划", "待", "将", "后续"
+    );
+
+    /**
+     * v9.0: Personal scope words that indicate PERSONAL target
+     */
+    private static final List<String> PERSONAL_WORDS = Arrays.asList(
+            "我的", "张三", "李四", "这个人", "他的", "她的",
+            "某人", "个人", "本人", "自己"
+    );
+
+    /**
+     * v9.0: Departmental scope words that indicate DEPARTMENTAL target
+     */
+    private static final List<String> DEPARTMENTAL_WORDS = Arrays.asList(
+            "部门", "车间", "全厂", "全部", "所有", "整个", "团队", "小组"
+    );
+
+    /**
+     * v9.0: Critical/important words that indicate CRITICAL modifier
+     */
+    private static final List<String> CRITICAL_WORDS = Arrays.asList(
+            "关键", "重要", "严重", "紧急", "优先", "高优", "核心"
+    );
+
+    /**
+     * v9.0: Monthly scope words for time scope detection
+     */
+    private static final List<String> MONTHLY_WORDS = Arrays.asList(
+            "本月", "这个月", "上个月", "月度", "月报"
     );
 
     // ==================== Public Methods ====================
 
     /**
-     * Main classification method - performs two-stage classification
+     * Main classification method - performs multi-stage classification
+     * v9.0: Extended with Stage 3 Modifier classification
      *
      * @param input User input text
-     * @return Classification result with domain, action, and composed intent
+     * @return Classification result with domain, action, modifiers, and composed intent
      */
     public TwoStageResult classify(String input) {
         if (input == null || input.trim().isEmpty()) {
@@ -206,11 +288,14 @@ public class TwoStageIntentClassifier {
                     .successful(false)
                     .domainKeyword(null)
                     .actionContext(null)
+                    .modifiers(Collections.emptySet())
+                    .timeScope("PRESENT")
+                    .targetScope("ALL")
                     .build();
         }
 
         String normalizedInput = input.trim();
-        log.debug("Starting two-stage classification for input: {}", normalizedInput);
+        log.debug("Starting multi-stage classification for input: {}", normalizedInput);
 
         // Stage 1: Domain Classification
         DomainResult domainResult = classifyDomainWithKeyword(normalizedInput);
@@ -224,12 +309,19 @@ public class TwoStageIntentClassifier {
         String actionContext = actionResult.context;
         log.debug("Stage 2 - Action: {} (context: {})", action, actionContext);
 
-        // Stage 3: Intent Composition
-        String composedIntent = compositionConfig.getIntent(domain.name(), action.name());
+        // Stage 3: Modifier Classification (v9.0)
+        Set<String> modifiers = classifyModifiers(normalizedInput);
+        String timeScope = classifyTimeScope(normalizedInput);
+        String targetScope = classifyTargetScope(normalizedInput);
+        log.debug("Stage 3 - Modifiers: {}, TimeScope: {}, TargetScope: {}",
+                modifiers, timeScope, targetScope);
+
+        // Stage 4: Intent Composition (v9.0: with multi-dimensional mapping)
+        String composedIntent = compositionConfig.getIntent(domain.name(), action.name(), modifiers);
         if (composedIntent == null) {
             composedIntent = domain.name() + "_" + action.name(); // Fallback pattern
         }
-        log.debug("Stage 3 - Composed Intent: {}", composedIntent);
+        log.debug("Stage 4 - Composed Intent: {}", composedIntent);
 
         // Calculate confidence
         double confidence = calculateConfidence(domain, action, domainKeyword, actionContext);
@@ -243,10 +335,14 @@ public class TwoStageIntentClassifier {
                 .successful(successful)
                 .domainKeyword(domainKeyword)
                 .actionContext(actionContext)
+                .modifiers(modifiers)
+                .timeScope(timeScope)
+                .targetScope(targetScope)
                 .build();
 
-        log.info("Two-stage classification completed: domain={}, action={}, intent={}, confidence={}",
-                domain, action, composedIntent, confidence);
+        log.info("Multi-stage classification completed: domain={}, action={}, modifiers={}, " +
+                        "timeScope={}, targetScope={}, intent={}, confidence={}",
+                domain, action, modifiers, timeScope, targetScope, composedIntent, confidence);
 
         return result;
     }
@@ -291,39 +387,46 @@ public class TwoStageIntentClassifier {
 
     /**
      * Internal action classification with context tracking
+     * v9.0: Reordered - CREATE/UPDATE checked before STATUS to avoid false QUERY classification
      */
     private ActionResult classifyActionWithContext(String input) {
-        // Rule 1: Time words indicate QUERY
-        if (hasTimeContext(input)) {
-            log.debug("Time context detected, classifying as QUERY");
-            return new ActionResult(ClassifiedAction.QUERY, "time_context");
-        }
-
-        // Rule 2: Question words indicate QUERY
-        if (isQuestion(input)) {
-            log.debug("Question pattern detected, classifying as QUERY");
-            return new ActionResult(ClassifiedAction.QUERY, "question_pattern");
-        }
-
-        // Rule 3: Status words indicate QUERY
-        if (hasStatusWords(input)) {
-            log.debug("Status words detected, classifying as QUERY");
-            return new ActionResult(ClassifiedAction.QUERY, "status_words");
-        }
-
-        // Rule 4: Create words indicate CREATE
+        // Rule 1: Create words indicate CREATE (high priority - checked first)
         if (hasCreateWords(input)) {
             log.debug("Create words detected, classifying as CREATE");
             return new ActionResult(ClassifiedAction.CREATE, "create_words");
         }
 
-        // Rule 5: Action words indicate UPDATE
+        // Rule 2: Action/Update words indicate UPDATE (high priority)
         if (hasActionWords(input)) {
             log.debug("Action words detected, classifying as UPDATE");
             return new ActionResult(ClassifiedAction.UPDATE, "action_words");
         }
 
-        // Rule 6: Imperative without time words - context dependent
+        // Rule 3: Time words indicate QUERY
+        if (hasTimeContext(input)) {
+            log.debug("Time context detected, classifying as QUERY");
+            return new ActionResult(ClassifiedAction.QUERY, "time_context");
+        }
+
+        // Rule 4: Question words indicate QUERY
+        if (isQuestion(input)) {
+            log.debug("Question pattern detected, classifying as QUERY");
+            return new ActionResult(ClassifiedAction.QUERY, "question_pattern");
+        }
+
+        // Rule 5: Status words indicate QUERY
+        if (hasStatusWords(input)) {
+            log.debug("Status words detected, classifying as QUERY");
+            return new ActionResult(ClassifiedAction.QUERY, "status_words");
+        }
+
+        // Rule 6: Imperative with attendance action - clock in/sign in
+        if (hasImperativeWithAttendanceAction(input)) {
+            log.debug("Imperative with attendance action detected, classifying as CREATE");
+            return new ActionResult(ClassifiedAction.CREATE, "imperative_attendance_action");
+        }
+
+        // Rule 7: Imperative without time words - context dependent
         if (hasImperativeWithoutTime(input)) {
             // Default to CREATE for imperative requests without clear context
             log.debug("Imperative without time detected, defaulting to CREATE");
@@ -417,6 +520,30 @@ public class TwoStageIntentClassifier {
     }
 
     /**
+     * v9.0: Check if input has imperative words with attendance action (clock in/sign in)
+     * E.g., "我要签到", "帮我打卡"
+     */
+    private boolean hasImperativeWithAttendanceAction(String input) {
+        boolean hasImperative = false;
+        for (String word : IMPERATIVE_WORDS) {
+            if (input.contains(word)) {
+                hasImperative = true;
+                break;
+            }
+        }
+        if (!hasImperative) {
+            return false;
+        }
+        // Check for attendance action words
+        for (String word : ATTENDANCE_ACTION_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Calculate confidence score based on classification quality
      */
     private double calculateConfidence(ClassifiedDomain domain, ClassifiedAction action,
@@ -440,6 +567,189 @@ public class TwoStageIntentClassifier {
 
         // Ensure confidence is within bounds
         return Math.min(1.0, Math.max(0.0, confidence));
+    }
+
+    // ==================== v9.0 Modifier Classification Methods ====================
+
+    /**
+     * v9.0: Stage 3 - Classify modifiers based on semantic keywords
+     * Identifies STATS, ANOMALY, FUTURE, CRITICAL modifiers
+     *
+     * @param input User input text
+     * @return Set of modifier codes
+     */
+    private Set<String> classifyModifiers(String input) {
+        Set<String> modifiers = new HashSet<>();
+
+        // Check for STATS modifier
+        if (hasStatsWords(input)) {
+            modifiers.add("STATS");
+            log.debug("Modifier detected: STATS");
+        }
+
+        // Check for ANOMALY modifier
+        if (hasAnomalyWords(input)) {
+            modifiers.add("ANOMALY");
+            log.debug("Modifier detected: ANOMALY");
+        }
+
+        // Check for FUTURE modifier
+        if (hasFutureWords(input)) {
+            modifiers.add("FUTURE");
+            log.debug("Modifier detected: FUTURE");
+        }
+
+        // Check for CRITICAL modifier
+        if (hasCriticalWords(input)) {
+            modifiers.add("CRITICAL");
+            log.debug("Modifier detected: CRITICAL");
+        }
+
+        // Check for MONTHLY modifier (for attendance)
+        if (hasMonthlyWords(input)) {
+            modifiers.add("MONTHLY");
+            log.debug("Modifier detected: MONTHLY");
+        }
+
+        // Check for PERSONAL modifier (for personal scope queries)
+        if (hasPersonalWords(input)) {
+            modifiers.add("PERSONAL");
+            log.debug("Modifier detected: PERSONAL");
+        }
+
+        return modifiers;
+    }
+
+    /**
+     * v9.0: Check if input contains personal scope words
+     */
+    private boolean hasPersonalWords(String input) {
+        for (String word : PERSONAL_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v9.0: Classify time scope (PAST, PRESENT, FUTURE)
+     *
+     * @param input User input text
+     * @return Time scope string
+     */
+    private String classifyTimeScope(String input) {
+        // Check for future indicators
+        for (String word : FUTURE_WORDS) {
+            if (input.contains(word)) {
+                return "FUTURE";
+            }
+        }
+        // Check for future time range patterns (N天后, N周后)
+        if (Pattern.compile("\\d+[天周月年]后").matcher(input).find()) {
+            return "FUTURE";
+        }
+
+        // Check for past indicators
+        if (input.contains("昨天") || input.contains("之前") ||
+                input.contains("过去") || input.contains("上周") ||
+                input.contains("上个月")) {
+            return "PAST";
+        }
+        // Check for past time range patterns (N天前, N天内 - both indicate looking back)
+        if (Pattern.compile("\\d+[天周月年]前").matcher(input).find() ||
+                Pattern.compile("\\d+[天周月年]内").matcher(input).find()) {
+            return "PAST";
+        }
+
+        // Default to present
+        return "PRESENT";
+    }
+
+    /**
+     * v9.0: Classify target scope (PERSONAL, DEPARTMENTAL, ALL)
+     *
+     * @param input User input text
+     * @return Target scope string
+     */
+    private String classifyTargetScope(String input) {
+        // Check for personal scope
+        for (String word : PERSONAL_WORDS) {
+            if (input.contains(word)) {
+                return "PERSONAL";
+            }
+        }
+
+        // Check for departmental scope
+        for (String word : DEPARTMENTAL_WORDS) {
+            if (input.contains(word)) {
+                return "DEPARTMENTAL";
+            }
+        }
+
+        // Default to ALL
+        return "ALL";
+    }
+
+    /**
+     * v9.0: Check if input contains stats/aggregation words
+     */
+    private boolean hasStatsWords(String input) {
+        for (String word : STATS_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v9.0: Check if input contains anomaly words
+     */
+    private boolean hasAnomalyWords(String input) {
+        for (String word : ANOMALY_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v9.0: Check if input contains future tense words
+     */
+    private boolean hasFutureWords(String input) {
+        for (String word : FUTURE_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        // Also check for future time range patterns
+        return Pattern.compile("\\d+[天周月年]后").matcher(input).find();
+    }
+
+    /**
+     * v9.0: Check if input contains critical/important words
+     */
+    private boolean hasCriticalWords(String input) {
+        for (String word : CRITICAL_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v9.0: Check if input contains monthly time scope words
+     */
+    private boolean hasMonthlyWords(String input) {
+        for (String word : MONTHLY_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ==================== Internal Result Classes ====================

@@ -441,8 +441,9 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // ========== Layer 0.6: v8.0 两阶段名词优先分类 ==========
-        // 基于业界最佳实践：名词分组优于动词分组，两阶段分类减少错误传播
+        // ========== Layer 0.6: v9.0 多维意图分类 ==========
+        // 基于业界最佳实践：名词分组优于动词分组，多维分类支持细粒度意图识别
+        // v9.0: 添加 Modifier 维度 (STATS, ANOMALY, FUTURE, CRITICAL 等)
         // 参考: Vonage Intent Classification Hierarchy, IEEE Two-Stage Intent Recognition Framework
         try {
             TwoStageIntentClassifier.TwoStageResult twoStageResult =
@@ -460,11 +461,12 @@ public class AIIntentServiceImpl implements AIIntentService {
                     AIIntentConfig intent = intentOpt.get();
                     ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
 
-                    log.info("v8.0两阶段分类命中: domain={}, action={}, intent={}, confidence={}, " +
-                                    "domainKeyword='{}', actionContext='{}'",
+                    log.info("v9.0多维分类命中: domain={}, action={}, modifiers={}, intent={}, confidence={}, " +
+                                    "domainKeyword='{}', actionContext='{}', timeScope={}, targetScope={}",
                             twoStageResult.getDomain(), twoStageResult.getAction(),
-                            composedIntent, twoStageResult.getConfidence(),
-                            twoStageResult.getDomainKeyword(), twoStageResult.getActionContext());
+                            twoStageResult.getModifiers(), composedIntent, twoStageResult.getConfidence(),
+                            twoStageResult.getDomainKeyword(), twoStageResult.getActionContext(),
+                            twoStageResult.getTimeScope(), twoStageResult.getTargetScope());
 
                     IntentMatchResult result = IntentMatchResult.builder()
                             .bestMatch(intent)
