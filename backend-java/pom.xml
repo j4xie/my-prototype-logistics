@@ -165,6 +165,13 @@
             </exclusions>
         </dependency>
 
+        <!-- Apache Commons IO - required by POI for streaming -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.15.1</version>
+        </dependency>
+
         <!-- Apache PDFBox for PDF parsing -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
