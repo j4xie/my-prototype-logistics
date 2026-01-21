@@ -6,7 +6,7 @@ import json
 import time
 import sys
 
-BASE_URL = "http://139.196.165.140:10010"
+BASE_URL = "http://localhost:10010"
 
 # Test cases: (query, expected_intent or list of acceptable intents)
 # v7.2: 修正期望值，允许功能等价的意图
