@@ -21,6 +21,14 @@ import java.util.Optional;
 public interface SmartBiExcelUploadRepository extends JpaRepository<SmartBiExcelUpload, Long> {
 
     /**
+     * 根据工厂ID查询上传记录
+     *
+     * @param factoryId 工厂ID
+     * @return 上传记录列表
+     */
+    List<SmartBiExcelUpload> findByFactoryId(String factoryId);
+
+    /**
      * 根据工厂ID查询上传记录，按创建时间降序排列
      *
      * @param factoryId 工厂ID

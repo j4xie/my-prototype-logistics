@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -50,7 +50,6 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/mobile/{factoryId}/smart-bi")
-@RequiredArgsConstructor
 @Tag(name = "SmartBI 智能分析", description = "SmartBI 智能商业分析 API")
 public class SmartBIController {
 
@@ -66,6 +65,39 @@ public class SmartBIController {
     private final QualityAnalysisService qualityAnalysisService;
     private final InventoryHealthAnalysisService inventoryHealthAnalysisService;
     private final ProcurementAnalysisService procurementAnalysisService;
+
+    // Optional service - may not be available yet
+    private final SmartBIUploadFlowService uploadFlowService;
+
+    @Autowired
+    public SmartBIController(
+            SalesAnalysisService salesAnalysisService,
+            DepartmentAnalysisService departmentAnalysisService,
+            RegionAnalysisService regionAnalysisService,
+            FinanceAnalysisService financeAnalysisService,
+            SmartBIIntentService intentService,
+            RecommendationService recommendationService,
+            ExcelDynamicParserService excelParserService,
+            SmartBiSchemaService schemaService,
+            ProductionAnalysisService productionAnalysisService,
+            QualityAnalysisService qualityAnalysisService,
+            InventoryHealthAnalysisService inventoryHealthAnalysisService,
+            ProcurementAnalysisService procurementAnalysisService,
+            @Autowired(required = false) SmartBIUploadFlowService uploadFlowService) {
+        this.salesAnalysisService = salesAnalysisService;
+        this.departmentAnalysisService = departmentAnalysisService;
+        this.regionAnalysisService = regionAnalysisService;
+        this.financeAnalysisService = financeAnalysisService;
+        this.intentService = intentService;
+        this.recommendationService = recommendationService;
+        this.excelParserService = excelParserService;
+        this.schemaService = schemaService;
+        this.productionAnalysisService = productionAnalysisService;
+        this.qualityAnalysisService = qualityAnalysisService;
+        this.inventoryHealthAnalysisService = inventoryHealthAnalysisService;
+        this.procurementAnalysisService = procurementAnalysisService;
+        this.uploadFlowService = uploadFlowService;
+    }
 
     // ==================== Excel 上传 ====================
 
@@ -98,6 +130,98 @@ public class SmartBIController {
         } catch (Exception e) {
             log.error("Excel 解析异常: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("解析失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 上传并分析 - 完整流程
+     * 上传 Excel 文件，自动解析、保存数据并生成图表分析
+     */
+    @PostMapping(value = "/upload-and-analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "上传并分析", description = "上传 Excel 文件，自动解析、保存数据并生成图表分析")
+    public ResponseEntity<ApiResponse<?>> uploadAndAnalyze(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "数据类型: sales/finance/inventory/production/quality/procurement")
+            @RequestParam(required = false) String dataType) {
+
+        log.info("上传并分析: factoryId={}, fileName={}, dataType={}",
+                factoryId, file.getOriginalFilename(), dataType);
+
+        // Check if uploadFlowService is available
+        if (uploadFlowService == null) {
+            log.warn("SmartBIUploadFlowService 尚未实现，使用基础解析流程");
+            // Fallback to basic parsing
+            try {
+                ExcelParseRequest request = ExcelParseRequest.builder()
+                        .factoryId(factoryId)
+                        .businessScene(dataType)
+                        .build();
+
+                ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
+
+                if (!response.isSuccess()) {
+                    return ResponseEntity.ok(ApiResponse.error(response.getErrorMessage()));
+                }
+
+                // Return parse result with hint that full flow is not yet available
+                Map<String, Object> result = new HashMap<>();
+                result.put("parseResult", response);
+                result.put("message", "Excel 解析成功，完整分析流程服务尚未实现");
+                result.put("needsConfirmation", true);
+
+                return ResponseEntity.ok(ApiResponse.success("Excel 解析成功，请确认字段映射", result));
+            } catch (IOException e) {
+                log.error("Excel 文件读取失败: {}", e.getMessage(), e);
+                return ResponseEntity.ok(ApiResponse.error("文件读取失败: " + e.getMessage()));
+            } catch (Exception e) {
+                log.error("Excel 解析异常: {}", e.getMessage(), e);
+                return ResponseEntity.ok(ApiResponse.error("解析失败: " + e.getMessage()));
+            }
+        }
+
+        try {
+            // Call the full upload flow service
+            Object result = uploadFlowService.executeUploadFlow(file, factoryId, dataType);
+            return ResponseEntity.ok(ApiResponse.success("上传并分析成功", result));
+        } catch (Exception e) {
+            log.error("上传并分析失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("上传并分析失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 确认字段映射并保存
+     * 用户确认字段映射后保存数据并生成图表
+     */
+    @PostMapping("/upload/confirm")
+    @Operation(summary = "确认字段映射并保存", description = "确认字段映射后保存数据并生成图表")
+    public ResponseEntity<ApiResponse<?>> confirmMappingsAndSave(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody @Valid ConfirmMappingRequest request) {
+
+        log.info("确认字段映射: factoryId={}, dataType={}, mappings={}",
+                factoryId, request.getDataType(),
+                request.getConfirmedMappings() != null ? request.getConfirmedMappings().size() : 0);
+
+        // Check if uploadFlowService is available
+        if (uploadFlowService == null) {
+            log.warn("SmartBIUploadFlowService 尚未实现");
+            return ResponseEntity.ok(ApiResponse.error("完整分析流程服务尚未实现，请稍后再试"));
+        }
+
+        try {
+            // Call the upload flow service to confirm and save
+            Object result = uploadFlowService.confirmMappingsAndSave(
+                    factoryId,
+                    request.getParseResponse(),
+                    request.getConfirmedMappings(),
+                    request.getDataType()
+            );
+            return ResponseEntity.ok(ApiResponse.success("数据保存成功并生成图表分析", result));
+        } catch (Exception e) {
+            log.error("确认映射并保存失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("保存失败: " + e.getMessage()));
         }
     }
 
@@ -1176,5 +1300,36 @@ public class SmartBIController {
         private LocalDate endDate;
         /** 额外筛选条件 */
         private Map<String, Object> filters;
+    }
+
+    /**
+     * 确认字段映射请求 DTO
+     * 用于 /upload/confirm 端点
+     */
+    @Data
+    public static class ConfirmMappingRequest {
+        /** 原始解析响应 (来自 /upload 或 /upload-and-analyze 返回的 parseResult) */
+        private ExcelParseResponse parseResponse;
+
+        /** 用户确认的字段映射
+         * Key: Excel 列名
+         * Value: 目标字段名 (标准字段名，如 "salesAmount", "productName" 等)
+         */
+        private Map<String, String> confirmedMappings;
+
+        /** 数据类型: sales/finance/inventory/production/quality/procurement */
+        private String dataType;
+
+        /** 是否保存原始数据 (默认 true) */
+        private Boolean saveRawData;
+
+        /** 是否生成图表 (默认 true) */
+        private Boolean generateChart;
+
+        /** 图表模板ID (可选，不指定则自动推荐) */
+        private Long chartTemplateId;
+
+        /** 附加选项 */
+        private Map<String, Object> options;
     }
 }
