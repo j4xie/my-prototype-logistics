@@ -80,6 +80,14 @@ public interface SmartBiSalesDataRepository extends JpaRepository<SmartBiSalesDa
                                      @Param("end") LocalDate end);
 
     /**
+     * 根据上传ID查询销售数据
+     *
+     * @param uploadId 上传记录ID
+     * @return 销售数据列表
+     */
+    List<SmartBiSalesData> findByUploadId(Long uploadId);
+
+    /**
      * 删除指定上传ID关联的销售数据
      *
      * @param uploadId 上传记录ID
