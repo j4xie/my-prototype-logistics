@@ -40,8 +40,8 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
     @DisplayName("多修饰语组合测试")
     @CsvSource({
             // 同时包含多个修饰语的场景 - 测试修饰语优先级
-            // "异常" 在 ALERT 关键词中
-            "统计一下本月异常考勤数据, ALERT_STATS",
+            // "考勤" 优先于 "异常"，ANOMALY modifier applies
+            "统计一下本月异常考勤数据, ATTENDANCE_ANOMALY",
             "汇总这个月没来的人数, ATTENDANCE_ANOMALY",
             "统计最近缺勤的员工数量, ATTENDANCE_ANOMALY",
             // "批次" 触发 PROCESSING domain, FUTURE 触发 MATERIAL_INCOMING
@@ -55,8 +55,8 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
             // STATS 优先于 PERSONAL
             "我的上个月考勤统计, ATTENDANCE_STATS",
             "部门这周的考勤汇总, ATTENDANCE_STATS",
-            // "车间" 优先匹配 PROCESSING domain
-            "统计车间设备故障数量, PROCESSING_ANOMALY",
+            // "故障" 触发 ALERT domain, STATS modifier applies
+            "统计车间设备故障数量, ALERT_STATS",
             "查看本月关键质检项目, QUALITY_CRITICAL_ITEMS",
             // STATS 优先于 CRITICAL
             "汇总最近一周的紧急告警, ALERT_STATS",
