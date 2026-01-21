@@ -1666,6 +1666,15 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     @Override
     public boolean isHealthy() {
+        // 优先检查 DashScope 直接调用是否可用
+        if (dashScopeConfig != null && dashScopeClient != null
+                && dashScopeConfig.shouldUseDirect("intent-classify")
+                && dashScopeClient.isAvailable()) {
+            log.debug("LLM service healthy via DashScope direct");
+            return true;
+        }
+
+        // 降级到检查本地 Python 服务
         String url = aiServiceUrl + "/api/ai/intent/health";
         Request request = new Request.Builder()
                 .url(url)
@@ -1675,7 +1684,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         try (Response response = httpClient.newCall(request).execute()) {
             return response.isSuccessful();
         } catch (Exception e) {
-            log.warn("LLM service health check failed: {}", e.getMessage());
+            log.warn("LLM service health check failed (Python service unavailable, DashScope not configured): {}", e.getMessage());
             return false;
         }
     }

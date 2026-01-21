@@ -1,5 +1,12 @@
 package com.cretas.aims.service.aps;
 
+import com.cretas.aims.dto.aps.CompletionPrediction;
+import com.cretas.aims.dto.aps.EfficiencyHistoryDTO;
+import com.cretas.aims.dto.aps.ProgressUpdateRequest;
+import com.cretas.aims.dto.aps.ProgressUpdateResponse;
+import com.cretas.aims.dto.aps.RiskAssessmentDTO;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +87,16 @@ public interface APSAdaptiveSchedulingService {
     double calculateRollingEfficiency(String lineId);
 
     /**
+     * 效率滚动计算 (EWMA - 指数加权移动平均)
+     * alpha = 0.3 (新数据权重)
+     *
+     * @param lineId 产线ID
+     * @param currentEfficiency 当前效率
+     * @return 滚动效率因子
+     */
+    BigDecimal calculateRollingEfficiency(String lineId, BigDecimal currentEfficiency);
+
+    /**
      * 计算工人效率因子
      *
      * @param workerId 工人ID
@@ -93,6 +110,27 @@ public interface APSAdaptiveSchedulingService {
      * @param lineId 产线ID
      */
     void updateLineEfficiencyFactor(String lineId);
+
+    /**
+     * 记录效率历史
+     *
+     * @param lineId 产线ID
+     * @param taskId 任务ID
+     * @param actualOutput 实际产出
+     * @param expectedOutput 期望产出
+     * @param workerCount 工人数量
+     */
+    void recordEfficiencyHistory(String lineId, String taskId,
+        BigDecimal actualOutput, BigDecimal expectedOutput, Integer workerCount);
+
+    /**
+     * 获取效率历史记录
+     *
+     * @param lineId 产线ID
+     * @param hours 最近小时数
+     * @return 效率历史列表
+     */
+    List<EfficiencyHistoryDTO> getEfficiencyHistory(String lineId, int hours);
 
     // ==================== 完成概率预测 ====================
 
@@ -112,6 +150,45 @@ public interface APSAdaptiveSchedulingService {
     double predictCompletionProbability(String taskId);
 
     /**
+     * 完成概率预测 - 12维特征逻辑回归
+     *
+     * 特征向量:
+     * [0] 进度百分比 (0-1)
+     * [1] 剩余时间紧迫度 (0=宽松, 1=紧迫)
+     * [2] 产线效率因子 (相对1.0的偏差)
+     * [3] 工人配置满足度
+     * [4] 历史同类任务完成率
+     * [5] 当前延迟程度
+     * [6] 物料齐套率
+     * [7] 是否紧急订单
+     * [8] 时间窗口宽度
+     * [9] 偏置项 (1.0)
+     * [10] 效率趋势 (上升/下降)
+     * [11] 已发生冲突数
+     *
+     * @param taskId 任务ID
+     * @return 完成预测结果
+     */
+    CompletionPrediction predictTaskCompletion(String taskId);
+
+    /**
+     * 获取任务风险评估详情
+     *
+     * @param taskId 任务ID
+     * @return 风险评估DTO
+     */
+    RiskAssessmentDTO getTaskRiskAssessment(String taskId);
+
+    /**
+     * 使用DTO更新任务进度
+     *
+     * @param taskId 任务ID
+     * @param request 进度更新请求
+     * @return 进度更新响应
+     */
+    ProgressUpdateResponse updateTaskProgress(String taskId, ProgressUpdateRequest request);
+
+    /**
      * 批量预测所有进行中任务的完成概率
      *
      * @return 任务ID -> 完成概率
@@ -125,6 +202,20 @@ public interface APSAdaptiveSchedulingService {
      * @return 低概率任务列表
      */
     List<TaskRiskInfo> getLowProbabilityTasks(double threshold);
+
+    /**
+     * 确定风险等级
+     *
+     * 风险等级判断标准:
+     * - probability >= 0.8: low (绿色)
+     * - probability >= 0.6: medium (黄色预警)
+     * - probability >= 0.5: high (红色高危)
+     * - probability < 0.5: critical (需立即重排)
+     *
+     * @param probability 完成概率
+     * @return 风险等级
+     */
+    String determineRiskLevel(double probability);
 
     // ==================== 策略权重自适应 ====================
 

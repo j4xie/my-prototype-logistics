@@ -6,7 +6,7 @@ import json
 import time
 import sys
 
-BASE_URL = "http://localhost:10010"
+BASE_URL = "http://139.196.165.140:10010"
 
 # V2 Test cases: 全新的100条测试用例，验证系统通用性
 # 格式: (query, [acceptable_intents])

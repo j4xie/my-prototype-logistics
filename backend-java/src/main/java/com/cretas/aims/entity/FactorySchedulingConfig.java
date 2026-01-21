@@ -205,6 +205,44 @@ public class FactorySchedulingConfig {
     @Column(name = "anomaly_count_for_calibration")
     private Integer anomalyCountForCalibration = 3;
 
+    // ==================== APS 排产策略权重 ====================
+
+    /**
+     * 最早交期优先权重 (影响准时完成率)
+     */
+    @Column(name = "earliest_deadline_weight")
+    private Double earliestDeadlineWeight = 0.20;
+
+    /**
+     * 最小换型时间权重 (影响换型效率)
+     */
+    @Column(name = "min_changeover_weight")
+    private Double minChangeoverWeight = 0.15;
+
+    /**
+     * 产能匹配权重 (影响负载均衡)
+     */
+    @Column(name = "capacity_match_weight")
+    private Double capacityMatchWeight = 0.15;
+
+    /**
+     * 最短工序优先权重 (影响吞吐量)
+     */
+    @Column(name = "shortest_process_weight")
+    private Double shortestProcessWeight = 0.15;
+
+    /**
+     * 物料齐套优先权重 (影响物料等待时间)
+     */
+    @Column(name = "material_ready_weight")
+    private Double materialReadyWeight = 0.15;
+
+    /**
+     * 紧急订单优先权重 (影响紧急订单准时率)
+     */
+    @Column(name = "urgency_first_weight")
+    private Double urgencyFirstWeight = 0.20;
+
     // ==================== 审计字段 ====================
 
     @Column(name = "created_at")
@@ -243,5 +281,68 @@ public class FactorySchedulingConfig {
         FactorySchedulingConfig config = new FactorySchedulingConfig();
         config.setFactoryId(factoryId);
         return config;
+    }
+
+    // ==================== APS 策略权重 Map 操作方法 ====================
+
+    /**
+     * 获取APS排产策略权重Map
+     *
+     * @return 策略名称 -> 权重值 的Map
+     */
+    public java.util.Map<String, Double> getStrategyWeightsMap() {
+        java.util.Map<String, Double> weights = new java.util.HashMap<>();
+        weights.put("earliest_deadline", earliestDeadlineWeight != null ? earliestDeadlineWeight : 0.20);
+        weights.put("min_changeover", minChangeoverWeight != null ? minChangeoverWeight : 0.15);
+        weights.put("capacity_match", capacityMatchWeight != null ? capacityMatchWeight : 0.15);
+        weights.put("shortest_process", shortestProcessWeight != null ? shortestProcessWeight : 0.15);
+        weights.put("material_ready", materialReadyWeight != null ? materialReadyWeight : 0.15);
+        weights.put("urgency_first", urgencyFirstWeight != null ? urgencyFirstWeight : 0.20);
+        return weights;
+    }
+
+    /**
+     * 从Map设置APS排产策略权重
+     *
+     * @param weights 策略名称 -> 权重值 的Map
+     */
+    public void setStrategyWeightsFromMap(java.util.Map<String, Double> weights) {
+        if (weights == null) {
+            return;
+        }
+        if (weights.containsKey("earliest_deadline")) {
+            this.earliestDeadlineWeight = weights.get("earliest_deadline");
+        }
+        if (weights.containsKey("min_changeover")) {
+            this.minChangeoverWeight = weights.get("min_changeover");
+        }
+        if (weights.containsKey("capacity_match")) {
+            this.capacityMatchWeight = weights.get("capacity_match");
+        }
+        if (weights.containsKey("shortest_process")) {
+            this.shortestProcessWeight = weights.get("shortest_process");
+        }
+        if (weights.containsKey("material_ready")) {
+            this.materialReadyWeight = weights.get("material_ready");
+        }
+        if (weights.containsKey("urgency_first")) {
+            this.urgencyFirstWeight = weights.get("urgency_first");
+        }
+    }
+
+    /**
+     * 获取默认APS策略权重Map
+     *
+     * @return 默认权重Map
+     */
+    public static java.util.Map<String, Double> getDefaultStrategyWeights() {
+        java.util.Map<String, Double> weights = new java.util.HashMap<>();
+        weights.put("earliest_deadline", 0.20);
+        weights.put("min_changeover", 0.15);
+        weights.put("capacity_match", 0.15);
+        weights.put("shortest_process", 0.15);
+        weights.put("material_ready", 0.15);
+        weights.put("urgency_first", 0.20);
+        return weights;
     }
 }
