@@ -153,9 +153,9 @@ class TwoStageIntentClassifierV9ComprehensiveTest {
             "查看机器运行情况, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "机台状态查询, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "仪器使用情况, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
-            // 故障查询
-            "设备故障, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
-            "机器异常, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
+            // 故障查询 - "故障"/"异常" 优先匹配 ALERT domain
+            "设备故障, ALERT, QUERY, ALERT_LIST",
+            "机器异常, ALERT, QUERY, ALERT_LIST",
             "哪些设备有问题, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
             // 统计查询
             "设备数量统计, EQUIPMENT, QUERY, EQUIPMENT_STATS",
