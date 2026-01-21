@@ -24,15 +24,15 @@ import java.util.Optional;
  * @since 2026-01-21
  */
 @Repository
-public interface AiIntentConfigRepository extends JpaRepository<AiIntentConfig, Long> {
+public interface AiIntentConfigRepository extends JpaRepository<AiIntentConfig, String> {
 
     /**
      * 按分类查找所有启用的意图配置
      *
-     * @param category 意图分类
+     * @param intentCategory 意图分类
      * @return 意图配置列表
      */
-    List<AiIntentConfig> findByCategoryAndIsActiveTrueOrderByPriorityAsc(String category);
+    List<AiIntentConfig> findByIntentCategoryAndIsActiveTrueOrderByPriorityAsc(String intentCategory);
 
     /**
      * 按意图代码查找
@@ -66,11 +66,11 @@ public interface AiIntentConfigRepository extends JpaRepository<AiIntentConfig, 
      * @param factoryId 工厂ID
      * @return 适用的意图配置列表
      */
-    @Query("SELECT c FROM AiIntentConfig c WHERE c.category = :category " +
+    @Query("SELECT c FROM AiIntentConfig c WHERE c.intentCategory = :intentCategory " +
            "AND c.isActive = true AND (c.factoryId = :factoryId OR c.factoryId IS NULL) " +
            "ORDER BY CASE WHEN c.factoryId IS NOT NULL THEN 0 ELSE 1 END, c.priority ASC")
-    List<AiIntentConfig> findByCategoryAndFactoryId(
-            @Param("category") String category,
+    List<AiIntentConfig> findByIntentCategoryAndFactoryId(
+            @Param("intentCategory") String intentCategory,
             @Param("factoryId") String factoryId);
 
     /**
@@ -95,7 +95,7 @@ public interface AiIntentConfigRepository extends JpaRepository<AiIntentConfig, 
      *
      * @return 分类列表
      */
-    @Query("SELECT DISTINCT c.category FROM AiIntentConfig c WHERE c.isActive = true")
+    @Query("SELECT DISTINCT c.intentCategory FROM AiIntentConfig c WHERE c.isActive = true")
     List<String> findAllDistinctCategories();
 
     /**

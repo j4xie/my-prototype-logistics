@@ -73,6 +73,27 @@ public class LineSchedule {
     @Column(name = "delay_reason", columnDefinition = "TEXT")
     private String delayReason;
 
+    @Column(name = "plan_efficiency", precision = 10, scale = 2)
+    private BigDecimal planEfficiency;
+
+    @Column(name = "efficiency_variance", precision = 5, scale = 2)
+    private BigDecimal efficiencyVariance;
+
+    @Column(name = "predicted_end")
+    private LocalDateTime predictedEnd;
+
+    @Column(name = "risk_level", length = 20)
+    private String riskLevel = "low";
+
+    @Column(name = "adjustment_count")
+    private Integer adjustmentCount = 0;
+
+    @Column(name = "last_adjustment_time")
+    private LocalDateTime lastAdjustmentTime;
+
+    @Column(name = "adjustment_reason", length = 200)
+    private String adjustmentReason;
+
     @Column(name = "supervisor_id")
     private Long supervisorId;
 

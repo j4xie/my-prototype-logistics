@@ -16,14 +16,9 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * @since 2026-01-18
  */
 @Configuration
-@EntityScan(basePackages = {
-    "com.cretas.aims.entity",
-    "com.cretas.aims.entity.smartbi"
-})
-@EnableJpaRepositories(basePackages = {
-    "com.cretas.aims.repository",
-    "com.cretas.aims.repository.smartbi"
-})
+@EntityScan(basePackages = "com.cretas.aims.entity")
+@EnableJpaRepositories(basePackages = "com.cretas.aims.repository")
 public class SmartBIJpaConfig {
     // 配置类，无需额外代码
+    // 注意: 子包 entity.smartbi 和 repository.smartbi 会被自动扫描
 }
