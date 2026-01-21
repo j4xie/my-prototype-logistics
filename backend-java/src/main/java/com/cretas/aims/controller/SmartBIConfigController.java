@@ -26,6 +26,7 @@ import java.util.Map;
  *   <li>激励规则（CRUD + reload）</li>
  *   <li>字段映射（CRUD + reload）</li>
  *   <li>指标公式（CRUD + reload）</li>
+ *   <li>图表模板（CRUD + reload + 推荐）</li>
  *   <li>全局配置重载和状态查询</li>
  * </ul>
  *
@@ -494,6 +495,158 @@ public class SmartBIConfigController {
         } catch (Exception e) {
             log.error("重载指标公式失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 图表模板 ====================
+
+    @GetMapping("/chart-templates")
+    @Operation(summary = "获取图表模板列表", description = "获取所有图表模板配置，可按分类或图表类型筛选")
+    public ResponseEntity<ApiResponse<List<SmartBiChartTemplate>>> listChartTemplates(
+            @Parameter(description = "模板分类: SALES/FINANCE/PRODUCTION/QUALITY/HR")
+            @RequestParam(required = false) String category,
+            @Parameter(description = "图表类型: LINE/BAR/PIE/AREA/SCATTER/GAUGE/TABLE")
+            @RequestParam(required = false) String chartType) {
+
+        log.info("获取图表模板列表: category={}, chartType={}", category, chartType);
+        try {
+            List<SmartBiChartTemplate> templates = configService.listChartTemplates(category, chartType);
+            return ResponseEntity.ok(ApiResponse.success(templates));
+        } catch (Exception e) {
+            log.error("获取图表模板失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chart-templates/{code}")
+    @Operation(summary = "获取指定图表模板", description = "根据模板代码获取图表模板，支持工厂级覆盖")
+    public ResponseEntity<ApiResponse<SmartBiChartTemplate>> getChartTemplate(
+            @Parameter(description = "模板代码") @PathVariable String code,
+            @Parameter(description = "工厂ID（可选，用于获取工厂级覆盖配置）")
+            @RequestParam(required = false) String factoryId) {
+
+        log.info("获取图表模板: code={}, factoryId={}", code, factoryId);
+        try {
+            SmartBiChartTemplate template = configService.getChartTemplate(code, factoryId);
+            if (template != null) {
+                return ResponseEntity.ok(ApiResponse.success(template));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error("图表模板不存在: " + code));
+            }
+        } catch (Exception e) {
+            log.error("获取图表模板失败: code={}, error={}", code, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/chart-templates")
+    @Operation(summary = "创建图表模板", description = "创建新的图表模板配置")
+    public ResponseEntity<ApiResponse<ConfigOperationResult>> createChartTemplate(
+            @RequestBody @Valid SmartBiChartTemplate template) {
+
+        log.info("创建图表模板: templateCode={}, chartType={}",
+                template.getTemplateCode(), template.getChartType());
+        try {
+            ConfigOperationResult result = configService.createChartTemplate(template);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success("创建成功", result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
+        } catch (Exception e) {
+            log.error("创建图表模板失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("创建失败: " + e.getMessage()));
+        }
+    }
+
+    @PutMapping("/chart-templates/{id}")
+    @Operation(summary = "更新图表模板", description = "更新指定的图表模板配置")
+    public ResponseEntity<ApiResponse<ConfigOperationResult>> updateChartTemplate(
+            @Parameter(description = "配置ID") @PathVariable Long id,
+            @RequestBody @Valid SmartBiChartTemplate template) {
+
+        log.info("更新图表模板: id={}", id);
+        try {
+            ConfigOperationResult result = configService.updateChartTemplate(id, template);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success("更新成功", result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
+        } catch (Exception e) {
+            log.error("更新图表模板失败: id={}, error={}", id, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("更新失败: " + e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/chart-templates/{id}")
+    @Operation(summary = "删除图表模板", description = "删除指定的图表模板配置（软删除）")
+    public ResponseEntity<ApiResponse<ConfigOperationResult>> deleteChartTemplate(
+            @Parameter(description = "配置ID") @PathVariable Long id) {
+
+        log.info("删除图表模板: id={}", id);
+        try {
+            ConfigOperationResult result = configService.deleteChartTemplate(id);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success("删除成功", result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
+        } catch (Exception e) {
+            log.error("删除图表模板失败: id={}, error={}", id, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("删除失败: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/chart-templates/reload")
+    @Operation(summary = "重载图表模板", description = "重新加载图表模板缓存")
+    public ResponseEntity<ApiResponse<ConfigOperationResult>> reloadChartTemplates() {
+
+        log.info("重载图表模板");
+        try {
+            ConfigOperationResult result = configService.reloadChartTemplates();
+            return ResponseEntity.ok(ApiResponse.success("重载成功", result));
+        } catch (Exception e) {
+            log.error("重载图表模板失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("重载失败: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chart-templates/recommend")
+    @Operation(summary = "推荐图表类型", description = "根据数据特征推荐最适合的图表类型")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> recommendChart(
+            @Parameter(description = "指标代码") @RequestParam String metricCode,
+            @Parameter(description = "数据点数量") @RequestParam(defaultValue = "10") int dataPoints,
+            @Parameter(description = "是否包含时间维度") @RequestParam(defaultValue = "false") boolean hasTimeDimension) {
+
+        log.info("推荐图表类型: metricCode={}, dataPoints={}, hasTimeDimension={}",
+                metricCode, dataPoints, hasTimeDimension);
+        try {
+            String recommendedType = configService.recommendChartType(metricCode, dataPoints, hasTimeDimension);
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("metricCode", metricCode);
+            result.put("dataPoints", dataPoints);
+            result.put("hasTimeDimension", hasTimeDimension);
+            result.put("recommendedChartType", recommendedType);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("推荐图表类型失败: metricCode={}, error={}", metricCode, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("推荐失败: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/chart-templates/for-metric/{metricCode}")
+    @Operation(summary = "获取指标适用的图表模板", description = "获取指定指标可用的所有图表模板")
+    public ResponseEntity<ApiResponse<List<SmartBiChartTemplate>>> getChartTemplatesForMetric(
+            @Parameter(description = "指标代码") @PathVariable String metricCode) {
+
+        log.info("获取指标适用的图表模板: metricCode={}", metricCode);
+        try {
+            List<SmartBiChartTemplate> templates = configService.getChartTemplatesForMetric(metricCode);
+            return ResponseEntity.ok(ApiResponse.success(templates));
+        } catch (Exception e) {
+            log.error("获取指标图表模板失败: metricCode={}, error={}", metricCode, e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
         }
     }
 

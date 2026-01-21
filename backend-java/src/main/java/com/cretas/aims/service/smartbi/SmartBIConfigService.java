@@ -16,6 +16,7 @@ import java.util.Map;
  *   <li>激励规则管理（CRUD + reload）</li>
  *   <li>字段映射管理（CRUD + reload）</li>
  *   <li>指标公式管理（CRUD + reload）</li>
+ *   <li>图表模板管理（CRUD + reload + 推荐）</li>
  *   <li>全局配置重载</li>
  * </ul>
  *
@@ -234,6 +235,76 @@ public interface SmartBIConfigService {
      * @return 重载结果
      */
     ConfigOperationResult reloadMetricFormulas();
+
+    // ==================== 图表模板 ====================
+
+    /**
+     * 获取图表模板列表
+     *
+     * @param category  模板分类（可选，null 表示获取所有）
+     * @param chartType 图表类型（可选，null 表示获取所有）
+     * @return 图表模板列表
+     */
+    List<SmartBiChartTemplate> listChartTemplates(String category, String chartType);
+
+    /**
+     * 创建图表模板
+     *
+     * @param template 图表模板
+     * @return 创建结果
+     */
+    ConfigOperationResult createChartTemplate(SmartBiChartTemplate template);
+
+    /**
+     * 更新图表模板
+     *
+     * @param id       配置ID
+     * @param template 图表模板
+     * @return 更新结果
+     */
+    ConfigOperationResult updateChartTemplate(Long id, SmartBiChartTemplate template);
+
+    /**
+     * 删除图表模板（软删除）
+     *
+     * @param id 配置ID
+     * @return 删除结果
+     */
+    ConfigOperationResult deleteChartTemplate(Long id);
+
+    /**
+     * 重载图表模板缓存
+     *
+     * @return 重载结果
+     */
+    ConfigOperationResult reloadChartTemplates();
+
+    /**
+     * 获取指定图表模板
+     *
+     * @param templateCode 模板代码
+     * @param factoryId    工厂ID（可选，用于获取工厂级覆盖配置）
+     * @return 图表模板，如果不存在返回 null
+     */
+    SmartBiChartTemplate getChartTemplate(String templateCode, String factoryId);
+
+    /**
+     * 获取指定指标适用的图表模板列表
+     *
+     * @param metricCode 指标代码
+     * @return 适用的图表模板列表
+     */
+    List<SmartBiChartTemplate> getChartTemplatesForMetric(String metricCode);
+
+    /**
+     * 根据数据特征推荐图表类型
+     *
+     * @param metricCode       指标代码
+     * @param dataPoints       数据点数量
+     * @param hasTimeDimension 是否包含时间维度
+     * @return 推荐的图表类型
+     */
+    String recommendChartType(String metricCode, int dataPoints, boolean hasTimeDimension);
 
     // ==================== 全局操作 ====================
 
