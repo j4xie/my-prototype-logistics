@@ -448,6 +448,139 @@
             </div>
         </div>
 
+        <!-- 图表模板配置 API 测试 -->
+        <div class="section">
+            <h2><span class="icon">📊</span> 图表模板配置 API 测试 <span class="badge badge-success">10/10 通过</span></h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th style="width:5%">#</th>
+                        <th style="width:25%">测试用例</th>
+                        <th style="width:35%">API 端点</th>
+                        <th style="width:25%">验证结果</th>
+                        <th style="width:10%">状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>获取所有图表模板</td>
+                        <td><code>GET /chart-templates</code></td>
+                        <td>返回 8 条模板数据</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>按分类筛选模板</td>
+                        <td><code>GET /chart-templates?category=FINANCE</code></td>
+                        <td>返回 8 条财务模板</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>获取单个模板详情</td>
+                        <td><code>GET /chart-templates/finance_health_radar</code></td>
+                        <td>模板名称: 财务健康度雷达图, 类型: RADAR</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>图表类型智能推荐</td>
+                        <td><code>GET /chart-templates/recommend?metricCode=roe</code></td>
+                        <td>推荐类型: LINE_BAR (有时间维度)</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>按指标获取适用模板</td>
+                        <td><code>GET /chart-templates/for-metric/roe</code></td>
+                        <td>返回 3 条关联模板</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>创建新模板</td>
+                        <td><code>POST /chart-templates</code></td>
+                        <td>成功创建 test_template_001</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>更新模板</td>
+                        <td><code>PUT /chart-templates/{id}</code></td>
+                        <td>名称更新为: 测试模板-已更新</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>热重载缓存</td>
+                        <td><code>POST /chart-templates/reload</code></td>
+                        <td>消息: 重载成功</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td>删除模板</td>
+                        <td><code>DELETE /chart-templates/{id}</code></td>
+                        <td>成功删除测试模板</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>删除后验证计数</td>
+                        <td><code>GET /chart-templates</code></td>
+                        <td>确认剩余 8 条模板</td>
+                        <td><span class="badge badge-success">通过</span></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- 预置图表模板列表 -->
+            <h3 style="margin-top:24px;margin-bottom:16px;font-size:14px;color:#666">预置图表模板 (8 个)</h3>
+            <div class="grid-4">
+                <div style="background:#f0f9ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6">
+                    <div style="font-weight:600;color:#1e40af;margin-bottom:8px">📈 财务健康度雷达图</div>
+                    <div style="font-size:12px;color:#64748b">类型: RADAR | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">评估盈利能力、流动性、偿债能力等 5 维度</div>
+                </div>
+                <div style="background:#f0fdf4;padding:16px;border-radius:10px;border-left:4px solid #22c55e">
+                    <div style="font-weight:600;color:#166534;margin-bottom:8px">📊 杜邦分析图</div>
+                    <div style="font-size:12px;color:#64748b">类型: LINE_BAR | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">ROE = 净利率 × 资产周转率 × 权益乘数</div>
+                </div>
+                <div style="background:#fffbeb;padding:16px;border-radius:10px;border-left:4px solid #f59e0b">
+                    <div style="font-weight:600;color:#b45309;margin-bottom:8px">💧 现金流量瀑布图</div>
+                    <div style="font-size:12px;color:#64748b">类型: WATERFALL | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">展示现金流从期初到期末的变化过程</div>
+                </div>
+                <div style="background:#fdf2f8;padding:16px;border-radius:10px;border-left:4px solid #ec4899">
+                    <div style="font-weight:600;color:#9d174d;margin-bottom:8px">⚖️ 盈亏平衡分析图</div>
+                    <div style="font-size:12px;color:#64748b">类型: LINE | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">分析固定成本、变动成本与收入关系</div>
+                </div>
+                <div style="background:#f5f3ff;padding:16px;border-radius:10px;border-left:4px solid #8b5cf6">
+                    <div style="font-weight:600;color:#5b21b6;margin-bottom:8px">🥧 成本结构分析图</div>
+                    <div style="font-size:12px;color:#64748b">类型: PIE | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">成本费用构成比例分析</div>
+                </div>
+                <div style="background:#ecfeff;padding:16px;border-radius:10px;border-left:4px solid #06b6d4">
+                    <div style="font-weight:600;color:#0e7490;margin-bottom:8px">📉 财务比率趋势图</div>
+                    <div style="font-size:12px;color:#64748b">类型: LINE | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">追踪关键财务比率变化趋势</div>
+                </div>
+                <div style="background:#fff7ed;padding:16px;border-radius:10px;border-left:4px solid #f97316">
+                    <div style="font-weight:600;color:#c2410c;margin-bottom:8px">🔄 周转率对比分析</div>
+                    <div style="font-size:12px;color:#64748b">类型: BAR | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">存货/应收/应付/资产周转率对比</div>
+                </div>
+                <div style="background:#f1f5f9;padding:16px;border-radius:10px;border-left:4px solid #64748b">
+                    <div style="font-weight:600;color:#334155;margin-bottom:8px">🎯 KPI 仪表盘</div>
+                    <div style="font-size:12px;color:#64748b">类型: GAUGE | 分类: FINANCE</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">直观展示单个 KPI 达成情况</div>
+                </div>
+            </div>
+        </div>
+
         <div class="footer">
             SmartBI 智能商业分析系统 v1.0 | 白垩纪食品溯源系统 | 报告自动生成于 2026-01-21
         </div>
