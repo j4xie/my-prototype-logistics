@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - steven
-  workflow_dispatch:  # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -16,10 +16,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync to Gitee
-        uses: wearerequired/git-mirror-action@master
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.GITEE_SSH_KEY }}
-        with:
-          source-repo: git@github.com:j4xie/my-prototype-logistics.git
-          destination-repo: git@gitee.com:stevenj4/my-prototype-logistics.git
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.GITEE_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -t ed25519 gitee.com >> ~/.ssh/known_hosts
+
+      - name: Push to Gitee
+        run: |
+          git remote add gitee git@gitee.com:stevenj4/my-prototype-logistics.git
+          git push gitee HEAD:${{ github.ref_name }} --force
