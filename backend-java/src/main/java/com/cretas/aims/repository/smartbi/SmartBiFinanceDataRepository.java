@@ -80,6 +80,14 @@ public interface SmartBiFinanceDataRepository extends JpaRepository<SmartBiFinan
                                                                   LocalDate end);
 
     /**
+     * 根据上传ID查询财务数据
+     *
+     * @param uploadId 上传记录ID
+     * @return 财务数据列表
+     */
+    List<SmartBiFinanceData> findByUploadId(Long uploadId);
+
+    /**
      * 删除指定上传ID关联的财务数据
      *
      * @param uploadId 上传记录ID
