@@ -200,19 +200,22 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
     @PostConstruct
     public void init() {
         log.info("初始化 SmartBI 意图识别服务...");
+        try {
+            // 1. 先初始化硬编码的默认配置（作为 fallback）
+            initDefaultKeywords();
+            initDefaultPatterns();
 
-        // 1. 先初始化硬编码的默认配置（作为 fallback）
-        initDefaultKeywords();
-        initDefaultPatterns();
+            // 2. 从配置文件加载额外的模式
+            loadPatternsFromFile();
 
-        // 2. 从配置文件加载额外的模式
-        loadPatternsFromFile();
+            // 3. 尝试从数据库加载 SmartBI 意图配置（优先级最高）
+            loadIntentsFromDatabase();
 
-        // 3. 尝试从数据库加载 SmartBI 意图配置（优先级最高）
-        loadIntentsFromDatabase();
-
-        log.info("SmartBI 意图识别服务初始化完成，支持 {} 个意图，数据库加载状态: {}",
-                intentKeywords.size(), databaseIntentsLoaded ? "成功" : "使用默认配置");
+            log.info("SmartBI 意图识别服务初始化完成，支持 {} 个意图，数据库加载状态: {}",
+                    intentKeywords.size(), databaseIntentsLoaded ? "成功" : "使用默认配置");
+        } catch (Exception e) {
+            log.warn("SmartBI 意图识别服务初始化失败，将使用最小配置: {}", e.getMessage());
+        }
     }
 
     /**

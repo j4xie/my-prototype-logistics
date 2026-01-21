@@ -58,8 +58,12 @@ public class AlertThresholdServiceImpl implements AlertThresholdService {
     @PostConstruct
     public void init() {
         log.info("初始化告警阈值缓存...");
-        reload();
-        log.info("告警阈值缓存初始化完成，共加载 {} 条配置", thresholdCache.size());
+        try {
+            reload();
+            log.info("告警阈值缓存初始化完成，共加载 {} 条配置", thresholdCache.size());
+        } catch (Exception e) {
+            log.warn("告警阈值缓存初始化失败（表可能不存在），将使用空缓存: {}", e.getMessage());
+        }
     }
 
     // ==================== 查询方法 ====================

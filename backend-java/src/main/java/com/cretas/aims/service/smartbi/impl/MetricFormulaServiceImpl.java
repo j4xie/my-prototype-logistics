@@ -86,8 +86,12 @@ public class MetricFormulaServiceImpl implements MetricFormulaService {
     @PostConstruct
     public void init() {
         log.info("初始化指标公式服务...");
-        reload();
-        log.info("指标公式服务初始化完成，已加载 {} 个公式配置", formulaCache.size());
+        try {
+            reload();
+            log.info("指标公式服务初始化完成，已加载 {} 个公式配置", formulaCache.size());
+        } catch (Exception e) {
+            log.warn("指标公式服务初始化失败（表可能不存在），将使用空缓存: {}", e.getMessage());
+        }
     }
 
     // ==================== 公开接口实现 ====================

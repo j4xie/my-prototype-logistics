@@ -55,6 +55,12 @@ public class ProductionLine extends BaseEntity {
     @Column(length = 20)
     private LineStatus status = LineStatus.active;
 
+    @Column(name = "efficiency_factor", precision = 5, scale = 4)
+    private BigDecimal efficiencyFactor = BigDecimal.ONE;
+
+    @Column(name = "rolling_efficiency", precision = 5, scale = 4)
+    private BigDecimal rollingEfficiency = BigDecimal.ONE;
+
     public enum LineStatus {
         active, maintenance, inactive
     }
