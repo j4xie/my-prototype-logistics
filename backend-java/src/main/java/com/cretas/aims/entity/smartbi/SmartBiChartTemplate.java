@@ -148,6 +148,27 @@ public class SmartBiChartTemplate extends BaseEntity {
     @Column(name = "sort_order")
     private Integer sortOrder = 0;
 
+    /**
+     * AI 分析提示词模板
+     * 支持变量替换，如 {{dataJson}} 会被替换为图表数据的 JSON 格式
+     */
+    @Column(name = "analysis_prompt", columnDefinition = "TEXT")
+    private String analysisPrompt;
+
+    /**
+     * 是否启用 AI 分析
+     */
+    @Builder.Default
+    @Column(name = "analysis_enabled")
+    private Boolean analysisEnabled = true;
+
+    /**
+     * AI 分析缓存时间（秒）
+     */
+    @Builder.Default
+    @Column(name = "analysis_cache_ttl")
+    private Integer analysisCacheTtl = 300;
+
     // ==================== 图表类型常量 ====================
 
     /** 折线图 */

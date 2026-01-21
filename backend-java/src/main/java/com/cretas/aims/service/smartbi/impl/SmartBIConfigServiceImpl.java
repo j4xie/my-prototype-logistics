@@ -3,10 +3,13 @@ package com.cretas.aims.service.smartbi.impl;
 import com.cretas.aims.dto.smartbi.ConfigOperationResult;
 import com.cretas.aims.entity.smartbi.*;
 import com.cretas.aims.repository.smartbi.*;
+import com.cretas.aims.service.smartbi.ChartTemplateService;
 import com.cretas.aims.service.smartbi.SmartBIConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +45,15 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     private final SmartBiMetricFormulaRepository metricFormulaRepository;
     private final SmartBiChartTemplateRepository chartTemplateRepository;
     private final CacheManager cacheManager;
+
+    // 使用 @Lazy 注入以避免循环依赖
+    private ChartTemplateService chartTemplateService;
+
+    @Autowired
+    @Lazy
+    public void setChartTemplateService(ChartTemplateService chartTemplateService) {
+        this.chartTemplateService = chartTemplateService;
+    }
 
     // 内存缓存
     private final Map<String, List<AiIntentConfig>> intentCache = new ConcurrentHashMap<>();
@@ -858,6 +870,12 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         }
 
         return "BAR";  // 默认柱状图
+    }
+
+    @Override
+    public Map<String, Object> buildChartWithAnalysis(String templateCode, Map<String, Object> data, String factoryId) {
+        log.info("构建带AI分析的图表: code={}, factoryId={}", templateCode, factoryId);
+        return chartTemplateService.buildChartWithAnalysis(templateCode, data, factoryId);
     }
 
     // ==================== 全局操作 ====================
