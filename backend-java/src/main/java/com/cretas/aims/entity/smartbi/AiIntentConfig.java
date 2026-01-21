@@ -27,7 +27,7 @@ import javax.persistence.*;
 @Table(name = "ai_intent_configs",
        indexes = {
            @Index(name = "idx_intent_code", columnList = "intent_code"),
-           @Index(name = "idx_intent_category", columnList = "category"),
+           @Index(name = "idx_intent_category", columnList = "intent_category"),
            @Index(name = "idx_intent_factory", columnList = "factory_id"),
            @Index(name = "idx_intent_active", columnList = "is_active")
        },
@@ -43,8 +43,8 @@ import javax.persistence.*;
 public class AiIntentConfig extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(length = 36)
+    private String id;
 
     /**
      * 意图代码（唯一标识）
@@ -61,10 +61,10 @@ public class AiIntentConfig extends BaseEntity {
     private String intentName;
 
     /**
-     * 意图分类：QUERY, ANALYSIS, ALERT, ACTION
+     * 意图分类：QUERY, ANALYSIS, ALERT, ACTION, SMARTBI
      */
-    @Column(name = "category", nullable = false, length = 32)
-    private String category;
+    @Column(name = "intent_category", length = 50)
+    private String intentCategory;
 
     /**
      * 关键词列表 (JSON 数组)
@@ -160,27 +160,27 @@ public class AiIntentConfig extends BaseEntity {
      * 判断是否为查询类意图
      */
     public boolean isQueryIntent() {
-        return CATEGORY_QUERY.equals(this.category);
+        return CATEGORY_QUERY.equals(this.intentCategory);
     }
 
     /**
      * 判断是否为分析类意图
      */
     public boolean isAnalysisIntent() {
-        return CATEGORY_ANALYSIS.equals(this.category);
+        return CATEGORY_ANALYSIS.equals(this.intentCategory);
     }
 
     /**
      * 判断是否为告警类意图
      */
     public boolean isAlertIntent() {
-        return CATEGORY_ALERT.equals(this.category);
+        return CATEGORY_ALERT.equals(this.intentCategory);
     }
 
     /**
      * 判断是否为操作类意图
      */
     public boolean isActionIntent() {
-        return CATEGORY_ACTION.equals(this.category);
+        return CATEGORY_ACTION.equals(this.intentCategory);
     }
 }

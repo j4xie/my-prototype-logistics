@@ -59,7 +59,11 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     @PostConstruct
     public void init() {
         log.info("初始化 SmartBI 配置缓存...");
-        reloadAll();
+        try {
+            reloadAll();
+        } catch (Exception e) {
+            log.warn("SmartBI 配置缓存初始化失败（表可能不存在）: {}", e.getMessage());
+        }
     }
 
     // ==================== 意图配置 ====================
@@ -67,7 +71,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     @Override
     public List<AiIntentConfig> listIntents(String category) {
         if (category != null && !category.isEmpty()) {
-            return intentConfigRepository.findByCategoryAndIsActiveTrueOrderByPriorityAsc(category);
+            return intentConfigRepository.findByIntentCategoryAndIsActiveTrueOrderByPriorityAsc(category);
         }
         return intentConfigRepository.findByIsActiveTrueOrderByPriorityAsc();
     }
@@ -758,7 +762,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         // 按分类分组
         Map<String, List<AiIntentConfig>> byCategory = new HashMap<>();
         for (AiIntentConfig intent : allIntents) {
-            byCategory.computeIfAbsent(intent.getCategory(), k -> new ArrayList<>()).add(intent);
+            byCategory.computeIfAbsent(intent.getIntentCategory(), k -> new ArrayList<>()).add(intent);
         }
         intentCache.putAll(byCategory);
 
@@ -800,7 +804,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
 
     private void updateIntentFields(AiIntentConfig existing, AiIntentConfig updated) {
         if (updated.getIntentName() != null) existing.setIntentName(updated.getIntentName());
-        if (updated.getCategory() != null) existing.setCategory(updated.getCategory());
+        if (updated.getIntentCategory() != null) existing.setIntentCategory(updated.getIntentCategory());
         if (updated.getKeywords() != null) existing.setKeywords(updated.getKeywords());
         if (updated.getPatterns() != null) existing.setPatterns(updated.getPatterns());
         if (updated.getExamples() != null) existing.setExamples(updated.getExamples());
