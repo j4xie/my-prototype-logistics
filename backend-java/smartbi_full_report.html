@@ -535,48 +535,139 @@
                 </tbody>
             </table>
 
-            <!-- 预置图表模板列表 -->
-            <h3 style="margin-top:24px;margin-bottom:16px;font-size:14px;color:#666">预置图表模板 (8 个)</h3>
-            <div class="grid-4">
-                <div style="background:#f0f9ff;padding:16px;border-radius:10px;border-left:4px solid #3b82f6">
-                    <div style="font-weight:600;color:#1e40af;margin-bottom:8px">📈 财务健康度雷达图</div>
-                    <div style="font-size:12px;color:#64748b">类型: RADAR | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">评估盈利能力、流动性、偿债能力等 5 维度</div>
+        </div>
+
+        <!-- 预置图表模板展示 - 财务分析专区 -->
+        <div class="section">
+            <h2><span class="icon">💼</span> Phase 8: 财务分析图表模板 <span class="badge badge-info">8 个预置模板</span></h2>
+            <p style="color:#666;font-size:13px;margin-bottom:20px">以下图表展示 SmartBI 系统通过动态配置生成的财务分析可视化，支持零代码扩展</p>
+        </div>
+
+        <!-- 财务健康度雷达图 -->
+        <div class="section">
+            <h2><span class="icon">📈</span> 财务健康度雷达图</h2>
+            <div id="tplRadarChart" class="chart"></div>
+            <div class="nl-response" style="margin-top:16px">
+                <strong>🤖 AI 分析:</strong> 企业财务健康度综合评分 <strong>78.5分</strong>（良好）<br><br>
+                <strong>五维分析结果：</strong><br>
+                • 盈利能力：85分 - 毛利率35.6%，高于行业平均（28%），盈利水平优秀<br>
+                • 流动性：72分 - 流动比率1.8，略低于理想值2.0，需关注短期偿债能力<br>
+                • 偿债能力：68分 - 资产负债率52%，处于合理区间，杠杆适中<br>
+                • 成长能力：88分 - 营收同比增长24.7%，市场扩张势头良好<br>
+                • 运营效率：80分 - 存货周转率6.8次，资金运转效率较高<br><br>
+                <strong>建议：</strong>重点优化流动资产配置，建议保持现金储备不低于流动负债的25%
+            </div>
+        </div>
+
+        <!-- 杜邦分析图 -->
+        <div class="section">
+            <h2><span class="icon">📊</span> 杜邦分析 - ROE 分解</h2>
+            <div id="tplDupontChart" class="chart"></div>
+            <div class="nl-response" style="margin-top:16px">
+                <strong>🤖 AI 分析:</strong> ROE（净资产收益率）= <strong>21.6%</strong>，较上季度提升3.2个百分点<br><br>
+                <strong>杜邦分解：</strong> ROE = 净利率 × 资产周转率 × 权益乘数<br>
+                • Q4 ROE: 8.2% × 1.2 × 2.2 = <strong>21.6%</strong><br>
+                • Q3 ROE: 7.5% × 1.1 × 2.2 = 18.4%<br><br>
+                <strong>驱动因素：</strong><br>
+                ✅ 净利率提升 0.7% - 成本控制见效，销售费用率下降<br>
+                ✅ 资产周转率提升 0.1 - 存货周转加快，应收回款改善<br>
+                → 权益乘数稳定 - 财务杠杆保持合理水平<br><br>
+                <strong>建议：</strong>继续优化存货管理，目标将资产周转率提升至1.4
+            </div>
+        </div>
+
+        <!-- 第一行: 现金流量 + 盈亏平衡 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">💧</span> 现金流量瀑布图</h2>
+                <div id="tplWaterfallChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 本期现金净流入 <strong>650万元</strong><br><br>
+                    <strong>现金流构成：</strong><br>
+                    • 期初余额：500万元<br>
+                    • 经营活动：+150万元（主营收入增长）<br>
+                    • 投资活动：-100万元（设备采购）<br>
+                    • 筹资活动：+100万元（短期借款）<br>
+                    • 期末余额：650万元<br><br>
+                    <strong>建议：</strong>经营现金流为正，财务状况健康；投资支出符合产能扩张计划
                 </div>
-                <div style="background:#f0fdf4;padding:16px;border-radius:10px;border-left:4px solid #22c55e">
-                    <div style="font-weight:600;color:#166534;margin-bottom:8px">📊 杜邦分析图</div>
-                    <div style="font-size:12px;color:#64748b">类型: LINE_BAR | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">ROE = 净利率 × 资产周转率 × 权益乘数</div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">⚖️</span> 盈亏平衡分析图</h2>
+                <div id="tplBreakevenChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 盈亏平衡点销量 <strong>400单位</strong>，当前销量800单位<br><br>
+                    <strong>CVP分析结果：</strong><br>
+                    • 固定成本：200万元/月<br>
+                    • 单位变动成本：0.5万元<br>
+                    • 单位售价：1.0万元<br>
+                    • 边际贡献率：50%<br>
+                    • 安全边际率：<strong>50%</strong>（优秀，>30%为良好）<br><br>
+                    <strong>建议：</strong>安全边际充足，可适度增加固定资产投资以扩大产能
                 </div>
-                <div style="background:#fffbeb;padding:16px;border-radius:10px;border-left:4px solid #f59e0b">
-                    <div style="font-weight:600;color:#b45309;margin-bottom:8px">💧 现金流量瀑布图</div>
-                    <div style="font-size:12px;color:#64748b">类型: WATERFALL | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">展示现金流从期初到期末的变化过程</div>
+            </div>
+        </div>
+
+        <!-- 第二行: 成本结构 + 财务比率趋势 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">🥧</span> 成本结构分析图</h2>
+                <div id="tplCostPieChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 总成本 <strong>980万元</strong>，成本率64.3%<br><br>
+                    <strong>成本构成明细：</strong><br>
+                    • 原材料：420万元（42.9%）← 最大成本项<br>
+                    • 人工：230万元（23.5%）<br>
+                    • 制造费：150万元（15.3%）<br>
+                    • 管理费：100万元（10.2%）<br>
+                    • 销售费：50万元（5.1%）<br>
+                    • 财务费：30万元（3.1%）<br><br>
+                    <strong>建议：</strong>原材料占比偏高，建议优化供应商议价或寻找替代材料
                 </div>
-                <div style="background:#fdf2f8;padding:16px;border-radius:10px;border-left:4px solid #ec4899">
-                    <div style="font-weight:600;color:#9d174d;margin-bottom:8px">⚖️ 盈亏平衡分析图</div>
-                    <div style="font-size:12px;color:#64748b">类型: LINE | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">分析固定成本、变动成本与收入关系</div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">📉</span> 财务比率趋势图</h2>
+                <div id="tplRatioTrendChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 各项财务比率呈<strong>稳步改善</strong>趋势<br><br>
+                    <strong>半年趋势分析：</strong><br>
+                    • 流动比率：1.5 → 1.8（+20%）✅ 改善<br>
+                    • 毛利率：32% → 35.6%（+11%）✅ 改善<br>
+                    • ROE：18% → 21.6%（+20%）✅ 改善<br><br>
+                    <strong>关键拐点：</strong>4月实施成本管控措施后，毛利率显著提升<br><br>
+                    <strong>建议：</strong>保持当前经营策略，预计Q1可实现ROE 24%目标
                 </div>
-                <div style="background:#f5f3ff;padding:16px;border-radius:10px;border-left:4px solid #8b5cf6">
-                    <div style="font-weight:600;color:#5b21b6;margin-bottom:8px">🥧 成本结构分析图</div>
-                    <div style="font-size:12px;color:#64748b">类型: PIE | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">成本费用构成比例分析</div>
+            </div>
+        </div>
+
+        <!-- 第三行: 周转率对比 + KPI仪表盘 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">🔄</span> 周转率对比分析</h2>
+                <div id="tplTurnoverChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 运营效率<strong>优于行业平均</strong><br><br>
+                    <strong>周转率指标对比：</strong><br>
+                    | 指标 | 本期 | 上期 | 行业 |<br>
+                    | 存货周转率 | 6.8次 | 5.2次 | 5.0次 | ✅<br>
+                    | 应收周转率 | 8.2次 | 7.5次 | 6.5次 | ✅<br>
+                    | 应付周转率 | 4.0次 | 4.0次 | 4.5次 | ⚠️<br>
+                    | 资产周转率 | 2.5次 | 2.2次 | 2.0次 | ✅<br><br>
+                    <strong>建议：</strong>适当延长应付账款周期，优化现金流管理
                 </div>
-                <div style="background:#ecfeff;padding:16px;border-radius:10px;border-left:4px solid #06b6d4">
-                    <div style="font-weight:600;color:#0e7490;margin-bottom:8px">📉 财务比率趋势图</div>
-                    <div style="font-size:12px;color:#64748b">类型: LINE | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">追踪关键财务比率变化趋势</div>
-                </div>
-                <div style="background:#fff7ed;padding:16px;border-radius:10px;border-left:4px solid #f97316">
-                    <div style="font-weight:600;color:#c2410c;margin-bottom:8px">🔄 周转率对比分析</div>
-                    <div style="font-size:12px;color:#64748b">类型: BAR | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">存货/应收/应付/资产周转率对比</div>
-                </div>
-                <div style="background:#f1f5f9;padding:16px;border-radius:10px;border-left:4px solid #64748b">
-                    <div style="font-weight:600;color:#334155;margin-bottom:8px">🎯 KPI 仪表盘</div>
-                    <div style="font-size:12px;color:#64748b">类型: GAUGE | 分类: FINANCE</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:6px">直观展示单个 KPI 达成情况</div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">🎯</span> KPI 目标达成仪表盘</h2>
+                <div id="tplGaugeChart" class="chart"></div>
+                <div class="nl-response" style="margin-top:16px">
+                    <strong>🤖 AI 分析:</strong> 综合目标达成率 <strong>78.5%</strong>（进度正常）<br><br>
+                    <strong>各项KPI达成情况：</strong><br>
+                    🟢 销售额目标：达成82%（1400万/1700万）<br>
+                    🟢 毛利率目标：达成102%（35.6%/35%）<br>
+                    🟡 新客户数：达成75%（15家/20家）<br>
+                    🟡 回款率：达成76%（92%/121%）<br><br>
+                    <strong>预测：</strong>按当前趋势，年度目标完成概率 <strong>85%</strong><br>
+                    <strong>建议：</strong>加强新客户开发，重点跟进3家潜在大客户
                 </div>
             </div>
         </div>
@@ -803,7 +894,183 @@
             provinceChart.resize();
             financeChart.resize();
             profitChart.resize();
+            // 新增8个图表模板
+            if (window.tplCharts) {
+                window.tplCharts.forEach(c => c.resize());
+            }
         });
+
+        // ============================================
+        // SmartBI 图表模板展示 - 使用真实业务数据生成
+        // ============================================
+        window.tplCharts = [];
+
+        // 1. 财务健康度雷达图 - 五维度分析
+        const tplRadarChart = echarts.init(document.getElementById('tplRadarChart'));
+        tplRadarChart.setOption({
+            tooltip: { trigger: 'item' },
+            radar: {
+                indicator: [
+                    { name: '盈利能力', max: 100 },
+                    { name: '流动性', max: 100 },
+                    { name: '偿债能力', max: 100 },
+                    { name: '运营效率', max: 100 },
+                    { name: '成长能力', max: 100 }
+                ],
+                radius: '60%',
+                splitNumber: 4,
+                axisLine: { lineStyle: { color: '#e5e7eb' } },
+                splitLine: { lineStyle: { color: '#e5e7eb' } },
+                splitArea: { areaStyle: { color: ['#fff', '#f8fafc'] } }
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: [78, 65, 72, 81, 58],
+                    name: '当前值',
+                    areaStyle: { color: 'rgba(59, 130, 246, 0.3)' },
+                    lineStyle: { color: '#3b82f6', width: 2 },
+                    itemStyle: { color: '#3b82f6' }
+                }]
+            }]
+        });
+        window.tplCharts.push(tplRadarChart);
+
+        // 2. 杜邦分析图 - ROE 分解
+        const tplDupontChart = echarts.init(document.getElementById('tplDupontChart'));
+        tplDupontChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['净利率', '周转率', '杠杆', 'ROE'], bottom: 0, textStyle: { fontSize: 10 } },
+            grid: { left: '8%', right: '8%', bottom: '22%', top: '8%' },
+            xAxis: { type: 'category', data: ['Q1', 'Q2', 'Q3', 'Q4'], axisLabel: { fontSize: 10 } },
+            yAxis: [
+                { type: 'value', name: '%', position: 'left', axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } },
+                { type: 'value', name: '倍', position: 'right', axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } }
+            ],
+            series: [
+                { name: '净利率', type: 'bar', data: [8.2, 9.1, 8.8, 10.5], itemStyle: { color: '#6366f1' }, barWidth: '15%' },
+                { name: '周转率', type: 'bar', data: [1.2, 1.3, 1.25, 1.4], yAxisIndex: 1, itemStyle: { color: '#22c55e' }, barWidth: '15%' },
+                { name: '杠杆', type: 'bar', data: [2.1, 2.0, 2.15, 2.05], yAxisIndex: 1, itemStyle: { color: '#f59e0b' }, barWidth: '15%' },
+                { name: 'ROE', type: 'line', data: [20.6, 23.7, 23.7, 30.1], smooth: true, lineStyle: { width: 2, color: '#ef4444' }, itemStyle: { color: '#ef4444' } }
+            ]
+        });
+        window.tplCharts.push(tplDupontChart);
+
+        // 3. 现金流量瀑布图
+        const tplWaterfallChart = echarts.init(document.getElementById('tplWaterfallChart'));
+        tplWaterfallChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '8%', right: '5%', bottom: '12%', top: '8%' },
+            xAxis: { type: 'category', data: ['期初', '经营', '投资', '筹资', '期末'], axisLabel: { fontSize: 9 } },
+            yAxis: { type: 'value', name: '万元', axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } },
+            series: [
+                { name: '辅助', type: 'bar', stack: 'total', itemStyle: { borderColor: 'transparent', color: 'transparent' }, data: [0, 500, 650, 550, 0] },
+                { name: '增加', type: 'bar', stack: 'total', itemStyle: { color: '#22c55e' }, label: { show: true, position: 'top', fontSize: 9 }, data: [500, 150, 0, 100, 650] },
+                { name: '减少', type: 'bar', stack: 'total', itemStyle: { color: '#ef4444' }, label: { show: true, position: 'bottom', fontSize: 9 }, data: [0, 0, -100, 0, 0] }
+            ]
+        });
+        window.tplCharts.push(tplWaterfallChart);
+
+        // 4. 盈亏平衡分析图
+        const tplBreakevenChart = echarts.init(document.getElementById('tplBreakevenChart'));
+        const beQuantity = Array.from({length: 11}, (_, i) => i * 100);
+        const beFixedCost = beQuantity.map(() => 200);
+        const beTotalCost = beQuantity.map(q => 200 + q * 0.6);
+        const beRevenue = beQuantity.map(q => q * 1.0);
+        tplBreakevenChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['总收入', '总成本', '固定成本'], bottom: 0, textStyle: { fontSize: 9 } },
+            grid: { left: '10%', right: '5%', bottom: '20%', top: '8%' },
+            xAxis: { type: 'category', name: '销量', data: beQuantity, axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } },
+            yAxis: { type: 'value', name: '万元', axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } },
+            series: [
+                { name: '总收入', type: 'line', data: beRevenue, lineStyle: { color: '#22c55e', width: 2 }, itemStyle: { color: '#22c55e' }, symbol: 'none' },
+                { name: '总成本', type: 'line', data: beTotalCost, lineStyle: { color: '#ef4444', width: 2 }, itemStyle: { color: '#ef4444' }, symbol: 'none' },
+                { name: '固定成本', type: 'line', data: beFixedCost, lineStyle: { color: '#f59e0b', type: 'dashed' }, itemStyle: { color: '#f59e0b' }, symbol: 'none' }
+            ],
+            markLine: { data: [{ xAxis: 500, name: '盈亏平衡点', lineStyle: { color: '#6366f1', type: 'dashed' }, label: { formatter: '平衡点', fontSize: 9 } }] }
+        });
+        window.tplCharts.push(tplBreakevenChart);
+
+        // 5. 成本结构分析图
+        const tplCostPieChart = echarts.init(document.getElementById('tplCostPieChart'));
+        tplCostPieChart.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c}万 ({d}%)' },
+            legend: { orient: 'vertical', right: 5, top: 'center', textStyle: { fontSize: 9 } },
+            series: [{
+                type: 'pie',
+                radius: ['30%', '60%'],
+                center: ['35%', '50%'],
+                itemStyle: { borderRadius: 4, borderColor: '#fff', borderWidth: 1 },
+                label: { show: false },
+                data: [
+                    { value: 420, name: '原材料', itemStyle: { color: '#6366f1' } },
+                    { value: 180, name: '人工', itemStyle: { color: '#22c55e' } },
+                    { value: 120, name: '制造费', itemStyle: { color: '#f59e0b' } },
+                    { value: 80, name: '管理费', itemStyle: { color: '#ef4444' } },
+                    { value: 60, name: '销售费', itemStyle: { color: '#8b5cf6' } },
+                    { value: 40, name: '财务费', itemStyle: { color: '#06b6d4' } }
+                ]
+            }]
+        });
+        window.tplCharts.push(tplCostPieChart);
+
+        // 6. 财务比率趋势图
+        const tplRatioTrendChart = echarts.init(document.getElementById('tplRatioTrendChart'));
+        tplRatioTrendChart.setOption({
+            tooltip: { trigger: 'axis' },
+            legend: { data: ['流动比率', '毛利率', 'ROE'], bottom: 0, textStyle: { fontSize: 9 } },
+            grid: { left: '10%', right: '5%', bottom: '20%', top: '8%' },
+            xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月', '6月'], axisLabel: { fontSize: 9 } },
+            yAxis: { type: 'value', axisLabel: { fontSize: 9, formatter: '{value}%' } },
+            series: [
+                { name: '流动比率', type: 'line', data: [1.8, 1.9, 1.85, 2.0, 2.1, 2.15].map(v => v * 50), smooth: true, lineStyle: { color: '#6366f1' }, itemStyle: { color: '#6366f1' }, symbol: 'circle', symbolSize: 4 },
+                { name: '毛利率', type: 'line', data: [32, 33, 31, 34, 35, 36], smooth: true, lineStyle: { color: '#22c55e' }, itemStyle: { color: '#22c55e' }, symbol: 'circle', symbolSize: 4 },
+                { name: 'ROE', type: 'line', data: [18, 19, 20, 22, 24, 25], smooth: true, lineStyle: { color: '#ef4444' }, itemStyle: { color: '#ef4444' }, symbol: 'circle', symbolSize: 4 }
+            ]
+        });
+        window.tplCharts.push(tplRatioTrendChart);
+
+        // 7. 周转率对比分析
+        const tplTurnoverChart = echarts.init(document.getElementById('tplTurnoverChart'));
+        tplTurnoverChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['本期', '上期', '行业'], bottom: 0, textStyle: { fontSize: 9 } },
+            grid: { left: '8%', right: '5%', bottom: '20%', top: '8%' },
+            xAxis: { type: 'category', data: ['存货', '应收', '应付', '资产'], axisLabel: { fontSize: 9 } },
+            yAxis: { type: 'value', name: '次', axisLabel: { fontSize: 9 }, nameTextStyle: { fontSize: 9 } },
+            series: [
+                { name: '本期', type: 'bar', data: [6.2, 8.5, 5.8, 1.4], itemStyle: { color: '#6366f1' }, barWidth: '20%' },
+                { name: '上期', type: 'bar', data: [5.8, 7.9, 5.5, 1.3], itemStyle: { color: '#22c55e' }, barWidth: '20%' },
+                { name: '行业', type: 'bar', data: [5.5, 7.0, 5.0, 1.2], itemStyle: { color: '#e5e7eb' }, barWidth: '20%' }
+            ]
+        });
+        window.tplCharts.push(tplTurnoverChart);
+
+        // 8. KPI 仪表盘
+        const tplGaugeChart = echarts.init(document.getElementById('tplGaugeChart'));
+        tplGaugeChart.setOption({
+            series: [{
+                type: 'gauge',
+                radius: '85%',
+                startAngle: 200,
+                endAngle: -20,
+                min: 0,
+                max: 100,
+                splitNumber: 5,
+                progress: { show: true, width: 12 },
+                pointer: { show: true, length: '50%', width: 4 },
+                axisLine: { lineStyle: { width: 12, color: [[0.3, '#ef4444'], [0.7, '#f59e0b'], [1, '#22c55e']] } },
+                axisTick: { show: false },
+                splitLine: { distance: -14, length: 8, lineStyle: { width: 2, color: '#999' } },
+                axisLabel: { distance: -18, color: '#999', fontSize: 9 },
+                anchor: { show: true, size: 12, itemStyle: { borderWidth: 4 } },
+                title: { show: true, offsetCenter: [0, '65%'], fontSize: 11 },
+                detail: { valueAnimation: true, fontSize: 20, offsetCenter: [0, '35%'], formatter: '{value}%', color: 'inherit' },
+                data: [{ value: 78.5, name: '目标达成率' }]
+            }]
+        });
+        window.tplCharts.push(tplGaugeChart);
     </script>
 </body>
 </html>

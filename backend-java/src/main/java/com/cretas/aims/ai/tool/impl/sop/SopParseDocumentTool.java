@@ -8,6 +8,8 @@ import com.cretas.aims.ai.tool.AbstractBusinessTool;
 import com.cretas.aims.config.DashScopeConfig;
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -157,10 +159,29 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     }
 
     /**
-     * 解析PDF文档（通过AI）
+     * 解析PDF文档
+     * 1. 从URL下载PDF
+     * 2. 使用PDFBox提取文本
+     * 3. 发送文本给AI进行结构化解析
      */
     private SopParseResult parsePdfDocument(String fileUrl) {
-        // 使用AI来解析PDF内容
+        // 1. 下载并提取PDF文本
+        String pdfText;
+        try {
+            pdfText = extractPdfText(fileUrl);
+            log.info("PDF文本提取完成，共 {} 个字符", pdfText.length());
+        } catch (Exception e) {
+            log.error("PDF文本提取失败: {}", e.getMessage(), e);
+            return createEmptyResult(fileUrl, "PDF文本提取失败: " + e.getMessage());
+        }
+
+        // 如果提取到的文本为空或太短，直接返回
+        if (pdfText == null || pdfText.trim().length() < 10) {
+            log.warn("PDF文本内容为空或太短");
+            return createEmptyResult(fileUrl, "PDF文本内容为空或无法提取");
+        }
+
+        // 2. 使用AI来解析提取的文本内容
         String systemPrompt = """
             你是一个SOP文档解析专家。请分析提供的SOP文档内容，提取以下信息：
             1. 工序步骤列表（按顺序）
@@ -188,16 +209,45 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
                     "specialNotes": "特殊注意事项"
                 }
             }
+
+            仅返回JSON，不要包含其他文字。
             """;
 
-        String userPrompt = "请解析以下SOP文档URL的内容: " + fileUrl;
+        // 限制文本长度，避免超出token限制
+        String truncatedText = pdfText.length() > 8000 ? pdfText.substring(0, 8000) + "\n...(内容已截断)" : pdfText;
+        String userPrompt = "请解析以下SOP文档内容:\n\n" + truncatedText;
 
         try {
             String response = dashScopeClient.chat(systemPrompt, userPrompt);
-            return parseAiResponse(response, fileUrl);
+            SopParseResult result = parseAiResponse(response, fileUrl);
+            // 保存原始PDF文本
+            result.setContent(pdfText);
+            return result;
         } catch (Exception e) {
-            log.error("PDF解析失败: {}", e.getMessage(), e);
-            return createEmptyResult(fileUrl, "PDF解析失败: " + e.getMessage());
+            log.error("AI解析PDF内容失败: {}", e.getMessage(), e);
+            // 返回原始文本，但没有结构化的步骤
+            SopParseResult result = createEmptyResult(fileUrl, "AI解析失败: " + e.getMessage());
+            result.setContent(pdfText);
+            return result;
+        }
+    }
+
+    /**
+     * 从URL下载PDF并提取文本
+     */
+    private String extractPdfText(String fileUrl) throws Exception {
+        log.info("开始下载PDF: {}", fileUrl);
+
+        try (InputStream is = new URL(fileUrl).openStream();
+             PDDocument document = PDDocument.load(is)) {
+
+            PDFTextStripper stripper = new PDFTextStripper();
+            stripper.setSortByPosition(true);
+
+            String text = stripper.getText(document);
+            log.info("PDF解析成功，页数: {}, 文本长度: {}", document.getNumberOfPages(), text.length());
+
+            return text;
         }
     }
 
