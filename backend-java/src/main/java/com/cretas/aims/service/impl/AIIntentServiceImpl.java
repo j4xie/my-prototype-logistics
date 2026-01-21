@@ -30,6 +30,7 @@ import com.cretas.aims.service.AIIntentDomainDefaultService;
 import com.cretas.aims.service.ConversationMemoryService;
 import com.cretas.aims.service.MultiLabelIntentClassifier;
 import com.cretas.aims.service.QueryPreprocessorService;
+import com.cretas.aims.service.TwoStageIntentClassifier;
 import com.cretas.aims.service.impl.IntentConfigRollbackService;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
@@ -84,6 +85,11 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final QueryPreprocessorService queryPreprocessorService;
     private final ConversationMemoryService conversationMemoryService;
     private final MultiLabelIntentClassifier multiLabelIntentClassifier;
+
+    /**
+     * v8.0: 两阶段意图分类器
+     */
+    private final TwoStageIntentClassifier twoStageIntentClassifier;
 
     /**
      * 意图匹配统一配置
@@ -433,6 +439,63 @@ public class AIIntentServiceImpl implements AIIntentService {
                 saveIntentMatchRecord(result, factoryId, null, null, false);
                 return result;
             }
+        }
+
+        // ========== Layer 0.6: v8.0 两阶段名词优先分类 ==========
+        // 基于业界最佳实践：名词分组优于动词分组，两阶段分类减少错误传播
+        // 参考: Vonage Intent Classification Hierarchy, IEEE Two-Stage Intent Recognition Framework
+        try {
+            TwoStageIntentClassifier.TwoStageResult twoStageResult =
+                    twoStageIntentClassifier.classify(userInput);
+
+            if (twoStageResult.isSuccessful() && twoStageResult.getConfidence() >= 0.85) {
+                String composedIntent = twoStageResult.getComposedIntent();
+                List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+
+                Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                        .filter(i -> i.getIntentCode().equals(composedIntent))
+                        .findFirst();
+
+                if (intentOpt.isPresent()) {
+                    AIIntentConfig intent = intentOpt.get();
+                    ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+
+                    log.info("v8.0两阶段分类命中: domain={}, action={}, intent={}, confidence={}, " +
+                                    "domainKeyword='{}', actionContext='{}'",
+                            twoStageResult.getDomain(), twoStageResult.getAction(),
+                            composedIntent, twoStageResult.getConfidence(),
+                            twoStageResult.getDomainKeyword(), twoStageResult.getActionContext());
+
+                    IntentMatchResult result = IntentMatchResult.builder()
+                            .bestMatch(intent)
+                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                    intent, twoStageResult.getConfidence(), 95,
+                                    twoStageResult.getDomainKeyword() != null ?
+                                            List.of(twoStageResult.getDomainKeyword()) : Collections.emptyList(),
+                                    MatchMethod.SEMANTIC)))
+                            .confidence(twoStageResult.getConfidence())
+                            .matchMethod(MatchMethod.SEMANTIC)
+                            .matchedKeywords(twoStageResult.getDomainKeyword() != null ?
+                                    List.of(twoStageResult.getDomainKeyword()) : Collections.emptyList())
+                            .isStrongSignal(true)
+                            .requiresConfirmation(twoStageResult.getConfidence() < 0.90)
+                            .userInput(originalInput)
+                            .actionType(detectedActionType)
+                            .build();
+
+                    saveIntentMatchRecord(result, factoryId, null, null, false);
+                    return result;
+                } else {
+                    log.debug("v8.0两阶段分类意图未找到配置: {}", composedIntent);
+                }
+            } else if (twoStageResult.isSuccessful()) {
+                // 置信度较低但成功分类，记录日志供后续层使用
+                log.debug("v8.0两阶段分类低置信度: domain={}, action={}, conf={}",
+                        twoStageResult.getDomain(), twoStageResult.getAction(),
+                        twoStageResult.getConfidence());
+            }
+        } catch (Exception e) {
+            log.warn("v8.0两阶段分类异常: {}", e.getMessage());
         }
 
         // ========== Layer 1: 精确表达匹配 (hash查表, O(1)) ==========
