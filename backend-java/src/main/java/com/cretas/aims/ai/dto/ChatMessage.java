@@ -122,6 +122,20 @@ public class ChatMessage {
     }
 
     /**
+     * 创建多模态用户消息 (图片URL+文本)
+     */
+    public static ChatMessage userWithImageUrl(String text, String imageUrl) {
+        List<ContentPart> parts = List.of(
+                ContentPart.imageUrl(imageUrl),
+                ContentPart.text(text)
+        );
+        return ChatMessage.builder()
+                .role("user")
+                .content(parts)
+                .build();
+    }
+
+    /**
      * 多模态内容部分
      */
     @Data
@@ -150,6 +164,13 @@ public class ChatMessage {
             return ContentPart.builder()
                     .type("image_url")
                     .image_url(new ImageUrl("data:" + mimeType + ";base64," + base64))
+                    .build();
+        }
+
+        public static ContentPart imageUrl(String url) {
+            return ContentPart.builder()
+                    .type("image_url")
+                    .image_url(new ImageUrl(url))
                     .build();
         }
 
