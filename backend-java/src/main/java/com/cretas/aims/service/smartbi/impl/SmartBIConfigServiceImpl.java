@@ -40,6 +40,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     private final SmartBiIncentiveRuleRepository incentiveRuleRepository;
     private final SmartBiDictionaryRepository dictionaryRepository;
     private final SmartBiMetricFormulaRepository metricFormulaRepository;
+    private final SmartBiChartTemplateRepository chartTemplateRepository;
     private final CacheManager cacheManager;
 
     // 内存缓存
@@ -48,6 +49,8 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     private final Map<String, List<SmartBiIncentiveRule>> incentiveRuleCache = new ConcurrentHashMap<>();
     private final Map<String, List<SmartBiDictionary>> dictionaryCache = new ConcurrentHashMap<>();
     private final Map<String, List<SmartBiMetricFormula>> metricFormulaCache = new ConcurrentHashMap<>();
+    private final Map<String, List<SmartBiChartTemplate>> chartTemplateCache = new ConcurrentHashMap<>();
+    private final Map<String, List<String>> metricToTemplatesCache = new ConcurrentHashMap<>();
 
     // 最后更新时间
     private LocalDateTime lastIntentUpdate;
@@ -55,6 +58,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
     private LocalDateTime lastIncentiveRuleUpdate;
     private LocalDateTime lastFieldMappingUpdate;
     private LocalDateTime lastMetricFormulaUpdate;
+    private LocalDateTime lastChartTemplateUpdate;
 
     @PostConstruct
     public void init() {
@@ -663,6 +667,199 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         }
     }
 
+    // ==================== 图表模板 ====================
+
+    @Override
+    public List<SmartBiChartTemplate> listChartTemplates(String category, String chartType) {
+        if (category != null && !category.isEmpty() && chartType != null && !chartType.isEmpty()) {
+            return chartTemplateRepository.findByChartTypeAndCategoryAndIsActiveTrueOrderBySortOrder(chartType, category);
+        } else if (category != null && !category.isEmpty()) {
+            return chartTemplateRepository.findByCategoryAndIsActiveTrueOrderBySortOrder(category);
+        } else if (chartType != null && !chartType.isEmpty()) {
+            return chartTemplateRepository.findByChartTypeAndIsActiveTrueOrderBySortOrder(chartType);
+        }
+        return chartTemplateRepository.findByIsActiveTrueOrderBySortOrder();
+    }
+
+    @Override
+    @Transactional
+    public ConfigOperationResult createChartTemplate(SmartBiChartTemplate template) {
+        try {
+            // 验证唯一性
+            if (chartTemplateRepository.existsByTemplateCodeAndIsActiveTrue(template.getTemplateCode())) {
+                return ConfigOperationResult.error(
+                        "CHART_TEMPLATE",
+                        "图表模板已存在: " + template.getTemplateCode());
+            }
+
+            template.setIsActive(true);
+            chartTemplateRepository.save(template);
+            log.info("创建图表模板: templateCode={}", template.getTemplateCode());
+
+            // 刷新缓存
+            refreshChartTemplateCache();
+
+            return ConfigOperationResult.success(
+                    "CHART_TEMPLATE",
+                    ConfigOperationResult.OPERATION_CREATE,
+                    "图表模板创建成功", 1);
+        } catch (Exception e) {
+            log.error("创建图表模板失败: {}", e.getMessage(), e);
+            return ConfigOperationResult.error(
+                    "CHART_TEMPLATE",
+                    "创建失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ConfigOperationResult updateChartTemplate(Long id, SmartBiChartTemplate template) {
+        try {
+            Optional<SmartBiChartTemplate> existingOpt = chartTemplateRepository.findById(id);
+            if (existingOpt.isEmpty()) {
+                return ConfigOperationResult.error(
+                        "CHART_TEMPLATE",
+                        "图表模板不存在: id=" + id);
+            }
+
+            SmartBiChartTemplate existing = existingOpt.get();
+            updateChartTemplateFields(existing, template);
+            chartTemplateRepository.save(existing);
+            log.info("更新图表模板: id={}, templateCode={}", id, existing.getTemplateCode());
+
+            // 刷新缓存
+            refreshChartTemplateCache();
+
+            return ConfigOperationResult.success(
+                    "CHART_TEMPLATE",
+                    ConfigOperationResult.OPERATION_UPDATE,
+                    "图表模板更新成功", 1);
+        } catch (Exception e) {
+            log.error("更新图表模板失败: id={}, error={}", id, e.getMessage(), e);
+            return ConfigOperationResult.error(
+                    "CHART_TEMPLATE",
+                    "更新失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
+    public ConfigOperationResult deleteChartTemplate(Long id) {
+        try {
+            Optional<SmartBiChartTemplate> existingOpt = chartTemplateRepository.findById(id);
+            if (existingOpt.isEmpty()) {
+                return ConfigOperationResult.error(
+                        "CHART_TEMPLATE",
+                        "图表模板不存在: id=" + id);
+            }
+
+            SmartBiChartTemplate existing = existingOpt.get();
+            existing.setIsActive(false);
+            existing.softDelete();
+            chartTemplateRepository.save(existing);
+            log.info("删除图表模板: id={}, templateCode={}", id, existing.getTemplateCode());
+
+            // 刷新缓存
+            refreshChartTemplateCache();
+
+            return ConfigOperationResult.success(
+                    "CHART_TEMPLATE",
+                    ConfigOperationResult.OPERATION_DELETE,
+                    "图表模板删除成功", 1);
+        } catch (Exception e) {
+            log.error("删除图表模板失败: id={}, error={}", id, e.getMessage(), e);
+            return ConfigOperationResult.error(
+                    "CHART_TEMPLATE",
+                    "删除失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public ConfigOperationResult reloadChartTemplates() {
+        try {
+            int count = refreshChartTemplateCache();
+            log.info("重载图表模板缓存: count={}", count);
+            return ConfigOperationResult.success(
+                    "CHART_TEMPLATE",
+                    ConfigOperationResult.OPERATION_RELOAD,
+                    "图表模板重载成功", count);
+        } catch (Exception e) {
+            log.error("重载图表模板失败: {}", e.getMessage(), e);
+            return ConfigOperationResult.error(
+                    "CHART_TEMPLATE",
+                    "重载失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public SmartBiChartTemplate getChartTemplate(String templateCode, String factoryId) {
+        // 先查工厂级配置
+        if (factoryId != null && !factoryId.isEmpty()) {
+            Optional<SmartBiChartTemplate> factoryTemplate =
+                    chartTemplateRepository.findByTemplateCodeAndFactoryId(templateCode, factoryId);
+            if (factoryTemplate.isPresent() && factoryTemplate.get().getIsActive()) {
+                return factoryTemplate.get();
+            }
+        }
+        // 再查全局配置
+        return chartTemplateRepository.findByTemplateCodeAndFactoryIdIsNull(templateCode)
+                .filter(SmartBiChartTemplate::getIsActive)
+                .orElse(null);
+    }
+
+    @Override
+    public List<SmartBiChartTemplate> getChartTemplatesForMetric(String metricCode) {
+        List<String> templateCodes = metricToTemplatesCache.get(metricCode);
+        if (templateCodes == null || templateCodes.isEmpty()) {
+            // 从数据库查询
+            return chartTemplateRepository.findByApplicableMetricContaining(metricCode);
+        }
+        // 从缓存获取
+        List<SmartBiChartTemplate> result = new ArrayList<>();
+        List<SmartBiChartTemplate> allTemplates = chartTemplateCache.get("all");
+        if (allTemplates != null) {
+            for (SmartBiChartTemplate template : allTemplates) {
+                if (templateCodes.contains(template.getTemplateCode())) {
+                    result.add(template);
+                }
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public String recommendChartType(String metricCode, int dataPoints, boolean hasTimeDimension) {
+        // 1. 先检查是否有指定模板
+        List<SmartBiChartTemplate> templates = getChartTemplatesForMetric(metricCode);
+        if (!templates.isEmpty()) {
+            return templates.get(0).getChartType();
+        }
+
+        // 2. 根据数据特征智能推荐
+        if (hasTimeDimension && dataPoints > 1) {
+            return "LINE";  // 时间序列用折线图
+        }
+        if (metricCode != null) {
+            String lowerCode = metricCode.toLowerCase();
+            if (lowerCode.contains("ratio") || lowerCode.contains("rate")) {
+                if (dataPoints <= 1) {
+                    return "GAUGE";  // 单个比率用仪表盘
+                }
+                if (dataPoints <= 6) {
+                    return "RADAR";  // 比率类指标用雷达图
+                }
+            }
+            if (lowerCode.contains("structure") || lowerCode.contains("composition") || lowerCode.contains("distribution")) {
+                return "PIE";  // 结构类用饼图
+            }
+        }
+        if (dataPoints > 10) {
+            return "BAR";  // 大数据量用柱状图
+        }
+
+        return "BAR";  // 默认柱状图
+    }
+
     // ==================== 全局操作 ====================
 
     @Override
@@ -673,12 +870,13 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
             int incentiveRuleCount = refreshIncentiveRuleCache();
             int dictionaryCount = refreshDictionaryCache();
             int metricFormulaCount = refreshMetricFormulaCache();
+            int chartTemplateCount = refreshChartTemplateCache();
 
             int totalCount = intentCount + thresholdCount + incentiveRuleCount
-                    + dictionaryCount + metricFormulaCount;
+                    + dictionaryCount + metricFormulaCount + chartTemplateCount;
 
-            log.info("重载所有配置缓存: intent={}, threshold={}, incentiveRule={}, dictionary={}, metricFormula={}, total={}",
-                    intentCount, thresholdCount, incentiveRuleCount, dictionaryCount, metricFormulaCount, totalCount);
+            log.info("重载所有配置缓存: intent={}, threshold={}, incentiveRule={}, dictionary={}, metricFormula={}, chartTemplate={}, total={}",
+                    intentCount, thresholdCount, incentiveRuleCount, dictionaryCount, metricFormulaCount, chartTemplateCount, totalCount);
 
             // 清除 Spring Cache
             if (cacheManager != null) {
@@ -696,6 +894,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
             counts.put("incentiveRules", incentiveRuleCount);
             counts.put("fieldMappings", dictionaryCount);
             counts.put("metricFormulas", metricFormulaCount);
+            counts.put("chartTemplates", chartTemplateCount);
 
             return ConfigOperationResult.builder()
                     .success(true)
@@ -725,6 +924,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         counts.put("incentiveRules", incentiveRuleRepository.count());
         counts.put("fieldMappings", dictionaryRepository.count());
         counts.put("metricFormulas", metricFormulaRepository.count());
+        counts.put("chartTemplates", chartTemplateRepository.count());
         status.put("counts", counts);
 
         // 缓存大小
@@ -734,6 +934,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         cacheSizes.put("incentiveRules", incentiveRuleCache.values().stream().mapToInt(List::size).sum());
         cacheSizes.put("fieldMappings", dictionaryCache.values().stream().mapToInt(List::size).sum());
         cacheSizes.put("metricFormulas", metricFormulaCache.values().stream().mapToInt(List::size).sum());
+        cacheSizes.put("chartTemplates", chartTemplateCache.values().stream().mapToInt(List::size).sum());
         status.put("cacheSizes", cacheSizes);
 
         // 最后更新时间
@@ -743,6 +944,7 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         lastUpdates.put("incentiveRules", lastIncentiveRuleUpdate);
         lastUpdates.put("fieldMappings", lastFieldMappingUpdate);
         lastUpdates.put("metricFormulas", lastMetricFormulaUpdate);
+        lastUpdates.put("chartTemplates", lastChartTemplateUpdate);
         status.put("lastUpdates", lastUpdates);
 
         // 系统信息
@@ -802,6 +1004,44 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         return allFormulas.size();
     }
 
+    private int refreshChartTemplateCache() {
+        chartTemplateCache.clear();
+        metricToTemplatesCache.clear();
+
+        List<SmartBiChartTemplate> allTemplates = chartTemplateRepository.findByIsActiveTrueOrderBySortOrder();
+        chartTemplateCache.put("all", allTemplates);
+
+        // 按分类分组
+        Map<String, List<SmartBiChartTemplate>> byCategory = new HashMap<>();
+        for (SmartBiChartTemplate template : allTemplates) {
+            byCategory.computeIfAbsent(template.getCategory(), k -> new ArrayList<>()).add(template);
+
+            // 构建指标到模板的映射
+            String applicableMetrics = template.getApplicableMetrics();
+            if (applicableMetrics != null && !applicableMetrics.isEmpty()) {
+                try {
+                    // 简单解析 JSON 数组，例如 ["metric1","metric2"]
+                    String cleaned = applicableMetrics.replaceAll("[\\[\\]\"]", "");
+                    String[] metrics = cleaned.split(",");
+                    for (String metric : metrics) {
+                        String trimmed = metric.trim();
+                        if (!trimmed.isEmpty()) {
+                            metricToTemplatesCache.computeIfAbsent(trimmed, k -> new ArrayList<>())
+                                    .add(template.getTemplateCode());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("解析图表模板 {} 的 applicableMetrics 失败: {}",
+                            template.getTemplateCode(), e.getMessage());
+                }
+            }
+        }
+        chartTemplateCache.putAll(byCategory);
+
+        lastChartTemplateUpdate = LocalDateTime.now();
+        return allTemplates.size();
+    }
+
     private void updateIntentFields(AiIntentConfig existing, AiIntentConfig updated) {
         if (updated.getIntentName() != null) existing.setIntentName(updated.getIntentName());
         if (updated.getIntentCategory() != null) existing.setIntentCategory(updated.getIntentCategory());
@@ -858,6 +1098,20 @@ public class SmartBIConfigServiceImpl implements SmartBIConfigService {
         if (updated.getUnit() != null) existing.setUnit(updated.getUnit());
         if (updated.getFormatPattern() != null) existing.setFormatPattern(updated.getFormatPattern());
         if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
+        if (updated.getIsActive() != null) existing.setIsActive(updated.getIsActive());
+    }
+
+    private void updateChartTemplateFields(SmartBiChartTemplate existing, SmartBiChartTemplate updated) {
+        if (updated.getTemplateName() != null) existing.setTemplateName(updated.getTemplateName());
+        if (updated.getChartType() != null) existing.setChartType(updated.getChartType());
+        if (updated.getCategory() != null) existing.setCategory(updated.getCategory());
+        if (updated.getApplicableMetrics() != null) existing.setApplicableMetrics(updated.getApplicableMetrics());
+        if (updated.getChartOptions() != null) existing.setChartOptions(updated.getChartOptions());
+        if (updated.getDataMapping() != null) existing.setDataMapping(updated.getDataMapping());
+        if (updated.getLayoutConfig() != null) existing.setLayoutConfig(updated.getLayoutConfig());
+        if (updated.getDescription() != null) existing.setDescription(updated.getDescription());
+        if (updated.getThumbnailUrl() != null) existing.setThumbnailUrl(updated.getThumbnailUrl());
+        if (updated.getSortOrder() != null) existing.setSortOrder(updated.getSortOrder());
         if (updated.getIsActive() != null) existing.setIsActive(updated.getIsActive());
     }
 }
