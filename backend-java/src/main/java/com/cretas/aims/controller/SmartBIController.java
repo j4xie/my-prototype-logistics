@@ -182,8 +182,12 @@ public class SmartBIController {
 
         try {
             // Call the full upload flow service
-            Object result = uploadFlowService.executeUploadFlow(file, factoryId, dataType);
-            return ResponseEntity.ok(ApiResponse.success("上传并分析成功", result));
+            SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.executeUploadFlow(factoryId, file, dataType);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
         } catch (Exception e) {
             log.error("上传并分析失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("上传并分析失败: " + e.getMessage()));
@@ -211,14 +215,30 @@ public class SmartBIController {
         }
 
         try {
+            // Convert Map to List<FieldMappingResult>
+            List<FieldMappingResult> mappings = new java.util.ArrayList<>();
+            if (request.getConfirmedMappings() != null) {
+                request.getConfirmedMappings().forEach((original, standard) -> {
+                    FieldMappingResult mapping = new FieldMappingResult();
+                    mapping.setOriginalColumn(original);
+                    mapping.setStandardField(standard);
+                    mapping.setConfidence(100.0); // User confirmed
+                    mappings.add(mapping);
+                });
+            }
+
             // Call the upload flow service to confirm and save
-            Object result = uploadFlowService.confirmMappingsAndSave(
+            SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.confirmAndPersist(
                     factoryId,
                     request.getParseResponse(),
-                    request.getConfirmedMappings(),
+                    mappings,
                     request.getDataType()
             );
-            return ResponseEntity.ok(ApiResponse.success("数据保存成功并生成图表分析", result));
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
         } catch (Exception e) {
             log.error("确认映射并保存失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("保存失败: " + e.getMessage()));
