@@ -50,7 +50,7 @@ public interface SmartBIConfigService {
      * @param config 意图配置
      * @return 更新结果
      */
-    ConfigOperationResult updateIntent(Long id, AiIntentConfig config);
+    ConfigOperationResult updateIntent(String id, AiIntentConfig config);
 
     /**
      * 删除意图配置（软删除）
@@ -58,7 +58,7 @@ public interface SmartBIConfigService {
      * @param id 配置ID
      * @return 删除结果
      */
-    ConfigOperationResult deleteIntent(Long id);
+    ConfigOperationResult deleteIntent(String id);
 
     /**
      * 重载意图配置缓存
