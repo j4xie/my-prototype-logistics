@@ -242,4 +242,54 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
            "AND (c.factoryId = :factoryId OR c.factoryId IS NULL) " +
            "ORDER BY c.priority DESC, c.intentName ASC")
     List<AIIntentConfig> findActiveByFactoryIdWithPriority(@Param("factoryId") String factoryId);
+
+    // ==================== SmartBI 专用查询方法 ====================
+
+    /**
+     * 查询 SmartBI 类型的活跃意图配置
+     * 用于 SmartBI 意图服务从数据库加载意图
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.intentCategory = 'SMARTBI' " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "ORDER BY c.priority DESC")
+    List<AIIntentConfig> findSmartBIIntents();
+
+    /**
+     * 根据意图分类查询活跃配置（简化版本）
+     * 兼容 SmartBI 服务的 findByIntentCategoryAndIsActiveTrue 调用
+     */
+    default List<AIIntentConfig> findByIntentCategoryAndIsActiveTrue(String category) {
+        return findByIntentCategoryAndIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc(category);
+    }
+
+    /**
+     * 根据意图代码查询活跃配置（简化版本）
+     * 兼容 SmartBI 服务的 findByIntentCodeAndIsActiveTrue 调用
+     */
+    default Optional<AIIntentConfig> findByIntentCodeAndIsActiveTrue(String intentCode) {
+        return findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(intentCode);
+    }
+
+    /**
+     * 查询指定图表类型的 SmartBI 意图
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.intentCategory = 'SMARTBI' " +
+           "AND c.chartType = :chartType " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL")
+    List<AIIntentConfig> findSmartBIIntentsByChartType(@Param("chartType") String chartType);
+
+    /**
+     * 查询有置信度提升的 SmartBI 意图
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.intentCategory = 'SMARTBI' " +
+           "AND c.confidenceBoost > 0 " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "ORDER BY c.confidenceBoost DESC")
+    List<AIIntentConfig> findSmartBIIntentsWithConfidenceBoost();
 }

@@ -12,8 +12,8 @@ import java.util.Map;
  * 特征维度分配:
  * - 用户特征: 64维
  * - 商品特征: 64维
- * - 交叉特征: 32维 (用户品类偏好x商品品类、用户价格偏好x商品价格等)
- * - 总特征维度: 160维
+ * - 交叉特征: 40维 (用户品类偏好x商品品类、用户价格偏好x商品价格、行为趋势、转化率等)
+ * - 总特征维度: 168维
  *
  * 模型参数:
  * - 学习率: 0.01
@@ -36,12 +36,21 @@ public interface CTRPredictionService {
     int ITEM_FEATURE_DIM = 64;
 
     /**
-     * 交叉特征维度
+     * 交叉特征维度 (V3.0: 40→72 增加32维深度交叉特征)
+     *
+     * 新增特征 [40-55]: 用户-商品深度交叉 (16维)
+     * - 购买频率×热度、价格匹配度、多样性交叉等
+     *
+     * 新增特征 [56-63]: 行为序列特征 (8维)
+     * - 浏览序列熵、复购概率、最近浏览相似度等
+     *
+     * 新增特征 [64-71]: 上下文特征 (8维)
+     * - 小时/星期归一化、周末标记、促销期、设备类型等
      */
-    int CROSS_FEATURE_DIM = 32;
+    int CROSS_FEATURE_DIM = 72;
 
     /**
-     * 总特征维度
+     * 总特征维度 (V3.0: 168→200)
      */
     int TOTAL_FEATURE_DIM = USER_FEATURE_DIM + ITEM_FEATURE_DIM + CROSS_FEATURE_DIM;
 
@@ -102,7 +111,7 @@ public interface CTRPredictionService {
     /**
      * 获取当前模型的权重向量
      *
-     * @return 权重向量 (160维)
+     * @return 权重向量 (168维)
      */
     double[] getModelWeights();
 

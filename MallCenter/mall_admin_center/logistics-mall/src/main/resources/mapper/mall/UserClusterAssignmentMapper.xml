@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.joolun.mall.mapper.UserClusterAssignmentMapper">
+
+    <!--
+        批量插入或更新用户聚类分配
+        使用 MySQL 的 INSERT ON DUPLICATE KEY UPDATE 语法
+
+        唯一键约束: wx_user_id (每个用户只能有一个主聚类分配)
+    -->
+    <insert id="batchInsertOrUpdate" parameterType="java.util.List">
+        INSERT INTO user_cluster_assignments (
+            wx_user_id,
+            cluster_id,
+            feature_vector,
+            distance_to_centroid,
+            confidence,
+            second_nearest_cluster_id,
+            distance_to_second_nearest,
+            version,
+            boundary_user,
+            assignment_time,
+            create_time,
+            update_time
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.wxUserId},
+                #{item.clusterId},
+                #{item.featureVector},
+                #{item.distanceToCentroid},
+                #{item.confidence},
+                #{item.secondNearestClusterId},
+                #{item.distanceToSecondNearest},
+                #{item.version},
+                #{item.boundaryUser},
+                #{item.assignmentTime},
+                NOW(),
+                NOW()
+            )
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+            cluster_id = VALUES(cluster_id),
+            feature_vector = VALUES(feature_vector),
+            distance_to_centroid = VALUES(distance_to_centroid),
+            confidence = VALUES(confidence),
+            second_nearest_cluster_id = VALUES(second_nearest_cluster_id),
+            distance_to_second_nearest = VALUES(distance_to_second_nearest),
+            version = VALUES(version),
+            boundary_user = VALUES(boundary_user),
+            assignment_time = VALUES(assignment_time),
+            update_time = NOW()
+    </insert>
+
+</mapper>

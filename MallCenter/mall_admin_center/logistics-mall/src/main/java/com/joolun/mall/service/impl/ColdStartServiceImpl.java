@@ -2,7 +2,7 @@ package com.joolun.mall.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.joolun.mall.entity.GoodsSpu;
-import com.joolun.mall.entity.UserProfile;
+import com.joolun.mall.entity.UserRecommendationProfile;
 import com.joolun.mall.mapper.GoodsSpuMapper;
 import com.joolun.mall.service.ColdStartService;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -261,7 +262,7 @@ public class ColdStartServiceImpl implements ColdStartService {
             LocalDateTime threshold = LocalDateTime.now().minusDays(NEW_PRODUCT_DAYS);
 
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(GoodsSpu::getShelfStatus, 1)  // 上架状态
+            wrapper.eq(GoodsSpu::getShelf, "1")  // 上架状态
                     .ge(GoodsSpu::getCreateTime, threshold)  // 7天内
                     .orderByDesc(GoodsSpu::getCreateTime)
                     .last("LIMIT " + limit);
@@ -297,7 +298,7 @@ public class ColdStartServiceImpl implements ColdStartService {
     }
 
     @Override
-    public double estimateColdStartScore(GoodsSpu product, UserProfile userProfile) {
+    public double estimateColdStartScore(GoodsSpu product, UserRecommendationProfile userProfile) {
         if (product == null) {
             return 0.0;
         }
@@ -309,24 +310,24 @@ public class ColdStartServiceImpl implements ColdStartService {
             // 这里简化处理，使用固定值
             score += 0.1;
 
-            // 2. 价格匹配
-            if (userProfile != null && product.getSalesPrice() != null) {
-                BigDecimal preferredPrice = userProfile.getAvgPrice();
-                if (preferredPrice != null && preferredPrice.compareTo(BigDecimal.ZERO) > 0) {
-                    double priceDiff = Math.abs(product.getSalesPrice().doubleValue() - preferredPrice.doubleValue())
-                            / preferredPrice.doubleValue();
-                    if (priceDiff < 0.2) {
-                        score += 0.15;  // 价格接近用户偏好
-                    } else if (priceDiff < 0.5) {
-                        score += 0.05;
+            // 2. 价格匹配 (使用 pricePreferences 字段)
+            if (userProfile != null && product.getSalesPrice() != null
+                    && userProfile.getPricePreferences() != null) {
+                // pricePreferences 是 JSON 字符串，这里简化处理
+                String pricePrefs = userProfile.getPricePreferences();
+                if (pricePrefs.contains("中等") || pricePrefs.contains("中低价")) {
+                    double price = product.getSalesPrice().doubleValue();
+                    if (price >= 50 && price <= 300) {
+                        score += 0.15;  // 价格在偏好范围内
                     }
                 }
             }
 
-            // 3. 分类匹配
-            if (userProfile != null && userProfile.getPreferredCategories() != null
+            // 3. 分类匹配 (使用 categoryPreferences 字段)
+            if (userProfile != null && userProfile.getCategoryPreferences() != null
                     && product.getCategoryFirst() != null) {
-                if (userProfile.getPreferredCategories().contains(product.getCategoryFirst())) {
+                String categoryPrefs = userProfile.getCategoryPreferences();
+                if (categoryPrefs.contains(product.getCategoryFirst())) {
                     score += 0.2;  // 分类匹配
                 }
             }
@@ -355,7 +356,126 @@ public class ColdStartServiceImpl implements ColdStartService {
 
     @Override
     public int getNewProductQuota(int totalLimit) {
-        return (int) Math.ceil(totalLimit * NEW_PRODUCT_QUOTA_RATIO);
+        double dynamicRatio = calculateDynamicNewProductRatio();
+        return (int) Math.ceil(totalLimit * dynamicRatio);
+    }
+
+    /**
+     * 计算动态新品配额比例 (优化点7)
+     * 根据新品销售速度动态调整:
+     * - 新品销售好 (velocity > 1.5x baseline): 增加到20%
+     * - 新品销售差 (velocity < 0.5x baseline): 减少到10%
+     * - 正常: 维持15%
+     */
+    private double calculateDynamicNewProductRatio() {
+        try {
+            // 获取新品平均销售速度
+            Double avgVelocity = getAverageNewProductVelocity();
+            Double baselineVelocity = getBaselineVelocity();
+
+            if (avgVelocity == null || baselineVelocity == null || baselineVelocity == 0) {
+                return NEW_PRODUCT_QUOTA_RATIO;  // 默认15%
+            }
+
+            double velocityRatio = avgVelocity / baselineVelocity;
+
+            if (velocityRatio > 1.5) {
+                log.debug("新品销售表现好，配额提升至20%: velocityRatio={}", velocityRatio);
+                return 0.20;  // 新品销售好，增加到20%
+            } else if (velocityRatio < 0.5) {
+                log.debug("新品销售表现差，配额降低至10%: velocityRatio={}", velocityRatio);
+                return 0.10;  // 新品销售差，减少到10%
+            }
+            return NEW_PRODUCT_QUOTA_RATIO;  // 默认15%
+
+        } catch (Exception e) {
+            log.debug("计算动态新品配额失败: {}", e.getMessage());
+            return NEW_PRODUCT_QUOTA_RATIO;
+        }
+    }
+
+    /**
+     * 获取新品平均销售速度 (7天内商品的日均销量)
+     */
+    private Double getAverageNewProductVelocity() {
+        try {
+            String cacheKey = "coldstart:velocity:new";
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return Double.parseDouble(cached);
+            }
+
+            // 计算新品销售速度
+            List<GoodsSpu> newProducts = getColdStartProducts(100);
+            if (newProducts.isEmpty()) {
+                return null;
+            }
+
+            double totalVelocity = 0;
+            int count = 0;
+            for (GoodsSpu product : newProducts) {
+                if (product.getSaleNum() != null && product.getCreateTime() != null) {
+                    long days = ChronoUnit.DAYS.between(
+                        product.getCreateTime(), LocalDateTime.now()) + 1;
+                    double velocity = product.getSaleNum() / (double) days;
+                    totalVelocity += velocity;
+                    count++;
+                }
+            }
+
+            double avgVelocity = count > 0 ? totalVelocity / count : 0;
+
+            // 缓存1小时
+            redisTemplate.opsForValue().set(cacheKey, String.valueOf(avgVelocity), 1, TimeUnit.HOURS);
+            return avgVelocity;
+
+        } catch (Exception e) {
+            log.debug("获取新品销售速度失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 获取基准销售速度 (所有商品的平均日销量)
+     */
+    private Double getBaselineVelocity() {
+        try {
+            String cacheKey = "coldstart:velocity:baseline";
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return Double.parseDouble(cached);
+            }
+
+            // 计算基准：取热门商品的平均速度作为参考
+            List<GoodsSpu> popularProducts = getPopularProducts(50);
+            if (popularProducts.isEmpty()) {
+                return 1.0;  // 默认基准
+            }
+
+            double totalVelocity = 0;
+            int count = 0;
+            for (GoodsSpu product : popularProducts) {
+                if (product.getSaleNum() != null && product.getCreateTime() != null) {
+                    long days = ChronoUnit.DAYS.between(
+                        product.getCreateTime(), LocalDateTime.now()) + 1;
+                    // 限制最大天数避免极端值
+                    days = Math.min(days, 365);
+                    double velocity = product.getSaleNum() / (double) days;
+                    totalVelocity += velocity;
+                    count++;
+                }
+            }
+
+            double avgVelocity = count > 0 ? totalVelocity / count : 1.0;
+
+            // 缓存1小时
+            redisTemplate.opsForValue().set(cacheKey, String.valueOf(avgVelocity), 1, TimeUnit.HOURS);
+            return avgVelocity;
+
+        } catch (Exception e) {
+            log.debug("获取基准销售速度失败: {}", e.getMessage());
+            return 1.0;
+        }
     }
 
     @Override
@@ -521,7 +641,7 @@ public class ColdStartServiceImpl implements ColdStartService {
     private List<GoodsSpu> getPopularProducts(int limit) {
         try {
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(GoodsSpu::getShelfStatus, 1)
+            wrapper.eq(GoodsSpu::getShelf, "1")
                     .orderByDesc(GoodsSpu::getSaleNum)
                     .last("LIMIT " + limit);
             return goodsSpuMapper.selectList(wrapper);
@@ -538,7 +658,7 @@ public class ColdStartServiceImpl implements ColdStartService {
         try {
             // 假设有评分字段，这里按销量和创建时间排序模拟
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(GoodsSpu::getShelfStatus, 1)
+            wrapper.eq(GoodsSpu::getShelf, "1")
                     .orderByDesc(GoodsSpu::getSaleNum)
                     .orderByDesc(GoodsSpu::getCreateTime)
                     .last("LIMIT " + limit);
@@ -562,7 +682,7 @@ public class ColdStartServiceImpl implements ColdStartService {
     private List<GoodsSpu> getRandomProducts(int limit) {
         try {
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(GoodsSpu::getShelfStatus, 1)
+            wrapper.eq(GoodsSpu::getShelf, "1")
                     .last("ORDER BY RAND() LIMIT " + limit);
             return goodsSpuMapper.selectList(wrapper);
         } catch (Exception e) {
@@ -577,7 +697,7 @@ public class ColdStartServiceImpl implements ColdStartService {
     private List<GoodsSpu> getProductsByCategories(List<String> categories, int limit) {
         try {
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
-            wrapper.eq(GoodsSpu::getShelfStatus, 1)
+            wrapper.eq(GoodsSpu::getShelf, "1")
                     .in(GoodsSpu::getCategoryFirst, categories)
                     .orderByDesc(GoodsSpu::getSaleNum)
                     .last("LIMIT " + limit);

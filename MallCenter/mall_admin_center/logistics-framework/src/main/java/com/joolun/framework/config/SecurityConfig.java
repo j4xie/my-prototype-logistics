@@ -115,7 +115,15 @@ public class SecurityConfig
                     // 个性化推荐和行为追踪API - 允许匿名访问
                     "/weixin/ma/recommend/popular", "/weixin/ma/recommend/similar/**", "/weixin/ma/behavior/**", "/weixin/ma/recommend/**",
                     // 商户列表 - 下拉选择用
-                    "/merchant/list"
+                    "/merchant/list",
+                    // 模拟数据生成和聚类API - 测试用
+                    "/simulation/**", "/api/recommend/clusters/**",
+                    // 反馈处理和CTR训练API - 内部调用
+                    "/api/recommend/feedback/**",
+                    // 配送调度API - 测试用
+                    "/api/delivery/**",
+                    // APS生产排程API - 测试用
+                    "/api/aps/**"
                 ).permitAll()
                     // 静态资源，可匿名访问
                     .requestMatchers(HttpMethod.GET, "/", "/*.html", "/**.html", "/**.css", "/**.js", "/profile/**").permitAll()

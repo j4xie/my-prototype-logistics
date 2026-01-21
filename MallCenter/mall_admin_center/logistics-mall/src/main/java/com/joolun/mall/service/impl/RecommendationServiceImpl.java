@@ -115,6 +115,11 @@ public class RecommendationServiceImpl implements RecommendationService {
         recommendations = frequencyCapService.filterByFrequencyCap(wxUserId, recommendations);
         log.debug("频控过滤后: {}件", recommendations.size());
 
+        // 应用品类/商户多样性控制 (优化点6)
+        if (recommendations != null && recommendations.size() > limit) {
+            recommendations = applyCategoryDiversity(recommendations, limit * 2);  // 先做配额筛选
+        }
+
         // 统一应用MMR多样性控制 (确保所有路径都经过商户配额限制)
         if (recommendations != null && recommendations.size() > limit) {
             recommendations = mmrDiversityService.applyMMRReranking(recommendations, limit);
@@ -360,7 +365,7 @@ public class RecommendationServiceImpl implements RecommendationService {
         List<String> recentViewed = behaviorTrackingService.getRecentViewedProducts(wxUserId, 10);
         if (!recentViewed.isEmpty()) {
             for (String productId : recentViewed.subList(0, Math.min(3, recentViewed.size()))) {
-                List<GoodsSpu> cfProducts = collaborativeFilteringService.findSimilarProducts(productId, 10);
+                List<GoodsSpu> cfProducts = collaborativeFilteringService.getSimilarProductRecommendations(productId, wxUserId, 10);
                 for (GoodsSpu cfProduct : cfProducts) {
                     if (!containsProduct(recallCandidates, cfProduct.getId())) {
                         recallCandidates.add(cfProduct);
@@ -371,14 +376,11 @@ public class RecommendationServiceImpl implements RecommendationService {
         }
 
         // 3. CTR预测排序 - 使用LR模型精排
-        UserRecommendationProfile profile = null;
-        try {
-            profile = behaviorTrackingService.getUserProfile(wxUserId);
-        } catch (Exception e) {
-            log.warn("获取用户画像失败", e);
+        List<GoodsSpu> rankedCandidates = ctrPredictionService.rerankByCTR(wxUserId, recallCandidates);
+        // 截取需要的数量
+        if (rankedCandidates.size() > limit * 2) {
+            rankedCandidates = rankedCandidates.subList(0, limit * 2);
         }
-        List<GoodsSpu> rankedCandidates = ctrPredictionService.predictAndRank(
-                wxUserId, profile, recallCandidates, limit * 2);
         log.debug("CTR精排完成: {}件", rankedCandidates.size());
 
         // 4. 策略干预重排序 (新商家/促销/库存加权)
@@ -409,6 +411,65 @@ public class RecommendationServiceImpl implements RecommendationService {
     private boolean containsProduct(List<GoodsSpu> products, String productId) {
         if (products == null || productId == null) return false;
         return products.stream().anyMatch(p -> p != null && productId.equals(p.getId()));
+    }
+
+    /**
+     * 应用品类和商户多样性控制 (优化点6)
+     * - 单品类最多占25%
+     * - 单商户最多占20%
+     */
+    private List<GoodsSpu> applyCategoryDiversity(List<GoodsSpu> products, int limit) {
+        if (products == null || products.isEmpty()) {
+            return products;
+        }
+
+        int maxPerCategory = (int) Math.ceil(limit * 0.25);  // 单品类最多25%
+        int maxPerMerchant = (int) Math.ceil(limit * 0.20);  // 单商户最多20%
+
+        List<GoodsSpu> diversified = new ArrayList<>();
+        Map<String, Integer> categoryCount = new HashMap<>();
+        Map<Long, Integer> merchantCount = new HashMap<>();
+
+        for (GoodsSpu product : products) {
+            String category = product.getCategoryFirst() != null ? product.getCategoryFirst() : "OTHER";
+            Long merchantId = product.getMerchantId();
+
+            int catCnt = categoryCount.getOrDefault(category, 0);
+            int merCnt = merchantId != null ? merchantCount.getOrDefault(merchantId, 0) : 0;
+
+            // 检查配额
+            if (catCnt < maxPerCategory && (merchantId == null || merCnt < maxPerMerchant)) {
+                diversified.add(product);
+                categoryCount.put(category, catCnt + 1);
+                if (merchantId != null) {
+                    merchantCount.put(merchantId, merCnt + 1);
+                }
+            }
+
+            if (diversified.size() >= limit) {
+                break;
+            }
+        }
+
+        // 如果多样性过滤后数量不足，补充不满足配额但仍有价值的商品
+        if (diversified.size() < limit) {
+            Set<String> addedIds = diversified.stream()
+                .map(GoodsSpu::getId)
+                .collect(Collectors.toSet());
+
+            for (GoodsSpu product : products) {
+                if (diversified.size() >= limit) break;
+                if (!addedIds.contains(product.getId())) {
+                    diversified.add(product);
+                    addedIds.add(product.getId());
+                }
+            }
+        }
+
+        log.debug("多样性控制: 输入{}件，品类数{}，商户数{}，输出{}件",
+                products.size(), categoryCount.size(), merchantCount.size(), diversified.size());
+
+        return diversified;
     }
 
     /**

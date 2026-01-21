@@ -228,6 +228,33 @@ public class AIIntentConfig extends BaseEntity {
     @Column(name = "metadata", columnDefinition = "JSON")
     private String metadata;
 
+    // ==================== SmartBI 专用字段 ====================
+
+    /**
+     * 推荐图表类型 (SmartBI)
+     * 用于智能BI查询时推荐的可视化图表类型
+     * 如: bar_chart, line_chart, pie_chart, table, card
+     */
+    @Column(name = "chart_type", length = 32)
+    private String chartType;
+
+    /**
+     * 必需实体类型 (SmartBI)
+     * JSON数组，定义该意图必须识别的实体类型
+     * 如: ["time", "region", "metric"]
+     */
+    @Column(name = "required_entities", columnDefinition = "TEXT")
+    private String requiredEntities;
+
+    /**
+     * 置信度提升值 (SmartBI)
+     * 当识别到特定实体组合时，提升该意图的置信度
+     * 范围: 0.00 - 1.00
+     */
+    @Column(name = "confidence_boost", columnDefinition = "DECIMAL(3,2)")
+    @Builder.Default
+    private java.math.BigDecimal confidenceBoost = java.math.BigDecimal.ZERO;
+
     // ==================== 版本控制字段 ====================
 
     /**
@@ -415,5 +442,48 @@ public class AIIntentConfig extends BaseEntity {
         } catch (Exception e) {
             this.negativeExamples = "[\"" + String.join("\", \"", negativeList) + "\"]";
         }
+    }
+
+    // ==================== SmartBI 辅助方法 ====================
+
+    /**
+     * 获取必需实体类型列表 (SmartBI)
+     * 从 JSON 数组字符串解析为 List
+     */
+    public java.util.List<String> getRequiredEntitiesList() {
+        if (requiredEntities == null || requiredEntities.isEmpty()) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            return mapper.readValue(requiredEntities,
+                mapper.getTypeFactory().constructCollectionType(java.util.List.class, String.class));
+        } catch (Exception e) {
+            return java.util.Arrays.asList(requiredEntities.replaceAll("[\\[\\]\"]", "").split(",\\s*"));
+        }
+    }
+
+    /**
+     * 设置必需实体类型列表 (SmartBI)
+     * 将 List 转换为 JSON 数组字符串
+     */
+    public void setRequiredEntitiesList(java.util.List<String> entityList) {
+        if (entityList == null || entityList.isEmpty()) {
+            this.requiredEntities = "[]";
+            return;
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+            this.requiredEntities = mapper.writeValueAsString(entityList);
+        } catch (Exception e) {
+            this.requiredEntities = "[\"" + String.join("\", \"", entityList) + "\"]";
+        }
+    }
+
+    /**
+     * 判断是否为 SmartBI 意图
+     */
+    public boolean isSmartBIIntent() {
+        return "SMARTBI".equals(intentCategory);
     }
 }

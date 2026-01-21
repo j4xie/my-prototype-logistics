@@ -1,9 +1,21 @@
 package com.cretas.aims.service.smartbi.impl;
 
 import com.cretas.aims.dto.smartbi.DateRange;
+import com.cretas.aims.dto.smartbi.DepartmentEntity;
+import com.cretas.aims.dto.smartbi.DimensionEntity;
 import com.cretas.aims.dto.smartbi.IntentResult;
+import com.cretas.aims.dto.smartbi.MetricEntity;
+import com.cretas.aims.dto.smartbi.RegionEntity;
+import com.cretas.aims.dto.smartbi.TimeEntity;
+import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.smartbi.enums.SmartBIIntent;
+import com.cretas.aims.repository.config.AIIntentConfigRepository;
+import com.cretas.aims.service.smartbi.DepartmentEntityRecognizer;
+import com.cretas.aims.service.smartbi.DimensionEntityRecognizer;
+import com.cretas.aims.service.smartbi.MetricEntityRecognizer;
+import com.cretas.aims.service.smartbi.RegionEntityRecognizer;
 import com.cretas.aims.service.smartbi.SmartBIIntentService;
+import com.cretas.aims.service.smartbi.TimeEntityRecognizer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +63,18 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
     private String patternsFile;
 
     private final ObjectMapper objectMapper;
+
+    private final AIIntentConfigRepository aiIntentConfigRepository;
+    private final RegionEntityRecognizer regionRecognizer;
+    private final DepartmentEntityRecognizer departmentRecognizer;
+    private final MetricEntityRecognizer metricRecognizer;
+    private final TimeEntityRecognizer timeRecognizer;
+    private final DimensionEntityRecognizer dimensionRecognizer;
+
+    /**
+     * 标记是否已从数据库加载 SmartBI 意图
+     */
+    private volatile boolean databaseIntentsLoaded = false;
 
     // ==================== 意图模式配置 ====================
 
@@ -155,8 +179,20 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
 
     // ==================== 构造函数 ====================
 
-    public SmartBIIntentServiceImpl(ObjectMapper objectMapper) {
+    public SmartBIIntentServiceImpl(ObjectMapper objectMapper,
+                                     AIIntentConfigRepository aiIntentConfigRepository,
+                                     RegionEntityRecognizer regionRecognizer,
+                                     DepartmentEntityRecognizer departmentRecognizer,
+                                     MetricEntityRecognizer metricRecognizer,
+                                     TimeEntityRecognizer timeRecognizer,
+                                     DimensionEntityRecognizer dimensionRecognizer) {
         this.objectMapper = objectMapper;
+        this.aiIntentConfigRepository = aiIntentConfigRepository;
+        this.regionRecognizer = regionRecognizer;
+        this.departmentRecognizer = departmentRecognizer;
+        this.metricRecognizer = metricRecognizer;
+        this.timeRecognizer = timeRecognizer;
+        this.dimensionRecognizer = dimensionRecognizer;
     }
 
     // ==================== 初始化 ====================
@@ -164,10 +200,106 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
     @PostConstruct
     public void init() {
         log.info("初始化 SmartBI 意图识别服务...");
+
+        // 1. 先初始化硬编码的默认配置（作为 fallback）
+        initDefaultKeywords();
+        initDefaultPatterns();
+
+        // 2. 从配置文件加载额外的模式
+        loadPatternsFromFile();
+
+        // 3. 尝试从数据库加载 SmartBI 意图配置（优先级最高）
+        loadIntentsFromDatabase();
+
+        log.info("SmartBI 意图识别服务初始化完成，支持 {} 个意图，数据库加载状态: {}",
+                intentKeywords.size(), databaseIntentsLoaded ? "成功" : "使用默认配置");
+    }
+
+    /**
+     * 从数据库加载 SmartBI 意图配置
+     * 数据库配置优先于硬编码配置
+     */
+    private void loadIntentsFromDatabase() {
+        try {
+            List<AIIntentConfig> smartBIConfigs = aiIntentConfigRepository.findSmartBIIntents();
+
+            if (smartBIConfigs.isEmpty()) {
+                log.info("数据库中没有 SmartBI 意图配置，使用默认硬编码配置");
+                return;
+            }
+
+            int loadedCount = 0;
+            for (AIIntentConfig config : smartBIConfigs) {
+                try {
+                    SmartBIIntent intent = SmartBIIntent.fromCode(config.getIntentCode());
+                    if (intent == SmartBIIntent.UNKNOWN) {
+                        log.warn("未知的 SmartBI 意图代码: {}, 跳过", config.getIntentCode());
+                        continue;
+                    }
+
+                    // 加载关键词（覆盖默认配置）
+                    List<String> keywords = config.getKeywordsList();
+                    if (!keywords.isEmpty()) {
+                        intentKeywords.put(intent, new ArrayList<>(keywords));
+                        log.debug("从数据库加载意图 {} 的关键词: {} 个", intent.getCode(), keywords.size());
+                    }
+
+                    // 加载正则模式
+                    String regexPattern = config.getRegexPattern();
+                    if (regexPattern != null && !regexPattern.isEmpty()) {
+                        try {
+                            Pattern pattern = Pattern.compile(regexPattern);
+                            List<Pattern> patterns = intentPatterns.computeIfAbsent(intent, k -> new ArrayList<>());
+                            patterns.add(0, pattern); // 数据库模式优先
+                            log.debug("从数据库加载意图 {} 的正则模式", intent.getCode());
+                        } catch (Exception e) {
+                            log.warn("意图 {} 的正则模式编译失败: {}", intent.getCode(), e.getMessage());
+                        }
+                    }
+
+                    // 加载置信度提升值
+                    if (config.getConfidenceBoost() != null && config.getConfidenceBoost().doubleValue() > 0) {
+                        intentWeights.put(intent, config.getConfidenceBoost().doubleValue());
+                    }
+
+                    loadedCount++;
+                } catch (Exception e) {
+                    log.error("处理 SmartBI 意图配置失败: intentCode={}, error={}",
+                            config.getIntentCode(), e.getMessage());
+                }
+            }
+
+            if (loadedCount > 0) {
+                databaseIntentsLoaded = true;
+                log.info("从数据库成功加载 {} 个 SmartBI 意图配置", loadedCount);
+            }
+
+        } catch (Exception e) {
+            log.error("从数据库加载 SmartBI 意图配置失败: {}", e.getMessage());
+            log.info("将使用默认硬编码配置");
+        }
+    }
+
+    /**
+     * 热重载 SmartBI 意图配置
+     * 可通过 API 调用触发，无需重启服务
+     */
+    public void reload() {
+        log.info("开始热重载 SmartBI 意图配置...");
+
+        // 清空现有配置
+        intentKeywords.clear();
+        intentPatterns.clear();
+        intentWeights.clear();
+        databaseIntentsLoaded = false;
+
+        // 重新加载
         initDefaultKeywords();
         initDefaultPatterns();
         loadPatternsFromFile();
-        log.info("SmartBI 意图识别服务初始化完成，支持 {} 个意图", intentKeywords.size());
+        loadIntentsFromDatabase();
+
+        log.info("SmartBI 意图配置热重载完成，当前支持 {} 个意图", intentKeywords.size());
     }
 
     /**
@@ -199,7 +331,9 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
 
         intentKeywords.put(SmartBIIntent.QUERY_REGION_ANALYSIS, Arrays.asList(
                 "区域分析", "区域销售", "各地区销量", "地区分布", "区域数据",
-                "哪个区域", "城市销售", "地区排名", "区域表现"));
+                "哪个区域", "城市销售", "地区排名", "区域表现", "各区域销售", "区域业绩",
+                "各省销售", "省份销售", "城市业绩", "地区业绩", "区域情况", "地区情况"));
+        // 注意：具体区域名称（如华东、华南等）通过 boostIntentByEntityDetection() 动态识别
 
         // 财务查询类
         intentKeywords.put(SmartBIIntent.QUERY_FINANCE_OVERVIEW, Arrays.asList(
@@ -523,6 +657,10 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
             }
         }
 
+        // 2.5 实体感知意图提升
+        // 如果检测到区域实体 + 销售相关词，提升 REGION_ANALYSIS 意图
+        boostIntentByEntityDetection(normalizedQuery, candidates);
+
         // 3. 排序候选（按置信度降序）
         candidates.sort((a, b) -> Double.compare(b.getConfidence(), a.getConfidence()));
 
@@ -669,8 +807,18 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
             return defaultRange;
         }
 
-        String normalizedQuery = normalizeQuery(userQuery);
+        // 使用动态时间识别器
+        TimeEntity firstTimeEntity = timeRecognizer.recognizeFirst(userQuery);
+        if (firstTimeEntity != null) {
+            DateRange range = timeRecognizer.parseToDateRange(firstTimeEntity);
+            if (range != null) {
+                log.debug("使用动态时间识别器解析: {} -> {}", firstTimeEntity.getText(), range);
+                return range;
+            }
+        }
 
+        // 回退到硬编码模式（向后兼容）
+        String normalizedQuery = normalizeQuery(userQuery);
         for (Map.Entry<Pattern, String> entry : TIME_PATTERNS.entrySet()) {
             Matcher matcher = entry.getKey().matcher(normalizedQuery);
             if (matcher.find()) {
@@ -805,8 +953,15 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
             return null;
         }
 
-        String normalizedQuery = normalizeQuery(userQuery);
+        // 使用动态维度识别器
+        DimensionEntity primaryDimension = dimensionRecognizer.parsePrimaryDimension(userQuery);
+        if (primaryDimension != null) {
+            log.debug("使用动态维度识别器解析: {} -> {}", primaryDimension.getText(), primaryDimension.getDimensionType());
+            return primaryDimension.getDimensionType();
+        }
 
+        // 回退到硬编码模式（向后兼容）
+        String normalizedQuery = normalizeQuery(userQuery);
         for (Map.Entry<Pattern, String> entry : DIMENSION_PATTERNS.entrySet()) {
             if (entry.getKey().matcher(normalizedQuery).find()) {
                 return entry.getValue();
@@ -822,9 +977,18 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
             return Collections.emptyList();
         }
 
+        // 使用动态维度识别器
+        List<DimensionEntity> dimensionEntities = dimensionRecognizer.parseAllDimensions(userQuery);
+        if (!dimensionEntities.isEmpty()) {
+            return dimensionEntities.stream()
+                    .map(DimensionEntity::getDimensionType)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+
+        // 回退到硬编码模式
         String normalizedQuery = normalizeQuery(userQuery);
         List<String> dimensions = new ArrayList<>();
-
         for (Map.Entry<Pattern, String> entry : DIMENSION_PATTERNS.entrySet()) {
             if (entry.getKey().matcher(normalizedQuery).find()) {
                 dimensions.add(entry.getValue());
@@ -842,30 +1006,41 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
             return Collections.emptyList();
         }
 
-        String normalizedQuery = normalizeQuery(userQuery);
-        Pattern pattern;
-
+        // 使用动态识别器处理各类实体
         switch (entityType.toLowerCase()) {
-            case "department":
-                pattern = DEPARTMENT_PATTERN;
-                break;
             case "region":
-                pattern = REGION_PATTERN;
-                break;
+                return regionRecognizer.recognize(userQuery).stream()
+                        .map(RegionEntity::getNormalizedName)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+            case "department":
+                return departmentRecognizer.recognize(userQuery).stream()
+                        .map(DepartmentEntity::getNormalizedName)
+                        .distinct()
+                        .collect(Collectors.toList());
+
             case "metric":
-                pattern = METRIC_PATTERN;
-                break;
+                return metricRecognizer.recognize(userQuery).stream()
+                        .map(MetricEntity::getNormalizedName)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+            case "time":
+                return timeRecognizer.recognize(userQuery).stream()
+                        .map(TimeEntity::getText)
+                        .distinct()
+                        .collect(Collectors.toList());
+
+            case "dimension":
+                return dimensionRecognizer.recognize(userQuery).stream()
+                        .map(DimensionEntity::getText)
+                        .distinct()
+                        .collect(Collectors.toList());
+
             default:
                 return Collections.emptyList();
         }
-
-        List<String> entities = new ArrayList<>();
-        Matcher matcher = pattern.matcher(normalizedQuery);
-        while (matcher.find()) {
-            entities.add(matcher.group(1));
-        }
-
-        return entities;
     }
 
     @Override
@@ -874,6 +1049,8 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
         result.put("department", parseEntities(userQuery, "department"));
         result.put("region", parseEntities(userQuery, "region"));
         result.put("metric", parseEntities(userQuery, "metric"));
+        result.put("time", parseEntities(userQuery, "time"));
+        result.put("dimension", parseEntities(userQuery, "dimension"));
         return result;
     }
 
@@ -881,7 +1058,7 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
      * 解析所有实体为列表
      */
     private List<String> parseAllEntitiesAsList(String userQuery) {
-        return Stream.of("department", "region", "metric")
+        return Stream.of("department", "region", "metric", "time", "dimension")
                 .flatMap(type -> parseEntities(userQuery, type).stream())
                 .distinct()
                 .collect(Collectors.toList());
@@ -997,10 +1174,22 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
         intentKeywords.clear();
         intentPatterns.clear();
         intentWeights.clear();
+        databaseIntentsLoaded = false;
+
         initDefaultKeywords();
         initDefaultPatterns();
         loadPatternsFromFile();
-        log.info("意图模式配置刷新完成");
+        loadIntentsFromDatabase();
+
+        log.info("意图模式配置刷新完成，数据库加载状态: {}", databaseIntentsLoaded ? "成功" : "使用默认配置");
+    }
+
+    /**
+     * 检查是否已从数据库加载意图配置
+     * @return true 如果已从数据库加载
+     */
+    public boolean isDatabaseIntentsLoaded() {
+        return databaseIntentsLoaded;
     }
 
     // ==================== 工具方法 ====================
@@ -1015,6 +1204,111 @@ public class SmartBIIntentServiceImpl implements SmartBIIntentService {
         return query.toLowerCase()
                 .replaceAll("[\\s]+", "") // 去除空白
                 .replaceAll("[,，.。!！?？;；:：]", ""); // 去除标点
+    }
+
+    /**
+     * 基于实体检测的意图提升
+     * 当检测到特定实体组合时，提升相应意图的置信度
+     *
+     * 使用动态识别器（Trie树）代替硬编码的正则表达式，
+     * 支持更灵活的实体表达方式识别：
+     * - 地域实体：省、市、区域
+     * - 部门实体：部门、团队、组
+     * - 指标实体：销售额、利润等
+     */
+    private void boostIntentByEntityDetection(String query, List<IntentResult.CandidateIntent> candidates) {
+        // 使用动态识别器检测各类实体
+        List<RegionEntity> regionEntities = regionRecognizer.recognize(query);
+        List<DepartmentEntity> deptEntities = departmentRecognizer.recognize(query);
+        List<MetricEntity> metricEntities = metricRecognizer.recognize(query);
+
+        boolean hasRegionEntity = !regionEntities.isEmpty();
+        boolean hasDeptEntity = !deptEntities.isEmpty();
+        boolean hasMetricEntity = !metricEntities.isEmpty();
+
+        // 销售相关词汇（作为备用判断，当指标识别器未识别到时）
+        boolean hasSalesKeyword = hasMetricEntity || query.contains("销售") || query.contains("业绩") ||
+                query.contains("销量") || query.contains("营收") || query.contains("收入") ||
+                query.contains("情况") || query.contains("怎么样") || query.contains("如何") ||
+                query.contains("数据") || query.contains("分析");
+
+        // 如果有区域实体 + 销售相关，提升 REGION_ANALYSIS
+        if (hasRegionEntity && hasSalesKeyword) {
+            boostRegionAnalysisIntent(candidates, regionEntities);
+        }
+
+        // 如果有部门实体 + 销售相关，提升 DEPARTMENT_PERFORMANCE
+        if (hasDeptEntity && hasSalesKeyword) {
+            boostDepartmentIntent(candidates, deptEntities);
+        }
+
+        // 如果识别到指标实体，记录到日志便于调试
+        if (hasMetricEntity) {
+            List<String> metricNames = metricEntities.stream()
+                    .map(MetricEntity::getNormalizedName)
+                    .collect(Collectors.toList());
+            log.debug("检测到指标实体: {}", metricNames);
+        }
+    }
+
+    /**
+     * 提升区域分析意图置信度
+     */
+    private void boostRegionAnalysisIntent(List<IntentResult.CandidateIntent> candidates, List<RegionEntity> regionEntities) {
+        Optional<IntentResult.CandidateIntent> regionCandidate = candidates.stream()
+                .filter(c -> c.getIntent() == SmartBIIntent.QUERY_REGION_ANALYSIS)
+                .findFirst();
+
+        List<String> matchedRegionNames = regionEntities.stream()
+                .map(RegionEntity::getText)
+                .collect(Collectors.toList());
+
+        if (regionCandidate.isPresent()) {
+            double boost = Math.min(0.2 + regionEntities.size() * 0.1, 0.4);
+            double newConfidence = Math.min(regionCandidate.get().getConfidence() + boost, 1.0);
+            regionCandidate.get().setConfidence(newConfidence);
+            List<String> existingKeywords = new ArrayList<>(regionCandidate.get().getMatchedKeywords());
+            existingKeywords.addAll(matchedRegionNames);
+            regionCandidate.get().setMatchedKeywords(existingKeywords.stream().distinct().collect(Collectors.toList()));
+            log.debug("检测到区域实体 {}，提升 REGION_ANALYSIS 置信度: {}", matchedRegionNames, newConfidence);
+        } else {
+            candidates.add(IntentResult.CandidateIntent.builder()
+                    .intent(SmartBIIntent.QUERY_REGION_ANALYSIS)
+                    .confidence(0.85)
+                    .matchedKeywords(matchedRegionNames)
+                    .build());
+            log.debug("检测到区域实体 {}，新增 REGION_ANALYSIS 候选，置信度: 0.85", matchedRegionNames);
+        }
+    }
+
+    /**
+     * 提升部门业绩意图置信度
+     */
+    private void boostDepartmentIntent(List<IntentResult.CandidateIntent> candidates, List<DepartmentEntity> deptEntities) {
+        Optional<IntentResult.CandidateIntent> deptCandidate = candidates.stream()
+                .filter(c -> c.getIntent() == SmartBIIntent.QUERY_DEPARTMENT_PERFORMANCE)
+                .findFirst();
+
+        List<String> matchedDeptNames = deptEntities.stream()
+                .map(DepartmentEntity::getText)
+                .collect(Collectors.toList());
+
+        if (deptCandidate.isPresent()) {
+            double boost = Math.min(0.2 + deptEntities.size() * 0.1, 0.4);
+            double newConfidence = Math.min(deptCandidate.get().getConfidence() + boost, 1.0);
+            deptCandidate.get().setConfidence(newConfidence);
+            List<String> existingKeywords = new ArrayList<>(deptCandidate.get().getMatchedKeywords());
+            existingKeywords.addAll(matchedDeptNames);
+            deptCandidate.get().setMatchedKeywords(existingKeywords.stream().distinct().collect(Collectors.toList()));
+            log.debug("检测到部门实体 {}，提升 DEPARTMENT_PERFORMANCE 置信度: {}", matchedDeptNames, newConfidence);
+        } else {
+            candidates.add(IntentResult.CandidateIntent.builder()
+                    .intent(SmartBIIntent.QUERY_DEPARTMENT_PERFORMANCE)
+                    .confidence(0.85)
+                    .matchedKeywords(matchedDeptNames)
+                    .build());
+            log.debug("检测到部门实体 {}，新增 DEPARTMENT_PERFORMANCE 候选，置信度: 0.85", matchedDeptNames);
+        }
     }
 
     /**

@@ -126,6 +126,106 @@ public class SmartBIController {
         }
     }
 
+    @GetMapping("/dashboard")
+    @Operation(summary = "获取统一仪表盘", description = "聚合所有分析维度的数据，提供一站式经营数据概览")
+    public ResponseEntity<ApiResponse<UnifiedDashboardResponse>> getUnifiedDashboard(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "时间周期: today/week/month/quarter/year")
+            @RequestParam(defaultValue = "month") String period) {
+
+        log.info("获取统一仪表盘: factoryId={}, period={}", factoryId, period);
+        long startTime = System.currentTimeMillis();
+
+        try {
+            LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
+            LocalDate startDate = dateRange[0];
+            LocalDate endDate = dateRange[1];
+
+            // 构建统一仪表盘响应
+            UnifiedDashboardResponse response = UnifiedDashboardResponse.builder()
+                    .period(period)
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .build();
+
+            // 聚合各维度数据（并行调用可优化性能）
+            try {
+                response.setSales(salesAnalysisService.getSalesOverview(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取销售数据失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setFinance(financeAnalysisService.getFinanceOverview(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取财务数据失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setInventory(inventoryHealthAnalysisService.getInventoryHealth(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取库存数据失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setProduction(productionAnalysisService.getOEEOverview(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取生产数据失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setQuality(qualityAnalysisService.getQualitySummary(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取质量数据失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setProcurement(procurementAnalysisService.getProcurementOverview(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取采购数据失败: {}", e.getMessage());
+            }
+
+            // 聚合部门和区域排名
+            try {
+                response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取部门排名失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setRegionRanking(regionAnalysisService.getRegionRanking(factoryId, startDate, endDate));
+            } catch (Exception e) {
+                log.warn("获取区域排名失败: {}", e.getMessage());
+            }
+
+            // 聚合预警和建议
+            try {
+                DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
+                response.setAlerts(recommendationService.generateAllAlerts(factoryId, range));
+            } catch (Exception e) {
+                log.warn("获取预警失败: {}", e.getMessage());
+            }
+
+            try {
+                response.setRecommendations(recommendationService.generateRecommendations(factoryId, "all"));
+            } catch (Exception e) {
+                log.warn("获取建议失败: {}", e.getMessage());
+            }
+
+            // 设置元数据
+            response.setGeneratedAt(java.time.LocalDateTime.now());
+            response.setDataVersion(String.valueOf(System.currentTimeMillis()));
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.info("统一仪表盘生成完成: factoryId={}, period={}, elapsed={}ms", factoryId, period, elapsed);
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("获取统一仪表盘失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取数据失败: " + e.getMessage()));
+        }
+    }
+
     // ==================== 销售分析 ====================
 
     @GetMapping("/analysis/sales")
@@ -494,9 +594,9 @@ public class SmartBIController {
             @RequestBody NLQueryRequest request) {
 
         log.info("自然语言查询: factoryId={}, query={}", factoryId,
-                request.getQueryText() != null && request.getQueryText().length() > 50
-                        ? request.getQueryText().substring(0, 50) + "..."
-                        : request.getQueryText());
+                request.getEffectiveQuery() != null && request.getEffectiveQuery().length() > 50
+                        ? request.getEffectiveQuery().substring(0, 50) + "..."
+                        : request.getEffectiveQuery());
 
         try {
             // 设置工厂ID
@@ -504,7 +604,7 @@ public class SmartBIController {
 
             // 识别意图
             IntentResult intentResult = intentService.recognizeIntent(
-                    request.getQueryText(), request.getContext());
+                    request.getEffectiveQuery(), request.getContext());
 
             // 构建响应
             NLQueryResponse response = NLQueryResponse.builder()
@@ -680,7 +780,7 @@ public class SmartBIController {
         }
 
         try {
-            com.cretas.aims.dto.smartbi.DateRange dateRange = intentService.parseTimeRange(request.getQueryText());
+            com.cretas.aims.dto.smartbi.DateRange dateRange = intentService.parseTimeRange(request.getEffectiveQuery());
             LocalDate startDate = dateRange != null ? dateRange.getStartDate() : DateRangeUtils.getStartDateOrDefault(null);
             LocalDate endDate = dateRange != null ? dateRange.getEndDate() : DateRangeUtils.getEndDateOrDefault(null);
 

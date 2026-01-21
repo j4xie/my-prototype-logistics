@@ -1,7 +1,7 @@
 package com.joolun.mall.service;
 
 import com.joolun.mall.entity.GoodsSpu;
-import com.joolun.mall.entity.UserProfile;
+import com.joolun.mall.entity.UserRecommendationProfile;
 
 import java.util.List;
 import java.util.Map;
@@ -116,7 +116,7 @@ public interface ColdStartService {
      * @param userProfile 用户画像
      * @return 预估分数
      */
-    double estimateColdStartScore(GoodsSpu product, UserProfile userProfile);
+    double estimateColdStartScore(GoodsSpu product, UserRecommendationProfile userProfile);
 
     /**
      * 获取应该强制曝光的新品配额

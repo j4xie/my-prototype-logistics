@@ -31,15 +31,20 @@ public class SmartBIPublicDemoController {
     private final FinanceAnalysisService financeAnalysisService;
     private final SmartBIIntentService intentService;
     private final RecommendationService recommendationService;
+    private final ForecastService forecastService;
 
     private static final String DEMO_FACTORY_ID = "F001";
 
     @PostMapping("/query")
     @Operation(summary = "自然语言查询")
     public ResponseEntity<ApiResponse<NLQueryResponse>> query(@RequestBody NLQueryRequest request) {
-        log.info("SmartBI 查询: {}", request.getQueryText());
+        log.info("SmartBI 查询: {}", request.getEffectiveQuery());
         try {
-            IntentResult intentResult = intentService.recognizeIntent(request.getQueryText(), request.getContext());
+            IntentResult intentResult = intentService.recognizeIntent(request.getEffectiveQuery(), request.getContext());
+            DateRange dr = intentService.parseTimeRange(request.getEffectiveQuery());
+            LocalDate start = dr != null ? dr.getStartDate() : LocalDate.now().minusDays(30);
+            LocalDate end = dr != null ? dr.getEndDate() : LocalDate.now();
+
             NLQueryResponse response = NLQueryResponse.builder()
                     .intent(intentResult.getIntent() != null ? intentResult.getIntent().name() : "UNKNOWN")
                     .parameters(intentResult.getParameters())
@@ -48,6 +53,18 @@ public class SmartBIPublicDemoController {
                     .build();
             response.setResponseText(executeQuery(intentResult, request));
             response.setFollowUpQuestions(getFollowUps(intentResult));
+
+            // 如果是预测意图，附加 forecast 结构化数据
+            if (intentResult.getIntent() == SmartBIIntent.FORECAST) {
+                int forecastDays = 7;
+                Object daysParam = intentResult.getParameters().get("forecastDays");
+                if (daysParam instanceof Number) {
+                    forecastDays = ((Number) daysParam).intValue();
+                }
+                ForecastResult forecast = forecastService.forecastSales(DEMO_FACTORY_ID, start, end, forecastDays);
+                response.setForecast(forecast);
+            }
+
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("查询失败: {}", e.getMessage(), e);
@@ -90,6 +107,40 @@ public class SmartBIPublicDemoController {
         try {
             LocalDate[] range = DateRangeUtils.getDateRangeByPeriod(period);
             return ResponseEntity.ok(ApiResponse.success(salesAnalysisService.getSalesOverview(DEMO_FACTORY_ID, range[0], range[1])));
+        } catch (Exception e) {
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/dashboard")
+    @Operation(summary = "统一仪表盘", description = "聚合所有分析维度数据")
+    public ResponseEntity<ApiResponse<UnifiedDashboardResponse>> getUnifiedDashboard(
+            @RequestParam(defaultValue = "month") String period) {
+        log.info("获取统一仪表盘: period={}", period);
+        try {
+            LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
+            LocalDate startDate = dateRange[0];
+            LocalDate endDate = dateRange[1];
+
+            UnifiedDashboardResponse response = UnifiedDashboardResponse.builder()
+                    .period(period)
+                    .startDate(startDate)
+                    .endDate(endDate)
+                    .build();
+
+            // 聚合各维度数据
+            try { response.setSales(salesAnalysisService.getSalesOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("销售数据获取失败: {}", e.getMessage()); }
+            try { response.setFinance(financeAnalysisService.getFinanceOverview(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("财务数据获取失败: {}", e.getMessage()); }
+            try { response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("部门排名获取失败: {}", e.getMessage()); }
+            try { response.setRegionRanking(regionAnalysisService.getRegionRanking(DEMO_FACTORY_ID, startDate, endDate)); } catch (Exception e) { log.warn("区域排名获取失败: {}", e.getMessage()); }
+            try {
+                DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
+                response.setAlerts(recommendationService.generateAllAlerts(DEMO_FACTORY_ID, range));
+            } catch (Exception e) { log.warn("预警获取失败: {}", e.getMessage()); }
+            try { response.setRecommendations(recommendationService.generateRecommendations(DEMO_FACTORY_ID, "all")); } catch (Exception e) { log.warn("建议获取失败: {}", e.getMessage()); }
+
+            response.setGeneratedAt(java.time.LocalDateTime.now());
+            return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
         }
@@ -161,6 +212,34 @@ public class SmartBIPublicDemoController {
         }
     }
 
+    @GetMapping("/incentive-plan/{targetType}/{targetId}")
+    @Operation(summary = "获取激励方案")
+    public ResponseEntity<ApiResponse<IncentivePlan>> getIncentivePlan(
+            @PathVariable String targetType,
+            @PathVariable String targetId) {
+        log.info("获取激励方案: targetType={}, targetId={}", targetType, targetId);
+        try {
+            DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod("month");
+            IncentivePlan plan;
+            switch (targetType.toLowerCase()) {
+                case "salesperson":
+                    plan = recommendationService.generateSalespersonIncentivePlan(
+                        DEMO_FACTORY_ID, targetId, range);
+                    break;
+                case "department":
+                    plan = recommendationService.generateDepartmentIncentivePlan(
+                        DEMO_FACTORY_ID, targetId, range);
+                    break;
+                default:
+                    plan = recommendationService.generateIncentivePlan(DEMO_FACTORY_ID, targetType);
+            }
+            return ResponseEntity.ok(ApiResponse.success(plan));
+        } catch (Exception e) {
+            log.error("获取激励方案失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+        }
+    }
+
     @PostMapping("/drill-down")
     public ResponseEntity<ApiResponse<Map<String, Object>>> drillDown(@RequestBody DrillDownRequest req) {
         try {
@@ -182,7 +261,7 @@ public class SmartBIPublicDemoController {
 
     private String executeQuery(IntentResult ir, NLQueryRequest req) {
         if (ir.getIntent() == null) return "无法理解您的问题。请尝试：本月销售额是多少？";
-        DateRange dr = intentService.parseTimeRange(req.getQueryText());
+        DateRange dr = intentService.parseTimeRange(req.getEffectiveQuery());
         LocalDate start = dr != null ? dr.getStartDate() : LocalDate.now().minusDays(30);
         LocalDate end = dr != null ? dr.getEndDate() : LocalDate.now();
         switch (ir.getIntent()) {
@@ -190,8 +269,34 @@ public class SmartBIPublicDemoController {
             case QUERY_SALES_RANKING: return genRankingResp(start, end);
             case QUERY_DEPARTMENT_PERFORMANCE: return genDeptResp(start, end);
             case QUERY_REGION_ANALYSIS: return genRegionResp(start, end);
+            case FORECAST: return genForecastResp(start, end, ir);
             default: return "查询完成。";
         }
+    }
+
+    private String genForecastResp(LocalDate start, LocalDate end, IntentResult ir) {
+        int forecastDays = 7;
+        Object daysParam = ir.getParameters().get("forecastDays");
+        if (daysParam instanceof Number) {
+            forecastDays = ((Number) daysParam).intValue();
+        }
+        ForecastResult result = forecastService.forecastSales(DEMO_FACTORY_ID, start, end, forecastDays);
+        if (result != null && result.getForecastPoints() != null && !result.getForecastPoints().isEmpty()) {
+            StringBuilder sb = new StringBuilder("销售预测：\n");
+            sb.append("- 算法: ").append(result.getAlgorithm() != null ? result.getAlgorithm().getDisplayName() : "自动选择").append("\n");
+            sb.append("- 置信度: ").append(result.getConfidence()).append("%\n");
+            sb.append("- 趋势: ").append(result.getTrend() != null ? result.getTrend() : "稳定").append("\n");
+            // 返回预测点（非历史数据）
+            int count = 0;
+            for (ForecastPoint p : result.getForecastPoints()) {
+                if (!Boolean.TRUE.equals(p.getIsHistorical()) && count < 5) {
+                    sb.append("- ").append(p.getDate()).append(": ").append(String.format("%,.2f", p.getValue())).append("元\n");
+                    count++;
+                }
+            }
+            return sb.toString();
+        }
+        return "预测数据生成中...";
     }
 
     private String genSalesResp(LocalDate s, LocalDate e) {

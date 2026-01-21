@@ -237,6 +237,26 @@ public interface QueryPreprocessorService {
     }
 
     /**
+     * 否定语义信息 v7.4
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    class NegationInfo {
+        /** 是否包含否定语义 */
+        private boolean hasNegation;
+        /** 检测到的否定词 */
+        private String negationWord;
+        /** 被排除的内容 */
+        private String excludedContent;
+
+        public boolean hasNegation() {
+            return hasNegation;
+        }
+    }
+
+    /**
      * 增强预处理结果
      */
     @lombok.Data
@@ -256,6 +276,8 @@ public interface QueryPreprocessorService {
         private RankingQueryResult rankingQuery;
         /** 动作消歧结果 */
         private ActionDisambiguationResult actionDisambiguation;
+        /** 否定语义信息 v7.5 */
+        private NegationInfo negationInfo;
         /** 检测到的查询特征 */
         private java.util.Set<String> queryFeatures;
         /** 处理耗时(ms) */
