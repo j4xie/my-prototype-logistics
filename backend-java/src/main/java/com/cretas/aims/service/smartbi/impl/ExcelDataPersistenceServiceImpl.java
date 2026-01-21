@@ -7,6 +7,7 @@ import com.cretas.aims.entity.smartbi.SmartBiExcelUpload;
 import com.cretas.aims.entity.smartbi.SmartBiFinanceData;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
 import com.cretas.aims.entity.smartbi.enums.RecordType;
+import com.cretas.aims.entity.smartbi.enums.UploadStatus;
 import com.cretas.aims.repository.smartbi.SmartBiExcelUploadRepository;
 import com.cretas.aims.repository.smartbi.SmartBiFinanceDataRepository;
 import com.cretas.aims.repository.smartbi.SmartBiSalesDataRepository;
@@ -164,8 +165,8 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
             }
 
             // 更新上传记录状态
-            upload.setStatus("COMPLETED");
-            upload.setProcessedRows(savedRows);
+            upload.setUploadStatus(UploadStatus.COMPLETED);
+            upload.setRowCount(savedRows);
             uploadRepository.save(upload);
 
             log.info("数据持久化完成: uploadId={}, savedRows={}", uploadId, savedRows);
@@ -216,11 +217,10 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
         SmartBiExcelUpload upload = SmartBiExcelUpload.builder()
                 .factoryId(factoryId)
                 .fileName(parseResponse.getMetadata() != null ? parseResponse.getMetadata().getSheetName() : "unknown")
-                .dataType(dataType.name())
-                .status("PROCESSING")
-                .totalRows(parseResponse.getRowCount())
-                .processedRows(0)
-                .uploadTime(LocalDateTime.now())
+                .uploadStatus(UploadStatus.PARSING)
+                .rowCount(parseResponse.getRowCount())
+                .columnCount(parseResponse.getColumnCount())
+                .dataFeatures("{\"dataType\": \"" + dataType.name() + "\"}")
                 .build();
 
         return uploadRepository.save(upload);
