@@ -1,4 +1,4 @@
-name: Sync to Gitee
+name: Deploy
 
 on:
   push:
@@ -8,25 +8,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Push to Gitee
-        run: |
-          git remote add gitee https://stevenj4:${{ secrets.GITEE_TOKEN }}@gitee.com/stevenj4/my-prototype-logistics.git
-          git push gitee HEAD:${{ github.ref_name }} --force
-
   deploy:
     runs-on: ubuntu-latest
-    needs: sync
-    if: github.ref == 'refs/heads/steven' || github.ref == 'refs/heads/main'
     steps:
-      - name: Trigger Deploy
+      - name: Trigger BT Deploy
         run: |
-          curl -k -X POST "https://139.196.165.140:17400/hook?access_key=${{ secrets.BT_WEBHOOK_KEY }}"
-          echo "Deploy triggered!"
+          curl -k -X POST "https://139.196.165.140:17400/hook?access_key=${{ secrets.BT_WEBHOOK_KEY }}&param=${{ github.ref_name }}"
+          echo "Deploy triggered for branch: ${{ github.ref_name }}"
