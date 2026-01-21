@@ -1,5 +1,6 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.ai.client.DashScopeClient;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 import com.cretas.aims.repository.smartbi.SmartBiChartTemplateRepository;
 import com.cretas.aims.service.smartbi.ChartTemplateService;
@@ -39,6 +40,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
 
     private final SmartBiChartTemplateRepository templateRepository;
     private final ObjectMapper objectMapper;
+    private final DashScopeClient dashScopeClient;
 
     /**
      * 模板缓存
@@ -267,6 +269,72 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
         // 5. 默认使用柱状图
         log.debug("指标 {} 使用默认图表类型 BAR", metricCode);
         return "BAR";
+    }
+
+    // ==================== AI 分析方法 ====================
+
+    @Override
+    public Map<String, Object> buildChartWithAnalysis(String templateCode, Map<String, Object> data, String factoryId) {
+        // 1. 首先获取基础图表配置
+        Map<String, Object> chartConfig = new LinkedHashMap<>(buildChart(templateCode, data, factoryId));
+
+        // 2. 获取模板配置
+        SmartBiChartTemplate template = getTemplate(templateCode, factoryId);
+        if (template == null) {
+            log.warn("未找到模板 {}，跳过 AI 分析", templateCode);
+            chartConfig.put("aiAnalysis", null);
+            return chartConfig;
+        }
+
+        // 3. 检查是否启用 AI 分析
+        if (!Boolean.TRUE.equals(template.getAnalysisEnabled())) {
+            log.debug("模板 {} 未启用 AI 分析", templateCode);
+            chartConfig.put("aiAnalysis", null);
+            return chartConfig;
+        }
+
+        // 4. 检查是否有分析提示词
+        String analysisPrompt = template.getAnalysisPrompt();
+        if (analysisPrompt == null || analysisPrompt.trim().isEmpty()) {
+            log.debug("模板 {} 没有配置分析提示词", templateCode);
+            chartConfig.put("aiAnalysis", null);
+            return chartConfig;
+        }
+
+        // 5. 检查 DashScopeClient 是否可用
+        if (dashScopeClient == null || !dashScopeClient.isAvailable()) {
+            log.warn("DashScopeClient 不可用，跳过 AI 分析");
+            chartConfig.put("aiAnalysis", "AI 分析服务未配置");
+            return chartConfig;
+        }
+
+        // 6. 生成 AI 分析
+        try {
+            // 将数据转换为 JSON 字符串
+            String dataJson = objectMapper.writeValueAsString(data);
+
+            // 替换提示词中的占位符
+            String processedPrompt = analysisPrompt.replace("{{dataJson}}", dataJson);
+
+            // 构建系统提示词
+            String systemPrompt = "你是一个专业的数据分析师。请根据提供的数据生成简洁、专业的分析结论。" +
+                    "分析应包含：1) 数据概述 2) 关键发现 3) 建议。" +
+                    "请用中文回答，保持简洁（不超过200字）。";
+
+            log.debug("开始为模板 {} 生成 AI 分析，数据大小: {} 字节", templateCode, dataJson.length());
+
+            // 调用 LLM 生成分析
+            String analysis = dashScopeClient.chat(systemPrompt, processedPrompt);
+
+            chartConfig.put("aiAnalysis", analysis);
+            log.debug("模板 {} AI 分析生成成功", templateCode);
+
+        } catch (Exception e) {
+            log.error("生成 AI 分析失败: templateCode={}, error={}", templateCode, e.getMessage(), e);
+            chartConfig.put("aiAnalysis", "AI 分析生成失败: " + e.getMessage());
+        }
+
+        return chartConfig;
     }
 
     // ==================== 缓存管理方法 ====================

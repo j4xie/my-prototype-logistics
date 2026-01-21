@@ -90,6 +90,19 @@ public interface ChartTemplateService {
     String recommendChartType(String metricCode, int dataPointCount, boolean hasTimeDimension);
 
     /**
+     * 构建图表配置并生成 AI 分析
+     *
+     * 除了返回标准的图表配置外，还会调用 LLM 生成基于图表数据的分析文本。
+     * 分析文本会作为 "aiAnalysis" 字段添加到返回的 Map 中。
+     *
+     * @param templateCode 模板代码
+     * @param data         图表数据
+     * @param factoryId    工厂ID（可选）
+     * @return 包含图表配置和 AI 分析的 Map
+     */
+    Map<String, Object> buildChartWithAnalysis(String templateCode, Map<String, Object> data, String factoryId);
+
+    /**
      * 重新加载缓存
      *
      * 清除所有缓存并从数据库重新加载模板配置

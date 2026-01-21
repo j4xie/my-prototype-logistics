@@ -306,6 +306,16 @@ public interface SmartBIConfigService {
      */
     String recommendChartType(String metricCode, int dataPoints, boolean hasTimeDimension);
 
+    /**
+     * 根据模板和数据构建图表配置，并生成AI分析文本
+     *
+     * @param templateCode 模板代码
+     * @param data         图表数据
+     * @param factoryId    工厂ID（可选）
+     * @return 包含图表配置和AI分析文本的 Map
+     */
+    Map<String, Object> buildChartWithAnalysis(String templateCode, Map<String, Object> data, String factoryId);
+
     // ==================== 全局操作 ====================
 
     /**
