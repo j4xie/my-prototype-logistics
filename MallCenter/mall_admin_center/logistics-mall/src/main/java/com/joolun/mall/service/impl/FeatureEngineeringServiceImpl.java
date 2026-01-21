@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -56,6 +58,12 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
     private static final double MAX_SALES = 10000.0;  // 最大销量
     private static final int MAX_BEHAVIOR_DAYS = 30;  // 行为分析天数
     private static final int EMBEDDING_COMPRESS_DIM = 32;  // 压缩后的embedding维度
+
+    // 品类统计缓存配置 (优化点5)
+    private static final String CATEGORY_STATS_CACHE_PREFIX = "feature:category:stats:";
+    private static final long CATEGORY_STATS_TTL_MINUTES = 60;  // 1小时缓存
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 中国节假日简化判断（实际项目应使用节假日API）
     private static final Set<String> HOLIDAYS = Set.of(
@@ -268,8 +276,8 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
             // 特征计算
             features[0] = Math.min(1.0, tagCount / 20.0);  // 标签数量作为等级代理
             features[1] = Math.min(1.0, behaviorCount / 500.0);  // 行为数量归一化
-            features[2] = calculateRecentActivityRate(recentEvents, 7);  // 7天活跃度
-            features[3] = calculateRecentActivityRate(recentEvents, 30);  // 30天活跃度
+            features[2] = calculateTimeDecayedActivityRate(recentEvents, 7);  // 7天时间衰减活跃度
+            features[3] = calculateTimeDecayedActivityRate(recentEvents, 30);  // 30天时间衰减活跃度
             features[4] = behaviorCount < 10 ? 1.0 : 0;  // 新用户
             features[5] = features[2] > 0.3 ? 1.0 : 0;  // 活跃用户
             features[6] = calculateHighValueScore(tags);  // 高价值用户
@@ -426,6 +434,504 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         return features;
     }
 
+    @Override
+    public double[] extractTransitionProbabilityFeatures(String wxUserId) {
+        double[] features = new double[16];
+        Arrays.fill(features, 0);
+
+        if (wxUserId == null || wxUserId.isEmpty()) {
+            return features;
+        }
+
+        try {
+            // 获取用户最近30天的行为事件
+            List<UserBehaviorEvent> events = userBehaviorEventMapper.selectRecentEvents(wxUserId, 500);
+            if (events.size() < 2) {
+                return features;
+            }
+
+            // 按时间排序（从旧到新）
+            events.sort((a, b) -> {
+                if (a.getEventTime() == null || b.getEventTime() == null) return 0;
+                return a.getEventTime().compareTo(b.getEventTime());
+            });
+
+            // 统计转移次数
+            Map<String, Map<String, Integer>> transitionCounts = new HashMap<>();
+            Map<String, Integer> sourceCounts = new HashMap<>();
+
+            // 初始化转移矩阵
+            String[] eventTypes = {"view", "click", "cart", "purchase", "favorite", "remove", "checkout"};
+            for (String type : eventTypes) {
+                transitionCounts.put(type, new HashMap<>());
+                sourceCounts.put(type, 0);
+            }
+
+            // 计算转移次数（相邻事件之间的转移）
+            for (int i = 0; i < events.size() - 1; i++) {
+                String sourceType = events.get(i).getEventType();
+                String targetType = events.get(i + 1).getEventType();
+
+                if (sourceType != null && targetType != null) {
+                    sourceCounts.merge(sourceType, 1, Integer::sum);
+                    transitionCounts.get(sourceType).merge(targetType, 1, Integer::sum);
+                }
+            }
+
+            // 计算转移概率
+            // [0-3]: view→click, view→cart, view→purchase, view→view
+            int viewCount = sourceCounts.getOrDefault("view", 0);
+            if (viewCount > 0) {
+                features[0] = transitionCounts.get("view").getOrDefault("click", 0) / (double) viewCount;
+                features[1] = transitionCounts.get("view").getOrDefault("cart", 0) / (double) viewCount;
+                features[2] = transitionCounts.get("view").getOrDefault("purchase", 0) / (double) viewCount;
+                features[3] = transitionCounts.get("view").getOrDefault("view", 0) / (double) viewCount;
+            }
+
+            // [4-7]: click→cart, click→purchase, click→favorite, click→click
+            int clickCount = sourceCounts.getOrDefault("click", 0);
+            if (clickCount > 0) {
+                features[4] = transitionCounts.get("click").getOrDefault("cart", 0) / (double) clickCount;
+                features[5] = transitionCounts.get("click").getOrDefault("purchase", 0) / (double) clickCount;
+                features[6] = transitionCounts.get("click").getOrDefault("favorite", 0) / (double) clickCount;
+                features[7] = transitionCounts.get("click").getOrDefault("click", 0) / (double) clickCount;
+            }
+
+            // [8-11]: cart→purchase, cart→remove, cart→checkout, cart→cart
+            int cartCount = sourceCounts.getOrDefault("cart", 0);
+            if (cartCount > 0) {
+                features[8] = transitionCounts.get("cart").getOrDefault("purchase", 0) / (double) cartCount;
+                features[9] = transitionCounts.get("cart").getOrDefault("remove", 0) / (double) cartCount;
+                features[10] = transitionCounts.get("cart").getOrDefault("checkout", 0) / (double) cartCount;
+                features[11] = transitionCounts.get("cart").getOrDefault("cart", 0) / (double) cartCount;
+            }
+
+            // [12-15]: 同品类复购率, 跨品类探索率, 品牌忠诚度, 价格一致性
+            // 12: 同品类复购率
+            features[12] = calculateSameCategoryRepurchaseRate(events);
+
+            // 13: 跨品类探索率
+            features[13] = calculateCrossCategoryExplorationRate(events);
+
+            // 14: 品牌忠诚度
+            features[14] = calculateBrandLoyalty(events);
+
+            // 15: 价格一致性
+            features[15] = calculatePriceConsistency(events);
+
+        } catch (Exception e) {
+            log.debug("提取转移概率特征失败: wxUserId={}, error={}", wxUserId, e.getMessage());
+        }
+
+        return features;
+    }
+
+    @Override
+    public double[] extractSequencePatternFeatures(String wxUserId) {
+        double[] features = new double[8];
+        Arrays.fill(features, 0);
+
+        if (wxUserId == null || wxUserId.isEmpty()) {
+            return features;
+        }
+
+        try {
+            // 获取用户最近30天的行为事件
+            List<UserBehaviorEvent> events = userBehaviorEventMapper.selectRecentEvents(wxUserId, 500);
+            if (events.isEmpty()) {
+                return features;
+            }
+
+            // 按时间排序（从旧到新）
+            events.sort((a, b) -> {
+                if (a.getEventTime() == null || b.getEventTime() == null) return 0;
+                return a.getEventTime().compareTo(b.getEventTime());
+            });
+
+            // [0]: 平均行为间隔时间（归一化到0-1，以小时为单位）
+            features[0] = calculateAverageEventInterval(events);
+
+            // [1]: Session深度（单次访问行为数，以30分钟无操作为session分隔）
+            features[1] = calculateAverageSessionDepth(events);
+
+            // [2]: 购买速度（日均购买数）
+            features[2] = calculatePurchaseVelocity(events);
+
+            // [3]: 探索率（浏览品类数/总浏览数）
+            features[3] = calculateExplorationRate(events);
+
+            // [4]: 近期活跃度变化（最近7天 vs 之前7天）
+            features[4] = calculateActivityTrend(events);
+
+            // [5]: 周期规律强度（基于星期几的分布）
+            features[5] = calculatePeriodicityStrength(events);
+
+            // [6]: 时间规律性（小时分布的集中度）
+            features[6] = calculateTimeRegularity(events);
+
+            // [7]: 漏斗完成率（购买数/浏览数）
+            features[7] = calculateFunnelCompletionRate(events);
+
+        } catch (Exception e) {
+            log.debug("提取序列模式特征失败: wxUserId={}, error={}", wxUserId, e.getMessage());
+        }
+
+        return features;
+    }
+
+    // ==================== 序列特征辅助方法 ====================
+
+    /**
+     * 计算同品类复购率
+     */
+    private double calculateSameCategoryRepurchaseRate(List<UserBehaviorEvent> events) {
+        List<String> purchasedCategories = events.stream()
+                .filter(e -> "purchase".equals(e.getEventType()) && e.getTargetId() != null)
+                .map(e -> getCategoryForProduct(e.getTargetId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (purchasedCategories.size() < 2) {
+            return 0;
+        }
+
+        // 统计重复购买的品类数
+        Set<String> uniqueCategories = new HashSet<>(purchasedCategories);
+        int repeatPurchases = purchasedCategories.size() - uniqueCategories.size();
+
+        return Math.min(1.0, repeatPurchases / (double) (purchasedCategories.size() - 1));
+    }
+
+    /**
+     * 计算跨品类探索率
+     */
+    private double calculateCrossCategoryExplorationRate(List<UserBehaviorEvent> events) {
+        List<String> viewedCategories = events.stream()
+                .filter(e -> "view".equals(e.getEventType()) && e.getTargetId() != null)
+                .map(e -> getCategoryForProduct(e.getTargetId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (viewedCategories.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> uniqueCategories = new HashSet<>(viewedCategories);
+        return Math.min(1.0, uniqueCategories.size() / (double) viewedCategories.size());
+    }
+
+    /**
+     * 计算品牌忠诚度
+     */
+    private double calculateBrandLoyalty(List<UserBehaviorEvent> events) {
+        List<String> purchasedBrands = events.stream()
+                .filter(e -> "purchase".equals(e.getEventType()) && e.getTargetId() != null)
+                .map(e -> getBrandForProduct(e.getTargetId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (purchasedBrands.size() < 2) {
+            return 0.5; // 数据不足时返回中性值
+        }
+
+        // 计算品牌集中度（最常购买品牌的比例）
+        Map<String, Long> brandCounts = purchasedBrands.stream()
+                .collect(Collectors.groupingBy(b -> b, Collectors.counting()));
+
+        long maxCount = brandCounts.values().stream().mapToLong(Long::longValue).max().orElse(1);
+        return Math.min(1.0, maxCount / (double) purchasedBrands.size());
+    }
+
+    /**
+     * 计算价格一致性
+     */
+    private double calculatePriceConsistency(List<UserBehaviorEvent> events) {
+        List<Double> prices = events.stream()
+                .filter(e -> "purchase".equals(e.getEventType()) && e.getTargetId() != null)
+                .map(e -> getPriceForProduct(e.getTargetId()))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (prices.size() < 2) {
+            return 0.5; // 数据不足时返回中性值
+        }
+
+        // 计算价格的变异系数（CV = std / mean）
+        double mean = prices.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        if (mean == 0) {
+            return 0.5;
+        }
+
+        double variance = prices.stream()
+                .mapToDouble(p -> Math.pow(p - mean, 2))
+                .average()
+                .orElse(0);
+        double std = Math.sqrt(variance);
+        double cv = std / mean;
+
+        // CV越小，价格一致性越高
+        return Math.max(0, 1.0 - cv);
+    }
+
+    /**
+     * 计算平均行为间隔时间
+     */
+    private double calculateAverageEventInterval(List<UserBehaviorEvent> events) {
+        if (events.size() < 2) {
+            return 0.5;
+        }
+
+        List<Long> intervals = new ArrayList<>();
+        for (int i = 1; i < events.size(); i++) {
+            LocalDateTime t1 = events.get(i - 1).getEventTime();
+            LocalDateTime t2 = events.get(i).getEventTime();
+            if (t1 != null && t2 != null) {
+                long minutes = ChronoUnit.MINUTES.between(t1, t2);
+                if (minutes >= 0 && minutes < 60 * 24 * 7) { // 排除超过7天的异常间隔
+                    intervals.add(minutes);
+                }
+            }
+        }
+
+        if (intervals.isEmpty()) {
+            return 0.5;
+        }
+
+        double avgMinutes = intervals.stream().mapToLong(Long::longValue).average().orElse(60);
+        // 归一化：1小时=1.0，越短越高
+        return Math.min(1.0, 60.0 / (avgMinutes + 1));
+    }
+
+    /**
+     * 计算平均Session深度
+     */
+    private double calculateAverageSessionDepth(List<UserBehaviorEvent> events) {
+        if (events.isEmpty()) {
+            return 0;
+        }
+
+        List<Integer> sessionSizes = new ArrayList<>();
+        int currentSessionSize = 1;
+
+        for (int i = 1; i < events.size(); i++) {
+            LocalDateTime t1 = events.get(i - 1).getEventTime();
+            LocalDateTime t2 = events.get(i).getEventTime();
+
+            if (t1 != null && t2 != null) {
+                long minutes = ChronoUnit.MINUTES.between(t1, t2);
+                if (minutes <= 30) { // 30分钟内算同一session
+                    currentSessionSize++;
+                } else {
+                    sessionSizes.add(currentSessionSize);
+                    currentSessionSize = 1;
+                }
+            }
+        }
+        sessionSizes.add(currentSessionSize);
+
+        double avgDepth = sessionSizes.stream().mapToInt(Integer::intValue).average().orElse(1);
+        // 归一化：10次行为=1.0
+        return Math.min(1.0, avgDepth / 10.0);
+    }
+
+    /**
+     * 计算购买速度（日均购买数）
+     */
+    private double calculatePurchaseVelocity(List<UserBehaviorEvent> events) {
+        long purchaseCount = events.stream()
+                .filter(e -> "purchase".equals(e.getEventType()))
+                .count();
+
+        if (purchaseCount == 0) {
+            return 0;
+        }
+
+        // 计算事件跨度天数
+        LocalDateTime firstEvent = events.stream()
+                .map(UserBehaviorEvent::getEventTime)
+                .filter(Objects::nonNull)
+                .min(LocalDateTime::compareTo)
+                .orElse(null);
+
+        LocalDateTime lastEvent = events.stream()
+                .map(UserBehaviorEvent::getEventTime)
+                .filter(Objects::nonNull)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+
+        if (firstEvent == null || lastEvent == null) {
+            return 0;
+        }
+
+        long days = Math.max(1, ChronoUnit.DAYS.between(firstEvent, lastEvent) + 1);
+        double purchasesPerDay = purchaseCount / (double) days;
+
+        // 归一化：每天2次购买=1.0
+        return Math.min(1.0, purchasesPerDay / 2.0);
+    }
+
+    /**
+     * 计算探索率
+     */
+    private double calculateExplorationRate(List<UserBehaviorEvent> events) {
+        List<String> viewedProducts = events.stream()
+                .filter(e -> "view".equals(e.getEventType()) && e.getTargetId() != null)
+                .map(UserBehaviorEvent::getTargetId)
+                .collect(Collectors.toList());
+
+        if (viewedProducts.isEmpty()) {
+            return 0;
+        }
+
+        Set<String> uniqueProducts = new HashSet<>(viewedProducts);
+        return (double) uniqueProducts.size() / viewedProducts.size();
+    }
+
+    /**
+     * 计算活跃度趋势（近7天 vs 前7天）
+     */
+    private double calculateActivityTrend(List<UserBehaviorEvent> events) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime sevenDaysAgo = now.minusDays(7);
+        LocalDateTime fourteenDaysAgo = now.minusDays(14);
+
+        long recentCount = events.stream()
+                .filter(e -> e.getEventTime() != null && e.getEventTime().isAfter(sevenDaysAgo))
+                .count();
+
+        long previousCount = events.stream()
+                .filter(e -> e.getEventTime() != null
+                        && e.getEventTime().isAfter(fourteenDaysAgo)
+                        && e.getEventTime().isBefore(sevenDaysAgo))
+                .count();
+
+        if (previousCount == 0) {
+            return recentCount > 0 ? 1.0 : 0.5;
+        }
+
+        double ratio = recentCount / (double) previousCount;
+        // 归一化：ratio=2表示增长，ratio=0.5表示下降
+        return Math.min(1.0, Math.max(0, (ratio - 0.5) / 1.5));
+    }
+
+    /**
+     * 计算周期规律强度（基于星期几的分布）
+     */
+    private double calculatePeriodicityStrength(List<UserBehaviorEvent> events) {
+        int[] dayOfWeekCounts = new int[7];
+
+        for (UserBehaviorEvent event : events) {
+            if (event.getEventTime() != null) {
+                int dayIndex = event.getEventTime().getDayOfWeek().getValue() - 1;
+                dayOfWeekCounts[dayIndex]++;
+            }
+        }
+
+        // 计算分布的熵
+        int total = Arrays.stream(dayOfWeekCounts).sum();
+        if (total == 0) {
+            return 0;
+        }
+
+        double entropy = 0;
+        for (int count : dayOfWeekCounts) {
+            if (count > 0) {
+                double p = count / (double) total;
+                entropy -= p * Math.log(p);
+            }
+        }
+
+        // 最大熵 = log(7)，越集中熵越小，规律性越强
+        double maxEntropy = Math.log(7);
+        return 1.0 - (entropy / maxEntropy);
+    }
+
+    /**
+     * 计算时间规律性（小时分布的集中度）
+     */
+    private double calculateTimeRegularity(List<UserBehaviorEvent> events) {
+        int[] hourCounts = new int[24];
+
+        for (UserBehaviorEvent event : events) {
+            if (event.getEventTime() != null) {
+                int hour = event.getEventTime().getHour();
+                hourCounts[hour]++;
+            }
+        }
+
+        // 计算方差
+        int total = Arrays.stream(hourCounts).sum();
+        if (total == 0) {
+            return 0;
+        }
+
+        double mean = total / 24.0;
+        double variance = Arrays.stream(hourCounts)
+                .mapToDouble(c -> Math.pow(c - mean, 2))
+                .average()
+                .orElse(0);
+
+        // 方差越大，分布越集中（规律性越强）
+        // 归一化
+        return Math.min(1.0, variance / (mean * mean + 1));
+    }
+
+    /**
+     * 计算漏斗完成率
+     */
+    private double calculateFunnelCompletionRate(List<UserBehaviorEvent> events) {
+        long viewCount = events.stream()
+                .filter(e -> "view".equals(e.getEventType()))
+                .count();
+
+        long purchaseCount = events.stream()
+                .filter(e -> "purchase".equals(e.getEventType()))
+                .count();
+
+        if (viewCount == 0) {
+            return 0;
+        }
+
+        return Math.min(1.0, purchaseCount / (double) viewCount);
+    }
+
+    /**
+     * 获取商品所属品类
+     */
+    private String getCategoryForProduct(String productId) {
+        try {
+            GoodsSpu product = goodsSpuMapper.selectById(productId);
+            return product != null ? product.getCategoryFirst() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取商品品牌
+     */
+    private String getBrandForProduct(String productId) {
+        try {
+            GoodsSpu product = goodsSpuMapper.selectById(productId);
+            return product != null ? product.getCategorySecond() : null; // 使用二级分类作为品牌代理
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 获取商品价格
+     */
+    private Double getPriceForProduct(String productId) {
+        try {
+            GoodsSpu product = goodsSpuMapper.selectById(productId);
+            return product != null && product.getSalesPrice() != null
+                    ? product.getSalesPrice().doubleValue() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     // ==================== 商品特征提取 ====================
 
     /**
@@ -492,16 +998,20 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
             float[] fullEmbedding = vectorSearchService.vectorizeProduct(product);
 
             if (fullEmbedding != null && fullEmbedding.length > 0) {
-                // 使用平均池化将1536维压缩到32维
+                // 使用加权池化压缩embedding (优化点3)
                 int poolSize = fullEmbedding.length / EMBEDDING_COMPRESS_DIM;
                 for (int i = 0; i < EMBEDDING_COMPRESS_DIM; i++) {
-                    double sum = 0;
+                    double weightedSum = 0;
+                    double weightSum = 0;
                     int start = i * poolSize;
                     int end = Math.min(start + poolSize, fullEmbedding.length);
                     for (int j = start; j < end; j++) {
-                        sum += fullEmbedding[j];
+                        // 位置越靠前权重越高
+                        double weight = 1.0 + 0.5 * (1.0 - (double)(j - start) / poolSize);
+                        weightedSum += fullEmbedding[j] * weight;
+                        weightSum += weight;
                     }
-                    features[i] = sum / (end - start);
+                    features[i] = weightSum > 0 ? weightedSum / weightSum : 0;
                 }
             }
 
@@ -628,6 +1138,87 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
     // ==================== 分类特征提取 ====================
 
     /**
+     * 获取品类统计信息（带Redis缓存，优化点5）
+     * 缓存1小时，避免重复计算品类级别的统计特征
+     */
+    private Map<String, CategoryStats> getCachedCategoryStats() {
+        String cacheKey = CATEGORY_STATS_CACHE_PREFIX + "all";
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null && !cached.isEmpty()) {
+                return objectMapper.readValue(cached,
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, CategoryStats>>() {});
+            }
+        } catch (Exception e) {
+            log.debug("读取品类统计缓存失败: {}", e.getMessage());
+        }
+
+        // 计算并缓存
+        Map<String, CategoryStats> stats = computeAllCategoryStats();
+        try {
+            redisTemplate.opsForValue().set(cacheKey,
+                objectMapper.writeValueAsString(stats),
+                CATEGORY_STATS_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (Exception e) {
+            log.debug("写入品类统计缓存失败: {}", e.getMessage());
+        }
+        return stats;
+    }
+
+    /**
+     * 计算所有品类的统计信息
+     */
+    private Map<String, CategoryStats> computeAllCategoryStats() {
+        Map<String, CategoryStats> result = new HashMap<>();
+        try {
+            // 查询所有上架商品
+            LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(GoodsSpu::getShelf, "1");
+            List<GoodsSpu> allProducts = goodsSpuMapper.selectList(wrapper);
+
+            // 按品类分组计算统计
+            Map<String, List<GoodsSpu>> byCategory = allProducts.stream()
+                .filter(p -> p.getCategoryFirst() != null)
+                .collect(Collectors.groupingBy(GoodsSpu::getCategoryFirst));
+
+            for (Map.Entry<String, List<GoodsSpu>> entry : byCategory.entrySet()) {
+                String category = entry.getKey();
+                List<GoodsSpu> products = entry.getValue();
+
+                CategoryStats stats = new CategoryStats();
+                stats.productCount = products.size();
+                stats.totalSales = products.stream()
+                    .filter(p -> p.getSaleNum() != null)
+                    .mapToInt(GoodsSpu::getSaleNum)
+                    .sum();
+                stats.avgPrice = products.stream()
+                    .filter(p -> p.getSalesPrice() != null)
+                    .mapToDouble(p -> p.getSalesPrice().doubleValue())
+                    .average()
+                    .orElse(0);
+                stats.inStockRatio = products.stream()
+                    .filter(p -> p.getStock() != null && p.getStock() > 0)
+                    .count() / (double) products.size();
+
+                result.put(category, stats);
+            }
+        } catch (Exception e) {
+            log.warn("计算品类统计失败: {}", e.getMessage());
+        }
+        return result;
+    }
+
+    /**
+     * 品类统计内部类
+     */
+    private static class CategoryStats {
+        int productCount;
+        int totalSales;
+        double avgPrice;
+        double inStockRatio;
+    }
+
+    /**
      * 提取分类热度特征 (8维)
      */
     private double[] extractCategoryHeatFeatures(String category) {
@@ -639,31 +1230,51 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
         }
 
         try {
+            // 尝试从缓存获取品类统计 (优化点5)
+            Map<String, CategoryStats> cachedStats = getCachedCategoryStats();
+            CategoryStats stats = cachedStats.get(category);
+            if (stats != null) {
+                features[0] = Math.min(1.0, stats.productCount / 50.0);
+                features[1] = Math.min(1.0, stats.totalSales / 10000.0);
+                features[2] = Math.min(1.0, stats.avgPrice / MAX_PRICE);
+                features[4] = stats.inStockRatio;
+                // 其他特征仍需计算，但避免了主要的重复查询
+            }
+
             LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(GoodsSpu::getCategoryFirst, category)
                     .eq(GoodsSpu::getShelf, "1");
             List<GoodsSpu> products = goodsSpuMapper.selectList(wrapper);
 
             if (!products.isEmpty()) {
-                // 商品数量
-                features[0] = Math.min(1.0, products.size() / 50.0);
+                // 如果没有缓存命中，使用原始计算
+                if (stats == null) {
+                    // 商品数量
+                    features[0] = Math.min(1.0, products.size() / 50.0);
 
-                // 总销量
-                int totalSales = products.stream()
-                        .filter(p -> p.getSaleNum() != null)
-                        .mapToInt(GoodsSpu::getSaleNum)
-                        .sum();
-                features[1] = Math.min(1.0, totalSales / 10000.0);
+                    // 总销量
+                    int totalSales = products.stream()
+                            .filter(p -> p.getSaleNum() != null)
+                            .mapToInt(GoodsSpu::getSaleNum)
+                            .sum();
+                    features[1] = Math.min(1.0, totalSales / 10000.0);
 
-                // 平均价格
-                double avgPrice = products.stream()
-                        .filter(p -> p.getSalesPrice() != null)
-                        .mapToDouble(p -> p.getSalesPrice().doubleValue())
-                        .average()
-                        .orElse(0);
-                features[2] = Math.min(1.0, avgPrice / MAX_PRICE);
+                    // 平均价格
+                    double avgPrice = products.stream()
+                            .filter(p -> p.getSalesPrice() != null)
+                            .mapToDouble(p -> p.getSalesPrice().doubleValue())
+                            .average()
+                            .orElse(0);
+                    features[2] = Math.min(1.0, avgPrice / MAX_PRICE);
 
-                // 价格方差（品类多样性）
+                    // 有库存的商品比例
+                    long inStockCount = products.stream()
+                            .filter(p -> p.getStock() != null && p.getStock() > 0)
+                            .count();
+                    features[4] = (double) inStockCount / products.size();
+                }
+
+                // 价格方差（品类多样性）- 仍需每次计算
                 double priceVariance = calculateVariance(
                         products.stream()
                                 .filter(p -> p.getSalesPrice() != null)
@@ -671,12 +1282,6 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
                                 .toArray()
                 );
                 features[3] = Math.min(1.0, priceVariance / 10000.0);
-
-                // 有库存的商品比例
-                long inStockCount = products.stream()
-                        .filter(p -> p.getStock() != null && p.getStock() > 0)
-                        .count();
-                features[4] = (double) inStockCount / products.size();
 
                 // 新品比例（30天内上架）
                 LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
@@ -860,7 +1465,8 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
     }
 
     /**
-     * 压缩embedding向量
+     * 加权池化压缩Embedding向量 (优化点3)
+     * 位置越靠前权重越高 (前面的维度通常包含更重要的语义信息)
      */
     private double[] compressEmbedding(float[] embedding, int targetDim) {
         double[] compressed = new double[targetDim];
@@ -870,13 +1476,18 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
 
         int poolSize = embedding.length / targetDim;
         for (int i = 0; i < targetDim; i++) {
-            double sum = 0;
+            double weightedSum = 0;
+            double weightSum = 0;
             int start = i * poolSize;
             int end = Math.min(start + poolSize, embedding.length);
+
             for (int j = start; j < end; j++) {
-                sum += embedding[j];
+                // 位置越靠前权重越高 (1.0 到 1.5)
+                double weight = 1.0 + 0.5 * (1.0 - (double)(j - start) / poolSize);
+                weightedSum += embedding[j] * weight;
+                weightSum += weight;
             }
-            compressed[i] = sum / (end - start);
+            compressed[i] = weightSum > 0 ? weightedSum / weightSum : 0;
         }
         return compressed;
     }
@@ -895,6 +1506,35 @@ public class FeatureEngineeringServiceImpl implements FeatureEngineeringService 
                 .count();
 
         return Math.min(1.0, recentCount / (days * 3.0));  // 假设每天3次活动为满分
+    }
+
+    /**
+     * 计算带时间衰减的活跃度 (优化点4)
+     * 使用指数衰减: score = exp(-daysAgo / HALF_LIFE)
+     * HALF_LIFE = 7天，即7天前的事件权重降为50%
+     */
+    private double calculateTimeDecayedActivityRate(List<UserBehaviorEvent> events, int days) {
+        if (events == null || events.isEmpty()) {
+            return 0;
+        }
+
+        final double HALF_LIFE = 7.0;  // 7天半衰期
+        double score = 0;
+        LocalDateTime now = LocalDateTime.now();
+
+        for (UserBehaviorEvent event : events) {
+            if (event.getEventTime() == null) continue;
+            long daysAgo = ChronoUnit.DAYS.between(event.getEventTime(), now);
+            if (daysAgo >= 0 && daysAgo <= days) {
+                // 指数衰减: 越近的事件权重越高
+                double decay = Math.exp(-daysAgo / HALF_LIFE);
+                score += decay;
+            }
+        }
+
+        // 归一化: 假设每天1次活动（带满衰减）为满分
+        double maxExpectedScore = days * 0.5;  // 考虑衰减后的期望最大值
+        return Math.min(1.0, score / maxExpectedScore);
     }
 
     /**

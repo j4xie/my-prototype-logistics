@@ -11,6 +11,8 @@ import com.cretas.aims.service.embedding.SentenceEmbeddingTranslator;
 import com.cretas.aims.util.VectorUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +43,8 @@ import java.util.stream.Collectors;
  */
 @Service
 @Primary
+@Lazy
+@ConditionalOnProperty(name = "embedding.djl.enabled", havingValue = "true", matchIfMissing = false)
 @Slf4j
 public class DjlEmbeddingClient implements EmbeddingClient {
 

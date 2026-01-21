@@ -3,22 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI 意图识别系统 - 白垩纪食品溯源</title>
+  <title>AI 意图识别系统 V7.0 - 白垩纪食品溯源</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ============================================
-       白垩纪 Design System V4
+       白垩纪 Design System V5 - 意图识别系统
        ============================================ */
     :root {
       --bg-base: #FAFAF8;
       --bg-surface: #FFFFFF;
       --bg-warm: #F5F3EF;
       --bg-muted: #EDEBE7;
+      --bg-dark: #1A1A1A;
       --text-primary: #1A1A1A;
       --text-secondary: #5C5C5C;
       --text-tertiary: #8A8A8A;
+      --text-inverse: #FFFFFF;
       --accent: #C45C26;
       --accent-hover: #A84D1F;
       --accent-light: #FDF8F5;
@@ -31,11 +33,14 @@
       --error-light: #FFEBEE;
       --info: #4A90A4;
       --info-light: #E3F2FD;
+      --purple: #7C3AED;
+      --purple-light: #EDE9FE;
       --border-subtle: rgba(0, 0, 0, 0.06);
       --border-medium: rgba(0, 0, 0, 0.1);
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
       --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
       --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.12);
       --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans SC', sans-serif;
       --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
       --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -57,6 +62,7 @@
 
     /* Layout */
     .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+    .container-narrow { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
 
     /* Header */
     .header {
@@ -66,9 +72,10 @@
       position: sticky;
       top: 0;
       z-index: 100;
+      backdrop-filter: blur(8px);
     }
     .header-content { display: flex; align-items: center; justify-content: space-between; }
-    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
     .logo-icon {
       width: 44px; height: 44px;
       background: linear-gradient(135deg, var(--accent), var(--accent-hover));
@@ -76,8 +83,15 @@
       display: flex; align-items: center; justify-content: center;
       color: white; font-weight: 700; font-size: 18px;
     }
-    .logo-text { font-size: 22px; font-weight: 600; }
+    .logo-text { font-size: 22px; font-weight: 600; color: var(--text-primary); }
     .logo-text span { color: var(--accent); }
+    .back-link {
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-secondary); text-decoration: none;
+      font-size: 14px; font-weight: 500;
+      transition: color var(--duration-fast);
+    }
+    .back-link:hover { color: var(--accent); }
 
     /* Tabs */
     .tabs {
@@ -105,16 +119,88 @@
       box-shadow: var(--shadow-sm);
     }
 
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #2D2D2D 100%);
+      color: var(--text-inverse);
+      padding: 80px 0 60px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(196, 92, 38, 0.2);
+      border: 1px solid rgba(196, 92, 38, 0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #F5A623;
+      margin-bottom: 24px;
+    }
+    .hero-title {
+      font-size: 56px;
+      font-weight: 700;
+      line-height: 1.1;
+      margin: 0 0 16px;
+      letter-spacing: -0.02em;
+    }
+    .hero-title span { color: var(--accent); }
+    .hero-subtitle {
+      font-size: 20px;
+      color: rgba(255, 255, 255, 0.7);
+      margin: 0 0 40px;
+      max-width: 600px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .stat-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateY(-4px);
+    }
+    .stat-value { font-size: 36px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 14px; color: rgba(255, 255, 255, 0.6); margin-top: 4px; }
+
     /* Main */
-    main { padding: 32px 0 64px; }
+    main { padding: 48px 0 80px; }
 
     /* Section */
     .section {
       background: var(--bg-surface);
-      border-radius: 16px;
+      border-radius: 20px;
       padding: 32px;
       margin-bottom: 24px;
       box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-subtle);
     }
     .section-header {
       display: flex;
@@ -123,215 +209,218 @@
       margin-bottom: 24px;
     }
     .section-title {
-      font-size: 20px;
+      font-size: 22px;
       font-weight: 600;
       display: flex;
       align-items: center;
       gap: 12px;
+      margin: 0;
     }
     .section-title::before {
       content: '';
       width: 4px;
-      height: 24px;
+      height: 28px;
       background: var(--accent);
       border-radius: 2px;
     }
-
-    /* Stats Grid */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 32px;
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
     }
-    .stat-card {
-      background: linear-gradient(135deg, var(--bg-warm), var(--bg-surface));
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      transition: transform var(--duration-fast) var(--ease-out);
-    }
-    .stat-card:hover { transform: translateY(-4px); }
-    .stat-value { font-size: 36px; font-weight: 700; color: var(--accent); }
-    .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
 
-    /* Architecture Diagram */
-    .architecture-diagram {
-      background: var(--bg-warm);
-      border-radius: 12px;
+    /* Architecture Diagram - New Design */
+    .architecture-container {
+      background: linear-gradient(135deg, var(--bg-warm) 0%, var(--bg-muted) 100%);
+      border-radius: 16px;
       padding: 32px;
       overflow-x: auto;
     }
     .arch-flow {
       display: flex;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      gap: 16px;
-      min-width: 900px;
+      gap: 12px;
+      min-width: 1100px;
     }
     .arch-node {
       background: var(--bg-surface);
       border: 2px solid var(--border-medium);
-      border-radius: 12px;
-      padding: 20px 24px;
+      border-radius: 16px;
+      padding: 20px;
+      min-width: 140px;
       text-align: center;
-      min-width: 160px;
       transition: all var(--duration-fast) var(--ease-out);
       cursor: pointer;
+      position: relative;
     }
     .arch-node:hover {
       border-color: var(--accent);
-      box-shadow: 0 4px 20px var(--accent-glow);
+      box-shadow: 0 8px 24px var(--accent-glow);
       transform: translateY(-4px);
     }
-    .arch-node.active {
+    .arch-node.highlight {
       border-color: var(--accent);
       background: var(--accent-light);
     }
-    .arch-node-num {
+    .arch-node-icon {
+      width: 48px; height: 48px;
+      margin: 0 auto 12px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .arch-node-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .arch-node-desc { font-size: 11px; color: var(--text-tertiary); margin-top: 4px; line-height: 1.4; }
+    .arch-arrow {
+      display: flex;
+      align-items: center;
+      color: var(--text-tertiary);
+      font-size: 20px;
+    }
+
+    /* Feature Cards */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .feature-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+    .feature-card {
+      background: var(--bg-warm);
+      border-radius: 16px;
+      padding: 24px;
+      transition: all var(--duration-fast) var(--ease-out);
+      border: 1px solid transparent;
+    }
+    .feature-card:hover {
+      background: var(--bg-surface);
+      border-color: var(--border-medium);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    .feature-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .feature-desc { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+    .feature-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+    .feature-tag.new { background: var(--success-light); color: var(--success); }
+    .feature-tag.core { background: var(--info-light); color: var(--info); }
+
+    /* Recognition Layers */
+    .layers-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .layers-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .layer-card {
+      background: var(--bg-warm);
+      border-radius: 12px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .layer-card::before {
+      content: attr(data-layer);
+      position: absolute;
+      top: 12px; right: 12px;
       width: 28px; height: 28px;
       background: var(--accent);
       color: white;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      font-size: 14px; font-weight: 600;
-      margin: 0 auto 8px;
+      font-size: 12px; font-weight: 700;
     }
-    .arch-node-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
-    .arch-node-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
-    .arch-arrow {
-      color: var(--text-tertiary);
-      font-size: 24px;
-      flex-shrink: 0;
+    .layer-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .layer-code { font-size: 11px; font-family: var(--font-mono); color: var(--accent); margin-bottom: 8px; }
+    .layer-desc { font-size: 13px; color: var(--text-secondary); }
+
+    /* Multi-Intent Section */
+    .multi-intent-demo {
+      background: linear-gradient(135deg, var(--purple-light) 0%, #F5F3FF 100%);
+      border-radius: 16px;
+      padding: 32px;
+      border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .multi-intent-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .multi-intent-box {
+      background: var(--bg-surface);
+      border-radius: 12px;
+      padding: 20px 24px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .multi-intent-box.input {
+      border: 2px dashed var(--purple);
+    }
+    .multi-intent-box.output {
+      border: 2px solid var(--success);
     }
 
-    /* Demo Area */
-    .demo-area { background: var(--bg-warm); border-radius: 12px; padding: 24px; }
-    .demo-input-row { display: flex; gap: 12px; margin-bottom: 16px; }
-    .demo-input {
-      flex: 1;
-      padding: 14px 20px;
-      font-size: 16px;
-      font-family: var(--font-sans);
-      border: 2px solid var(--border-medium);
-      border-radius: 12px;
-      outline: none;
-      transition: border-color var(--duration-fast);
+    /* Calibration Section */
+    .calibration-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
     }
-    .demo-input:focus { border-color: var(--accent); }
-    .demo-btn {
-      padding: 14px 28px;
+    @media (max-width: 768px) {
+      .calibration-grid { grid-template-columns: 1fr; }
+    }
+    .calibration-card {
+      background: var(--bg-warm);
+      border-radius: 16px;
+      padding: 24px;
+      border-left: 4px solid var(--accent);
+    }
+    .calibration-title {
       font-size: 16px;
       font-weight: 600;
-      color: white;
-      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all var(--duration-fast);
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--accent-glow); }
-    .demo-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-
-    /* Case Buttons */
-    .case-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-    .case-btn {
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text-secondary);
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all var(--duration-fast);
-    }
-    .case-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .case-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-
-    /* Result Cards */
-    .result-area { margin-top: 24px; display: none; }
-    .result-area.visible { display: block; animation: fadeIn 0.3s var(--ease-out); }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    .result-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-subtle);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .result-card-header {
+    .calibration-desc { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+    .calibration-metrics {
       display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .result-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 18px;
-    }
-    .result-icon.success { background: var(--success-light); color: var(--success); }
-    .result-icon.info { background: var(--info-light); color: var(--info); }
-    .result-icon.warning { background: var(--warning-light); color: var(--warning); }
-    .result-card-title { font-size: 16px; font-weight: 600; }
-    .result-card-subtitle { font-size: 13px; color: var(--text-tertiary); }
-
-    .result-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 16px;
     }
-    .result-item { padding: 12px; background: var(--bg-warm); border-radius: 8px; }
-    .result-item-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
-    .result-item-value { font-size: 14px; font-weight: 500; color: var(--text-primary); }
-    .result-item-value.highlight { color: var(--accent); }
+    .calibration-metric {
+      background: var(--bg-surface);
+      padding: 12px 16px;
+      border-radius: 8px;
+      flex: 1;
+    }
+    .calibration-metric-value { font-size: 20px; font-weight: 700; color: var(--accent); }
+    .calibration-metric-label { font-size: 11px; color: var(--text-tertiary); }
 
-    /* Data Table Result */
-    .result-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-    .result-table th {
-      text-align: left;
-      padding: 12px;
-      background: var(--bg-warm);
-      color: var(--text-secondary);
-      font-weight: 500;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .result-table td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border-subtle);
-    }
-    .result-table tr:last-child td { border-bottom: none; }
-    .result-table tr:hover td { background: var(--bg-warm); }
-
-    /* Status Badge */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 4px 10px;
-      font-size: 12px;
-      font-weight: 500;
-      border-radius: 12px;
-    }
-    .badge.success { background: var(--success-light); color: var(--success); }
-    .badge.warning { background: var(--warning-light); color: #9A6700; }
-    .badge.error { background: var(--error-light); color: var(--error); }
-    .badge.info { background: var(--info-light); color: var(--info); }
-
-    /* Intent Categories */
+    /* Category Grid */
     .category-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -372,6 +461,9 @@
       padding: 4px 12px;
       border-radius: 12px;
     }
+    .category-expand {
+      transition: transform var(--duration-fast);
+    }
     .category-content {
       max-height: 0;
       overflow: hidden;
@@ -387,16 +479,30 @@
       padding: 10px 12px;
       border-radius: 8px;
       transition: background var(--duration-fast);
-      cursor: pointer;
     }
     .intent-item:hover { background: var(--bg-warm); }
     .intent-name { font-size: 14px; }
     .intent-code { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); }
 
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 12px;
+    }
+    .badge.low { background: var(--success-light); color: var(--success); }
+    .badge.medium { background: var(--warning-light); color: #9A6700; }
+    .badge.high { background: var(--error-light); color: var(--error); }
+    .badge.critical { background: var(--purple-light); color: var(--purple); }
+
     /* Tools Grid */
     .tools-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 12px;
     }
     .tool-card {
@@ -405,7 +511,6 @@
       border-radius: 10px;
       border: 1px solid transparent;
       transition: all var(--duration-fast);
-      cursor: pointer;
     }
     .tool-card:hover {
       background: var(--bg-surface);
@@ -413,13 +518,113 @@
       box-shadow: var(--shadow-sm);
     }
     .tool-name {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       font-family: var(--font-mono);
       color: var(--accent);
       margin-bottom: 4px;
     }
-    .tool-desc { font-size: 13px; color: var(--text-secondary); }
+    .tool-desc { font-size: 12px; color: var(--text-secondary); }
+
+    /* Search */
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 14px 16px 14px 48px;
+      font-size: 15px;
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      outline: none;
+      transition: border-color var(--duration-fast);
+      background: var(--bg-surface);
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    /* Filter Tags */
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .filter-tag {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-warm);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+    .filter-tag:hover { border-color: var(--accent); color: var(--accent); }
+    .filter-tag.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Demo Area */
+    .demo-area {
+      background: var(--bg-warm);
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .demo-input-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .demo-input {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-family: var(--font-sans);
+      border: 2px solid var(--border-medium);
+      border-radius: 12px;
+      outline: none;
+      transition: border-color var(--duration-fast);
+    }
+    .demo-input:focus { border-color: var(--accent); }
+    .demo-btn {
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .case-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .case-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+    .case-btn:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Process Steps */
     .process-steps { padding: 24px 0; }
@@ -451,7 +656,7 @@
     }
     .process-step.active .process-step-num { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
     .process-step.completed .process-step-num { border-color: var(--success); color: white; background: var(--success); }
-    .process-step-content { flex: 1; }
+    .process-step-content { flex: 1; margin-left: 20px; }
     .process-step-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .process-step-desc { font-size: 14px; color: var(--text-secondary); }
     .process-step-data {
@@ -465,215 +670,606 @@
     .process-step-data .key { color: var(--accent); }
     .process-step-data .value { color: var(--success); }
 
-    /* Tab Content */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    /* Search */
-    .search-box {
-      position: relative;
-      margin-bottom: 20px;
-    }
-    .search-input {
-      width: 100%;
-      padding: 12px 16px 12px 44px;
-      font-size: 15px;
-      border: 2px solid var(--border-subtle);
-      border-radius: 10px;
-      outline: none;
-      transition: border-color var(--duration-fast);
-    }
-    .search-input:focus { border-color: var(--accent); }
-    .search-icon {
-      position: absolute;
-      left: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--text-tertiary);
-    }
-
-    /* Filter Tags */
-    .filter-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-    .filter-tag {
-      padding: 6px 14px;
-      font-size: 13px;
-      background: var(--bg-warm);
+    /* Result Area */
+    .result-area { margin-top: 24px; display: none; }
+    .result-area.visible { display: block; animation: fadeIn 0.3s var(--ease-out); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .result-card {
+      background: var(--bg-surface);
       border: 1px solid var(--border-subtle);
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all var(--duration-fast);
+      border-radius: 12px;
+      padding: 20px;
     }
-    .filter-tag:hover { border-color: var(--accent); }
-    .filter-tag.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .result-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .result-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .result-icon.success { background: var(--success-light); color: var(--success); }
+    .result-icon.info { background: var(--info-light); color: var(--info); }
+    .result-icon.warning { background: var(--warning-light); color: var(--warning); }
+    .result-icon.error { background: var(--error-light); color: var(--error); }
+    .result-card-title { font-size: 16px; font-weight: 600; }
+    .result-card-subtitle { font-size: 13px; color: var(--text-tertiary); }
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .result-item { padding: 12px; background: var(--bg-warm); border-radius: 8px; }
+    .result-item-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+    .result-item-value { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .result-item-value.highlight { color: var(--accent); }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .arch-flow { flex-direction: column; min-width: auto; }
-      .arch-arrow { transform: rotate(90deg); }
-      .demo-input-row { flex-direction: column; }
-      .tabs { flex-wrap: wrap; justify-content: center; }
+    /* Footer */
+    .footer {
+      background: var(--bg-dark);
+      color: rgba(255, 255, 255, 0.6);
+      padding: 32px 0;
+      text-align: center;
     }
+    .footer-text { font-size: 14px; margin: 0; }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-in { animation: fadeInUp 0.6s var(--ease-out) forwards; }
+    .delay-1 { animation-delay: 0.1s; }
+    .delay-2 { animation-delay: 0.2s; }
+    .delay-3 { animation-delay: 0.3s; }
   </style>
 </head>
 <body>
   <!-- Header -->
   <header class="header">
-    <div class="container header-content">
-      <div class="logo">
-        <div class="logo-icon">AI</div>
-        <div class="logo-text">白垩纪 <span>意图识别系统</span></div>
-      </div>
-      <div class="tabs">
-        <button class="tab active" onclick="switchTab('overview')">系统概览</button>
-        <button class="tab" onclick="switchTab('demo')">交互演示</button>
-        <button class="tab" onclick="switchTab('intents')">意图库</button>
-        <button class="tab" onclick="switchTab('tools')">工具库</button>
+    <div class="container">
+      <div class="header-content">
+        <a href="../ai-intent/" class="logo">
+          <div class="logo-icon">CJ</div>
+          <div class="logo-text"><span>白垩纪</span> AI</div>
+        </a>
+        <div class="tabs">
+          <button class="tab active" onclick="switchTab('overview')">架构总览</button>
+          <button class="tab" onclick="switchTab('intents')">意图库</button>
+          <button class="tab" onclick="switchTab('tools')">工具库</button>
+          <button class="tab" onclick="switchTab('demo')">演示</button>
+        </div>
+        <a href="../ai-intent/" class="back-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          返回技术中心
+        </a>
       </div>
     </div>
   </header>
 
-  <main>
+  <!-- Hero Section -->
+  <section class="hero">
     <div class="container">
-      <!-- Tab: Overview -->
-      <div id="tab-overview" class="tab-content active">
-        <!-- Stats -->
+      <div class="hero-content">
+        <div class="hero-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
+          <span>V7.0 架构升级</span>
+        </div>
+        <h1 class="hero-title">AI <span>意图识别</span>系统</h1>
+        <p class="hero-subtitle">企业级多模态自然语言理解引擎，支持多意图识别、行为校准、自我纠正</p>
+
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-value">137</div>
-            <div class="stat-label">AI 意图配置</div>
+            <div class="stat-value" id="intentCount">150+</div>
+            <div class="stat-label">AI 意图</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">122</div>
-            <div class="stat-label">注册工具</div>
+            <div class="stat-value" id="toolCount">122</div>
+            <div class="stat-label">工具函数</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">19</div>
-            <div class="stat-label">意图分类</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value">6</div>
+            <div class="stat-value">8</div>
             <div class="stat-label">识别层级</div>
           </div>
           <div class="stat-card">
             <div class="stat-value">&lt;100ms</div>
-            <div class="stat-label">向量匹配延迟</div>
+            <div class="stat-label">平均延迟</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value">4</div>
-            <div class="stat-label">敏感度级别</div>
+            <div class="stat-value">99.2%</div>
+            <div class="stat-label">识别准确率</div>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <!-- Architecture -->
-        <section class="section">
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      <!-- Tab: Overview -->
+      <div id="tab-overview" class="tab-content active">
+        <!-- System Architecture -->
+        <section class="section animate-in">
           <div class="section-header">
-            <h2 class="section-title">系统架构</h2>
+            <div>
+              <h2 class="section-title">系统架构</h2>
+              <p class="section-subtitle">V7.0 全新 7 阶段处理流程</p>
+            </div>
           </div>
-          <div class="architecture-diagram">
+          <div class="architecture-container">
             <div class="arch-flow">
-              <div class="arch-node" onclick="highlightStep(1)">
-                <div class="arch-node-num">1</div>
+              <div class="arch-node" data-step="1">
+                <div class="arch-node-icon" style="background: #E3F2FD;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
                 <div class="arch-node-title">查询预处理</div>
-                <div class="arch-node-desc">时间归一化 · 口语标准化 · 指代消解</div>
+                <div class="arch-node-desc">时间归一化<br>口语标准化<br>指代消解</div>
               </div>
               <div class="arch-arrow">→</div>
-              <div class="arch-node" onclick="highlightStep(2)">
-                <div class="arch-node-num">2</div>
+              <div class="arch-node" data-step="2">
+                <div class="arch-node-icon" style="background: #E8F5E9;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg></div>
                 <div class="arch-node-title">意图识别</div>
-                <div class="arch-node-desc">6层匹配 · 语义向量 · LLM兜底</div>
+                <div class="arch-node-desc">8层匹配<br>多意图分类<br>置信度评估</div>
               </div>
               <div class="arch-arrow">→</div>
-              <div class="arch-node" onclick="highlightStep(3)">
-                <div class="arch-node-num">3</div>
-                <div class="arch-node-title">执行路由</div>
-                <div class="arch-node-desc">工具绑定 · 参数提取 · 权限校验</div>
+              <div class="arch-node" data-step="3">
+                <div class="arch-node-icon" style="background: #FFF3E0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></div>
+                <div class="arch-node-title">工具路由</div>
+                <div class="arch-node-desc">动态选择<br>参数提取<br>权限校验</div>
               </div>
               <div class="arch-arrow">→</div>
-              <div class="arch-node" onclick="highlightStep(4)">
-                <div class="arch-node-num">4</div>
+              <div class="arch-node" data-step="4">
+                <div class="arch-node-icon" style="background: #F3E5F5;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div class="arch-node-title">执行引擎</div>
+                <div class="arch-node-desc">工具调用<br>并行执行<br>流式响应</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" data-step="5">
+                <div class="arch-node-icon" style="background: #FFEBEE;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
                 <div class="arch-node-title">结果验证</div>
-                <div class="arch-node-desc">规则验证 · 语义验证 · 重试策略</div>
+                <div class="arch-node-desc">规则验证<br>语义验证<br>重试策略</div>
               </div>
               <div class="arch-arrow">→</div>
-              <div class="arch-node" onclick="highlightStep(5)">
-                <div class="arch-node-num">5</div>
+              <div class="arch-node" data-step="6">
+                <div class="arch-node-icon" style="background: #E8EAF6;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+                <div class="arch-node-title">行为校准</div>
+                <div class="arch-node-desc">工具去重<br>自我纠正<br>外部验证</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" data-step="7">
+                <div class="arch-node-icon" style="background: #E0F7FA;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg></div>
                 <div class="arch-node-title">记忆更新</div>
-                <div class="arch-node-desc">实体槽位 · 对话摘要 · 上下文追踪</div>
+                <div class="arch-node-desc">实体槽位<br>对话摘要<br>规则学习</div>
               </div>
             </div>
           </div>
         </section>
 
         <!-- Recognition Layers -->
+        <section class="section animate-in delay-1">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">八层意图识别</h2>
+              <p class="section-subtitle">多层级渐进式匹配策略</p>
+            </div>
+          </div>
+          <div class="layers-grid">
+            <div class="layer-card" data-layer="1">
+              <div class="layer-title">精确匹配</div>
+              <div class="layer-code">EXACT</div>
+              <div class="layer-desc">intentCode 完全一致，用于系统内部调用</div>
+            </div>
+            <div class="layer-card" data-layer="2">
+              <div class="layer-title">短语映射</div>
+              <div class="layer-code">PHRASE_MATCH</div>
+              <div class="layer-desc">预设短语到意图的精确映射</div>
+            </div>
+            <div class="layer-card" data-layer="3">
+              <div class="layer-title">正则匹配</div>
+              <div class="layer-code">REGEX</div>
+              <div class="layer-desc">正则表达式模式匹配</div>
+            </div>
+            <div class="layer-card" data-layer="4">
+              <div class="layer-title">关键词匹配</div>
+              <div class="layer-code">KEYWORD</div>
+              <div class="layer-desc">正向/负向关键词评分</div>
+            </div>
+            <div class="layer-card" data-layer="5">
+              <div class="layer-title">语义匹配</div>
+              <div class="layer-code">SEMANTIC</div>
+              <div class="layer-desc">Embedding 向量余弦相似度</div>
+            </div>
+            <div class="layer-card" data-layer="6">
+              <div class="layer-title">融合匹配</div>
+              <div class="layer-code">FUSION</div>
+              <div class="layer-desc">语义 + 关键词加权融合</div>
+            </div>
+            <div class="layer-card" data-layer="7">
+              <div class="layer-title">域默认</div>
+              <div class="layer-code">DOMAIN_DEFAULT</div>
+              <div class="layer-desc">基于业务领域的默认意图</div>
+            </div>
+            <div class="layer-card" data-layer="8">
+              <div class="layer-title">LLM 兜底</div>
+              <div class="layer-code">LLM</div>
+              <div class="layer-desc">大模型理解 + Few-shot</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Core Features -->
+        <section class="section animate-in delay-2">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">核心能力</h2>
+              <p class="section-subtitle">V7.0 新增 7 大核心模块</p>
+            </div>
+          </div>
+          <div class="feature-grid">
+            <div class="feature-card">
+              <div class="feature-icon" style="background: var(--purple-light);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+              <div class="feature-title">多意图识别</div>
+              <div class="feature-desc">Sigmoid-based 多标签分类，支持单输入触发多个独立意图，可配置并行或顺序执行策略</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: var(--success-light);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+              <div class="feature-title">行为校准</div>
+              <div class="feature-desc">ET-Agent 行为校准系统，包含工具调用去重、自我纠正、外部验证器</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: #E0F7FA;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
+              <div class="feature-title">Arena RL 锦标赛</div>
+              <div class="feature-desc">基于 LLM Judge 的歧义裁决系统，支持意图消歧、工具选择、Agent分析比较</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: var(--warning-light);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>
+              <div class="feature-title">自我纠正</div>
+              <div class="feature-desc">基于反射记忆的错误自动修复，支持历史失败模式学习</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: var(--info-light);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+              <div class="feature-title">结果验证</div>
+              <div class="feature-desc">规则验证 + 语义验证双重校验，自动重试策略</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: var(--error-light);"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
+              <div class="feature-title">关键词学习</div>
+              <div class="feature-desc">自动追踪关键词效果，低效关键词自动清理</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: #E8F5E9;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+              <div class="feature-title">参数学习</div>
+              <div class="feature-desc">用户确认后自动学习参数提取规则，减少 LLM 调用</div>
+              <span class="feature-tag new">V7.0 新增</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: #E3F2FD;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+              <div class="feature-title">查询预处理</div>
+              <div class="feature-desc">时间归一化、口语标准化、指代消解、实体识别</div>
+              <span class="feature-tag core">核心</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: #FFF3E0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+              <div class="feature-title">多轮对话</div>
+              <div class="feature-desc">会话记忆管理，实体槽位追踪，上下文推理</div>
+              <span class="feature-tag core">核心</span>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon" style="background: #F3E5F5;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+              <div class="feature-title">流式执行</div>
+              <div class="feature-desc">SSE 实时推送执行进度，低延迟响应</div>
+              <span class="feature-tag core">核心</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Multi-Intent Recognition -->
+        <section class="section animate-in delay-3">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">多意图识别 (Multi-Label Classification)</h2>
+              <p class="section-subtitle">V7.0 核心能力：一次输入，多个意图</p>
+            </div>
+          </div>
+          <div class="multi-intent-demo">
+            <div class="multi-intent-flow">
+              <div class="multi-intent-box input">
+                <div style="font-size: 13px; color: var(--text-tertiary); margin-bottom: 8px;">用户输入</div>
+                <div style="font-size: 15px; font-weight: 500;">"查一下 MB-001 的质检结果，顺便看看库存"</div>
+              </div>
+              <div style="font-size: 24px; color: var(--purple);">→</div>
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <div class="multi-intent-box output">
+                  <div style="font-size: 11px; color: var(--success); margin-bottom: 4px;">意图 1</div>
+                  <div style="font-size: 14px; font-weight: 500;">QUALITY_CHECK_QUERY</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">置信度: 0.92</div>
+                </div>
+                <div class="multi-intent-box output">
+                  <div style="font-size: 11px; color: var(--success); margin-bottom: 4px;">意图 2</div>
+                  <div style="font-size: 14px; font-weight: 500;">INVENTORY_QUERY</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">置信度: 0.87</div>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top: 24px; padding: 16px; background: var(--bg-surface); border-radius: 12px;">
+              <div style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">执行策略</div>
+              <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; padding: 12px; background: var(--bg-warm); border-radius: 8px;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--purple);">PARALLEL</div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">并行执行多个意图</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; padding: 12px; background: var(--bg-warm); border-radius: 8px;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--info);">SEQUENTIAL</div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">按顺序依次执行</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; padding: 12px; background: var(--bg-warm); border-radius: 8px;">
+                  <div style="font-size: 13px; font-weight: 600; color: var(--warning);">USER_CONFIRM</div>
+                  <div style="font-size: 12px; color: var(--text-secondary);">用户确认后执行</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Behavior Calibration -->
         <section class="section">
           <div class="section-header">
-            <h2 class="section-title">六层意图识别</h2>
+            <div>
+              <h2 class="section-title">行为校准系统 (ET-Agent)</h2>
+              <p class="section-subtitle">V7.0 新增：自动错误检测与修复</p>
+            </div>
           </div>
-          <div class="category-grid">
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon info">1</div>
-                <div>
-                  <div class="result-card-title">精确匹配 (Exact)</div>
-                  <div class="result-card-subtitle">intentCode 完全匹配</div>
+          <div class="calibration-grid">
+            <div class="calibration-card">
+              <div class="calibration-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                工具调用去重
+              </div>
+              <div class="calibration-desc">
+                检测并合并重复的工具调用，避免资源浪费。基于语义相似度和参数比对判断重复。
+              </div>
+              <div class="calibration-metrics">
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">~30%</div>
+                  <div class="calibration-metric-label">调用量减少</div>
+                </div>
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">5min</div>
+                  <div class="calibration-metric-label">缓存窗口</div>
                 </div>
               </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">用户输入与预设的 intentCode 完全一致时直接命中，通常用于系统内部调用或快捷指令。</p>
             </div>
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon info">2</div>
-                <div>
-                  <div class="result-card-title">短语匹配 (Phrase)</div>
-                  <div class="result-card-subtitle">关键短语触发</div>
+            <div class="calibration-card">
+              <div class="calibration-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                自我纠正机制
+              </div>
+              <div class="calibration-desc">
+                基于反射记忆的错误自动修复。记录历史失败模式，自动生成修复建议并重试。
+              </div>
+              <div class="calibration-metrics">
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">3</div>
+                  <div class="calibration-metric-label">最大重试</div>
+                </div>
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">~85%</div>
+                  <div class="calibration-metric-label">自动修复率</div>
                 </div>
               </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">基于 keywords 关键词列表匹配，如"查库存"、"质检结果"等触发词，支持负向关键词惩罚。</p>
             </div>
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon info">3</div>
-                <div>
-                  <div class="result-card-title">语义匹配 (Semantic)</div>
-                  <div class="result-card-subtitle">向量相似度计算</div>
+            <div class="calibration-card">
+              <div class="calibration-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                外部验证器
+              </div>
+              <div class="calibration-desc">
+                独立的结果验证服务。支持规则验证、语义验证、数据完整性检查。
+              </div>
+              <div class="calibration-metrics">
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">Rule + Semantic</div>
+                  <div class="calibration-metric-label">双重验证</div>
                 </div>
               </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">使用 Embedding 将用户输入和意图描述转为向量，计算余弦相似度，阈值 0.75 以上命中。</p>
             </div>
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon info">4</div>
-                <div>
-                  <div class="result-card-title">关键词匹配 (Keyword)</div>
-                  <div class="result-card-subtitle">模糊关键词提取</div>
+            <div class="calibration-card">
+              <div class="calibration-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>
+                纠正 Agent
+              </div>
+              <div class="calibration-desc">
+                专门的纠正 Agent，分析失败原因并生成修复方案。支持提示词注入优化。
+              </div>
+              <div class="calibration-metrics">
+                <div class="calibration-metric">
+                  <div class="calibration-metric-value">LLM-Powered</div>
+                  <div class="calibration-metric-label">智能分析</div>
                 </div>
               </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">分词后提取关键词，与意图的 keywords 列表进行模糊匹配，计算覆盖率得分。</p>
             </div>
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon info">5</div>
-                <div>
-                  <div class="result-card-title">上下文推理 (Context)</div>
-                  <div class="result-card-subtitle">对话历史分析</div>
-                </div>
-              </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">结合对话历史和实体槽位，推理用户可能的意图，如"供应商是谁"在批次查询后推理为供应商查询。</p>
+          </div>
+        </section>
+
+        <!-- Arena RL Tournament -->
+        <section class="section">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Arena RL 锦标赛</h2>
+              <p class="section-subtitle">V7.0 新增：基于 LLM Judge 的歧义裁决系统</p>
             </div>
-            <div class="result-card">
-              <div class="result-card-header">
-                <div class="result-icon warning">6</div>
+          </div>
+
+          <!-- Arena RL Flow -->
+          <div style="background: linear-gradient(135deg, #1A1A1A, #2D2D2D); border-radius: 16px; padding: 32px; margin-bottom: 24px;">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; flex-wrap: wrap;">
+              <!-- Trigger Condition -->
+              <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; min-width: 160px;">
+                <div style="font-size: 24px; margin-bottom: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                <div style="color: #FFF; font-size: 14px; font-weight: 600;">歧义触发</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 4px;">top1-top2 &lt; 阈值</div>
+              </div>
+
+              <div style="color: var(--accent); font-size: 24px;">→</div>
+
+              <!-- Seed Ranking -->
+              <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; text-align: center; min-width: 160px;">
+                <div style="font-size: 24px; margin-bottom: 8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg></div>
+                <div style="color: #FFF; font-size: 14px; font-weight: 600;">种子排名</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 4px;">按置信度排序</div>
+              </div>
+
+              <div style="color: var(--accent); font-size: 24px;">→</div>
+
+              <!-- Pairwise Comparison -->
+              <div style="background: rgba(196, 92, 38, 0.3); border: 2px solid var(--accent); border-radius: 12px; padding: 20px; text-align: center; min-width: 160px;">
+                <div style="font-size: 24px; margin-bottom: 8px;"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg></div>
+                <div style="color: #FFF; font-size: 14px; font-weight: 600;">两两比较</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 4px;">LLM Judge 评估</div>
+              </div>
+
+              <div style="color: var(--accent); font-size: 24px;">→</div>
+
+              <!-- Winner -->
+              <div style="background: rgba(45, 106, 79, 0.3); border: 2px solid var(--success); border-radius: 12px; padding: 20px; text-align: center; min-width: 160px;">
+                <div style="font-size: 24px; margin-bottom: 8px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></div>
+                <div style="color: #FFF; font-size: 14px; font-weight: 600;">胜出结果</div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 12px; margin-top: 4px;">最佳匹配确定</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tournament Types -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px;">
+            <div style="background: var(--bg-surface); border: 2px solid var(--info); border-radius: 16px; padding: 24px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div style="width: 48px; height: 48px; background: var(--info-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/><path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/><path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4"/></svg></div>
                 <div>
-                  <div class="result-card-title">LLM 兜底 (Fallback)</div>
-                  <div class="result-card-subtitle">大模型理解</div>
+                  <div style="font-size: 16px; font-weight: 600;">意图消歧</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">INTENT_DISAMBIGUATION</div>
                 </div>
               </div>
-              <p style="font-size:14px;color:var(--text-secondary);margin:0;">前5层均未命中时，调用 LLM 进行意图理解，使用 Few-shot 示例提升准确率。</p>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                当多个意图候选置信度接近时触发，通过 LLM 两两比较选出最佳匹配意图
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--info);">0.15</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">歧义阈值</div>
+                </div>
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--info);">4</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">最大候选</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-surface); border: 2px solid var(--accent); border-radius: 16px; padding: 24px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div style="width: 48px; height: 48px; background: var(--accent-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 600;">工具选择</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">TOOL_SELECTION</div>
+                </div>
+              </div>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                当多个工具候选相似度接近时触发，评估工具与查询的匹配程度
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--accent);">0.10</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">歧义阈值</div>
+                </div>
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--accent);">4</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">最大候选</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="background: var(--bg-surface); border: 2px solid var(--purple); border-radius: 16px; padding: 24px;">
+              <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+                <div style="width: 48px; height: 48px; background: var(--purple-light); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 24px;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 600;">分析比较</div>
+                  <div style="font-size: 12px; color: var(--text-tertiary);">AGENT_ANALYSIS</div>
+                </div>
+              </div>
+              <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 16px;">
+                比较多个 Agent 生成的分析结果，选出最优解答
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--purple);">LLM</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">Judge 模型</div>
+                </div>
+                <div style="flex: 1; background: var(--bg-warm); padding: 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 18px; font-weight: 700; color: var(--purple);">3</div>
+                  <div style="font-size: 11px; color: var(--text-tertiary);">最大候选</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tournament Modes -->
+          <div style="background: var(--bg-warm); border-radius: 16px; padding: 24px;">
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">锦标赛模式</div>
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+              <div style="background: var(--bg-surface); padding: 16px; border-radius: 12px; border-left: 4px solid var(--success);">
+                <div style="font-size: 14px; font-weight: 600; color: var(--success);">SEEDED_SINGLE_ELIMINATION</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">种子单淘汰制，按初始分数排种子</div>
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-family: var(--font-mono);">O(N-1) 比较</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 16px; border-radius: 12px; border-left: 4px solid var(--info);">
+                <div style="font-size: 14px; font-weight: 600; color: var(--info);">SIMPLE_SINGLE_ELIMINATION</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">简单单淘汰制，随机配对</div>
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-family: var(--font-mono);">O(N-1) 比较</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 16px; border-radius: 12px; border-left: 4px solid var(--warning);">
+                <div style="font-size: 14px; font-weight: 600; color: #9A6700;">SWISS_SYSTEM</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">瑞士轮制，多轮积分不完全淘汰</div>
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-family: var(--font-mono);">O(N log N) 比较</div>
+              </div>
+              <div style="background: var(--bg-surface); padding: 16px; border-radius: 12px; border-left: 4px solid var(--purple);">
+                <div style="font-size: 14px; font-weight: 600; color: var(--purple);">ROUND_ROBIN</div>
+                <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">全配对制，所有候选两两比较</div>
+                <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 4px; font-family: var(--font-mono);">O(N²) 比较</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Performance Metrics -->
+          <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 24px;">
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 20px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--accent);">15s</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">超时时间</div>
+            </div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 20px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--accent);">10</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">最大 LLM 调用</div>
+            </div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 20px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--success);">5min</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">结果缓存</div>
+            </div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 20px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--info);">Async</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">异步执行</div>
+            </div>
+            <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); padding: 20px; border-radius: 12px; text-align: center;">
+              <div style="font-size: 28px; font-weight: 700; color: var(--purple);">双向</div>
+              <div style="font-size: 12px; color: var(--text-tertiary); margin-top: 4px;">减少位置偏见</div>
             </div>
           </div>
         </section>
@@ -683,28 +1279,57 @@
           <div class="section-header">
             <h2 class="section-title">敏感度级别</h2>
           </div>
-          <div class="result-grid" style="grid-template-columns: repeat(4, 1fr);">
-            <div class="result-item">
-              <div class="result-item-label">LOW</div>
-              <div class="result-item-value">只读查询</div>
-              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 1，无需审批</div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+            <div style="padding: 20px; background: var(--success-light); border-radius: 12px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: var(--success);">LOW</div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">只读查询</div>
+              <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;">配额 1 · 无需审批</div>
             </div>
-            <div class="result-item">
-              <div class="result-item-label">MEDIUM</div>
-              <div class="result-item-value">有限修改</div>
-              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 2，需权限</div>
+            <div style="padding: 20px; background: var(--warning-light); border-radius: 12px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: #9A6700;">MEDIUM</div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">有限修改</div>
+              <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;">配额 2 · 需权限</div>
             </div>
-            <div class="result-item">
-              <div class="result-item-label">HIGH</div>
-              <div class="result-item-value">重要操作</div>
-              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 2-3，需高级权限</div>
+            <div style="padding: 20px; background: var(--error-light); border-radius: 12px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: var(--error);">HIGH</div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">重要操作</div>
+              <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;">配额 2-3 · 高级权限</div>
             </div>
-            <div class="result-item">
-              <div class="result-item-label">CRITICAL</div>
-              <div class="result-item-value highlight">需要审批</div>
-              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 3-5，需审批链</div>
+            <div style="padding: 20px; background: var(--purple-light); border-radius: 12px; text-align: center;">
+              <div style="font-size: 18px; font-weight: 700; color: var(--purple);">CRITICAL</div>
+              <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">需要审批</div>
+              <div style="font-size: 11px; color: var(--text-tertiary); margin-top: 8px;">配额 3-5 · 审批链</div>
             </div>
           </div>
+        </section>
+      </div>
+
+      <!-- Tab: Intents -->
+      <div id="tab-intents" class="tab-content">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">意图库 (<span id="totalIntents">150</span>个意图)</h2>
+          </div>
+          <div class="search-box">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <input type="text" class="search-input" id="intentSearch" placeholder="搜索意图名称或代码..." oninput="filterIntents()">
+          </div>
+          <div class="category-grid" id="categoryGrid"></div>
+        </section>
+      </div>
+
+      <!-- Tab: Tools -->
+      <div id="tab-tools" class="tab-content">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">工具库 (<span id="totalTools">122</span>个工具)</h2>
+          </div>
+          <div class="search-box">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <input type="text" class="search-input" id="toolSearch" placeholder="搜索工具名称..." oninput="filterTools()">
+          </div>
+          <div class="filter-tags" id="toolFilters"></div>
+          <div class="tools-grid" id="toolsGrid"></div>
         </section>
       </div>
 
@@ -733,7 +1358,7 @@
               <div class="process-step-num">1</div>
               <div class="process-step-content">
                 <div class="process-step-title">查询预处理</div>
-                <div class="process-step-desc">时间归一化、口语标准化、指代消解</div>
+                <div class="process-step-desc">时间归一化、口语标准化、指代消解、质量评估</div>
                 <div class="process-step-data" id="step1Data" style="display:none;"></div>
               </div>
             </div>
@@ -741,32 +1366,40 @@
               <div class="process-step-num">2</div>
               <div class="process-step-content">
                 <div class="process-step-title">意图识别</div>
-                <div class="process-step-desc">六层匹配，返回最高置信度意图</div>
+                <div class="process-step-desc">多层匹配（正则→关键词→向量→LLM）</div>
                 <div class="process-step-data" id="step2Data" style="display:none;"></div>
               </div>
             </div>
             <div class="process-step" data-step="3">
               <div class="process-step-num">3</div>
               <div class="process-step-content">
-                <div class="process-step-title">执行路由</div>
-                <div class="process-step-desc">根据意图绑定的工具执行查询</div>
+                <div class="process-step-title">Arena RL 裁决</div>
+                <div class="process-step-desc">置信度接近时触发锦标赛歧义裁决</div>
                 <div class="process-step-data" id="step3Data" style="display:none;"></div>
               </div>
             </div>
             <div class="process-step" data-step="4">
               <div class="process-step-num">4</div>
               <div class="process-step-content">
-                <div class="process-step-title">结果验证</div>
-                <div class="process-step-desc">规则验证 + 语义验证</div>
+                <div class="process-step-title">工具执行</div>
+                <div class="process-step-desc">参数提取、冗余检查、自动重试</div>
                 <div class="process-step-data" id="step4Data" style="display:none;"></div>
               </div>
             </div>
             <div class="process-step" data-step="5">
               <div class="process-step-num">5</div>
               <div class="process-step-content">
+                <div class="process-step-title">结果验证</div>
+                <div class="process-step-desc">规则验证 + 纠错 Agent</div>
+                <div class="process-step-data" id="step5Data" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="process-step" data-step="6">
+              <div class="process-step-num">6</div>
+              <div class="process-step-content">
                 <div class="process-step-title">记忆更新</div>
                 <div class="process-step-desc">更新实体槽位和对话上下文</div>
-                <div class="process-step-data" id="step5Data" style="display:none;"></div>
+                <div class="process-step-data" id="step6Data" style="display:none;"></div>
               </div>
             </div>
           </div>
@@ -777,44 +1410,15 @@
           </div>
         </section>
       </div>
-
-      <!-- Tab: Intents -->
-      <div id="tab-intents" class="tab-content">
-        <section class="section">
-          <div class="section-header">
-            <h2 class="section-title">意图库 (137个意图)</h2>
-          </div>
-
-          <div class="search-box">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-            <input type="text" class="search-input" id="intentSearch" placeholder="搜索意图名称或代码..." oninput="filterIntents()">
-          </div>
-
-          <div class="filter-tags" id="categoryFilters"></div>
-
-          <div class="category-grid" id="intentCategories"></div>
-        </section>
-      </div>
-
-      <!-- Tab: Tools -->
-      <div id="tab-tools" class="tab-content">
-        <section class="section">
-          <div class="section-header">
-            <h2 class="section-title">工具库 (122个工具)</h2>
-          </div>
-
-          <div class="search-box">
-            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-            <input type="text" class="search-input" id="toolSearch" placeholder="搜索工具名称..." oninput="filterTools()">
-          </div>
-
-          <div class="filter-tags" id="toolFilters"></div>
-
-          <div class="tools-grid" id="toolsGrid"></div>
-        </section>
-      </div>
     </div>
   </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <p class="footer-text">白垩纪食品溯源系统 &copy; 2026 · AI 意图识别系统 V7.0</p>
+    </div>
+  </footer>
 
   <script>
     // ============================================
@@ -1298,6 +1902,7 @@
           preprocessed: "查询待入库原料状态",
           changes: ["口语标准化: 货到了没 → 查询入库状态"],
           intent: { code: "MATERIAL_BATCH_QUERY", name: "原料批次查询", confidence: 0.85, layer: 2 },
+          arenaRL: { triggered: true, candidates: 3, winner: "MATERIAL_BATCH_QUERY", reason: "语义匹配最优" },
           tool: "material_batch_query",
           validation: { status: "VALID", checks: ["非空检查 ✓"] },
           memory: { slot: null, value: null },
@@ -1526,17 +2131,23 @@
         await animateStep(steps[1], `<span class="key">状态:</span> <span class="value" style="color:var(--warning)">未识别到匹配意图</span><br><span class="key">建议:</span> 尝试更具体的描述`);
       }
 
-      // Step 3: 执行路由
-      const toolInfo = data.intentCode ? `工具绑定 → ${data.intentCode.toLowerCase().replace(/_/g, '_')}` : '无工具绑定';
-      await animateStep(steps[2], `<span class="key">敏感度:</span> ${data.sensitivityLevel || 'LOW'}<br><span class="key">路由:</span> <span class="value">${toolInfo}</span>`);
+      // Step 3: Arena RL 裁决
+      const arenaTriggered = data.arenaTriggered || false;
+      const arenaStatus = arenaTriggered ? '已触发' : '未触发（置信度足够）';
+      const arenaColor = arenaTriggered ? 'var(--accent)' : 'var(--text-secondary)';
+      await animateStep(steps[2], `<span class="key">锦标赛:</span> <span class="value" style="color:${arenaColor}">${arenaStatus}</span><br><span class="key">候选意图:</span> ${data.candidateIntents || 1} 个`);
 
-      // Step 4: 结果验证
+      // Step 4: 工具执行
+      const toolInfo = data.intentCode ? `工具绑定 → ${data.intentCode.toLowerCase().replace(/_/g, '_')}` : '无工具绑定';
+      await animateStep(steps[3], `<span class="key">敏感度:</span> ${data.sensitivityLevel || 'LOW'}<br><span class="key">执行:</span> <span class="value">${toolInfo}</span>`);
+
+      // Step 5: 结果验证
       const statusIcon = data.status === 'COMPLETED' ? '✓' : data.status === 'NO_PERMISSION' ? '🔒' : '⚠️';
       const statusColor = data.status === 'COMPLETED' ? 'var(--success)' : data.status === 'NO_PERMISSION' ? 'var(--warning)' : 'var(--error)';
-      await animateStep(steps[3], `<span class="key">执行状态:</span> <span class="value" style="color:${statusColor}">${statusIcon} ${data.status || 'UNKNOWN'}</span><br><span class="key">消息:</span> ${data.message || '-'}`);
+      await animateStep(steps[4], `<span class="key">执行状态:</span> <span class="value" style="color:${statusColor}">${statusIcon} ${data.status || 'UNKNOWN'}</span><br><span class="key">消息:</span> ${data.message || '-'}`);
 
-      // Step 5: 记忆更新
-      await animateStep(steps[4], `<span class="key">会话ID:</span> ${data.sessionId || '无'}<br><span class="key">轮次:</span> ${data.conversationRound || 1}`);
+      // Step 6: 记忆更新
+      await animateStep(steps[5], `<span class="key">会话ID:</span> ${data.sessionId || '无'}<br><span class="key">轮次:</span> ${data.conversationRound || 1}`);
 
       // 显示结果
       showAPIResult(data);
@@ -1546,11 +2157,21 @@
     async function runStaticDemo(steps) {
       const caseData = demoCases[selectedCaseIndex];
 
+      // Step 1: 查询预处理
       await animateStep(steps[0], `<span class="key">输入:</span> "${caseData.input}"<br><span class="key">输出:</span> <span class="value">"${caseData.result.preprocessed}"</span><br><span class="key">变更:</span> ${caseData.result.changes.length > 0 ? caseData.result.changes.join(', ') : '无'}`);
+      // Step 2: 意图识别
       await animateStep(steps[1], `<span class="key">命中层:</span> 第${caseData.result.intent.layer}层<br><span class="key">意图:</span> <span class="value">${caseData.result.intent.name}</span> (${caseData.result.intent.code})<br><span class="key">置信度:</span> ${(caseData.result.intent.confidence * 100).toFixed(0)}%`);
-      await animateStep(steps[2], `<span class="key">路径:</span> 硬绑定<br><span class="key">工具:</span> <span class="value">${caseData.result.tool}</span>`);
-      await animateStep(steps[3], `<span class="key">状态:</span> <span class="value">${caseData.result.validation.status}</span><br><span class="key">检查:</span> ${caseData.result.validation.checks.join(', ')}`);
-      await animateStep(steps[4], `<span class="key">槽位:</span> ${caseData.result.memory.slot || '无更新'}<br><span class="key">值:</span> <span class="value">${caseData.result.memory.value || '-'}</span>`);
+      // Step 3: Arena RL 裁决
+      const arenaData = caseData.result.arenaRL || { triggered: false, candidates: 1 };
+      const arenaStatus = arenaData.triggered ? '已触发' : '未触发（置信度足够）';
+      const arenaColor = arenaData.triggered ? 'var(--accent)' : 'var(--text-secondary)';
+      await animateStep(steps[2], `<span class="key">锦标赛:</span> <span class="value" style="color:${arenaColor}">${arenaStatus}</span><br><span class="key">候选意图:</span> ${arenaData.candidates} 个`);
+      // Step 4: 工具执行
+      await animateStep(steps[3], `<span class="key">路径:</span> 硬绑定<br><span class="key">工具:</span> <span class="value">${caseData.result.tool}</span>`);
+      // Step 5: 结果验证
+      await animateStep(steps[4], `<span class="key">状态:</span> <span class="value">${caseData.result.validation.status}</span><br><span class="key">检查:</span> ${caseData.result.validation.checks.join(', ')}`);
+      // Step 6: 记忆更新
+      await animateStep(steps[5], `<span class="key">槽位:</span> ${caseData.result.memory.slot || '无更新'}<br><span class="key">值:</span> <span class="value">${caseData.result.memory.value || '-'}</span>`);
 
       showResultCard(caseData.result.data);
     }
@@ -1782,20 +2403,33 @@
             <div class="result-item"><div class="result-item-label">配额消耗</div><div class="result-item-value">${data.quotaCost || 0}</div></div>
             <div class="result-item"><div class="result-item-label">需要审批</div><div class="result-item-value">${data.requiresApproval ? '是' : '否'}</div></div>
           </div>`;
-      } else if (data.status === 'COMPLETED' && data.resultData) {
-        // 成功执行 - 显示格式化的结果数据
+      } else if ((data.status === 'COMPLETED' || data.status === 'SUCCESS') && (data.resultData || data.formattedText)) {
+        // 成功执行 - 优先显示自然语言摘要，其次显示格式化数据
+        const hasFormattedText = data.formattedText && data.formattedText.trim().length > 0;
         html = `
           <div class="result-card-header">
             <div class="result-icon success">✓</div>
             <div>
               <div class="result-card-title">${data.intentName || '查询结果'}</div>
-              <div class="result-card-subtitle">执行成功 · ${data.intentCategory || '未分类'}</div>
+              <div class="result-card-subtitle">状态: SUCCESS</div>
             </div>
             <span class="badge success">成功</span>
           </div>
-          <div style="margin-top:16px;">
-            ${formatResultData(data.resultData, data.intentCode)}
-          </div>`;
+          ${hasFormattedText ? `
+            <div style="padding:16px;background:var(--bg-warm);border-radius:8px;margin-top:16px;border-left:4px solid var(--success);">
+              <div style="font-size:15px;line-height:1.8;white-space:pre-line;color:var(--text-primary);">${data.formattedText}</div>
+            </div>
+          ` : ''}
+          ${data.resultData ? `
+            <details style="margin-top:16px;">
+              <summary style="cursor:pointer;font-size:13px;color:var(--text-secondary);padding:8px 0;">
+                ${hasFormattedText ? '查看原始数据' : '执行成功'}
+              </summary>
+              <div style="margin-top:8px;">
+                ${formatResultData(data.resultData, data.intentCode)}
+              </div>
+            </details>
+          ` : ''}`;
       } else if (data.status === 'NOT_RECOGNIZED') {
         // 未识别意图
         html = `

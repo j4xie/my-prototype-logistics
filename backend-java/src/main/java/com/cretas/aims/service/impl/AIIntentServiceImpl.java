@@ -274,7 +274,9 @@ public class AIIntentServiceImpl implements AIIntentService {
                 }
 
                 // Step 2: 动词+名词消歧（在 IntentKnowledgeBase 中进行）
-                verbNounResult = knowledgeBase.disambiguateByVerbNoun(processedInput);
+                // v4.5修复: 使用原始输入检测时间上下文，避免预处理后丢失时间词
+                // 例如 "上周入库的原料" 预处理后变成 "入库原料"，导致时间上下文丢失
+                verbNounResult = knowledgeBase.disambiguateByVerbNoun(processedInput, userInput);
                 if (verbNounResult != null && verbNounResult.isDisambiguated()) {
                     log.info("VerbNoun disambiguation: '{}' -> intent={} (verb={}, noun={}, conf={})",
                             processedInput, verbNounResult.getRecommendedIntent(),
@@ -308,6 +310,33 @@ public class AIIntentServiceImpl implements AIIntentService {
             result.setPreprocessedQuery(preprocessedQuery);
         }
 
+        // v7.5: 否定语义意图转换
+        // 当检测到否定语义时，将动作类意图转换为对应的查询类意图
+        if (result != null && result.getBestMatch() != null && enhancedResult != null) {
+            QueryPreprocessorService.NegationInfo negationInfo = enhancedResult.getNegationInfo();
+            if (negationInfo != null && negationInfo.hasNegation()) {
+                String originalIntentCode = result.getBestMatch().getIntentCode();
+                String convertedIntentCode = convertNegationIntent(originalIntentCode, true);
+
+                if (!convertedIntentCode.equals(originalIntentCode)) {
+                    // 查找转换后的意图配置
+                    AIIntentConfig convertedConfig = getIntentConfigByCode(factoryId, convertedIntentCode);
+                    if (convertedConfig != null) {
+                        log.info("v7.5否定语义转换成功: {} -> {}, 否定词='{}', 排除内容='{}'",
+                                originalIntentCode, convertedIntentCode,
+                                negationInfo.getNegationWord(), negationInfo.getExcludedContent());
+
+                        // 重建结果，使用转换后的意图
+                        result = result.toBuilder()
+                                .bestMatch(convertedConfig)
+                                .build();
+                    } else {
+                        log.warn("v7.5否定语义转换失败: 找不到意图配置 {}", convertedIntentCode);
+                    }
+                }
+            }
+        }
+
         return result;
     }
 
@@ -330,6 +359,42 @@ public class AIIntentServiceImpl implements AIIntentService {
                                                               QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
                                                               IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult) {
         String userInput = processedInput; // 使用处理后的输入进行匹配
+
+        // ========== v4.5修复: Layer 0 - 原始输入短语匹配优先检查 ==========
+        // 当原始输入包含时间上下文时（如"上周入库的原料"），短语匹配应使用原始输入
+        // 因为预处理可能已将其简化为"入库原料"，丢失时间上下文
+        Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput);
+        if (originalPhraseMatch.isPresent() && !originalPhraseMatch.get().equals(knowledgeBase.matchPhrase(processedInput).orElse(null))) {
+            // 原始输入和处理后输入的短语匹配结果不同，使用原始输入的结果
+            String matchedIntent = originalPhraseMatch.get();
+            List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+            Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                    .filter(i -> i.getIntentCode().equals(matchedIntent))
+                    .findFirst();
+
+            if (intentOpt.isPresent()) {
+                AIIntentConfig intent = intentOpt.get();
+                ActionType detectedActionType = knowledgeBase.detectActionType(originalInput.toLowerCase().trim());
+                log.info("v4.5原始输入短语匹配: original='{}', processed='{}', intent={}",
+                        originalInput, processedInput, matchedIntent);
+
+                IntentMatchResult result = IntentMatchResult.builder()
+                        .bestMatch(intent)
+                        .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                intent, 0.95, 95, Collections.emptyList(), MatchMethod.SEMANTIC)))
+                        .confidence(0.95)
+                        .matchMethod(MatchMethod.SEMANTIC)
+                        .matchedKeywords(Collections.emptyList())
+                        .isStrongSignal(true)
+                        .requiresConfirmation(false)
+                        .userInput(originalInput)
+                        .actionType(detectedActionType)
+                        .build();
+
+                saveIntentMatchRecord(result, factoryId, null, null, false);
+                return result;
+            }
+        }
 
         // ========== Layer 0.5: 动词+名词消歧快速路径 ==========
         // 如果动词+名词消歧成功且置信度足够高，直接返回该意图
@@ -778,14 +843,15 @@ public class AIIntentServiceImpl implements AIIntentService {
         });
 
         // ========== 阶段四：意图消歧 ==========
-        // 如果前两个候选意图分数接近（差距<10%），应用消歧逻辑
+        // 如果前两个候选意图分数接近（差距<25%），应用消歧逻辑
+        // v7.2优化: 从0.10扩大到0.25，触发更多等价检查，减少"假失败"
         IntentKnowledgeBase.Domain inputDomain = knowledgeBase.detectDomain(userInput);
         if (scoredIntents.size() >= 2) {
             IntentScoreEntry first = scoredIntents.get(0);
             IntentScoreEntry second = scoredIntents.get(1);
             double scoreDiff = (double)(first.matchScore - second.matchScore) / first.matchScore;
 
-            if (scoreDiff < 0.10) {
+            if (scoreDiff < 0.25) {
                 log.debug("检测到分数接近的意图，尝试消歧: first={} ({}), second={} ({}), diff={:.2f}%",
                         first.config.getIntentCode(), first.matchScore,
                         second.config.getIntentCode(), second.matchScore, scoreDiff * 100);
@@ -1604,6 +1670,74 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return 0.0;
+    }
+
+    /**
+     * 计算时态与意图的一致性分数 v7.4
+     *
+     * 规则：
+     * - 过去时态 (刚才/之前/已经) + 查询类意图 → +10分
+     * - 过去时态 + 动作类意图 (CREATE/START/EXECUTE) → -15分
+     * - 将来时态 (即将/将要/马上) + 查询类意图 → +10分
+     * - 将来时态 + 动作类意图 → -10分
+     * - 进行时态 (正在/ing) + 状态类意图 → +10分
+     *
+     * @param input 用户输入
+     * @param intentCode 意图代码
+     * @param semanticAction 语义动作 (如 READ, QUERY, CREATE 等)
+     * @return 调整分数 (正数表示加分，负数表示减分)
+     */
+    private int calculateTenseConsistency(String input, String intentCode, String semanticAction) {
+        // 检测时态
+        boolean isPast = input.matches(".*(刚才|之前|已经|曾经|上次|昨天|前天|历史).*");
+        boolean isFuture = input.matches(".*(即将|将要|马上|明天|下周|未来|将).*");
+        boolean isOngoing = input.matches(".*(正在|在进行|进行中|运行中).*");
+
+        // 判断意图类型
+        boolean isActionIntent = intentCode.contains("CREATE") || intentCode.contains("START")
+            || intentCode.contains("EXECUTE") || intentCode.contains("UPDATE")
+            || intentCode.contains("RECORD") || intentCode.contains("CONSUME");
+        boolean isQueryIntent = "READ".equalsIgnoreCase(semanticAction)
+            || "QUERY".equalsIgnoreCase(semanticAction)
+            || intentCode.contains("QUERY") || intentCode.contains("LIST")
+            || intentCode.contains("DETAIL") || intentCode.contains("STATS");
+        boolean isStatusIntent = intentCode.contains("STATUS") || intentCode.contains("LIST");
+
+        int score = 0;
+
+        // 过去时态规则
+        if (isPast) {
+            if (isQueryIntent) {
+                score += 10;  // 过去时态查询，加分
+                log.debug("v7.4时态一致性: {} 过去时态 + 查询意图 (+10)", intentCode);
+            }
+            if (isActionIntent) {
+                score -= 15;  // 过去时态不应执行动作，扣分
+                log.debug("v7.4时态一致性: {} 过去时态 + 动作意图 (-15)", intentCode);
+            }
+        }
+
+        // 将来时态规则
+        if (isFuture) {
+            if (isQueryIntent) {
+                score += 10;  // 将来时态查询（如查即将到期），加分
+                log.debug("v7.4时态一致性: {} 将来时态 + 查询意图 (+10)", intentCode);
+            }
+            if (isActionIntent) {
+                score -= 10;  // 将来时态通常不是立即执行
+                log.debug("v7.4时态一致性: {} 将来时态 + 动作意图 (-10)", intentCode);
+            }
+        }
+
+        // 进行时态规则
+        if (isOngoing) {
+            if (isStatusIntent || isQueryIntent) {
+                score += 10;  // 进行时态查状态，加分
+                log.debug("v7.4时态一致性: {} 进行时态 + 状态/查询意图 (+10)", intentCode);
+            }
+        }
+
+        return score;
     }
 
     /**
@@ -2705,13 +2839,15 @@ public class AIIntentServiceImpl implements AIIntentService {
             double domainBonus = 0.0;
             if (inputDomain != IntentKnowledgeBase.Domain.GENERAL && intentDomain == inputDomain) {
                 int domainKeywordCount = knowledgeBase.countDomainKeywords(normalizedInput, inputDomain);
-                // 命中1个词+0.10, 2个词+0.15, 3+个词+0.20
-                domainBonus = Math.min(0.20, 0.05 + domainKeywordCount * 0.05);
+                // v7.2优化：命中1个词+0.13, 2个词+0.21, 3+个词+0.25 (上限0.25)
+                // 增强领域关键词权重，从0.05提升到0.08
+                domainBonus = Math.min(0.25, 0.05 + domainKeywordCount * 0.08);
             }
 
-            // 操作类型加分 (匹配+0.10)
+            // 操作类型加分 (匹配+0.15, 不匹配-0.10)
+            // v7.2优化: 增加ActionType一致性验证权重，从(+10,-3)调整为(+15,-10)
             double opTypeBonus = knowledgeBase.calculateOperationTypeAdjustment(
-                    intentCode, opType, 10, -3) / 100.0;
+                    intentCode, opType, 15, 10) / 100.0;
 
             // === 负向关键词扣分 ===
             double negativeKeywordPenalty = 0.0;
@@ -3040,15 +3176,25 @@ public class AIIntentServiceImpl implements AIIntentService {
                 adjustment += 0.05;
             }
 
-            // 5. 操作类型匹配加分
+            // 5. 操作类型匹配加分 (v7.2优化: 增加权重)
             double opTypeBonus = knowledgeBase.calculateOperationTypeAdjustment(
-                    candidate.intentCode, opType, 10, -3) / 100.0;
+                    candidate.intentCode, opType, 15, 10) / 100.0;
             adjustment += opTypeBonus;
 
             // 6. v7.1: 时态语义检测 - 区分查询状态 vs 执行动作
             // "正在xxx" / "今天的xxx" / "最近的xxx" 通常是查询状态，不是执行动作
             double temporalAdjustment = calculateTemporalSemanticAdjustment(normalizedInput, candidate.intentCode);
             adjustment += temporalAdjustment;
+
+            // 7. v7.4: 时态一致性评分 - 过去/将来/进行时态与意图类型匹配
+            // "刚才启动的批次" → 查询意图, "即将到期的原料" → 查询意图
+            String semanticAction = candidate.config != null ? candidate.config.getSemanticAction() : null;
+            int tenseScore = calculateTenseConsistency(userInput, candidate.intentCode, semanticAction);
+            if (tenseScore != 0) {
+                double tenseAdjustment = tenseScore / 100.0;  // 转换为分数比例
+                adjustment += tenseAdjustment;
+                log.debug("v7.4时态一致性调整: {} -> {} ({})", candidate.intentCode, tenseScore, tenseAdjustment);
+            }
 
             // 计算最终调整后分数
             candidate.adjustedScore = Math.max(0.0, Math.min(1.0,
@@ -3265,6 +3411,70 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
         // 再查全局的
         return intentRepository.findByFactoryIdAndIntentCode(null, intentCode).orElse(null);
+    }
+
+    /**
+     * 否定语义意图转换 v7.5
+     * 当检测到否定语义时，将动作类意图转换为对应的查询类意图
+     *
+     * 转换规则：
+     * - XXX_COMPLETE → XXX_LIST (如 PROCESSING_BATCH_COMPLETE → PROCESSING_BATCH_LIST)
+     * - XXX_ACKNOWLEDGE → XXX_LIST (如 ALERT_ACKNOWLEDGE → ALERT_LIST)
+     * - XXX_STOP/START/UPDATE → XXX_STATUS/LIST
+     * - XXX_CREATE → XXX_QUERY
+     *
+     * @param intentCode 原始意图代码
+     * @param hasNegation 是否检测到否定语义
+     * @return 转换后的意图代码（如果需要转换），否则返回原始代码
+     */
+    private String convertNegationIntent(String intentCode, boolean hasNegation) {
+        if (!hasNegation || intentCode == null) {
+            return intentCode;
+        }
+
+        // 定义转换映射
+        Map<String, String> negationConversions = Map.ofEntries(
+                // 批次相关
+                Map.entry("PROCESSING_BATCH_COMPLETE", "PROCESSING_BATCH_LIST"),
+                Map.entry("PROCESSING_BATCH_START", "PROCESSING_BATCH_LIST"),
+                Map.entry("PROCESSING_BATCH_PAUSE", "PROCESSING_BATCH_LIST"),
+                Map.entry("PROCESSING_BATCH_CREATE", "PROCESSING_BATCH_LIST"),
+                // 告警相关
+                Map.entry("ALERT_ACKNOWLEDGE", "ALERT_LIST"),
+                Map.entry("ALERT_CREATE", "ALERT_LIST"),
+                // 设备相关
+                Map.entry("EQUIPMENT_STOP", "EQUIPMENT_STATUS"),
+                Map.entry("EQUIPMENT_START", "EQUIPMENT_STATUS"),
+                Map.entry("EQUIPMENT_CONTROL", "EQUIPMENT_STATUS"),
+                Map.entry("EQUIPMENT_STATUS_UPDATE", "EQUIPMENT_STATUS"),
+                // 发货相关
+                Map.entry("SHIPMENT_STATUS_UPDATE", "SHIPMENT_QUERY"),
+                Map.entry("SHIPMENT_CREATE", "SHIPMENT_QUERY"),
+                Map.entry("SHIPMENT_UPDATE", "SHIPMENT_QUERY"),
+                // 原料相关
+                Map.entry("MATERIAL_BATCH_CREATE", "MATERIAL_BATCH_QUERY"),
+                Map.entry("MATERIAL_BATCH_CONSUME", "MATERIAL_BATCH_QUERY"),
+                Map.entry("MATERIAL_EXPIRED_QUERY", "MATERIAL_BATCH_QUERY"),
+                // 质检相关
+                Map.entry("QUALITY_CHECK_EXECUTE", "QUALITY_CHECK_QUERY"),
+                Map.entry("QUALITY_DISPOSITION_EXECUTE", "QUALITY_CHECK_QUERY"),
+                // 考勤相关
+                Map.entry("CLOCK_IN", "ATTENDANCE_QUERY"),
+                Map.entry("CLOCK_OUT", "ATTENDANCE_QUERY"),
+                Map.entry("ATTENDANCE_RECORD", "ATTENDANCE_QUERY"),
+                // 供应商相关
+                Map.entry("SUPPLIER_EVALUATE", "SUPPLIER_QUERY"),
+                // 地磅相关
+                Map.entry("SCALE_ADD_DEVICE", "MATERIAL_BATCH_QUERY")
+        );
+
+        String converted = negationConversions.get(intentCode);
+        if (converted != null) {
+            log.info("v7.5否定语义转换: {} -> {}", intentCode, converted);
+            return converted;
+        }
+
+        return intentCode;
     }
 
     /**

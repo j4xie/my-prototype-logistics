@@ -42,6 +42,11 @@ public interface FeatureEngineeringService {
     int TOTAL_FEATURE_DIM = USER_FEATURE_DIM + ITEM_FEATURE_DIM;
 
     /**
+     * 序列特征维度 - 转移概率 + 序列模式
+     */
+    int SEQUENCE_FEATURE_DIM = 24;
+
+    /**
      * 构建用户特征向量 (64维)
      *
      * @param wxUserId 微信用户ID
@@ -127,6 +132,34 @@ public interface FeatureEngineeringService {
      * @return 16维统计特征
      */
     double[] extractProductStatisticsFeatures(GoodsSpu product);
+
+    /**
+     * 提取用户行为转移概率特征 (16维)
+     * [0-3]:   view→click, view→cart, view→purchase, view→view
+     * [4-7]:   click→cart, click→purchase, click→favorite, click→click
+     * [8-11]:  cart→purchase, cart→remove, cart→checkout, cart→cart
+     * [12-15]: 同品类复购率, 跨品类探索率, 品牌忠诚度, 价格一致性
+     *
+     * @param wxUserId 用户ID
+     * @return 16维转移概率特征
+     */
+    double[] extractTransitionProbabilityFeatures(String wxUserId);
+
+    /**
+     * 提取序列模式特征 (8维)
+     * [0]: 平均行为间隔时间
+     * [1]: Session深度 (单次访问行为数)
+     * [2]: 购买速度 (日均购买数)
+     * [3]: 探索率 (浏览品类数/总浏览)
+     * [4]: 近期活跃度变化
+     * [5]: 周期规律强度
+     * [6]: 时间规律性
+     * [7]: 漏斗完成率 (浏览→购买)
+     *
+     * @param wxUserId 用户ID
+     * @return 8维序列模式特征
+     */
+    double[] extractSequencePatternFeatures(String wxUserId);
 
     /**
      * 特征归一化

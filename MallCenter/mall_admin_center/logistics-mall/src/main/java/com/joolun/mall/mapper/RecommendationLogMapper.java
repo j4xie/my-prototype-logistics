@@ -50,4 +50,32 @@ public interface RecommendationLogMapper extends BaseMapper<RecommendationLog> {
             "WHERE create_time > DATE_SUB(NOW(), INTERVAL #{days} DAY) " +
             "GROUP BY recommendation_type")
     List<Map<String, Object>> selectEffectStats(@Param("days") int days);
+
+    /**
+     * 查询最近N天的推荐日志
+     */
+    @Select("SELECT * FROM recommendation_logs WHERE create_time > DATE_SUB(NOW(), INTERVAL #{days} DAY)")
+    List<RecommendationLog> selectRecentLogs(@Param("days") int days);
+
+    /**
+     * 查询有反馈的推荐日志
+     */
+    @Select("SELECT * FROM recommendation_logs WHERE is_clicked IS NOT NULL " +
+            "AND create_time > DATE_SUB(NOW(), INTERVAL #{days} DAY)")
+    List<RecommendationLog> selectWithFeedback(@Param("days") int days);
+
+    /**
+     * 批量更新反馈状态
+     */
+    int batchUpdateFeedback(@Param("list") List<RecommendationLog> list);
+
+    /**
+     * 统计模拟反馈数据
+     */
+    @Select("SELECT COUNT(*) as total, " +
+            "SUM(CASE WHEN is_clicked = 1 THEN 1 ELSE 0 END) as clicked, " +
+            "SUM(CASE WHEN is_purchased = 1 THEN 1 ELSE 0 END) as purchased " +
+            "FROM recommendation_logs " +
+            "WHERE create_time > DATE_SUB(NOW(), INTERVAL #{days} DAY)")
+    Map<String, Object> selectFeedbackStats(@Param("days") int days);
 }

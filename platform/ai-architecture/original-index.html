@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 意图识别系统 - 白垩纪食品溯源</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       白垩纪 Design System V4
+       ============================================ */
+    :root {
+      --bg-base: #FAFAF8;
+      --bg-surface: #FFFFFF;
+      --bg-warm: #F5F3EF;
+      --bg-muted: #EDEBE7;
+      --text-primary: #1A1A1A;
+      --text-secondary: #5C5C5C;
+      --text-tertiary: #8A8A8A;
+      --accent: #C45C26;
+      --accent-hover: #A84D1F;
+      --accent-light: #FDF8F5;
+      --accent-glow: rgba(196, 92, 38, 0.15);
+      --success: #2D6A4F;
+      --success-light: #E8F5E9;
+      --warning: #D4A574;
+      --warning-light: #FFF8E1;
+      --error: #BC4749;
+      --error-light: #FFEBEE;
+      --info: #4A90A4;
+      --info-light: #E3F2FD;
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --border-medium: rgba(0, 0, 0, 0.1);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Noto Sans SC', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--bg-base);
+    }
+
+    /* Layout */
+    .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+    /* Header */
+    .header {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-content { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 18px;
+    }
+    .logo-text { font-size: 22px; font-weight: 600; }
+    .logo-text span { color: var(--accent); }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-warm);
+      padding: 4px;
+      border-radius: 12px;
+    }
+    .tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-out);
+    }
+    .tab:hover { color: var(--text-primary); }
+    .tab.active {
+      background: var(--bg-surface);
+      color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Main */
+    main { padding: 32px 0 64px; }
+
+    /* Section */
+    .section {
+      background: var(--bg-surface);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-title {
+      font-size: 20px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, var(--bg-warm), var(--bg-surface));
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      transition: transform var(--duration-fast) var(--ease-out);
+    }
+    .stat-card:hover { transform: translateY(-4px); }
+    .stat-value { font-size: 36px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+
+    /* Architecture Diagram */
+    .architecture-diagram {
+      background: var(--bg-warm);
+      border-radius: 12px;
+      padding: 32px;
+      overflow-x: auto;
+    }
+    .arch-flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      min-width: 900px;
+    }
+    .arch-node {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-medium);
+      border-radius: 12px;
+      padding: 20px 24px;
+      text-align: center;
+      min-width: 160px;
+      transition: all var(--duration-fast) var(--ease-out);
+      cursor: pointer;
+    }
+    .arch-node:hover {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px var(--accent-glow);
+      transform: translateY(-4px);
+    }
+    .arch-node.active {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+    .arch-node-num {
+      width: 28px; height: 28px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+      margin: 0 auto 8px;
+    }
+    .arch-node-title { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+    .arch-node-desc { font-size: 12px; color: var(--text-tertiary); margin-top: 4px; }
+    .arch-arrow {
+      color: var(--text-tertiary);
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    /* Demo Area */
+    .demo-area { background: var(--bg-warm); border-radius: 12px; padding: 24px; }
+    .demo-input-row { display: flex; gap: 12px; margin-bottom: 16px; }
+    .demo-input {
+      flex: 1;
+      padding: 14px 20px;
+      font-size: 16px;
+      font-family: var(--font-sans);
+      border: 2px solid var(--border-medium);
+      border-radius: 12px;
+      outline: none;
+      transition: border-color var(--duration-fast);
+    }
+    .demo-input:focus { border-color: var(--accent); }
+    .demo-btn {
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .demo-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--accent-glow); }
+    .demo-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Case Buttons */
+    .case-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+    .case-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+    .case-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .case-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Result Cards */
+    .result-area { margin-top: 24px; display: none; }
+    .result-area.visible { display: block; animation: fadeIn 0.3s var(--ease-out); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .result-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .result-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .result-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .result-icon.success { background: var(--success-light); color: var(--success); }
+    .result-icon.info { background: var(--info-light); color: var(--info); }
+    .result-icon.warning { background: var(--warning-light); color: var(--warning); }
+    .result-card-title { font-size: 16px; font-weight: 600; }
+    .result-card-subtitle { font-size: 13px; color: var(--text-tertiary); }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .result-item { padding: 12px; background: var(--bg-warm); border-radius: 8px; }
+    .result-item-label { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; }
+    .result-item-value { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .result-item-value.highlight { color: var(--accent); }
+
+    /* Data Table Result */
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .result-table th {
+      text-align: left;
+      padding: 12px;
+      background: var(--bg-warm);
+      color: var(--text-secondary);
+      font-weight: 500;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .result-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .result-table tr:last-child td { border-bottom: none; }
+    .result-table tr:hover td { background: var(--bg-warm); }
+
+    /* Status Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 12px;
+    }
+    .badge.success { background: var(--success-light); color: var(--success); }
+    .badge.warning { background: var(--warning-light); color: #9A6700; }
+    .badge.error { background: var(--error-light); color: var(--error); }
+    .badge.info { background: var(--info-light); color: var(--info); }
+
+    /* Intent Categories */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .category-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all var(--duration-fast);
+    }
+    .category-card:hover { border-color: var(--border-medium); box-shadow: var(--shadow-md); }
+    .category-header {
+      padding: 16px;
+      background: var(--bg-warm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+    .category-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+    .category-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+    .category-count {
+      font-size: 13px;
+      color: var(--text-tertiary);
+      background: var(--bg-surface);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+    .category-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s var(--ease-out);
+    }
+    .category-card.expanded .category-content { max-height: 600px; }
+    .category-card.expanded .category-expand { transform: rotate(180deg); }
+    .intent-list { padding: 16px; }
+    .intent-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-radius: 8px;
+      transition: background var(--duration-fast);
+      cursor: pointer;
+    }
+    .intent-item:hover { background: var(--bg-warm); }
+    .intent-name { font-size: 14px; }
+    .intent-code { font-size: 11px; font-family: var(--font-mono); color: var(--text-tertiary); }
+
+    /* Tools Grid */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .tool-card {
+      padding: 16px;
+      background: var(--bg-warm);
+      border-radius: 10px;
+      border: 1px solid transparent;
+      transition: all var(--duration-fast);
+      cursor: pointer;
+    }
+    .tool-card:hover {
+      background: var(--bg-surface);
+      border-color: var(--accent);
+      box-shadow: var(--shadow-sm);
+    }
+    .tool-name {
+      font-size: 14px;
+      font-weight: 500;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .tool-desc { font-size: 13px; color: var(--text-secondary); }
+
+    /* Process Steps */
+    .process-steps { padding: 24px 0; }
+    .process-step {
+      display: flex;
+      gap: 20px;
+      padding: 20px;
+      border-left: 3px solid var(--border-subtle);
+      margin-left: 16px;
+      position: relative;
+      transition: all var(--duration-fast);
+    }
+    .process-step.active {
+      border-left-color: var(--accent);
+      background: var(--accent-light);
+      border-radius: 0 12px 12px 0;
+    }
+    .process-step.completed { border-left-color: var(--success); }
+    .process-step-num {
+      position: absolute;
+      left: -18px;
+      width: 32px; height: 32px;
+      background: var(--bg-surface);
+      border: 3px solid var(--border-subtle);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 600;
+      color: var(--text-tertiary);
+    }
+    .process-step.active .process-step-num { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+    .process-step.completed .process-step-num { border-color: var(--success); color: white; background: var(--success); }
+    .process-step-content { flex: 1; }
+    .process-step-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .process-step-desc { font-size: 14px; color: var(--text-secondary); }
+    .process-step-data {
+      margin-top: 12px;
+      padding: 12px;
+      background: var(--bg-surface);
+      border-radius: 8px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+    .process-step-data .key { color: var(--accent); }
+    .process-step-data .value { color: var(--success); }
+
+    /* Tab Content */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Search */
+    .search-box {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 12px 16px 12px 44px;
+      font-size: 15px;
+      border: 2px solid var(--border-subtle);
+      border-radius: 10px;
+      outline: none;
+      transition: border-color var(--duration-fast);
+    }
+    .search-input:focus { border-color: var(--accent); }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-tertiary);
+    }
+
+    /* Filter Tags */
+    .filter-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .filter-tag {
+      padding: 6px 14px;
+      font-size: 13px;
+      background: var(--bg-warm);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all var(--duration-fast);
+    }
+    .filter-tag:hover { border-color: var(--accent); }
+    .filter-tag.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .arch-flow { flex-direction: column; min-width: auto; }
+      .arch-arrow { transform: rotate(90deg); }
+      .demo-input-row { flex-direction: column; }
+      .tabs { flex-wrap: wrap; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="container header-content">
+      <div class="logo">
+        <div class="logo-icon">AI</div>
+        <div class="logo-text">白垩纪 <span>意图识别系统</span></div>
+      </div>
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">系统概览</button>
+        <button class="tab" onclick="switchTab('demo')">交互演示</button>
+        <button class="tab" onclick="switchTab('intents')">意图库</button>
+        <button class="tab" onclick="switchTab('tools')">工具库</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <!-- Tab: Overview -->
+      <div id="tab-overview" class="tab-content active">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value">137</div>
+            <div class="stat-label">AI 意图配置</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">122</div>
+            <div class="stat-label">注册工具</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">19</div>
+            <div class="stat-label">意图分类</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">6</div>
+            <div class="stat-label">识别层级</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">&lt;100ms</div>
+            <div class="stat-label">向量匹配延迟</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">4</div>
+            <div class="stat-label">敏感度级别</div>
+          </div>
+        </div>
+
+        <!-- Architecture -->
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">系统架构</h2>
+          </div>
+          <div class="architecture-diagram">
+            <div class="arch-flow">
+              <div class="arch-node" onclick="highlightStep(1)">
+                <div class="arch-node-num">1</div>
+                <div class="arch-node-title">查询预处理</div>
+                <div class="arch-node-desc">时间归一化 · 口语标准化 · 指代消解</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" onclick="highlightStep(2)">
+                <div class="arch-node-num">2</div>
+                <div class="arch-node-title">意图识别</div>
+                <div class="arch-node-desc">6层匹配 · 语义向量 · LLM兜底</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" onclick="highlightStep(3)">
+                <div class="arch-node-num">3</div>
+                <div class="arch-node-title">执行路由</div>
+                <div class="arch-node-desc">工具绑定 · 参数提取 · 权限校验</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" onclick="highlightStep(4)">
+                <div class="arch-node-num">4</div>
+                <div class="arch-node-title">结果验证</div>
+                <div class="arch-node-desc">规则验证 · 语义验证 · 重试策略</div>
+              </div>
+              <div class="arch-arrow">→</div>
+              <div class="arch-node" onclick="highlightStep(5)">
+                <div class="arch-node-num">5</div>
+                <div class="arch-node-title">记忆更新</div>
+                <div class="arch-node-desc">实体槽位 · 对话摘要 · 上下文追踪</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recognition Layers -->
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">六层意图识别</h2>
+          </div>
+          <div class="category-grid">
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon info">1</div>
+                <div>
+                  <div class="result-card-title">精确匹配 (Exact)</div>
+                  <div class="result-card-subtitle">intentCode 完全匹配</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">用户输入与预设的 intentCode 完全一致时直接命中，通常用于系统内部调用或快捷指令。</p>
+            </div>
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon info">2</div>
+                <div>
+                  <div class="result-card-title">短语匹配 (Phrase)</div>
+                  <div class="result-card-subtitle">关键短语触发</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">基于 keywords 关键词列表匹配，如"查库存"、"质检结果"等触发词，支持负向关键词惩罚。</p>
+            </div>
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon info">3</div>
+                <div>
+                  <div class="result-card-title">语义匹配 (Semantic)</div>
+                  <div class="result-card-subtitle">向量相似度计算</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">使用 Embedding 将用户输入和意图描述转为向量，计算余弦相似度，阈值 0.75 以上命中。</p>
+            </div>
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon info">4</div>
+                <div>
+                  <div class="result-card-title">关键词匹配 (Keyword)</div>
+                  <div class="result-card-subtitle">模糊关键词提取</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">分词后提取关键词，与意图的 keywords 列表进行模糊匹配，计算覆盖率得分。</p>
+            </div>
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon info">5</div>
+                <div>
+                  <div class="result-card-title">上下文推理 (Context)</div>
+                  <div class="result-card-subtitle">对话历史分析</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">结合对话历史和实体槽位，推理用户可能的意图，如"供应商是谁"在批次查询后推理为供应商查询。</p>
+            </div>
+            <div class="result-card">
+              <div class="result-card-header">
+                <div class="result-icon warning">6</div>
+                <div>
+                  <div class="result-card-title">LLM 兜底 (Fallback)</div>
+                  <div class="result-card-subtitle">大模型理解</div>
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--text-secondary);margin:0;">前5层均未命中时，调用 LLM 进行意图理解，使用 Few-shot 示例提升准确率。</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Sensitivity Levels -->
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">敏感度级别</h2>
+          </div>
+          <div class="result-grid" style="grid-template-columns: repeat(4, 1fr);">
+            <div class="result-item">
+              <div class="result-item-label">LOW</div>
+              <div class="result-item-value">只读查询</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 1，无需审批</div>
+            </div>
+            <div class="result-item">
+              <div class="result-item-label">MEDIUM</div>
+              <div class="result-item-value">有限修改</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 2，需权限</div>
+            </div>
+            <div class="result-item">
+              <div class="result-item-label">HIGH</div>
+              <div class="result-item-value">重要操作</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 2-3，需高级权限</div>
+            </div>
+            <div class="result-item">
+              <div class="result-item-label">CRITICAL</div>
+              <div class="result-item-value highlight">需要审批</div>
+              <div style="font-size:12px;color:var(--text-tertiary);margin-top:4px;">配额消耗 3-5，需审批链</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tab: Demo -->
+      <div id="tab-demo" class="tab-content">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">交互式演示</h2>
+          </div>
+
+          <div class="demo-area">
+            <div class="demo-input-row">
+              <input type="text" class="demo-input" id="demoInput" placeholder="输入自然语言查询，例如：这批的质检情况怎么样">
+              <button class="demo-btn" id="demoBtn" onclick="runDemo()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                运行演示
+              </button>
+            </div>
+            <div style="margin-bottom:12px;color:var(--text-secondary);font-size:14px;">预设案例：</div>
+            <div class="case-buttons" id="caseButtons"></div>
+          </div>
+
+          <!-- Process Visualization -->
+          <div class="process-steps" id="processSteps">
+            <div class="process-step" data-step="1">
+              <div class="process-step-num">1</div>
+              <div class="process-step-content">
+                <div class="process-step-title">查询预处理</div>
+                <div class="process-step-desc">时间归一化、口语标准化、指代消解</div>
+                <div class="process-step-data" id="step1Data" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="process-step" data-step="2">
+              <div class="process-step-num">2</div>
+              <div class="process-step-content">
+                <div class="process-step-title">意图识别</div>
+                <div class="process-step-desc">六层匹配，返回最高置信度意图</div>
+                <div class="process-step-data" id="step2Data" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="process-step" data-step="3">
+              <div class="process-step-num">3</div>
+              <div class="process-step-content">
+                <div class="process-step-title">执行路由</div>
+                <div class="process-step-desc">根据意图绑定的工具执行查询</div>
+                <div class="process-step-data" id="step3Data" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="process-step" data-step="4">
+              <div class="process-step-num">4</div>
+              <div class="process-step-content">
+                <div class="process-step-title">结果验证</div>
+                <div class="process-step-desc">规则验证 + 语义验证</div>
+                <div class="process-step-data" id="step4Data" style="display:none;"></div>
+              </div>
+            </div>
+            <div class="process-step" data-step="5">
+              <div class="process-step-num">5</div>
+              <div class="process-step-content">
+                <div class="process-step-title">记忆更新</div>
+                <div class="process-step-desc">更新实体槽位和对话上下文</div>
+                <div class="process-step-data" id="step5Data" style="display:none;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Result Display -->
+          <div class="result-area" id="resultArea">
+            <div class="result-card" id="resultCard"></div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Tab: Intents -->
+      <div id="tab-intents" class="tab-content">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">意图库 (137个意图)</h2>
+          </div>
+
+          <div class="search-box">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <input type="text" class="search-input" id="intentSearch" placeholder="搜索意图名称或代码..." oninput="filterIntents()">
+          </div>
+
+          <div class="filter-tags" id="categoryFilters"></div>
+
+          <div class="category-grid" id="intentCategories"></div>
+        </section>
+      </div>
+
+      <!-- Tab: Tools -->
+      <div id="tab-tools" class="tab-content">
+        <section class="section">
+          <div class="section-header">
+            <h2 class="section-title">工具库 (122个工具)</h2>
+          </div>
+
+          <div class="search-box">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+            <input type="text" class="search-input" id="toolSearch" placeholder="搜索工具名称..." oninput="filterTools()">
+          </div>
+
+          <div class="filter-tags" id="toolFilters"></div>
+
+          <div class="tools-grid" id="toolsGrid"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // ============================================
+    // 完整意图数据 (19个分类，137个意图)
+    // ============================================
+    const intentCategories = {
+      QUALITY: {
+        name: "质检管理",
+        icon: "✓",
+        color: "#2D6A4F",
+        intents: [
+          { code: "QUALITY_CHECK_QUERY", name: "质检项查询", sensitivity: "LOW", tool: "quality_check_query" },
+          { code: "QUALITY_CHECK_EXECUTE", name: "执行质检", sensitivity: "MEDIUM", tool: "quality_check_update" },
+          { code: "QUALITY_DISPOSITION_EVALUATE", name: "处置评估", sensitivity: "MEDIUM", tool: null },
+          { code: "QUALITY_DISPOSITION_EXECUTE", name: "执行处置", sensitivity: "HIGH", tool: "quality_result_submit" },
+          { code: "QUALITY_STATS", name: "质检统计", sensitivity: "LOW", tool: "quality_stats_query" },
+          { code: "QUALITY_CRITICAL_ITEMS", name: "关键质检项", sensitivity: "LOW", tool: "quality_check_query" }
+        ]
+      },
+      MATERIAL: {
+        name: "原料管理",
+        icon: "📦",
+        color: "#D4A574",
+        intents: [
+          { code: "MATERIAL_BATCH_QUERY", name: "原料批次查询", sensitivity: "LOW", tool: "material_batch_query" },
+          { code: "MATERIAL_BATCH_USE", name: "使用原料", sensitivity: "HIGH", tool: "material_batch_use" },
+          { code: "MATERIAL_BATCH_RESERVE", name: "预留原料", sensitivity: "MEDIUM", tool: "material_batch_reserve" },
+          { code: "MATERIAL_BATCH_RELEASE", name: "释放预留", sensitivity: "MEDIUM", tool: "material_batch_release" },
+          { code: "MATERIAL_BATCH_CONSUME", name: "消耗预留", sensitivity: "HIGH", tool: "material_batch_consume" },
+          { code: "MATERIAL_FIFO_RECOMMEND", name: "FIFO推荐", sensitivity: "LOW", tool: "material_fifo_recommend" },
+          { code: "MATERIAL_EXPIRING_ALERT", name: "即将过期预警", sensitivity: "LOW", tool: "material_expiring_alert" },
+          { code: "MATERIAL_LOW_STOCK_ALERT", name: "低库存预警", sensitivity: "LOW", tool: "material_low_stock_alert" },
+          { code: "MATERIAL_EXPIRED_QUERY", name: "已过期查询", sensitivity: "LOW", tool: "material_expired_query" },
+          { code: "MATERIAL_ADJUST_QUANTITY", name: "调整数量", sensitivity: "HIGH", tool: "material_adjust_quantity" }
+        ]
+      },
+      SHIPMENT: {
+        name: "出货溯源",
+        icon: "🚚",
+        color: "#4A90A4",
+        intents: [
+          { code: "SHIPMENT_CREATE", name: "创建出货", sensitivity: "HIGH", tool: "shipment_create" },
+          { code: "SHIPMENT_QUERY", name: "查询出货", sensitivity: "LOW", tool: "shipment_query" },
+          { code: "SHIPMENT_UPDATE", name: "更新出货", sensitivity: "MEDIUM", tool: "shipment_update" },
+          { code: "SHIPMENT_STATUS_UPDATE", name: "更新出货状态", sensitivity: "MEDIUM", tool: "shipment_status_update" },
+          { code: "SHIPMENT_STATS", name: "出货统计", sensitivity: "LOW", tool: "shipment_stats_query" },
+          { code: "SHIPMENT_BY_CUSTOMER", name: "客户出货", sensitivity: "LOW", tool: "shipment_by_customer" },
+          { code: "SHIPMENT_BY_DATE", name: "日期出货", sensitivity: "LOW", tool: "shipment_by_date" },
+          { code: "TRACE_BATCH", name: "批次溯源", sensitivity: "LOW", tool: "trace_batch" },
+          { code: "TRACE_FULL", name: "完整溯源", sensitivity: "LOW", tool: "trace_full" },
+          { code: "TRACE_PUBLIC", name: "公开溯源", sensitivity: "LOW", tool: "trace_public" }
+        ]
+      },
+      REPORT: {
+        name: "报表生成",
+        icon: "📊",
+        color: "#8B5CF6",
+        intents: [
+          { code: "REPORT_DASHBOARD_OVERVIEW", name: "仪表盘总览", sensitivity: "LOW", tool: "report_dashboard_overview" },
+          { code: "REPORT_PRODUCTION", name: "生产报表", sensitivity: "LOW", tool: "report_production" },
+          { code: "REPORT_QUALITY", name: "质量报表", sensitivity: "LOW", tool: "report_quality" },
+          { code: "REPORT_INVENTORY", name: "库存报表", sensitivity: "LOW", tool: "report_inventory" },
+          { code: "REPORT_FINANCE", name: "财务报表", sensitivity: "MEDIUM", tool: "report_finance" },
+          { code: "REPORT_EFFICIENCY", name: "效率分析报表", sensitivity: "LOW", tool: "report_efficiency" },
+          { code: "REPORT_KPI", name: "KPI指标报表", sensitivity: "LOW", tool: "report_kpi" },
+          { code: "REPORT_ANOMALY", name: "异常报表", sensitivity: "MEDIUM", tool: "report_anomaly" },
+          { code: "REPORT_TRENDS", name: "趋势报表", sensitivity: "LOW", tool: "report_trends" }
+        ]
+      },
+      ALERT: {
+        name: "告警管理",
+        icon: "🔔",
+        color: "#EF4444",
+        intents: [
+          { code: "ALERT_LIST", name: "告警列表", sensitivity: "LOW", tool: "alert_list" },
+          { code: "ALERT_ACTIVE", name: "活跃告警", sensitivity: "LOW", tool: "alert_active" },
+          { code: "ALERT_STATS", name: "告警统计", sensitivity: "LOW", tool: "alert_stats" },
+          { code: "ALERT_ACKNOWLEDGE", name: "确认告警", sensitivity: "MEDIUM", tool: "alert_acknowledge" },
+          { code: "ALERT_RESOLVE", name: "解决告警", sensitivity: "MEDIUM", tool: "alert_resolve" },
+          { code: "ALERT_TRIAGE", name: "告警分级", sensitivity: "LOW", tool: "alert_triage" },
+          { code: "ALERT_DIAGNOSE", name: "告警诊断", sensitivity: "MEDIUM", tool: "alert_diagnose" },
+          { code: "ALERT_BY_EQUIPMENT", name: "按设备告警", sensitivity: "LOW", tool: "alert_by_equipment" },
+          { code: "ALERT_BY_LEVEL", name: "按级别告警", sensitivity: "LOW", tool: "alert_by_level" }
+        ]
+      },
+      HR: {
+        name: "考勤管理",
+        icon: "👤",
+        color: "#F59E0B",
+        intents: [
+          { code: "ATTENDANCE_STATUS", name: "打卡状态", sensitivity: "LOW", tool: "attendance_status" },
+          { code: "ATTENDANCE_HISTORY", name: "考勤历史", sensitivity: "LOW", tool: "attendance_history" },
+          { code: "ATTENDANCE_STATS", name: "考勤统计", sensitivity: "LOW", tool: "attendance_stats" },
+          { code: "ATTENDANCE_MONTHLY", name: "月度考勤", sensitivity: "LOW", tool: "attendance_monthly" },
+          { code: "ATTENDANCE_ANOMALY", name: "考勤异常", sensitivity: "MEDIUM", tool: "attendance_anomaly" },
+          { code: "ATTENDANCE_DEPARTMENT", name: "部门考勤", sensitivity: "LOW", tool: "attendance_department" },
+          { code: "ATTENDANCE_TODAY", name: "今日打卡记录", sensitivity: "LOW", tool: "attendance_today" },
+          { code: "CLOCK_IN", name: "上班打卡", sensitivity: "MEDIUM", tool: "clock_in" },
+          { code: "CLOCK_OUT", name: "下班打卡", sensitivity: "MEDIUM", tool: "clock_out" }
+        ]
+      },
+      CRM: {
+        name: "客户供应商",
+        icon: "🤝",
+        color: "#06B6D4",
+        intents: [
+          { code: "CUSTOMER_LIST", name: "客户列表", sensitivity: "LOW", tool: "customer_list" },
+          { code: "CUSTOMER_SEARCH", name: "客户搜索", sensitivity: "LOW", tool: "customer_search" },
+          { code: "CUSTOMER_STATS", name: "客户统计", sensitivity: "LOW", tool: "customer_stats" },
+          { code: "CUSTOMER_BY_TYPE", name: "按类型客户", sensitivity: "LOW", tool: "customer_by_type" },
+          { code: "CUSTOMER_ACTIVE", name: "活跃客户", sensitivity: "LOW", tool: "customer_active" },
+          { code: "CUSTOMER_PURCHASE_HISTORY", name: "客户购买历史", sensitivity: "LOW", tool: "customer_purchase_history" },
+          { code: "SUPPLIER_LIST", name: "供应商列表", sensitivity: "LOW", tool: "supplier_list" },
+          { code: "SUPPLIER_SEARCH", name: "供应商搜索", sensitivity: "LOW", tool: "supplier_search" },
+          { code: "SUPPLIER_EVALUATE", name: "供应商评估", sensitivity: "MEDIUM", tool: "supplier_evaluate" },
+          { code: "SUPPLIER_BY_CATEGORY", name: "按类别供应商", sensitivity: "LOW", tool: "supplier_by_category" },
+          { code: "SUPPLIER_ACTIVE", name: "活跃供应商", sensitivity: "LOW", tool: "supplier_active" },
+          { code: "SUPPLIER_RANKING", name: "供应商排名", sensitivity: "LOW", tool: "supplier_ranking" }
+        ]
+      },
+      EQUIPMENT: {
+        name: "设备管理",
+        icon: "⚙️",
+        color: "#64748B",
+        intents: [
+          { code: "EQUIPMENT_LIST", name: "查询设备列表", sensitivity: "LOW", tool: "equipment_list" },
+          { code: "EQUIPMENT_DETAIL", name: "查询设备详情", sensitivity: "LOW", tool: "equipment_detail" },
+          { code: "EQUIPMENT_STATS", name: "设备统计", sensitivity: "LOW", tool: "equipment_stats" },
+          { code: "EQUIPMENT_START", name: "启动设备", sensitivity: "MEDIUM", tool: "equipment_start" },
+          { code: "EQUIPMENT_STOP", name: "停止设备", sensitivity: "MEDIUM", tool: "equipment_stop" },
+          { code: "EQUIPMENT_STATUS_UPDATE", name: "更新设备状态", sensitivity: "MEDIUM", tool: "equipment_status_update" },
+          { code: "EQUIPMENT_ALERT_LIST", name: "查询设备告警", sensitivity: "LOW", tool: "equipment_alert_list" },
+          { code: "EQUIPMENT_ALERT_ACKNOWLEDGE", name: "确认设备告警", sensitivity: "MEDIUM", tool: "equipment_alert_acknowledge" },
+          { code: "EQUIPMENT_ALERT_RESOLVE", name: "解决设备告警", sensitivity: "MEDIUM", tool: "equipment_alert_resolve" },
+          { code: "EQUIPMENT_ALERT_STATS", name: "设备告警统计", sensitivity: "LOW", tool: "equipment_alert_stats" }
+        ]
+      },
+      PROCESSING: {
+        name: "生产批次",
+        icon: "🏭",
+        color: "#84CC16",
+        intents: [
+          { code: "PROCESSING_BATCH_CREATE", name: "创建生产批次", sensitivity: "HIGH", tool: "processing_batch_create" },
+          { code: "PROCESSING_BATCH_LIST", name: "查询批次列表", sensitivity: "LOW", tool: "processing_batch_list" },
+          { code: "PROCESSING_BATCH_DETAIL", name: "查询批次详情", sensitivity: "LOW", tool: "processing_batch_detail" },
+          { code: "PROCESSING_BATCH_START", name: "开始生产批次", sensitivity: "HIGH", tool: "processing_batch_start" },
+          { code: "PROCESSING_BATCH_PAUSE", name: "暂停生产批次", sensitivity: "HIGH", tool: "processing_batch_pause" },
+          { code: "PROCESSING_BATCH_RESUME", name: "恢复生产批次", sensitivity: "HIGH", tool: "processing_batch_resume" },
+          { code: "PROCESSING_BATCH_COMPLETE", name: "完成生产批次", sensitivity: "HIGH", tool: "processing_batch_complete" },
+          { code: "PROCESSING_BATCH_CANCEL", name: "取消生产批次", sensitivity: "MEDIUM", tool: "processing_batch_cancel" },
+          { code: "PROCESSING_WORKER_ASSIGN", name: "分配工人", sensitivity: "MEDIUM", tool: "processing_worker_assign" },
+          { code: "PROCESSING_WORKER_CHECKOUT", name: "工人签出", sensitivity: "MEDIUM", tool: "processing_worker_checkout" }
+        ]
+      },
+      SCALE: {
+        name: "秤设备",
+        icon: "⚖️",
+        color: "#A855F7",
+        intents: [
+          { code: "SCALE_ADD_MODEL", name: "添加秤型号", sensitivity: "MEDIUM", tool: null },
+          { code: "SCALE_PROTOCOL_DETECT", name: "协议自动识别", sensitivity: "LOW", tool: "scale_protocol_detect" },
+          { code: "SCALE_CONFIG_GENERATE", name: "AI生成秤配置", sensitivity: "MEDIUM", tool: null },
+          { code: "SCALE_TROUBLESHOOT", name: "秤故障排查", sensitivity: "LOW", tool: null },
+          { code: "SCALE_LIST_PROTOCOLS", name: "列出可用协议", sensitivity: "LOW", tool: null },
+          { code: "SCALE_TEST_PARSE", name: "测试数据解析", sensitivity: "LOW", tool: null },
+          { code: "SCALE_SEARCH_MODEL", name: "搜索秤型号", sensitivity: "LOW", tool: null },
+          { code: "SCALE_MODEL_DETAIL", name: "查看秤详情", sensitivity: "LOW", tool: null },
+          { code: "SCALE_ADD_DEVICE", name: "添加秤设备", sensitivity: "MEDIUM", tool: "scale_add_device" },
+          { code: "SCALE_ADD_DEVICE_VISION", name: "图片识别添加秤", sensitivity: "MEDIUM", tool: "scale_add_device_vision" },
+          { code: "SCALE_LIST_DEVICES", name: "列出秤设备", sensitivity: "LOW", tool: "scale_list_devices" },
+          { code: "SCALE_DEVICE_DETAIL", name: "查看秤设备详情", sensitivity: "LOW", tool: "scale_device_detail" },
+          { code: "SCALE_UPDATE_DEVICE", name: "更新秤设备", sensitivity: "MEDIUM", tool: "scale_update_device" },
+          { code: "SCALE_DELETE_DEVICE", name: "删除秤设备", sensitivity: "HIGH", tool: "scale_delete_device" }
+        ]
+      },
+      CAMERA: {
+        name: "摄像头",
+        icon: "📹",
+        color: "#EC4899",
+        intents: [
+          { code: "CAMERA_ADD", name: "添加摄像头", sensitivity: "MEDIUM", tool: null },
+          { code: "CAMERA_LIST", name: "查看摄像头列表", sensitivity: "LOW", tool: null },
+          { code: "CAMERA_DETAIL", name: "摄像头详情", sensitivity: "LOW", tool: null },
+          { code: "CAMERA_CAPTURE", name: "抓拍图片", sensitivity: "MEDIUM", tool: null },
+          { code: "CAMERA_SUBSCRIBE", name: "订阅摄像头告警", sensitivity: "MEDIUM", tool: null },
+          { code: "CAMERA_UNSUBSCRIBE", name: "取消订阅告警", sensitivity: "MEDIUM", tool: null },
+          { code: "CAMERA_EVENTS", name: "查看告警记录", sensitivity: "LOW", tool: null },
+          { code: "CAMERA_STATUS", name: "摄像头状态", sensitivity: "LOW", tool: null },
+          { code: "CAMERA_STREAMS", name: "获取流地址", sensitivity: "LOW", tool: null }
+        ]
+      },
+      ANALYSIS: {
+        name: "数据分析",
+        icon: "📈",
+        color: "#0EA5E9",
+        intents: [
+          { code: "COST_ANALYSIS", name: "成本分析", sensitivity: "MEDIUM", tool: null },
+          { code: "COST_QUERY", name: "成本查询", sensitivity: "LOW", tool: null },
+          { code: "QUALITY_ANALYSIS", name: "质量分析", sensitivity: "LOW", tool: null },
+          { code: "PRODUCTION_ANALYSIS", name: "生产分析", sensitivity: "LOW", tool: null },
+          { code: "INVENTORY_ANALYSIS", name: "库存分析", sensitivity: "LOW", tool: null },
+          { code: "INVENTORY_QUERY", name: "库存查询", sensitivity: "LOW", tool: null },
+          { code: "TREND_PREDICTION", name: "趋势预测", sensitivity: "MEDIUM", tool: null }
+        ]
+      },
+      DATA_OP: {
+        name: "数据操作",
+        icon: "✏️",
+        color: "#F97316",
+        intents: [
+          { code: "BATCH_UPDATE", name: "批量更新", sensitivity: "HIGH", tool: "batch_update" },
+          { code: "BATCH_QUERY", name: "批次查询", sensitivity: "LOW", tool: null },
+          { code: "DATA_CORRECTION", name: "数据修正", sensitivity: "HIGH", tool: null },
+          { code: "BATCH_DELETE", name: "批量删除", sensitivity: "CRITICAL", tool: null },
+          { code: "PLAN_UPDATE", name: "生产计划更新", sensitivity: "HIGH", tool: "plan_update" },
+          { code: "PRODUCT_UPDATE", name: "产品更新", sensitivity: "HIGH", tool: "product_update" },
+          { code: "MATERIAL_UPDATE", name: "原料更新", sensitivity: "HIGH", tool: "material_update" },
+          { code: "QUANTITY_ADJUST", name: "数量调整", sensitivity: "HIGH", tool: null }
+        ]
+      },
+      FORM: {
+        name: "表单生成",
+        icon: "📝",
+        color: "#14B8A6",
+        intents: [
+          { code: "FORM_GENERATION", name: "表单生成", sensitivity: "LOW", tool: "form_generation" },
+          { code: "FORM_VALIDATION", name: "表单校验", sensitivity: "LOW", tool: null },
+          { code: "FORM_SUGGESTION", name: "表单建议", sensitivity: "LOW", tool: null }
+        ]
+      },
+      SCHEDULE: {
+        name: "排程优化",
+        icon: "📅",
+        color: "#6366F1",
+        intents: [
+          { code: "SCHEDULE_OPTIMIZATION", name: "排程优化", sensitivity: "MEDIUM", tool: null },
+          { code: "RESOURCE_ALLOCATION", name: "资源分配", sensitivity: "MEDIUM", tool: null },
+          { code: "CAPACITY_PLANNING", name: "产能规划", sensitivity: "MEDIUM", tool: null },
+          { code: "URGENT_INSERT", name: "紧急插单", sensitivity: "HIGH", tool: null }
+        ]
+      },
+      SYSTEM: {
+        name: "系统管理",
+        icon: "🔧",
+        color: "#78716C",
+        intents: [
+          { code: "SYSTEM_REPORT", name: "系统报表", sensitivity: "LOW", tool: null },
+          { code: "SYSTEM_CONFIG", name: "系统配置", sensitivity: "CRITICAL", tool: null },
+          { code: "USER_QUERY", name: "用户咨询", sensitivity: "LOW", tool: null },
+          { code: "SCHEDULING_SET_AUTO", name: "排产全自动", sensitivity: "HIGH", tool: "scheduling_set_auto" },
+          { code: "SCHEDULING_SET_MANUAL", name: "排产人工确认", sensitivity: "HIGH", tool: "scheduling_set_manual" },
+          { code: "SCHEDULING_SET_DISABLED", name: "禁用自动排产", sensitivity: "HIGH", tool: "scheduling_set_disabled" },
+          { code: "FACTORY_FEATURE_TOGGLE", name: "功能开关", sensitivity: "HIGH", tool: "factory_feature_toggle" },
+          { code: "FACTORY_NOTIFICATION_CONFIG", name: "通知设置", sensitivity: "MEDIUM", tool: "factory_notification_config" }
+        ]
+      },
+      USER: {
+        name: "用户管理",
+        icon: "👥",
+        color: "#DC2626",
+        intents: [
+          { code: "USER_CREATE", name: "创建用户", sensitivity: "HIGH", tool: "user_create" },
+          { code: "USER_DISABLE", name: "禁用用户", sensitivity: "HIGH", tool: "user_disable" },
+          { code: "USER_ROLE_ASSIGN", name: "角色分配", sensitivity: "CRITICAL", tool: "user_role_assign" }
+        ]
+      },
+      CONFIG: {
+        name: "配置管理",
+        icon: "⚡",
+        color: "#EA580C",
+        intents: [
+          { code: "EQUIPMENT_MAINTENANCE", name: "设备维护", sensitivity: "MEDIUM", tool: "equipment_maintenance" },
+          { code: "CONVERSION_RATE_UPDATE", name: "转换率配置", sensitivity: "MEDIUM", tool: "conversion_rate_update" },
+          { code: "RULE_CONFIG", name: "规则配置", sensitivity: "HIGH", tool: "rule_config" }
+        ]
+      },
+      META: {
+        name: "意图自扩展",
+        icon: "🧠",
+        color: "#7C3AED",
+        intents: [
+          { code: "INTENT_CREATE", name: "创建AI意图", sensitivity: "CRITICAL", tool: "create_new_intent" },
+          { code: "INTENT_UPDATE", name: "更新AI意图", sensitivity: "HIGH", tool: "update_intent" },
+          { code: "INTENT_ANALYZE", name: "分析意图使用", sensitivity: "LOW", tool: null }
+        ]
+      }
+    };
+
+    // 工具列表
+    const toolsList = [
+      { name: "quality_check_create", desc: "创建质检项", category: "质检" },
+      { name: "quality_check_query", desc: "查询质检项", category: "质检" },
+      { name: "quality_check_update", desc: "更新质检项", category: "质检" },
+      { name: "quality_result_submit", desc: "提交质检结果", category: "质检" },
+      { name: "quality_record_query", desc: "查询质检记录", category: "质检" },
+      { name: "quality_stats_query", desc: "查询质检统计", category: "质检" },
+      { name: "material_batch_query", desc: "查询原料批次", category: "原料" },
+      { name: "material_batch_use", desc: "使用原料", category: "原料" },
+      { name: "material_batch_reserve", desc: "预留原料", category: "原料" },
+      { name: "material_batch_release", desc: "释放预留", category: "原料" },
+      { name: "material_batch_consume", desc: "消耗预留", category: "原料" },
+      { name: "material_fifo_recommend", desc: "FIFO推荐", category: "原料" },
+      { name: "material_expiring_alert", desc: "即将过期预警", category: "原料" },
+      { name: "material_low_stock_alert", desc: "低库存预警", category: "原料" },
+      { name: "material_expired_query", desc: "已过期查询", category: "原料" },
+      { name: "material_adjust_quantity", desc: "调整数量", category: "原料" },
+      { name: "shipment_create", desc: "创建出货", category: "出货" },
+      { name: "shipment_query", desc: "查询出货", category: "出货" },
+      { name: "shipment_update", desc: "更新出货", category: "出货" },
+      { name: "shipment_status_update", desc: "更新出货状态", category: "出货" },
+      { name: "shipment_stats_query", desc: "出货统计", category: "出货" },
+      { name: "shipment_by_customer", desc: "按客户出货", category: "出货" },
+      { name: "shipment_by_date", desc: "按日期出货", category: "出货" },
+      { name: "shipment_cancel", desc: "取消出货", category: "出货" },
+      { name: "shipment_complete", desc: "完成出货", category: "出货" },
+      { name: "shipment_confirm", desc: "确认出货", category: "出货" },
+      { name: "trace_batch", desc: "批次溯源", category: "溯源" },
+      { name: "trace_full", desc: "完整溯源", category: "溯源" },
+      { name: "trace_public", desc: "公开溯源", category: "溯源" },
+      { name: "report_dashboard_overview", desc: "仪表盘总览", category: "报表" },
+      { name: "report_production", desc: "生产报表", category: "报表" },
+      { name: "report_quality", desc: "质量报表", category: "报表" },
+      { name: "report_inventory", desc: "库存报表", category: "报表" },
+      { name: "report_finance", desc: "财务报表", category: "报表" },
+      { name: "report_efficiency", desc: "效率分析报表", category: "报表" },
+      { name: "report_kpi", desc: "KPI指标报表", category: "报表" },
+      { name: "report_anomaly", desc: "异常报表", category: "报表" },
+      { name: "report_trends", desc: "趋势报表", category: "报表" },
+      { name: "report_bom_cost", desc: "BOM成本报表", category: "报表" },
+      { name: "report_cost_variance", desc: "成本差异报表", category: "报表" },
+      { name: "report_oee", desc: "OEE报表", category: "报表" },
+      { name: "alert_list", desc: "告警列表", category: "告警" },
+      { name: "alert_active", desc: "活跃告警", category: "告警" },
+      { name: "alert_stats", desc: "告警统计", category: "告警" },
+      { name: "alert_acknowledge", desc: "确认告警", category: "告警" },
+      { name: "alert_resolve", desc: "解决告警", category: "告警" },
+      { name: "alert_triage", desc: "告警分级", category: "告警" },
+      { name: "alert_diagnose", desc: "告警诊断", category: "告警" },
+      { name: "alert_by_equipment", desc: "按设备告警", category: "告警" },
+      { name: "alert_by_level", desc: "按级别告警", category: "告警" },
+      { name: "attendance_status", desc: "打卡状态", category: "考勤" },
+      { name: "attendance_history", desc: "考勤历史", category: "考勤" },
+      { name: "attendance_stats", desc: "考勤统计", category: "考勤" },
+      { name: "attendance_monthly", desc: "月度考勤", category: "考勤" },
+      { name: "attendance_anomaly", desc: "考勤异常", category: "考勤" },
+      { name: "attendance_department", desc: "部门考勤", category: "考勤" },
+      { name: "attendance_today", desc: "今日打卡", category: "考勤" },
+      { name: "clock_in", desc: "上班打卡", category: "考勤" },
+      { name: "clock_out", desc: "下班打卡", category: "考勤" },
+      { name: "customer_list", desc: "客户列表", category: "CRM" },
+      { name: "customer_search", desc: "客户搜索", category: "CRM" },
+      { name: "customer_stats", desc: "客户统计", category: "CRM" },
+      { name: "customer_by_type", desc: "按类型客户", category: "CRM" },
+      { name: "customer_active", desc: "活跃客户", category: "CRM" },
+      { name: "customer_purchase_history", desc: "客户购买历史", category: "CRM" },
+      { name: "supplier_list", desc: "供应商列表", category: "CRM" },
+      { name: "supplier_search", desc: "供应商搜索", category: "CRM" },
+      { name: "supplier_evaluate", desc: "供应商评估", category: "CRM" },
+      { name: "supplier_by_category", desc: "按类别供应商", category: "CRM" },
+      { name: "supplier_active", desc: "活跃供应商", category: "CRM" },
+      { name: "supplier_ranking", desc: "供应商排名", category: "CRM" },
+      { name: "scale_add_device", desc: "添加秤设备", category: "秤" },
+      { name: "scale_add_device_vision", desc: "图片识别添加秤", category: "秤" },
+      { name: "scale_list_devices", desc: "列出秤设备", category: "秤" },
+      { name: "scale_device_detail", desc: "秤设备详情", category: "秤" },
+      { name: "scale_update_device", desc: "更新秤设备", category: "秤" },
+      { name: "scale_delete_device", desc: "删除秤设备", category: "秤" },
+      { name: "scale_protocol_detect", desc: "协议自动识别", category: "秤" },
+      { name: "equipment_list", desc: "设备列表", category: "设备" },
+      { name: "equipment_detail", desc: "设备详情", category: "设备" },
+      { name: "equipment_stats", desc: "设备统计", category: "设备" },
+      { name: "equipment_start", desc: "启动设备", category: "设备" },
+      { name: "equipment_stop", desc: "停止设备", category: "设备" },
+      { name: "equipment_status_update", desc: "更新设备状态", category: "设备" },
+      { name: "equipment_alert_list", desc: "设备告警列表", category: "设备" },
+      { name: "equipment_alert_acknowledge", desc: "确认设备告警", category: "设备" },
+      { name: "equipment_alert_resolve", desc: "解决设备告警", category: "设备" },
+      { name: "equipment_alert_stats", desc: "设备告警统计", category: "设备" },
+      { name: "user_create", desc: "创建用户", category: "用户" },
+      { name: "user_disable", desc: "禁用用户", category: "用户" },
+      { name: "user_role_assign", desc: "角色分配", category: "用户" },
+      { name: "scheduling_set_auto", desc: "排产全自动", category: "系统" },
+      { name: "scheduling_set_manual", desc: "排产人工确认", category: "系统" },
+      { name: "scheduling_set_disabled", desc: "禁用自动排产", category: "系统" },
+      { name: "factory_feature_toggle", desc: "功能开关", category: "系统" },
+      { name: "factory_notification_config", desc: "通知设置", category: "系统" },
+      { name: "batch_update", desc: "批量更新", category: "数据" },
+      { name: "plan_update", desc: "生产计划更新", category: "数据" },
+      { name: "product_update", desc: "产品更新", category: "数据" },
+      { name: "material_update", desc: "原料更新", category: "数据" },
+      { name: "product_type_query", desc: "产品类型查询", category: "数据" },
+      { name: "processing_batch_create", desc: "创建生产批次", category: "生产" },
+      { name: "processing_batch_list", desc: "批次列表", category: "生产" },
+      { name: "processing_batch_detail", desc: "批次详情", category: "生产" },
+      { name: "processing_batch_start", desc: "开始生产", category: "生产" },
+      { name: "processing_batch_pause", desc: "暂停生产", category: "生产" },
+      { name: "processing_batch_resume", desc: "恢复生产", category: "生产" },
+      { name: "processing_batch_complete", desc: "完成生产", category: "生产" },
+      { name: "processing_batch_cancel", desc: "取消生产", category: "生产" },
+      { name: "processing_batch_timeline", desc: "批次时间线", category: "生产" },
+      { name: "processing_batch_workers", desc: "批次工人列表", category: "生产" },
+      { name: "processing_worker_assign", desc: "分配工人", category: "生产" },
+      { name: "processing_worker_checkout", desc: "工人签出", category: "生产" },
+      { name: "form_generation", desc: "表单生成", category: "表单" },
+      { name: "equipment_maintenance", desc: "设备维护", category: "配置" },
+      { name: "conversion_rate_update", desc: "转换率配置", category: "配置" },
+      { name: "rule_config", desc: "规则配置", category: "配置" },
+      { name: "create_new_intent", desc: "创建意图", category: "意图" },
+      { name: "update_intent", desc: "更新意图", category: "意图" },
+      { name: "test_intent_matching", desc: "测试意图匹配", category: "意图" },
+      { name: "query_entity_schema", desc: "查询Entity Schema", category: "查询" },
+      { name: "query_drools_rules", desc: "查询Drools规则", category: "查询" },
+      { name: "generate_handler_config", desc: "生成Handler配置", category: "查询" }
+    ];
+
+    // 演示案例
+    const demoCases = [
+      {
+        name: "质检查询",
+        input: "这批的质检情况怎么样",
+        context: "上一轮查询了批次 MB-2026-0115-001",
+        result: {
+          preprocessed: "MB-2026-0115-001 的质检结果",
+          changes: ["指代消解: 这批 → MB-2026-0115-001"],
+          intent: { code: "QUALITY_STATS", name: "质检统计", confidence: 0.92, layer: 3 },
+          tool: "quality_stats_query",
+          validation: { status: "VALID", checks: ["非空检查 ✓", "实体匹配 ✓"] },
+          memory: { slot: "BATCH", value: "MB-2026-0115-001" },
+          data: {
+            type: "quality",
+            batchId: "MB-2026-0115-001",
+            productName: "冷冻三文鱼片",
+            totalItems: 12,
+            passedItems: 11,
+            failedItems: 1,
+            passRate: "91.7%",
+            lastCheckTime: "2026-01-15 14:30",
+            items: [
+              { name: "外观检查", result: "合格", value: "色泽正常，无异味" },
+              { name: "重量检测", result: "合格", value: "502g (标准500±10g)" },
+              { name: "温度检测", result: "合格", value: "-18.2°C" },
+              { name: "微生物检测", result: "不合格", value: "大肠杆菌超标" }
+            ]
+          }
+        }
+      },
+      {
+        name: "时间查询",
+        input: "昨天入库了多少原料",
+        context: "无上下文",
+        result: {
+          preprocessed: "2026-01-15 入库的原料数量",
+          changes: ["时间归一化: 昨天 → 2026-01-15"],
+          intent: { code: "MATERIAL_BATCH_QUERY", name: "原料批次查询", confidence: 0.88, layer: 4 },
+          tool: "material_batch_query",
+          validation: { status: "VALID", checks: ["非空检查 ✓", "时间验证 ✓"] },
+          memory: { slot: "TIME_RANGE", value: "2026-01-15" },
+          data: {
+            type: "material_list",
+            date: "2026-01-15",
+            totalBatches: 8,
+            totalWeight: "4,250 kg",
+            batches: [
+              { id: "MB-0115-001", name: "冷冻三文鱼", weight: "1,200 kg", supplier: "挪威渔业", time: "08:30" },
+              { id: "MB-0115-002", name: "冷冻虾仁", weight: "800 kg", supplier: "山东海鲜", time: "09:15" },
+              { id: "MB-0115-003", name: "生蚝", weight: "500 kg", supplier: "广东海产", time: "10:00" },
+              { id: "MB-0115-004", name: "鳕鱼片", weight: "750 kg", supplier: "青岛冷链", time: "11:20" },
+              { id: "MB-0115-005", name: "带子", weight: "400 kg", supplier: "大连水产", time: "13:45" },
+              { id: "MB-0115-006", name: "龙虾", weight: "300 kg", supplier: "澳洲海鲜", time: "14:30" },
+              { id: "MB-0115-007", name: "金枪鱼", weight: "200 kg", supplier: "日本水产", time: "15:00" },
+              { id: "MB-0115-008", name: "墨鱼", weight: "100 kg", supplier: "福建渔业", time: "16:20" }
+            ]
+          }
+        }
+      },
+      {
+        name: "口语查询",
+        input: "货到了没",
+        context: "无上下文",
+        result: {
+          preprocessed: "查询待入库原料状态",
+          changes: ["口语标准化: 货到了没 → 查询入库状态"],
+          intent: { code: "MATERIAL_BATCH_QUERY", name: "原料批次查询", confidence: 0.85, layer: 2 },
+          tool: "material_batch_query",
+          validation: { status: "VALID", checks: ["非空检查 ✓"] },
+          memory: { slot: null, value: null },
+          data: {
+            type: "pending_inbound",
+            summary: { total: 3, arrived: 2, pending: 1 },
+            items: [
+              { id: "PO-2026-0116-001", name: "冷冻鲈鱼", status: "已到货", weight: "600 kg", eta: "已到达", supplier: "青岛冷链" },
+              { id: "PO-2026-0116-002", name: "生蚝", status: "已到货", weight: "400 kg", eta: "已到达", supplier: "广东海产" },
+              { id: "PO-2026-0116-003", name: "龙虾", status: "运输中", weight: "500 kg", eta: "预计 16:00", supplier: "澳洲海鲜" }
+            ]
+          }
+        }
+      },
+      {
+        name: "多轮对话",
+        input: "供应商是谁",
+        context: "上一轮查询了批次 MB-2026-0115-001 的详情",
+        result: {
+          preprocessed: "MB-2026-0115-001 的供应商信息",
+          changes: ["上下文注入: 继承批次参数"],
+          intent: { code: "SUPPLIER_SEARCH", name: "供应商搜索", confidence: 0.87, layer: 5 },
+          tool: "supplier_search",
+          validation: { status: "VALID", checks: ["非空检查 ✓", "实体匹配 ✓"] },
+          memory: { slot: "SUPPLIER", value: "挪威渔业有限公司" },
+          data: {
+            type: "supplier_detail",
+            supplier: {
+              id: "SUP-001",
+              name: "挪威渔业有限公司",
+              shortName: "挪威渔业",
+              category: "海产品",
+              level: "A级",
+              contact: "张经理",
+              phone: "138****5678",
+              address: "挪威奥斯陆港口区",
+              rating: 4.8,
+              totalOrders: 156,
+              onTimeRate: "98.2%",
+              qualityRate: "99.1%",
+              cooperationYears: 3
+            }
+          }
+        }
+      },
+      {
+        name: "统计报表",
+        input: "本月的生产效率怎么样",
+        context: "无上下文",
+        result: {
+          preprocessed: "2026年1月的生产效率报表",
+          changes: ["时间归一化: 本月 → 2026-01-01 至 2026-01-16"],
+          intent: { code: "REPORT_EFFICIENCY", name: "效率分析报表", confidence: 0.91, layer: 3 },
+          tool: "report_efficiency",
+          validation: { status: "VALID", checks: ["非空检查 ✓"] },
+          memory: { slot: "TIME_RANGE", value: "2026-01" },
+          data: {
+            type: "efficiency_report",
+            period: "2026年1月",
+            oee: "87.5%",
+            availability: "92.3%",
+            performance: "95.1%",
+            quality: "99.7%",
+            trends: [
+              { week: "第1周", oee: "85.2%", production: "12,500 kg" },
+              { week: "第2周", oee: "88.1%", production: "13,200 kg" },
+              { week: "第3周(进行中)", oee: "89.2%", production: "6,800 kg" }
+            ],
+            topProducts: [
+              { name: "冷冻三文鱼片", output: "8,500 kg", efficiency: "91.2%" },
+              { name: "冷冻虾仁", output: "6,200 kg", efficiency: "88.5%" },
+              { name: "生蚝", output: "4,300 kg", efficiency: "86.3%" }
+            ]
+          }
+        }
+      },
+      {
+        name: "告警处理",
+        input: "有什么紧急告警需要处理",
+        context: "无上下文",
+        result: {
+          preprocessed: "查询当前紧急级别的活跃告警",
+          changes: [],
+          intent: { code: "ALERT_ACTIVE", name: "活跃告警", confidence: 0.93, layer: 2 },
+          tool: "alert_active",
+          validation: { status: "VALID", checks: ["非空检查 ✓"] },
+          memory: { slot: null, value: null },
+          data: {
+            type: "alert_list",
+            summary: { critical: 1, high: 2, medium: 3, low: 5 },
+            criticalAlerts: [
+              {
+                id: "ALT-2026-0116-001",
+                level: "CRITICAL",
+                title: "冷库温度异常",
+                equipment: "华东冷库A区",
+                message: "温度升至 -12°C，超出安全阈值 (-18±2°C)",
+                time: "10分钟前",
+                suggestion: "建议立即检查制冷设备，必要时转移货物"
+              }
+            ],
+            highAlerts: [
+              { id: "ALT-2026-0116-002", level: "HIGH", title: "原料即将过期", message: "3批原料将在24小时内过期", time: "30分钟前" },
+              { id: "ALT-2026-0116-003", level: "HIGH", title: "设备维护提醒", message: "3号生产线需要例行维护", time: "1小时前" }
+            ]
+          }
+        }
+      }
+    ];
+
+    // ============================================
+    // API Configuration
+    // ============================================
+    // 使用相对路径，通过 Nginx 代理，避免 CORS/混合内容问题
+    const API_BASE_URL = '';
+    const API_DEMO_ENDPOINT = '/api/public/ai-demo/execute';
+    let useLiveAPI = true; // 默认使用真实API
+
+    // ============================================
+    // UI Functions
+    // ============================================
+    let currentTab = 'overview';
+    let selectedCaseIndex = 0;
+    let isRunning = false;
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`.tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(`tab-${tabId}`).classList.add('active');
+    }
+
+    function highlightStep(step) {
+      document.querySelectorAll('.arch-node').forEach((node, i) => {
+        node.classList.toggle('active', i === step - 1);
+      });
+    }
+
+    // Render functions
+    function renderCaseButtons() {
+      const container = document.getElementById('caseButtons');
+      container.innerHTML = demoCases.map((c, i) =>
+        `<button class="case-btn ${i === 0 ? 'active' : ''}" onclick="selectCase(${i})">${c.name}</button>`
+      ).join('');
+    }
+
+    function selectCase(index) {
+      selectedCaseIndex = index;
+      document.querySelectorAll('.case-btn').forEach((btn, i) => btn.classList.toggle('active', i === index));
+      document.getElementById('demoInput').value = demoCases[index].input;
+      resetProcessSteps();
+    }
+
+    function resetProcessSteps() {
+      document.querySelectorAll('.process-step').forEach(step => {
+        step.classList.remove('active', 'completed');
+        step.querySelector('.process-step-data').style.display = 'none';
+      });
+      document.getElementById('resultArea').classList.remove('visible');
+    }
+
+    async function runDemo() {
+      if (isRunning) return;
+      isRunning = true;
+      document.getElementById('demoBtn').disabled = true;
+      resetProcessSteps();
+
+      const userInput = document.getElementById('demoInput').value.trim();
+      if (!userInput) {
+        alert('请输入查询内容');
+        isRunning = false;
+        document.getElementById('demoBtn').disabled = false;
+        return;
+      }
+
+      const steps = document.querySelectorAll('.process-step');
+
+      if (useLiveAPI) {
+        // 使用真实 API
+        try {
+          await runLiveDemo(userInput, steps);
+        } catch (error) {
+          console.error('API调用失败，使用演示模式:', error);
+          showAPIError('API 连接失败: ' + error.message);
+        }
+      } else {
+        // 使用静态演示数据
+        await runStaticDemo(steps);
+      }
+
+      isRunning = false;
+      document.getElementById('demoBtn').disabled = false;
+    }
+
+    // 真实 API 调用
+    async function runLiveDemo(userInput, steps) {
+      // Step 1: 预处理（显示用户输入）
+      await animateStep(steps[0], `<span class="key">用户输入:</span> "${userInput}"<br><span class="key">状态:</span> <span class="value">正在调用 AI 服务...</span>`);
+
+      // 调用真实 API
+      const response = await fetch(API_BASE_URL + API_DEMO_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userInput: userInput })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const apiResult = await response.json();
+      const data = apiResult.data;
+
+      if (!data) {
+        throw new Error('API 返回数据为空');
+      }
+
+      // Step 2: 意图识别
+      if (data.intentRecognized) {
+        const confidence = data.confidence ? (data.confidence * 100).toFixed(0) : '?';
+        const matchMethod = data.matchMethod || 'KEYWORD';
+        const layer = matchMethod === 'REGEX' ? 1 : matchMethod === 'KEYWORD' ? 3 : matchMethod === 'SEMANTIC' ? 5 : 6;
+        await animateStep(steps[1], `<span class="key">命中层:</span> 第${layer}层 (${matchMethod})<br><span class="key">意图:</span> <span class="value">${data.intentName || '-'}</span> (${data.intentCode || '-'})<br><span class="key">置信度:</span> ${confidence}%`);
+      } else {
+        await animateStep(steps[1], `<span class="key">状态:</span> <span class="value" style="color:var(--warning)">未识别到匹配意图</span><br><span class="key">建议:</span> 尝试更具体的描述`);
+      }
+
+      // Step 3: 执行路由
+      const toolInfo = data.intentCode ? `工具绑定 → ${data.intentCode.toLowerCase().replace(/_/g, '_')}` : '无工具绑定';
+      await animateStep(steps[2], `<span class="key">敏感度:</span> ${data.sensitivityLevel || 'LOW'}<br><span class="key">路由:</span> <span class="value">${toolInfo}</span>`);
+
+      // Step 4: 结果验证
+      const statusIcon = data.status === 'COMPLETED' ? '✓' : data.status === 'NO_PERMISSION' ? '🔒' : '⚠️';
+      const statusColor = data.status === 'COMPLETED' ? 'var(--success)' : data.status === 'NO_PERMISSION' ? 'var(--warning)' : 'var(--error)';
+      await animateStep(steps[3], `<span class="key">执行状态:</span> <span class="value" style="color:${statusColor}">${statusIcon} ${data.status || 'UNKNOWN'}</span><br><span class="key">消息:</span> ${data.message || '-'}`);
+
+      // Step 5: 记忆更新
+      await animateStep(steps[4], `<span class="key">会话ID:</span> ${data.sessionId || '无'}<br><span class="key">轮次:</span> ${data.conversationRound || 1}`);
+
+      // 显示结果
+      showAPIResult(data);
+    }
+
+    // 静态演示模式
+    async function runStaticDemo(steps) {
+      const caseData = demoCases[selectedCaseIndex];
+
+      await animateStep(steps[0], `<span class="key">输入:</span> "${caseData.input}"<br><span class="key">输出:</span> <span class="value">"${caseData.result.preprocessed}"</span><br><span class="key">变更:</span> ${caseData.result.changes.length > 0 ? caseData.result.changes.join(', ') : '无'}`);
+      await animateStep(steps[1], `<span class="key">命中层:</span> 第${caseData.result.intent.layer}层<br><span class="key">意图:</span> <span class="value">${caseData.result.intent.name}</span> (${caseData.result.intent.code})<br><span class="key">置信度:</span> ${(caseData.result.intent.confidence * 100).toFixed(0)}%`);
+      await animateStep(steps[2], `<span class="key">路径:</span> 硬绑定<br><span class="key">工具:</span> <span class="value">${caseData.result.tool}</span>`);
+      await animateStep(steps[3], `<span class="key">状态:</span> <span class="value">${caseData.result.validation.status}</span><br><span class="key">检查:</span> ${caseData.result.validation.checks.join(', ')}`);
+      await animateStep(steps[4], `<span class="key">槽位:</span> ${caseData.result.memory.slot || '无更新'}<br><span class="key">值:</span> <span class="value">${caseData.result.memory.value || '-'}</span>`);
+
+      showResultCard(caseData.result.data);
+    }
+
+    // 格式化结果数据为用户友好的展示
+    function formatResultData(resultData, intentCode) {
+      if (!resultData) return '';
+
+      // 获取实际数据数组（可能在 content 或 items 字段中）
+      const items = resultData.content || resultData.items || (Array.isArray(resultData) ? resultData : null);
+
+      // 质检数据格式化
+      if (intentCode && intentCode.includes('QUALITY') ||
+          (items && items.length > 0 && (items[0].qualityResult || items[0].passRate || items[0].qualityGrade))) {
+        return formatQualityInspectionData(items || [resultData]);
+      }
+
+      // 原料库存数据格式化
+      if (intentCode && intentCode.includes('MATERIAL') ||
+          (items && items.length > 0 && (items[0].materialName || items[0].remainingQuantity || items[0].expiryDate))) {
+        return formatMaterialData(items || [resultData]);
+      }
+
+      // 批次数据格式化
+      if (intentCode && intentCode.includes('BATCH') ||
+          (items && items.length > 0 && (items[0].batchNumber || items[0].productionDate))) {
+        return formatBatchData(items || [resultData]);
+      }
+
+      // 默认：格式化 JSON
+      return `<pre style="background:var(--bg-warm);padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;font-family:var(--font-mono);white-space:pre-wrap;word-break:break-word;">${JSON.stringify(resultData, null, 2)}</pre>`;
+    }
+
+    // 格式化质检数据为表格
+    function formatQualityInspectionData(items) {
+      if (!items || items.length === 0) {
+        return '<div style="padding:16px;color:var(--text-secondary);text-align:center;">暂无质检记录</div>';
+      }
+
+      let html = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--bg-warm);border-bottom:2px solid var(--border);">
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">批次号</th>
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">质检结果</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">合格率</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">质量等级</th>
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">检测时间</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+      items.forEach((item, index) => {
+        const bgColor = index % 2 === 0 ? 'transparent' : 'var(--bg-warm)';
+        const resultBadge = item.qualityResult === 'PASSED' || item.qualityResult === '合格'
+          ? '<span style="background:var(--success-light);color:var(--success);padding:4px 12px;border-radius:12px;font-size:12px;">✓ 合格</span>'
+          : '<span style="background:var(--error-light);color:var(--error);padding:4px 12px;border-radius:12px;font-size:12px;">✗ 不合格</span>';
+        const passRate = item.passRate != null ? `${(item.passRate * 100).toFixed(1)}%` : '-';
+        const grade = item.qualityGrade || item.grade || '-';
+        const time = item.inspectionDate || item.createdAt || '-';
+
+        html += `
+          <tr style="background:${bgColor};border-bottom:1px solid var(--border);">
+            <td style="padding:12px 16px;font-family:var(--font-mono);font-size:13px;">${item.batchNumber || item.batchId || '-'}</td>
+            <td style="padding:12px 16px;">${resultBadge}</td>
+            <td style="padding:12px 16px;text-align:center;font-weight:500;color:${item.passRate >= 0.9 ? 'var(--success)' : 'var(--warning)'};">${passRate}</td>
+            <td style="padding:12px 16px;text-align:center;"><span style="background:var(--info-light);color:var(--info);padding:4px 12px;border-radius:12px;font-size:12px;">${grade}</span></td>
+            <td style="padding:12px 16px;color:var(--text-secondary);font-size:13px;">${time}</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+
+      // 添加统计摘要
+      const total = items.length;
+      const passed = items.filter(i => i.qualityResult === 'PASSED' || i.qualityResult === '合格').length;
+      html += `
+        <div style="margin-top:16px;padding:12px 16px;background:var(--bg-warm);border-radius:8px;display:flex;gap:24px;font-size:13px;">
+          <span>共 <strong>${total}</strong> 条记录</span>
+          <span>合格 <strong style="color:var(--success);">${passed}</strong> 条</span>
+          <span>合格率 <strong style="color:${passed/total >= 0.9 ? 'var(--success)' : 'var(--warning)'};">${((passed/total)*100).toFixed(1)}%</strong></span>
+        </div>`;
+
+      return html;
+    }
+
+    // 格式化原料数据为表格
+    function formatMaterialData(items) {
+      if (!items || items.length === 0) {
+        return '<div style="padding:16px;color:var(--text-secondary);text-align:center;">暂无原料记录</div>';
+      }
+
+      let html = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--bg-warm);border-bottom:2px solid var(--border);">
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">原料名称</th>
+                <th style="padding:12px 16px;text-align:right;font-weight:600;">剩余数量</th>
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">供应商</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">过期日期</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">状态</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+      items.forEach((item, index) => {
+        const bgColor = index % 2 === 0 ? 'transparent' : 'var(--bg-warm)';
+        const qty = item.remainingQuantity || item.quantity || item.stockQuantity || 0;
+        const unit = item.unit || 'kg';
+        const expiryDate = item.expiryDate || item.expireDate || '-';
+        const isExpiringSoon = expiryDate !== '-' && new Date(expiryDate) <= new Date(Date.now() + 7*24*60*60*1000);
+        const isLowStock = qty < 100;
+
+        let statusBadge = '<span style="background:var(--success-light);color:var(--success);padding:4px 12px;border-radius:12px;font-size:12px;">正常</span>';
+        if (isExpiringSoon) {
+          statusBadge = '<span style="background:var(--warning-light);color:var(--warning);padding:4px 12px;border-radius:12px;font-size:12px;">即将过期</span>';
+        } else if (isLowStock) {
+          statusBadge = '<span style="background:var(--warning-light);color:var(--warning);padding:4px 12px;border-radius:12px;font-size:12px;">库存偏低</span>';
+        }
+
+        html += `
+          <tr style="background:${bgColor};border-bottom:1px solid var(--border);">
+            <td style="padding:12px 16px;font-weight:500;">${item.materialName || item.name || '-'}</td>
+            <td style="padding:12px 16px;text-align:right;font-family:var(--font-mono);">${qty.toLocaleString()} ${unit}</td>
+            <td style="padding:12px 16px;color:var(--text-secondary);">${item.supplierName || item.supplier || '-'}</td>
+            <td style="padding:12px 16px;text-align:center;color:${isExpiringSoon ? 'var(--warning)' : 'var(--text-secondary)'};">${expiryDate}</td>
+            <td style="padding:12px 16px;text-align:center;">${statusBadge}</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+
+      return html;
+    }
+
+    // 格式化批次数据为表格
+    function formatBatchData(items) {
+      if (!items || items.length === 0) {
+        return '<div style="padding:16px;color:var(--text-secondary);text-align:center;">暂无批次记录</div>';
+      }
+
+      let html = `
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr style="background:var(--bg-warm);border-bottom:2px solid var(--border);">
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">批次号</th>
+                <th style="padding:12px 16px;text-align:left;font-weight:600;">产品名称</th>
+                <th style="padding:12px 16px;text-align:right;font-weight:600;">数量</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">生产日期</th>
+                <th style="padding:12px 16px;text-align:center;font-weight:600;">状态</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+      items.forEach((item, index) => {
+        const bgColor = index % 2 === 0 ? 'transparent' : 'var(--bg-warm)';
+        const status = item.status || 'ACTIVE';
+        const statusMap = {
+          'ACTIVE': { label: '生产中', color: 'var(--info)' },
+          'COMPLETED': { label: '已完成', color: 'var(--success)' },
+          'PENDING': { label: '待处理', color: 'var(--warning)' },
+          'CANCELLED': { label: '已取消', color: 'var(--text-secondary)' }
+        };
+        const statusInfo = statusMap[status] || { label: status, color: 'var(--text-secondary)' };
+
+        html += `
+          <tr style="background:${bgColor};border-bottom:1px solid var(--border);">
+            <td style="padding:12px 16px;font-family:var(--font-mono);font-size:13px;">${item.batchNumber || '-'}</td>
+            <td style="padding:12px 16px;font-weight:500;">${item.productName || item.materialName || '-'}</td>
+            <td style="padding:12px 16px;text-align:right;font-family:var(--font-mono);">${(item.quantity || 0).toLocaleString()} ${item.unit || ''}</td>
+            <td style="padding:12px 16px;text-align:center;color:var(--text-secondary);">${item.productionDate || item.createdAt || '-'}</td>
+            <td style="padding:12px 16px;text-align:center;"><span style="background:color-mix(in srgb, ${statusInfo.color} 15%, transparent);color:${statusInfo.color};padding:4px 12px;border-radius:12px;font-size:12px;">${statusInfo.label}</span></td>
+          </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+
+      return html;
+    }
+
+    // 显示 API 返回结果
+    function showAPIResult(data) {
+      const resultArea = document.getElementById('resultArea');
+      const resultCard = document.getElementById('resultCard');
+      let html = '';
+
+      if (data.status === 'NEED_MORE_INFO' || data.status === 'NEED_CLARIFICATION') {
+        // 需要更多信息 - 显示澄清问题
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon info">💬</div>
+            <div>
+              <div class="result-card-title">需要更多信息</div>
+              <div class="result-card-subtitle">请补充以下信息以完成操作</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:var(--info-light);border-radius:8px;margin-top:16px;border-left:4px solid var(--info);">
+            <div style="font-size:15px;color:var(--text-primary);line-height:1.8;">${data.message || '请提供更多信息'}</div>
+          </div>`;
+        if (data.clarificationQuestions && data.clarificationQuestions.length > 0) {
+          html += `
+            <div style="margin-top:16px;">
+              <div style="font-weight:600;margin-bottom:12px;color:var(--text-secondary);font-size:13px;">您可以这样回答：</div>
+              <ul style="margin:0;padding-left:20px;color:var(--text-primary);line-height:2;">
+                ${data.clarificationQuestions.map(q => `<li>${q}</li>`).join('')}
+              </ul>
+            </div>`;
+        }
+      } else if (data.status === 'NO_PERMISSION') {
+        // 权限拒绝 - 写入操作
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon warning">🔒</div>
+            <div>
+              <div class="result-card-title">需要权限验证</div>
+              <div class="result-card-subtitle">${data.intentName || '未知操作'} · ${data.sensitivityLevel || 'MEDIUM'} 敏感度</div>
+            </div>
+            <span class="badge warning">${data.sensitivityLevel || 'MEDIUM'}</span>
+          </div>
+          <div style="padding:16px;background:var(--warning-light);border-radius:8px;margin-top:16px;border-left:4px solid var(--warning);">
+            <div style="white-space:pre-line;font-size:14px;color:var(--text-primary);line-height:1.8;">${data.message || '该操作需要验证权限'}</div>
+          </div>
+          <div class="result-grid" style="margin-top:16px;">
+            <div class="result-item"><div class="result-item-label">意图代码</div><div class="result-item-value" style="font-family:var(--font-mono)">${data.intentCode || '-'}</div></div>
+            <div class="result-item"><div class="result-item-label">分类</div><div class="result-item-value">${data.intentCategory || '-'}</div></div>
+            <div class="result-item"><div class="result-item-label">配额消耗</div><div class="result-item-value">${data.quotaCost || 0}</div></div>
+            <div class="result-item"><div class="result-item-label">需要审批</div><div class="result-item-value">${data.requiresApproval ? '是' : '否'}</div></div>
+          </div>`;
+      } else if (data.status === 'COMPLETED' && data.resultData) {
+        // 成功执行 - 显示格式化的结果数据
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon success">✓</div>
+            <div>
+              <div class="result-card-title">${data.intentName || '查询结果'}</div>
+              <div class="result-card-subtitle">执行成功 · ${data.intentCategory || '未分类'}</div>
+            </div>
+            <span class="badge success">成功</span>
+          </div>
+          <div style="margin-top:16px;">
+            ${formatResultData(data.resultData, data.intentCode)}
+          </div>`;
+      } else if (data.status === 'NOT_RECOGNIZED') {
+        // 未识别意图
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon info">❓</div>
+            <div>
+              <div class="result-card-title">未识别到意图</div>
+              <div class="result-card-subtitle">请尝试更具体的描述</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:var(--info-light);border-radius:8px;margin-top:16px;">
+            <div style="font-size:14px;color:var(--text-secondary);">${data.message || '系统无法理解您的请求，请尝试以下方式：'}</div>
+            <ul style="margin-top:12px;padding-left:20px;color:var(--text-secondary);">
+              <li>使用更具体的业务术语</li>
+              <li>明确指定操作对象（如批次号、产品名）</li>
+              <li>尝试"查询XXX"、"统计XXX"等格式</li>
+            </ul>
+          </div>`;
+      } else {
+        // 其他状态
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon info">ℹ️</div>
+            <div>
+              <div class="result-card-title">${data.intentName || 'AI 响应'}</div>
+              <div class="result-card-subtitle">状态: ${data.status || 'UNKNOWN'}</div>
+            </div>
+          </div>
+          <div style="padding:16px;background:var(--bg-warm);border-radius:8px;margin-top:16px;">
+            <div style="font-size:14px;">${data.message || '操作已处理'}</div>
+          </div>
+          ${data.resultData ? `<pre style="margin-top:16px;background:var(--bg-muted);padding:16px;border-radius:8px;overflow-x:auto;font-size:12px;font-family:var(--font-mono);">${JSON.stringify(data.resultData, null, 2)}</pre>` : ''}`;
+      }
+
+      resultCard.innerHTML = html;
+      resultArea.classList.add('visible');
+    }
+
+    // 显示 API 错误
+    function showAPIError(message) {
+      const resultArea = document.getElementById('resultArea');
+      const resultCard = document.getElementById('resultCard');
+      resultCard.innerHTML = `
+        <div class="result-card-header">
+          <div class="result-icon error">✗</div>
+          <div>
+            <div class="result-card-title">连接失败</div>
+            <div class="result-card-subtitle">无法连接到 AI 服务</div>
+          </div>
+        </div>
+        <div style="padding:16px;background:var(--error-light);border-radius:8px;margin-top:16px;border-left:4px solid var(--error);">
+          <div style="font-size:14px;color:var(--error);">${message}</div>
+          <div style="margin-top:12px;font-size:13px;color:var(--text-secondary);">
+            提示：请确保后端服务 (${API_BASE_URL}) 已启动并可访问。
+          </div>
+        </div>`;
+      resultArea.classList.add('visible');
+    }
+
+    async function animateStep(stepEl, html) {
+      stepEl.classList.add('active');
+      const dataEl = stepEl.querySelector('.process-step-data');
+      dataEl.innerHTML = html;
+      dataEl.style.display = 'block';
+      await sleep(800);
+      stepEl.classList.remove('active');
+      stepEl.classList.add('completed');
+    }
+
+    function showResultCard(data) {
+      const resultArea = document.getElementById('resultArea');
+      const resultCard = document.getElementById('resultCard');
+
+      let html = '';
+      if (data.type === 'quality') {
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon success">✓</div>
+            <div>
+              <div class="result-card-title">质检结果 - ${data.batchId}</div>
+              <div class="result-card-subtitle">${data.productName} · 最后检测: ${data.lastCheckTime}</div>
+            </div>
+            <span class="badge ${data.passRate === '100%' ? 'success' : 'warning'}">${data.passRate} 合格率</span>
+          </div>
+          <div class="result-grid">
+            <div class="result-item"><div class="result-item-label">检测项目</div><div class="result-item-value">${data.totalItems} 项</div></div>
+            <div class="result-item"><div class="result-item-label">合格项目</div><div class="result-item-value highlight">${data.passedItems} 项</div></div>
+            <div class="result-item"><div class="result-item-label">不合格项目</div><div class="result-item-value" style="color:var(--error)">${data.failedItems} 项</div></div>
+          </div>
+          <table class="result-table" style="margin-top:16px;">
+            <thead><tr><th>检测项</th><th>结果</th><th>数值</th></tr></thead>
+            <tbody>
+              ${data.items.map(item => `<tr><td>${item.name}</td><td><span class="badge ${item.result === '合格' ? 'success' : 'error'}">${item.result}</span></td><td>${item.value}</td></tr>`).join('')}
+            </tbody>
+          </table>`;
+      } else if (data.type === 'material_list') {
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon info">📦</div>
+            <div>
+              <div class="result-card-title">${data.date} 入库记录</div>
+              <div class="result-card-subtitle">共 ${data.totalBatches} 批次，总重量 ${data.totalWeight}</div>
+            </div>
+          </div>
+          <table class="result-table">
+            <thead><tr><th>批次号</th><th>原料名称</th><th>重量</th><th>供应商</th><th>入库时间</th></tr></thead>
+            <tbody>
+              ${data.batches.map(b => `<tr><td style="font-family:var(--font-mono);color:var(--accent)">${b.id}</td><td>${b.name}</td><td>${b.weight}</td><td>${b.supplier}</td><td>${b.time}</td></tr>`).join('')}
+            </tbody>
+          </table>`;
+      } else if (data.type === 'pending_inbound') {
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon info">🚚</div>
+            <div>
+              <div class="result-card-title">入库状态</div>
+              <div class="result-card-subtitle">已到货 ${data.summary.arrived} 批，待到货 ${data.summary.pending} 批</div>
+            </div>
+          </div>
+          <table class="result-table">
+            <thead><tr><th>订单号</th><th>原料</th><th>状态</th><th>重量</th><th>预计到达</th><th>供应商</th></tr></thead>
+            <tbody>
+              ${data.items.map(item => `<tr><td style="font-family:var(--font-mono)">${item.id}</td><td>${item.name}</td><td><span class="badge ${item.status === '已到货' ? 'success' : 'info'}">${item.status}</span></td><td>${item.weight}</td><td>${item.eta}</td><td>${item.supplier}</td></tr>`).join('')}
+            </tbody>
+          </table>`;
+      } else if (data.type === 'supplier_detail') {
+        const s = data.supplier;
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon success">🤝</div>
+            <div>
+              <div class="result-card-title">${s.name}</div>
+              <div class="result-card-subtitle">${s.category} · ${s.level}供应商 · 合作${s.cooperationYears}年</div>
+            </div>
+            <span class="badge success">⭐ ${s.rating}</span>
+          </div>
+          <div class="result-grid">
+            <div class="result-item"><div class="result-item-label">联系人</div><div class="result-item-value">${s.contact}</div></div>
+            <div class="result-item"><div class="result-item-label">电话</div><div class="result-item-value">${s.phone}</div></div>
+            <div class="result-item"><div class="result-item-label">累计订单</div><div class="result-item-value highlight">${s.totalOrders} 单</div></div>
+            <div class="result-item"><div class="result-item-label">准时率</div><div class="result-item-value">${s.onTimeRate}</div></div>
+            <div class="result-item"><div class="result-item-label">质量合格率</div><div class="result-item-value">${s.qualityRate}</div></div>
+            <div class="result-item"><div class="result-item-label">地址</div><div class="result-item-value">${s.address}</div></div>
+          </div>`;
+      } else if (data.type === 'efficiency_report') {
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon success">📊</div>
+            <div>
+              <div class="result-card-title">${data.period} 生产效率报表</div>
+              <div class="result-card-subtitle">OEE: ${data.oee}</div>
+            </div>
+          </div>
+          <div class="result-grid">
+            <div class="result-item"><div class="result-item-label">设备可用率</div><div class="result-item-value highlight">${data.availability}</div></div>
+            <div class="result-item"><div class="result-item-label">性能效率</div><div class="result-item-value highlight">${data.performance}</div></div>
+            <div class="result-item"><div class="result-item-label">质量率</div><div class="result-item-value highlight">${data.quality}</div></div>
+          </div>
+          <div style="margin-top:16px;"><strong>周趋势:</strong></div>
+          <table class="result-table" style="margin-top:8px;">
+            <thead><tr><th>周</th><th>OEE</th><th>产量</th></tr></thead>
+            <tbody>${data.trends.map(t => `<tr><td>${t.week}</td><td>${t.oee}</td><td>${t.production}</td></tr>`).join('')}</tbody>
+          </table>
+          <div style="margin-top:16px;"><strong>产品效率 TOP3:</strong></div>
+          <table class="result-table" style="margin-top:8px;">
+            <thead><tr><th>产品</th><th>产量</th><th>效率</th></tr></thead>
+            <tbody>${data.topProducts.map(p => `<tr><td>${p.name}</td><td>${p.output}</td><td>${p.efficiency}</td></tr>`).join('')}</tbody>
+          </table>`;
+      } else if (data.type === 'alert_list') {
+        html = `
+          <div class="result-card-header">
+            <div class="result-icon warning">🔔</div>
+            <div>
+              <div class="result-card-title">活跃告警</div>
+              <div class="result-card-subtitle">紧急 ${data.summary.critical} · 高 ${data.summary.high} · 中 ${data.summary.medium} · 低 ${data.summary.low}</div>
+            </div>
+          </div>
+          ${data.criticalAlerts.map(a => `
+            <div style="padding:16px;background:var(--error-light);border-radius:8px;margin-bottom:12px;border-left:4px solid var(--error);">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <strong style="color:var(--error)">${a.title}</strong>
+                <span class="badge error">${a.level}</span>
+              </div>
+              <div style="font-size:14px;color:var(--text-secondary);margin-bottom:8px;">${a.message}</div>
+              <div style="font-size:13px;color:var(--text-tertiary);">设备: ${a.equipment} · ${a.time}</div>
+              <div style="margin-top:12px;padding:12px;background:white;border-radius:6px;font-size:13px;"><strong>建议:</strong> ${a.suggestion}</div>
+            </div>`).join('')}
+          <div style="margin-top:8px;"><strong>高优先级告警:</strong></div>
+          ${data.highAlerts.map(a => `
+            <div style="padding:12px;background:var(--warning-light);border-radius:8px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+              <div><strong>${a.title}</strong><div style="font-size:13px;color:var(--text-secondary)">${a.message}</div></div>
+              <span style="font-size:12px;color:var(--text-tertiary)">${a.time}</span>
+            </div>`).join('')}`;
+      }
+
+      resultCard.innerHTML = html;
+      resultArea.classList.add('visible');
+    }
+
+    // Intent Categories
+    function renderIntentCategories() {
+      const container = document.getElementById('intentCategories');
+      const filters = document.getElementById('categoryFilters');
+
+      // Render filters
+      filters.innerHTML = `<span class="filter-tag active" onclick="filterByCategory('all')">全部</span>` +
+        Object.entries(intentCategories).map(([key, cat]) =>
+          `<span class="filter-tag" onclick="filterByCategory('${key}')">${cat.icon} ${cat.name}</span>`
+        ).join('');
+
+      // Render categories
+      renderCategoryCards(Object.entries(intentCategories));
+    }
+
+    function renderCategoryCards(entries) {
+      const container = document.getElementById('intentCategories');
+      container.innerHTML = entries.map(([key, cat]) => `
+        <div class="category-card" data-category="${key}">
+          <div class="category-header" onclick="toggleCategory(this)">
+            <div class="category-name">
+              <span class="category-icon" style="background:${cat.color}20;color:${cat.color}">${cat.icon}</span>
+              ${cat.name}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="category-count">${cat.intents.length} 个意图</span>
+              <svg class="category-expand" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+            </div>
+          </div>
+          <div class="category-content">
+            <div class="intent-list">
+              ${cat.intents.map(intent => `
+                <div class="intent-item">
+                  <div>
+                    <div class="intent-name">${intent.name}</div>
+                    <div class="intent-code">${intent.code}</div>
+                  </div>
+                  <span class="badge ${intent.sensitivity === 'LOW' ? 'success' : intent.sensitivity === 'MEDIUM' ? 'info' : intent.sensitivity === 'HIGH' ? 'warning' : 'error'}">${intent.sensitivity}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function toggleCategory(header) {
+      header.parentElement.classList.toggle('expanded');
+    }
+
+    function filterByCategory(category) {
+      document.querySelectorAll('#categoryFilters .filter-tag').forEach(tag => tag.classList.remove('active'));
+      event.target.classList.add('active');
+
+      if (category === 'all') {
+        renderCategoryCards(Object.entries(intentCategories));
+      } else {
+        renderCategoryCards([[category, intentCategories[category]]]);
+      }
+    }
+
+    function filterIntents() {
+      const query = document.getElementById('intentSearch').value.toLowerCase();
+      if (!query) {
+        renderCategoryCards(Object.entries(intentCategories));
+        return;
+      }
+
+      const filtered = {};
+      Object.entries(intentCategories).forEach(([key, cat]) => {
+        const matchedIntents = cat.intents.filter(i =>
+          i.name.toLowerCase().includes(query) || i.code.toLowerCase().includes(query)
+        );
+        if (matchedIntents.length > 0) {
+          filtered[key] = { ...cat, intents: matchedIntents };
+        }
+      });
+      renderCategoryCards(Object.entries(filtered));
+    }
+
+    // Tools
+    function renderTools() {
+      const container = document.getElementById('toolsGrid');
+      const filters = document.getElementById('toolFilters');
+
+      const categories = [...new Set(toolsList.map(t => t.category))];
+      filters.innerHTML = `<span class="filter-tag active" onclick="filterTools('all')">全部 (${toolsList.length})</span>` +
+        categories.map(cat => {
+          const count = toolsList.filter(t => t.category === cat).length;
+          return `<span class="filter-tag" onclick="filterTools('${cat}')">${cat} (${count})</span>`;
+        }).join('');
+
+      renderToolCards(toolsList);
+    }
+
+    function renderToolCards(tools) {
+      const container = document.getElementById('toolsGrid');
+      container.innerHTML = tools.map(tool => `
+        <div class="tool-card">
+          <div class="tool-name">${tool.name}</div>
+          <div class="tool-desc">${tool.desc}</div>
+        </div>
+      `).join('');
+    }
+
+    function filterTools(category) {
+      if (typeof category === 'string' && category !== 'all') {
+        document.querySelectorAll('#toolFilters .filter-tag').forEach(tag => tag.classList.remove('active'));
+        event.target.classList.add('active');
+        renderToolCards(toolsList.filter(t => t.category === category));
+      } else if (category === 'all') {
+        document.querySelectorAll('#toolFilters .filter-tag').forEach(tag => tag.classList.remove('active'));
+        event.target.classList.add('active');
+        renderToolCards(toolsList);
+      } else {
+        // Search
+        const query = document.getElementById('toolSearch').value.toLowerCase();
+        if (!query) {
+          renderToolCards(toolsList);
+        } else {
+          renderToolCards(toolsList.filter(t => t.name.includes(query) || t.desc.includes(query)));
+        }
+      }
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      renderCaseButtons();
+      renderIntentCategories();
+      renderTools();
+      selectCase(0);
+
+      document.getElementById('demoInput').addEventListener('keypress', e => {
+        if (e.key === 'Enter') runDemo();
+      });
+    });
+  </script>
+</body>
+</html>

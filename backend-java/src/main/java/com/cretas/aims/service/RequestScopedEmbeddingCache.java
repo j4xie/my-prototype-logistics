@@ -1,8 +1,8 @@
 package com.cretas.aims.service;
 
-import com.cretas.aims.service.impl.DjlEmbeddingClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -28,7 +28,7 @@ public class RequestScopedEmbeddingCache {
 
     private static final Logger log = LoggerFactory.getLogger(RequestScopedEmbeddingCache.class);
 
-    private final DjlEmbeddingClient embeddingClient;
+    private final EmbeddingClient embeddingClient;
 
     /**
      * ThreadLocal 缓存，key = normalized input text, value = embedding vector
@@ -42,7 +42,7 @@ public class RequestScopedEmbeddingCache {
     private final ThreadLocal<CacheStats> requestStats =
         ThreadLocal.withInitial(CacheStats::new);
 
-    public RequestScopedEmbeddingCache(DjlEmbeddingClient embeddingClient) {
+    public RequestScopedEmbeddingCache(@Lazy EmbeddingClient embeddingClient) {
         this.embeddingClient = embeddingClient;
     }
 
