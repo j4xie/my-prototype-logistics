@@ -4,6 +4,8 @@ import com.cretas.aims.entity.BaseEntity;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+import org.hibernate.annotations.GenericGenerator;
+
 import javax.persistence.*;
 
 /**
@@ -43,6 +45,8 @@ import javax.persistence.*;
 public class AiIntentConfig extends BaseEntity {
 
     @Id
+    @GeneratedValue(generator = "uuid2")
+    @GenericGenerator(name = "uuid2", strategy = "uuid2")
     @Column(length = 36)
     private String id;
 

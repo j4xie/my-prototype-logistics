@@ -82,7 +82,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
     public List<SmartBiChartTemplate> getAllTemplates() {
         if (templateCache.isEmpty()) {
             log.debug("缓存为空，从数据库加载所有模板");
-            return templateRepository.findByIsActiveTrue();
+            return templateRepository.findByIsActiveTrueOrderBySortOrder();
         }
         return new ArrayList<>(templateCache.values().stream()
                 .filter(t -> Boolean.TRUE.equals(t.getIsActive()))
@@ -94,7 +94,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
     public List<SmartBiChartTemplate> getTemplatesByCategory(String category) {
         return categoryCache.computeIfAbsent(category, key -> {
             log.debug("加载分类模板列表: category={}", category);
-            return templateRepository.findByCategoryAndIsActiveTrue(category);
+            return templateRepository.findByCategoryAndIsActiveTrueOrderBySortOrder(category);
         });
     }
 
@@ -127,8 +127,8 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
 
             // 从数据库查询工厂配置
             Optional<SmartBiChartTemplate> dbTemplate = templateRepository
-                    .findByTemplateCodeAndFactoryIdAndIsActiveTrue(templateCode, factoryId);
-            if (dbTemplate.isPresent()) {
+                    .findByTemplateCodeAndFactoryId(templateCode, factoryId);
+            if (dbTemplate.isPresent() && Boolean.TRUE.equals(dbTemplate.get().getIsActive())) {
                 templateCache.put(factoryCacheKey, dbTemplate.get());
                 return dbTemplate.get();
             }
@@ -144,8 +144,8 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
 
         // 从数据库查询全局配置
         Optional<SmartBiChartTemplate> dbGlobalTemplate = templateRepository
-                .findGlobalTemplate(templateCode);
-        if (dbGlobalTemplate.isPresent()) {
+                .findByTemplateCodeAndFactoryIdIsNull(templateCode);
+        if (dbGlobalTemplate.isPresent() && Boolean.TRUE.equals(dbGlobalTemplate.get().getIsActive())) {
             templateCache.put(globalCacheKey, dbGlobalTemplate.get());
             return dbGlobalTemplate.get();
         }
@@ -176,20 +176,20 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
             // 1. 加载模板基础配置
             chartConfig.put("chartType", template.getChartType());
             chartConfig.put("templateCode", templateCode);
-            chartConfig.put("title", template.getTitle());
+            chartConfig.put("title", template.getTemplateName());
 
             // 2. 合并模板选项
-            if (template.getOptionsJson() != null && !template.getOptionsJson().isEmpty()) {
+            if (template.getChartOptions() != null && !template.getChartOptions().isEmpty()) {
                 Map<String, Object> options = objectMapper.readValue(
-                        template.getOptionsJson(),
+                        template.getChartOptions(),
                         new TypeReference<Map<String, Object>>() {});
                 chartConfig.put("options", options);
             }
 
             // 3. 应用数据映射
-            if (template.getDataMappingJson() != null && !template.getDataMappingJson().isEmpty()) {
+            if (template.getDataMapping() != null && !template.getDataMapping().isEmpty()) {
                 Map<String, String> dataMapping = objectMapper.readValue(
-                        template.getDataMappingJson(),
+                        template.getDataMapping(),
                         new TypeReference<Map<String, String>>() {});
 
                 Map<String, Object> mappedData = new LinkedHashMap<>();
@@ -206,12 +206,12 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                 chartConfig.put("data", data);
             }
 
-            // 4. 添加样式配置
-            if (template.getStyleJson() != null && !template.getStyleJson().isEmpty()) {
-                Map<String, Object> style = objectMapper.readValue(
-                        template.getStyleJson(),
+            // 4. 添加布局配置（如果有）
+            if (template.getLayoutConfig() != null && !template.getLayoutConfig().isEmpty()) {
+                Map<String, Object> layout = objectMapper.readValue(
+                        template.getLayoutConfig(),
                         new TypeReference<Map<String, Object>>() {});
-                chartConfig.put("style", style);
+                chartConfig.put("layout", layout);
             }
 
             log.debug("成功构建图表配置: templateCode={}, chartType={}", templateCode, template.getChartType());
@@ -389,21 +389,21 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
      * 构建指标到模板的映射
      */
     private void buildMetricMapping(SmartBiChartTemplate template) {
-        if (template.getMetricCodes() == null || template.getMetricCodes().isEmpty()) {
+        if (template.getApplicableMetrics() == null || template.getApplicableMetrics().isEmpty()) {
             return;
         }
 
         try {
-            // 假设 metricCodes 是逗号分隔的字符串或 JSON 数组
-            String metricCodesStr = template.getMetricCodes();
+            // 假设 applicableMetrics 是逗号分隔的字符串或 JSON 数组
+            String applicableMetricsStr = template.getApplicableMetrics();
             List<String> metricCodes;
 
-            if (metricCodesStr.startsWith("[")) {
+            if (applicableMetricsStr.startsWith("[")) {
                 // JSON 数组格式
-                metricCodes = objectMapper.readValue(metricCodesStr, new TypeReference<List<String>>() {});
+                metricCodes = objectMapper.readValue(applicableMetricsStr, new TypeReference<List<String>>() {});
             } else {
                 // 逗号分隔格式
-                metricCodes = Arrays.asList(metricCodesStr.split(","));
+                metricCodes = Arrays.asList(applicableMetricsStr.split(","));
             }
 
             for (String metricCode : metricCodes) {
@@ -412,8 +412,8 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                         .add(template.getTemplateCode());
             }
         } catch (Exception e) {
-            log.warn("解析模板指标映射失败: templateCode={}, metricCodes={}, error={}",
-                    template.getTemplateCode(), template.getMetricCodes(), e.getMessage());
+            log.warn("解析模板指标映射失败: templateCode={}, applicableMetrics={}, error={}",
+                    template.getTemplateCode(), template.getApplicableMetrics(), e.getMessage());
         }
     }
 

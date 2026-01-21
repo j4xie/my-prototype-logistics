@@ -1,8 +1,10 @@
 package com.cretas.aims.controller;
 
+import com.cretas.aims.dto.aps.GlobalDashboard;
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.scheduling.*;
 import com.cretas.aims.service.aps.APSAdaptiveSchedulingService;
+import com.cretas.aims.service.aps.DashboardAggregationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
 public class APSAdaptiveController {
 
     private final APSAdaptiveSchedulingService adaptiveService;
+    private final DashboardAggregationService dashboardAggregationService;
 
     // ==================== 1. 进度上报 ====================
 
@@ -65,14 +68,28 @@ public class APSAdaptiveController {
     // ==================== 2. 获取实时仪表盘 ====================
 
     /**
-     * 获取自适应排产仪表盘
+     * 获取自适应排产仪表盘 (增强版)
      */
     @GetMapping("/dashboard")
     @Operation(summary = "获取自适应排产仪表盘", description = "获取全局实时状态，包括任务统计、性能指标、产线状态、风险任务等")
-    public ApiResponse<AdaptiveDashboardDTO> getDashboard(
+    public ApiResponse<GlobalDashboard> getDashboard(
             @Parameter(description = "工厂ID", example = "F001")
             @PathVariable String factoryId) {
         log.info("获取自适应排产仪表盘: factoryId={}", factoryId);
+
+        GlobalDashboard dashboard = dashboardAggregationService.generateDashboard(factoryId);
+        return ApiResponse.success("获取成功", dashboard);
+    }
+
+    /**
+     * 获取自适应排产仪表盘 (兼容旧版)
+     */
+    @GetMapping("/dashboard/v1")
+    @Operation(summary = "获取自适应排产仪表盘(旧版)", description = "获取全局实时状态(旧版DTO格式)")
+    public ApiResponse<AdaptiveDashboardDTO> getDashboardV1(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId) {
+        log.info("获取自适应排产仪表盘(旧版): factoryId={}", factoryId);
 
         APSAdaptiveSchedulingService.GlobalDashboard dashboard = adaptiveService.getGlobalDashboard();
         AdaptiveDashboardDTO dto = convertToDashboardDTO(dashboard);
@@ -232,16 +249,32 @@ public class APSAdaptiveController {
     // ==================== 9. 获取高风险任务列表 ====================
 
     /**
-     * 获取高风险任务列表
+     * 获取高风险任务列表 (增强版 - 带分页)
      */
     @GetMapping("/risks")
-    @Operation(summary = "获取高风险任务列表", description = "获取完成概率低于指定阈值的任务列表")
-    public ApiResponse<List<TaskRiskDTO>> getRiskTasks(
+    @Operation(summary = "获取高风险任务列表", description = "获取完成概率较低的任务列表，按风险程度排序")
+    public ApiResponse<List<GlobalDashboard.RiskTask>> getRiskTasks(
+            @Parameter(description = "工厂ID", example = "F001")
+            @PathVariable String factoryId,
+            @Parameter(description = "返回数量限制", example = "10")
+            @RequestParam(defaultValue = "10") int limit) {
+        log.info("获取高风险任务: factoryId={}, limit={}", factoryId, limit);
+
+        List<GlobalDashboard.RiskTask> risks = dashboardAggregationService.getTopRiskTasks(factoryId, limit);
+        return ApiResponse.success("获取成功", risks);
+    }
+
+    /**
+     * 获取高风险任务列表 (旧版 - 按阈值过滤)
+     */
+    @GetMapping("/risks/v1")
+    @Operation(summary = "获取高风险任务列表(旧版)", description = "获取完成概率低于指定阈值的任务列表")
+    public ApiResponse<List<TaskRiskDTO>> getRiskTasksV1(
             @Parameter(description = "工厂ID", example = "F001")
             @PathVariable String factoryId,
             @Parameter(description = "概率阈值(0-1)，低于此值视为高风险", example = "0.7")
             @RequestParam(defaultValue = "0.7") double threshold) {
-        log.info("获取高风险任务: factoryId={}, threshold={}", factoryId, threshold);
+        log.info("获取高风险任务(旧版): factoryId={}, threshold={}", factoryId, threshold);
 
         List<APSAdaptiveSchedulingService.TaskRiskInfo> risks =
                 adaptiveService.getLowProbabilityTasks(threshold);

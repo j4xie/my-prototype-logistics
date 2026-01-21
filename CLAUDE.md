@@ -23,8 +23,11 @@ This file provides guidance to Claude Code when working with this repository.
 | Service | Port | URL |
 |---------|------|-----|
 | React Native | 3010 | `http://localhost:3010` |
-| Spring Boot | 10010 | `http://139.196.165.140:10010` |
+| Cretas 后端 | 10010 | `http://139.196.165.140:10010` |
+| Mall 后端 | 8080 | `http://139.196.165.140:8080` |
 | MySQL | 3306 | `localhost:3306` |
+| Redis | 6379 | `localhost:6379` |
+| FRP | 7501 | 内网穿透 |
 
 ### 测试账号
 | 角色 | 用户名 | 密码 | factoryId |
@@ -32,6 +35,10 @@ This file provides guidance to Claude Code when working with this repository.
 | 工厂超级管理员 | `factory_admin1` | `123456` | F001 |
 | 平台管理员 | `platform_admin` | `123456` | - |
 | 车间主管 | `workshop_sup1` | `123456` | F001 |
+| 仓储主管 | `warehouse_mgr1` | `123456` | F001 |
+| HR 管理员 | `hr_admin1` | `123456` | F001 |
+| 调度员 | `dispatcher1` | `123456` | F001 |
+| 质检员 | `quality_insp1` | `123456` | F001 |
 
 ---
 
@@ -53,8 +60,49 @@ mvn spring-boot:run              # Run locally
 
 ### 部署到服务器
 ```bash
-scp target/*.jar root@139.196.165.140:/www/wwwroot/cretas/
-ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
+# 一键部署（推荐）
+./deploy-backend.sh steven
+
+# 或使用 skill
+/deploy-backend
+```
+
+---
+
+## Server Structure
+
+### 服务器目录 (`/www/wwwroot/`)
+```
+/www/wwwroot/
+├── cretas/              # Cretas 食品溯源系统
+│   ├── cretas-backend-system-1.0.0.jar
+│   ├── application.properties
+│   ├── restart.sh
+│   ├── ai-service/      # AI 服务 (Python)
+│   ├── backend-java/    # 后端源码
+│   ├── code/            # 完整代码仓库
+│   └── logs/            # 日志目录
+├── mall/                # 商城系统
+│   ├── admin/           # 管理前端
+│   ├── backend/         # 后端服务 (logistics-admin.jar)
+│   └── data/            # 数据文件
+├── showcase/            # 展示网站
+│   └── cretaceousfuture/
+└── web-admin/           # Web 管理前端
+```
+
+### 服务管理
+```bash
+# Mall 后端 (systemd 管理)
+systemctl status mall-backend
+systemctl restart mall-backend
+
+# Cretas 后端 (脚本管理)
+cd /www/wwwroot/cretas && bash restart.sh
+
+# 查看日志
+tail -f /www/wwwroot/cretas/cretas-backend.log
+tail -f /www/wwwroot/mall/backend/mall-admin.log
 ```
 
 ---
@@ -99,6 +147,8 @@ frontend/CretasFoodTrace/src/
 - `jwt-token-handling.md` - JWT Token 处理
 - `database-entity-sync.md` - 数据库同步
 - `field-naming-convention.md` - 字段命名
+- `server-operations.md` - 服务器运维规范
+- `backend-deployment.md` - 后端自动化部署
 
 ### 核心原则
 1. **禁止降级处理** - 不返回假数据，明确显示错误

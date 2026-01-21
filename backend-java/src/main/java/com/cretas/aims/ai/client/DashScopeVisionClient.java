@@ -259,6 +259,40 @@ public class DashScopeVisionClient {
         return config.isAvailable() && config.getVisionModel() != null;
     }
 
+    /**
+     * 通用图片分析方法
+     *
+     * @param imageUrl 图片URL
+     * @param prompt   分析提示词
+     * @return 分析结果文本
+     */
+    public String analyzeImage(String imageUrl, String prompt) {
+        if (!config.isAvailable()) {
+            throw new RuntimeException("DashScope API 未配置");
+        }
+
+        try {
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model(config.getVisionModel())
+                    .messages(List.of(ChatMessage.userWithImageUrl(prompt, imageUrl)))
+                    .maxTokens(2000)
+                    .temperature(0.3)
+                    .build();
+
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+
+            if (response.hasError()) {
+                throw new RuntimeException("API 调用失败: " + response.getErrorMessage());
+            }
+
+            return response.getContent();
+
+        } catch (Exception e) {
+            log.error("图片分析失败", e);
+            throw new RuntimeException("图片分析失败: " + e.getMessage(), e);
+        }
+    }
+
     // ==================== 摄像头告警图片分析 ====================
 
     /**

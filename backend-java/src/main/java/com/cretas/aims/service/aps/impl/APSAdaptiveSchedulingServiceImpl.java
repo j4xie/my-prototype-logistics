@@ -1,5 +1,6 @@
 package com.cretas.aims.service.aps.impl;
 
+import com.cretas.aims.dto.aps.*;
 import com.cretas.aims.entity.*;
 import com.cretas.aims.repository.*;
 import com.cretas.aims.service.aps.APSAdaptiveSchedulingService;
@@ -231,6 +232,9 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
 
     // ==================== 效率动态计算 ====================
 
+    /** EWMA alpha 参数 (新数据权重) */
+    private static final double EWMA_ALPHA = 0.3;
+
     @Override
     public double calculateRollingEfficiency(String lineId) {
         LocalDateTime windowStart = LocalDateTime.now().minusHours(EFFICIENCY_ROLLING_WINDOW_HOURS);
@@ -242,17 +246,43 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
         }
 
         // EWMA 计算: new = alpha * current + (1-alpha) * old
-        double alpha = 0.3;
         double rollingEfficiency = 1.0;
 
         // 从旧到新遍历
         for (int i = histories.size() - 1; i >= 0; i--) {
             EfficiencyHistory h = histories.get(i);
             double ratio = h.getEfficiencyRatio() != null ? h.getEfficiencyRatio().doubleValue() : 1.0;
-            rollingEfficiency = alpha * ratio + (1 - alpha) * rollingEfficiency;
+            rollingEfficiency = EWMA_ALPHA * ratio + (1 - EWMA_ALPHA) * rollingEfficiency;
         }
 
         return rollingEfficiency;
+    }
+
+    @Override
+    public BigDecimal calculateRollingEfficiency(String lineId, BigDecimal currentEfficiency) {
+        // 获取最近4小时的效率历史记录
+        LocalDateTime windowStart = LocalDateTime.now().minusHours(EFFICIENCY_ROLLING_WINDOW_HOURS);
+        List<EfficiencyHistory> histories = efficiencyHistoryRepository
+            .findByLineIdAndRecordedAtAfterOrderByRecordedAtDesc(lineId, windowStart);
+
+        double current = currentEfficiency != null ? currentEfficiency.doubleValue() : 1.0;
+
+        if (histories.isEmpty()) {
+            // 无历史数据，直接返回当前效率
+            return BigDecimal.valueOf(current);
+        }
+
+        // 获取最近一条记录的滚动效率作为 previous
+        double previous = 1.0;
+        if (!histories.isEmpty() && histories.get(0).getEfficiencyRatio() != null) {
+            // 使用最近的 EWMA 值
+            previous = calculateRollingEfficiency(lineId);
+        }
+
+        // EWMA 计算: new = 0.3 * current + 0.7 * previous
+        double rollingEfficiency = EWMA_ALPHA * current + (1 - EWMA_ALPHA) * previous;
+
+        return BigDecimal.valueOf(rollingEfficiency).setScale(4, BigDecimal.ROUND_HALF_UP);
     }
 
     @Override
@@ -272,6 +302,59 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
             productionLineRepository.save(line);
             log.info("Updated line {} rolling efficiency to {}", lineId, rollingEfficiency);
         });
+    }
+
+    @Override
+    @Transactional
+    public void recordEfficiencyHistory(String lineId, String taskId,
+                                         BigDecimal actualOutput, BigDecimal expectedOutput, Integer workerCount) {
+        EfficiencyHistory history = new EfficiencyHistory();
+        history.setLineId(lineId);
+        history.setTaskId(taskId);
+        history.setRecordedAt(LocalDateTime.now());
+        history.setActualOutput(actualOutput);
+        history.setExpectedOutput(expectedOutput);
+
+        // 计算效率比率
+        if (expectedOutput != null && expectedOutput.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal ratio = actualOutput.divide(expectedOutput, 4, BigDecimal.ROUND_HALF_UP);
+            history.setEfficiencyRatio(ratio);
+        } else {
+            history.setEfficiencyRatio(BigDecimal.ONE);
+        }
+
+        history.setWorkerCount(workerCount);
+        efficiencyHistoryRepository.save(history);
+
+        log.info("Recorded efficiency history for line {}, task {}: ratio = {}",
+            lineId, taskId, history.getEfficiencyRatio());
+    }
+
+    @Override
+    public List<EfficiencyHistoryDTO> getEfficiencyHistory(String lineId, int hours) {
+        LocalDateTime windowStart = LocalDateTime.now().minusHours(hours);
+        List<EfficiencyHistory> histories = efficiencyHistoryRepository
+            .findByLineIdAndRecordedAtAfterOrderByRecordedAtDesc(lineId, windowStart);
+
+        ProductionLine line = productionLineRepository.findById(lineId).orElse(null);
+        String lineName = line != null ? line.getName() : "Unknown";
+
+        // 计算滚动效率
+        double currentRollingEfficiency = calculateRollingEfficiency(lineId);
+
+        return histories.stream().map(h -> EfficiencyHistoryDTO.builder()
+            .id(h.getId())
+            .lineId(h.getLineId())
+            .lineName(lineName)
+            .taskId(h.getTaskId())
+            .recordedAt(h.getRecordedAt())
+            .actualOutput(h.getActualOutput())
+            .expectedOutput(h.getExpectedOutput())
+            .efficiencyRatio(h.getEfficiencyRatio())
+            .workerCount(h.getWorkerCount())
+            .rollingEfficiency(BigDecimal.valueOf(currentRollingEfficiency))
+            .build()
+        ).collect(Collectors.toList());
     }
 
     // ==================== 完成概率预测 ====================
@@ -366,6 +449,216 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
         riskTasks.sort(Comparator.comparingDouble(TaskRiskInfo::getCompletionProbability));
 
         return riskTasks;
+    }
+
+    @Override
+    public String determineRiskLevel(double probability) {
+        if (probability >= 0.8) return "low";       // 绿色
+        if (probability >= 0.6) return "medium";    // 黄色预警
+        if (probability >= 0.5) return "high";      // 红色高危
+        return "critical";                           // 需立即重排
+    }
+
+    @Override
+    public CompletionPrediction predictTaskCompletion(String taskId) {
+        LineSchedule task = lineScheduleRepository.findById(taskId)
+            .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+
+        ProductionLine line = productionLineRepository.findById(task.getProductionLineId()).orElse(null);
+
+        // 构建12维特征向量
+        double[] features = buildFeatureVector(task);
+
+        // 获取预测模型权重
+        double[] weights = getWeightsArray();
+
+        // 计算 logit = Σ weight[i] * feature[i]
+        double logit = 0;
+        for (int i = 0; i < features.length && i < weights.length; i++) {
+            logit += weights[i] * features[i];
+        }
+
+        // Sigmoid: probability = 1 / (1 + exp(-logit))
+        double probability = 1.0 / (1.0 + Math.exp(-logit));
+
+        // 确定风险等级
+        String riskLevel = determineRiskLevel(probability);
+
+        // 计算预计完成时间和延迟
+        LocalDateTime predictedEndTime = estimateEndTime(task);
+        int estimatedDelayMinutes = 0;
+        if (predictedEndTime != null && task.getPlannedEndTime() != null) {
+            if (predictedEndTime.isAfter(task.getPlannedEndTime())) {
+                estimatedDelayMinutes = (int) ChronoUnit.MINUTES.between(
+                    task.getPlannedEndTime(), predictedEndTime);
+            }
+        }
+
+        // 生成建议行动
+        List<String> suggestedActions = generateSuggestedActions(task, probability);
+
+        return CompletionPrediction.builder()
+            .taskId(taskId)
+            .probability(probability)
+            .riskLevel(riskLevel)
+            .predictedEndTime(predictedEndTime)
+            .estimatedDelayMinutes(estimatedDelayMinutes)
+            .suggestedActions(suggestedActions)
+            .featureVector(features)
+            .build();
+    }
+
+    @Override
+    public RiskAssessmentDTO getTaskRiskAssessment(String taskId) {
+        LineSchedule task = lineScheduleRepository.findById(taskId)
+            .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+
+        ProductionLine line = productionLineRepository.findById(task.getProductionLineId()).orElse(null);
+
+        // 构建特征向量
+        double[] features = buildFeatureVector(task);
+        double[] weights = getWeightsArray();
+
+        // 计算概率
+        double logit = 0;
+        for (int i = 0; i < features.length && i < weights.length; i++) {
+            logit += weights[i] * features[i];
+        }
+        double probability = 1.0 / (1.0 + Math.exp(-logit));
+
+        String riskLevel = determineRiskLevel(probability);
+
+        // 构建风险因素详情
+        List<RiskAssessmentDTO.RiskFactor> riskFactors = new ArrayList<>();
+        for (int i = 0; i < features.length && i < CompletionPrediction.FEATURE_NAMES.length; i++) {
+            double contribution = weights[i] * features[i];
+            riskFactors.add(RiskAssessmentDTO.RiskFactor.builder()
+                .factorName(CompletionPrediction.FEATURE_NAMES[i])
+                .value(features[i])
+                .weight(weights[i])
+                .contribution(contribution)
+                .description(getFeatureDescription(i, features[i]))
+                .build());
+        }
+
+        // 计算预计延迟
+        LocalDateTime predictedEndTime = estimateEndTime(task);
+        int estimatedDelayMinutes = 0;
+        if (predictedEndTime != null && task.getPlannedEndTime() != null
+            && predictedEndTime.isAfter(task.getPlannedEndTime())) {
+            estimatedDelayMinutes = (int) ChronoUnit.MINUTES.between(
+                task.getPlannedEndTime(), predictedEndTime);
+        }
+
+        return RiskAssessmentDTO.builder()
+            .taskId(taskId)
+            .taskNo(task.getId())
+            .lineName(line != null ? line.getName() : "Unknown")
+            .completionProbability(probability)
+            .riskLevel(riskLevel)
+            .riskReason(generateRiskReason(task, probability))
+            .estimatedDelayMinutes(estimatedDelayMinutes)
+            .suggestedActions(generateSuggestedActions(task, probability))
+            .riskFactors(riskFactors)
+            .build();
+    }
+
+    @Override
+    @Transactional
+    public ProgressUpdateResponse updateTaskProgress(String taskId, ProgressUpdateRequest request) {
+        LineSchedule task = lineScheduleRepository.findById(taskId)
+            .orElseThrow(() -> new RuntimeException("Task not found: " + taskId));
+
+        // 记录更新前的进度
+        double previousProgress = task.getCompletedQuantity() != null && task.getPlannedQuantity() != null
+            && task.getPlannedQuantity() > 0
+            ? task.getCompletedQuantity() * 100.0 / task.getPlannedQuantity() : 0;
+
+        // 更新已完成数量
+        task.setCompletedQuantity(request.getCompletedQty());
+        double currentProgress = task.getPlannedQuantity() != null && task.getPlannedQuantity() > 0
+            ? request.getCompletedQty() * 100.0 / task.getPlannedQuantity() : 0;
+
+        // 更新实际效率
+        if (request.getActualEfficiency() != null) {
+            task.setActualEfficiency(request.getActualEfficiency());
+            // 记录效率历史
+            recordEfficiencyHistory(
+                task.getProductionLineId(),
+                taskId,
+                BigDecimal.valueOf(request.getCompletedQty()),
+                task.getPlannedQuantity() != null ? BigDecimal.valueOf(task.getPlannedQuantity()) : BigDecimal.ZERO,
+                task.getAssignedWorkers()
+            );
+            // 更新产线滚动效率
+            updateLineEfficiencyFactor(task.getProductionLineId());
+        }
+
+        // 预测完成概率
+        CompletionPrediction prediction = predictTaskCompletion(taskId);
+        task.setPredictedCompletionProb(BigDecimal.valueOf(prediction.getProbability()));
+        task.setRiskLevel(prediction.getRiskLevel());
+
+        // 保存更新
+        lineScheduleRepository.save(task);
+
+        return ProgressUpdateResponse.builder()
+            .taskId(taskId)
+            .previousProgress(previousProgress)
+            .currentProgress(currentProgress)
+            .completionProbability(prediction.getProbability())
+            .riskLevel(prediction.getRiskLevel())
+            .needsAttention(prediction.getProbability() < PROBABILITY_WARNING_THRESHOLD)
+            .estimatedEndTime(prediction.getPredictedEndTime())
+            .estimatedDelayMinutes(prediction.getEstimatedDelayMinutes())
+            .message("进度更新成功")
+            .build();
+    }
+
+    /**
+     * 获取权重数组
+     */
+    private double[] getWeightsArray() {
+        List<PredictionModelWeight> weights = predictionModelWeightRepository.findByFactoryId("DEFAULT");
+
+        if (weights.isEmpty()) {
+            return CompletionPrediction.DEFAULT_WEIGHTS;
+        }
+
+        double[] weightArray = new double[12];
+        Map<String, Double> weightMap = weights.stream()
+            .collect(Collectors.toMap(PredictionModelWeight::getFeatureName,
+                w -> w.getFeatureWeight().doubleValue()));
+
+        for (int i = 0; i < CompletionPrediction.FEATURE_NAMES.length; i++) {
+            weightArray[i] = weightMap.getOrDefault(
+                CompletionPrediction.FEATURE_NAMES[i],
+                CompletionPrediction.DEFAULT_WEIGHTS[i]
+            );
+        }
+
+        return weightArray;
+    }
+
+    /**
+     * 获取特征描述
+     */
+    private String getFeatureDescription(int index, double value) {
+        switch (index) {
+            case 0: return String.format("进度完成 %.1f%%", value * 100);
+            case 1: return value > 0.7 ? "时间紧迫" : value > 0.3 ? "时间适中" : "时间充裕";
+            case 2: return value > 0 ? "效率高于标准" : value < 0 ? "效率低于标准" : "效率正常";
+            case 3: return String.format("工人配置满足度 %.0f%%", value * 100);
+            case 4: return String.format("历史完成率 %.0f%%", value * 100);
+            case 5: return value > 0.5 ? "已有明显延迟" : value > 0 ? "轻微延迟" : "无延迟";
+            case 6: return String.format("物料齐套率 %.0f%%", value * 100);
+            case 7: return value > 0 ? "紧急订单" : "普通订单";
+            case 8: return value > 0.5 ? "时间窗口宽" : "时间窗口窄";
+            case 9: return "偏置项";
+            case 10: return value > 0 ? "效率上升" : value < 0 ? "效率下降" : "效率稳定";
+            case 11: return value > 0 ? String.format("%.0f个冲突", value) : "无冲突";
+            default: return "";
+        }
     }
 
     // ==================== 策略权重自适应 ====================
@@ -609,10 +902,8 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
     }
 
     private String calculateRiskLevel(double probability) {
-        if (probability >= 0.8) return "low";
-        if (probability >= 0.6) return "medium";
-        if (probability >= 0.4) return "high";
-        return "critical";
+        // 使用新的风险等级判断标准
+        return determineRiskLevel(probability);
     }
 
     private double[] buildFeatureVector(LineSchedule task) {

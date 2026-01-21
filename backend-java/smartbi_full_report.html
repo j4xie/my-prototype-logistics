@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartBI 全维度分析报告</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+        .header h1 { font-size: 28px; margin-bottom: 8px; }
+        .header .meta { opacity: 0.9; font-size: 14px; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .kpi-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .kpi-card .label { color: #666; font-size: 13px; margin-bottom: 8px; }
+        .kpi-card .value { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+        .kpi-card .change { font-size: 12px; margin-top: 6px; }
+        .kpi-card .change.up { color: #10b981; }
+        .kpi-card .change.down { color: #ef4444; }
+        .kpi-card.highlight { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .kpi-card.highlight .label, .kpi-card.highlight .value { color: white; }
+
+        /* Section */
+        .section {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .section h2 {
+            font-size: 16px;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section h2 .icon { font-size: 20px; }
+
+        /* Grid layouts */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+        /* Chart containers */
+        .chart { height: 320px; }
+        .chart-lg { height: 400px; }
+        .chart-sm { height: 260px; }
+
+        /* Tables */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .data-table th, .data-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #f0f0f0; }
+        .data-table th { background: #f8fafc; color: #666; font-weight: 600; }
+        .data-table tr:hover { background: #f8fafc; }
+        .rank-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 24px; height: 24px; border-radius: 50%; font-weight: 700; font-size: 12px;
+        }
+        .rank-1 { background: #fef3c7; color: #d97706; }
+        .rank-2 { background: #e5e7eb; color: #6b7280; }
+        .rank-3 { background: #fed7aa; color: #c2410c; }
+        .rank-other { background: #f3f4f6; color: #9ca3af; }
+
+        /* Status badges */
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; }
+        .badge-success { background: #d1fae5; color: #059669; }
+        .badge-warning { background: #fef3c7; color: #d97706; }
+        .badge-danger { background: #fee2e2; color: #dc2626; }
+        .badge-info { background: #e0e7ff; color: #4f46e5; }
+
+        /* Progress bars */
+        .progress { height: 8px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .progress-green { background: linear-gradient(90deg, #10b981, #34d399); }
+        .progress-yellow { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .progress-red { background: linear-gradient(90deg, #ef4444, #f87171); }
+
+        /* Dimension tags */
+        .dim-summary {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .dim-tag {
+            background: #f0f2f5;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+        .dim-tag strong { color: #6366f1; margin-right: 4px; }
+
+        /* Alerts section */
+        .alert-item {
+            display: flex;
+            padding: 14px;
+            background: #fef2f2;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ef4444;
+        }
+        .alert-item.warning { background: #fffbeb; border-left-color: #f59e0b; }
+        .alert-item.info { background: #eff6ff; border-left-color: #3b82f6; }
+        .alert-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 12px; font-weight: bold; font-size: 14px; }
+        .alert-danger .alert-icon { background: #fee2e2; color: #dc2626; }
+        .alert-warning .alert-icon { background: #fef3c7; color: #d97706; }
+        .alert-title { font-weight: 600; font-size: 14px; color: #1a1a2e; }
+        .alert-msg { font-size: 13px; color: #666; margin-top: 4px; }
+
+        /* NL Test results */
+        .nl-test {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #10b981;
+        }
+        .nl-query { font-weight: 600; color: #1a1a2e; margin-bottom: 10px; }
+        .nl-meta { display: flex; gap: 10px; margin-bottom: 10px; }
+        .nl-response {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #374151;
+            white-space: pre-line;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-size: 13px;
+        }
+
+        @media (max-width: 1200px) {
+            .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+            .grid-4 { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 768px) {
+            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SmartBI 全维度商业分析报告</h1>
+        <div class="meta">
+            报告周期: 2026年1月 | 工厂: F001 | 生成时间: 2026-01-21 08:50:00 |
+            数据维度: <strong>13</strong> 产品类别 · <strong>10</strong> 客户类型 · <strong>17</strong> 省份 · <strong>8</strong> 销售员
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 核心KPI -->
+        <div class="kpi-grid">
+            <div class="kpi-card highlight">
+                <div class="label">总销售额</div>
+                <div class="value">1,400,000</div>
+                <div class="change">本月累计 (元)</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">毛利额</div>
+                <div class="value">499,050</div>
+                <div class="change up">毛利率 35.65%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">净利润</div>
+                <div class="value">349,335</div>
+                <div class="change up">净利率 24.95%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">订单数</div>
+                <div class="value">53</div>
+                <div class="change">客单价 26,415元</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">目标完成率</div>
+                <div class="value" style="color:#f59e0b">22.4%</div>
+                <div class="change down">需加速追赶</div>
+            </div>
+            <div class="kpi-card">
+                <div class="label">回款率</div>
+                <div class="value" style="color:#ef4444">53.5%</div>
+                <div class="change down">应收余额 20万</div>
+            </div>
+        </div>
+
+        <!-- 数据维度概览 -->
+        <div class="section">
+            <h2><span class="icon">📊</span> 数据维度概览</h2>
+            <div class="dim-summary">
+                <div class="dim-tag"><strong>13</strong> 产品类别</div>
+                <div class="dim-tag"><strong>10</strong> 客户类型</div>
+                <div class="dim-tag"><strong>4</strong> 销售区域</div>
+                <div class="dim-tag"><strong>17</strong> 省份</div>
+                <div class="dim-tag"><strong>28</strong> 城市</div>
+                <div class="dim-tag"><strong>8</strong> 销售员</div>
+                <div class="dim-tag"><strong>4</strong> 销售部门</div>
+                <div class="dim-tag"><strong>20</strong> 产品SKU</div>
+            </div>
+        </div>
+
+        <!-- 销售趋势 -->
+        <div class="section">
+            <h2><span class="icon">📈</span> 销售趋势分析 (日维度)</h2>
+            <div id="trendChart" class="chart-lg"></div>
+        </div>
+
+        <!-- 多维度分析 - 第一行 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">🏷️</span> 产品类别销售分布</h2>
+                <div id="productChart" class="chart"></div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">👥</span> 客户类型销售分布</h2>
+                <div id="customerChart" class="chart"></div>
+            </div>
+        </div>
+
+        <!-- 多维度分析 - 第二行 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">🗺️</span> 区域销售对比</h2>
+                <div id="regionChart" class="chart"></div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">🏢</span> 部门业绩对比</h2>
+                <div id="deptChart" class="chart"></div>
+            </div>
+        </div>
+
+        <!-- 省份热力图 -->
+        <div class="section">
+            <h2><span class="icon">📍</span> 省份销售TOP10</h2>
+            <div id="provinceChart" class="chart"></div>
+        </div>
+
+        <!-- 销售员排名 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">🏆</span> 销售员业绩排名</h2>
+                <table class="data-table">
+                    <thead>
+                        <tr><th>排名</th><th>销售员</th><th>部门</th><th>销售额</th><th>利润</th><th>完成率</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="rank-badge rank-1">1</span></td>
+                            <td>王五</td><td>销售二部</td>
+                            <td>296,000</td><td>91,700</td>
+                            <td><span class="badge badge-warning">24.7%</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-2">2</span></td>
+                            <td>张三</td><td>销售一部</td>
+                            <td>211,000</td><td>71,700</td>
+                            <td><span class="badge badge-warning">17.6%</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-3">3</span></td>
+                            <td>孙七</td><td>销售三部</td>
+                            <td>180,000</td><td>62,100</td>
+                            <td><span class="badge badge-warning">20.0%</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">4</span></td>
+                            <td>李四</td><td>销售一部</td>
+                            <td>208,000</td><td>73,700</td>
+                            <td><span class="badge badge-warning">28.9%</span></td>
+                        </tr>
+                        <tr>
+                            <td><span class="rank-badge rank-other">5</span></td>
+                            <td>吴九</td><td>销售四部</td>
+                            <td>154,500</td><td>54,750</td>
+                            <td><span class="badge badge-warning">21.5%</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="section">
+                <h2><span class="icon">💰</span> 财务指标概览</h2>
+                <div id="financeChart" class="chart"></div>
+            </div>
+        </div>
+
+        <!-- 产品利润分析 -->
+        <div class="section">
+            <h2><span class="icon">📦</span> 产品类别利润贡献</h2>
+            <div id="profitChart" class="chart"></div>
+        </div>
+
+        <!-- 自然语言查询测试 -->
+        <div class="section">
+            <h2><span class="icon">🤖</span> 自然语言查询测试结果 <span class="badge badge-success">7/7 通过</span></h2>
+            <div class="grid-2">
+                <div class="nl-test">
+                    <div class="nl-query">"本月销售额是多少？"</div>
+                    <div class="nl-meta">
+                        <span class="badge badge-info">QUERY_SALES_OVERVIEW</span>
+                        <span class="badge badge-success">置信度 100%</span>
+                    </div>
+                    <div class="nl-response">销售情况：
+- 总销售额: 1,400,000.00 元
+- 订单数: 53 单
+- 客单价: 26,415.00 元</div>
+                </div>
+                <div class="nl-test">
+                    <div class="nl-query">"各区域销售对比"</div>
+                    <div class="nl-meta">
+                        <span class="badge badge-info">QUERY_REGION_ANALYSIS</span>
+                        <span class="badge badge-success">置信度 100%</span>
+                    </div>
+                    <div class="nl-response">区域销售：
+1. 华东区: 419,000 元
+2. 华北区: 380,500 元
+3. 华南区: 323,000 元
+4. 西部区: 277,500 元</div>
+                </div>
+                <div class="nl-test">
+                    <div class="nl-query">"各部门销售业绩如何？"</div>
+                    <div class="nl-meta">
+                        <span class="badge badge-info">QUERY_DEPARTMENT_PERFORMANCE</span>
+                        <span class="badge badge-success">置信度 85%</span>
+                    </div>
+                    <div class="nl-response">部门业绩：
+1. 销售一部: 419,000 元 (目标完成率 82.6%)
+2. 销售二部: 380,500 元 (目标完成率 79.6%)
+3. 销售三部: 323,000 元 (目标完成率 62.1%)
+4. 销售四部: 277,500 元 (目标完成率 54.3%)</div>
+                </div>
+                <div class="nl-test">
+                    <div class="nl-query">"本月利润情况如何？"</div>
+                    <div class="nl-meta">
+                        <span class="badge badge-info">QUERY_PROFIT_ANALYSIS</span>
+                        <span class="badge badge-success">置信度 90%</span>
+                    </div>
+                    <div class="nl-response">利润分析：
+- 毛利额: 499,050 元
+- 毛利率: 35.65%
+- 净利润: 349,335 元
+- 净利率: 24.95%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预警与建议 -->
+        <div class="grid-2">
+            <div class="section">
+                <h2><span class="icon">⚠️</span> 系统预警</h2>
+                <div class="alert-item alert-danger">
+                    <div class="alert-icon">!</div>
+                    <div>
+                        <div class="alert-title">销售目标严重滞后</div>
+                        <div class="alert-msg">当前完成率仅为 22.4%，远低于 60% 的预期水平</div>
+                    </div>
+                </div>
+                <div class="alert-item alert-warning warning">
+                    <div class="alert-icon">!</div>
+                    <div>
+                        <div class="alert-title">回款率偏低</div>
+                        <div class="alert-msg">回款率 53.5%，应收账款余额 20万元</div>
+                    </div>
+                </div>
+                <div class="alert-item alert-warning warning">
+                    <div class="alert-icon">!</div>
+                    <div>
+                        <div class="alert-title">产品结构集中</div>
+                        <div class="alert-msg">乳制品占比 43.5%，需优化产品组合分散风险</div>
+                    </div>
+                </div>
+            </div>
+            <div class="section">
+                <h2><span class="icon">💡</span> AI 智能建议</h2>
+                <div class="alert-item info" style="background:#eff6ff;border-left-color:#3b82f6">
+                    <div class="alert-icon" style="background:#dbeafe;color:#2563eb">1</div>
+                    <div>
+                        <div class="alert-title">加强电商渠道拓展</div>
+                        <div class="alert-msg">电商渠道销售占比 12.9%，增长潜力大，建议增加天猫、京东投入</div>
+                    </div>
+                </div>
+                <div class="alert-item info" style="background:#eff6ff;border-left-color:#3b82f6">
+                    <div class="alert-icon" style="background:#dbeafe;color:#2563eb">2</div>
+                    <div>
+                        <div class="alert-title">拓展西部市场</div>
+                        <div class="alert-msg">西部区占比 19.8%，可开发云南、贵州、新疆等新市场</div>
+                    </div>
+                </div>
+                <div class="alert-item info" style="background:#eff6ff;border-left-color:#3b82f6">
+                    <div class="alert-icon" style="background:#dbeafe;color:#2563eb">3</div>
+                    <div>
+                        <div class="alert-title">推广高毛利产品</div>
+                        <div class="alert-msg">酒类、糖果毛利率 40%，建议重点推广以提升整体利润</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 动态配置状态 -->
+        <div class="section">
+            <h2><span class="icon">⚙️</span> SmartBI 动态配置系统状态</h2>
+            <div class="grid-4">
+                <div style="text-align:center;padding:20px;background:#f8fafc;border-radius:10px">
+                    <div style="font-size:36px;font-weight:700;color:#6366f1">146</div>
+                    <div style="color:#666;font-size:13px;margin-top:5px">意图配置</div>
+                </div>
+                <div style="text-align:center;padding:20px;background:#f8fafc;border-radius:10px">
+                    <div style="font-size:36px;font-weight:700;color:#10b981">33</div>
+                    <div style="color:#666;font-size:13px;margin-top:5px">告警阈值</div>
+                </div>
+                <div style="text-align:center;padding:20px;background:#f8fafc;border-radius:10px">
+                    <div style="font-size:36px;font-weight:700;color:#f59e0b">21</div>
+                    <div style="color:#666;font-size:13px;margin-top:5px">激励规则</div>
+                </div>
+                <div style="text-align:center;padding:20px;background:#f8fafc;border-radius:10px">
+                    <div style="font-size:36px;font-weight:700;color:#8b5cf6">46</div>
+                    <div style="color:#666;font-size:13px;margin-top:5px">字段映射</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            SmartBI 智能商业分析系统 v1.0 | 白垩纪食品溯源系统 | 报告自动生成于 2026-01-21
+        </div>
+    </div>
+
+    <script>
+        // 销售趋势图
+        const trendChart = echarts.init(document.getElementById('trendChart'));
+        trendChart.setOption({
+            tooltip: { trigger: 'axis', formatter: '{b}<br/>销售额: {c} 元' },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: {
+                type: 'category',
+                data: ['01-02', '01-03', '01-04', '01-05', '01-06', '01-07', '01-08', '01-09', '01-10',
+                       '01-11', '01-12', '01-13', '01-14', '01-15', '01-16', '01-17', '01-18', '01-19', '01-20', '01-21'],
+                axisLabel: { rotate: 45 }
+            },
+            yAxis: { type: 'value', name: '销售额 (元)', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            series: [{
+                name: '销售额',
+                type: 'line',
+                smooth: true,
+                data: [160000, 109000, 99000, 139500, 89000, 70000, 75000, 25000, 36000,
+                       109000, 85000, 18000, 87000, 73000, 30000, 27000, 35000, 60000, 37500, 36000],
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(99, 102, 241, 0.4)' },
+                        { offset: 1, color: 'rgba(99, 102, 241, 0.05)' }
+                    ])
+                },
+                lineStyle: { color: '#6366f1', width: 3 },
+                itemStyle: { color: '#6366f1' },
+                markLine: {
+                    data: [{ type: 'average', name: '平均值' }],
+                    lineStyle: { color: '#f59e0b', type: 'dashed' }
+                }
+            }]
+        });
+
+        // 产品类别图
+        const productChart = echarts.init(document.getElementById('productChart'));
+        productChart.setOption({
+            tooltip: { trigger: 'item', formatter: '{b}: {c} 元<br/>占比: {d}%' },
+            legend: { orient: 'vertical', right: 10, top: 'center', textStyle: { fontSize: 11 } },
+            series: [{
+                type: 'pie',
+                radius: ['35%', '65%'],
+                center: ['40%', '50%'],
+                itemStyle: { borderRadius: 6, borderColor: '#fff', borderWidth: 2 },
+                label: { show: false },
+                data: [
+                    { value: 609500, name: '乳制品', itemStyle: { color: '#6366f1' } },
+                    { value: 247000, name: '饮料', itemStyle: { color: '#8b5cf6' } },
+                    { value: 116000, name: '糖果', itemStyle: { color: '#a855f7' } },
+                    { value: 105000, name: '烘焙', itemStyle: { color: '#d946ef' } },
+                    { value: 75000, name: '冷冻食品', itemStyle: { color: '#ec4899' } },
+                    { value: 66000, name: '零食', itemStyle: { color: '#f43f5e' } },
+                    { value: 60000, name: '即食食品', itemStyle: { color: '#10b981' } },
+                    { value: 60000, name: '酒类', itemStyle: { color: '#14b8a6' } },
+                    { value: 37500, name: '粮油', itemStyle: { color: '#f59e0b' } },
+                    { value: 24000, name: '调味品', itemStyle: { color: '#eab308' } }
+                ]
+            }]
+        });
+
+        // 客户类型图
+        const customerChart = echarts.init(document.getElementById('customerChart'));
+        customerChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            yAxis: {
+                type: 'category',
+                data: ['C级客户', '连锁便利', 'B级客户', '便利店', 'A级客户', '会员店', '百货', '电商', '新零售', '零售商'].reverse(),
+                axisLabel: { fontSize: 11 }
+            },
+            series: [{
+                type: 'bar',
+                data: [16000, 28000, 43000, 65000, 77000, 97500, 121500, 181000, 191000, 716000].reverse(),
+                itemStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 1, 0, [
+                        { offset: 0, color: '#6366f1' },
+                        { offset: 1, color: '#a855f7' }
+                    ])
+                },
+                label: { show: true, position: 'right', formatter: v => (v.value/10000).toFixed(1) + '万' }
+            }]
+        });
+
+        // 区域对比图
+        const regionChart = echarts.init(document.getElementById('regionChart'));
+        regionChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['销售额', '目标'] },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: ['华东区', '华北区', '华南区', '西部区'] },
+            yAxis: { type: 'value', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            series: [
+                {
+                    name: '销售额',
+                    type: 'bar',
+                    data: [419000, 380500, 323000, 277500],
+                    itemStyle: { color: '#6366f1' },
+                    label: { show: true, position: 'top', formatter: v => (v.value/10000).toFixed(1) + '万' }
+                },
+                {
+                    name: '目标',
+                    type: 'bar',
+                    data: [2070000, 1800000, 1260000, 1120000],
+                    itemStyle: { color: '#e5e7eb' }
+                }
+            ]
+        });
+
+        // 部门对比图
+        const deptChart = echarts.init(document.getElementById('deptChart'));
+        deptChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['销售额', '利润'] },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: ['销售一部', '销售二部', '销售三部', '销售四部'] },
+            yAxis: { type: 'value', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            series: [
+                {
+                    name: '销售额',
+                    type: 'bar',
+                    data: [419000, 380500, 323000, 277500],
+                    itemStyle: { color: '#6366f1' }
+                },
+                {
+                    name: '利润',
+                    type: 'bar',
+                    data: [145400, 131300, 111700, 110650],
+                    itemStyle: { color: '#10b981' }
+                }
+            ]
+        });
+
+        // 省份TOP10图
+        const provinceChart = echarts.init(document.getElementById('provinceChart'));
+        provinceChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'value', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            yAxis: {
+                type: 'category',
+                data: ['新疆', '甘肃', '贵州', '福建', '海南', '云南', '河北', '天津', '重庆', '陕西', '山西', '浙江', '江苏', '四川', '北京', '广东', '上海'].reverse(),
+                axisLabel: { fontSize: 11 }
+            },
+            series: [{
+                type: 'bar',
+                data: [28000, 17500, 24000, 42000, 21000, 32000, 46500, 70500, 40500, 40000, 24000, 75000, 85000, 122000, 223000, 200000, 219000].reverse(),
+                itemStyle: {
+                    color: function(params) {
+                        const colors = ['#6366f1', '#7c3aed', '#8b5cf6', '#a855f7', '#c084fc'];
+                        return colors[params.dataIndex % colors.length];
+                    }
+                },
+                label: { show: true, position: 'right', formatter: v => (v.value/10000).toFixed(1) + '万', fontSize: 10 }
+            }]
+        });
+
+        // 财务指标图
+        const financeChart = echarts.init(document.getElementById('financeChart'));
+        financeChart.setOption({
+            tooltip: { trigger: 'item' },
+            radar: {
+                indicator: [
+                    { name: '毛利率', max: 50 },
+                    { name: '净利率', max: 35 },
+                    { name: 'ROI', max: 80 },
+                    { name: '回款率', max: 100 },
+                    { name: '目标完成率', max: 100 }
+                ],
+                radius: '65%'
+            },
+            series: [{
+                type: 'radar',
+                data: [{
+                    value: [35.65, 24.95, 55.39, 53.5, 22.4],
+                    name: '当前值',
+                    areaStyle: { color: 'rgba(99, 102, 241, 0.3)' },
+                    lineStyle: { color: '#6366f1' },
+                    itemStyle: { color: '#6366f1' }
+                }]
+            }]
+        });
+
+        // 利润贡献图
+        const profitChart = echarts.init(document.getElementById('profitChart'));
+        profitChart.setOption({
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: ['销售额', '利润'] },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: ['乳制品', '饮料', '糖果', '烘焙', '冷冻食品', '零食', '即食食品', '酒类', '粮油', '调味品'], axisLabel: { rotate: 30, fontSize: 11 } },
+            yAxis: { type: 'value', axisLabel: { formatter: v => (v/10000).toFixed(0) + '万' } },
+            series: [
+                {
+                    name: '销售额',
+                    type: 'bar',
+                    data: [609500, 247000, 116000, 105000, 75000, 66000, 60000, 60000, 37500, 24000],
+                    itemStyle: { color: '#6366f1' }
+                },
+                {
+                    name: '利润',
+                    type: 'bar',
+                    data: [182850, 98800, 46400, 42000, 30000, 26400, 24000, 24000, 15000, 9600],
+                    itemStyle: { color: '#10b981' }
+                }
+            ]
+        });
+
+        // 响应式
+        window.addEventListener('resize', () => {
+            trendChart.resize();
+            productChart.resize();
+            customerChart.resize();
+            regionChart.resize();
+            deptChart.resize();
+            provinceChart.resize();
+            financeChart.resize();
+            profitChart.resize();
+        });
+    </script>
+</body>
+</html>
