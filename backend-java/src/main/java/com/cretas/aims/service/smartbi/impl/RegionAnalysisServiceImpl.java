@@ -100,21 +100,46 @@ public class RegionAnalysisServiceImpl implements RegionAnalysisService {
         List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
                 factoryId, startDate, endDate);
 
+        log.info("查询到销售数据: {} 条", salesData.size());
+
         if (salesData.isEmpty()) {
+            log.warn("无销售数据，factoryId={}, 日期范围={} to {}", factoryId, startDate, endDate);
             return Collections.emptyList();
         }
 
-        // 按区域筛选（如果指定）
+        // 按区域筛选（支持模糊匹配）
         if (region != null && !region.isEmpty()) {
+            String normalizedRegion = normalizeRegionName(region);
             salesData = salesData.stream()
-                    .filter(s -> region.equals(s.getRegion()))
+                    .filter(s -> {
+                        String dataRegion = s.getRegion();
+                        if (dataRegion == null) return false;
+                        String normalizedData = normalizeRegionName(dataRegion);
+                        return normalizedData.contains(normalizedRegion) ||
+                               normalizedRegion.contains(normalizedData);
+                    })
                     .collect(Collectors.toList());
+            log.info("按区域 '{}' 过滤后: {} 条", region, salesData.size());
         }
 
         // 按省份分组聚合
         Map<String, RegionAggregation> provinceAggregations = aggregateByProvince(salesData);
 
         return buildRankingList(provinceAggregations);
+    }
+
+    /**
+     * 标准化区域名称（用于模糊匹配）
+     */
+    private String normalizeRegionName(String region) {
+        if (region == null) {
+            return "";
+        }
+        return region
+                .replace("地区", "")
+                .replace("区域", "")
+                .replace("大区", "")
+                .trim();
     }
 
     @Override

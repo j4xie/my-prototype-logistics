@@ -1,21 +1,34 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.ai.client.DashScopeClient;
+import com.cretas.aims.ai.dto.ChatCompletionRequest;
+import com.cretas.aims.ai.dto.ChatCompletionResponse;
+import com.cretas.aims.ai.dto.ChatMessage;
+import com.cretas.aims.dto.conversation.ConversationMessage;
+import com.cretas.aims.dto.intent.IntentMatchResult;
 import com.cretas.aims.dto.smartbi.*;
+import com.cretas.aims.dto.smartbi.ForecastResult;
+import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.entity.smartbi.*;
 import com.cretas.aims.entity.smartbi.enums.ActionType;
 import com.cretas.aims.entity.smartbi.enums.BillingMode;
 import com.cretas.aims.entity.smartbi.enums.SmartBIIntent;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.repository.smartbi.*;
+import com.cretas.aims.service.ConversationMemoryService;
+import com.cretas.aims.service.LlmIntentFallbackClient;
 import com.cretas.aims.service.smartbi.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -44,7 +57,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class SmartBIServiceImpl implements SmartBIService {
 
     // ==================== 依赖注入 ====================
@@ -63,6 +75,78 @@ public class SmartBIServiceImpl implements SmartBIService {
     private final SmartBiQueryHistoryRepository queryHistoryRepository;
 
     private final ObjectMapper objectMapper;
+
+    // ==================== 新增: AI Chat 能力集成 ====================
+
+    /**
+     * LLM Fallback 客户端 - 用于低置信度意图识别
+     * 复用 AI Chat 的 LLM 意图分类能力
+     */
+    @Autowired(required = false)
+    private LlmIntentFallbackClient llmFallbackClient;
+
+    /**
+     * 对话记忆服务 - 用于多轮对话和指代消解
+     * 复用 AI Chat 的会话上下文管理能力
+     */
+    @Autowired(required = false)
+    private ConversationMemoryService conversationMemoryService;
+
+    /**
+     * DashScope 客户端 - 用于 LLM 洞察生成
+     */
+    @Autowired(required = false)
+    private DashScopeClient dashScopeClient;
+
+    /**
+     * 预测服务 - 用于 FORECAST 意图处理
+     */
+    @Autowired(required = false)
+    private ForecastService forecastService;
+
+    // ==================== 配置参数 ====================
+
+    @Value("${smartbi.llm.enabled:true}")
+    private boolean llmEnabled;
+
+    @Value("${smartbi.llm.insight-generation:true}")
+    private boolean llmInsightEnabled;
+
+    @Value("${smartbi.llm.fallback-threshold:0.7}")
+    private double llmFallbackThreshold;
+
+    @Value("${smartbi.conversation.enabled:true}")
+    private boolean conversationEnabled;
+
+    // ==================== 构造函数 ====================
+
+    @Autowired
+    public SmartBIServiceImpl(
+            SalesAnalysisService salesService,
+            DepartmentAnalysisService deptService,
+            RegionAnalysisService regionService,
+            FinanceAnalysisService financeService,
+            SmartBIIntentService intentService,
+            SmartBIPromptService promptService,
+            RecommendationService recommendationService,
+            SmartBiAnalysisCacheRepository cacheRepository,
+            SmartBiUsageRecordRepository usageRepository,
+            SmartBiBillingConfigRepository billingRepository,
+            SmartBiQueryHistoryRepository queryHistoryRepository,
+            ObjectMapper objectMapper) {
+        this.salesService = salesService;
+        this.deptService = deptService;
+        this.regionService = regionService;
+        this.financeService = financeService;
+        this.intentService = intentService;
+        this.promptService = promptService;
+        this.recommendationService = recommendationService;
+        this.cacheRepository = cacheRepository;
+        this.usageRepository = usageRepository;
+        this.billingRepository = billingRepository;
+        this.queryHistoryRepository = queryHistoryRepository;
+        this.objectMapper = objectMapper;
+    }
 
     // ==================== 常量定义 ====================
 
@@ -226,7 +310,7 @@ public class SmartBIServiceImpl implements SmartBIService {
     @Transactional
     public NLQueryResponse processQuery(String factoryId, Long userId, NLQueryRequest request) {
         log.info("处理自然语言查询: factoryId={}, userId={}, query={}",
-                factoryId, userId, request.getQueryText());
+                factoryId, userId, request.getEffectiveQuery());
         long startTime = System.currentTimeMillis();
 
         // 1. 检查配额
@@ -234,37 +318,47 @@ public class SmartBIServiceImpl implements SmartBIService {
             throw new BusinessException("今日查询配额已用完，请明日再试或升级套餐");
         }
 
-        // 2. 意图识别
-        IntentResult intentResult = intentService.recognizeIntent(request.getQueryText());
-        log.info("意图识别结果: intent={}, confidence={}", intentResult.getIntent(), intentResult.getConfidence());
-
-        // 3. 处理低置信度情况
-        if (intentResult.isNeedsLLMFallback()) {
-            log.warn("意图识别置信度低，需要 LLM Fallback: query={}", request.getQueryText());
-            // TODO: 调用 LLM 进行意图澄清
+        // 2. 指代消解 - 解析多轮对话中的指代词（复用 AI Chat 会话记忆能力）
+        String resolvedQuery = resolveQueryReferences(request);
+        if (!resolvedQuery.equals(request.getEffectiveQuery())) {
+            log.info("指代消解: '{}' -> '{}'", request.getEffectiveQuery(), resolvedQuery);
         }
 
-        // 4. 根据意图执行查询
+        // 3. 意图识别
+        IntentResult intentResult = intentService.recognizeIntent(resolvedQuery);
+        log.info("意图识别结果: intent={}, confidence={}", intentResult.getIntent(), intentResult.getConfidence());
+
+        // 4. 处理低置信度情况 - LLM Fallback（复用 AI Chat LLM 能力）
+        if (intentResult.isNeedsLLMFallback()) {
+            log.info("触发 LLM Fallback: confidence={}, threshold={}",
+                    intentResult.getConfidence(), llmFallbackThreshold);
+            intentResult = tryLLMFallback(factoryId, userId, resolvedQuery, intentResult);
+        }
+
+        // 5. 根据意图执行查询
         Object data = executeIntent(factoryId, intentResult);
 
-        // 5. 生成响应文本
+        // 6. 生成响应文本
         String responseText = generateResponseText(intentResult, data);
 
-        // 6. 生成图表配置
+        // 7. 生成图表配置
         List<ChartConfig> charts = generateChartConfig(intentResult, data);
 
-        // 7. 生成后续问题建议
+        // 8. 生成后续问题建议
         List<String> followUpQuestions = generateFollowUpQuestions(intentResult);
 
-        // 8. 保存查询历史
+        // 9. 更新对话记忆（复用 AI Chat 会话记忆能力）
+        updateConversationMemory(request.getSessionId(), request, intentResult, responseText);
+
+        // 10. 保存查询历史
         saveQueryHistory(factoryId, userId, request, intentResult, responseText);
 
-        // 9. 记录使用
+        // 11. 记录使用
         long elapsed = System.currentTimeMillis() - startTime;
-        recordUsageWithQuery(factoryId, userId, request.getQueryText(), intentResult.getIntent().getCode(),
+        recordUsageWithQuery(factoryId, userId, request.getEffectiveQuery(), intentResult.getIntent().getCode(),
                 0, false, (int) elapsed);
 
-        // 10. 构建响应
+        // 12. 构建响应
         Map<String, Object> parameters = intentResult.getParameters() != null ?
                 intentResult.getParameters() : new HashMap<>();
         if (intentResult.getTimeRange() != null) {
@@ -277,6 +371,154 @@ public class SmartBIServiceImpl implements SmartBIService {
                 .parameters(parameters)
                 .charts(charts)
                 .followUpQuestions(followUpQuestions)
+                .build();
+    }
+
+    // ==================== AI Chat 能力集成方法 ====================
+
+    /**
+     * 解析查询中的指代词（复用 ConversationMemoryService）
+     *
+     * 支持的指代模式：
+     * - "这批"、"那批" -> 上一轮提到的批次
+     * - "这家"、"那个供应商" -> 上一轮提到的供应商
+     * - "这个部门"、"那个区域" -> 上一轮提到的部门/区域
+     *
+     * @param request 查询请求
+     * @return 消解后的查询文本
+     */
+    private String resolveQueryReferences(NLQueryRequest request) {
+        if (!conversationEnabled || conversationMemoryService == null) {
+            return request.getEffectiveQuery();
+        }
+
+        String sessionId = request.getSessionId();
+        if (sessionId == null || sessionId.isEmpty()) {
+            return request.getEffectiveQuery();
+        }
+
+        try {
+            // 调用 AI Chat 的指代消解能力
+            String resolved = conversationMemoryService.resolveReference(sessionId, request.getEffectiveQuery());
+            return resolved != null ? resolved : request.getEffectiveQuery();
+        } catch (Exception e) {
+            log.warn("指代消解失败: sessionId={}, error={}", sessionId, e.getMessage());
+            return request.getEffectiveQuery();
+        }
+    }
+
+    /**
+     * 尝试 LLM Fallback 意图识别（复用 LlmIntentFallbackClient）
+     *
+     * 当规则引擎置信度低于阈值时，调用 LLM 进行意图澄清。
+     * 参考 AIIntentServiceImpl:1055 的实现。
+     *
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param query 查询文本
+     * @param ruleResult 规则引擎识别结果
+     * @return 最终意图识别结果
+     */
+    private IntentResult tryLLMFallback(String factoryId, Long userId, String query, IntentResult ruleResult) {
+        if (!llmEnabled || llmFallbackClient == null) {
+            log.debug("LLM Fallback 未启用或客户端未配置");
+            return ruleResult;
+        }
+
+        try {
+            // 将 SmartBI 意图转换为 AIIntentConfig 列表
+            List<AIIntentConfig> intentConfigs = convertToIntentConfigs(SmartBIIntent.values());
+
+            // 调用 LLM 进行意图分类（参考 AIIntentServiceImpl:1055）
+            IntentMatchResult llmResult = llmFallbackClient.classifyIntent(
+                    query, intentConfigs, factoryId, userId, null);
+
+            if (llmResult != null && llmResult.hasMatch()) {
+                log.info("LLM Fallback 成功: intent={}, confidence={}",
+                        llmResult.getBestMatch().getIntentCode(), llmResult.getConfidence());
+
+                // 如果 LLM 置信度更高，使用 LLM 结果
+                if (llmResult.getConfidence() > ruleResult.getConfidence()) {
+                    return convertToSmartBIIntentResult(llmResult, query);
+                }
+            }
+        } catch (Exception e) {
+            log.error("LLM Fallback 异常: {}", e.getMessage(), e);
+        }
+
+        return ruleResult;
+    }
+
+    /**
+     * 更新对话记忆（复用 ConversationMemoryService）
+     *
+     * 参考 IntentExecutorServiceImpl:648 的 updateConversationMemory() 实现。
+     *
+     * @param sessionId 会话ID
+     * @param request 查询请求
+     * @param intentResult 意图识别结果
+     * @param responseText 响应文本
+     */
+    private void updateConversationMemory(String sessionId, NLQueryRequest request,
+                                          IntentResult intentResult, String responseText) {
+        if (!conversationEnabled || conversationMemoryService == null) {
+            return;
+        }
+
+        if (sessionId == null || sessionId.isEmpty()) {
+            return;
+        }
+
+        try {
+            // 记录用户消息
+            conversationMemoryService.addMessage(sessionId,
+                    ConversationMessage.user(request.getEffectiveQuery()));
+
+            // 记录助手回复
+            conversationMemoryService.addMessage(sessionId,
+                    ConversationMessage.assistant(responseText, intentResult.getIntent().getCode()));
+
+            // 更新最后意图
+            conversationMemoryService.updateLastIntent(sessionId, intentResult.getIntent().getCode());
+
+            log.debug("对话记忆已更新: sessionId={}, intent={}", sessionId, intentResult.getIntent().getCode());
+        } catch (Exception e) {
+            log.warn("更新对话记忆失败: sessionId={}, error={}", sessionId, e.getMessage());
+        }
+    }
+
+    /**
+     * 将 SmartBIIntent 枚举转换为 AIIntentConfig 列表
+     * 用于 LLM Fallback 调用
+     */
+    private List<AIIntentConfig> convertToIntentConfigs(SmartBIIntent[] intents) {
+        List<AIIntentConfig> configs = new ArrayList<>();
+        for (SmartBIIntent intent : intents) {
+            if (intent == SmartBIIntent.UNKNOWN) {
+                continue;
+            }
+            AIIntentConfig config = AIIntentConfig.builder()
+                    .intentCode(intent.getCode())
+                    .intentName(intent.getName())
+                    .intentCategory(intent.getCategory())
+                    .build();
+            configs.add(config);
+        }
+        return configs;
+    }
+
+    /**
+     * 将 AI Chat 的 IntentMatchResult 转换为 SmartBI 的 IntentResult
+     */
+    private IntentResult convertToSmartBIIntentResult(IntentMatchResult matchResult, String originalQuery) {
+        SmartBIIntent intent = SmartBIIntent.fromCode(matchResult.getBestMatch().getIntentCode());
+
+        return IntentResult.builder()
+                .intent(intent)
+                .confidence(matchResult.getConfidence())
+                .originalQuery(originalQuery)
+                .needsLLMFallback(false)
+                .matchMethod("LLM")
                 .build();
     }
 
@@ -544,17 +786,154 @@ public class SmartBIServiceImpl implements SmartBIService {
             return insights;
         }
 
-        // 从推荐服务获取洞察
+        // 1. 从推荐服务获取规则引擎洞察
         List<AIInsight> recommendationInsights = recommendationService.generateInsightSummary(dashboard);
         if (recommendationInsights != null) {
             insights.addAll(recommendationInsights);
         }
 
-        // 限制返回数量，按级别排序
+        // 2. LLM 生成洞察（复用 DashScopeClient）
+        if (llmInsightEnabled && dashScopeClient != null && checkQuota(factoryId)) {
+            try {
+                List<AIInsight> llmInsights = generateLLMInsights(factoryId, dashboard);
+                if (llmInsights != null && !llmInsights.isEmpty()) {
+                    insights.addAll(llmInsights);
+                    log.info("LLM 洞察生成成功: factoryId={}, count={}", factoryId, llmInsights.size());
+                }
+            } catch (Exception e) {
+                log.warn("LLM 洞察生成失败: factoryId={}, error={}", factoryId, e.getMessage());
+            }
+        }
+
+        // 3. 去重、限制返回数量，按级别排序
         return insights.stream()
+                .distinct()
                 .sorted(this::compareInsightLevel)
                 .limit(5)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 使用 LLM 生成 AI 洞察
+     *
+     * 调用 DashScopeClient 分析仪表盘数据，生成 3-5 条关键洞察。
+     *
+     * @param factoryId 工厂ID
+     * @param dashboard 仪表盘数据
+     * @return LLM 生成的洞察列表
+     */
+    private List<AIInsight> generateLLMInsights(String factoryId, DashboardResponse dashboard) {
+        if (dashScopeClient == null) {
+            return Collections.emptyList();
+        }
+
+        try {
+            // 构建分析提示词
+            String dataJson = objectMapper.writeValueAsString(dashboard.getKpiCards());
+            String prompt = buildInsightPrompt(dashboard, dataJson);
+
+            // 系统提示词
+            String systemPrompt = "你是一位专业的BI分析师，请基于给定的业务数据生成3-5条关键洞察。\n" +
+                    "要求：\n" +
+                    "1. 每条洞察包含：level（级别）、category（分类）、message（洞察内容）、relatedEntity（相关实体）、actionSuggestion（建议）\n" +
+                    "2. level取值: RED（严重警告）, YELLOW（注意）, GREEN（良好）, INFO（信息）\n" +
+                    "3. 优先发现异常和风险（用RED/YELLOW标记）\n" +
+                    "4. 提供可操作的行动建议\n" +
+                    "5. 返回JSON数组格式：[{\"level\":\"YELLOW\",\"category\":\"销售分析\",\"message\":\"华东区销售增长放缓\",\"relatedEntity\":\"华东区\",\"actionSuggestion\":\"建议加强华东区促销力度\"}]";
+
+            // 调用 LLM
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .messages(List.of(
+                            ChatMessage.system(systemPrompt),
+                            ChatMessage.user(prompt)
+                    ))
+                    .temperature(0.3)
+                    .maxTokens(1024)
+                    .build();
+
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+
+            if (response != null && response.getChoices() != null && !response.getChoices().isEmpty()) {
+                String content = response.getChoices().get(0).getMessage().getContent();
+                return parseLLMInsights(content);
+            }
+        } catch (Exception e) {
+            log.error("LLM 洞察生成异常: {}", e.getMessage(), e);
+        }
+
+        return Collections.emptyList();
+    }
+
+    /**
+     * 构建 LLM 洞察分析提示词
+     */
+    private String buildInsightPrompt(DashboardResponse dashboard, String kpiJson) {
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("请分析以下业务数据并生成洞察：\n\n");
+
+        // KPI 数据
+        prompt.append("【KPI指标】\n").append(kpiJson).append("\n\n");
+
+        // 排名数据
+        if (dashboard.getRankings() != null && !dashboard.getRankings().isEmpty()) {
+            prompt.append("【排名数据】\n");
+            dashboard.getRankings().forEach((key, rankings) -> {
+                prompt.append(key).append(": ");
+                if (rankings != null && !rankings.isEmpty()) {
+                    prompt.append(rankings.stream()
+                            .limit(3)
+                            .map(r -> r.getName() + "(" + r.getValue() + ")")
+                            .collect(Collectors.joining(", ")));
+                }
+                prompt.append("\n");
+            });
+        }
+
+        prompt.append("\n请返回JSON数组格式的洞察列表。");
+        return prompt.toString();
+    }
+
+    /**
+     * 解析 LLM 返回的洞察 JSON
+     */
+    private List<AIInsight> parseLLMInsights(String llmResponse) {
+        List<AIInsight> insights = new ArrayList<>();
+
+        try {
+            // 提取 JSON 数组（处理可能的 markdown 代码块）
+            String jsonContent = llmResponse;
+            if (jsonContent.contains("```json")) {
+                jsonContent = jsonContent.substring(jsonContent.indexOf("```json") + 7);
+                jsonContent = jsonContent.substring(0, jsonContent.indexOf("```"));
+            } else if (jsonContent.contains("```")) {
+                jsonContent = jsonContent.substring(jsonContent.indexOf("```") + 3);
+                jsonContent = jsonContent.substring(0, jsonContent.indexOf("```"));
+            }
+            jsonContent = jsonContent.trim();
+
+            // 解析 JSON 数组
+            List<Map<String, Object>> insightMaps = objectMapper.readValue(
+                    jsonContent, new TypeReference<List<Map<String, Object>>>() {});
+
+            for (Map<String, Object> map : insightMaps) {
+                // AIInsight 字段: level, category, message, relatedEntity, actionSuggestion
+                AIInsight insight = AIInsight.builder()
+                        .level((String) map.getOrDefault("level", "INFO"))
+                        .category((String) map.getOrDefault("category", "LLM_INSIGHT"))
+                        .message((String) map.getOrDefault("content",
+                                (String) map.getOrDefault("message", "")))
+                        .relatedEntity((String) map.getOrDefault("relatedEntity",
+                                (String) map.getOrDefault("title", "")))
+                        .actionSuggestion((String) map.getOrDefault("actionSuggestion",
+                                (String) map.getOrDefault("suggestion", "")))
+                        .build();
+                insights.add(insight);
+            }
+        } catch (Exception e) {
+            log.warn("解析 LLM 洞察响应失败: {}", e.getMessage());
+        }
+
+        return insights;
     }
 
     // ==================== 私有辅助方法 ====================
@@ -694,9 +1073,46 @@ public class SmartBIServiceImpl implements SmartBIService {
             case DRILL_DOWN:
                 return handleDrillDownIntent(factoryId, intentResult);
 
+            case FORECAST:
+                return handleForecastIntent(factoryId, intentResult, startDate, endDate);
+
             default:
                 log.warn("未支持的意图类型: {}", intent);
                 throw new BusinessException("暂不支持该查询类型: " + intent.getName());
+        }
+    }
+
+    /**
+     * 处理预测分析意图
+     */
+    private Object handleForecastIntent(String factoryId, IntentResult intentResult,
+                                        LocalDate startDate, LocalDate endDate) {
+        if (forecastService == null) {
+            throw new BusinessException("预测服务未配置");
+        }
+
+        // 默认预测未来7天
+        int forecastDays = 7;
+        Object forecastDaysParam = intentResult.getParameters() != null ?
+                intentResult.getParameters().get("forecastDays") : null;
+        if (forecastDaysParam instanceof Number) {
+            forecastDays = ((Number) forecastDaysParam).intValue();
+        }
+
+        // 获取预测指标类型，默认为销售额
+        String metricType = intentResult.getStringParameter("metricType");
+        if (metricType == null || metricType.isEmpty()) {
+            metricType = "SALES";
+        }
+
+        log.info("执行预测分析: factoryId={}, metricType={}, forecastDays={}",
+                factoryId, metricType, forecastDays);
+
+        // 调用预测服务
+        if ("SALES".equalsIgnoreCase(metricType)) {
+            return forecastService.forecastSales(factoryId, startDate, endDate, forecastDays);
+        } else {
+            return forecastService.forecastMetric(factoryId, metricType, startDate, endDate, forecastDays);
         }
     }
 
@@ -904,7 +1320,7 @@ public class SmartBIServiceImpl implements SmartBIService {
                     .factoryId(factoryId)
                     .userId(userId)
                     .sessionId(request.getSessionId())
-                    .queryText(request.getQueryText())
+                    .queryText(request.getEffectiveQuery())
                     .intent(intentResult.getIntent().getCode())
                     .parameters(objectMapper.writeValueAsString(intentResult.getParameters()))
                     .context(request.getContext() != null ?

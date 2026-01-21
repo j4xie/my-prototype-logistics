@@ -9,10 +9,12 @@ import java.util.Map;
  * 实现多策略召回融合，生成高质量候选集
  *
  * 召回策略权重配置:
- * - 热度召回: 30%
- * - 协同过滤: 25%
- * - 品类召回: 20%
+ * - 热度召回: 21%
+ * - 协同过滤: 18%
+ * - 品类召回: 18%
  * - 时间衰减: 15%
+ * - 语义召回: 10%
+ * - 聚类规则: 8%
  * - 新品召回: 5%
  * - 高评分商家: 5%
  */
@@ -70,6 +72,24 @@ public interface MultiRecallService {
      * @return 高评分商家的商品列表
      */
     List<GoodsSpu> recallByHighRatingMerchant(int limit);
+
+    /**
+     * 语义召回 - 基于用户兴趣的向量相似度
+     * @param wxUserId 用户ID
+     * @param limit 召回数量限制
+     * @return 语义相似商品列表
+     */
+    List<GoodsSpu> recallBySemantic(String wxUserId, int limit);
+
+    /**
+     * 聚类规则召回 - 根据用户所属聚类强制召回匹配品类的商品
+     * 作为"保底"机制，确保推荐与用户聚类偏好相关
+     *
+     * @param wxUserId 用户ID
+     * @param limit 召回数量限制
+     * @return 聚类偏好品类的商品列表
+     */
+    List<GoodsSpu> recallByClusterRule(String wxUserId, int limit);
 
     /**
      * 获取召回统计信息

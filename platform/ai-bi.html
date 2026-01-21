@@ -1113,6 +1113,325 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- User Message 3 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">TOP5 热销产品是哪些？利润率如何？</div>
+                    </div>
+
+                    <!-- AI Response 3 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                本周TOP5热销产品及利润率分析：
+                            </div>
+                            <div class="chat-chart-preview">
+                                <svg viewBox="0 0 320 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <rect width="320" height="140" fill="#FAFAF8" rx="8"/>
+                                    <text x="16" y="20" font-size="11" fill="#8A8A8A" font-family="DM Sans, sans-serif">热销产品 TOP5（销量 / 利润率）</text>
+                                    <!-- Product 1 -->
+                                    <rect x="16" y="32" width="200" height="16" rx="3" fill="#C45C26"/>
+                                    <text x="220" y="44" font-size="10" fill="#5C5C5C" font-family="DM Sans, sans-serif">有机燕麦片</text>
+                                    <text x="290" y="44" font-size="9" fill="#2D6A4F" font-family="JetBrains Mono, monospace">32%</text>
+                                    <!-- Product 2 -->
+                                    <rect x="16" y="54" width="160" height="16" rx="3" fill="#D4714A"/>
+                                    <text x="180" y="66" font-size="10" fill="#5C5C5C" font-family="DM Sans, sans-serif">低脂牛奶 1L</text>
+                                    <text x="290" y="66" font-size="9" fill="#2D6A4F" font-family="JetBrains Mono, monospace">28%</text>
+                                    <!-- Product 3 -->
+                                    <rect x="16" y="76" width="140" height="16" rx="3" fill="#E8956E"/>
+                                    <text x="160" y="88" font-size="10" fill="#5C5C5C" font-family="DM Sans, sans-serif">全麦面包</text>
+                                    <text x="290" y="88" font-size="9" fill="#BC4749" font-family="JetBrains Mono, monospace">15%</text>
+                                    <!-- Product 4 -->
+                                    <rect x="16" y="98" width="120" height="16" rx="3" fill="#F5B89A"/>
+                                    <text x="140" y="110" font-size="10" fill="#5C5C5C" font-family="DM Sans, sans-serif">进口橙汁</text>
+                                    <text x="290" y="110" font-size="9" fill="#2D6A4F" font-family="JetBrains Mono, monospace">35%</text>
+                                    <!-- Product 5 -->
+                                    <rect x="16" y="120" width="100" height="16" rx="3" fill="#FDD8C5"/>
+                                    <text x="120" y="132" font-size="10" fill="#5C5C5C" font-family="DM Sans, sans-serif">希腊酸奶</text>
+                                    <text x="290" y="132" font-size="9" fill="#2D6A4F" font-family="JetBrains Mono, monospace">42%</text>
+                                </svg>
+                            </div>
+                            <div class="chat-insight">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                                <span>AI洞察：全麦面包销量第3但利润率仅15%，建议优化供应链成本或调整定价策略。希腊酸奶利润率最高(42%)，可加大推广。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 4 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">库存周转率低于30天的有哪些？</div>
+                    </div>
+
+                    <!-- AI Response 4 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                共发现 <strong style="color: var(--error);">7款产品</strong> 库存周转率低于30天，存在滞销风险：
+                            </div>
+                            <div class="chat-chart-preview" style="padding: 12px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                                    <div style="background: #FFF5F5; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #BC4749;">
+                                        <div style="color: #BC4749; font-weight: 600;">进口奶酪片</div>
+                                        <div style="color: #8A8A8A; font-size: 10px;">周转: 58天 | 库存: 2,340件</div>
+                                    </div>
+                                    <div style="background: #FFF5F5; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #BC4749;">
+                                        <div style="color: #BC4749; font-weight: 600;">有机蜂蜜 500g</div>
+                                        <div style="color: #8A8A8A; font-size: 10px;">周转: 45天 | 库存: 1,856件</div>
+                                    </div>
+                                    <div style="background: #FFF8E1; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #D4A574;">
+                                        <div style="color: #9A6700; font-weight: 600;">椰子水 330ml</div>
+                                        <div style="color: #8A8A8A; font-size: 10px;">周转: 38天 | 库存: 3,200件</div>
+                                    </div>
+                                    <div style="background: #FFF8E1; padding: 8px 10px; border-radius: 6px; border-left: 3px solid #D4A574;">
+                                        <div style="color: #9A6700; font-weight: 600;">坚果礼盒装</div>
+                                        <div style="color: #8A8A8A; font-size: 10px;">周转: 35天 | 库存: 890件</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-insight">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/>
+                                    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>
+                                </svg>
+                                <span>⚠️ 预警：进口奶酪片即将过期（剩余30天），建议立即启动促销清仓或调配至高动销门店。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 5 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">帮我生成一份本月经营简报</div>
+                    </div>
+
+                    <!-- AI Response 5 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                已生成 <strong>2025年1月经营简报</strong>，关键指标如下：
+                            </div>
+                            <div class="chat-chart-preview" style="padding: 16px;">
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+                                    <div style="background: linear-gradient(135deg, #E8F5E9, #C8E6C9); padding: 12px; border-radius: 8px;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #2D6A4F;">¥12.8M</div>
+                                        <div style="font-size: 10px; color: #5C5C5C;">月销售额</div>
+                                        <div style="font-size: 10px; color: #2D6A4F;">↑ 15.2%</div>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #FFF3E0, #FFE0B2); padding: 12px; border-radius: 8px;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #C45C26;">28.5%</div>
+                                        <div style="font-size: 10px; color: #5C5C5C;">毛利率</div>
+                                        <div style="font-size: 10px; color: #C45C26;">↑ 2.1pp</div>
+                                    </div>
+                                    <div style="background: linear-gradient(135deg, #E3F2FD, #BBDEFB); padding: 12px; border-radius: 8px;">
+                                        <div style="font-size: 20px; font-weight: 700; color: #4A90A4;">45,230</div>
+                                        <div style="font-size: 10px; color: #5C5C5C;">订单数</div>
+                                        <div style="font-size: 10px; color: #4A90A4;">↑ 8.7%</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; padding: 10px; background: #F5F3EF; border-radius: 6px; font-size: 11px; color: #5C5C5C;">
+                                    📊 完整报告已生成，包含：销售分析、品类表现、区域对比、库存健康度、客户洞察 5大模块
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <button style="padding: 6px 12px; font-size: 11px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer;">📥 下载PDF</button>
+                                <button style="padding: 6px 12px; font-size: 11px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-medium); border-radius: 6px; cursor: pointer;">📧 发送邮件</button>
+                                <button style="padding: 6px 12px; font-size: 11px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-medium); border-radius: 6px; cursor: pointer;">📅 设置自动发送</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 6 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">各销售部门业绩排名怎么样？</div>
+                    </div>
+
+                    <!-- AI Response 6 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                本月各销售部门业绩排名及完成率：
+                            </div>
+                            <div class="chat-chart-preview" style="padding: 12px;">
+                                <div style="font-size: 10px; color: #8A8A8A; margin-bottom: 10px;">部门业绩排名（目标完成率）</div>
+                                <div style="display: flex; flex-direction: column; gap: 8px;">
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="width: 20px; height: 20px; background: linear-gradient(135deg, #FFD700, #FFA500); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white;">1</span>
+                                        <span style="width: 60px; font-size: 11px; font-weight: 600;">华东一部</span>
+                                        <div style="flex: 1; height: 16px; background: #EDEBE7; border-radius: 4px; overflow: hidden;">
+                                            <div style="width: 128%; height: 100%; background: linear-gradient(90deg, #2D6A4F, #40916C); border-radius: 4px;"></div>
+                                        </div>
+                                        <span style="font-size: 11px; font-weight: 600; color: #2D6A4F;">128%</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="width: 20px; height: 20px; background: linear-gradient(135deg, #C0C0C0, #A0A0A0); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white;">2</span>
+                                        <span style="width: 60px; font-size: 11px; font-weight: 600;">华南部</span>
+                                        <div style="flex: 1; height: 16px; background: #EDEBE7; border-radius: 4px; overflow: hidden;">
+                                            <div style="width: 115%; height: 100%; background: linear-gradient(90deg, #2D6A4F, #52B788); border-radius: 4px;"></div>
+                                        </div>
+                                        <span style="font-size: 11px; font-weight: 600; color: #2D6A4F;">115%</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="width: 20px; height: 20px; background: linear-gradient(135deg, #CD7F32, #B87333); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: white;">3</span>
+                                        <span style="width: 60px; font-size: 11px; font-weight: 600;">华东二部</span>
+                                        <div style="flex: 1; height: 16px; background: #EDEBE7; border-radius: 4px; overflow: hidden;">
+                                            <div style="width: 103%; height: 100%; background: linear-gradient(90deg, #2D6A4F, #74C69D); border-radius: 4px;"></div>
+                                        </div>
+                                        <span style="font-size: 11px; font-weight: 600; color: #2D6A4F;">103%</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="width: 20px; height: 20px; background: #EDEBE7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8A8A8A;">4</span>
+                                        <span style="width: 60px; font-size: 11px;">华北部</span>
+                                        <div style="flex: 1; height: 16px; background: #EDEBE7; border-radius: 4px; overflow: hidden;">
+                                            <div style="width: 87%; height: 100%; background: linear-gradient(90deg, #D4A574, #E8B98A); border-radius: 4px;"></div>
+                                        </div>
+                                        <span style="font-size: 11px; color: #9A6700;">87%</span>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 10px;">
+                                        <span style="width: 20px; height: 20px; background: #EDEBE7; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #8A8A8A;">5</span>
+                                        <span style="width: 60px; font-size: 11px;">西南部</span>
+                                        <div style="flex: 1; height: 16px; background: #EDEBE7; border-radius: 4px; overflow: hidden;">
+                                            <div style="width: 72%; height: 100%; background: linear-gradient(90deg, #BC4749, #D4686A); border-radius: 4px;"></div>
+                                        </div>
+                                        <span style="font-size: 11px; color: #BC4749;">72%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="chat-insight">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                                <span>AI洞察：华东一部连续3个月蝉联冠军，其客户拜访频次是其他部门的1.5倍。西南部需重点关注，建议调配资源支援。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 7 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">华东一部的张明业绩怎么样？</div>
+                    </div>
+
+                    <!-- AI Response 7 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                <strong>张明</strong>（华东一部 · 高级销售经理）本月业绩详情：
+                            </div>
+                            <div class="chat-chart-preview" style="padding: 16px;">
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #EDEBE7;">
+                                    <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #C45C26, #E8956E); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px;">张</div>
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 14px;">张明</div>
+                                        <div style="font-size: 11px; color: #8A8A8A;">华东一部 · 高级销售经理 · 入职3年</div>
+                                    </div>
+                                    <div style="margin-left: auto; text-align: right;">
+                                        <div style="font-size: 10px; color: #8A8A8A;">本月排名</div>
+                                        <div style="font-size: 20px; font-weight: 700; color: #C45C26;">#1</div>
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center;">
+                                    <div style="background: #F5F3EF; padding: 10px 6px; border-radius: 8px;">
+                                        <div style="font-size: 16px; font-weight: 700; color: #2D6A4F;">¥186万</div>
+                                        <div style="font-size: 9px; color: #8A8A8A;">销售额</div>
+                                    </div>
+                                    <div style="background: #F5F3EF; padding: 10px 6px; border-radius: 8px;">
+                                        <div style="font-size: 16px; font-weight: 700; color: #C45C26;">142%</div>
+                                        <div style="font-size: 9px; color: #8A8A8A;">目标完成</div>
+                                    </div>
+                                    <div style="background: #F5F3EF; padding: 10px 6px; border-radius: 8px;">
+                                        <div style="font-size: 16px; font-weight: 700; color: #4A90A4;">23</div>
+                                        <div style="font-size: 9px; color: #8A8A8A;">成交客户</div>
+                                    </div>
+                                    <div style="background: #F5F3EF; padding: 10px 6px; border-radius: 8px;">
+                                        <div style="font-size: 16px; font-weight: 700; color: #2D6A4F;">68%</div>
+                                        <div style="font-size: 9px; color: #8A8A8A;">转化率</div>
+                                    </div>
+                                </div>
+                                <div style="margin-top: 12px; padding: 10px; background: #E8F5E9; border-radius: 6px; font-size: 11px;">
+                                    🏆 <strong>荣誉</strong>：连续6个月超额完成目标，获"销售之星"称号
+                                </div>
+                            </div>
+                            <div class="chat-insight">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                                <span>AI洞察：张明的客户复购率高达45%，远超团队平均28%。其成功经验可作为内部培训案例推广。</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message 8 -->
+                    <div class="chat-message user">
+                        <div class="avatar">我</div>
+                        <div class="chat-bubble">西南部业绩落后，有什么改进建议？</div>
+                    </div>
+
+                    <!-- AI Response 8 -->
+                    <div class="chat-message ai">
+                        <div class="avatar">AI</div>
+                        <div>
+                            <div class="chat-bubble">
+                                基于数据分析，为西南部制定以下 <strong style="color: var(--accent);">4项改进方案</strong>：
+                            </div>
+                            <div class="chat-chart-preview" style="padding: 12px;">
+                                <div style="display: flex; flex-direction: column; gap: 10px;">
+                                    <div style="display: flex; gap: 10px; padding: 10px; background: linear-gradient(135deg, #FFF3E0, #FFE0B2); border-radius: 8px; border-left: 4px solid #C45C26;">
+                                        <div style="width: 24px; height: 24px; background: #C45C26; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;">1</div>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 600; color: #1A1A1A;">优化客户拜访路线</div>
+                                            <div style="font-size: 10px; color: #5C5C5C; margin-top: 2px;">当前人均日拜访3.2家，建议优化至5家。预计提升业绩 <strong style="color: #2D6A4F;">+18%</strong></div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; padding: 10px; background: linear-gradient(135deg, #E3F2FD, #BBDEFB); border-radius: 8px; border-left: 4px solid #4A90A4;">
+                                        <div style="width: 24px; height: 24px; background: #4A90A4; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;">2</div>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 600; color: #1A1A1A;">引入高毛利产品组合</div>
+                                            <div style="font-size: 10px; color: #5C5C5C; margin-top: 2px;">西南部高毛利产品占比仅12%，低于公司平均25%。推荐主推希腊酸奶、进口橙汁</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; padding: 10px; background: linear-gradient(135deg, #E8F5E9, #C8E6C9); border-radius: 8px; border-left: 4px solid #2D6A4F;">
+                                        <div style="width: 24px; height: 24px; background: #2D6A4F; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;">3</div>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 600; color: #1A1A1A;">安排华东一部经验分享</div>
+                                            <div style="font-size: 10px; color: #5C5C5C; margin-top: 2px;">建议张明进行1对1帮扶，重点传授客户维护和复购提升技巧</div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 10px; padding: 10px; background: linear-gradient(135deg, #F3E5F5, #E1BEE7); border-radius: 8px; border-left: 4px solid #9C27B0;">
+                                        <div style="width: 24px; height: 24px; background: #9C27B0; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 700; flex-shrink: 0;">4</div>
+                                        <div>
+                                            <div style="font-size: 12px; font-weight: 600; color: #1A1A1A;">启动区域促销活动</div>
+                                            <div style="font-size: 10px; color: #5C5C5C; margin-top: 2px;">针对成都、重庆核心市场，建议2月启动"新春特惠"活动，预算 ¥15万</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <button style="padding: 8px 16px; font-size: 11px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer;">✅ 生成改进计划</button>
+                                <button style="padding: 8px 16px; font-size: 11px; background: var(--bg-surface); color: var(--text-secondary); border: 1px solid var(--border-medium); border-radius: 6px; cursor: pointer;">📊 详细数据分析</button>
+                            </div>
+                            <div class="chat-insight" style="margin-top: 10px;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 5a3 3 0 1 0-5.997.125 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z"/>
+                                    <path d="M12 5a3 3 0 1 1 5.997.125 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z"/>
+                                </svg>
+                                <span>预测：若执行以上方案，西南部下月业绩预计提升至 <strong style="color: #2D6A4F;">92-98%</strong> 完成率，3个月内有望达标。</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

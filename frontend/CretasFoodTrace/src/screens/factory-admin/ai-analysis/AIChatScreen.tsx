@@ -249,15 +249,19 @@ export default function AIChatScreen() {
             if (executeResult.success && executeResult.data) {
               const execData = executeResult.data as unknown as Record<string, unknown>;
               const execInnerData = execData.data as Record<string, unknown> | undefined;
-              // 使用执行结果的消息替换原消息
-              if (execInnerData?.message && typeof execInnerData.message === 'string') {
+
+              // 优先使用后端生成的自然语言摘要 formattedText
+              if (execInnerData?.formattedText && typeof execInnerData.formattedText === 'string') {
+                replyMessage = execInnerData.formattedText;
+              } else if (execInnerData?.message && typeof execInnerData.message === 'string') {
+                // 备用: 使用执行结果的消息
                 replyMessage = execInnerData.message;
               } else if (execData.message && typeof execData.message === 'string' && execData.message !== '操作成功') {
                 replyMessage = execData.message;
               }
-              // 如果有结构化数据，追加到消息中
-              // 后端 IntentExecuteResponse 使用 resultData (不是 result)，分析内容在 analysis 字段
-              if (execInnerData?.resultData) {
+
+              // 如果没有 formattedText，尝试从结构化数据中提取摘要
+              if (!execInnerData?.formattedText && execInnerData?.resultData) {
                 const resultData = execInnerData.resultData as Record<string, unknown>;
                 // 优先使用 analysis 字段 (成本分析等)，备用 summary 字段
                 const analysisContent = resultData.analysis || resultData.summary;

@@ -1,0 +1,59 @@
+{
+  "relativeTime": {
+    "TODAY": {
+      "patterns": ["今天", "当天", "今日", "本日"],
+      "description": "当天"
+    },
+    "YESTERDAY": {
+      "patterns": ["昨天", "昨日"],
+      "description": "昨天"
+    },
+    "THIS_WEEK": {
+      "patterns": ["本周", "这周", "这一周", "当周"],
+      "description": "本周"
+    },
+    "LAST_WEEK": {
+      "patterns": ["上周", "上一周", "前一周"],
+      "description": "上周"
+    },
+    "THIS_MONTH": {
+      "patterns": ["本月", "这个月", "当月", "这月"],
+      "description": "本月"
+    },
+    "LAST_MONTH": {
+      "patterns": ["上月", "上个月", "前一个月"],
+      "description": "上月"
+    },
+    "THIS_QUARTER": {
+      "patterns": ["本季度", "这个季度", "当季", "本季"],
+      "description": "本季度"
+    },
+    "LAST_QUARTER": {
+      "patterns": ["上季度", "上个季度", "前一季度"],
+      "description": "上季度"
+    },
+    "THIS_YEAR": {
+      "patterns": ["今年", "本年", "这一年", "当年"],
+      "description": "今年"
+    },
+    "LAST_YEAR": {
+      "patterns": ["去年", "上一年", "前一年"],
+      "description": "去年"
+    }
+  },
+  "quarters": {
+    "Q1": ["Q1", "第一季度", "一季度", "1季度"],
+    "Q2": ["Q2", "第二季度", "二季度", "2季度"],
+    "Q3": ["Q3", "第三季度", "三季度", "3季度"],
+    "Q4": ["Q4", "第四季度", "四季度", "4季度"]
+  },
+  "dynamicPatterns": {
+    "LAST_N_DAYS": "最近(\\d+)天|过去(\\d+)天|近(\\d+)天",
+    "LAST_N_WEEKS": "最近(\\d+)周|过去(\\d+)周|近(\\d+)周",
+    "LAST_N_MONTHS": "最近(\\d+)个?月|过去(\\d+)个?月|近(\\d+)个?月",
+    "ABSOLUTE_DATE": "(\\d{4})年(\\d{1,2})月(\\d{1,2})日?",
+    "ABSOLUTE_MONTH": "(\\d{4})年(\\d{1,2})月",
+    "ABSOLUTE_YEAR": "(\\d{4})年",
+    "ISO_DATE": "(\\d{4})-(\\d{1,2})-(\\d{1,2})"
+  }
+}

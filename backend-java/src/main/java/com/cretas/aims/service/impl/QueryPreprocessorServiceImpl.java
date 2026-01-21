@@ -92,6 +92,13 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             "(批次|库存|供应商|客户|产品|设备|订单|记录|数据|信息|状态|数量|金额|重量|质检|检测)"
     );
 
+    /**
+     * 否定/排除词模式 v7.4
+     */
+    private static final Pattern NEGATION_PATTERN = Pattern.compile(
+            "(除了|排除|不要|不包括|去掉|去除|不含|除开|不是|非|不想要|别给我)"
+    );
+
     @Autowired
     public QueryPreprocessorServiceImpl(
             TimeNormalizationRules timeNormalizationRules,
@@ -699,6 +706,39 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
         return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
+    /**
+     * 检测否定/排除语义 v7.4
+     * 当检测到否定词时，返回标记信息以便后续处理
+     */
+    public NegationInfo detectNegationSemantics(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return new NegationInfo(false, null, null);
+        }
+        Matcher matcher = NEGATION_PATTERN.matcher(input);
+        if (matcher.find()) {
+            String negationWord = matcher.group(1);
+            // 提取被排除的内容
+            String excludedContent = extractExcludedContent(input, matcher.end());
+            return new NegationInfo(true, negationWord, excludedContent);
+        }
+        return new NegationInfo(false, null, null);
+    }
+
+    /**
+     * 提取否定词后面被排除的内容 v7.4
+     */
+    private String extractExcludedContent(String input, int startPos) {
+        // 提取否定词后面的名词短语
+        String afterNegation = input.substring(startPos).trim();
+        // 简单提取：取到下一个连接词或句末
+        Pattern contentPattern = Pattern.compile("^([^，,。的之外还]+)");
+        Matcher m = contentPattern.matcher(afterNegation);
+        if (m.find()) {
+            return m.group(1).trim();
+        }
+        return afterNegation;
+    }
+
     // ==================== 复杂语义预处理方法实现 ====================
 
     /**
@@ -835,25 +875,136 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
         ACTION_INTENT_MAPPINGS.put("溯源+发货", "TRACE_BATCH");
         ACTION_INTENT_MAPPINGS.put("查询+溯源", "TRACE_BATCH");
         ACTION_INTENT_MAPPINGS.put("查看+溯源", "TRACE_BATCH");
+
+        // ========== v7.2新增：更多动作消歧映射 ==========
+
+        // 考勤相关
+        ACTION_INTENT_MAPPINGS.put("查询+考勤", "ATTENDANCE_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查看+考勤", "ATTENDANCE_QUERY");
+        ACTION_INTENT_MAPPINGS.put("统计+考勤", "ATTENDANCE_STATS");
+        ACTION_INTENT_MAPPINGS.put("打卡+考勤", "ATTENDANCE_RECORD");
+        ACTION_INTENT_MAPPINGS.put("记录+考勤", "ATTENDANCE_RECORD");
+
+        // v7.5: 修复 "记录" 动词的映射
+        ACTION_INTENT_MAPPINGS.put("记录+打卡", "ATTENDANCE_RECORD");
+        ACTION_INTENT_MAPPINGS.put("记录+出勤", "ATTENDANCE_RECORD");
+
+        // 供应商相关
+        ACTION_INTENT_MAPPINGS.put("查询+供应商", "SUPPLIER_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查看+供应商", "SUPPLIER_QUERY");
+        ACTION_INTENT_MAPPINGS.put("搜索+供应商", "SUPPLIER_SEARCH");
+        ACTION_INTENT_MAPPINGS.put("找+供应商", "SUPPLIER_SEARCH");
+        ACTION_INTENT_MAPPINGS.put("评价+供应商", "SUPPLIER_EVALUATE");
+        ACTION_INTENT_MAPPINGS.put("评估+供应商", "SUPPLIER_EVALUATE");
+        ACTION_INTENT_MAPPINGS.put("添加+供应商", "SUPPLIER_CREATE");
+        ACTION_INTENT_MAPPINGS.put("新增+供应商", "SUPPLIER_CREATE");
+
+        // 设备控制相关
+        ACTION_INTENT_MAPPINGS.put("启动+设备", "EQUIPMENT_START");
+        ACTION_INTENT_MAPPINGS.put("开启+设备", "EQUIPMENT_START");
+        ACTION_INTENT_MAPPINGS.put("打开+设备", "EQUIPMENT_START");
+        ACTION_INTENT_MAPPINGS.put("停止+设备", "EQUIPMENT_STOP");
+        ACTION_INTENT_MAPPINGS.put("关闭+设备", "EQUIPMENT_STOP");
+        ACTION_INTENT_MAPPINGS.put("关掉+设备", "EQUIPMENT_STOP");
+        ACTION_INTENT_MAPPINGS.put("暂停+设备", "EQUIPMENT_STOP");
+        ACTION_INTENT_MAPPINGS.put("维护+设备", "EQUIPMENT_MAINTENANCE");
+        ACTION_INTENT_MAPPINGS.put("保养+设备", "EQUIPMENT_MAINTENANCE");
+        ACTION_INTENT_MAPPINGS.put("维修+设备", "EQUIPMENT_MAINTENANCE");
+        ACTION_INTENT_MAPPINGS.put("查询+机器", "EQUIPMENT_LIST");
+        ACTION_INTENT_MAPPINGS.put("查看+机器", "EQUIPMENT_LIST");
+        ACTION_INTENT_MAPPINGS.put("启动+机器", "EQUIPMENT_START");
+        ACTION_INTENT_MAPPINGS.put("停止+机器", "EQUIPMENT_STOP");
+
+        // 报表相关
+        ACTION_INTENT_MAPPINGS.put("生成+报表", "REPORT_DASHBOARD_OVERVIEW");
+        ACTION_INTENT_MAPPINGS.put("导出+报表", "REPORT_EXPORT");
+        ACTION_INTENT_MAPPINGS.put("查看+报表", "REPORT_DASHBOARD_OVERVIEW");
+        ACTION_INTENT_MAPPINGS.put("统计+报表", "REPORT_DASHBOARD_OVERVIEW");
+        ACTION_INTENT_MAPPINGS.put("查询+报表", "REPORT_DASHBOARD_OVERVIEW");
+        ACTION_INTENT_MAPPINGS.put("生成+数据", "REPORT_DASHBOARD_OVERVIEW");
+        ACTION_INTENT_MAPPINGS.put("导出+数据", "REPORT_EXPORT");
+
+        // 效率/产量相关
+        ACTION_INTENT_MAPPINGS.put("统计+效率", "REPORT_EFFICIENCY");
+        ACTION_INTENT_MAPPINGS.put("查看+效率", "REPORT_EFFICIENCY");
+        ACTION_INTENT_MAPPINGS.put("统计+产量", "REPORT_PRODUCTION");
+        ACTION_INTENT_MAPPINGS.put("查看+产量", "REPORT_PRODUCTION");
+        ACTION_INTENT_MAPPINGS.put("查询+产量", "REPORT_PRODUCTION");
+
+        // 告警/预警相关
+        ACTION_INTENT_MAPPINGS.put("处理+预警", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("确认+告警", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("确认+预警", "ALERT_ACKNOWLEDGE");
+        ACTION_INTENT_MAPPINGS.put("忽略+告警", "ALERT_DISMISS");
+        ACTION_INTENT_MAPPINGS.put("忽略+预警", "ALERT_DISMISS");
+
+        // 订单相关
+        ACTION_INTENT_MAPPINGS.put("创建+订单", "ORDER_CREATE");
+        ACTION_INTENT_MAPPINGS.put("新建+订单", "ORDER_CREATE");
+        ACTION_INTENT_MAPPINGS.put("查询+订单", "ORDER_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查看+订单", "ORDER_QUERY");
+        ACTION_INTENT_MAPPINGS.put("取消+订单", "ORDER_CANCEL");
+        ACTION_INTENT_MAPPINGS.put("修改+订单", "ORDER_UPDATE");
+        ACTION_INTENT_MAPPINGS.put("更新+订单", "ORDER_UPDATE");
+
+        // 库存调整相关
+        ACTION_INTENT_MAPPINGS.put("盘点+库存", "INVENTORY_CHECK");
+        ACTION_INTENT_MAPPINGS.put("盘+库存", "INVENTORY_CHECK");
+        ACTION_INTENT_MAPPINGS.put("查看+库存", "INVENTORY_QUERY");
+        ACTION_INTENT_MAPPINGS.put("查询+库存", "INVENTORY_QUERY");
+        ACTION_INTENT_MAPPINGS.put("补充+库存", "MATERIAL_BATCH_CREATE");
+        ACTION_INTENT_MAPPINGS.put("调拨+库存", "MATERIAL_TRANSFER");
     }
 
     /**
-     * 核心动词集合
+     * 核心动词集合 (v7.4扩展)
      */
     private static final Set<String> CORE_VERBS = Set.of(
+            // 查询类
             "查询", "查看", "查", "看", "显示", "统计", "分析", "计算", "获取", "导出",
-            "添加", "新增", "创建", "修改", "更新", "删除", "入库", "出库", "发货", "收货",
-            "处理", "提交", "执行", "确认", "开始", "启动", "停止", "暂停", "恢复", "完成", "结束",
-            "安排", "调整", "设置", "录入", "追溯", "溯源"
+            "搜索", "搜", "找", "查找", "检索", "筛选", "过滤", "核实", "核查",
+            // 创建/添加类
+            "添加", "新增", "创建", "新建", "录入", "登记", "注册", "记录",
+            // 修改/更新类
+            "修改", "更新", "编辑", "调整", "变更", "改", "设置", "配置",
+            // 删除类
+            "删除", "移除", "取消", "作废", "撤销",
+            // 物流类
+            "入库", "出库", "发货", "收货", "调拨", "转移", "配送",
+            // 处理/执行类
+            "处理", "提交", "执行", "确认", "审核", "审批", "批准", "消耗", "用掉",
+            // 状态控制类 (v7.4: 增加单字动词)
+            "开始", "启动", "停止", "暂停", "恢复", "完成", "结束", "终止",
+            "关", "关掉", "关闭", "开", "开启", "停",
+            // 其他
+            "安排", "追溯", "溯源", "盘点", "盘", "打卡", "签到",
+            "维护", "保养", "维修", "评价", "评估", "生成", "汇总", "检查"
     );
 
     /**
-     * 核心名词集合
+     * 核心名词集合 (v7.2扩展)
      */
     private static final Set<String> CORE_NOUNS = Set.of(
-            "原料", "物料", "批次", "库存", "发货", "收货", "告警", "预警", "设备", "机器",
-            "质检", "检测", "检验", "客户", "供应商", "订单", "记录", "数据", "报表", "统计",
-            "生产", "加工", "产量", "效率", "状态", "信息", "列表", "详情"
+            // 物料相关
+            "原料", "物料", "材料", "批次", "库存", "存货", "货物",
+            // 物流相关
+            "发货", "收货", "出货", "入库", "出库", "配送",
+            // 告警相关
+            "告警", "预警", "警报", "异常", "故障",
+            // 设备相关
+            "设备", "机器", "机台", "产线", "生产线",
+            // 质量相关
+            "质检", "检测", "检验", "质量", "品质",
+            // 人员相关
+            "客户", "供应商", "员工", "工人", "用户",
+            // 业务对象
+            "订单", "记录", "数据", "报表", "报告",
+            // 生产相关
+            "生产", "加工", "产量", "效率", "产能",
+            // 通用
+            "状态", "信息", "列表", "详情", "进度", "结果",
+            // 考勤相关
+            "考勤", "打卡", "签到", "出勤"
     );
 
     /**
@@ -1204,12 +1355,30 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             features.add("ACTION_DISAMBIGUATED");
         }
 
+        // Step 6 (v7.4): 否定语义检测
+        NegationInfo negationInfo = detectNegationSemantics(input);
+        if (negationInfo.hasNegation()) {
+            features.add("HAS_NEGATION");
+            features.add("NEGATION_WORD:" + negationInfo.getNegationWord());
+            log.debug("检测到否定语义: {}", negationInfo);
+        }
+
         // 决定最终处理结果
         String finalProcessed = processed;
         if (coreResult.isExtracted() && coreResult.getCoreQuery() != null
                 && coreResult.getCoreQuery().length() >= 2) {
             // 如果核心提取有效且不太短，使用核心查询
             finalProcessed = coreResult.getCoreQuery();
+        }
+
+        // v7.5: 将内部 NegationInfo 转换为接口 NegationInfo
+        QueryPreprocessorService.NegationInfo interfaceNegationInfo = null;
+        if (negationInfo.hasNegation()) {
+            interfaceNegationInfo = QueryPreprocessorService.NegationInfo.builder()
+                    .hasNegation(true)
+                    .negationWord(negationInfo.getNegationWord())
+                    .excludedContent(negationInfo.getExcludedContent())
+                    .build();
         }
 
         return EnhancedPreprocessResult.builder()
@@ -1219,8 +1388,35 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
                 .coreExtraction(coreResult)
                 .rankingQuery(rankingResult)
                 .actionDisambiguation(disambiguationResult)
+                .negationInfo(interfaceNegationInfo)
                 .queryFeatures(features)
                 .processingTimeMs(System.currentTimeMillis() - startTime)
                 .build();
+    }
+
+    /**
+     * 否定语义信息 v7.4 (内部使用)
+     */
+    public static class NegationInfo {
+        private final boolean hasNegation;
+        private final String negationWord;
+        private final String excludedContent;
+
+        public NegationInfo(boolean hasNegation, String negationWord, String excludedContent) {
+            this.hasNegation = hasNegation;
+            this.negationWord = negationWord;
+            this.excludedContent = excludedContent;
+        }
+
+        public boolean hasNegation() { return hasNegation; }
+        public String getNegationWord() { return negationWord; }
+        public String getExcludedContent() { return excludedContent; }
+
+        @Override
+        public String toString() {
+            return hasNegation ?
+                String.format("NegationInfo[word=%s, excluded=%s]", negationWord, excludedContent) :
+                "NegationInfo[none]";
+        }
     }
 }

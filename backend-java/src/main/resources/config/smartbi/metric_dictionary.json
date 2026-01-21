@@ -1,0 +1,107 @@
+{
+  "metrics": {
+    "销售额": {
+      "aliases": ["销售金额", "营业额", "营收", "收入", "总收入", "销售收入"],
+      "category": "sales",
+      "unit": "元",
+      "aggregation": "SUM"
+    },
+    "销量": {
+      "aliases": ["销售量", "销售数量", "卖出数量", "出货量"],
+      "category": "sales",
+      "unit": "件",
+      "aggregation": "SUM"
+    },
+    "利润": {
+      "aliases": ["净利润", "纯利润", "盈利", "利润额"],
+      "category": "finance",
+      "unit": "元",
+      "aggregation": "SUM"
+    },
+    "毛利": {
+      "aliases": ["毛利润", "毛利额"],
+      "category": "finance",
+      "unit": "元",
+      "aggregation": "SUM"
+    },
+    "成本": {
+      "aliases": ["总成本", "成本额", "花费"],
+      "category": "finance",
+      "unit": "元",
+      "aggregation": "SUM"
+    },
+    "费用": {
+      "aliases": ["支出", "开支", "费用支出"],
+      "category": "finance",
+      "unit": "元",
+      "aggregation": "SUM"
+    },
+    "同比": {
+      "aliases": ["同比增长", "同比变化", "年同比", "YoY"],
+      "category": "comparison",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "环比": {
+      "aliases": ["环比增长", "环比变化", "月环比", "MoM"],
+      "category": "comparison",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "增长率": {
+      "aliases": ["增长比例", "增速", "增幅"],
+      "category": "comparison",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "占比": {
+      "aliases": ["比例", "百分比", "份额", "市场份额"],
+      "category": "analysis",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "均价": {
+      "aliases": ["平均价格", "单价", "平均单价"],
+      "category": "sales",
+      "unit": "元",
+      "aggregation": "AVG"
+    },
+    "客单价": {
+      "aliases": ["人均消费", "平均客单", "订单均价"],
+      "category": "sales",
+      "unit": "元",
+      "aggregation": "AVG"
+    },
+    "转化率": {
+      "aliases": ["转化比例", "成交率", "下单率"],
+      "category": "analysis",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "回款率": {
+      "aliases": ["回款比例", "收款率", "回款"],
+      "category": "finance",
+      "unit": "%",
+      "aggregation": "CALC"
+    },
+    "订单数": {
+      "aliases": ["订单量", "单数", "成交数"],
+      "category": "sales",
+      "unit": "单",
+      "aggregation": "COUNT"
+    },
+    "客户数": {
+      "aliases": ["客户量", "用户数", "顾客数"],
+      "category": "customer",
+      "unit": "人",
+      "aggregation": "COUNT"
+    }
+  },
+  "categories": {
+    "sales": "销售类指标",
+    "finance": "财务类指标",
+    "comparison": "对比类指标",
+    "analysis": "分析类指标",
+    "customer": "客户类指标"
+  }
+}

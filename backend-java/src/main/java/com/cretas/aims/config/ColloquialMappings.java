@@ -259,6 +259,93 @@ public class ColloquialMappings {
         COLLOQUIAL_MAP.put("都有啥", "所有列表");
         COLLOQUIAL_MAP.put("有多少", "数量统计");
 
+        // ==================== v7.2新增：复杂语义口语化 ====================
+        // 设备运行状态口语化
+        COLLOQUIAL_MAP.put("转着", "运行中");
+        COLLOQUIAL_MAP.put("转着呢", "运行中");
+        COLLOQUIAL_MAP.put("开着呢", "运行中");
+        COLLOQUIAL_MAP.put("停着呢", "停止中");
+        COLLOQUIAL_MAP.put("闲着呢", "空闲中");
+        COLLOQUIAL_MAP.put("跑着", "运行中");
+        COLLOQUIAL_MAP.put("干着", "运行中");
+
+        // 状态确认口语化
+        COLLOQUIAL_MAP.put("好使吗", "是否正常");
+        COLLOQUIAL_MAP.put("好用吗", "是否正常");
+        COLLOQUIAL_MAP.put("顶用吗", "是否有效");
+        COLLOQUIAL_MAP.put("管用吗", "是否有效");
+        COLLOQUIAL_MAP.put("行得通吗", "是否可行");
+        COLLOQUIAL_MAP.put("没毛病吧", "是否正常");
+        COLLOQUIAL_MAP.put("有毛病吗", "是否有问题");
+        COLLOQUIAL_MAP.put("出岔子没", "是否出错");
+
+        // 时间状态确认
+        COLLOQUIAL_MAP.put("忙完了吗", "是否完成");
+        COLLOQUIAL_MAP.put("完事了吗", "是否完成");
+        COLLOQUIAL_MAP.put("弄完了吗", "是否完成");
+        COLLOQUIAL_MAP.put("搞定了吗", "是否完成");
+        COLLOQUIAL_MAP.put("结了没", "是否完成");
+        COLLOQUIAL_MAP.put("了结了吗", "是否完成");
+
+        // 数量确认口语化
+        COLLOQUIAL_MAP.put("还剩几个", "剩余数量");
+        COLLOQUIAL_MAP.put("还剩多少", "剩余数量");
+        COLLOQUIAL_MAP.put("剩几个了", "剩余数量");
+        COLLOQUIAL_MAP.put("剩多少了", "剩余数量");
+        COLLOQUIAL_MAP.put("用了多少", "消耗数量");
+        COLLOQUIAL_MAP.put("消耗多少", "消耗数量");
+        COLLOQUIAL_MAP.put("花了多少", "消耗数量");
+
+        // 进度查询口语化
+        COLLOQUIAL_MAP.put("进行到哪了", "查询进度");
+        COLLOQUIAL_MAP.put("做到哪了", "查询进度");
+        COLLOQUIAL_MAP.put("搞到哪了", "查询进度");
+        COLLOQUIAL_MAP.put("弄到哪了", "查询进度");
+        COLLOQUIAL_MAP.put("到哪一步了", "查询进度");
+        COLLOQUIAL_MAP.put("进度咋样", "查询进度");
+
+        // 否定句作为查询
+        COLLOQUIAL_MAP.put("是不是", "是否");
+        COLLOQUIAL_MAP.put("有没有", "是否有");
+        COLLOQUIAL_MAP.put("做没做", "是否完成");
+        COLLOQUIAL_MAP.put("发没发", "是否发货");
+        COLLOQUIAL_MAP.put("到没到", "是否到货");
+        COLLOQUIAL_MAP.put("收没收", "是否收货");
+        COLLOQUIAL_MAP.put("检没检", "是否质检");
+        COLLOQUIAL_MAP.put("验没验", "是否检验");
+
+        // 祈使句转查询（当带有时间词或条件词时）
+        COLLOQUIAL_MAP.put("帮忙看", "查看");
+        COLLOQUIAL_MAP.put("帮忙查", "查询");
+        COLLOQUIAL_MAP.put("帮忙统计", "统计");
+        COLLOQUIAL_MAP.put("帮忙找", "查找");
+        COLLOQUIAL_MAP.put("帮忙拉", "导出");
+
+        // 跨领域口语化
+        COLLOQUIAL_MAP.put("厂里", "工厂");
+        COLLOQUIAL_MAP.put("库里", "仓库");
+        COLLOQUIAL_MAP.put("车间里", "车间");
+        COLLOQUIAL_MAP.put("线上", "生产线");
+
+        // 方言/俚语（更广泛）
+        COLLOQUIAL_MAP.put("啥玩意儿", "什么");
+        COLLOQUIAL_MAP.put("整啥", "做什么");
+        COLLOQUIAL_MAP.put("弄啥", "做什么");
+        COLLOQUIAL_MAP.put("干啥", "做什么");
+        COLLOQUIAL_MAP.put("搞啥", "做什么");
+        COLLOQUIAL_MAP.put("要啥", "需要什么");
+        COLLOQUIAL_MAP.put("缺啥", "缺少什么");
+        COLLOQUIAL_MAP.put("少啥", "缺少什么");
+
+        // 确认类简短口语
+        COLLOQUIAL_MAP.put("OK吗", "是否可以");
+        COLLOQUIAL_MAP.put("ok吗", "是否可以");
+        COLLOQUIAL_MAP.put("可以吗", "是否可以");
+        COLLOQUIAL_MAP.put("成吗", "是否可以");
+        COLLOQUIAL_MAP.put("行吗", "是否可以");
+        COLLOQUIAL_MAP.put("妥吗", "是否可以");
+        COLLOQUIAL_MAP.put("稳吗", "是否稳定");
+
         // ==================== 正则模式补充 ====================
         // 口语化疑问句模式
         PATTERN_MAP.put(Pattern.compile(".{1,10}咋样"), "查询状态");
@@ -267,6 +354,13 @@ public class ColloquialMappings {
         PATTERN_MAP.put(Pattern.compile("干了.{0,5}[吗没]"), "查询完成状态");
         PATTERN_MAP.put(Pattern.compile("做了.{0,5}[吗没]"), "查询完成状态");
         PATTERN_MAP.put(Pattern.compile("整了.{0,5}[吗没]"), "查询完成状态");
+
+        // v7.2新增正则模式
+        PATTERN_MAP.put(Pattern.compile(".{1,5}没.{1,5}[吗没呢]"), "查询状态");  // X没X吗 模式
+        PATTERN_MAP.put(Pattern.compile(".{1,10}是不是"), "是否");
+        PATTERN_MAP.put(Pattern.compile(".{1,10}有没有"), "是否有");
+        PATTERN_MAP.put(Pattern.compile("帮.{0,3}[看查找拉统计]"), "查询");
+        PATTERN_MAP.put(Pattern.compile("[转开停闲跑]着[呢吗没]?"), "查询设备状态");
     }
 
     /**

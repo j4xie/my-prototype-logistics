@@ -1,10 +1,18 @@
 package com.cretas.aims.config.smartbi;
 
+import com.cretas.aims.entity.smartbi.SmartBiDictionary;
+import com.cretas.aims.repository.smartbi.SmartBiDictionaryRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -18,9 +26,33 @@ import java.util.stream.Collectors;
  *
  * @see docs/architecture/smart-bi-ai-analysis-spec.md Section 4.1
  */
+@Slf4j
 @Configuration
 @Component
 public class FieldMappingDictionary {
+
+    private static final String DICT_TYPE_FIELD_SYNONYM = "field_synonym";
+
+    @Autowired(required = false)
+    private SmartBiDictionaryRepository dictionaryRepository;
+
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /**
+     * 动态同义词映射（数据库 + 硬编码合并）
+     * 使用 ConcurrentHashMap 支持线程安全的热重载
+     */
+    private Map<String, List<String>> dynamicSynonymMap = new ConcurrentHashMap<>();
+
+    /**
+     * 动态数据类型映射（数据库配置）
+     */
+    private Map<String, String> dynamicDataTypeMap = new ConcurrentHashMap<>();
+
+    /**
+     * 动态聚合方式映射（数据库配置）
+     */
+    private Map<String, String> dynamicAggregationMap = new ConcurrentHashMap<>();
 
     // ==================== 字段分类定义 ====================
 
@@ -445,34 +477,285 @@ public class FieldMappingDictionary {
 
     @PostConstruct
     public void init() {
+        // 1. 先加载硬编码配置作为默认值
+        dynamicSynonymMap.putAll(SYNONYM_MAP);
+        dynamicDataTypeMap.putAll(DATA_TYPE_MAP);
+
+        // 2. 从数据库加载配置（覆盖硬编码）
+        loadFromDatabase();
+
+        // 3. 构建索引
         buildSynonymIndex();
         buildCategoryMap();
+
+        log.info("FieldMappingDictionary initialized with {} fields, {} from database",
+                dynamicSynonymMap.size(), getDbLoadedCount());
+    }
+
+    /**
+     * 从数据库加载字段同义词配置
+     */
+    private void loadFromDatabase() {
+        if (dictionaryRepository == null) {
+            log.warn("SmartBiDictionaryRepository not available, using hardcoded config only");
+            return;
+        }
+
+        try {
+            List<SmartBiDictionary> dbEntries = dictionaryRepository
+                    .findByDictTypeAndIsActiveTrueOrderByPriorityAsc(DICT_TYPE_FIELD_SYNONYM);
+
+            int loadedCount = 0;
+            for (SmartBiDictionary entry : dbEntries) {
+                try {
+                    String fieldName = entry.getName();
+                    List<String> aliases = parseAliases(entry.getAliases());
+
+                    if (aliases != null && !aliases.isEmpty()) {
+                        // 合并数据库配置与硬编码配置（数据库优先）
+                        List<String> merged = new ArrayList<>(aliases);
+                        List<String> hardcoded = SYNONYM_MAP.get(fieldName);
+                        if (hardcoded != null) {
+                            for (String s : hardcoded) {
+                                if (!merged.contains(s)) {
+                                    merged.add(s);
+                                }
+                            }
+                        }
+                        dynamicSynonymMap.put(fieldName, merged);
+                    }
+
+                    // 解析 metadata 获取 dataType 和 aggregation
+                    parseMetadata(entry.getMetadata(), fieldName);
+                    loadedCount++;
+
+                } catch (Exception e) {
+                    log.warn("Failed to parse field synonym entry: {}", entry.getName(), e);
+                }
+            }
+
+            log.info("Loaded {} field synonym entries from database", loadedCount);
+
+        } catch (Exception e) {
+            log.error("Failed to load field synonyms from database", e);
+        }
+    }
+
+    /**
+     * 解析别名 JSON 数组
+     */
+    private List<String> parseAliases(String aliasesJson) {
+        if (aliasesJson == null || aliasesJson.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        try {
+            return objectMapper.readValue(aliasesJson, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse aliases JSON: {}", aliasesJson);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 解析 metadata JSON 获取数据类型和聚合方式
+     */
+    private void parseMetadata(String metadataJson, String fieldName) {
+        if (metadataJson == null || metadataJson.trim().isEmpty()) {
+            return;
+        }
+        try {
+            Map<String, Object> metadata = objectMapper.readValue(metadataJson,
+                    new TypeReference<Map<String, Object>>() {});
+
+            if (metadata.containsKey("dataType")) {
+                dynamicDataTypeMap.put(fieldName, metadata.get("dataType").toString());
+            }
+            if (metadata.containsKey("aggregation")) {
+                dynamicAggregationMap.put(fieldName, metadata.get("aggregation").toString());
+            }
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to parse metadata JSON for field {}: {}", fieldName, metadataJson);
+        }
+    }
+
+    /**
+     * 获取从数据库加载的条目数
+     */
+    private int getDbLoadedCount() {
+        if (dictionaryRepository == null) {
+            return 0;
+        }
+        try {
+            return (int) dictionaryRepository.countByDictTypeAndIsActiveTrue(DICT_TYPE_FIELD_SYNONYM);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
+     * 热重载配置
+     * 从数据库重新加载所有字段同义词配置
+     *
+     * @return 重载后的字段数量
+     */
+    public int reload() {
+        log.info("Reloading FieldMappingDictionary from database...");
+
+        // 清空动态配置
+        dynamicSynonymMap.clear();
+        dynamicDataTypeMap.clear();
+        dynamicAggregationMap.clear();
+
+        // 重新初始化
+        dynamicSynonymMap.putAll(SYNONYM_MAP);
+        dynamicDataTypeMap.putAll(DATA_TYPE_MAP);
+        loadFromDatabase();
+        buildSynonymIndex();
+
+        log.info("FieldMappingDictionary reloaded with {} fields", dynamicSynonymMap.size());
+        return dynamicSynonymMap.size();
+    }
+
+    /**
+     * 运行时添加字段同义词
+     * 同时保存到数据库（如果 Repository 可用）
+     *
+     * @param fieldName 标准字段名
+     * @param synonyms 同义词列表
+     * @param dataType 数据类型（可选）
+     * @param aggregation 聚合方式（可选）
+     * @return true 如果添加成功
+     */
+    public boolean addFieldSynonym(String fieldName, List<String> synonyms,
+                                   String dataType, String aggregation) {
+        if (fieldName == null || fieldName.trim().isEmpty()) {
+            log.warn("Cannot add field synonym: fieldName is empty");
+            return false;
+        }
+
+        try {
+            // 合并到现有配置
+            List<String> existing = dynamicSynonymMap.getOrDefault(fieldName, new ArrayList<>());
+            List<String> merged = new ArrayList<>(existing);
+            for (String s : synonyms) {
+                if (!merged.contains(s)) {
+                    merged.add(s);
+                }
+            }
+            dynamicSynonymMap.put(fieldName, merged);
+
+            // 更新数据类型和聚合方式
+            if (dataType != null && !dataType.isEmpty()) {
+                dynamicDataTypeMap.put(fieldName, dataType);
+            }
+            if (aggregation != null && !aggregation.isEmpty()) {
+                dynamicAggregationMap.put(fieldName, aggregation);
+            }
+
+            // 重建同义词索引
+            buildSynonymIndex();
+
+            // 保存到数据库
+            saveToDatabase(fieldName, merged, dataType, aggregation);
+
+            log.info("Added field synonym: {} with {} aliases", fieldName, synonyms.size());
+            return true;
+
+        } catch (Exception e) {
+            log.error("Failed to add field synonym: {}", fieldName, e);
+            return false;
+        }
+    }
+
+    /**
+     * 保存字段同义词到数据库
+     */
+    private void saveToDatabase(String fieldName, List<String> synonyms,
+                                String dataType, String aggregation) {
+        if (dictionaryRepository == null) {
+            log.debug("SmartBiDictionaryRepository not available, skip database save");
+            return;
+        }
+
+        try {
+            // 查找现有条目
+            Optional<SmartBiDictionary> existing = dictionaryRepository
+                    .findGlobalByDictTypeAndName(DICT_TYPE_FIELD_SYNONYM, fieldName);
+
+            SmartBiDictionary entry;
+            if (existing.isPresent()) {
+                entry = existing.get();
+            } else {
+                entry = SmartBiDictionary.builder()
+                        .dictType(DICT_TYPE_FIELD_SYNONYM)
+                        .name(fieldName)
+                        .source("USER")
+                        .isActive(true)
+                        .priority(100)
+                        .build();
+            }
+
+            // 更新别名
+            entry.setAliases(objectMapper.writeValueAsString(synonyms));
+
+            // 更新 metadata
+            Map<String, Object> metadata = new HashMap<>();
+            if (dataType != null && !dataType.isEmpty()) {
+                metadata.put("dataType", dataType);
+            }
+            if (aggregation != null && !aggregation.isEmpty()) {
+                metadata.put("aggregation", aggregation);
+            }
+            if (!metadata.isEmpty()) {
+                entry.setMetadata(objectMapper.writeValueAsString(metadata));
+            }
+
+            dictionaryRepository.save(entry);
+            log.debug("Saved field synonym to database: {}", fieldName);
+
+        } catch (Exception e) {
+            log.error("Failed to save field synonym to database: {}", fieldName, e);
+        }
+    }
+
+    /**
+     * 获取字段的聚合方式
+     *
+     * @param standardField 标准字段名
+     * @return 聚合方式（SUM, COUNT, AVG 等），未定义返回 null
+     */
+    public String getAggregation(String standardField) {
+        return dynamicAggregationMap.get(standardField);
     }
 
     /**
      * 构建同义词反向索引
+     * 使用 dynamicSynonymMap（包含硬编码 + 数据库配置）
      */
     private void buildSynonymIndex() {
-        synonymToFieldIndex = new HashMap<>();
+        Map<String, String> newIndex = new HashMap<>();
 
-        for (Map.Entry<String, List<String>> entry : SYNONYM_MAP.entrySet()) {
+        for (Map.Entry<String, List<String>> entry : dynamicSynonymMap.entrySet()) {
             String standardField = entry.getKey();
 
             // 标准字段名本身也可以作为查找依据
-            synonymToFieldIndex.put(standardField.toLowerCase(), standardField);
-            synonymToFieldIndex.put(standardField.replace("_", " ").toLowerCase(), standardField);
-            synonymToFieldIndex.put(standardField.replace("_", "").toLowerCase(), standardField);
+            newIndex.put(standardField.toLowerCase(), standardField);
+            newIndex.put(standardField.replace("_", " ").toLowerCase(), standardField);
+            newIndex.put(standardField.replace("_", "").toLowerCase(), standardField);
 
             // 所有同义词
             for (String synonym : entry.getValue()) {
-                synonymToFieldIndex.put(synonym.toLowerCase(), standardField);
+                newIndex.put(synonym.toLowerCase(), standardField);
                 // 去除空格的版本
                 String noSpace = synonym.replace(" ", "").toLowerCase();
                 if (!noSpace.equals(synonym.toLowerCase())) {
-                    synonymToFieldIndex.put(noSpace, standardField);
+                    newIndex.put(noSpace, standardField);
                 }
             }
         }
+
+        // 线程安全地替换索引
+        synonymToFieldIndex = newIndex;
     }
 
     /**
@@ -567,12 +850,13 @@ public class FieldMappingDictionary {
 
     /**
      * 获取标准字段的数据类型
+     * 优先使用动态配置（数据库），其次使用硬编码默认值
      *
      * @param standardField 标准字段名
      * @return 数据类型，未定义则返回 STRING
      */
     public String getDataType(String standardField) {
-        return DATA_TYPE_MAP.getOrDefault(standardField, TYPE_STRING);
+        return dynamicDataTypeMap.getOrDefault(standardField, TYPE_STRING);
     }
 
     /**
@@ -587,12 +871,13 @@ public class FieldMappingDictionary {
 
     /**
      * 获取标准字段的所有同义词
+     * 使用动态映射（包含硬编码 + 数据库配置）
      *
      * @param standardField 标准字段名
      * @return 同义词列表，未找到返回空列表
      */
     public List<String> getAllSynonyms(String standardField) {
-        List<String> synonyms = SYNONYM_MAP.get(standardField);
+        List<String> synonyms = dynamicSynonymMap.get(standardField);
         return synonyms != null ? new ArrayList<>(synonyms) : Collections.emptyList();
     }
 
@@ -622,11 +907,12 @@ public class FieldMappingDictionary {
 
     /**
      * 获取所有标准字段
+     * 使用动态映射（包含硬编码 + 数据库配置）
      *
      * @return 所有标准字段名列表
      */
     public List<String> getAllStandardFields() {
-        return new ArrayList<>(SYNONYM_MAP.keySet());
+        return new ArrayList<>(dynamicSynonymMap.keySet());
     }
 
     /**
@@ -694,8 +980,8 @@ public class FieldMappingDictionary {
             return 100;
         }
 
-        // 精确匹配同义词
-        List<String> synonyms = SYNONYM_MAP.get(standardField);
+        // 精确匹配同义词（使用动态映射）
+        List<String> synonyms = dynamicSynonymMap.get(standardField);
         if (synonyms != null) {
             for (String synonym : synonyms) {
                 if (normalizedName.equals(synonym.toLowerCase())) {
@@ -713,5 +999,22 @@ public class FieldMappingDictionary {
         }
 
         return 0;
+    }
+
+    /**
+     * 获取配置统计信息
+     *
+     * @return 包含配置数量等统计信息的 Map
+     */
+    public Map<String, Object> getConfigStats() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("totalFields", dynamicSynonymMap.size());
+        stats.put("hardcodedFields", SYNONYM_MAP.size());
+        stats.put("dbLoadedFields", getDbLoadedCount());
+        stats.put("totalSynonyms", dynamicSynonymMap.values().stream()
+                .mapToInt(List::size).sum());
+        stats.put("dataTypesConfigured", dynamicDataTypeMap.size());
+        stats.put("aggregationsConfigured", dynamicAggregationMap.size());
+        return stats;
     }
 }

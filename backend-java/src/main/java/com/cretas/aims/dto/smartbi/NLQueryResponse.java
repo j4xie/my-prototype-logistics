@@ -98,6 +98,12 @@ public class NLQueryResponse {
     private String clarificationQuestion;
 
     /**
+     * 预测结果
+     * 当查询意图为 FORECAST 时，包含结构化的预测数据
+     */
+    private ForecastResult forecast;
+
+    /**
      * 获取有效的建议列表
      * 优先返回 suggestions，兼容旧版 followUpQuestions
      *

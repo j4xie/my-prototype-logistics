@@ -14,7 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,18 +30,20 @@ import java.util.stream.Collectors;
  * - 预测: P(click) = sigmoid(w·x) = 1 / (1 + exp(-w·x))
  * - 在线学习: SGD更新 w_i += lr * (label - prediction) * x_i - lr * lambda * w_i
  *
- * 特征维度设计 (160维):
+ * 特征维度设计 (168维):
  * - 用户特征 (0-63): 64维，来自FeatureEngineeringService
  * - 商品特征 (64-127): 64维，来自FeatureEngineeringService
- * - 交叉特征 (128-159): 32维，用户偏好与商品属性的交叉
+ * - 交叉特征 (128-167): 40维，用户偏好与商品属性的交叉
  *
- * 交叉特征详解 (32维):
+ * 交叉特征详解 (40维):
  * - 用户品类偏好 x 商品品类 (0-7): 8维
  * - 用户价格偏好 x 商品价格区间 (8-15): 8维
  * - 用户活跃度 x 商品新鲜度 (16-19): 4维
  * - 用户购买力 x 商品价格 (20-23): 4维
  * - 用户品牌偏好 x 商品品牌热度 (24-27): 4维
  * - 时间上下文 x 商品时段适配 (28-31): 4维
+ * - 行为趋势交叉特征 (32-35): 4维
+ * - 转化率交叉特征 (36-39): 4维
  *
  * @author CTR Enhancement
  * @since 2026-01-19
@@ -155,7 +157,7 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
             FEATURE_NAMES.put(i, "item_context_" + (i - 120));
         }
 
-        // 交叉特征名称 (128-159)
+        // 交叉特征名称 (128-167)
         for (int i = 0; i < 8; i++) {
             FEATURE_NAMES.put(128 + i, "cross_category_" + i);
         }
@@ -174,6 +176,56 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
         for (int i = 0; i < 4; i++) {
             FEATURE_NAMES.put(156 + i, "cross_time_" + i);
         }
+        // 新增: 行为趋势交叉特征 (160-163)
+        FEATURE_NAMES.put(160, "cross_user_item_trend");
+        FEATURE_NAMES.put(161, "cross_user_trend_positive");
+        FEATURE_NAMES.put(162, "cross_item_trend_positive");
+        FEATURE_NAMES.put(163, "cross_trend_diff");
+        // 新增: 转化率交叉特征 (164-167)
+        FEATURE_NAMES.put(164, "cross_cvr_ctr");
+        FEATURE_NAMES.put(165, "cross_user_cvr");
+        FEATURE_NAMES.put(166, "cross_item_ctr");
+        FEATURE_NAMES.put(167, "cross_high_conversion");
+
+        // ==================== V3.0 新增特征 (168-199) ====================
+
+        // 用户-商品深度交叉特征 (168-183)
+        FEATURE_NAMES.put(168, "cross_purchase_freq_x_popularity");
+        FEATURE_NAMES.put(169, "cross_user_avg_price_div_item_price");
+        FEATURE_NAMES.put(170, "cross_user_category_depth");
+        FEATURE_NAMES.put(171, "cross_user_merchant_loyalty");
+        FEATURE_NAMES.put(172, "cross_user_repurchase_x_item_repurchase");
+        FEATURE_NAMES.put(173, "cross_user_basket_x_item_combo");
+        FEATURE_NAMES.put(174, "cross_user_diversity_x_item_niche");
+        FEATURE_NAMES.put(175, "cross_user_promo_sensitivity_x_item_discount");
+        FEATURE_NAMES.put(176, "cross_user_new_product_affinity");
+        FEATURE_NAMES.put(177, "cross_user_brand_preference");
+        FEATURE_NAMES.put(178, "cross_user_seasonal_pattern");
+        FEATURE_NAMES.put(179, "cross_user_time_preference_match");
+        FEATURE_NAMES.put(180, "cross_user_cluster_x_item_cluster_affinity");
+        FEATURE_NAMES.put(181, "cross_user_mature_x_item_complexity");
+        FEATURE_NAMES.put(182, "cross_user_active_x_item_freshness_deep");
+        FEATURE_NAMES.put(183, "cross_user_value_x_item_margin");
+
+        // 行为序列特征 (184-191)
+        FEATURE_NAMES.put(184, "seq_last_view_similarity");
+        FEATURE_NAMES.put(185, "seq_last_purchase_similarity");
+        FEATURE_NAMES.put(186, "seq_browse_entropy");
+        FEATURE_NAMES.put(187, "seq_category_transition_prob");
+        FEATURE_NAMES.put(188, "seq_repurchase_probability");
+        FEATURE_NAMES.put(189, "seq_session_depth");
+        FEATURE_NAMES.put(190, "seq_cart_abandon_rate");
+        FEATURE_NAMES.put(191, "seq_view_to_purchase_rate");
+
+        // 上下文特征 (192-199)
+        FEATURE_NAMES.put(192, "ctx_hour_normalized");
+        FEATURE_NAMES.put(193, "ctx_day_of_week_normalized");
+        FEATURE_NAMES.put(194, "ctx_is_weekend");
+        FEATURE_NAMES.put(195, "ctx_is_promotion_period");
+        FEATURE_NAMES.put(196, "ctx_is_peak_hour");
+        FEATURE_NAMES.put(197, "ctx_season_indicator");
+        FEATURE_NAMES.put(198, "ctx_holiday_proximity");
+        FEATURE_NAMES.put(199, "ctx_session_duration_normalized");
     }
 
     // ==================== 初始化 ====================
@@ -281,10 +333,18 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
         // 获取用户偏好 (用于交叉特征)
         Map<String, Double> userPreferences = getUserPreferences(wxUserId);
 
+        // 预构建商品特征向量缓存 (优化点1: 避免循环内重复构建)
+        Map<String, double[]> productFeaturesCache = new HashMap<>();
+        for (GoodsSpu product : products) {
+            productFeaturesCache.put(product.getId(),
+                featureEngineeringService.buildProductFeatureVector(product));
+        }
+
+        // 在循环中使用缓存进行CTR预测
         for (GoodsSpu product : products) {
             try {
-                // 构建商品特征
-                double[] productFeatures = featureEngineeringService.buildProductFeatureVector(product);
+                // 从缓存获取商品特征
+                double[] productFeatures = productFeaturesCache.get(product.getId());
 
                 // 构建交叉特征
                 double[] crossFeatures = buildCrossFeatures(userFeatures, productFeatures, userPreferences, product);
@@ -446,7 +506,8 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
         stats.put("userFeatureDim", USER_FEATURE_DIM);
         stats.put("itemFeatureDim", ITEM_FEATURE_DIM);
         stats.put("crossFeatureDim", CROSS_FEATURE_DIM);
-        stats.put("learningRate", LEARNING_RATE);
+        stats.put("baseLearningRate", LEARNING_RATE);
+        stats.put("currentLearningRate", getAdaptiveLearningRate());  // 当前自适应学习率
         stats.put("l2Lambda", LAMBDA);
         stats.put("totalSamples", totalSamples.get());
         stats.put("positiveSamples", positiveSamples.get());
@@ -555,6 +616,7 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
         }
 
         double error = label - prediction;
+        double lr = getAdaptiveLearningRate();  // 使用自适应学习率
 
         for (int i = 0; i < features.length && i < weights.length; i++) {
             // 梯度
@@ -564,8 +626,31 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
             gradient = Math.max(-GRADIENT_CLIP, Math.min(GRADIENT_CLIP, gradient));
 
             // SGD更新 + L2正则化
-            weights[i] += LEARNING_RATE * gradient - LEARNING_RATE * LAMBDA * weights[i];
+            weights[i] += lr * gradient - lr * LAMBDA * weights[i];
         }
+    }
+
+    /**
+     * 获取自适应学习率
+     * 实现学习率调度策略:
+     * - Warm-up阶段: 前1000次更新逐步增加学习率
+     * - 衰减阶段: 每10000次更新衰减10%
+     * - 最小学习率: 0.001
+     *
+     * @return 当前自适应学习率
+     */
+    private double getAdaptiveLearningRate() {
+        long updates = updateCount.get();
+        double baseLr = LEARNING_RATE;  // 0.01
+
+        // Warm-up: 前1000次更新逐步增加学习率
+        if (updates < 1000) {
+            return baseLr * (updates + 1) / 1000.0;
+        }
+
+        // 衰减: 每10000次更新衰减10%
+        double decay = Math.pow(0.9, updates / 10000);
+        return Math.max(0.001, baseLr * decay);  // 最小学习率0.001
     }
 
     // ==================== 特征工程 ====================
@@ -609,7 +694,7 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
                     Math.min(productFeatures.length, ITEM_FEATURE_DIM));
         }
 
-        // 交叉特征 (128-159)
+        // 交叉特征 (128-167)
         if (crossFeatures != null) {
             System.arraycopy(crossFeatures, 0, features, USER_FEATURE_DIM + ITEM_FEATURE_DIM,
                     Math.min(crossFeatures.length, CROSS_FEATURE_DIM));
@@ -619,7 +704,7 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
     }
 
     /**
-     * 构建交叉特征 (32维)
+     * 构建交叉特征 (40维)
      *
      * 交叉特征设计:
      * - 用户品类偏好 x 商品品类匹配度 (0-7): 8维
@@ -628,6 +713,8 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
      * - 用户购买力 x 商品价格 (20-23): 4维
      * - 用户品牌偏好 x 商品品牌热度 (24-27): 4维
      * - 时间上下文 x 商品时段适配 (28-31): 4维
+     * - 行为趋势交叉特征 (32-35): 4维
+     * - 转化率交叉特征 (36-39): 4维
      */
     private double[] buildCrossFeatures(double[] userFeatures, double[] productFeatures,
                                          Map<String, Double> userPreferences, GoodsSpu product) {
@@ -735,11 +822,478 @@ public class CTRPredictionServiceImpl implements CTRPredictionService {
                 crossFeatures[31] = isEvening;  // 晚间购物
             }
 
+            // 7. 行为趋势交叉特征 (32-35) - 新增
+            String wxUserId = userPreferences.containsKey("wx_user_id") ?
+                    String.valueOf(userPreferences.get("wx_user_id")) : null;
+            double userTrend = getUserActivityTrend(wxUserId);
+            double itemTrend = getItemSalesTrend(product);
+            crossFeatures[32] = userTrend * itemTrend;
+            crossFeatures[33] = userTrend > 0 ? 1.0 : 0;
+            crossFeatures[34] = itemTrend > 0 ? 1.0 : 0;
+            crossFeatures[35] = Math.abs(userTrend - itemTrend);
+
+            // 8. 转化率交叉特征 (36-39) - 新增
+            double userCVR = getUserConversionRate(wxUserId);
+            double itemCTR = getItemClickRate(product);
+            crossFeatures[36] = userCVR * itemCTR;
+            crossFeatures[37] = userCVR;
+            crossFeatures[38] = itemCTR;
+            crossFeatures[39] = (userCVR > 0.1 && itemCTR > 0.05) ? 1.0 : 0;
+
+            // ==================== V3.0 新增特征 (40-71) ====================
+
+            // 9. 用户-商品深度交叉特征 (40-55)
+            double userPurchaseFreq = safeGet(userFeatures, 15);
+            double itemPopularity = safeGet(productFeatures, 9);
+            double userAvgPrice = safeGet(userFeatures, 10);
+            double itemPrice = safeGet(productFeatures, 3);
+            double userCategoryCount = safeGet(userFeatures, 25);
+            double userMerchantLoyalty = safeGet(userFeatures, 26);
+            double userRepurchaseRate = safeGet(userFeatures, 21);
+            double itemRepurchaseRate = safeGet(productFeatures, 12);
+            double userBasketSize = safeGet(userFeatures, 22);
+            double itemComboScore = safeGet(productFeatures, 13);
+            double userDiversity = safeGet(userFeatures, 27);
+            double itemNiche = 1.0 - itemPopularity;
+            double userPromoSensitivity = safeGet(userFeatures, 28);
+            double itemDiscount = safeGet(productFeatures, 15);
+            double userNewProductAffinity = safeGet(userFeatures, 29);
+            double itemFreshness2 = safeGet(productFeatures, 8);
+            double userActiveRecent = safeGet(userFeatures, 2);
+
+            crossFeatures[40] = userPurchaseFreq * itemPopularity;                      // 购买频率×热度
+            crossFeatures[41] = itemPrice > 0 ? userAvgPrice / (itemPrice + 0.001) : 0; // 价格匹配度
+            crossFeatures[42] = userCategoryCount;                                      // 用户品类深度
+            crossFeatures[43] = userMerchantLoyalty;                                    // 用户商户忠诚度
+            crossFeatures[44] = userRepurchaseRate * itemRepurchaseRate;                // 复购交叉
+            crossFeatures[45] = userBasketSize * itemComboScore;                        // 篮子×组合
+            crossFeatures[46] = userDiversity * itemNiche;                              // 多样性×小众
+            crossFeatures[47] = userPromoSensitivity * itemDiscount;                    // 促销敏感度×折扣
+            crossFeatures[48] = userNewProductAffinity * itemFreshness2;                // 新品偏好×新鲜度
+            crossFeatures[49] = safeGet(userFeatures, 30);                              // 用户品牌偏好
+            crossFeatures[50] = safeGet(userFeatures, 31);                              // 用户季节模式
+            crossFeatures[51] = calculateTimePreferenceMatchV3(userFeatures);           // 时间偏好匹配
+            crossFeatures[52] = safeGet(userFeatures, 7);                               // 聚类亲和度(从画像成熟度)
+            crossFeatures[53] = safeGet(userFeatures, 18) * safeGet(productFeatures, 11); // 成熟度×复杂度
+            crossFeatures[54] = userActiveRecent * itemFreshness2;                      // 活跃×新鲜深度交叉
+            crossFeatures[55] = safeGet(userFeatures, 32) * safeGet(productFeatures, 16); // 价值×利润率
+
+            // 10. 行为序列特征 (56-63)
+            crossFeatures[56] = calculateCategorySimilarityV3(wxUserId, product);       // 最近浏览相似度
+            crossFeatures[57] = calculatePurchaseSimilarityV3(wxUserId, product);       // 最近购买相似度
+            crossFeatures[58] = calculateBrowseEntropyV3(wxUserId);                     // 浏览熵
+            crossFeatures[59] = 0.5;                                                    // 品类转移概率(简化)
+            crossFeatures[60] = userRepurchaseRate;                                     // 复购概率
+            crossFeatures[61] = safeGet(userFeatures, 33);                              // 会话深度
+            crossFeatures[62] = safeGet(userFeatures, 34);                              // 加购放弃率
+            crossFeatures[63] = safeGet(userFeatures, 35);                              // 浏览到购买率
+
+            // 11. 上下文特征 (64-71)
+            java.time.LocalDateTime now = java.time.LocalDateTime.now();
+            int hour = now.getHour();
+            int dayOfWeek = now.getDayOfWeek().getValue();
+
+            crossFeatures[64] = hour / 24.0;                                            // 小时归一化
+            crossFeatures[65] = dayOfWeek / 7.0;                                        // 星期归一化
+            crossFeatures[66] = (dayOfWeek >= 6) ? 1.0 : 0.0;                          // 是否周末
+            crossFeatures[67] = isPromotionPeriodV3() ? 1.0 : 0.0;                     // 是否促销期
+            crossFeatures[68] = (hour >= 12 && hour <= 14) || (hour >= 18 && hour <= 21) ? 1.0 : 0.0; // 高峰时段
+            crossFeatures[69] = getSeasonIndicatorV3(now);                              // 季节指标
+            crossFeatures[70] = getHolidayProximityV3(now);                             // 节日临近度
+            crossFeatures[71] = safeGet(userFeatures, 36);                              // 会话时长归一化
+
         } catch (Exception e) {
             log.debug("构建交叉特征失败: {}", e.getMessage());
         }
 
         return crossFeatures;
+    }
+
+    // ==================== V3.0 新增辅助方法 ====================
+
+    /**
+     * 安全获取数组元素
+     */
+    private double safeGet(double[] arr, int index) {
+        if (arr == null || index < 0 || index >= arr.length) {
+            return 0.0;
+        }
+        return arr[index];
+    }
+
+    /**
+     * V3.0: 计算时间偏好匹配度
+     */
+    private double calculateTimePreferenceMatchV3(double[] userFeatures) {
+        int hour = java.time.LocalDateTime.now().getHour();
+        double userMorningPref = safeGet(userFeatures, 40);
+        double userEveningPref = safeGet(userFeatures, 41);
+
+        if (hour >= 6 && hour <= 12) {
+            return userMorningPref;
+        } else if (hour >= 18 && hour <= 22) {
+            return userEveningPref;
+        }
+        return 0.5;
+    }
+
+    /**
+     * V3.0: 计算品类相似度
+     * 基于Jaccard相似度计算用户浏览品类与商品品类的匹配程度
+     *
+     * @param wxUserId 用户ID
+     * @param product 商品
+     * @return 相似度值 [0, 1]
+     *         - 1.0: 商品品类在用户最近浏览列表中
+     *         - 0.7: 商品品类是用户浏览品类的子类
+     *         - 0.3: 默认相似度
+     */
+    private double calculateCategorySimilarityV3(String wxUserId, GoodsSpu product) {
+        if (wxUserId == null || product == null || product.getCategoryFirst() == null) {
+            return 0.0;
+        }
+
+        try {
+            // 获取用户最近浏览的品类列表 (从Redis缓存获取)
+            String cacheKey = "user:recent:categories:" + wxUserId;
+            String cachedCategories = redisTemplate.opsForValue().get(cacheKey);
+
+            Set<String> userCategories = new HashSet<>();
+            if (cachedCategories != null && !cachedCategories.isEmpty()) {
+                // 解析品类列表 (格式: "cat1,cat2,cat3")
+                String[] categories = cachedCategories.split(",");
+                for (String cat : categories) {
+                    if (cat != null && !cat.trim().isEmpty()) {
+                        userCategories.add(cat.trim());
+                    }
+                }
+            }
+
+            // 如果没有缓存，尝试从用户兴趣标签获取
+            if (userCategories.isEmpty()) {
+                List<UserInterestTag> tags = userInterestTagMapper.selectTopTags(wxUserId, 30);
+                for (UserInterestTag tag : tags) {
+                    if ("category".equals(tag.getTagType()) && tag.getTagValue() != null) {
+                        userCategories.add(tag.getTagValue());
+                    }
+                }
+            }
+
+            // 如果仍然没有数据，返回默认值
+            if (userCategories.isEmpty()) {
+                return 0.3;
+            }
+
+            String productCategory = product.getCategoryFirst();
+            String productSubCategory = product.getCategorySecond();
+
+            // 完全匹配: 商品一级品类在用户浏览列表中
+            if (userCategories.contains(productCategory)) {
+                return 1.0;
+            }
+
+            // 子类匹配: 商品二级品类在用户浏览列表中
+            if (productSubCategory != null && userCategories.contains(productSubCategory)) {
+                return 0.7;
+            }
+
+            // 计算Jaccard相似度 (商品品类集合与用户品类集合的交集/并集)
+            Set<String> productCategories = new HashSet<>();
+            productCategories.add(productCategory);
+            if (productSubCategory != null) {
+                productCategories.add(productSubCategory);
+            }
+
+            // 计算交集大小
+            int intersection = 0;
+            for (String cat : productCategories) {
+                if (userCategories.contains(cat)) {
+                    intersection++;
+                }
+            }
+
+            // 计算并集大小
+            Set<String> union = new HashSet<>(userCategories);
+            union.addAll(productCategories);
+            int unionSize = union.size();
+
+            if (unionSize > 0 && intersection > 0) {
+                double jaccard = (double) intersection / unionSize;
+                // 将Jaccard相似度映射到 [0.3, 1.0] 范围
+                return 0.3 + jaccard * 0.7;
+            }
+
+            return 0.3;  // 默认中等相似度
+
+        } catch (Exception e) {
+            log.debug("计算品类相似度失败: userId={}, error={}", wxUserId, e.getMessage());
+            return 0.3;
+        }
+    }
+
+    /**
+     * V3.0: 计算购买相似度
+     * 基于用户最近购买的商品品类与当前商品品类的匹配程度
+     *
+     * @param wxUserId 用户ID
+     * @param product 商品
+     * @return 相似度值
+     *         - 1.0: 完全匹配 (一级和二级品类都匹配)
+     *         - 0.6: 部分匹配 (一级品类匹配)
+     *         - 0.2: 无匹配
+     */
+    private double calculatePurchaseSimilarityV3(String wxUserId, GoodsSpu product) {
+        if (wxUserId == null || product == null) {
+            return 0.2;
+        }
+
+        try {
+            // 获取用户最近购买的品类列表 (从Redis缓存获取)
+            String cacheKey = "user:purchase:categories:" + wxUserId;
+            String cachedPurchases = redisTemplate.opsForValue().get(cacheKey);
+
+            Map<String, Integer> purchaseCounts = new HashMap<>();
+            if (cachedPurchases != null && !cachedPurchases.isEmpty()) {
+                // 解析品类及购买次数 (格式: "cat1:5,cat2:3,cat3:1")
+                String[] entries = cachedPurchases.split(",");
+                for (String entry : entries) {
+                    String[] parts = entry.split(":");
+                    if (parts.length == 2) {
+                        purchaseCounts.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
+                    } else if (parts.length == 1 && !parts[0].trim().isEmpty()) {
+                        purchaseCounts.put(parts[0].trim(), 1);
+                    }
+                }
+            }
+
+            // 如果没有缓存，尝试从用户兴趣标签获取购买相关标签
+            if (purchaseCounts.isEmpty()) {
+                List<UserInterestTag> tags = userInterestTagMapper.selectTopTags(wxUserId, 50);
+                for (UserInterestTag tag : tags) {
+                    if ("purchase_category".equals(tag.getTagType()) && tag.getTagValue() != null) {
+                        int weight = tag.getWeight() != null ? tag.getWeight().intValue() : 1;
+                        purchaseCounts.put(tag.getTagValue(), weight);
+                    } else if ("category".equals(tag.getTagType()) && tag.getWeight() != null
+                            && tag.getWeight().doubleValue() > 0.5) {
+                        // 高权重品类标签也可能代表购买偏好
+                        purchaseCounts.put(tag.getTagValue(), (int) (tag.getWeight().doubleValue() * 10));
+                    }
+                }
+            }
+
+            if (purchaseCounts.isEmpty()) {
+                return 0.2;
+            }
+
+            String productCategory = product.getCategoryFirst();
+            String productSubCategory = product.getCategorySecond();
+
+            // 完全匹配: 一级和二级品类都在购买历史中
+            boolean firstMatch = purchaseCounts.containsKey(productCategory);
+            boolean secondMatch = productSubCategory != null && purchaseCounts.containsKey(productSubCategory);
+
+            if (firstMatch && secondMatch) {
+                return 1.0;  // 完全匹配
+            } else if (firstMatch || secondMatch) {
+                return 0.6;  // 部分匹配
+            }
+
+            return 0.2;  // 无匹配
+
+        } catch (Exception e) {
+            log.debug("计算购买相似度失败: userId={}, error={}", wxUserId, e.getMessage());
+            return 0.2;
+        }
+    }
+
+    /**
+     * V3.0: 计算浏览熵
+     * 基于Shannon熵衡量用户浏览行为的多样性
+     * 熵越高表示用户浏览品类越分散，熵越低表示用户浏览品类越集中
+     *
+     * 公式: entropy = -Σ(p_i * log2(p_i))
+     *
+     * @param wxUserId 用户ID
+     * @return 归一化熵值 [0, 1]
+     *         - 0: 用户只浏览单一品类
+     *         - 1: 用户浏览品类非常分散
+     */
+    private double calculateBrowseEntropyV3(String wxUserId) {
+        if (wxUserId == null) {
+            return 0.5;
+        }
+
+        try {
+            // 先检查缓存
+            String cacheKey = "user:browse:entropy:" + wxUserId;
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return Double.parseDouble(cached);
+            }
+
+            // 获取用户最近7天的浏览品类分布
+            String distributionKey = "user:browse:distribution:" + wxUserId;
+            String distributionData = redisTemplate.opsForValue().get(distributionKey);
+
+            Map<String, Integer> categoryDistribution = new HashMap<>();
+
+            if (distributionData != null && !distributionData.isEmpty()) {
+                // 解析品类分布 (格式: "cat1:10,cat2:5,cat3:3")
+                String[] entries = distributionData.split(",");
+                for (String entry : entries) {
+                    String[] parts = entry.split(":");
+                    if (parts.length == 2) {
+                        categoryDistribution.put(parts[0].trim(), Integer.parseInt(parts[1].trim()));
+                    }
+                }
+            }
+
+            // 如果没有分布数据，从用户兴趣标签估算
+            if (categoryDistribution.isEmpty()) {
+                List<UserInterestTag> tags = userInterestTagMapper.selectTopTags(wxUserId, 30);
+                for (UserInterestTag tag : tags) {
+                    if ("category".equals(tag.getTagType()) && tag.getTagValue() != null) {
+                        int weight = tag.getWeight() != null ? (int) (tag.getWeight().doubleValue() * 100) : 1;
+                        categoryDistribution.put(tag.getTagValue(), Math.max(1, weight));
+                    }
+                }
+            }
+
+            if (categoryDistribution.isEmpty()) {
+                return 0.5;  // 默认中等熵值
+            }
+
+            // 计算总浏览次数
+            int total = 0;
+            for (int count : categoryDistribution.values()) {
+                total += count;
+            }
+
+            if (total == 0) {
+                return 0.5;
+            }
+
+            // 计算Shannon熵: entropy = -Σ(p_i * log2(p_i))
+            double entropy = 0.0;
+            for (int count : categoryDistribution.values()) {
+                if (count > 0) {
+                    double p = (double) count / total;
+                    entropy -= p * (Math.log(p) / Math.log(2));  // log2(p) = ln(p) / ln(2)
+                }
+            }
+
+            // 归一化到 [0, 1]: 最大熵 = log2(N), N为品类数量
+            int numCategories = categoryDistribution.size();
+            double maxEntropy = Math.log(numCategories) / Math.log(2);
+            double normalizedEntropy = maxEntropy > 0 ? entropy / maxEntropy : 0.0;
+
+            // 确保在 [0, 1] 范围内
+            normalizedEntropy = Math.max(0.0, Math.min(1.0, normalizedEntropy));
+
+            // 缓存结果 (缓存1小时)
+            redisTemplate.opsForValue().set(cacheKey, String.valueOf(normalizedEntropy), 1, TimeUnit.HOURS);
+
+            return normalizedEntropy;
+
+        } catch (Exception e) {
+            log.debug("计算浏览熵失败: userId={}, error={}", wxUserId, e.getMessage());
+            return 0.5;
+        }
+    }
+
+    /**
+     * V3.0: 判断是否促销期
+     */
+    private boolean isPromotionPeriodV3() {
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();
+        int day = now.getDayOfMonth();
+        // 每月1号、11号、月末为促销日
+        return day == 1 || day == 11 || day >= 28;
+    }
+
+    /**
+     * V3.0: 获取季节指标
+     */
+    private double getSeasonIndicatorV3(java.time.LocalDateTime now) {
+        int month = now.getMonthValue();
+        if (month >= 3 && month <= 5) return 0.25;  // 春
+        if (month >= 6 && month <= 8) return 0.50;  // 夏
+        if (month >= 9 && month <= 11) return 0.75; // 秋
+        return 1.0;  // 冬
+    }
+
+    /**
+     * V3.0: 获取节日临近度
+     */
+    private double getHolidayProximityV3(java.time.LocalDateTime now) {
+        int month = now.getMonthValue();
+        int day = now.getDayOfMonth();
+
+        // 主要节日
+        if ((month == 1 || month == 2) && day <= 15) return 1.0;  // 春节
+        if (month == 5 && day <= 7) return 0.8;                    // 五一
+        if (month == 10 && day <= 7) return 0.8;                   // 十一
+        if (month == 11 && day >= 1 && day <= 15) return 1.0;     // 双11
+        if (month == 12 && day >= 1 && day <= 15) return 0.9;     // 双12
+
+        return 0.0;
+    }
+
+    /**
+     * 获取用户活跃度趋势 (7天环比)
+     */
+    private double getUserActivityTrend(String wxUserId) {
+        if (wxUserId == null) return 0;
+        try {
+            String key = "user:trend:" + wxUserId;
+            String cached = redisTemplate.opsForValue().get(key);
+            if (cached != null) {
+                return Double.parseDouble(cached);
+            }
+        } catch (Exception e) {
+            log.debug("获取用户趋势失败: {}", e.getMessage());
+        }
+        return 0;
+    }
+
+    /**
+     * 获取商品销量趋势 (7天环比)
+     */
+    private double getItemSalesTrend(GoodsSpu product) {
+        if (product == null || product.getSaleNum() == null) return 0;
+        // 简化实现：基于销量估算趋势
+        int sales = product.getSaleNum();
+        if (sales > 100) return 0.2;
+        if (sales > 50) return 0.1;
+        if (sales > 10) return 0;
+        return -0.1;
+    }
+
+    /**
+     * 获取用户转化率
+     */
+    private double getUserConversionRate(String wxUserId) {
+        if (wxUserId == null) return 0.05;  // 默认5%
+        try {
+            String key = "user:cvr:" + wxUserId;
+            String cached = redisTemplate.opsForValue().get(key);
+            if (cached != null) {
+                return Double.parseDouble(cached);
+            }
+        } catch (Exception e) {
+            log.debug("获取用户CVR失败: {}", e.getMessage());
+        }
+        return 0.05;
+    }
+
+    /**
+     * 获取商品点击率
+     */
+    private double getItemClickRate(GoodsSpu product) {
+        if (product == null) return 0.05;
+        // 简化实现：基于销量估算CTR
+        int sales = product.getSaleNum() != null ? product.getSaleNum() : 0;
+        return Math.min(0.3, 0.02 + sales / 5000.0);
     }
 
     /**
