@@ -170,9 +170,9 @@ def run_tests():
         if eval_result["correct"]:
             categories[difficulty]["correct"] += 1
 
-        # Print progress
-        status = "✅" if eval_result["correct"] else "❌"
-        print(f"[{i+1}/{len(test_cases)}] {status} '{user_input[:30]}...' -> {eval_result['matched_intent']} ({latency:.0f}ms) [{route_type}]")
+        # Print progress (use ASCII for Windows compatibility)
+        status = "[OK]" if eval_result["correct"] else "[FAIL]"
+        print(f"[{i+1}/{len(test_cases)}] {status} '{user_input[:30]}' -> {eval_result['matched_intent']} ({latency:.0f}ms) [{route_type}]")
 
         results.append({
             "input": user_input,
@@ -206,7 +206,7 @@ def run_tests():
         print(f"  {diff:20s}: {stats['correct']:3d}/{stats['total']:3d} ({acc:5.1f}%) avg={avg_lat:.0f}ms")
 
     print("\n--- Route Type Distribution ---")
-    for route_type, count in sorted(route_types.items()):
+    for route_type, count in sorted(route_types.items(), key=lambda x: (x[0] is None, x[0])):
         pct = 100 * count / total_cases
         print(f"  {route_type:20s}: {count:3d} ({pct:5.1f}%)")
 
