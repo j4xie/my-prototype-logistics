@@ -26,6 +26,9 @@ import BatchWorkersScreen from '../screens/dispatcher/plan/BatchWorkersScreen';
 // AI 模块
 import AICompletionProbScreen from '../screens/dispatcher/ai/AICompletionProbScreen';
 import AIWorkerOptimizeScreen from '../screens/dispatcher/ai/AIWorkerOptimizeScreen';
+import AIScheduleAnalysisScreen from '../screens/dispatcher/ai/AIScheduleAnalysisScreen';
+import AIRescheduleScreen from '../screens/dispatcher/ai/AIRescheduleScreen';
+import AIProbabilityDetailScreen from '../screens/dispatcher/ai/AIProbabilityDetailScreen';
 
 // Personnel 模块
 import PersonnelDetailScreen from '../screens/dispatcher/personnel/PersonnelDetailScreen';
@@ -55,6 +58,9 @@ export type DispatcherStackParamList = {
   // AI 模块
   AICompletionProb: undefined;
   AIWorkerOptimize: undefined;
+  AIScheduleAnalysis: undefined;
+  AIReschedule: undefined;
+  AIProbabilityDetail: { scheduleId?: string; planId?: string } | undefined;
   // Personnel 模块
   PersonnelDetail: { employeeId: string };
   PersonnelSchedule: undefined;
@@ -90,6 +96,9 @@ export function DispatcherNavigator() {
       {/* AI 模块详情页 */}
       <Stack.Screen name="AICompletionProb" component={AICompletionProbScreen} />
       <Stack.Screen name="AIWorkerOptimize" component={AIWorkerOptimizeScreen} />
+      <Stack.Screen name="AIScheduleAnalysis" component={AIScheduleAnalysisScreen} />
+      <Stack.Screen name="AIReschedule" component={AIRescheduleScreen} />
+      <Stack.Screen name="AIProbabilityDetail" component={AIProbabilityDetailScreen} />
 
       {/* Personnel 模块详情页 */}
       <Stack.Screen name="PersonnelDetail" component={PersonnelDetailScreen} />

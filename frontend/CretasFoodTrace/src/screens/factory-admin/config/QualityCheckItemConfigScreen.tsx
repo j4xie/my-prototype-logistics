@@ -13,6 +13,7 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  TouchableOpacity,
 } from 'react-native';
 import {
   Text,
@@ -33,7 +34,10 @@ import {
   ProgressBar,
 } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuthStore } from '../../../store/authStore';
+import { FAManagementStackParamList } from '../../../types/navigation';
 import qualityCheckItemApi, {
   QualityCheckItem,
   QualityCheckCategory,
@@ -47,8 +51,11 @@ import qualityCheckItemApi, {
   VALUE_TYPES,
 } from '../../../services/api/qualityCheckItemApiClient';
 
+type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList, 'QualityCheckItemConfig'>;
+
 const QualityCheckItemConfigScreen: React.FC = () => {
   const { t } = useTranslation('home');
+  const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
   const factoryId = user?.factoryId ?? '';
 
@@ -314,9 +321,14 @@ const QualityCheckItemConfigScreen: React.FC = () => {
     return QUALITY_SEVERITIES.find((s) => s.value === severity)?.color ?? '#666';
   };
 
+  // 导航到详情页
+  const navigateToDetail = (itemId: string) => {
+    navigation.navigate('QualityCheckItemDetail', { itemId });
+  };
+
   // 渲染质检项卡片
   const renderItem = (item: QualityCheckItem) => (
-    <Card key={item.id} style={styles.card}>
+    <Card key={item.id} style={styles.card} onPress={() => navigateToDetail(item.id)}>
       <Card.Content>
         <View style={styles.cardHeader}>
           <View style={styles.cardTitle}>
@@ -352,6 +364,14 @@ const QualityCheckItemConfigScreen: React.FC = () => {
               />
             }
           >
+            <Menu.Item
+              onPress={() => {
+                setMenuVisible(null);
+                navigation.navigate('QualityCheckItemDetail', { itemId: item.id });
+              }}
+              title={t('qualityCheckItemConfig.viewDetails', '查看详情')}
+              leadingIcon="eye"
+            />
             <Menu.Item
               onPress={() => openEditModal(item)}
               title={t('common.edit')}

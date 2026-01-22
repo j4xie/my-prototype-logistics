@@ -463,6 +463,43 @@ export const qualityCheckItemApi = {
   },
 
   /**
+   * 获取质检项的统计数据（单个项目）
+   */
+  async getItemStatistics(
+    factoryId: string,
+    itemId: string
+  ): Promise<{
+    totalInspections: number;
+    passCount: number;
+    failCount: number;
+    passRate: number;
+    recentInspections: Array<{
+      id: string;
+      batchNumber: string;
+      result: string;
+      value: string;
+      inspectedAt: string;
+    }>;
+  }> {
+    const response = await apiClient.get<ApiResponse<{
+      totalInspections: number;
+      passCount: number;
+      failCount: number;
+      passRate: number;
+      recentInspections: Array<{
+        id: string;
+        batchNumber: string;
+        result: string;
+        value: string;
+        inspectedAt: string;
+      }>;
+    }>>(
+      `${getBaseUrl(factoryId)}/${itemId}/statistics`
+    );
+    return response.data;
+  },
+
+  /**
    * 验证检测值
    */
   async validateValue(
