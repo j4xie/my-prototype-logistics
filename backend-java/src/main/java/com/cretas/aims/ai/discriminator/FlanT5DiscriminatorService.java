@@ -568,4 +568,15 @@ public class FlanT5DiscriminatorService {
         intentDescriptionCache.clear();
         preloadIntentDescriptions();
     }
+
+    /**
+     * Get all intent descriptions for training data export.
+     * @return Map of intentCode -> description
+     */
+    public Map<String, String> getIntentDescriptions() {
+        if (intentDescriptionCache.isEmpty()) {
+            preloadIntentDescriptions();
+        }
+        return new HashMap<>(intentDescriptionCache);
+    }
 }
