@@ -1891,8 +1891,28 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     /**
      * 构建无匹配响应
+     *
+     * 委托到 responseBuilderServiceDelegate（如果可用）
      */
     private IntentExecuteResponse buildNoMatchResponse(IntentMatchResult matchResult, String factoryId) {
+        log.debug("[Delegate] buildNoMatchResponse - 委托: responseBuilderServiceDelegate");
+
+        // 尝试委托到 ResponseBuilderService
+        if (responseBuilderServiceDelegate != null) {
+            try {
+                log.info("[Delegate] 委托 buildNoMatchResponse 到 responseBuilderServiceDelegate");
+                IntentExecuteResponse delegateResponse = responseBuilderServiceDelegate.buildNoMatchResponse(
+                        factoryId, null, matchResult);
+                if (delegateResponse != null) {
+                    log.debug("[Delegate] buildNoMatchResponse 委托成功");
+                    return delegateResponse;
+                }
+            } catch (Exception e) {
+                log.warn("[Delegate] buildNoMatchResponse 委托失败，回退到本地实现: {}", e.getMessage());
+            }
+        }
+
+        // 本地实现（作为回退）
         log.info("🔍 buildNoMatchResponse调用: sessionId={}, conversationMessage={}, hasMatch={}",
                 matchResult.getSessionId(), matchResult.getConversationMessage(), matchResult.hasMatch());
 
@@ -1946,8 +1966,28 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     /**
      * 构建需要澄清的响应
+     *
+     * 委托到 responseBuilderServiceDelegate（如果可用）
      */
     private IntentExecuteResponse buildClarificationResponse(IntentMatchResult matchResult, String factoryId) {
+        log.debug("[Delegate] buildClarificationResponse - 委托: responseBuilderServiceDelegate");
+
+        // 尝试委托到 ResponseBuilderService
+        if (responseBuilderServiceDelegate != null) {
+            try {
+                log.info("[Delegate] 委托 buildClarificationResponse 到 responseBuilderServiceDelegate");
+                IntentExecuteResponse delegateResponse = responseBuilderServiceDelegate.buildClarificationResponse(
+                        factoryId, null, matchResult);
+                if (delegateResponse != null) {
+                    log.debug("[Delegate] buildClarificationResponse 委托成功");
+                    return delegateResponse;
+                }
+            } catch (Exception e) {
+                log.warn("[Delegate] buildClarificationResponse 委托失败，回退到本地实现: {}", e.getMessage());
+            }
+        }
+
+        // 本地实现（作为回退）
         AIIntentConfig matchedIntent = matchResult.getBestMatch();
         List<IntentExecuteResponse.SuggestedAction> candidateActions = buildCandidateActions(matchResult, factoryId);
 
@@ -2190,9 +2230,17 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      * 3. 提供用户可选的操作（重新描述、查看常用操作、联系管理员）
      *
      * 符合 R3 要求: 校验失败不执行，反问用户 double check
+     *
+     * 委托候选: responseBuilderServiceDelegate（签名不同，需适配）
      */
     private IntentExecuteResponse buildValidationFailureResponse(String factoryId, String userInput,
                                                                    LlmSchemaValidationException e) {
+        log.debug("[Delegate] buildValidationFailureResponse - 委托候选: responseBuilderServiceDelegate");
+
+        // 注意: 子服务签名为 buildValidationFailureResponse(factoryId, request, intent, validationMessage)
+        // 当前方法签名不同，使用 LlmSchemaValidationException 作为错误源
+        // 保留本地实现以处理 LLM Schema 特定的验证错误
+
         // 构建用户友好的错误消息
         String clarificationMessage = buildValidationFailureMessage(userInput, e);
 
@@ -2803,6 +2851,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      */
     private String generateConversationalResponse(String factoryId, String userInput, QuestionType questionType,
                                                    Boolean enableThinking, Integer thinkingBudget) {
+        log.debug("[Delegate] generateConversationalResponse - 委托候选: analysisExecutionServiceDelegate");
+
+        // 注意: 子服务 AnalysisExecutionService.generateConversationalResponse 签名不同
+        // 子服务需要 AIIntentConfig 和 analysisData，此处是通用对话生成
+        // 保留原实现以支持无意图配置的对话场景
+
         String systemPrompt;
 
         if (questionType == QuestionType.GENERAL_QUESTION) {
@@ -2927,6 +2981,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     private IntentExecuteResponse executeAnalysisFlow(String factoryId, String userInput,
                                                        IntentExecuteRequest request,
                                                        Long userId, String userRole) {
+        log.debug("[Delegate] executeAnalysisFlow - 委托模式: analysisExecutionServiceDelegate");
+
+        // 尝试委托到 AnalysisExecutionService (如果意图配置可用)
+        // 注意: 当前方法签名与子服务不同，保留原实现作为主路径
+        // 子服务用于特定意图的分析执行，此处是通用分析流程
+
         try {
             // 1. 检测分析主题
             AnalysisTopic topic = analysisRouterService.detectAnalysisTopic(userInput);
@@ -3188,8 +3248,16 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     /**
      * 构建多意图确认响应
+     *
+     * 委托候选: multiIntentOrchestrationServiceDelegate（签名不同，需适配）
      */
     private IntentExecuteResponse buildMultiIntentConfirmationResponse(IntentMatchResult intentResult) {
+        log.debug("[Delegate] buildMultiIntentConfirmationResponse - 委托候选: multiIntentOrchestrationServiceDelegate");
+
+        // 注意: 子服务签名为 buildMultiIntentConfirmationResponse(MultiIntentResult)
+        // 当前方法使用 IntentMatchResult，两者结构不同
+        // 保留本地实现以支持 IntentMatchResult 的多意图确认场景
+
         List<IntentExecuteResponse.SuggestedAction> actions = new java.util.ArrayList<>();
 
         // 主意图
@@ -3267,6 +3335,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     /**
      * 更新对话记忆
+     *
+     * 委托到 conversationManagementServiceDelegate（如果可用）
      */
     private void updateConversationMemory(String sessionId,
                                           IntentExecuteRequest request,
@@ -3274,19 +3344,40 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                           IntentMatchResult intentResult,
                                           String factoryId,
                                           Long userId) {
+        log.debug("[Delegate] updateConversationMemory - 委托: conversationManagementServiceDelegate");
+
+        String userInput = request.getUserInput();
+        String assistantMessage = response.getMessage() != null ? response.getMessage() : "执行完成";
+        String intentCode = (intentResult != null && intentResult.getBestMatch() != null)
+                ? intentResult.getBestMatch().getIntentCode() : null;
+
+        // 尝试委托到 ConversationManagementService
+        if (conversationManagementServiceDelegate != null) {
+            try {
+                log.info("[Delegate] 委托 updateConversationMemory 到 conversationManagementServiceDelegate");
+                conversationManagementServiceDelegate.updateConversationMemory(
+                        factoryId, userId, sessionId, userInput, assistantMessage, intentCode);
+                log.debug("[Delegate] updateConversationMemory 委托成功");
+                // 委托成功后，仍然需要执行本地的实体槽位提取逻辑
+                extractAndUpdateEntitySlots(sessionId, response, intentResult);
+                return;
+            } catch (Exception e) {
+                log.warn("[Delegate] updateConversationMemory 委托失败，回退到本地实现: {}", e.getMessage());
+            }
+        }
+
+        // 本地实现（作为回退）
         log.info("更新对话记忆: sessionId={}, userInput={}, status={}",
                 sessionId,
-                request.getUserInput() != null && request.getUserInput().length() > 30 ?
-                        request.getUserInput().substring(0, 30) + "..." : request.getUserInput(),
+                userInput != null && userInput.length() > 30 ?
+                        userInput.substring(0, 30) + "..." : userInput,
                 response.getStatus());
         try {
             // 添加用户消息
             conversationMemoryService.addMessage(sessionId,
-                ConversationMessage.user(request.getUserInput()));
+                ConversationMessage.user(userInput));
 
             // 添加助手响应
-            String assistantMessage = response.getMessage() != null ?
-                response.getMessage() : "执行完成";
             conversationMemoryService.addMessage(sessionId,
                 ConversationMessage.assistant(assistantMessage));
 
@@ -3294,9 +3385,8 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
             extractAndUpdateEntitySlots(sessionId, response, intentResult);
 
             // 更新最后意图
-            if (intentResult != null && intentResult.getBestMatch() != null) {
-                conversationMemoryService.updateLastIntent(sessionId,
-                        intentResult.getBestMatch().getIntentCode());
+            if (intentCode != null) {
+                conversationMemoryService.updateLastIntent(sessionId, intentCode);
             }
 
         } catch (Exception e) {

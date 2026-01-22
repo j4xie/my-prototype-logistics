@@ -2013,41 +2013,15 @@ public class SchedulingServiceImpl implements SchedulingService {
 
     @Override
     public List<SchedulingAlertDTO> getUnresolvedAlerts(String factoryId) {
-        List<SchedulingAlert> alerts = alertRepository.findByFactoryIdAndIsResolvedFalseOrderByCreatedAtDesc(factoryId);
-        return alerts.stream()
-            .map(SchedulingAlertDTO::fromEntity)
-            .collect(Collectors.toList());
+        log.debug("Delegating getUnresolvedAlerts to schedulingAlertService: factoryId={}", factoryId);
+        return schedulingAlertService.getUnresolvedAlerts(factoryId);
     }
 
     @Override
     public Page<SchedulingAlertDTO> getAlerts(String factoryId, String severity, String alertType, Pageable pageable) {
-        Page<SchedulingAlert> alerts;
-
-        if (severity != null) {
-            // 支持大小写不敏感，并映射常见别名
-            SchedulingAlert.Severity sev = parseSeverity(severity);
-            if (sev != null) {
-                alerts = alertRepository.findByFactoryIdAndSeverity(factoryId, sev, pageable);
-            } else {
-                // 无效的severity值，返回空结果
-                alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
-            }
-        } else if (alertType != null) {
-            try {
-                SchedulingAlert.AlertType type = SchedulingAlert.AlertType.valueOf(alertType.toLowerCase());
-                alerts = alertRepository.findByFactoryIdAndAlertType(factoryId, type, pageable);
-            } catch (IllegalArgumentException e) {
-                alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
-            }
-        } else {
-            alerts = alertRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId, pageable);
-        }
-
-        List<SchedulingAlertDTO> dtos = alerts.getContent().stream()
-            .map(SchedulingAlertDTO::fromEntity)
-            .collect(Collectors.toList());
-
-        return new PageImpl<>(dtos, pageable, alerts.getTotalElements());
+        log.debug("Delegating getAlerts to schedulingAlertService: factoryId={}, severity={}, alertType={}",
+            factoryId, severity, alertType);
+        return schedulingAlertService.getAlerts(factoryId, severity, alertType, pageable);
     }
 
     /**
@@ -2078,29 +2052,17 @@ public class SchedulingServiceImpl implements SchedulingService {
     @Override
     @Transactional
     public SchedulingAlertDTO acknowledgeAlert(String factoryId, String alertId, Long userId) {
-        SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId)
-            .orElseThrow(() -> new EntityNotFoundException("ScheduleAlert", alertId));
-
-        alert.setAcknowledgedAt(LocalDateTime.now());
-        alert.setAcknowledgedBy(userId);
-        alert = alertRepository.save(alert);
-
-        return SchedulingAlertDTO.fromEntity(alert);
+        log.debug("Delegating acknowledgeAlert to schedulingAlertService: factoryId={}, alertId={}, userId={}",
+            factoryId, alertId, userId);
+        return schedulingAlertService.acknowledgeAlert(factoryId, alertId, userId);
     }
 
     @Override
     @Transactional
     public SchedulingAlertDTO resolveAlert(String factoryId, String alertId, Long userId, String resolutionNotes) {
-        SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId)
-            .orElseThrow(() -> new EntityNotFoundException("ScheduleAlert", alertId));
-
-        alert.setIsResolved(true);
-        alert.setResolvedAt(LocalDateTime.now());
-        alert.setResolvedBy(userId);
-        alert.setResolutionNotes(resolutionNotes);
-        alert = alertRepository.save(alert);
-
-        return SchedulingAlertDTO.fromEntity(alert);
+        log.debug("Delegating resolveAlert to schedulingAlertService: factoryId={}, alertId={}, userId={}",
+            factoryId, alertId, userId);
+        return schedulingAlertService.resolveAlert(factoryId, alertId, userId, resolutionNotes);
     }
 
     // ==================== 产线管理 ====================
@@ -2174,113 +2136,19 @@ public class SchedulingServiceImpl implements SchedulingService {
 
     @Override
     public SchedulingDashboardDTO getDashboard(String factoryId, LocalDate date) {
-        SchedulingDashboardDTO dashboard = new SchedulingDashboardDTO();
-        dashboard.setDate(date);
-
-        // 计划统计
-        Optional<SchedulingPlan> todayPlan = planRepository.findTodayPlan(factoryId, date);
-        if (todayPlan.isPresent()) {
-            dashboard.setTotalPlans(1);
-            SchedulingPlan plan = todayPlan.get();
-            switch (plan.getStatus()) {
-                case confirmed:
-                    dashboard.setConfirmedPlans(1);
-                    break;
-                case in_progress:
-                    dashboard.setInProgressPlans(1);
-                    break;
-                case completed:
-                    dashboard.setCompletedPlans(1);
-                    break;
-                default:
-                    break;
-            }
-
-            // 排程统计
-            List<LineSchedule> schedules = scheduleRepository.findByPlanId(plan.getId());
-            dashboard.setTotalSchedules(schedules.size());
-
-            int pending = 0, inProgress = 0, completed = 0, delayed = 0;
-            int totalPlanned = 0, totalCompleted = 0;
-
-            for (LineSchedule schedule : schedules) {
-                switch (schedule.getStatus()) {
-                    case pending: pending++; break;
-                    case in_progress: inProgress++; break;
-                    case completed: completed++; break;
-                    case delayed: delayed++; break;
-                    default: break;
-                }
-                if (schedule.getPlannedQuantity() != null) {
-                    totalPlanned += schedule.getPlannedQuantity();
-                }
-                if (schedule.getCompletedQuantity() != null) {
-                    totalCompleted += schedule.getCompletedQuantity();
-                }
-            }
-
-            dashboard.setPendingSchedules(pending);
-            dashboard.setInProgressSchedules(inProgress);
-            dashboard.setCompletedSchedules(completed);
-            dashboard.setDelayedSchedules(delayed);
-            dashboard.setTotalPlannedQuantity(totalPlanned);
-            dashboard.setTotalCompletedQuantity(totalCompleted);
-
-            if (totalPlanned > 0) {
-                dashboard.setOverallCompletionRate(BigDecimal.valueOf(totalCompleted)
-                    .divide(BigDecimal.valueOf(totalPlanned), 4, BigDecimal.ROUND_HALF_UP)
-                    .multiply(BigDecimal.valueOf(100)));
-            }
-
-            // 当前排程（使用批量版本解决 N+1 问题）
-            List<LineSchedule> inProgressSchedules = schedules.stream()
-                .filter(s -> s.getStatus() == LineSchedule.ScheduleStatus.in_progress)
-                .collect(Collectors.toList());
-            dashboard.setCurrentSchedules(enrichScheduleDTOs(inProgressSchedules));
-        }
-
-        // 人员统计
-        try {
-            Long totalActiveWorkers = userRepository.countActiveUsersByFactory(factoryId);
-            dashboard.setTotalWorkers(totalActiveWorkers != null ? totalActiveWorkers.intValue() : 0);
-
-            // 临时工人数 (兼职、派遣、实习、临时工)
-            List<HireType> temporaryTypes = Arrays.asList(
-                    HireType.PART_TIME, HireType.DISPATCH, HireType.INTERN, HireType.TEMPORARY);
-            long tempWorkers = userRepository.countTemporaryWorkers(factoryId, temporaryTypes);
-            dashboard.setTemporaryWorkers((int) tempWorkers);
-
-            // 今日打卡人数
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-            long checkedIn = timeClockRecordRepository.countDistinctUsersByFactoryIdAndClockDateBetween(
-                    factoryId, startOfDay, endOfDay);
-            dashboard.setCheckedInWorkers((int) checkedIn);
-
-            // TODO: 请假人数 - 需要实现 LeaveRequest 实体后补充
-            // 目前暂设为0，等请假管理功能完成后从 LeaveRequestRepository 查询
-            dashboard.setOnLeaveWorkers(0);
-        } catch (Exception e) {
-            log.warn("获取人员统计失败: {}", e.getMessage());
-            dashboard.setTotalWorkers(0);
-            dashboard.setCheckedInWorkers(0);
-            dashboard.setTemporaryWorkers(0);
-            dashboard.setOnLeaveWorkers(0);
-        }
-
-        // 产线状态
-        dashboard.setProductionLines(getProductionLines(factoryId, null));
-
-        // 未解决告警
-        dashboard.setAlerts(getUnresolvedAlerts(factoryId));
-        dashboard.setUnresolvedAlerts(dashboard.getAlerts() != null ? dashboard.getAlerts().size() : 0);
-        dashboard.setCriticalAlerts((int) alertRepository.countCriticalUnresolvedByFactoryId(factoryId));
-
-        return dashboard;
+        log.debug("Delegating getDashboard to schedulingDashboardService: factoryId={}, date={}", factoryId, date);
+        return schedulingDashboardService.getDashboard(factoryId, date);
     }
 
     @Override
     public SchedulingDashboardDTO getRealtimeMonitor(String factoryId, String planId) {
+        log.debug("Delegating getRealtimeMonitor to schedulingDashboardService: factoryId={}, planId={}", factoryId, planId);
+        return schedulingDashboardService.getRealtimeMonitor(factoryId, planId);
+    }
+
+    // Legacy implementation - kept for reference during migration
+    @SuppressWarnings("unused")
+    private SchedulingDashboardDTO getRealtimeMonitorLegacy(String factoryId, String planId) {
         SchedulingPlan plan = planRepository.findByIdAndFactoryIdAndDeletedAtIsNull(planId, factoryId)
             .orElseThrow(() -> new EntityNotFoundException("ProductionPlan", planId));
 
