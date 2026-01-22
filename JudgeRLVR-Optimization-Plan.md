@@ -1,8 +1,8 @@
 # JudgeRLVR 判别器优化计划
 
-> **版本**: v1.0
+> **版本**: v1.1
 > **更新日期**: 2026-01-22
-> **状态**: 规划中
+> **状态**: 训练数据已就绪，待微调
 
 ---
 
@@ -39,8 +39,9 @@ backend-java/src/main/java/com/cretas/aims/
 |------|------|------|
 | 判别器代码 | ✅ 已完成 | 支持批量判别、剪枝、缓存 |
 | 配置体系 | ✅ 已完成 | 阈值、触发条件、自动调参 |
-| 管理 API | ✅ 已完成 | 测试、监控、配置 |
-| 本地模型 | ❌ 未部署 | 需要微调 Flan-T5 |
+| 管理 API | ✅ 已完成 | 测试、监控、配置、**训练数据导出** |
+| 训练数据 | ✅ **已就绪** | **1847 样本，覆盖 105/159 意图 (66%)** |
+| 本地模型 | ⏳ 待微调 | 需要 GPU 微调 Flan-T5 |
 | DashScope Fallback | ✅ 可用 | 使用 qwen-turbo |
 | 功能开关 | ❌ 禁用 | `enabled=false` |
 
@@ -436,15 +437,44 @@ public List<WorkerRecommendation> recommendWithJudge(
 已有数据：
 ```
 backend-java/src/main/resources/data/training/
-├── intent_judge_train.csv   # 224 条
-└── intent_judge_valid.csv   # 59 条
+└── intent_judge_train.csv   # 1847 条，105 个意图
 ```
+
+**数据统计**：
+| 指标 | 数值 |
+|------|------|
+| 总样本数 | 1847 |
+| 覆盖意图数 | 105 |
+| 系统总意图 | 159 |
+| 覆盖率 | 66% |
+
+**覆盖的主要意图类别**：
+- SmartBI (6): sales_overview, sales_ranking, sales_trend, inventory, profit_analysis, cost_analysis
+- ALERT (9): LIST, ACTIVE, ACKNOWLEDGE, RESOLVE, STATS, BY_EQUIPMENT, BY_LEVEL, DIAGNOSE, TRIAGE
+- ATTENDANCE (9): TODAY, STATUS, STATS, HISTORY, MONTHLY, DEPARTMENT, ANOMALY, CLOCK_IN, CLOCK_OUT
+- MATERIAL (8): BATCH_QUERY, INVENTORY_QUERY, BATCH_USE, RESERVE, RELEASE, EXPIRING, LOW_STOCK, FIFO
+- EQUIPMENT (6): LIST, STATUS_QUERY, STATS, START, STOP, MAINTENANCE
+- QUALITY (3): INSPECTION_QUERY, CHECK_EXECUTE, STATS
+- PRODUCTION (5): STATUS_QUERY, BATCH_LIST, CREATE, START, COMPLETE
+- SCALE (6): WEIGHT_RECORD, START, BATCH_WEIGH, TARE, CALIBRATE, STATS
+- FORM (3): GENERATE, VALIDATE, SUBMIT
+- DATA (6): EXPORT, IMPORT, CORRECTION, QUERY, BATCH_DELETE, BATCH_UPDATE
+- USER (4): LIST, CREATE, PERMISSION, DISABLE
+- ANALYSIS (5): COST, QUALITY, PRODUCTION, INVENTORY, TREND_PREDICTION
+- LEAVE/OVERTIME (5): APPLY, APPROVE, QUERY, OVERTIME_APPLY, OVERTIME_QUERY
+- ORDER/TASK/NOTIFICATION 等其他意图...
 
 数据格式：
 ```csv
 user_input,intent_code,intent_description,label
 这个月销售怎么样,sales_overview,销售情况概览查询,1
 删除这条记录,sales_overview,销售情况概览查询,0
+```
+
+**训练数据导出 API** (新增)：
+```bash
+# 从服务器导出含合成数据的训练集
+curl "http://139.196.165.140:10010/api/admin/discriminator/export-training-data?factoryId=F001&includeSynthetic=true" > intent_judge_train.csv
 ```
 
 ### 4.3 微调环境
@@ -506,7 +536,34 @@ user_input,intent_code,intent_description,label
 
 ### 4.5 微调脚本
 
-已创建 Colab Notebook：
+已创建两个微调脚本：
+
+**方式一：本地 GPU 微调（推荐）**
+```
+scripts/flan_t5_local_finetune.py
+```
+
+使用方法：
+```bash
+# 1. 进入 scripts 目录
+cd scripts
+
+# 2. 复制训练数据
+cp ../backend-java/src/main/resources/data/training/intent_judge_train.csv .
+
+# 3. 安装依赖
+pip install transformers datasets accelerate peft bitsandbytes
+pip install optimum[onnxruntime] onnx onnxruntime scikit-learn pandas
+
+# 4. 运行微调
+python flan_t5_local_finetune.py --train-data intent_judge_train.csv
+
+# 5. 输出位置
+#    - PyTorch 模型: ./flan-t5-intent-judge-merged/
+#    - ONNX 模型: ./flan-t5-intent-judge-onnx/
+```
+
+**方式二：Google Colab**
 ```
 scripts/flan_t5_finetune_colab.ipynb
 ```
@@ -514,7 +571,7 @@ scripts/flan_t5_finetune_colab.ipynb
 使用方法：
 1. 打开 [Google Colab](https://colab.research.google.com/)
 2. 上传 `flan_t5_finetune_colab.ipynb`
-3. 上传训练数据 `intent_judge_train.csv` 和 `intent_judge_valid.csv`
+3. 上传训练数据 `intent_judge_train.csv`
 4. 运行所有单元格
 5. 下载 `flan-t5-intent-judge-onnx.zip`
 
@@ -612,7 +669,10 @@ curl -X POST http://localhost:10010/api/admin/discriminator/judge \
 ```
 Phase 1 (Week 1-2): 基础部署
 ├── [x] 判别器代码已完成
-├── [ ] Flan-T5 微调 (Colab/AutoDL)
+├── [x] 训练数据准备 (1847 样本, 105 意图)
+├── [x] 训练数据导出 API
+├── [x] 本地 GPU 微调脚本
+├── [ ] Flan-T5 微调 (本地 GPU / Colab)  ← 当前步骤
 ├── [ ] ONNX 导出
 ├── [ ] 服务器部署
 ├── [ ] 启用 DashScope Fallback 模式验证
@@ -685,21 +745,24 @@ curl http://localhost:10010/api/admin/discriminator/config
 backend-java/
 ├── src/main/java/com/cretas/aims/
 │   ├── ai/discriminator/
-│   │   ├── FlanT5DiscriminatorService.java
+│   │   ├── FlanT5DiscriminatorService.java  # 判别服务 (含 getIntentDescriptions())
 │   │   ├── FlanT5Config.java
 │   │   ├── JudgeAutoTuner.java
 │   │   └── DiscriminatorResult.java
 │   ├── service/
 │   │   └── TwoStageIntentClassifier.java
 │   └── controller/admin/
-│       └── DiscriminatorController.java
+│       └── DiscriminatorController.java      # 含训练数据导出 API
 ├── src/main/resources/
 │   ├── application.properties (判别器配置)
 │   └── data/training/
-│       ├── intent_judge_train.csv
-│       └── intent_judge_valid.csv
+│       └── intent_judge_train.csv            # 1847 样本, 105 意图
+
 scripts/
-└── flan_t5_finetune_colab.ipynb
+├── flan_t5_finetune_colab.ipynb              # Colab 微调脚本
+└── flan_t5_local_finetune.py                 # 本地 GPU 微调脚本 (推荐)
+
+JudgeRLVR-Optimization-Plan.md                # 本文档
 ```
 
 ### B. 配置参数说明
