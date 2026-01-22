@@ -95,13 +95,13 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
 
         // 聚合信号分布
         stats.setStrongSignalCount((int) records.stream()
-                .filter(r -> Boolean.TRUE.equals(r.getIsStrongSignal()))
+                .filter(IntentMatchRecord::isStrongSignal)
                 .count());
         stats.setWeakSignalCount(stats.getTotalRequests() - stats.getStrongSignalCount());
 
         // 聚合确认统计
         stats.setConfirmationRequested((int) records.stream()
-                .filter(r -> Boolean.TRUE.equals(r.getRequiresConfirmation()))
+                .filter(IntentMatchRecord::isRequiresConfirmation)
                 .count());
         stats.setUserConfirmedCount((int) records.stream()
                 .filter(r -> Boolean.TRUE.equals(r.getUserConfirmed()))
