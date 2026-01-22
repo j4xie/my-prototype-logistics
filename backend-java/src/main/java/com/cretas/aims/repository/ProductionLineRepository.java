@@ -38,4 +38,14 @@ public interface ProductionLineRepository extends JpaRepository<ProductionLine, 
     long countByFactoryIdAndStatus(
         @Param("factoryId") String factoryId,
         @Param("status") ProductionLine.LineStatus status);
+
+    /**
+     * 根据状态查询产线（不限工厂，用于全局检查）
+     */
+    List<ProductionLine> findByStatusAndDeletedAtIsNull(ProductionLine.LineStatus status);
+
+    /**
+     * 统计指定状态的产线数量（不限工厂）
+     */
+    long countByStatusAndDeletedAtIsNull(ProductionLine.LineStatus status);
 }

@@ -36,6 +36,9 @@ import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
 
+// Type for MaterialCommunityIcons names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 const { width: screenWidth } = Dimensions.get('window');
 
 // Theme colors for SmartBI
@@ -60,7 +63,7 @@ type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
 interface AnalysisTypeOption {
   key: AnalysisType;
   label: string;
-  icon: string;
+  icon: MaterialCommunityIconName;
   color: string;
 }
 
@@ -125,7 +128,7 @@ interface FinanceKPICardProps {
   title: string;
   value: string;
   change?: number;
-  icon: string;
+  icon: MaterialCommunityIconName;
   color: string;
   isPercentage?: boolean;
 }
@@ -144,7 +147,7 @@ const FinanceKPICard: React.FC<FinanceKPICardProps> = ({
   return (
     <Surface style={styles.kpiCard} elevation={2}>
       <View style={[styles.kpiIconContainer, { backgroundColor: color + '20' }]}>
-        <MaterialCommunityIcons name={icon as any} size={20} color={color} />
+        <MaterialCommunityIcons name={icon} size={20} color={color} />
       </View>
       <Text style={styles.kpiValue}>{value}</Text>
       <Text style={styles.kpiTitle}>{title}</Text>
@@ -210,7 +213,7 @@ interface AlertItemProps {
 }
 
 const AlertItemComponent: React.FC<AlertItemProps> = ({ alert, onPress }) => {
-  const getAlertConfig = (level: FinanceAlert['level']) => {
+  const getAlertConfig = (level: FinanceAlert['level']): { icon: MaterialCommunityIconName; color: string } => {
     switch (level) {
       case 'danger':
         return { icon: 'alert-circle', color: SMARTBI_THEME.danger };
@@ -227,7 +230,7 @@ const AlertItemComponent: React.FC<AlertItemProps> = ({ alert, onPress }) => {
   return (
     <TouchableOpacity style={styles.alertItem} onPress={onPress}>
       <View style={[styles.alertIcon, { backgroundColor: config.color + '20' }]}>
-        <MaterialCommunityIcons name={config.icon as any} size={20} color={config.color} />
+        <MaterialCommunityIcons name={config.icon} size={20} color={config.color} />
       </View>
       <View style={styles.alertContent}>
         <Text style={styles.alertTitle}>{alert.title}</Text>
@@ -510,7 +513,7 @@ export function FinanceAnalysisScreen() {
               ]}
               icon={() => (
                 <MaterialCommunityIcons
-                  name={type.icon as any}
+                  name={type.icon}
                   size={16}
                   color={selectedType === type.key ? type.color : SMARTBI_THEME.textSecondary}
                 />

@@ -37,6 +37,9 @@ import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
 
+// Type for MaterialCommunityIcons names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 // Theme colors for SmartBI
 const SMARTBI_THEME = {
   primary: '#4F46E5',
@@ -78,7 +81,7 @@ interface Message {
 interface QuickQuestion {
   id: string;
   text: string;
-  icon: string;
+  icon: MaterialCommunityIconName;
 }
 
 type NLQueryRouteProp = RouteProp<SmartBIStackParamList, 'NLQuery'>;
@@ -179,7 +182,7 @@ interface QuickQuestionButtonProps {
 const QuickQuestionButton: React.FC<QuickQuestionButtonProps> = ({ question, onPress }) => (
   <TouchableOpacity style={styles.quickQuestionButton} onPress={onPress}>
     <MaterialCommunityIcons
-      name={question.icon as any}
+      name={question.icon}
       size={18}
       color={SMARTBI_THEME.primary}
     />

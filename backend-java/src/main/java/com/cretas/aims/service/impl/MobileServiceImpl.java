@@ -1435,16 +1435,24 @@ public class MobileServiceImpl implements MobileService {
 
         List<MobileDTO.BatchCostData> costDataList = new ArrayList<>();
 
-        for (String batchId : batchIds) {
-            // 查询批次信息
-            Optional<ProductionBatch> batchOpt = productionBatchRepository.findByIdAndFactoryId(Long.valueOf(batchId), factoryId);
+        // 批量查询所有批次 - 解决 N+1 问题
+        Set<Long> batchIdSet = batchIds.stream()
+                .map(Long::valueOf)
+                .collect(Collectors.toSet());
 
-            if (batchOpt.isEmpty()) {
+        Map<Long, ProductionBatch> batchMap = productionBatchRepository
+                .findByIdInAndFactoryId(batchIdSet, factoryId)
+                .stream()
+                .collect(Collectors.toMap(ProductionBatch::getId, java.util.function.Function.identity()));
+
+        for (String batchId : batchIds) {
+            // 从批量查询结果中获取批次
+            ProductionBatch batch = batchMap.get(Long.valueOf(batchId));
+
+            if (batch == null) {
                 log.warn("批次不存在: factoryId={}, batchId={}", factoryId, batchId);
                 continue;
             }
-
-            ProductionBatch batch = batchOpt.get();
 
             // 提取成本数据（从BigDecimal转Double）
             Double totalCost = batch.getTotalCost() != null ? batch.getTotalCost().doubleValue() : 0.0;
