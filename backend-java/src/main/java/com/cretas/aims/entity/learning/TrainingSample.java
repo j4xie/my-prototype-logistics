@@ -154,9 +154,9 @@ public class TrainingSample {
     /**
      * 是否为强信号 (高置信度匹配)
      */
-    @Column(name = "is_strong_signal")
+    @Column(name = "is_strong_signal", nullable = false)
     @Builder.Default
-    private Boolean isStrongSignal = false;
+    private boolean isStrongSignal = false;
 
     /**
      * 创建时间
@@ -169,10 +169,7 @@ public class TrainingSample {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
-        // 确保 isStrongSignal 不为 null
-        if (isStrongSignal == null) {
-            isStrongSignal = false;
-        }
+        // isStrongSignal 现在是原始类型，不需要检查 null
     }
 
     /**
