@@ -1848,3 +1848,586 @@ body.smartbi-page {
         height: 150px;
     }
 }
+
+/* ============================================
+   EXCEL UPLOAD PROCESS SECTION
+   ============================================ */
+
+#excel-upload.section {
+    background: var(--bg-base);
+    position: relative;
+}
+
+#excel-upload .eyebrow {
+    font-family: var(--font-mono);
+}
+
+#excel-upload .h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+}
+
+/* Upload Flow */
+.excel-upload-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+}
+
+.upload-step {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    padding: 32px 28px;
+    text-align: center;
+    min-width: 180px;
+    max-width: 200px;
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.upload-step:hover {
+    transform: translateY(-8px);
+    border-color: rgba(196, 92, 38, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.upload-step .step-number {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    background: var(--gradient-accent);
+    border-radius: 50%;
+    color: white;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px var(--glow-accent);
+}
+
+.upload-step .step-icon {
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+}
+
+.upload-step h4 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.upload-step p {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.upload-arrow {
+    flex-shrink: 0;
+    opacity: 0.6;
+}
+
+.upload-arrow svg {
+    display: block;
+}
+
+/* Upload Features Row */
+.upload-features-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.upload-feature {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-secondary);
+}
+
+.upload-feature svg {
+    flex-shrink: 0;
+}
+
+/* Excel Upload Responsive */
+@media (max-width: 1024px) {
+    .excel-upload-flow {
+        gap: 12px;
+    }
+
+    .upload-step {
+        min-width: 160px;
+        padding: 28px 20px;
+    }
+
+    .upload-arrow {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .excel-upload-flow {
+        flex-direction: column;
+        gap: 24px;
+    }
+
+    .upload-step {
+        min-width: auto;
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .upload-features-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+    }
+}
+
+/* ============================================
+   SMART ALERT SYSTEM SECTION
+   ============================================ */
+
+#alerts.section {
+    background: var(--dark-bg);
+    position: relative;
+}
+
+#alerts::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-mesh);
+    pointer-events: none;
+}
+
+#alerts .eyebrow {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+
+body.ai-bi-page #alerts .h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+body.ai-bi-page #alerts .body-lg {
+    font-family: var(--font-body);
+    color: var(--dark-text-secondary);
+}
+
+/* Alert Level Cards */
+.alert-levels-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 48px;
+    position: relative;
+    z-index: 1;
+}
+
+.alert-level-card {
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 24px;
+    padding: 32px;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.alert-level-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.3);
+}
+
+.alert-level-card.critical:hover {
+    border-color: rgba(188, 71, 73, 0.5);
+}
+
+.alert-level-card.warning:hover {
+    border-color: rgba(233, 196, 106, 0.5);
+}
+
+.alert-level-card.normal:hover {
+    border-color: rgba(45, 106, 79, 0.5);
+}
+
+.alert-level-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.alert-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: alert-pulse 2s ease-in-out infinite;
+}
+
+.alert-dot.critical {
+    background: #BC4749;
+    box-shadow: 0 0 16px rgba(188, 71, 73, 0.6);
+}
+
+.alert-dot.warning {
+    background: #E9C46A;
+    box-shadow: 0 0 16px rgba(233, 196, 106, 0.6);
+}
+
+.alert-dot.normal {
+    background: #2D6A4F;
+    box-shadow: 0 0 16px rgba(45, 106, 79, 0.6);
+}
+
+@keyframes alert-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.9); }
+}
+
+.alert-level-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--dark-text);
+}
+
+.alert-level-desc {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--dark-text-secondary);
+    margin-bottom: 24px;
+}
+
+.alert-examples {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.alert-example {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--dark-text);
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 12px;
+    transition: background 0.3s ease;
+}
+
+.alert-example:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.alert-example svg,
+.alert-example lord-icon {
+    flex-shrink: 0;
+}
+
+/* Alert Features Grid */
+.alert-features-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.alert-feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 24px;
+    background: var(--dark-surface);
+    border: 1px solid var(--dark-border);
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.alert-feature-item:hover {
+    border-color: rgba(196, 92, 38, 0.4);
+    transform: translateY(-4px);
+}
+
+.alert-feature-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(196, 92, 38, 0.1);
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.alert-feature-item h4 {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--dark-text);
+    margin-bottom: 4px;
+}
+
+.alert-feature-item p {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--dark-text-secondary);
+    line-height: 1.5;
+}
+
+/* Alert Section Responsive */
+@media (max-width: 1024px) {
+    .alert-levels-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .alert-levels-row .alert-level-card:last-child {
+        grid-column: span 2;
+    }
+
+    .alert-features-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .alert-levels-row {
+        grid-template-columns: 1fr;
+    }
+
+    .alert-levels-row .alert-level-card:last-child {
+        grid-column: auto;
+    }
+
+    .alert-features-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .alert-feature-item {
+        padding: 20px;
+    }
+}
+
+/* Alerts section transition */
+.smartbi-page #alerts.section {
+    position: relative;
+    background: #0D0D0F;
+    padding-top: 100px;
+    padding-bottom: 200px;
+}
+
+.smartbi-page #alerts.section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(250, 249, 246, 0.03) 20%,
+        rgba(250, 249, 246, 0.1) 35%,
+        rgba(250, 249, 246, 0.25) 50%,
+        rgba(250, 249, 246, 0.5) 65%,
+        rgba(250, 249, 246, 0.75) 80%,
+        #FAF9F6 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* Excel Upload section transition */
+.smartbi-page #excel-upload.section {
+    position: relative;
+    background: #FAF9F6;
+    padding-top: 100px;
+    padding-bottom: 200px;
+}
+
+.smartbi-page #excel-upload.section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    background: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(13, 13, 15, 0.03) 20%,
+        rgba(13, 13, 15, 0.1) 35%,
+        rgba(13, 13, 15, 0.25) 50%,
+        rgba(13, 13, 15, 0.5) 65%,
+        rgba(13, 13, 15, 0.75) 80%,
+        #0D0D0F 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+@media (max-width: 768px) {
+    .smartbi-page #alerts.section,
+    .smartbi-page #excel-upload.section {
+        padding-top: 80px;
+        padding-bottom: 150px;
+    }
+
+    .smartbi-page #alerts.section::after,
+    .smartbi-page #excel-upload.section::after {
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .smartbi-page #alerts.section,
+    .smartbi-page #excel-upload.section {
+        padding-top: 60px;
+        padding-bottom: 120px;
+    }
+
+    .smartbi-page #alerts.section::after,
+    .smartbi-page #excel-upload.section::after {
+        height: 150px;
+    }
+}
+
+/* ============================================
+   CHART EXAMPLES SECTION
+   ============================================ */
+
+.chart-examples-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 32px;
+}
+
+.chart-example-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.chart-example-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+    border-color: rgba(196, 92, 38, 0.3);
+}
+
+.chart-example-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.chart-type-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: linear-gradient(135deg, rgba(196, 92, 38, 0.12) 0%, rgba(196, 92, 38, 0.04) 100%);
+    border: 1px solid rgba(196, 92, 38, 0.2);
+    border-radius: 100px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.chart-example-header h4 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.chart-example-body {
+    padding: 24px;
+    background: linear-gradient(180deg, rgba(250, 249, 246, 0.5) 0%, white 100%);
+}
+
+.chart-example-body svg {
+    width: 100%;
+    height: auto;
+    max-height: 220px;
+}
+
+.chart-example-insight {
+    padding: 20px 24px;
+    background: rgba(45, 106, 79, 0.06);
+    border-top: 1px solid rgba(45, 106, 79, 0.1);
+}
+
+.chart-example-insight .insight-label {
+    display: inline-block;
+    padding: 4px 10px;
+    background: rgba(45, 106, 79, 0.15);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 600;
+    color: #2D6A4F;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.chart-example-insight p {
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.chart-example-insight p strong {
+    color: #2D6A4F;
+    font-weight: 600;
+}
+
+/* Chart Examples Responsive */
+@media (max-width: 1024px) {
+    .chart-examples-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .chart-example-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .chart-example-body {
+        padding: 16px;
+    }
+
+    .chart-example-insight {
+        padding: 16px;
+    }
+}
