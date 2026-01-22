@@ -288,26 +288,25 @@
             <version>0.30.0</version>
         </dependency>
 
-        <!-- ONNX Runtime Engine for DJL (外置到服务器 /www/wwwroot/cretas/lib) -->
+        <!-- ONNX Runtime Engine for DJL -->
         <dependency>
             <groupId>ai.djl.onnxruntime</groupId>
             <artifactId>onnxruntime-engine</artifactId>
             <version>0.30.0</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.microsoft.onnxruntime</groupId>
-                    <artifactId>onnxruntime</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
-        <!-- HuggingFace Tokenizer (JNI binding) for DJL (外置到服务器) -->
+        <!-- ONNX Runtime Native Library -->
+        <dependency>
+            <groupId>com.microsoft.onnxruntime</groupId>
+            <artifactId>onnxruntime</artifactId>
+            <version>1.18.0</version>
+        </dependency>
+
+        <!-- HuggingFace Tokenizer (JNI binding) for DJL -->
         <dependency>
             <groupId>ai.djl.huggingface</groupId>
             <artifactId>tokenizers</artifactId>
             <version>0.30.0</version>
-            <scope>provided</scope>
         </dependency>
 
         <!-- PyTorch Engine for DJL (Flan-T5 Discriminator) -->
