@@ -4,7 +4,7 @@ import com.cretas.aims.ai.discriminator.DiscriminatorResult;
 import com.cretas.aims.ai.discriminator.FlanT5Config;
 import com.cretas.aims.ai.discriminator.FlanT5DiscriminatorService;
 import com.cretas.aims.ai.discriminator.JudgeAutoTuner;
-import com.cretas.aims.dto.ApiResponse;
+import com.cretas.aims.dto.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
