@@ -105,4 +105,59 @@ public interface FactoryAILearningConfigRepository extends JpaRepository<Factory
     @Query("SELECT COUNT(c) FROM FactoryAILearningConfig c " +
            "WHERE c.learningPhase = 'LEARNING'")
     long countLearningFactories();
+
+    // ========== EnvScaler 合成数据方法 ==========
+
+    /**
+     * 获取启用合成数据的工厂配置
+     */
+    List<FactoryAILearningConfig> findBySyntheticEnabledTrue();
+
+    /**
+     * 获取启用合成数据的工厂ID列表
+     */
+    @Query("SELECT c.factoryId FROM FactoryAILearningConfig c " +
+           "WHERE c.syntheticEnabled = true")
+    List<String> findSyntheticEnabledFactoryIds();
+
+    /**
+     * 禁用工厂的合成数据生成
+     */
+    @Modifying
+    @Query("UPDATE FactoryAILearningConfig c SET " +
+           "c.syntheticEnabled = false, " +
+           "c.syntheticDisabledReason = :reason, " +
+           "c.syntheticDisabledAt = :disabledAt " +
+           "WHERE c.factoryId = :factoryId")
+    int disableSynthetic(
+        @Param("factoryId") String factoryId,
+        @Param("reason") String reason,
+        @Param("disabledAt") LocalDateTime disabledAt
+    );
+
+    /**
+     * 重新启用工厂的合成数据生成
+     */
+    @Modifying
+    @Query("UPDATE FactoryAILearningConfig c SET " +
+           "c.syntheticEnabled = true, " +
+           "c.syntheticDisabledReason = null, " +
+           "c.syntheticDisabledAt = null " +
+           "WHERE c.factoryId = :factoryId")
+    int enableSynthetic(@Param("factoryId") String factoryId);
+
+    /**
+     * 统计启用合成数据的工厂数量
+     */
+    @Query("SELECT COUNT(c) FROM FactoryAILearningConfig c " +
+           "WHERE c.syntheticEnabled = true")
+    long countSyntheticEnabledFactories();
+
+    /**
+     * 统计被熔断禁用合成数据的工厂数量
+     */
+    @Query("SELECT COUNT(c) FROM FactoryAILearningConfig c " +
+           "WHERE c.syntheticEnabled = false " +
+           "AND c.syntheticDisabledReason IS NOT NULL")
+    long countSyntheticDisabledFactories();
 }
