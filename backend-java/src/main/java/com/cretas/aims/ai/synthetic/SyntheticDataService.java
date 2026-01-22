@@ -250,7 +250,7 @@ public class SyntheticDataService {
         }
 
         // 合成数据默认非强信号
-        sample.setIsStrongSignal(false);
+        sample.setStrongSignal(false);
 
         return sample;
     }
