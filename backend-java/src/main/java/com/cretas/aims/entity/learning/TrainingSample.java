@@ -169,6 +169,10 @@ public class TrainingSample {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
         }
+        // 确保 isStrongSignal 不为 null
+        if (isStrongSignal == null) {
+            isStrongSignal = false;
+        }
     }
 
     /**
