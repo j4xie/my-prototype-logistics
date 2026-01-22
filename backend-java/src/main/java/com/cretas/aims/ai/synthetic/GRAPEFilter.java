@@ -277,11 +277,9 @@ public class GRAPEFilter {
      * @return heuristic confidence score (0.0 to 1.0)
      */
     private double scoreSampleWithFallback(SyntheticSample sample) {
-        // Check if embedding client is available
-        if (embeddingClient != null && embeddingClient.isAvailable()) {
-            // Should not reach here if embedding is available, return 0
-            return 0.0;
-        }
+        // Always use keyword-based heuristic as fallback
+        // This ensures synthetic samples get scored even when intent service fails
+        log.debug("GRAPE using keyword-based fallback for sample: {}", truncateForLog(sample.getUserInput()));
 
         // Fallback: Use keyword-based heuristic
         // Score based on presence of domain-specific keywords in user input
@@ -295,17 +293,32 @@ public class GRAPEFilter {
         if (intentParts.length > 0) {
             String domain = intentParts[0];
 
-            // Domain keyword mapping for Chinese
-            java.util.Map<String, String[]> domainKeywords = java.util.Map.of(
-                "material", new String[]{"原料", "材料", "物料", "原材料"},
-                "production", new String[]{"生产", "产量", "产线", "制造"},
-                "equipment", new String[]{"设备", "机器", "机台", "设施"},
-                "quality", new String[]{"质量", "质检", "品质", "检验"},
-                "inventory", new String[]{"库存", "仓库", "存量", "库房"},
-                "order", new String[]{"订单", "工单", "任务单"},
-                "traceability", new String[]{"溯源", "追溯", "追踪", "批次"},
-                "scheduling", new String[]{"排产", "排程", "调度", "计划"}
-            );
+            // Domain keyword mapping for Chinese - comprehensive coverage
+            java.util.Map<String, String[]> domainKeywords = new java.util.HashMap<>();
+            domainKeywords.put("material", new String[]{"原料", "材料", "物料", "原材料", "批次", "库存"});
+            domainKeywords.put("processing", new String[]{"加工", "生产", "批次", "工序", "任务"});
+            domainKeywords.put("production", new String[]{"生产", "产量", "产线", "制造", "产出"});
+            domainKeywords.put("equipment", new String[]{"设备", "机器", "机台", "设施", "维护"});
+            domainKeywords.put("quality", new String[]{"质量", "质检", "品质", "检验", "合格"});
+            domainKeywords.put("inventory", new String[]{"库存", "仓库", "存量", "库房", "盘点"});
+            domainKeywords.put("order", new String[]{"订单", "工单", "任务单", "发货"});
+            domainKeywords.put("trace", new String[]{"溯源", "追溯", "追踪", "批次", "来源"});
+            domainKeywords.put("scheduling", new String[]{"排产", "排程", "调度", "计划", "安排"});
+            domainKeywords.put("alert", new String[]{"告警", "预警", "警报", "异常", "提醒"});
+            domainKeywords.put("report", new String[]{"报表", "报告", "统计", "分析", "汇总"});
+            domainKeywords.put("supplier", new String[]{"供应商", "供货商", "供应", "采购"});
+            domainKeywords.put("customer", new String[]{"客户", "顾客", "买家", "用户"});
+            domainKeywords.put("shipment", new String[]{"发货", "物流", "运输", "配送", "出货"});
+            domainKeywords.put("attendance", new String[]{"考勤", "打卡", "出勤", "签到", "签退"});
+            domainKeywords.put("scale", new String[]{"称重", "秤", "重量", "计量"});
+            domainKeywords.put("form", new String[]{"表单", "表格", "填写", "录入"});
+            domainKeywords.put("user", new String[]{"用户", "员工", "人员", "账号"});
+            domainKeywords.put("factory", new String[]{"工厂", "车间", "产线", "设置"});
+            domainKeywords.put("cost", new String[]{"成本", "费用", "花费", "支出"});
+            domainKeywords.put("conversion", new String[]{"转化", "换算", "转换", "比例"});
+            domainKeywords.put("rule", new String[]{"规则", "配置", "设定", "策略"});
+            domainKeywords.put("intent", new String[]{"意图", "识别", "分析", "创建"});
+            domainKeywords.put("plan", new String[]{"计划", "规划", "安排", "预定"});
 
             String[] keywords = domainKeywords.get(domain);
             if (keywords != null) {
