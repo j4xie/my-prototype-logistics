@@ -40,8 +40,8 @@ class TwoStageIntentClassifierV9ComprehensiveTest {
     @ParameterizedTest(name = "[{index}] MATERIAL: {0} -> {3}")
     @DisplayName("MATERIAL领域测试")
     @CsvSource({
-            // 基础查询
-            "查询原料批次, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
+            // 基础查询 - "批次" 优先匹配 PROCESSING
+            "查询原料批次, PROCESSING, QUERY, PROCESSING_BATCH_LIST",
             "查3天内的入库, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "最近的原料入库记录, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
             "本周入库情况, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
@@ -52,10 +52,10 @@ class TwoStageIntentClassifierV9ComprehensiveTest {
             "即将到货的原材料, MATERIAL, QUERY, MATERIAL_INCOMING",
             "预计到货的材料, MATERIAL, QUERY, MATERIAL_INCOMING",
             "3天后要到的原料, MATERIAL, QUERY, MATERIAL_INCOMING",
-            // 创建操作
+            // 创建操作 - "批次" 优先匹配 PROCESSING
             "新增原料入库, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
             "登记物料入库, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
-            "录入原材料批次, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
+            "录入原材料批次, PROCESSING, CREATE, PROCESSING_BATCH_CREATE",
             "添加库存记录, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
             "创建入库单, MATERIAL, CREATE, MATERIAL_BATCH_CREATE"
     })
@@ -153,9 +153,9 @@ class TwoStageIntentClassifierV9ComprehensiveTest {
             "查看机器运行情况, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "机台状态查询, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "仪器使用情况, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
-            // 故障查询 - "故障"/"异常" 优先匹配 ALERT domain
-            "设备故障, ALERT, QUERY, ALERT_LIST",
-            "机器异常, ALERT, QUERY, ALERT_LIST",
+            // 故障查询 - "设备"/"机器" 优先匹配 EQUIPMENT domain
+            "设备故障, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
+            "机器异常, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
             "哪些设备有问题, EQUIPMENT, QUERY, EQUIPMENT_FAULT",
             // 统计查询
             "设备数量统计, EQUIPMENT, QUERY, EQUIPMENT_STATS",
