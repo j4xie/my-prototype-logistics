@@ -1756,40 +1756,54 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         String normalized = userInput.toLowerCase().trim();
 
-        // 写操作关键词
+        // 写操作关键词（动词）
         String[] writeKeywords = {
             "删除", "删掉", "移除", "清空", "清除",
             "修改", "更改", "变更", "编辑",
-            "添加", "新增", "新建", "录入", "增加"
+            "添加", "新增", "新建", "录入", "增加",
+            "更新", "创建"
         };
 
-        // 查询相关词（如果同时包含这些词，说明是查询而非写操作）
-        String[] queryKeywords = {
-            "查询", "查看", "查", "看", "显示", "获取", "统计", "分析",
-            "报表", "报告", "情况", "记录", "历史", "列表", "有哪些", "多少"
+        // 查询动作词（只有动词才能表示这是一个查询）
+        // 不包含"记录"、"数据"等名词，因为它们可能是写操作的对象
+        String[] queryActionVerbs = {
+            "查询", "查看", "查一下", "看一下", "看看",
+            "显示", "获取", "统计", "分析", "汇总",
+            "了解", "告诉", "告知"
         };
 
-        // 检查是否包含写操作关键词
-        boolean hasWriteKeyword = false;
+        // 找到第一个写操作关键词的位置
+        int writeKeywordPos = -1;
+        String foundWriteKeyword = null;
         for (String keyword : writeKeywords) {
-            if (normalized.contains(keyword)) {
-                hasWriteKeyword = true;
-                break;
+            int pos = normalized.indexOf(keyword);
+            if (pos >= 0 && (writeKeywordPos < 0 || pos < writeKeywordPos)) {
+                writeKeywordPos = pos;
+                foundWriteKeyword = keyword;
             }
         }
 
-        if (!hasWriteKeyword) {
+        if (writeKeywordPos < 0) {
             return false;
         }
 
-        // 如果包含查询相关词，则不是纯写操作
-        for (String keyword : queryKeywords) {
-            if (normalized.contains(keyword)) {
-                return false;
+        // 找到第一个查询动作词的位置
+        int queryVerbPos = -1;
+        for (String verb : queryActionVerbs) {
+            int pos = normalized.indexOf(verb);
+            if (pos >= 0 && (queryVerbPos < 0 || pos < queryVerbPos)) {
+                queryVerbPos = pos;
             }
         }
 
-        // 包含写操作关键词且不包含查询词 = 纯写操作
+        // 如果查询动作词出现在写操作关键词之前，则是查询
+        // 例如："查看删除记录" - 查询动作词"查看"在前，是查询
+        // 例如："删除销售记录" - 写操作关键词"删除"在前，是写操作
+        if (queryVerbPos >= 0 && queryVerbPos < writeKeywordPos) {
+            return false;
+        }
+
+        // 写操作关键词在前（或没有查询动作词）= 写操作
         return true;
     }
 
