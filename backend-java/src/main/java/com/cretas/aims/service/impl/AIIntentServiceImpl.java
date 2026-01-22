@@ -32,12 +32,18 @@ import com.cretas.aims.service.MultiLabelIntentClassifier;
 import com.cretas.aims.service.QueryPreprocessorService;
 import com.cretas.aims.service.TwoStageIntentClassifier;
 import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.service.intent.IntentConfigService;
+import com.cretas.aims.service.intent.IntentPermissionService;
+import com.cretas.aims.service.intent.IntentFeedbackService;
+import com.cretas.aims.service.intent.IntentMatchingService;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.conversation.ConversationContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -105,6 +111,16 @@ public class AIIntentServiceImpl implements AIIntentService {
      * 意图识别知识库
      */
     private final IntentKnowledgeBase knowledgeBase;
+
+    // ==================== 子服务委托 (Facade Delegate Pattern) ====================
+    @Autowired @Lazy
+    private IntentConfigService intentConfigService;
+    @Autowired @Lazy
+    private IntentPermissionService intentPermissionService;
+    @Autowired @Lazy
+    private IntentFeedbackService intentFeedbackService;
+    @Autowired @Lazy
+    private IntentMatchingService intentMatchingServiceDelegate;
 
     /**
      * 是否启用查询预处理
