@@ -3,7 +3,10 @@ package com.cretas.aims.ai.synthetic;
 import com.cretas.aims.ai.synthetic.IntentSkelBuilder.IntentSkel;
 import com.cretas.aims.ai.synthetic.IntentSkelBuilder.Slot;
 import com.cretas.aims.config.SyntheticDataConfig;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,6 +65,9 @@ public class IntentScenGenerator {
      * extracted parameters, and quality metrics for filtering.
      */
     @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class SyntheticSample {
         /**
          * The generated user input text.
@@ -88,6 +94,7 @@ public class IntentScenGenerator {
          * Generation depth. Set to 1 for first-generation synthetic data.
          * Used to prevent recursive synthesis.
          */
+        @Builder.Default
         private int generation = 1;
 
         /**
