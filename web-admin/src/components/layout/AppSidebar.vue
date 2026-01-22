@@ -127,6 +127,12 @@ const menuConfig: MenuItem[] = [
     ]
   },
   {
+    path: '/calibration', title: '行为校准', icon: 'Aim', module: 'system',
+    children: [
+      { path: '/calibration/list', title: '校准管理', icon: '', module: 'system' }
+    ]
+  },
+  {
     path: '/smart-bi', title: '智能分析', icon: 'TrendCharts', module: 'analytics',
     children: [
       { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics' },
