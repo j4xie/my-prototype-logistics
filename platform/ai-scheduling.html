@@ -1277,6 +1277,122 @@
                     </ul>
                 </div>
             </div>
+
+            <!-- Algorithm Details - 12维特征权重表 -->
+            <div style="margin-top: 80px;">
+                <div style="text-align: center; margin-bottom: 48px;">
+                    <div class="eyebrow" style="font-family: var(--font-mono);">算法详解</div>
+                    <h3 style="font-size: 28px; font-weight: 600; margin-top: 16px; color: var(--text-primary);">12 维特征预测模型权重</h3>
+                    <p style="color: var(--text-secondary); max-width: 600px; margin: 16px auto 0;">
+                        基于逻辑回归的完成概率预测公式：<code style="background: rgba(196,92,38,0.1); padding: 4px 8px; border-radius: 4px; font-family: monospace;">P = σ(Σ weight[i] × feature[i])</code>
+                    </p>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px;">
+                    <!-- 正向权重 -->
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 32px;">
+                        <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #2D6A4F; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">📈</span> 正向特征 (提升概率)
+                        </h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">progress_percent</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">进度百分比</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.30</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">efficiency_deviation</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">效率偏差</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.15</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">worker_config</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">工人配置满足度</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.10</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">historical_completion_rate</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">历史完成率</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.10</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">material_ready_rate</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">物料齐套率</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.05</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">efficiency_trend</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">效率趋势</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #2D6A4F; text-align: right; font-family: monospace;">+0.05</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- 负向权重 -->
+                    <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 20px; padding: 32px;">
+                        <h4 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #BC4749; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 20px;">📉</span> 负向特征 (降低概率)
+                        </h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">time_urgency</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">时间紧迫度</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #BC4749; text-align: right; font-family: monospace;">-0.20</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">current_delay</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">当前延迟程度</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #BC4749; text-align: right; font-family: monospace;">-0.10</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">is_urgent</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">紧急订单标记</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #BC4749; text-align: right; font-family: monospace;">-0.05</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">conflict_count</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">冲突数量</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: #BC4749; text-align: right; font-family: monospace;">-0.05</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid var(--border-subtle);">
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">time_window_width</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">时间窗口宽度</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: var(--text-tertiary); text-align: right; font-family: monospace;">+0.05</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-secondary);">bias</td>
+                                <td style="padding: 12px 0; font-size: 14px; color: var(--text-tertiary);">偏置项</td>
+                                <td style="padding: 12px 0; font-size: 16px; font-weight: 600; color: var(--text-tertiary); text-align: right; font-family: monospace;">0.00</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 自适应学习说明 -->
+                <div style="margin-top: 32px; background: linear-gradient(135deg, rgba(196,92,38,0.08) 0%, rgba(45,106,79,0.08) 100%); border-radius: 16px; padding: 24px 32px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 200px;">
+                        <h5 style="font-size: 16px; font-weight: 600; margin: 0 0 8px; color: var(--text-primary);">🔄 在线学习机制</h5>
+                        <p style="font-size: 14px; color: var(--text-secondary); margin: 0;">
+                            每当任务完成时，系统根据实际结果自动调整权重：<br>
+                            <code style="font-family: monospace; font-size: 13px; color: var(--accent);">weight[i] += 0.05 × (actual - predicted) × feature[i]</code>
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 32px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--accent);">0.05</div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">学习率</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--accent);">[0.05, 0.40]</div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">权重约束</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 24px; font-weight: 700; color: var(--accent);">4h</div>
+                            <div style="font-size: 12px; color: var(--text-tertiary);">EWMA 窗口</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
