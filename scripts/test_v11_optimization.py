@@ -208,7 +208,8 @@ def run_tests():
     print("\n--- Route Type Distribution ---")
     for route_type, count in sorted(route_types.items(), key=lambda x: (x[0] is None, x[0])):
         pct = 100 * count / total_cases
-        print(f"  {route_type:20s}: {count:3d} ({pct:5.1f}%)")
+        route_name = str(route_type) if route_type else "None"
+        print(f"  {route_name:20s}: {count:3d} ({pct:5.1f}%)")
 
     # Get router statistics
     print("\n--- SemanticRouter Statistics ---")
