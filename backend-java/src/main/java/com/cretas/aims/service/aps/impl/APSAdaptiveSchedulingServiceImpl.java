@@ -796,10 +796,9 @@ public class APSAdaptiveSchedulingServiceImpl implements APSAdaptiveSchedulingSe
             affectedTaskIds.addAll(lowProbTasks.stream().map(TaskRiskInfo::getTaskId).collect(Collectors.toList()));
         }
 
-        // 检查产线故障
-        List<ProductionLine> faultLines = productionLineRepository.findAll().stream()
-            .filter(l -> l.getStatus() == ProductionLine.LineStatus.maintenance)
-            .collect(Collectors.toList());
+        // 检查产线故障 - 使用条件查询避免全表扫描
+        List<ProductionLine> faultLines = productionLineRepository.findByStatusAndDeletedAtIsNull(
+            ProductionLine.LineStatus.maintenance);
         if (!faultLines.isEmpty()) {
             reasons.add("有" + faultLines.size() + "条产线处于维护状态");
         }

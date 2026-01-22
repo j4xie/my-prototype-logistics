@@ -36,6 +36,9 @@ import { useTranslation } from 'react-i18next';
 import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 
+// Type for MaterialCommunityIcons names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 const { width: screenWidth } = Dimensions.get('window');
 
 // Theme colors for SmartBI
@@ -111,7 +114,7 @@ interface KPICardProps {
   title: string;
   value: string;
   change: number;
-  icon: string;
+  icon: MaterialCommunityIconName;
   color: string;
   onPress?: () => void;
 }
@@ -127,7 +130,7 @@ const KPICard: React.FC<KPICardProps> = ({ title, value, change, icon, color, on
     >
       <Surface style={styles.kpiCard} elevation={2}>
         <View style={[styles.kpiIconContainer, { backgroundColor: color + '20' }]}>
-          <MaterialCommunityIcons name={icon as any} size={24} color={color} />
+          <MaterialCommunityIcons name={icon} size={24} color={color} />
         </View>
         <Text style={styles.kpiValue}>{value}</Text>
         <Text style={styles.kpiTitle}>{title}</Text>
@@ -204,7 +207,7 @@ interface AIInsightCardProps {
 }
 
 const AIInsightCard: React.FC<AIInsightCardProps> = ({ insight, onPress }) => {
-  const getInsightConfig = (type: AIInsight['type']) => {
+  const getInsightConfig = (type: AIInsight['type']): { icon: MaterialCommunityIconName; color: string } => {
     switch (type) {
       case 'opportunity':
         return { icon: 'lightbulb-on', color: SMARTBI_THEME.success };
@@ -226,7 +229,7 @@ const AIInsightCard: React.FC<AIInsightCardProps> = ({ insight, onPress }) => {
       <Card style={styles.insightCard}>
         <Card.Content style={styles.insightContent}>
           <View style={[styles.insightIcon, { backgroundColor: config.color + '20' }]}>
-            <MaterialCommunityIcons name={config.icon as any} size={20} color={config.color} />
+            <MaterialCommunityIcons name={config.icon} size={20} color={config.color} />
           </View>
           <View style={styles.insightText}>
             <Text style={styles.insightTitle}>{insight.title}</Text>

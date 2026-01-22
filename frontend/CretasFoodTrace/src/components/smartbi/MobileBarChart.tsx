@@ -181,18 +181,35 @@ export default function MobileBarChart({
   flatStyle = false,
   onBarPress,
 }: MobileBarChartProps): React.ReactElement {
+  // Edge case: Empty data check
+  const hasData = data.length > 0 && labels.length > 0;
+
+  // Normalize data: ensure labels and data arrays are same length, handle negative values
+  const normalizedData = useMemo(() => {
+    if (!hasData) return [];
+    // Take the minimum length to avoid mismatch
+    const length = Math.min(labels.length, data.length);
+    return data.slice(0, length).map(v => Math.max(0, v ?? 0)); // Clamp negative to 0
+  }, [data, labels.length, hasData]);
+
+  const normalizedLabels = useMemo(() => {
+    if (!hasData) return [];
+    const length = Math.min(labels.length, data.length);
+    return labels.slice(0, length);
+  }, [labels, data.length, hasData]);
+
   // Chart data structure
   const chartData = useMemo(() => ({
-    labels,
+    labels: normalizedLabels,
     datasets: [
       {
-        data,
+        data: normalizedData.length > 0 ? normalizedData : [0],
         colors: barColors
-          ? barColors.map(c => () => c)
+          ? barColors.slice(0, normalizedData.length).map(c => () => c)
           : undefined,
       },
     ],
-  }), [labels, data, barColors]);
+  }), [normalizedLabels, normalizedData, barColors]);
 
   // Chart configuration
   const chartConfig = useMemo(() => ({
@@ -215,9 +232,25 @@ export default function MobileBarChart({
     fillShadowGradientTo: flatStyle ? barColor : undefined,
   }), [decimalPlaces, barColor, flatStyle]);
 
+  // Edge case: Show "No data" message when data is empty
+  if (!hasData) {
+    return (
+      <Surface style={styles.container} elevation={1}>
+        {title && (
+          <Text variant="titleMedium" style={styles.title}>
+            {title}
+          </Text>
+        )}
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>No data available</Text>
+        </View>
+      </Surface>
+    );
+  }
+
   // For horizontal layout, use custom horizontal bars
   if (horizontal) {
-    const maxValue = Math.max(...data, 1);
+    const maxValue = Math.max(...normalizedData, 1);
 
     return (
       <Surface style={styles.container} elevation={1}>
@@ -231,16 +264,16 @@ export default function MobileBarChart({
           contentContainerStyle={styles.horizontalContent}
           showsVerticalScrollIndicator={false}
         >
-          {labels.map((label, index) => (
+          {normalizedLabels.map((label, index) => (
             <HorizontalBarItem
               key={`bar-${index}`}
               label={label}
-              value={data[index] ?? 0}
+              value={normalizedData[index] ?? 0}
               maxValue={maxValue}
               color={barColors?.[index] ?? CHART_COLORS.series[index % CHART_COLORS.series.length] ?? CHART_COLORS.primary}
               index={index}
               suffix={yAxisSuffix}
-              onPress={onBarPress ? () => onBarPress(index, data[index] ?? 0) : undefined}
+              onPress={onBarPress ? () => onBarPress(index, normalizedData[index] ?? 0) : undefined}
             />
           ))}
         </ScrollView>
@@ -304,5 +337,14 @@ const styles = StyleSheet.create({
   },
   horizontalContent: {
     paddingBottom: 8,
+  },
+  noDataContainer: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
 });

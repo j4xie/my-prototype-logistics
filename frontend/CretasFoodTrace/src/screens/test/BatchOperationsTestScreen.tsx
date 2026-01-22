@@ -3,15 +3,128 @@ import {
   View,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { Text, Card, Button, TextInput } from 'react-native-paper';
+import { Text, Card, Button } from 'react-native-paper';
+import { isAxiosError } from 'axios';
 import { materialTypeApiClient } from '../../services/api/materialTypeApiClient';
 import { supplierApiClient } from '../../services/api/supplierApiClient';
 import { processingApiClient } from '../../services/api/processingApiClient';
-import { materialBatchApiClient } from '../../services/api/materialBatchApiClient';
+import { materialBatchApiClient, MaterialBatch } from '../../services/api/materialBatchApiClient';
+
+/**
+ * Type guard helpers for API responses
+ */
+interface WithId {
+  id?: string | number;
+}
+
+interface WrappedResponse<T> {
+  data?: T;
+}
+
+/**
+ * Extracts ID from API response (handles both wrapped and unwrapped formats)
+ * Edge cases handled:
+ * - null/undefined response -> ''
+ * - empty object {} -> ''
+ * - data: null -> ''
+ * - data: { id: null } -> ''
+ * - id at root level -> extracted
+ * - non-object response -> ''
+ */
+function extractId(response: unknown): string {
+  if (response === null || response === undefined) {
+    return '';
+  }
+  if (typeof response !== 'object') {
+    return '';
+  }
+  const res = response as WrappedResponse<WithId> & WithId;
+  const id = res.data?.id ?? res.id;
+  // Return empty string for null, undefined, or empty values
+  if (id === null || id === undefined || id === '') {
+    return '';
+  }
+  return String(id);
+}
+
+/**
+ * Type-safe error message extraction
+ * Edge cases handled:
+ * - Axios error with response -> data.message
+ * - Axios error without response -> error.message
+ * - Standard Error object -> error.message
+ * - String error -> string directly (no double-quoting)
+ * - null/undefined -> 'Unknown error'
+ * - Object without message -> JSON stringified
+ */
+function getErrorMessage(error: unknown): string {
+  // Handle null/undefined
+  if (error === null || error === undefined) {
+    return 'Unknown error';
+  }
+  // Handle Axios errors
+  if (isAxiosError(error)) {
+    const axiosMessage = error.response?.data?.message;
+    if (typeof axiosMessage === 'string') {
+      return axiosMessage;
+    }
+    return error.message;
+  }
+  // Handle standard Error objects
+  if (error instanceof Error) {
+    return error.message;
+  }
+  // Handle string errors directly (no JSON.stringify to avoid double-quoting)
+  if (typeof error === 'string') {
+    return error;
+  }
+  // Handle objects with message property
+  if (typeof error === 'object' && 'message' in error) {
+    const msg = (error as { message: unknown }).message;
+    if (typeof msg === 'string') {
+      return msg;
+    }
+  }
+  // Fallback to JSON for other types
+  return JSON.stringify(error);
+}
+
+/**
+ * Type guard for MaterialBatch response
+ * Edge cases handled:
+ * - Valid MaterialBatch response -> extracted
+ * - Response with data: null -> null
+ * - Response without data property -> checks root level
+ * - Response with partial batch data -> returns it (caller handles validation)
+ * - Non-object response -> null
+ * - null/undefined response -> null
+ */
+function extractBatchData(response: unknown): MaterialBatch | null {
+  // Handle null/undefined/non-object
+  if (response === null || response === undefined) {
+    return null;
+  }
+  if (typeof response !== 'object') {
+    return null;
+  }
+
+  const res = response as WrappedResponse<MaterialBatch> & MaterialBatch;
+
+  // Check wrapped format: { data: MaterialBatch }
+  if (res.data && typeof res.data === 'object') {
+    return res.data as MaterialBatch;
+  }
+
+  // Check unwrapped format: MaterialBatch at root (identified by remainingQuantity field)
+  if (res.remainingQuantity !== undefined) {
+    return res as MaterialBatch;
+  }
+
+  return null;
+}
 
 /**
  * 批次操作测试页面
@@ -62,11 +175,11 @@ export const BatchOperationsTestScreen = () => {
         notes: '前端测试用'
       });
 
-      const id = (response as any).data?.id || (response as any).id;
+      const id = extractId(response);
       setMaterialTypeId(id);
       addLog(`✅ 成功：创建原材料类型 ID=${id}`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -86,11 +199,11 @@ export const BatchOperationsTestScreen = () => {
         address: '测试地址'
       });
 
-      const id = (response as any).data?.id || (response as any).id;
+      const id = extractId(response);
       setSupplierId(id);
       addLog(`✅ 成功：创建供应商 ID=${id}`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -115,11 +228,11 @@ export const BatchOperationsTestScreen = () => {
         receivedDate: new Date().toISOString().split('T')[0]
       });
 
-      const id = (response as any).data?.id || (response as any).id;
+      const id = extractId(response);
       setBatchId(id);
       addLog(`✅ 成功：原材料入库 Batch ID=${id}, 数量=500kg`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -144,10 +257,11 @@ export const BatchOperationsTestScreen = () => {
       addLog(`✅ 成功：预留300kg, 剩余应为200kg`);
 
       // 查询确认
-      const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：剩余=${(batch as any).data?.remainingQuantity}kg, 预留=${(batch as any).data?.reservedQuantity}kg`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+      const batchResponse = await materialBatchApiClient.getBatchById(batchId);
+      const batchData = extractBatchData(batchResponse);
+      addLog(`📊 查询结果：剩余=${batchData?.remainingQuantity ?? 'N/A'}kg, 预留=${batchData?.reservedQuantity ?? 'N/A'}kg`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -172,10 +286,11 @@ export const BatchOperationsTestScreen = () => {
       addLog(`✅ 成功：消耗150kg`);
 
       // 查询确认
-      const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：预留=${(batch as any).data?.reservedQuantity}kg, 已用=${(batch as any).data?.usedQuantity}kg`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+      const batchResponse = await materialBatchApiClient.getBatchById(batchId);
+      const batchData = extractBatchData(batchResponse);
+      addLog(`📊 查询结果：预留=${batchData?.reservedQuantity ?? 'N/A'}kg, 已用=${batchData?.usedQuantity ?? 'N/A'}kg`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -200,10 +315,11 @@ export const BatchOperationsTestScreen = () => {
       addLog(`✅ 成功：释放50kg`);
 
       // 查询确认
-      const batch = await materialBatchApiClient.getBatchById(batchId);
-      addLog(`📊 查询结果：剩余=${(batch as any).data?.remainingQuantity}kg, 预留=${(batch as any).data?.reservedQuantity}kg`);
-    } catch (error: any) {
-      addLog(`❌ 失败：${(error as any).message || JSON.stringify(error)}`);
+      const batchResponse = await materialBatchApiClient.getBatchById(batchId);
+      const batchData = extractBatchData(batchResponse);
+      addLog(`📊 查询结果：剩余=${batchData?.remainingQuantity ?? 'N/A'}kg, 预留=${batchData?.reservedQuantity ?? 'N/A'}kg`);
+    } catch (error) {
+      addLog(`❌ 失败：${getErrorMessage(error)}`);
     } finally {
       setLoading(false);
     }
@@ -243,8 +359,8 @@ export const BatchOperationsTestScreen = () => {
       addLog('========================================');
       addLog('✅ 完整流程测试完成！');
       addLog('========================================');
-    } catch (error: any) {
-      addLog(`❌ 流程测试失败：${(error as any).message}`);
+    } catch (error) {
+      addLog(`❌ 流程测试失败：${getErrorMessage(error)}`);
     }
   };
 

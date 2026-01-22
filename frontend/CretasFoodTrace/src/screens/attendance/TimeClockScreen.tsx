@@ -8,17 +8,21 @@ import {
   List,
 } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTranslation } from 'react-i18next';
 import * as Location from 'expo-location';
 import { timeclockApiClient } from '../../services/api/timeclockApiClient';
 import { useAuthStore } from '../../store/authStore';
 import { getFactoryId } from '../../types/auth';
+import type { AttendanceStackParamList } from '../../types/navigation';
 import { NeoCard, NeoButton, ScreenWrapper, StatusBadge } from '../../components/ui';
 import { theme } from '../../theme';
 import { handleError } from '../../utils/errorHandler';
 
+type TimeClockNavigationProp = NativeStackNavigationProp<AttendanceStackParamList, 'TimeClockScreen'>;
+
 export default function TimeClockScreen() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<TimeClockNavigationProp>();
   const { user } = useAuthStore();
   const { t } = useTranslation('hr');
 
@@ -177,7 +181,7 @@ export default function TimeClockScreen() {
       <Appbar.Header elevated style={{ backgroundColor: theme.colors.surface }}>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title={t('attendance.timeClock.title')} />
-        <Appbar.Action icon="history" onPress={() => (navigation as any).navigate('AttendanceHistory')} />
+        <Appbar.Action icon="history" onPress={() => navigation.navigate('AttendanceHistory')} />
         <Appbar.Action icon="refresh" onPress={loadTodayRecords} />
       </Appbar.Header>
 
@@ -274,10 +278,10 @@ export default function TimeClockScreen() {
         <NeoCard style={styles.card} padding="m">
           <Text style={styles.sectionTitle}>{t('attendance.timeClock.quickLinks')}</Text>
           <View style={styles.grid}>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('AttendanceHistory')} style={styles.gridBtn}>{t('attendance.timeClock.historyRecords')}</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('TimeStatistics')} style={styles.gridBtn}>{t('attendance.timeClock.timeStatistics')}</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('WorkRecords')} style={styles.gridBtn}>{t('attendance.timeClock.workRecords')}</NeoButton>
-            <NeoButton variant="outline" size="small" onPress={() => (navigation as any).navigate('DepartmentAttendance')} style={styles.gridBtn}>{t('attendance.timeClock.departmentAttendance')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('AttendanceHistory')} style={styles.gridBtn}>{t('attendance.timeClock.historyRecords')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('TimeStatistics', {})} style={styles.gridBtn}>{t('attendance.timeClock.timeStatistics')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('WorkRecords', {})} style={styles.gridBtn}>{t('attendance.timeClock.workRecords')}</NeoButton>
+            <NeoButton variant="outline" size="small" onPress={() => navigation.navigate('DepartmentAttendance')} style={styles.gridBtn}>{t('attendance.timeClock.departmentAttendance')}</NeoButton>
           </View>
         </NeoCard>
 

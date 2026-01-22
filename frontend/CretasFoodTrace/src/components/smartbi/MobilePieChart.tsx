@@ -154,25 +154,33 @@ export default function MobilePieChart({
   const [selectedItem, setSelectedItem] = useState<PieDataItem | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
 
+  // Edge case: Check if there's data to display
+  const hasData = data.length > 0;
+
+  // Filter out items with non-positive values (pie chart can't display 0 or negative)
+  const validData = useMemo(() => {
+    return data.filter(item => item.value > 0);
+  }, [data]);
+
   // Calculate total for percentages
   const total = useMemo(() => {
-    return data.reduce((sum, item) => sum + item.value, 0);
-  }, [data]);
+    return validData.reduce((sum, item) => sum + item.value, 0);
+  }, [validData]);
 
   // Format data with colors
   const chartData = useMemo(() => {
-    return data.map((item, index) => ({
+    return validData.map((item, index) => ({
       name: item.name,
       population: item.value,
       color: item.color || CHART_COLORS.series[index % CHART_COLORS.series.length],
       legendFontColor: item.legendFontColor || '#6B7280',
       legendFontSize: item.legendFontSize || 12,
     }));
-  }, [data]);
+  }, [validData]);
 
   // Handle segment press
   const handleSegmentPress = (index: number) => {
-    const item = data[index];
+    const item = validData[index];
     if (item) {
       setSelectedItem(item);
       setModalVisible(true);
@@ -188,6 +196,22 @@ export default function MobilePieChart({
 
   // Calculate actual chart size (smaller to fit legend)
   const chartSize = hasLegend ? Math.min(width, height) * 0.6 : Math.min(width, height);
+
+  // Edge case: Show "No data" message when data is empty or all values are 0/negative
+  if (!hasData || validData.length === 0) {
+    return (
+      <Surface style={styles.container} elevation={1}>
+        {title && (
+          <Text variant="titleMedium" style={styles.title}>
+            {title}
+          </Text>
+        )}
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>No data available</Text>
+        </View>
+      </Surface>
+    );
+  }
 
   return (
     <Surface style={styles.container} elevation={1}>
@@ -230,7 +254,7 @@ export default function MobilePieChart({
         {/* Custom Legend */}
         {hasLegend && (
           <View style={styles.legendContainer}>
-            {data.map((item, index) => (
+            {validData.map((item, index) => (
               <LegendItem
                 key={`legend-${index}`}
                 name={item.name}
@@ -384,5 +408,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  noDataContainer: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
 });

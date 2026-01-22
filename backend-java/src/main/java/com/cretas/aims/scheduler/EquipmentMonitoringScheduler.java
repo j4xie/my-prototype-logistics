@@ -65,19 +65,12 @@ public class EquipmentMonitoringScheduler {
             // 清理过期的告警缓存
             cleanExpiredAlerts();
 
-            // 查询所有工厂ID（通过查询所有设备获取）
-            List<FactoryEquipment> allEquipments = equipmentRepository.findAll();
+            // 查询所有不重复的工厂ID（避免 findAll() 全表扫描导致的内存溢出风险）
+            Set<String> factoryIds = equipmentRepository.findDistinctFactoryIds();
 
-            // 按工厂分组处理
-            Map<String, List<FactoryEquipment>> equipmentsByFactory = new HashMap<>();
-            for (FactoryEquipment equipment : allEquipments) {
-                equipmentsByFactory.computeIfAbsent(equipment.getFactoryId(), k -> new java.util.ArrayList<>())
-                        .add(equipment);
-            }
-
-            for (Map.Entry<String, List<FactoryEquipment>> entry : equipmentsByFactory.entrySet()) {
-                String factoryId = entry.getKey();
-                List<FactoryEquipment> factoryEquipments = entry.getValue();
+            // 按工厂分批处理
+            for (String factoryId : factoryIds) {
+                List<FactoryEquipment> factoryEquipments = equipmentRepository.findByFactoryId(factoryId);
 
                 // 检查异常状态设备
                 checkAbnormalEquipments(factoryId, factoryEquipments);
@@ -184,12 +177,8 @@ public class EquipmentMonitoringScheduler {
         log.debug("开始检查保修到期设备...");
 
         try {
-            // 获取所有工厂
-            List<FactoryEquipment> allEquipments = equipmentRepository.findAll();
-            Set<String> factoryIds = new java.util.HashSet<>();
-            for (FactoryEquipment eq : allEquipments) {
-                factoryIds.add(eq.getFactoryId());
-            }
+            // 获取所有不重复的工厂ID（避免 findAll() 全表扫描导致的内存溢出风险）
+            Set<String> factoryIds = equipmentRepository.findDistinctFactoryIds();
 
             LocalDate warningDate = LocalDate.now().plusDays(30); // 30天内到期
 

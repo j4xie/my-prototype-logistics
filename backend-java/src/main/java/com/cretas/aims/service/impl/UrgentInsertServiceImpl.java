@@ -553,10 +553,14 @@ public class UrgentInsertServiceImpl implements UrgentInsertService {
      */
     @Override
     public List<ProductionPlanDTO> getPendingForceInsertApprovals(String factoryId) {
-        return productionPlanRepository.findAll().stream()
-                .filter(p -> factoryId.equals(p.getFactoryId()))
-                .filter(p -> Boolean.TRUE.equals(p.getIsForceInserted()))
-                .filter(ProductionPlan::isPendingApproval)
+        // 使用 Repository 条件查询替代 findAll() 全表扫描，避免内存溢出
+        return productionPlanRepository
+                .findByFactoryIdAndIsForceInsertedAndRequiresApprovalAndApprovalStatus(
+                        factoryId,
+                        true,
+                        true,
+                        ProductionPlan.ApprovalStatus.PENDING)
+                .stream()
                 .map(productionPlanMapper::toDTO)
                 .collect(Collectors.toList());
     }

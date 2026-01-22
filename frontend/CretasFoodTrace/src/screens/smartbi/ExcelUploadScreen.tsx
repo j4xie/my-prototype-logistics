@@ -34,6 +34,9 @@ import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
 
+// Type for MaterialCommunityIcons names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 // Theme colors for SmartBI
 const SMARTBI_THEME = {
   primary: '#4F46E5',
@@ -57,7 +60,7 @@ interface DataTypeOption {
   key: DataType;
   label: string;
   description: string;
-  icon: string;
+  icon: MaterialCommunityIconName;
   color: string;
 }
 
@@ -96,7 +99,7 @@ const DataTypeCard: React.FC<DataTypeCardProps> = ({ option, selected, onSelect 
       elevation={selected ? 3 : 1}
     >
       <View style={[styles.dataTypeIcon, { backgroundColor: option.color + '20' }]}>
-        <MaterialCommunityIcons name={option.icon as any} size={28} color={option.color} />
+        <MaterialCommunityIcons name={option.icon} size={28} color={option.color} />
       </View>
       <Text style={styles.dataTypeLabel}>{option.label}</Text>
       <Text style={styles.dataTypeDescription}>{option.description}</Text>

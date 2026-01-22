@@ -116,6 +116,23 @@ export default function MobileRadarChart({
   showDots = true,
   showLegend,
 }: MobileRadarChartProps): React.ReactElement {
+  // Edge case: Check if there's data to display
+  const hasData = labels.length >= 3 && datasets.length > 0 && datasets.some(ds => ds.data.length > 0);
+
+  // Normalize datasets to match labels length
+  const normalizedDatasets = useMemo(() => {
+    if (!hasData) return [];
+    return datasets.map(dataset => ({
+      ...dataset,
+      // Ensure data array matches labels length, fill missing with 0, trim excess
+      data: labels.map((_, index) => {
+        const value = dataset.data[index] ?? 0;
+        // Clamp values to 0-maxValue range (handle negative values)
+        return Math.max(0, Math.min(value, maxValue));
+      }),
+    }));
+  }, [datasets, labels, maxValue, hasData]);
+
   // Determine if legend should be shown
   const shouldShowLegend = showLegend ?? datasets.length > 1;
 
@@ -192,7 +209,8 @@ export default function MobileRadarChart({
    * Generate dataset polygons and points
    */
   const datasetShapes = useMemo(() => {
-    return datasets.map((dataset, datasetIndex) => {
+    if (!hasData) return [];
+    return normalizedDatasets.map((dataset, datasetIndex) => {
       const color = dataset.color || CHART_COLORS.series[datasetIndex % CHART_COLORS.series.length];
       const fillOpacity = dataset.fillOpacity ?? 0.2;
       const points = getPolygonPoints(centerX, centerY, radius, dataset.data, maxValue);
@@ -210,7 +228,25 @@ export default function MobileRadarChart({
         label: dataset.label,
       };
     });
-  }, [datasets, centerX, centerY, radius, numAxes, maxValue]);
+  }, [normalizedDatasets, centerX, centerY, radius, numAxes, maxValue, hasData]);
+
+  // Edge case: Show "No data" message when data is empty or insufficient
+  if (!hasData || datasetShapes.length === 0) {
+    return (
+      <Surface style={styles.container} elevation={1}>
+        {title && (
+          <Text variant="titleMedium" style={styles.title}>
+            {title}
+          </Text>
+        )}
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>
+            {labels.length < 3 ? 'At least 3 data points required' : 'No data available'}
+          </Text>
+        </View>
+      </Surface>
+    );
+  }
 
   return (
     <Surface style={styles.container} elevation={1}>
@@ -359,5 +395,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#4B5563',
     fontWeight: '500',
+  },
+  noDataContainer: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
 });

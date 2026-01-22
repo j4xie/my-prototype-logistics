@@ -39,6 +39,9 @@ import { smartBIApiClient } from '../../services/api/smartbi';
 import { useAuthStore } from '../../store/authStore';
 import { SmartBIStackParamList } from '../../types/smartbi';
 
+// Type for MaterialCommunityIcons names
+type MaterialCommunityIconName = keyof typeof MaterialCommunityIcons.glyphMap;
+
 const { width: screenWidth } = Dimensions.get('window');
 
 // Theme colors for SmartBI
@@ -75,7 +78,7 @@ type Dimension = 'person' | 'product' | 'customer' | 'region';
 interface DimensionOption {
   key: Dimension;
   label: string;
-  icon: string;
+  icon: MaterialCommunityIconName;
 }
 
 // Date range
@@ -137,7 +140,7 @@ interface KPICardProps {
   title: string;
   value: string;
   change: number;
-  icon: string;
+  icon: MaterialCommunityIconName;
   color: string;
 }
 
@@ -147,7 +150,7 @@ const SalesKPICard: React.FC<KPICardProps> = ({ title, value, change, icon, colo
   return (
     <Surface style={styles.kpiCard} elevation={2}>
       <View style={[styles.kpiIconContainer, { backgroundColor: color + '20' }]}>
-        <MaterialCommunityIcons name={icon as any} size={20} color={color} />
+        <MaterialCommunityIcons name={icon} size={20} color={color} />
       </View>
       <Text style={styles.kpiValue}>{value}</Text>
       <Text style={styles.kpiTitle}>{title}</Text>
@@ -518,7 +521,7 @@ export function SalesAnalysisScreen() {
               onPress={() => setSelectedDimension(dim.key)}
             >
               <MaterialCommunityIcons
-                name={dim.icon as any}
+                name={dim.icon}
                 size={16}
                 color={
                   selectedDimension === dim.key ? '#fff' : SMARTBI_THEME.textSecondary

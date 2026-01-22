@@ -112,8 +112,16 @@ public class TwoStageIntentClassifier {
     private static final Map<ClassifiedDomain, List<String>> DOMAIN_KEYWORDS = new HashMap<>();
 
     static {
+        // v10.0: 扩充 Material 领域关键词覆盖
         DOMAIN_KEYWORDS.put(ClassifiedDomain.MATERIAL, Arrays.asList(
-                "原料", "物料", "材料", "入库", "库存", "仓库", "批号", "原材料"
+                // 原有基础词
+                "原料", "物料", "材料", "入库", "库存", "仓库", "批号", "原材料",
+                // v10.0 新增 - 进货/到货相关
+                "到货", "进货", "来料", "收货", "要到", "将到",
+                // v10.0 新增 - 库存查询相关
+                "存量", "余量", "剩余", "盘点",
+                // v10.0 新增 - 效期相关
+                "临期", "过期", "保质期", "效期", "有效期"
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.SHIPMENT, Arrays.asList(
                 "发货", "出货", "配送", "物流", "运输", "出库", "送货", "发运"
