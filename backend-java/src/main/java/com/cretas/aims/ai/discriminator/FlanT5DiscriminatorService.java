@@ -379,12 +379,10 @@ public class FlanT5DiscriminatorService {
      */
     private DiscriminatorResult judgeWithDashScope(String prompt, String intentCode) {
         try {
-            // Call DashScope with short timeout
-            String response = dashScopeClient.generateSimple(
-                    prompt,
-                    config.getDashScopeFallbackModel(),
-                    10,  // max tokens
-                    0.1  // low temperature for deterministic output
+            // Call DashScope with low temperature for deterministic output
+            String response = dashScopeClient.chatLowTemp(
+                    "你是一个意图判别助手，只回答'是'或'否'。",
+                    prompt
             );
 
             // Parse response
