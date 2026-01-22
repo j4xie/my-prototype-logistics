@@ -11,8 +11,9 @@ import java.time.LocalDateTime;
 
 /**
  * 样本来源枚举 (EnvScaler增强)
+ * 注意: 定义在 TrainingSample 类内部，包级别访问
  */
-public enum SampleSource {
+enum SampleSource {
     /** 真实用户交互 */
     REAL,
     /** 程序化合成 (EnvScaler) */
