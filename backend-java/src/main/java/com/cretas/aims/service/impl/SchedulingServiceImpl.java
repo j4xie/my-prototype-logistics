@@ -13,7 +13,15 @@ import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.NotificationService;
 import com.cretas.aims.service.PushNotificationService;
 import com.cretas.aims.service.SchedulingService;
+import com.cretas.aims.service.scheduling.SchedulingPlanService;
+import com.cretas.aims.service.scheduling.WorkerAssignmentService;
+import com.cretas.aims.service.scheduling.SchedulingAlertService;
+import com.cretas.aims.service.scheduling.SchedulingProbabilityService;
+import com.cretas.aims.service.scheduling.ProductionLineScheduleService;
+import com.cretas.aims.service.scheduling.SchedulingDashboardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -60,6 +68,20 @@ public class SchedulingServiceImpl implements SchedulingService {
     private final NotificationService notificationService;
     private final PushNotificationService pushNotificationService;
     private final ProductionLineSupervisorRepository supervisorRepository;
+
+    // ==================== 子服务委托 (Facade Delegate Pattern) ====================
+    @Autowired @Lazy
+    private SchedulingPlanService schedulingPlanService;
+    @Autowired @Lazy
+    private WorkerAssignmentService workerAssignmentService;
+    @Autowired @Lazy
+    private SchedulingAlertService schedulingAlertService;
+    @Autowired @Lazy
+    private SchedulingProbabilityService schedulingProbabilityService;
+    @Autowired @Lazy
+    private ProductionLineScheduleService productionLineScheduleService;
+    @Autowired @Lazy
+    private SchedulingDashboardService schedulingDashboardService;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
