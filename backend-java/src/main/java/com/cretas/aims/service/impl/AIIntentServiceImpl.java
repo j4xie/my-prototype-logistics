@@ -690,6 +690,28 @@ public class AIIntentServiceImpl implements AIIntentService {
             return noMatchResult;
         }
 
+        // ========== v11.1: 写操作检测 - 直接拒绝 ==========
+        // 对于纯写操作输入（删除、修改、添加等），直接返回 NONE
+        // 因为 AI 助手只支持查询操作，不支持数据修改
+        if (isWriteOnlyInput(userInput)) {
+            log.info("检测到写操作，直接拒绝: input='{}'", userInput);
+            IntentMatchResult noMatchResult = IntentMatchResult.builder()
+                    .bestMatch(null)
+                    .topCandidates(Collections.emptyList())
+                    .confidence(0.0)
+                    .matchMethod(MatchMethod.NONE)
+                    .matchedKeywords(Collections.emptyList())
+                    .isStrongSignal(false)
+                    .requiresConfirmation(false)
+                    .userInput(userInput)
+                    .actionType(ActionType.UNKNOWN)
+                    .questionType(questionType)
+                    .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。请通过管理后台进行数据操作。")
+                    .build();
+            saveIntentMatchRecord(noMatchResult, factoryId, null, null, false);
+            return noMatchResult;
+        }
+
         boolean isAmbiguousQuery = (questionType == IntentKnowledgeBase.QuestionType.GENERAL_QUESTION);
         if (isAmbiguousQuery) {
             log.info("问题类型为GENERAL_QUESTION，将使用更高置信度阈值: input='{}'", userInput);
@@ -1713,6 +1735,62 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return false;
+    }
+
+    /**
+     * v11.1: 判断输入是否为纯写操作（而非查询操作）
+     *
+     * 写操作关键词（删除、修改、添加等）+ 没有查询相关词 = 纯写操作
+     * 例如：
+     * - "删除销售记录" -> 纯写操作，返回 true
+     * - "查看删除记录" -> 查询操作，返回 false
+     * - "修改库存数据" -> 纯写操作，返回 true
+     *
+     * @param userInput 用户输入
+     * @return 是否为纯写操作
+     */
+    private boolean isWriteOnlyInput(String userInput) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalized = userInput.toLowerCase().trim();
+
+        // 写操作关键词
+        String[] writeKeywords = {
+            "删除", "删掉", "移除", "清空", "清除",
+            "修改", "更改", "变更", "编辑",
+            "添加", "新增", "新建", "录入", "增加"
+        };
+
+        // 查询相关词（如果同时包含这些词，说明是查询而非写操作）
+        String[] queryKeywords = {
+            "查询", "查看", "查", "看", "显示", "获取", "统计", "分析",
+            "报表", "报告", "情况", "记录", "历史", "列表", "有哪些", "多少"
+        };
+
+        // 检查是否包含写操作关键词
+        boolean hasWriteKeyword = false;
+        for (String keyword : writeKeywords) {
+            if (normalized.contains(keyword)) {
+                hasWriteKeyword = true;
+                break;
+            }
+        }
+
+        if (!hasWriteKeyword) {
+            return false;
+        }
+
+        // 如果包含查询相关词，则不是纯写操作
+        for (String keyword : queryKeywords) {
+            if (normalized.contains(keyword)) {
+                return false;
+            }
+        }
+
+        // 包含写操作关键词且不包含查询词 = 纯写操作
+        return true;
     }
 
     /**
