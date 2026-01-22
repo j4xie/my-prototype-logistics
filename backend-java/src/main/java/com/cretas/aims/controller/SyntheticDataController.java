@@ -3,7 +3,7 @@ package com.cretas.aims.controller;
 import com.cretas.aims.ai.synthetic.SyntheticDataService;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticDataStats;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticGenerationResult;
-import com.cretas.aims.dto.ApiResponse;
+import com.cretas.aims.dto.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
