@@ -11,6 +11,7 @@ import com.cretas.aims.repository.IntentOptimizationSuggestionRepository;
 import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.scheduler.ErrorAttributionAnalysisScheduler;
 import com.cretas.aims.service.ErrorAttributionAnalysisService;
+import com.cretas.aims.service.SemanticRouterService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -56,6 +57,7 @@ public class IntentAnalysisController {
     private final IntentMatchRecordRepository matchRecordRepository;
     private final IntentOptimizationSuggestionRepository suggestionRepository;
     private final AIIntentConfigRepository intentConfigRepository;
+    private final SemanticRouterService semanticRouterService;
 
     // ==================== 统计数据 ====================
 
@@ -897,6 +899,74 @@ public class IntentAnalysisController {
         } catch (Exception e) {
             log.error("审批晋升请求失败: suggestionId={}", suggestionId, e);
             return ResponseEntity.ok(ApiResponse.error("审批失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    // ==================== v11.0 语义路由器统计 ====================
+
+    /**
+     * 获取语义路由器统计信息
+     */
+    @Operation(summary = "获取语义路由器统计",
+            description = "获取语义路由器的运行统计数据，包括路由次数、直接执行比例、平均延迟等")
+    @GetMapping("/semantic-router/statistics")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getSemanticRouterStatistics(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
+
+        try {
+            if (!semanticRouterService.isAvailable()) {
+                Map<String, Object> unavailable = new HashMap<>();
+                unavailable.put("available", false);
+                unavailable.put("message", "语义路由器服务不可用");
+                return ResponseEntity.ok(ApiResponse.success(unavailable));
+            }
+
+            SemanticRouterService.RouterStatistics stats = semanticRouterService.getStatistics();
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("available", true);
+            result.put("totalRoutes", stats.getTotalRoutes());
+            result.put("directExecuteCount", stats.getDirectExecuteCount());
+            result.put("needRerankingCount", stats.getNeedRerankingCount());
+            result.put("needFullLLMCount", stats.getNeedFullLLMCount());
+            result.put("cachedIntentCount", stats.getCachedIntentCount());
+            result.put("averageLatencyMs", String.format("%.2f", stats.getAverageLatencyMs()));
+
+            // 计算比例
+            result.put("directExecuteRate", String.format("%.2f%%", stats.getDirectExecuteRate()));
+            result.put("needRerankingRate", String.format("%.2f%%", stats.getNeedRerankingRate()));
+            result.put("needFullLLMRate", String.format("%.2f%%", stats.getNeedFullLLMRate()));
+
+            // 性能指标
+            long llmSaved = stats.getDirectExecuteCount();
+            long estimatedSavingsMs = llmSaved * 800; // 假设每次 LLM 调用平均 800ms
+            result.put("estimatedLLMCallsSaved", llmSaved);
+            result.put("estimatedTimeSavedMs", estimatedSavingsMs);
+            result.put("estimatedTimeSavedSeconds", String.format("%.1f", estimatedSavingsMs / 1000.0));
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取语义路由器统计失败: factoryId={}", factoryId, e);
+            return ResponseEntity.ok(ApiResponse.error("获取统计失败: " + ErrorSanitizer.sanitize(e)));
+        }
+    }
+
+    /**
+     * 刷新语义路由器缓存
+     */
+    @Operation(summary = "刷新语义路由器缓存",
+            description = "管理员手动刷新语义路由器的意图向量缓存")
+    @PostMapping("/semantic-router/refresh-cache")
+    public ResponseEntity<ApiResponse<Void>> refreshSemanticRouterCache(
+            @Parameter(description = "工厂ID", example = "F001") @PathVariable String factoryId) {
+
+        try {
+            semanticRouterService.refreshCache(factoryId);
+            log.info("语义路由器缓存已刷新: factoryId={}", factoryId);
+            return ResponseEntity.ok(ApiResponse.successMessage("缓存刷新成功"));
+        } catch (Exception e) {
+            log.error("刷新语义路由器缓存失败: factoryId={}", factoryId, e);
+            return ResponseEntity.ok(ApiResponse.error("刷新缓存失败: " + ErrorSanitizer.sanitize(e)));
         }
     }
 
