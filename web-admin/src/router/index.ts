@@ -341,6 +341,28 @@ const businessRoutes: RouteRecordRaw[] = [
         ]
       },
 
+      // 行为校准管理
+      {
+        path: 'calibration',
+        name: 'Calibration',
+        redirect: '/calibration/list',
+        meta: { requiresAuth: true, title: '行为校准', icon: 'Aim', module: 'system' },
+        children: [
+          {
+            path: 'list',
+            name: 'CalibrationList',
+            component: () => import('@/views/calibration/CalibrationListView.vue'),
+            meta: { requiresAuth: true, title: '校准列表', module: 'system' }
+          },
+          {
+            path: ':id',
+            name: 'CalibrationDetail',
+            component: () => import('@/views/calibration/CalibrationDetailView.vue'),
+            meta: { requiresAuth: true, title: '校准详情', module: 'system', hidden: true }
+          }
+        ]
+      },
+
       // 智能调度
       {
         path: 'scheduling',

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 训练样本 Repository
@@ -23,6 +24,12 @@ import java.util.List;
  */
 @Repository
 public interface TrainingSampleRepository extends JpaRepository<TrainingSample, Long> {
+
+    /**
+     * Find most recent training sample by factory and matched intent code
+     */
+    Optional<TrainingSample> findTopByFactoryIdAndMatchedIntentCodeOrderByCreatedAtDesc(String factoryId, String matchedIntentCode);
+
 
     // ========== 反馈更新 ==========
 

@@ -49,6 +49,34 @@ const smartBIRoutes: RouteRecordRaw[] = [
       },
     ],
   },
+
+  // SmartBI 配置管理模块
+  {
+    path: 'smartbi-config',
+    name: 'SmartBIConfig',
+    redirect: '/smartbi-config/overview',
+    meta: { requiresAuth: true, title: 'SmartBI配置', icon: 'Setting', module: 'system' },
+    children: [
+      {
+        path: 'overview',
+        name: 'SmartBIConfigOverview',
+        component: () => import('@/views/smartbi-config/SmartBIConfigView.vue'),
+        meta: { requiresAuth: true, title: '配置概览', module: 'system' },
+      },
+      {
+        path: 'data-sources',
+        name: 'SmartBIDataSources',
+        component: () => import('@/views/smartbi-config/DataSourceConfigView.vue'),
+        meta: { requiresAuth: true, title: '数据源配置', module: 'system', action: 'write' },
+      },
+      {
+        path: 'chart-templates',
+        name: 'SmartBIChartTemplates',
+        component: () => import('@/views/smartbi-config/ChartTemplateView.vue'),
+        meta: { requiresAuth: true, title: '图表模板', module: 'system', action: 'write' },
+      },
+    ],
+  },
 ];
 
 // 快捷入口重定向路由 (需要在顶层路由注册)
