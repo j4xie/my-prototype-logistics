@@ -380,4 +380,28 @@ public interface TrainingSampleRepository extends JpaRepository<TrainingSample, 
            "AND (s.source = 'REAL' OR s.source IS NULL) " +
            "AND s.isCorrect = true")
     List<String> findDistinctIntentCodes(@Param("factoryId") String factoryId);
+
+    // ========== P0/P1 修复: GRAPE 分数重新计算和低频意图统计 ==========
+
+    /**
+     * 按工厂和来源查询所有样本 (用于 GRAPE 分数重新计算)
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.source = :source ORDER BY s.createdAt DESC")
+    List<TrainingSample> findByFactoryIdAndSource(
+        @Param("factoryId") String factoryId,
+        @Param("source") SampleSource source
+    );
+
+    /**
+     * 获取意图样本统计 (真实 vs 合成)
+     * 返回: [intentCode, realCount, syntheticCount]
+     */
+    @Query("SELECT s.matchedIntentCode, " +
+           "SUM(CASE WHEN s.source = 'REAL' OR s.source IS NULL THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN s.source = 'SYNTHETIC' THEN 1 ELSE 0 END) " +
+           "FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.matchedIntentCode IS NOT NULL " +
+           "GROUP BY s.matchedIntentCode")
+    List<Object[]> getIntentSampleStats(@Param("factoryId") String factoryId);
 }

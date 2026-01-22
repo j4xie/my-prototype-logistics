@@ -3,6 +3,7 @@ package com.cretas.aims.ai.synthetic;
 import com.cretas.aims.ai.synthetic.IntentSkelBuilder.IntentSkel;
 import com.cretas.aims.ai.synthetic.IntentScenGenerator.SyntheticSample;
 import com.cretas.aims.config.SyntheticDataConfig;
+import com.cretas.aims.entity.learning.SampleSource;
 import com.cretas.aims.entity.learning.TrainingSample;
 import com.cretas.aims.repository.learning.TrainingSampleRepository;
 import lombok.AllArgsConstructor;
@@ -388,6 +389,137 @@ public class SyntheticDataService {
                 .grapeDistribution(grapeDistribution)
                 .calculationPeriodDays(syntheticDataConfig.getRatioCalculationDays())
                 .build();
+    }
+
+    /**
+     * 重新计算所有合成样本的 GRAPE 分数
+     *
+     * @param factoryId 工厂ID
+     * @return 更新的样本数
+     */
+    @Transactional
+    public int recalculateGrapeScores(String factoryId) {
+        log.info("开始重新计算 GRAPE 分数: factoryId={}", factoryId);
+
+        // 获取所有合成样本
+        List<TrainingSample> syntheticSamples = trainingSampleRepository
+                .findByFactoryIdAndSource(factoryId, SampleSource.SYNTHETIC);
+
+        if (syntheticSamples.isEmpty()) {
+            log.info("没有找到合成样本");
+            return 0;
+        }
+
+        int updated = 0;
+        for (TrainingSample sample : syntheticSamples) {
+            try {
+                // 创建临时 SyntheticSample 用于评分
+                SyntheticSample tempSample = SyntheticSample.builder()
+                        .userInput(sample.getUserInput())
+                        .intentCode(sample.getMatchedIntentCode())
+                        .build();
+
+                // 重新计算分数
+                double newScore = grapeFilter.scoreSample(tempSample);
+
+                // 更新分数
+                sample.setGrapeScore(java.math.BigDecimal.valueOf(newScore));
+                trainingSampleRepository.save(sample);
+                updated++;
+
+                if (updated % 50 == 0) {
+                    log.debug("已处理 {} 个样本", updated);
+                }
+            } catch (Exception e) {
+                log.warn("重新计算样本 {} 的 GRAPE 分数失败: {}", sample.getId(), e.getMessage());
+            }
+        }
+
+        log.info("GRAPE 分数重新计算完成: 更新了 {} 个样本", updated);
+        return updated;
+    }
+
+    /**
+     * 为低频意图生成合成数据
+     *
+     * @param factoryId 工厂ID
+     * @param minRealSamples 最小真实样本阈值
+     * @param targetSynthetic 目标合成样本数
+     * @return 生成结果列表
+     */
+    public List<SyntheticGenerationResult> generateForLowFrequencyIntents(
+            String factoryId, int minRealSamples, int targetSynthetic) {
+
+        log.info("为低频意图生成合成数据: factoryId={}, minReal={}, target={}",
+                factoryId, minRealSamples, targetSynthetic);
+
+        // 获取低频意图（真实样本数少且合成样本数为 0 的意图）
+        List<Object[]> intentStats = trainingSampleRepository.getIntentSampleStats(factoryId);
+
+        List<String> lowFrequencyIntents = intentStats.stream()
+                .filter(stat -> {
+                    long realCount = ((Number) stat[1]).longValue();
+                    long syntheticCount = ((Number) stat[2]).longValue();
+                    return realCount > 0 && realCount < minRealSamples && syntheticCount == 0;
+                })
+                .map(stat -> (String) stat[0])
+                .collect(Collectors.toList());
+
+        log.info("找到 {} 个低频意图需要扩充", lowFrequencyIntents.size());
+
+        List<SyntheticGenerationResult> results = new ArrayList<>();
+        for (String intentCode : lowFrequencyIntents) {
+            try {
+                SyntheticGenerationResult result = generateForIntent(intentCode, factoryId, targetSynthetic);
+                results.add(result);
+                log.info("意图 {} 生成完成: saved={}", intentCode, result.getSaved());
+            } catch (Exception e) {
+                log.warn("为意图 {} 生成合成数据失败: {}", intentCode, e.getMessage());
+            }
+        }
+
+        return results;
+    }
+
+    /**
+     * 获取意图样本统计（真实 vs 合成）
+     *
+     * @param factoryId 工厂ID
+     * @return 意图统计列表
+     */
+    public List<IntentSampleStat> getIntentSampleStats(String factoryId) {
+        log.info("获取意图样本统计: factoryId={}", factoryId);
+
+        List<Object[]> rawStats = trainingSampleRepository.getIntentSampleStats(factoryId);
+
+        return rawStats.stream()
+                .map(stat -> IntentSampleStat.builder()
+                        .intentCode((String) stat[0])
+                        .realCount(((Number) stat[1]).longValue())
+                        .syntheticCount(((Number) stat[2]).longValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 意图样本统计
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class IntentSampleStat {
+        private String intentCode;
+        private long realCount;
+        private long syntheticCount;
+
+        public long getTotalCount() {
+            return realCount + syntheticCount;
+        }
+
+        public boolean isLowFrequency(int threshold) {
+            return realCount > 0 && realCount < threshold && syntheticCount == 0;
+        }
     }
 
     /**
