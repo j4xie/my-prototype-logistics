@@ -107,19 +107,42 @@ public class IntentValidator {
         return ValidationResult.failure(allErrors);
     }
 
+    // Intent codes that require TIME or METRIC slots (query-type intents)
+    private static final Set<String> QUERY_INTENTS = Set.of(
+        "SALES_QUERY", "INVENTORY_QUERY", "PRODUCTION_QUERY", "QUALITY_QUERY",
+        "COST_QUERY", "PROFIT_QUERY", "ORDER_QUERY", "REVENUE_QUERY",
+        "REPORT_PRODUCTION", "REPORT_SALES", "REPORT_INVENTORY"
+    );
+
     /**
      * Validates that required slots exist in the sample
-     * At least TIME or METRIC must be present
+     * For query-type intents: at least TIME or METRIC must be present
+     * For action-type intents: basic structure is sufficient
      *
      * @param sample the synthetic sample to validate
      * @return true if structure is valid
      */
     public boolean validateStructure(SyntheticSample sample) {
-        if (sample == null || sample.getParams() == null) {
+        if (sample == null) {
             return false;
         }
 
+        // Basic checks: intentCode must be present
+        String intentCode = sample.getIntentCode();
+        if (intentCode == null || intentCode.trim().isEmpty()) {
+            return false;
+        }
+
+        // For non-query intents (action intents like ALERT_ACTIVE), params are optional
+        if (!isQueryIntent(intentCode)) {
+            return true;  // Action intents don't require TIME/METRIC
+        }
+
+        // For query intents, require at least TIME or METRIC
         Map<String, String> params = sample.getParams();
+        if (params == null || params.isEmpty()) {
+            return false;
+        }
 
         // Check if at least TIME or METRIC is present
         boolean hasTime = params.containsKey("TIME") && params.get("TIME") != null
@@ -128,6 +151,22 @@ public class IntentValidator {
                             && !params.get("METRIC").trim().isEmpty();
 
         return hasTime || hasMetric;
+    }
+
+    /**
+     * Check if the intent is a query-type intent that requires TIME/METRIC slots
+     */
+    private boolean isQueryIntent(String intentCode) {
+        if (intentCode == null) {
+            return false;
+        }
+        // Check exact match first
+        if (QUERY_INTENTS.contains(intentCode)) {
+            return true;
+        }
+        // Check if it contains QUERY or REPORT keywords
+        String upper = intentCode.toUpperCase();
+        return upper.contains("QUERY") || upper.contains("REPORT") || upper.contains("ANALYSIS");
     }
 
     /**
