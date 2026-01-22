@@ -11,10 +11,14 @@ import {
   SafeAreaView,
   RefreshControl,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Card, Chip, List, Divider, Icon, Surface } from 'react-native-paper';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { intentConfigApiClient, type AIIntentConfig, type IntentCategoryConfig } from '../../../services/api/intentConfigApiClient';
+import type { FAManagementStackParamList } from '../../../types/navigation';
 
 // 兼容类型别名
 type IntentConfig = AIIntentConfig & {
@@ -119,8 +123,11 @@ interface GroupedIntents {
   [category: string]: IntentConfig[];
 }
 
+type NavigationProp = NativeStackNavigationProp<FAManagementStackParamList, 'IntentView'>;
+
 export function FAIntentViewScreen() {
   const { t } = useTranslation('home');
+  const navigation = useNavigation<NavigationProp>();
   const [intents, setIntents] = useState<IntentConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -246,64 +253,76 @@ export function FAIntentViewScreen() {
     const categoryConfig = groupConfig[mappedGroup];
 
     return (
-      <Card key={intent.intentCode} style={styles.intentCard} mode="outlined">
-        <Card.Content>
-          {/* 标题行 */}
-          <View style={styles.intentHeader}>
-            <View style={styles.intentTitleRow}>
-              <Text style={styles.intentName} numberOfLines={2}>
-                {intent.displayName || intent.intentName}
+      <TouchableOpacity
+        key={intent.intentCode}
+        onPress={() => navigation.navigate('IntentConfigDetail', { intentCode: intent.intentCode })}
+        activeOpacity={0.7}
+      >
+        <Card style={styles.intentCard} mode="outlined">
+          <Card.Content>
+            {/* 标题行 */}
+            <View style={styles.intentHeader}>
+              <View style={styles.intentTitleRow}>
+                <Text style={styles.intentName} numberOfLines={2}>
+                  {intent.displayName || intent.intentName}
+                </Text>
+                {!isActive && (
+                  <Chip style={styles.disabledChip} textStyle={styles.disabledChipText}>
+                    已禁用
+                  </Chip>
+                )}
+              </View>
+              <View style={styles.intentCodeRow}>
+                <Text style={styles.intentCode}>{intent.intentCode}</Text>
+                {categoryConfig && (
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
+                    <Text style={[styles.categoryBadgeText, { color: categoryConfig.color }]}>
+                      {categoryConfig.label}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* 描述 */}
+            {intent.description && (
+              <Text style={styles.description} numberOfLines={2}>
+                {intent.description}
               </Text>
-              {!isActive && (
-                <Chip style={styles.disabledChip} textStyle={styles.disabledChipText}>
-                  已禁用
+            )}
+
+            {/* 标签行 */}
+            <View style={styles.tagsRow}>
+              <Chip
+                style={[styles.tagChip, { backgroundColor: priorityConfig.color + '15' }]}
+                textStyle={[styles.tagChipText, { color: priorityConfig.color }]}
+              >
+                {priorityConfig.label}
+              </Chip>
+              <Chip
+                style={[styles.tagChip, { backgroundColor: sensitivityConfig.color + '15' }]}
+                textStyle={[styles.tagChipText, { color: sensitivityConfig.color }]}
+              >
+                {sensitivityConfig.label}
+              </Chip>
+              {(intent as unknown as { operationType?: string }).operationType && (
+                <Chip style={styles.tagChip} textStyle={styles.tagChipText}>
+                  {(intent as unknown as { operationType?: string }).operationType === 'READ' ? '只读' : '写入'}
                 </Chip>
               )}
             </View>
-            <View style={styles.intentCodeRow}>
-              <Text style={styles.intentCode}>{intent.intentCode}</Text>
-              {categoryConfig && (
-                <View style={[styles.categoryBadge, { backgroundColor: categoryConfig.color + '20' }]}>
-                  <Text style={[styles.categoryBadgeText, { color: categoryConfig.color }]}>
-                    {categoryConfig.label}
-                  </Text>
-                </View>
-              )}
+
+            {/* 关键词 */}
+            {renderKeywords(intent.keywords)}
+
+            {/* 查看详情提示 */}
+            <View style={styles.viewDetailHint}>
+              <Icon source="chevron-right" size={16} color="#999" />
+              <Text style={styles.viewDetailText}>点击查看详情</Text>
             </View>
-          </View>
-
-          {/* 描述 */}
-          {intent.description && (
-            <Text style={styles.description} numberOfLines={2}>
-              {intent.description}
-            </Text>
-          )}
-
-          {/* 标签行 */}
-          <View style={styles.tagsRow}>
-            <Chip
-              style={[styles.tagChip, { backgroundColor: priorityConfig.color + '15' }]}
-              textStyle={[styles.tagChipText, { color: priorityConfig.color }]}
-            >
-              {priorityConfig.label}
-            </Chip>
-            <Chip
-              style={[styles.tagChip, { backgroundColor: sensitivityConfig.color + '15' }]}
-              textStyle={[styles.tagChipText, { color: sensitivityConfig.color }]}
-            >
-              {sensitivityConfig.label}
-            </Chip>
-            {(intent as unknown as { operationType?: string }).operationType && (
-              <Chip style={styles.tagChip} textStyle={styles.tagChipText}>
-                {(intent as unknown as { operationType?: string }).operationType === 'READ' ? '只读' : '写入'}
-              </Chip>
-            )}
-          </View>
-
-          {/* 关键词 */}
-          {renderKeywords(intent.keywords)}
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
     );
   };
 
@@ -595,6 +614,19 @@ const styles = StyleSheet.create({
     marginTop: 12,
     color: '#999',
     fontSize: 14,
+  },
+  viewDetailHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  viewDetailText: {
+    fontSize: 12,
+    color: '#999',
   },
 });
 

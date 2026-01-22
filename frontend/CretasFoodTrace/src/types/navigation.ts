@@ -319,10 +319,14 @@ export type FAManagementStackParamList = {
   EncodingRuleConfig: undefined;
   // 质检项配置
   QualityCheckItemConfig: undefined;
+  // 质检项详情
+  QualityCheckItemDetail: { itemId: string };
   // SOP 流程配置
   SopConfig: undefined;
   // 意图配置查看 (只读)
   IntentView: undefined;
+  // 意图配置详情 (编辑)
+  IntentConfigDetail: { intentCode: string };
   // 统一设备管理中心
   UnifiedDeviceManagement: undefined;
   // 表单模版管理

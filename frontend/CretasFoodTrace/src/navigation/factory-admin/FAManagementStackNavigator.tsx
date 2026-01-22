@@ -29,8 +29,10 @@ import RuleConfigurationScreen from "../../screens/management/RuleConfigurationS
 import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
 import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
 import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
+import QualityCheckItemDetailScreen from "../../screens/factory-admin/management/QualityCheckItemDetailScreen";
 import SopConfigScreen from "../../screens/management/SopConfigScreen";
 import { FAIntentViewScreen } from "../../screens/factory-admin/management/FAIntentViewScreen";
+import { IntentConfigDetailScreen } from "../../screens/factory-admin/management/IntentConfigDetailScreen";
 
 // IoT 电子秤设备管理
 import { IotDeviceListScreen } from "../../screens/factory-admin/iot/IotDeviceListScreen";
@@ -200,6 +202,13 @@ export function FAManagementStackNavigator() {
         options={{ title: "质检项配置" }}
       />
 
+      {/* 质检项详情 */}
+      <Stack.Screen
+        name="QualityCheckItemDetail"
+        component={QualityCheckItemDetailScreen}
+        options={{ title: "质检项详情" }}
+      />
+
       {/* SOP 流程配置 */}
       <Stack.Screen
         name="SopConfig"
@@ -212,6 +221,13 @@ export function FAManagementStackNavigator() {
         name="IntentView"
         component={FAIntentViewScreen}
         options={{ title: "意图配置" }}
+      />
+
+      {/* 意图配置详情 (编辑) */}
+      <Stack.Screen
+        name="IntentConfigDetail"
+        component={IntentConfigDetailScreen}
+        options={{ title: "意图详情" }}
       />
 
       {/* 统一设备管理中心 */}
