@@ -1754,9 +1754,9 @@ public class AIIntentServiceImpl implements AIIntentService {
             return false;
         }
 
-        String normalized = userInput.toLowerCase().trim();
+        String normalized = userInput.trim();
 
-        // 写操作关键词（动词）
+        // 写操作关键词（动词）- 按优先级排列
         String[] writeKeywords = {
             "删除", "删掉", "移除", "清空", "清除",
             "修改", "更改", "变更", "编辑",
@@ -1764,47 +1764,46 @@ public class AIIntentServiceImpl implements AIIntentService {
             "更新", "创建"
         };
 
-        // 查询动作词（只有动词才能表示这是一个查询）
-        // 不包含"记录"、"数据"等名词，因为它们可能是写操作的对象
-        String[] queryActionVerbs = {
-            "查询", "查看", "查一下", "看一下", "看看",
-            "显示", "获取", "统计", "分析", "汇总",
-            "了解", "告诉", "告知"
+        // 查询动作词（只有这些动词开头才能表示这是一个查询）
+        String[] queryPrefixes = {
+            "查询", "查看", "查一下", "看一下", "看看", "帮我查", "帮我看",
+            "显示", "获取", "统计", "分析", "汇总", "查",
+            "了解", "告诉", "告知", "列出", "列表"
         };
 
-        // 找到第一个写操作关键词的位置
-        int writeKeywordPos = -1;
-        String foundWriteKeyword = null;
+        // 方法1: 检查是否以查询词开头
+        for (String prefix : queryPrefixes) {
+            if (normalized.startsWith(prefix)) {
+                log.debug("输入以查询词'{}'开头，不是写操作: {}", prefix, userInput);
+                return false;
+            }
+        }
+
+        // 方法2: 检查是否以写操作词开头，或在前5个字符内包含写操作词
         for (String keyword : writeKeywords) {
+            if (normalized.startsWith(keyword)) {
+                log.info("输入以写操作词'{}'开头，是写操作: {}", keyword, userInput);
+                return true;
+            }
+            // 也检查前5个字符（允许"帮我删除"这样的模式）
             int pos = normalized.indexOf(keyword);
-            if (pos >= 0 && (writeKeywordPos < 0 || pos < writeKeywordPos)) {
-                writeKeywordPos = pos;
-                foundWriteKeyword = keyword;
+            if (pos >= 0 && pos <= 4) {
+                // 但要排除"查看删除记录"这样的情况
+                boolean hasQueryBefore = false;
+                for (String qPrefix : queryPrefixes) {
+                    if (normalized.startsWith(qPrefix)) {
+                        hasQueryBefore = true;
+                        break;
+                    }
+                }
+                if (!hasQueryBefore) {
+                    log.info("输入在前5字符内包含写操作词'{}'，是写操作: {}", keyword, userInput);
+                    return true;
+                }
             }
         }
 
-        if (writeKeywordPos < 0) {
-            return false;
-        }
-
-        // 找到第一个查询动作词的位置
-        int queryVerbPos = -1;
-        for (String verb : queryActionVerbs) {
-            int pos = normalized.indexOf(verb);
-            if (pos >= 0 && (queryVerbPos < 0 || pos < queryVerbPos)) {
-                queryVerbPos = pos;
-            }
-        }
-
-        // 如果查询动作词出现在写操作关键词之前，则是查询
-        // 例如："查看删除记录" - 查询动作词"查看"在前，是查询
-        // 例如："删除销售记录" - 写操作关键词"删除"在前，是写操作
-        if (queryVerbPos >= 0 && queryVerbPos < writeKeywordPos) {
-            return false;
-        }
-
-        // 写操作关键词在前（或没有查询动作词）= 写操作
-        return true;
+        return false;
     }
 
     /**
