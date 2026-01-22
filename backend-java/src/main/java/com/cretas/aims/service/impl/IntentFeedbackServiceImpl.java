@@ -2,7 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.dto.intent.IntentFeedbackRequest;
 import com.cretas.aims.entity.learning.TrainingSample;
-import com.cretas.aims.repository.TrainingSampleRepository;
+import com.cretas.aims.repository.learning.TrainingSampleRepository;
 import com.cretas.aims.service.IntentFeedbackService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
