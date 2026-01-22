@@ -292,4 +292,27 @@ public interface AIIntentConfigRepository extends JpaRepository<AIIntentConfig, 
            "AND c.deletedAt IS NULL " +
            "ORDER BY c.confidenceBoost DESC")
     List<AIIntentConfig> findSmartBIIntentsWithConfidenceBoost();
+
+    // ==================== SemanticRouter 相关方法 ====================
+
+    /**
+     * 获取所有有意图配置的工厂ID
+     * 用于 SemanticRouterService 刷新缓存
+     */
+    @Query("SELECT DISTINCT c.factoryId FROM AIIntentConfig c " +
+           "WHERE c.factoryId IS NOT NULL " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL")
+    List<String> findDistinctFactoryIds();
+
+    /**
+     * 查询全局意图配置 (factoryId IS NULL)
+     * 用于 SemanticRouterService 加载全局意图
+     */
+    @Query("SELECT c FROM AIIntentConfig c " +
+           "WHERE c.factoryId IS NULL " +
+           "AND c.isActive = true " +
+           "AND c.deletedAt IS NULL " +
+           "ORDER BY c.priority DESC")
+    List<AIIntentConfig> findGlobalIntents();
 }

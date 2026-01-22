@@ -9,8 +9,12 @@ import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.IntentExecutorService;
 import com.cretas.aims.service.LinUCBService;
 import com.cretas.aims.service.ResultFormatterService;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * AI公开演示控制器
@@ -52,7 +59,6 @@ public class AIPublicDemoController {
 
     // 演示用的默认用户信息 (使用 factory_super_admin 确保所有 LOW 敏感度查询能执行)
     // 写入操作（MEDIUM/HIGH/CRITICAL）会在敏感度检查阶段被拦截，不会执行
-    private static final Long DEMO_USER_ID = 0L;
     private static final String DEMO_USER_ROLE = "factory_super_admin";
 
     // 允许执行的敏感度级别（只允许查询类）
@@ -64,39 +70,85 @@ public class AIPublicDemoController {
             "上面的", "前面的", "刚刚的", "之前的"
     ));
 
+    // ==================== Demo 会话管理 ====================
+
+    /**
+     * 临时用户ID生成器
+     * 使用负数ID区分演示用户和真实用户
+     */
+    private static final AtomicLong tempUserIdGenerator = new AtomicLong(-1000L);
+
+    /**
+     * Demo 会话缓存
+     * - 30分钟过期
+     * - 最多1000个并发会话
+     * - 启用统计以便监控
+     */
+    private final Cache<String, DemoSession> demoSessions = Caffeine.newBuilder()
+            .expireAfterAccess(30, TimeUnit.MINUTES)
+            .maximumSize(1000)
+            .recordStats()
+            .build();
+
+    /**
+     * Demo 会话信息
+     */
+    @Data
+    @AllArgsConstructor
+    public static class DemoSession {
+        private Long tempUserId;
+        private String sessionId;
+        private LocalDateTime createdAt;
+        private LocalDateTime lastAccessedAt;
+    }
+
     @PostMapping("/execute")
-    @Operation(summary = "演示执行AI意图", description = "无需登录的AI意图识别与执行演示。查询类操作可执行，写入类操作需要权限验证。")
+    @Operation(summary = "演示执行AI意图", description = "无需登录的AI意图识别与执行演示。查询类操作可执行，写入类操作需要权限验证。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentExecuteResponse>> executeDemo(
             @RequestBody DemoExecuteRequest request) {
 
         String userInput = request.getUserInput();
-        log.info("AI演示请求: input='{}'",
-                userInput.length() > 50 ? userInput.substring(0, 50) + "..." : userInput);
+        log.info("AI演示请求: input='{}', sessionId={}",
+                userInput != null && userInput.length() > 50 ? userInput.substring(0, 50) + "..." : userInput,
+                request.getSessionId());
 
-        // 0. 检测未解析的指代词（演示模式没有上下文，无法解析指代）
-        String unresolvedRef = detectUnresolvedReference(userInput);
-        if (unresolvedRef != null) {
-            log.info("AI演示检测到未解析指代词: '{}'", unresolvedRef);
-            IntentExecuteResponse response = IntentExecuteResponse.builder()
-                    .intentRecognized(false)
-                    .status("NEED_MORE_INFO")
-                    .message(buildClarificationMessage(unresolvedRef))
-                    .clarificationQuestions(buildClarificationQuestions(unresolvedRef))
-                    .executedAt(LocalDateTime.now())
-                    .build();
-            return ResponseEntity.ok(ApiResponse.success(response));
+        // 0. 获取或创建 Demo 会话
+        DemoSession session = getOrCreateSession(request.getSessionId());
+        String sessionId = session.getSessionId();
+        Long demoUserId = session.getTempUserId();
+
+        log.debug("Demo会话: sessionId={}, tempUserId={}, isNew={}",
+                sessionId, demoUserId, request.getSessionId() == null);
+
+        // 1. 检测未解析的指代词（只有在没有会话上下文时才需要）
+        // 如果有会话ID，说明可能在多轮对话中，指代词可能可以解析
+        if (request.getSessionId() == null) {
+            String unresolvedRef = detectUnresolvedReference(userInput);
+            if (unresolvedRef != null) {
+                log.info("AI演示检测到未解析指代词: '{}', 返回会话ID供后续对话", unresolvedRef);
+                IntentExecuteResponse response = IntentExecuteResponse.builder()
+                        .intentRecognized(false)
+                        .status("NEED_MORE_INFO")
+                        .message(buildClarificationMessage(unresolvedRef))
+                        .clarificationQuestions(buildClarificationQuestions(unresolvedRef))
+                        .sessionId(sessionId)  // 返回会话ID供前端续接
+                        .executedAt(LocalDateTime.now())
+                        .build();
+                return ResponseEntity.ok(ApiResponse.success(response));
+            }
         }
 
-        // 1. 识别意图
+        // 2. 识别意图（传递完整的会话参数）
         IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
-                userInput, DEMO_FACTORY_ID, 1, null, null);
+                userInput, DEMO_FACTORY_ID, 1, demoUserId, DEMO_USER_ROLE, sessionId);
 
-        // 2. 如果没有匹配到意图
+        // 3. 如果没有匹配到意图
         if (!matchResult.hasMatch()) {
             IntentExecuteResponse response = IntentExecuteResponse.builder()
                     .intentRecognized(false)
                     .status("NOT_RECOGNIZED")
                     .message("未能识别您的意图，请尝试更具体的描述")
+                    .sessionId(sessionId)  // 返回会话ID供前端续接对话
                     .executedAt(LocalDateTime.now())
                     .build();
             return ResponseEntity.ok(ApiResponse.success(response));
@@ -114,7 +166,7 @@ public class AIPublicDemoController {
         log.info("AI演示意图匹配: intentCode={}, sensitivity={}, confidence={}",
                 matchedIntent.getIntentCode(), sensitivityLevel, matchResult.getConfidence());
 
-        // 3. 检查敏感度级别 - 只允许LOW级别的查询操作
+        // 4. 检查敏感度级别 - 只允许LOW级别的查询操作
         if (!ALLOWED_SENSITIVITY_LEVELS.contains(sensitivityLevel)) {
             // 写入类操作，返回权限提示
             IntentExecuteResponse response = IntentExecuteResponse.builder()
@@ -130,6 +182,7 @@ public class AIPublicDemoController {
                     .message(buildPermissionDeniedMessage(matchedIntent))
                     .requiresApproval(matchedIntent.needsApproval())
                     .quotaCost(matchedIntent.getQuotaCost())
+                    .sessionId(sessionId)  // 返回会话ID供前端续接对话
                     .executedAt(LocalDateTime.now())
                     .build();
 
@@ -139,15 +192,16 @@ public class AIPublicDemoController {
             return ResponseEntity.ok(ApiResponse.success(response));
         }
 
-        // 4. LOW敏感度的查询操作，正常执行
+        // 5. LOW敏感度的查询操作，正常执行
         try {
             IntentExecuteRequest executeRequest = IntentExecuteRequest.builder()
                     .userInput(userInput)
                     .intentCode(matchedIntent.getIntentCode())
+                    .sessionId(sessionId)  // 传递会话ID支持多轮对话
                     .build();
 
             IntentExecuteResponse response = intentExecutorService.execute(
-                    DEMO_FACTORY_ID, executeRequest, DEMO_USER_ID, DEMO_USER_ROLE);
+                    DEMO_FACTORY_ID, executeRequest, demoUserId, DEMO_USER_ROLE);
 
             // 补充意图识别信息
             response.setIntentRecognized(true);
@@ -158,17 +212,18 @@ public class AIPublicDemoController {
             response.setConfidence(matchResult.getConfidence());
             response.setMatchMethod(matchResult.getMatchMethod() != null ?
                     matchResult.getMatchMethod().name() : "KEYWORD");
+            response.setSessionId(sessionId);  // 确保响应包含会话ID
 
             // 格式化结果为自然语言文本
             resultFormatterService.formatAndSet(response);
 
-            log.info("AI演示执行成功: intentCode={}", matchedIntent.getIntentCode());
+            log.info("AI演示执行成功: intentCode={}, sessionId={}", matchedIntent.getIntentCode(), sessionId);
 
             return ResponseEntity.ok(ApiResponse.success(response));
 
         } catch (Exception e) {
-            log.error("AI演示执行失败: intentCode={}, error={}",
-                    matchedIntent.getIntentCode(), e.getMessage(), e);
+            log.error("AI演示执行失败: intentCode={}, sessionId={}, error={}",
+                    matchedIntent.getIntentCode(), sessionId, e.getMessage(), e);
 
             IntentExecuteResponse response = IntentExecuteResponse.builder()
                     .intentRecognized(true)
@@ -176,6 +231,7 @@ public class AIPublicDemoController {
                     .intentName(matchedIntent.getIntentName())
                     .status("FAILED")
                     .message("演示执行失败: " + e.getMessage())
+                    .sessionId(sessionId)  // 返回会话ID供前端续接对话
                     .executedAt(LocalDateTime.now())
                     .build();
 
@@ -184,20 +240,27 @@ public class AIPublicDemoController {
     }
 
     @PostMapping("/recognize")
-    @Operation(summary = "演示意图识别", description = "仅识别意图，不执行操作")
+    @Operation(summary = "演示意图识别", description = "仅识别意图，不执行操作。支持多轮对话。")
     public ResponseEntity<ApiResponse<IntentRecognizeResponse>> recognizeDemo(
             @RequestBody DemoExecuteRequest request) {
 
         String userInput = request.getUserInput();
-        log.info("AI演示识别请求: input='{}'",
-                userInput.length() > 50 ? userInput.substring(0, 50) + "..." : userInput);
+        log.info("AI演示识别请求: input='{}', sessionId={}",
+                userInput != null && userInput.length() > 50 ? userInput.substring(0, 50) + "..." : userInput,
+                request.getSessionId());
+
+        // 获取或创建 Demo 会话
+        DemoSession session = getOrCreateSession(request.getSessionId());
+        String sessionId = session.getSessionId();
+        Long demoUserId = session.getTempUserId();
 
         IntentMatchResult matchResult = aiIntentService.recognizeIntentWithConfidence(
-                userInput, DEMO_FACTORY_ID, 1, null, null);
+                userInput, DEMO_FACTORY_ID, 1, demoUserId, DEMO_USER_ROLE, sessionId);
 
         IntentRecognizeResponse response = new IntentRecognizeResponse();
         response.setUserInput(userInput);
         response.setMatched(matchResult.hasMatch());
+        response.setSessionId(sessionId);  // 返回会话ID供前端续接
 
         if (matchResult.hasMatch()) {
             AIIntentConfig intent = matchResult.getBestMatch();
@@ -328,6 +391,54 @@ public class AIPublicDemoController {
         return questions;
     }
 
+    // ==================== Demo 会话管理方法 ====================
+
+    /**
+     * 获取或创建 Demo 会话
+     *
+     * @param requestSessionId 请求中携带的会话ID（可能为null）
+     * @return DemoSession 会话对象
+     */
+    private DemoSession getOrCreateSession(String requestSessionId) {
+        // 如果请求中有会话ID，尝试获取已有会话
+        if (requestSessionId != null && !requestSessionId.isEmpty()) {
+            DemoSession existingSession = demoSessions.getIfPresent(requestSessionId);
+            if (existingSession != null) {
+                // 更新最后访问时间
+                existingSession.setLastAccessedAt(LocalDateTime.now());
+                log.debug("复用已有会话: sessionId={}, tempUserId={}",
+                        existingSession.getSessionId(), existingSession.getTempUserId());
+                return existingSession;
+            }
+            // 会话已过期或不存在，记录日志后创建新会话
+            log.info("会话不存在或已过期，创建新会话: requestedSessionId={}", requestSessionId);
+        }
+
+        // 创建新会话
+        String newSessionId = "demo-" + UUID.randomUUID().toString();
+        Long newTempUserId = tempUserIdGenerator.decrementAndGet();
+        LocalDateTime now = LocalDateTime.now();
+
+        DemoSession newSession = new DemoSession(newTempUserId, newSessionId, now, now);
+        demoSessions.put(newSessionId, newSession);
+
+        log.info("创建新的Demo会话: sessionId={}, tempUserId={}", newSessionId, newTempUserId);
+
+        return newSession;
+    }
+
+    /**
+     * 获取会话统计信息（用于调试）
+     */
+    @GetMapping("/session-stats")
+    @Operation(summary = "获取Demo会话统计", description = "返回当前活跃的Demo会话数量和缓存状态")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Object>>> getSessionStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("activeSessions", demoSessions.estimatedSize());
+        stats.put("cacheStats", demoSessions.stats().toString());
+        return ResponseEntity.ok(ApiResponse.success(stats));
+    }
+
     // ==================== LinUCB 测试端点 ====================
 
     @PostMapping("/linucb-test")
@@ -383,7 +494,17 @@ public class AIPublicDemoController {
 
     @lombok.Data
     public static class DemoExecuteRequest {
+        /**
+         * 用户输入的自然语言
+         */
         private String userInput;
+
+        /**
+         * 会话ID (可选)
+         * - 如果提供：尝试延续已有会话
+         * - 如果不提供：创建新会话
+         */
+        private String sessionId;
     }
 
     @lombok.Data
@@ -409,5 +530,11 @@ public class AIPublicDemoController {
         private int matchLayer;
         private boolean canExecuteInDemo;
         private String toolName;
+
+        /**
+         * 会话ID
+         * 前端可以保存此ID用于后续的多轮对话
+         */
+        private String sessionId;
     }
 }
