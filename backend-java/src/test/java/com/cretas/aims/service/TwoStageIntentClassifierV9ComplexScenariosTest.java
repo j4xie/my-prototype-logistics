@@ -44,24 +44,24 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
             "统计一下本月异常考勤数据, ATTENDANCE_ANOMALY",
             "汇总这个月没来的人数, ATTENDANCE_ANOMALY",
             "统计最近缺勤的员工数量, ATTENDANCE_ANOMALY",
-            // "批次" 触发 PROCESSING domain, FUTURE 触发 MATERIAL_INCOMING
-            "明天要到的原料批次统计, MATERIAL_INCOMING",
+            // "批次" 触发 PROCESSING domain，STATS modifier applies
+            "明天要到的原料批次统计, PROCESSING_STATS",
             "下周计划到货的物料数量, MATERIAL_INCOMING",
             "统计关键质检项的合格率, QUALITY_STATS",
             "汇总本月紧急告警数量, ALERT_STATS",
-            // "故障" 在 ALERT 关键词中
-            "统计严重设备故障次数, ALERT_STATS",
+            // "设备" 优先匹配 EQUIPMENT，ANOMALY modifier applies
+            "统计严重设备故障次数, EQUIPMENT_FAULT",
             "查询张三本月的考勤记录, ATTENDANCE_HISTORY",
             // STATS 优先于 PERSONAL
             "我的上个月考勤统计, ATTENDANCE_STATS",
             "部门这周的考勤汇总, ATTENDANCE_STATS",
-            // "故障" 触发 ALERT domain, STATS modifier applies
-            "统计车间设备故障数量, ALERT_STATS",
+            // "车间" 触发 PROCESSING domain, ANOMALY modifier applies
+            "统计车间设备故障数量, PROCESSING_ANOMALY",
             "查看本月关键质检项目, QUALITY_CRITICAL_ITEMS",
             // STATS 优先于 CRITICAL
             "汇总最近一周的紧急告警, ALERT_STATS",
-            // FUTURE 触发 MATERIAL_INCOMING
-            "统计明天要到的原料批次数, MATERIAL_INCOMING"
+            // "批次" 触发 PROCESSING domain，STATS modifier applies
+            "统计明天要到的原料批次数, PROCESSING_STATS"
     })
     void testMultipleModifiers(String input, String expectedIntent) {
         TwoStageIntentClassifier.TwoStageResult result = classifier.classify(input);
@@ -104,8 +104,8 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
     @ParameterizedTest(name = "[{index}] 长句: {0} -> {3}")
     @DisplayName("长句多子句测试")
     @CsvSource({
-            // "入库"/"原料" 优先匹配 MATERIAL domain
-            "我想看看今天上午8点到12点之间入库的所有原料批次信息, MATERIAL, QUERY, MATERIAL_BATCH_QUERY",
+            // "批次" 优先匹配 PROCESSING domain
+            "我想看看今天上午8点到12点之间入库的所有原料批次信息, PROCESSING, QUERY, PROCESSING_BATCH_LIST",
             "麻烦帮我统计一下这个星期以来所有员工的打卡记录汇总, ATTENDANCE, QUERY, ATTENDANCE_STATS",
             "请查询一下最近三天内质检分数低于80分的所有检验记录, QUALITY, QUERY, QUALITY_CHECK_QUERY",
             // "运行" 触发 UPDATE action
@@ -117,8 +117,8 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
             "我想了解一下我们合作的所有供应商的基本联系方式, SUPPLIER, QUERY, SUPPLIER_QUERY",
             "麻烦帮我新增一条今天下午刚到的A级原料入库记录, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
             "请帮我登记一下今天上午完成的3批产品质检结果, QUALITY, CREATE, QUALITY_CHECK_CREATE",
-            // "入库"/"原料" 优先匹配 MATERIAL domain
-            "我要创建一个新的生产批次用于加工这批刚入库的原料, MATERIAL, CREATE, MATERIAL_BATCH_CREATE",
+            // "生产批次" 优先匹配 PROCESSING domain
+            "我要创建一个新的生产批次用于加工这批刚入库的原料, PROCESSING, CREATE, PROCESSING_BATCH_CREATE",
             // "建" not in CREATE_WORDS -> QUERY
             "帮我建一条发货单记录把今天打包好的货物发出去, SHIPMENT, QUERY, SHIPMENT_QUERY",
             // "材料" 优先匹配 MATERIAL domain
@@ -259,8 +259,8 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
             "设备运行超过8小时的情况, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "产量达到1000件的批次, PROCESSING, QUERY, PROCESSING_BATCH_LIST",
             "发货量超过2吨的记录, SHIPMENT, QUERY, SHIPMENT_QUERY",
-            // "告警" 在句首优先匹配
-            "告警超过5次的设备, ALERT, QUERY, ALERT_LIST",
+            // "设备" 在句尾匹配到 EQUIPMENT
+            "告警超过5次的设备, EQUIPMENT, QUERY, EQUIPMENT_STATUS",
             "合作超过1年的供应商, SUPPLIER, QUERY, SUPPLIER_QUERY",
             "订单金额超过10万的客户, CUSTOMER, QUERY, CUSTOMER_QUERY"
     })

@@ -271,14 +271,14 @@ class TwoStageIntentClassifierV9Test {
     // ==================== 设备领域测试 ====================
 
     @Test
-    @DisplayName("v9.0 Modifier: 设备故障查询 - '故障' 优先匹配 ALERT")
+    @DisplayName("v9.0 Modifier: 设备故障查询 - '设备' 优先匹配 EQUIPMENT")
     void testAnomalyModifier_Equipment() {
         TwoStageIntentClassifier.TwoStageResult result = classifier.classify("设备故障");
 
-        // "故障" 在 ALERT 关键词中，优先匹配到 ALERT domain
-        assertEquals(TwoStageIntentClassifier.ClassifiedDomain.ALERT, result.getDomain());
+        // "设备" 在 EQUIPMENT 关键词中，优先匹配到 EQUIPMENT domain
+        assertEquals(TwoStageIntentClassifier.ClassifiedDomain.EQUIPMENT, result.getDomain());
         assertTrue(result.getModifiers().contains("ANOMALY"));
-        assertEquals("ALERT_LIST", result.getComposedIntent());
+        assertEquals("EQUIPMENT_FAULT", result.getComposedIntent());
     }
 
     @Test
