@@ -3351,21 +3351,6 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         String intentCode = (intentResult != null && intentResult.getBestMatch() != null)
                 ? intentResult.getBestMatch().getIntentCode() : null;
 
-        // 尝试委托到 ConversationManagementService
-        if (conversationManagementServiceDelegate != null) {
-            try {
-                log.info("[Delegate] 委托 updateConversationMemory 到 conversationManagementServiceDelegate");
-                conversationManagementServiceDelegate.updateConversationMemory(
-                        factoryId, userId, sessionId, userInput, assistantMessage, intentCode);
-                log.debug("[Delegate] updateConversationMemory 委托成功");
-                // 委托成功后，仍然需要执行本地的实体槽位提取逻辑
-                extractAndUpdateEntitySlots(sessionId, response, intentResult);
-                return;
-            } catch (Exception e) {
-                log.warn("[Delegate] updateConversationMemory 委托失败，回退到本地实现: {}", e.getMessage());
-            }
-        }
-
         // 本地实现（作为回退）
         log.info("更新对话记忆: sessionId={}, userInput={}, status={}",
                 sessionId,
