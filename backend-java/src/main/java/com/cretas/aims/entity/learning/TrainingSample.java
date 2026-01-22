@@ -151,6 +151,13 @@ public class TrainingSample {
     private String skeletonId;
 
     /**
+     * 是否为强信号 (高置信度匹配)
+     */
+    @Column(name = "is_strong_signal")
+    @Builder.Default
+    private Boolean isStrongSignal = false;
+
+    /**
      * 创建时间
      */
     @Column(name = "created_at", updatable = false)
