@@ -440,6 +440,55 @@ public class SyntheticDataService {
     }
 
     /**
+     * 修复合成样本使其可用于训练
+     * 设置 isCorrect=true 和 confidence（如果缺失）
+     *
+     * @param factoryId 工厂ID
+     * @return 修复的样本数
+     */
+    @Transactional
+    public int fixSyntheticSamplesForTraining(String factoryId) {
+        log.info("开始修复合成样本使其可用于训练: factoryId={}", factoryId);
+
+        List<TrainingSample> syntheticSamples = trainingSampleRepository
+                .findByFactoryIdAndSource(factoryId, SampleSource.SYNTHETIC);
+
+        if (syntheticSamples.isEmpty()) {
+            log.info("没有找到合成样本");
+            return 0;
+        }
+
+        int fixed = 0;
+        for (TrainingSample sample : syntheticSamples) {
+            boolean needsUpdate = false;
+
+            // 修复 isCorrect
+            if (sample.getIsCorrect() == null) {
+                sample.setIsCorrect(true);
+                needsUpdate = true;
+            }
+
+            // 修复 confidence（从 syntheticConfidence 复制）
+            if (sample.getConfidence() == null || sample.getConfidence().doubleValue() == 0) {
+                if (sample.getSyntheticConfidence() != null) {
+                    sample.setConfidence(sample.getSyntheticConfidence());
+                } else {
+                    sample.setConfidence(java.math.BigDecimal.valueOf(0.7)); // 默认置信度
+                }
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                trainingSampleRepository.save(sample);
+                fixed++;
+            }
+        }
+
+        log.info("合成样本修复完成: 修复了 {} 个样本 (共 {} 个)", fixed, syntheticSamples.size());
+        return fixed;
+    }
+
+    /**
      * 为低频意图生成合成数据
      *
      * @param factoryId 工厂ID
