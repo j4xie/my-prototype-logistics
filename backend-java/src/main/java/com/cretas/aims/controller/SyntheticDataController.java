@@ -4,6 +4,8 @@ import com.cretas.aims.ai.synthetic.SyntheticDataService;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.IntentSampleStat;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticDataStats;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticGenerationResult;
+import com.cretas.aims.service.MixedTrainingDataService;
+import com.cretas.aims.service.MixedTrainingDataService.MixedTrainingDataSet;
 import com.cretas.aims.dto.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,6 +30,7 @@ import java.util.List;
 public class SyntheticDataController {
 
     private final SyntheticDataService syntheticDataService;
+    private final MixedTrainingDataService mixedTrainingDataService;
 
     /**
      * 为指定意图生成合成数据
@@ -140,6 +143,27 @@ public class SyntheticDataController {
         List<IntentSampleStat> stats = syntheticDataService.getIntentSampleStats(factoryId);
 
         return ApiResponse.success(stats);
+    }
+
+    // ==================== 闭环测试: 混合训练数据 ====================
+
+    /**
+     * 获取混合训练数据统计 (闭环验证)
+     * 验证合成数据是否被正确纳入训练集
+     */
+    @GetMapping("/mixed-training/{factoryId}")
+    @Operation(summary = "获取混合训练数据",
+               description = "验证合成数据是否被正确纳入训练集 (闭环测试)")
+    public ApiResponse<MixedTrainingDataSet> getMixedTrainingData(
+            @PathVariable String factoryId,
+            @RequestParam(defaultValue = "0.6") double minConfidence) {
+
+        log.info("API 获取混合训练数据: factory={}, minConfidence={}", factoryId, minConfidence);
+
+        MixedTrainingDataSet dataSet = mixedTrainingDataService.getMixedTrainingData(
+                factoryId, java.math.BigDecimal.valueOf(minConfidence));
+
+        return ApiResponse.success(dataSet);
     }
 
     // ==================== DTO ====================
