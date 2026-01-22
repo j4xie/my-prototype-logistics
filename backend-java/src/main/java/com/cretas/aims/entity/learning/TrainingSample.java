@@ -275,6 +275,7 @@ public class TrainingSample {
             .confidence(BigDecimal.valueOf(confidence))
             .llmResponseIntent(intentCode)
             .sessionId(sessionId)
+            .isStrongSignal(false)
             .build();
     }
 
@@ -293,6 +294,7 @@ public class TrainingSample {
             .sessionId(sessionId)
             .source(SampleSource.REAL)
             .generation(0)
+            .isStrongSignal(false)
             .build();
     }
 
