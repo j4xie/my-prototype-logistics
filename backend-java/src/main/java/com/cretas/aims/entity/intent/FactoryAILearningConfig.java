@@ -98,6 +98,41 @@ public class FactoryAILearningConfig {
     @Builder.Default
     private BigDecimal llmNewKeywordWeight = BigDecimal.valueOf(0.80);
 
+    // ========== EnvScaler 合成数据配置 ==========
+
+    /**
+     * 是否启用合成数据生成
+     */
+    @Column(name = "synthetic_enabled")
+    @Builder.Default
+    private Boolean syntheticEnabled = true;
+
+    /**
+     * 合成数据被禁用的原因 (熔断时填写)
+     */
+    @Column(name = "synthetic_disabled_reason", length = 500)
+    private String syntheticDisabledReason;
+
+    /**
+     * 合成数据被禁用的时间
+     */
+    @Column(name = "synthetic_disabled_at")
+    private LocalDateTime syntheticDisabledAt;
+
+    /**
+     * 合成数据占比上限 (默认0.8)
+     */
+    @Column(name = "synthetic_max_ratio", precision = 3, scale = 2)
+    @Builder.Default
+    private BigDecimal syntheticMaxRatio = BigDecimal.valueOf(0.80);
+
+    /**
+     * 合成数据训练权重 (默认0.5)
+     */
+    @Column(name = "synthetic_weight", precision = 3, scale = 2)
+    @Builder.Default
+    private BigDecimal syntheticWeight = BigDecimal.valueOf(0.50);
+
     // 审计字段
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -177,7 +212,54 @@ public class FactoryAILearningConfig {
             .specificityRecalcEnabled(true)
             .llmFallbackEnabled(true)
             .llmNewKeywordWeight(BigDecimal.valueOf(0.80))
+            // EnvScaler 默认配置
+            .syntheticEnabled(true)
+            .syntheticMaxRatio(BigDecimal.valueOf(0.80))
+            .syntheticWeight(BigDecimal.valueOf(0.50))
             .build();
+    }
+
+    // ========== EnvScaler 合成数据方法 ==========
+
+    /**
+     * 禁用合成数据生成
+     *
+     * @param reason 禁用原因
+     */
+    public void disableSynthetic(String reason) {
+        this.syntheticEnabled = false;
+        this.syntheticDisabledReason = reason;
+        this.syntheticDisabledAt = LocalDateTime.now();
+    }
+
+    /**
+     * 重新启用合成数据生成
+     */
+    public void enableSynthetic() {
+        this.syntheticEnabled = true;
+        this.syntheticDisabledReason = null;
+        this.syntheticDisabledAt = null;
+    }
+
+    /**
+     * 检查合成数据是否启用
+     */
+    public boolean isSyntheticEnabled() {
+        return Boolean.TRUE.equals(syntheticEnabled);
+    }
+
+    /**
+     * 获取合成数据训练权重
+     */
+    public double getSyntheticWeightValue() {
+        return syntheticWeight != null ? syntheticWeight.doubleValue() : 0.5;
+    }
+
+    /**
+     * 获取合成数据最大占比
+     */
+    public double getSyntheticMaxRatioValue() {
+        return syntheticMaxRatio != null ? syntheticMaxRatio.doubleValue() : 0.8;
     }
 
     /**
