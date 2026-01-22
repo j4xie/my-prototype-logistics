@@ -312,6 +312,7 @@ public class TrainingSample {
             .syntheticConfidence(BigDecimal.valueOf(syntheticConfidence))
             .skeletonId(skeletonId)
             .isCorrect(true)  // 合成数据假定正确
+            .isStrongSignal(false)  // 合成数据默认非强信号
             .build();
     }
 
