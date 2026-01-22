@@ -52,6 +52,11 @@ import com.cretas.aims.service.calibration.SelfCorrectionService;
 import com.cretas.aims.service.calibration.CorrectionAgentService;
 import com.cretas.aims.service.calibration.ExternalVerifierService;
 import com.cretas.aims.service.calibration.ToolResultValidatorService;
+import com.cretas.aims.service.executor.ToolExecutionService;
+import com.cretas.aims.service.executor.ConversationManagementService;
+import com.cretas.aims.service.executor.MultiIntentOrchestrationService;
+import com.cretas.aims.service.executor.ResponseBuilderService;
+import com.cretas.aims.service.executor.AnalysisExecutionService;
 import com.cretas.aims.entity.calibration.ToolCallRecord;
 import com.cretas.aims.entity.calibration.CorrectionRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -137,6 +142,18 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     // 新增：工具结果验证器（扩展纠错触发条件）
     private final ToolResultValidatorService toolResultValidatorService;
+
+    // ==================== 子服务委托 (Facade Delegate Pattern) ====================
+    @Autowired @Lazy
+    private ToolExecutionService toolExecutionServiceDelegate;
+    @Autowired @Lazy
+    private ConversationManagementService conversationManagementServiceDelegate;
+    @Autowired @Lazy
+    private MultiIntentOrchestrationService multiIntentOrchestrationServiceDelegate;
+    @Autowired @Lazy
+    private ResponseBuilderService responseBuilderServiceDelegate;
+    @Autowired @Lazy
+    private AnalysisExecutionService analysisExecutionServiceDelegate;
 
     // 处理器映射表: category -> handler
     private final Map<String, IntentHandler> handlerMap = new HashMap<>();
