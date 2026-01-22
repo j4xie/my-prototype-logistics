@@ -4,11 +4,11 @@ import com.cretas.aims.ai.synthetic.SyntheticDataService;
 import com.cretas.aims.config.SyntheticDataConfig;
 import com.cretas.aims.entity.ModelVersion;
 import com.cretas.aims.entity.intent.FactoryAILearningConfig;
-import com.cretas.aims.entity.learning.TrainingSample;
 import com.cretas.aims.repository.FactoryAILearningConfigRepository;
 import com.cretas.aims.repository.ModelVersionRepository;
 import com.cretas.aims.repository.TrainingDataRepository;
-import com.cretas.aims.repository.learning.TrainingSampleRepository;
+import com.cretas.aims.service.MixedTrainingDataService;
+import com.cretas.aims.service.MixedTrainingDataService.MixedTrainingDataSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +36,8 @@ public class ModelTrainingScheduler {
     private final RestTemplate restTemplate;
     private final SyntheticDataConfig syntheticDataConfig;
     private final SyntheticDataService syntheticDataService;
-    private final TrainingSampleRepository trainingSampleRepository;
     private final FactoryAILearningConfigRepository factoryAILearningConfigRepository;
+    private final MixedTrainingDataService mixedTrainingDataService;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -340,47 +340,52 @@ public class ModelTrainingScheduler {
      * @return 混合训练数据组成信息
      */
     public Map<String, Object> trainWithMixedData(String factoryId) {
-        Map<String, Object> composition = new HashMap<>();
-
         log.info("准备工厂 {} 的混合训练数据...", factoryId);
 
-        // 获取真实样本
+        // 使用 MixedTrainingDataService 获取带权重的混合数据
         BigDecimal minConfidence = new BigDecimal("0.6");
-        List<TrainingSample> realSamples = trainingSampleRepository
-                .findRealTrainingReady(factoryId, minConfidence);
-        int realCount = realSamples.size();
+        MixedTrainingDataSet dataSet = mixedTrainingDataService
+                .getMixedTrainingData(factoryId, minConfidence);
 
-        // 获取合成样本
-        List<TrainingSample> syntheticSamples = trainingSampleRepository
-                .findSyntheticTrainingReady(factoryId);
-        int syntheticCount = syntheticSamples.size();
-
-        // 应用比例限制
-        double maxRatio = syntheticDataConfig.getMaxRatio();
-        int maxSyntheticAllowed = (int) Math.floor(realCount * maxRatio / (1 - maxRatio));
-        int syntheticUsed = Math.min(syntheticCount, maxSyntheticAllowed);
-
-        // 如果合成样本超过限制，只取部分
-        List<TrainingSample> syntheticToUse = syntheticSamples.stream()
-                .limit(syntheticUsed)
-                .toList();
-
-        int totalSamples = realCount + syntheticUsed;
-        double actualRatio = totalSamples > 0 ? (double) syntheticUsed / totalSamples : 0;
-
+        // 构建返回信息
+        Map<String, Object> composition = new HashMap<>();
         composition.put("factoryId", factoryId);
-        composition.put("realSampleCount", realCount);
-        composition.put("syntheticSampleCount", syntheticCount);
-        composition.put("syntheticSamplesUsed", syntheticUsed);
-        composition.put("totalSamples", totalSamples);
-        composition.put("configuredMaxRatio", maxRatio);
-        composition.put("actualRatio", actualRatio);
-        composition.put("syntheticWeight", syntheticDataConfig.getSyntheticWeight());
+        composition.put("realSampleCount", dataSet.getRealCount());
+        composition.put("syntheticSampleCount", dataSet.getSyntheticTotal());
+        composition.put("syntheticSamplesUsed", dataSet.getSyntheticCount());
+        composition.put("totalSamples", dataSet.getTotalCount());
+        composition.put("configuredMaxRatio", dataSet.getMaxRatio());
+        composition.put("actualRatio", dataSet.getActualRatio());
+        composition.put("syntheticWeight", dataSet.getSyntheticWeight());
+        composition.put("totalEffectiveWeight", dataSet.getTotalEffectiveWeight());
 
-        log.info("工厂 {} 混合训练数据组成: 真实样本={}, 合成样本={} (使用={}), 总计={}, 合成比例={:.2f}% (上限={:.2f}%)",
-                factoryId, realCount, syntheticCount, syntheticUsed, totalSamples,
-                actualRatio * 100, maxRatio * 100);
+        log.info("工厂 {} 混合训练数据组成: 真实样本={}, 合成样本={} (使用={}), 总计={}, 合成比例={:.1f}% (上限={:.1f}%), 有效权重={:.2f}",
+                factoryId, dataSet.getRealCount(), dataSet.getSyntheticTotal(), dataSet.getSyntheticCount(),
+                dataSet.getTotalCount(), dataSet.getActualRatio() * 100, dataSet.getMaxRatio() * 100,
+                dataSet.getTotalEffectiveWeight());
 
         return composition;
+    }
+
+    /**
+     * 导出混合训练数据用于 AI 服务训练
+     *
+     * @param factoryId 工厂ID
+     * @return 带权重的训练数据列表
+     */
+    public List<Map<String, Object>> exportMixedTrainingData(String factoryId) {
+        BigDecimal minConfidence = new BigDecimal("0.6");
+        return mixedTrainingDataService.exportMixedTrainingData(factoryId, minConfidence);
+    }
+
+    /**
+     * 获取混合训练数据统计
+     *
+     * @param factoryId 工厂ID
+     * @return 统计信息
+     */
+    public Map<String, Object> getMixedTrainingStats(String factoryId) {
+        BigDecimal minConfidence = new BigDecimal("0.6");
+        return mixedTrainingDataService.getMixedTrainingStats(factoryId, minConfidence);
     }
 }

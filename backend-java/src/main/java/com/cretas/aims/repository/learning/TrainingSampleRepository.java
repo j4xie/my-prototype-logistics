@@ -302,6 +302,55 @@ public interface TrainingSampleRepository extends JpaRepository<TrainingSample, 
            "GROUP BY s.skeletonId")
     List<Object[]> countBySkeletonId(@Param("factoryId") String factoryId);
 
+    // ========== 混合训练数据导出 (EnvScaler) ==========
+
+    /**
+     * 导出混合训练数据 (真实 + 合成)
+     * 返回: [userInput, intentCode, source, weight]
+     * - 真实样本权重 = 1.0
+     * - 合成样本权重 = syntheticConfidence * grapeScore (需在 Service 层计算)
+     */
+    @Query("SELECT s.userInput, " +
+           "CASE WHEN s.isCorrect = true THEN s.matchedIntentCode ELSE s.correctIntentCode END, " +
+           "s.source, " +
+           "s.syntheticConfidence, " +
+           "s.grapeScore " +
+           "FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.confidence >= :minConfidence")
+    List<Object[]> exportMixedForTraining(
+        @Param("factoryId") String factoryId,
+        @Param("minConfidence") BigDecimal minConfidence
+    );
+
+    /**
+     * 获取混合训练样本 (真实 + 合成)，用于带权重训练
+     */
+    @Query("SELECT s FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.confidence >= :minConfidence " +
+           "ORDER BY s.source, s.createdAt DESC")
+    List<TrainingSample> findMixedTrainingReady(
+        @Param("factoryId") String factoryId,
+        @Param("minConfidence") BigDecimal minConfidence
+    );
+
+    /**
+     * 统计混合训练数据组成
+     * 返回: [source, count]
+     */
+    @Query("SELECT s.source, COUNT(s) FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.confidence >= :minConfidence " +
+           "GROUP BY s.source")
+    List<Object[]> countMixedTrainingBySource(
+        @Param("factoryId") String factoryId,
+        @Param("minConfidence") BigDecimal minConfidence
+    );
+
     /**
      * 获取 GRAPE 分数分布
      */
