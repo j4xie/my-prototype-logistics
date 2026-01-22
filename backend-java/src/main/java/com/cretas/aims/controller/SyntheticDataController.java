@@ -110,6 +110,25 @@ public class SyntheticDataController {
     }
 
     /**
+     * 修复合成样本使其可用于训练
+     * 设置 isCorrect=true 和 confidence（如果缺失）
+     */
+    @PostMapping("/fix-for-training/{factoryId}")
+    @Operation(summary = "修复合成样本",
+               description = "设置 isCorrect=true 和 confidence，使合成样本可用于混合训练")
+    public ApiResponse<RecalculateResult> fixSyntheticSamplesForTraining(@PathVariable String factoryId) {
+        log.info("API 触发合成样本修复: factory={}", factoryId);
+
+        int fixed = syntheticDataService.fixSyntheticSamplesForTraining(factoryId);
+
+        return ApiResponse.success(RecalculateResult.builder()
+                .factoryId(factoryId)
+                .updatedCount(fixed)
+                .timestamp(java.time.LocalDateTime.now())
+                .build());
+    }
+
+    /**
      * 为低频意图生成合成数据
      * P1 修复: 扩充真实样本少且无合成样本覆盖的意图
      */
