@@ -10,6 +10,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
+ * 样本来源枚举 (EnvScaler增强)
+ */
+public enum SampleSource {
+    /** 真实用户交互 */
+    REAL,
+    /** 程序化合成 (EnvScaler) */
+    SYNTHETIC
+}
+
+/**
  * 训练样本实体
  *
  * 收集所有意图识别样本，用于：
@@ -27,7 +37,9 @@ import java.time.LocalDateTime;
     @Index(name = "idx_ats_intent", columnList = "matched_intent_code"),
     @Index(name = "idx_ats_correct", columnList = "is_correct"),
     @Index(name = "idx_ats_method", columnList = "match_method"),
-    @Index(name = "idx_ats_created", columnList = "created_at")
+    @Index(name = "idx_ats_created", columnList = "created_at"),
+    @Index(name = "idx_ats_source", columnList = "source"),
+    @Index(name = "idx_ats_generation", columnList = "generation")
 })
 @Data
 @Builder
@@ -109,6 +121,44 @@ public class TrainingSample {
      */
     @Column(name = "session_id", length = 100)
     private String sessionId;
+
+    // ========== EnvScaler 合成数据字段 ==========
+
+    /**
+     * 样本来源: REAL (真实用户交互) 或 SYNTHETIC (程序化合成)
+     */
+    @Column(name = "source", length = 20)
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private SampleSource source = SampleSource.REAL;
+
+    /**
+     * 合成世代: 真实数据为0, 合成数据为1
+     * 约束: generation <= 1 (防止递归合成导致模型崩溃)
+     */
+    @Column(name = "generation")
+    @Builder.Default
+    private Integer generation = 0;
+
+    /**
+     * 合成样本的生成器置信度 (0.0-1.0)
+     * 表示骨架+槽位填充的确定性
+     */
+    @Column(name = "synthetic_confidence", precision = 5, scale = 4)
+    private BigDecimal syntheticConfidence;
+
+    /**
+     * GRAPE 筛选分数 (0.0-1.0)
+     * 当前模型对该样本的认可程度，用于筛选分布偏移风险低的样本
+     */
+    @Column(name = "grape_score", precision = 5, scale = 4)
+    private BigDecimal grapeScore;
+
+    /**
+     * 骨架ID (用于追溯合成来源)
+     */
+    @Column(name = "skeleton_id", length = 100)
+    private String skeletonId;
 
     /**
      * 创建时间
@@ -242,6 +292,79 @@ public class TrainingSample {
             .matchMethod(method)
             .confidence(BigDecimal.valueOf(confidence))
             .sessionId(sessionId)
+            .source(SampleSource.REAL)
+            .generation(0)
             .build();
+    }
+
+    // ========== EnvScaler 合成数据方法 ==========
+
+    /**
+     * 创建合成样本 (EnvScaler)
+     *
+     * @param factoryId 工厂ID
+     * @param userInput 合成的用户输入
+     * @param intentCode 意图代码
+     * @param syntheticConfidence 生成器置信度
+     * @param skeletonId 骨架ID
+     * @return 合成样本
+     */
+    public static TrainingSample createSynthetic(String factoryId, String userInput,
+                                                  String intentCode, double syntheticConfidence,
+                                                  String skeletonId) {
+        return TrainingSample.builder()
+            .factoryId(factoryId)
+            .userInput(userInput)
+            .matchedIntentCode(intentCode)
+            .matchMethod(MatchMethod.UNKNOWN)  // 合成样本暂无匹配方法
+            .source(SampleSource.SYNTHETIC)
+            .generation(1)  // 合成数据世代为1
+            .syntheticConfidence(BigDecimal.valueOf(syntheticConfidence))
+            .skeletonId(skeletonId)
+            .isCorrect(true)  // 合成数据假定正确
+            .build();
+    }
+
+    /**
+     * 是否为合成样本
+     */
+    public boolean isSynthetic() {
+        return SampleSource.SYNTHETIC.equals(this.source);
+    }
+
+    /**
+     * 是否为真实样本
+     */
+    public boolean isReal() {
+        return SampleSource.REAL.equals(this.source) || this.source == null;
+    }
+
+    /**
+     * 设置 GRAPE 分数
+     */
+    public void setGrapeScoreValue(double score) {
+        this.grapeScore = BigDecimal.valueOf(score);
+    }
+
+    /**
+     * 是否通过 GRAPE 筛选 (需要分数 > 0)
+     */
+    public boolean hasGrapeScore() {
+        return grapeScore != null && grapeScore.doubleValue() > 0;
+    }
+
+    /**
+     * 获取合成样本的有效训练权重
+     * 真实样本: 1.0
+     * 合成样本: 基于 syntheticConfidence 和 grapeScore 的综合权重
+     */
+    public double getTrainingWeight(double syntheticBaseWeight) {
+        if (isReal()) {
+            return 1.0;
+        }
+        // 合成样本权重 = 基础权重 * 生成器置信度 * GRAPE分数
+        double conf = syntheticConfidence != null ? syntheticConfidence.doubleValue() : 0.5;
+        double grape = grapeScore != null ? grapeScore.doubleValue() : 0.5;
+        return syntheticBaseWeight * conf * grape;
     }
 }

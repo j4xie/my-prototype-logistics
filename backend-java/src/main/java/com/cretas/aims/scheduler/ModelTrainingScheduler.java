@@ -1,8 +1,14 @@
 package com.cretas.aims.scheduler;
 
+import com.cretas.aims.ai.synthetic.SyntheticDataService;
+import com.cretas.aims.config.SyntheticDataConfig;
 import com.cretas.aims.entity.ModelVersion;
+import com.cretas.aims.entity.intent.FactoryAILearningConfig;
+import com.cretas.aims.entity.learning.TrainingSample;
+import com.cretas.aims.repository.FactoryAILearningConfigRepository;
 import com.cretas.aims.repository.ModelVersionRepository;
 import com.cretas.aims.repository.TrainingDataRepository;
+import com.cretas.aims.repository.learning.TrainingSampleRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +16,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +34,10 @@ public class ModelTrainingScheduler {
     private final TrainingDataRepository trainingDataRepository;
     private final ModelVersionRepository modelVersionRepository;
     private final RestTemplate restTemplate;
+    private final SyntheticDataConfig syntheticDataConfig;
+    private final SyntheticDataService syntheticDataService;
+    private final TrainingSampleRepository trainingSampleRepository;
+    private final FactoryAILearningConfigRepository factoryAILearningConfigRepository;
 
     @Value("${ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -71,6 +82,8 @@ public class ModelTrainingScheduler {
 
         for (String factoryId : factories) {
             try {
+                // 在训练前先进行合成数据增强
+                augmentWithSyntheticData(factoryId);
                 checkAndTrainFactory(factoryId);
             } catch (Exception e) {
                 log.error("检查工厂 {} 训练状态失败: {}", factoryId, e.getMessage());
@@ -263,5 +276,111 @@ public class ModelTrainingScheduler {
         status.put("retrainThreshold", retrainThreshold);
 
         return status;
+    }
+
+    // ==================== EnvScaler 混合训练支持 ====================
+
+    /**
+     * 使用合成数据增强训练集
+     *
+     * @param factoryId 工厂ID
+     */
+    public void augmentWithSyntheticData(String factoryId) {
+        // 检查工厂级配置是否启用合成数据
+        Optional<FactoryAILearningConfig> factoryConfigOpt =
+                factoryAILearningConfigRepository.findByFactoryId(factoryId);
+
+        if (factoryConfigOpt.isEmpty()) {
+            log.debug("工厂 {} 无 AI 学习配置，跳过合成数据增强", factoryId);
+            return;
+        }
+
+        FactoryAILearningConfig factoryConfig = factoryConfigOpt.get();
+        if (!factoryConfig.getSyntheticEnabled()) {
+            log.debug("工厂 {} 的合成数据功能已禁用，跳过增强", factoryId);
+            return;
+        }
+
+        // 检查全局配置是否启用合成数据
+        if (!syntheticDataConfig.isEnabled()) {
+            log.debug("全局合成数据功能已禁用，跳过工厂 {} 的增强", factoryId);
+            return;
+        }
+
+        log.info("开始为工厂 {} 进行合成数据增强...", factoryId);
+
+        try {
+            // 调用 SyntheticDataService 生成合成数据
+            List<SyntheticDataService.SyntheticGenerationResult> results =
+                    syntheticDataService.generateForAllIntents(factoryId, 100);
+
+            // 统计生成结果
+            int totalGenerated = results.stream()
+                    .mapToInt(SyntheticDataService.SyntheticGenerationResult::getGenerated)
+                    .sum();
+            int totalSaved = results.stream()
+                    .mapToInt(SyntheticDataService.SyntheticGenerationResult::getSaved)
+                    .sum();
+            long successCount = results.stream()
+                    .filter(SyntheticDataService.SyntheticGenerationResult::isSuccess)
+                    .count();
+
+            log.info("工厂 {} 合成数据增强完成: 处理 {} 个意图, 成功 {}, 生成 {} 个候选, 保存 {} 个样本",
+                    factoryId, results.size(), successCount, totalGenerated, totalSaved);
+
+        } catch (Exception e) {
+            log.error("工厂 {} 合成数据增强失败: {}", factoryId, e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 使用混合数据 (真实 + 合成) 进行训练
+     *
+     * @param factoryId 工厂ID
+     * @return 混合训练数据组成信息
+     */
+    public Map<String, Object> trainWithMixedData(String factoryId) {
+        Map<String, Object> composition = new HashMap<>();
+
+        log.info("准备工厂 {} 的混合训练数据...", factoryId);
+
+        // 获取真实样本
+        BigDecimal minConfidence = new BigDecimal("0.6");
+        List<TrainingSample> realSamples = trainingSampleRepository
+                .findRealTrainingReady(factoryId, minConfidence);
+        int realCount = realSamples.size();
+
+        // 获取合成样本
+        List<TrainingSample> syntheticSamples = trainingSampleRepository
+                .findSyntheticTrainingReady(factoryId);
+        int syntheticCount = syntheticSamples.size();
+
+        // 应用比例限制
+        double maxRatio = syntheticDataConfig.getMaxRatio();
+        int maxSyntheticAllowed = (int) Math.floor(realCount * maxRatio / (1 - maxRatio));
+        int syntheticUsed = Math.min(syntheticCount, maxSyntheticAllowed);
+
+        // 如果合成样本超过限制，只取部分
+        List<TrainingSample> syntheticToUse = syntheticSamples.stream()
+                .limit(syntheticUsed)
+                .toList();
+
+        int totalSamples = realCount + syntheticUsed;
+        double actualRatio = totalSamples > 0 ? (double) syntheticUsed / totalSamples : 0;
+
+        composition.put("factoryId", factoryId);
+        composition.put("realSampleCount", realCount);
+        composition.put("syntheticSampleCount", syntheticCount);
+        composition.put("syntheticSamplesUsed", syntheticUsed);
+        composition.put("totalSamples", totalSamples);
+        composition.put("configuredMaxRatio", maxRatio);
+        composition.put("actualRatio", actualRatio);
+        composition.put("syntheticWeight", syntheticDataConfig.getSyntheticWeight());
+
+        log.info("工厂 {} 混合训练数据组成: 真实样本={}, 合成样本={} (使用={}), 总计={}, 合成比例={:.2f}% (上限={:.2f}%)",
+                factoryId, realCount, syntheticCount, syntheticUsed, totalSamples,
+                actualRatio * 100, maxRatio * 100);
+
+        return composition;
     }
 }

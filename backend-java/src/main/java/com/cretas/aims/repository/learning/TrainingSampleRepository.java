@@ -1,5 +1,6 @@
 package com.cretas.aims.repository.learning;
 
+import com.cretas.aims.entity.learning.SampleSource;
 import com.cretas.aims.entity.learning.TrainingSample;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -168,4 +170,158 @@ public interface TrainingSampleRepository extends JpaRepository<TrainingSample, 
      */
     @Query("SELECT COUNT(s) FROM TrainingSample s WHERE s.factoryId = :factoryId")
     long countByFactory(@Param("factoryId") String factoryId);
+
+    // ========== EnvScaler 合成数据查询 ==========
+
+    /**
+     * 按来源和意图查询样本
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.matchedIntentCode = :intentCode " +
+           "AND s.source = :source ORDER BY s.createdAt DESC")
+    List<TrainingSample> findByIntentCodeAndSource(
+        @Param("intentCode") String intentCode,
+        @Param("source") SampleSource source
+    );
+
+    /**
+     * 获取可用于训练的样本 (按来源)
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.source = :source " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.confidence >= :minConfidence")
+    List<TrainingSample> findTrainingReadyBySource(
+        @Param("factoryId") String factoryId,
+        @Param("source") SampleSource source,
+        @Param("minConfidence") BigDecimal minConfidence
+    );
+
+    /**
+     * 获取真实样本用于训练
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND (s.source = 'REAL' OR s.source IS NULL) " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.confidence >= :minConfidence")
+    List<TrainingSample> findRealTrainingReady(
+        @Param("factoryId") String factoryId,
+        @Param("minConfidence") BigDecimal minConfidence
+    );
+
+    /**
+     * 获取合成样本用于训练 (需要 GRAPE 分数)
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.source = 'SYNTHETIC' " +
+           "AND s.grapeScore IS NOT NULL " +
+           "AND s.grapeScore > 0")
+    List<TrainingSample> findSyntheticTrainingReady(
+        @Param("factoryId") String factoryId
+    );
+
+    /**
+     * 统计真实 vs 合成样本数
+     */
+    @Query("SELECT s.source, COUNT(s) FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.createdAt >= :since " +
+           "GROUP BY s.source")
+    List<Object[]> countBySource(
+        @Param("factoryId") String factoryId,
+        @Param("since") LocalDateTime since
+    );
+
+    /**
+     * 计算真实样本准确率
+     */
+    @Query("SELECT " +
+           "SUM(CASE WHEN s.isCorrect = true THEN 1 ELSE 0 END) * 1.0 / COUNT(s) " +
+           "FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND (s.source = 'REAL' OR s.source IS NULL) " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.createdAt >= :since")
+    Double getRealAccuracy(
+        @Param("factoryId") String factoryId,
+        @Param("since") LocalDateTime since
+    );
+
+    /**
+     * 计算合成样本准确率 (基于后续验证)
+     */
+    @Query("SELECT " +
+           "SUM(CASE WHEN s.isCorrect = true THEN 1 ELSE 0 END) * 1.0 / COUNT(s) " +
+           "FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.source = 'SYNTHETIC' " +
+           "AND s.isCorrect IS NOT NULL " +
+           "AND s.createdAt >= :since")
+    Double getSyntheticAccuracy(
+        @Param("factoryId") String factoryId,
+        @Param("since") LocalDateTime since
+    );
+
+    /**
+     * 获取意图的所有真实样本 (用于骨架构建)
+     */
+    @Query("SELECT s FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.matchedIntentCode = :intentCode " +
+           "AND (s.source = 'REAL' OR s.source IS NULL) " +
+           "AND s.isCorrect = true " +
+           "ORDER BY s.createdAt DESC")
+    List<TrainingSample> findVerifiedRealSamples(
+        @Param("factoryId") String factoryId,
+        @Param("intentCode") String intentCode
+    );
+
+    /**
+     * 删除合成样本 (清理用)
+     */
+    @Modifying
+    @Query("DELETE FROM TrainingSample s WHERE s.factoryId = :factoryId " +
+           "AND s.source = 'SYNTHETIC' " +
+           "AND s.createdAt < :before")
+    int deleteSyntheticBefore(
+        @Param("factoryId") String factoryId,
+        @Param("before") LocalDateTime before
+    );
+
+    /**
+     * 统计骨架ID生成的样本数
+     */
+    @Query("SELECT s.skeletonId, COUNT(s) FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.source = 'SYNTHETIC' " +
+           "GROUP BY s.skeletonId")
+    List<Object[]> countBySkeletonId(@Param("factoryId") String factoryId);
+
+    /**
+     * 获取 GRAPE 分数分布
+     */
+    @Query("SELECT " +
+           "CASE " +
+           "  WHEN s.grapeScore < 0.3 THEN 'LOW' " +
+           "  WHEN s.grapeScore < 0.6 THEN 'MEDIUM' " +
+           "  ELSE 'HIGH' " +
+           "END, COUNT(s) " +
+           "FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.source = 'SYNTHETIC' " +
+           "AND s.grapeScore IS NOT NULL " +
+           "GROUP BY CASE " +
+           "  WHEN s.grapeScore < 0.3 THEN 'LOW' " +
+           "  WHEN s.grapeScore < 0.6 THEN 'MEDIUM' " +
+           "  ELSE 'HIGH' " +
+           "END")
+    List<Object[]> getGrapeScoreDistribution(@Param("factoryId") String factoryId);
+
+    /**
+     * 获取工厂的所有不同意图代码 (用于合成数据生成)
+     */
+    @Query("SELECT DISTINCT s.matchedIntentCode FROM TrainingSample s " +
+           "WHERE s.factoryId = :factoryId " +
+           "AND s.matchedIntentCode IS NOT NULL " +
+           "AND (s.source = 'REAL' OR s.source IS NULL) " +
+           "AND s.isCorrect = true")
+    List<String> findDistinctIntentCodes(@Param("factoryId") String factoryId);
 }
