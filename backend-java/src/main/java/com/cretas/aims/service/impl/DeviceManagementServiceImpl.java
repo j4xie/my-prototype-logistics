@@ -7,6 +7,7 @@ import com.cretas.aims.dto.device.DeviceInfo;
 import com.cretas.aims.dto.device.DeviceStatus;
 import com.cretas.aims.entity.FactoryEquipment;
 import com.cretas.aims.entity.common.UnifiedDeviceType;
+import com.cretas.aims.entity.enums.DeviceCategory;
 import com.cretas.aims.entity.isapi.IsapiDevice;
 import com.cretas.aims.repository.EquipmentRepository;
 import com.cretas.aims.repository.isapi.IsapiDeviceRepository;
@@ -427,14 +428,17 @@ public class DeviceManagementServiceImpl implements DeviceManagementService {
                     .map(this::convertScaleToDeviceInfo)
                     .orElse(null);
         } catch (NumberFormatException e) {
-            // Try by equipment code
-            return equipmentRepository.findAll().stream()
-                    .filter(eq -> eq.getUnifiedDeviceType() == UnifiedDeviceType.SCALE)
-                    .filter(eq -> deviceId.equalsIgnoreCase(eq.getEquipmentCode()) ||
-                                  deviceId.equalsIgnoreCase(eq.getIotDeviceCode()))
-                    .findFirst()
-                    .map(this::convertScaleToDeviceInfo)
-                    .orElse(null);
+            // Try by equipment code using indexed query (avoids findAll() full table scan)
+            Optional<FactoryEquipment> equipment = equipmentRepository
+                    .findByEquipmentCodeIgnoreCaseAndDeviceCategory(deviceId, DeviceCategory.IOT_SCALE);
+
+            // If not found, try by iotDeviceCode
+            if (equipment.isEmpty()) {
+                equipment = equipmentRepository
+                        .findByIotDeviceCodeIgnoreCaseAndDeviceCategory(deviceId, DeviceCategory.IOT_SCALE);
+            }
+
+            return equipment.map(this::convertScaleToDeviceInfo).orElse(null);
         }
     }
 

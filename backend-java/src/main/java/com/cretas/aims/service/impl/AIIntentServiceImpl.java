@@ -449,7 +449,8 @@ public class AIIntentServiceImpl implements AIIntentService {
             TwoStageIntentClassifier.TwoStageResult twoStageResult =
                     twoStageIntentClassifier.classify(userInput);
 
-            if (twoStageResult.isSuccessful() && twoStageResult.getConfidence() >= 0.85) {
+            // v10.0: 提高短路阈值到 0.92，让更多中置信度请求有机会触发 LLM 学习
+            if (twoStageResult.isSuccessful() && twoStageResult.getConfidence() >= 0.92) {
                 String composedIntent = twoStageResult.getComposedIntent();
                 List<AIIntentConfig> allIntents = getAllIntents(factoryId);
 

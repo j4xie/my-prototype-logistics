@@ -473,11 +473,12 @@ export function InventoryDashboardScreen() {
             <Card style={styles.chartCard}>
               <Card.Content>
                 <MobileBarChart
-                  data={expiryWarningData}
+                  labels={expiryWarningData.map(item => item.label)}
+                  data={expiryWarningData.map(item => item.value)}
                   width={screenWidth - 64}
                   height={200}
                   horizontal={false}
-                  showValues
+                  showValuesOnTopOfBars
                   barColor={SMARTBI_THEME.warning}
                 />
               </Card.Content>

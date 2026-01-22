@@ -450,4 +450,23 @@ public interface ProductionPlanRepository extends JpaRepository<ProductionPlan, 
             @Param("factoryId") String factoryId,
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime);
+
+    // ==================== 强制插单审批查询 ====================
+
+    /**
+     * 查找待审批的强制插单计划
+     * 替代 findAll() + stream filter，避免全表扫描
+     *
+     * @param factoryId 工厂ID
+     * @param isForceInserted 是否强制插单
+     * @param requiresApproval 是否需要审批
+     * @param approvalStatus 审批状态
+     * @return 待审批的强制插单计划列表
+     * @since 2026-01-22
+     */
+    List<ProductionPlan> findByFactoryIdAndIsForceInsertedAndRequiresApprovalAndApprovalStatus(
+            String factoryId,
+            Boolean isForceInserted,
+            Boolean requiresApproval,
+            ProductionPlan.ApprovalStatus approvalStatus);
 }

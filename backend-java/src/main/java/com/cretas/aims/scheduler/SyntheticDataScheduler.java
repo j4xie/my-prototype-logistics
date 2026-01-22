@@ -1,6 +1,6 @@
 package com.cretas.aims.scheduler;
 
-import com.cretas.aims.ai.synthetic.SyntheticDataConfig;
+import com.cretas.aims.config.SyntheticDataConfig;
 import com.cretas.aims.ai.synthetic.SyntheticDataService;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticDataStats;
 import com.cretas.aims.ai.synthetic.SyntheticDataService.SyntheticGenerationResult;

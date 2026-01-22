@@ -337,10 +337,14 @@ export function ProcurementDashboardScreen() {
   }, [categories]);
 
   // Prepare line chart data for procurement trend
+  const trendLabels: string[] = useMemo(() => {
+    return procurementTrend.map(item => item.label);
+  }, [procurementTrend]);
+
   const trendData: LineDataSeries[] = useMemo(() => {
     return [{
-      label: '采购金额',
-      data: procurementTrend,
+      name: '采购金额',
+      data: procurementTrend.map(item => item.value),
       color: SMARTBI_THEME.primary,
     }];
   }, [procurementTrend]);
@@ -525,11 +529,11 @@ export function ProcurementDashboardScreen() {
             <Card style={styles.chartCard}>
               <Card.Content>
                 <MobileLineChart
-                  data={trendData}
+                  labels={trendLabels}
+                  datasets={trendData}
                   width={screenWidth - 64}
                   height={200}
                   showDots
-                  showGrid
                   yAxisSuffix="万"
                 />
               </Card.Content>

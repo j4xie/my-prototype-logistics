@@ -200,10 +200,14 @@ export function QualityDashboardScreen() {
   }, [defectItems]);
 
   // Prepare trend data for MobileLineChart
+  const trendLabels: string[] = useMemo(() => {
+    return qualityTrend.map(item => item.label);
+  }, [qualityTrend]);
+
   const trendData: LineDataSeries[] = useMemo(() => {
     return [{
-      label: 'FPY',
-      data: qualityTrend,
+      name: 'FPY',
+      data: qualityTrend.map(item => item.value),
       color: SMARTBI_THEME.secondary,
     }];
   }, [qualityTrend]);
@@ -403,11 +407,12 @@ export function QualityDashboardScreen() {
             <Card style={styles.chartCard}>
               <Card.Content>
                 <MobileBarChart
-                  data={barChartData}
+                  labels={barChartData.map(item => item.label)}
+                  data={barChartData.map(item => item.value)}
                   width={screenWidth - 64}
                   height={220}
                   horizontal={false}
-                  showValues
+                  showValuesOnTopOfBars
                   barColor={SMARTBI_THEME.danger}
                 />
               </Card.Content>
@@ -443,11 +448,11 @@ export function QualityDashboardScreen() {
             <Card style={styles.chartCard}>
               <Card.Content>
                 <MobileLineChart
-                  data={trendData}
+                  labels={trendLabels}
+                  datasets={trendData}
                   width={screenWidth - 64}
                   height={200}
                   showDots
-                  showGrid
                   yAxisSuffix="%"
                 />
               </Card.Content>

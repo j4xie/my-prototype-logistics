@@ -107,15 +107,46 @@ export default function MobileLineChart({
   fillShadow = false,
   onDataPointClick,
 }: MobileLineChartProps): React.ReactElement {
+  // Edge case: Check if there's data to display
+  const hasData = useMemo(() => {
+    if (data && data.length > 0 && labels.length > 0) return true;
+    if (datasets && datasets.length > 0 && datasets.some(ds => ds.data.length > 0) && labels.length > 0) return true;
+    return false;
+  }, [data, datasets, labels]);
+
+  // Normalize data: ensure labels and data arrays match, handle negative values for fromZero
+  const normalizedLabels = useMemo(() => {
+    if (!hasData) return [];
+    if (data) {
+      const length = Math.min(labels.length, data.length);
+      return labels.slice(0, length);
+    }
+    if (datasets && datasets.length > 0) {
+      const maxDataLength = Math.max(...datasets.map(ds => ds.data.length));
+      return labels.slice(0, Math.min(labels.length, maxDataLength));
+    }
+    return [];
+  }, [labels, data, datasets, hasData]);
+
   // Build chart data structure
   const chartData = useMemo(() => {
+    if (!hasData) {
+      return {
+        labels: [],
+        datasets: [{ data: [0] }],
+        legend: [],
+      };
+    }
+
     // Single data series
     if (data && !datasets) {
+      const length = Math.min(labels.length, data.length);
+      const normalizedData = data.slice(0, length).map(v => v ?? 0);
       return {
-        labels,
+        labels: normalizedLabels,
         datasets: [
           {
-            data,
+            data: normalizedData.length > 0 ? normalizedData : [0],
             color: (opacity = 1) => `rgba(59, 130, 246, ${opacity})`,
             strokeWidth: 2,
           },
@@ -126,10 +157,11 @@ export default function MobileLineChart({
 
     // Multiple data series
     if (datasets) {
+      const targetLength = normalizedLabels.length;
       return {
-        labels,
+        labels: normalizedLabels,
         datasets: datasets.map((series, index) => ({
-          data: series.data,
+          data: series.data.slice(0, targetLength).map(v => v ?? 0),
           color: (opacity = 1) => {
             const baseColor = series.color || CHART_COLORS.series[index % CHART_COLORS.series.length] || CHART_COLORS.primary;
             // Convert hex to rgba
@@ -150,7 +182,7 @@ export default function MobileLineChart({
       datasets: [{ data: [0] }],
       legend: [],
     };
-  }, [data, datasets, labels, showLegend]);
+  }, [data, datasets, normalizedLabels, showLegend, hasData]);
 
   // Chart configuration
   const chartConfig = useMemo(() => ({
@@ -195,6 +227,22 @@ export default function MobileLineChart({
       });
     }
   };
+
+  // Edge case: Show "No data" message when data is empty
+  if (!hasData) {
+    return (
+      <Surface style={styles.container} elevation={1}>
+        {title && (
+          <Text variant="titleMedium" style={styles.title}>
+            {title}
+          </Text>
+        )}
+        <View style={styles.noDataContainer}>
+          <Text style={styles.noDataText}>No data available</Text>
+        </View>
+      </Surface>
+    );
+  }
 
   return (
     <Surface style={styles.container} elevation={1}>
@@ -290,5 +338,14 @@ const styles = StyleSheet.create({
   },
   chart: {
     borderRadius: 8,
+  },
+  noDataContainer: {
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#9CA3AF',
   },
 });

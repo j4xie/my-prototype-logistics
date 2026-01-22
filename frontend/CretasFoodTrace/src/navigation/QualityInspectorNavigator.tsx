@@ -18,6 +18,9 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { QI_COLORS, QualityInspectorStackParamList } from '../types/qualityInspector';
 
+// Type for Ionicons names
+type IoniconsName = keyof typeof Ionicons.glyphMap;
+
 // 屏幕组件导入
 import QIHomeScreen from '../screens/quality-inspector/QIHomeScreen';
 import QIInspectListScreen from '../screens/quality-inspector/QIInspectListScreen';
@@ -66,8 +69,10 @@ const TabIcon = ({
   size: number;
 }) => {
   const iconName = TAB_ICONS[routeName] || 'ellipse';
-  const iconWithOutline = focused ? iconName : `${iconName}-outline`;
-  return <Ionicons name={iconWithOutline as any} size={size} color={color} />;
+  const iconWithOutline: IoniconsName = focused
+    ? iconName
+    : (`${iconName}-outline` as IoniconsName);
+  return <Ionicons name={iconWithOutline} size={size} color={color} />;
 };
 
 // ============================================

@@ -222,6 +222,15 @@ public interface ProductionBatchRepository extends JpaRepository<ProductionBatch
     java.util.List<ProductionBatch> findByIdIn(@Param("ids") Collection<Long> ids);
 
     /**
+     * 批量查询多个生产批次（带工厂ID过滤）- 解决 N+1 查询问题
+     * @param ids 生产批次ID集合
+     * @param factoryId 工厂ID
+     * @return 生产批次列表
+     */
+    @Query("SELECT b FROM ProductionBatch b WHERE b.id IN :ids AND b.factoryId = :factoryId")
+    java.util.List<ProductionBatch> findByIdInAndFactoryId(@Param("ids") Collection<Long> ids, @Param("factoryId") String factoryId);
+
+    /**
      * 按产品类型统计生产数量
      * 返回: [productTypeId, productName, SUM(actualQuantity), unit]
      *

@@ -20,3 +20,8 @@ export { default as ProcurementDashboardScreen } from './ProcurementDashboardScr
 
 // 销售与客户分析
 export { default as SalesFunnelScreen } from './SalesFunnelScreen';
+export { default as CustomerRFMScreen } from './CustomerRFMScreen';
+
+// 财务深度分析
+export { default as CashFlowScreen } from './CashFlowScreen';
+export { default as FinancialRatiosScreen } from './FinancialRatiosScreen';

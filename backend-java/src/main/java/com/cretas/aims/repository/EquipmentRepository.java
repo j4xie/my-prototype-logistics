@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 设备数据访问接口
@@ -155,4 +156,31 @@ public interface EquipmentRepository extends JpaRepository<FactoryEquipment, Lon
      * @return 设备列表
      */
     List<FactoryEquipment> findByIdIn(java.util.Collection<Long> ids);
+
+    /**
+     * 查询所有不重复的工厂ID - 解决 findAll() 全表扫描性能问题
+     * @return 工厂ID集合
+     */
+    @Query("SELECT DISTINCT e.factoryId FROM FactoryEquipment e WHERE e.deletedAt IS NULL")
+    Set<String> findDistinctFactoryIds();
+
+    /**
+     * 根据设备编码和设备类别查找设备（忽略大小写）
+     * 解决 findAll() 全表扫描性能问题
+     * @param equipmentCode 设备编码
+     * @param deviceCategory 设备类别
+     * @return 设备（可选）
+     */
+    Optional<FactoryEquipment> findByEquipmentCodeIgnoreCaseAndDeviceCategory(
+            String equipmentCode, com.cretas.aims.entity.enums.DeviceCategory deviceCategory);
+
+    /**
+     * 根据IoT设备编码和设备类别查找设备（忽略大小写）
+     * 解决 findAll() 全表扫描性能问题
+     * @param iotDeviceCode IoT设备编码
+     * @param deviceCategory 设备类别
+     * @return 设备（可选）
+     */
+    Optional<FactoryEquipment> findByIotDeviceCodeIgnoreCaseAndDeviceCategory(
+            String iotDeviceCode, com.cretas.aims.entity.enums.DeviceCategory deviceCategory);
 }

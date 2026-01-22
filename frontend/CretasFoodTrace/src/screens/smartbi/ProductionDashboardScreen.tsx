@@ -231,10 +231,14 @@ export function ProductionDashboardScreen() {
   }, [productionLines]);
 
   // Prepare trend data for MobileLineChart
+  const trendLabels: string[] = useMemo(() => {
+    return oeeTrend.map(item => item.label);
+  }, [oeeTrend]);
+
   const trendData: LineDataSeries[] = useMemo(() => {
     return [{
-      label: 'OEE',
-      data: oeeTrend,
+      name: 'OEE',
+      data: oeeTrend.map(item => item.value),
       color: SMARTBI_THEME.primary,
     }];
   }, [oeeTrend]);
@@ -441,11 +445,11 @@ export function ProductionDashboardScreen() {
             <Card style={styles.chartCard}>
               <Card.Content>
                 <MobileLineChart
-                  data={trendData}
+                  labels={trendLabels}
+                  datasets={trendData}
                   width={screenWidth - 64}
                   height={200}
                   showDots
-                  showGrid
                   yAxisSuffix="%"
                 />
               </Card.Content>

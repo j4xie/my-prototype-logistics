@@ -182,4 +182,20 @@ public class SyntheticDataConfig {
     public double getMaxSyntheticRatio() {
         return this.maxRatio;
     }
+
+    // ============================================================
+    // Circuit Breaker additional fields
+    // ============================================================
+
+    /**
+     * 准确率阈值 (熔断器使用)
+     * 当准确率低于此值时触发熔断
+     */
+    private java.math.BigDecimal accuracyThreshold = java.math.BigDecimal.valueOf(0.85);
+
+    /**
+     * 分布漂移阈值 (熔断器使用)
+     * 当分布漂移超过此值时触发熔断
+     */
+    private java.math.BigDecimal distributionDriftThreshold = java.math.BigDecimal.valueOf(0.10);
 }
