@@ -60,6 +60,12 @@ export function FAManagementScreen() {
               onPress={() => navigation.navigate('UnifiedDeviceManagement')}
             />
             <GridItem
+              icon="chart-line"
+              title={t('management.equipmentAnalysis', '设备分析')}
+              color="#667eea"
+              onPress={() => navigation.navigate('EquipmentAnalysis')}
+            />
+            <GridItem
               icon="domain"
               title={t('management.departmentManagement')}
               color="#fa8c16"

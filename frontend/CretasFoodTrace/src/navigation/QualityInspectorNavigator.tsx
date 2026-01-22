@@ -28,6 +28,7 @@ import QIBatchSelectScreen from '../screens/quality-inspector/QIBatchSelectScree
 import QIScanScreen from '../screens/quality-inspector/QIScanScreen';
 import QIFormScreen from '../screens/quality-inspector/QIFormScreen';
 import QIVoiceScreen from '../screens/quality-inspector/QIVoiceScreen';
+import VoiceInspectionResultScreen from '../screens/quality-inspector/VoiceInspectionResultScreen';
 import QICameraScreen from '../screens/quality-inspector/QICameraScreen';
 import QIResultScreen from '../screens/quality-inspector/QIResultScreen';
 import QIRecordsScreen from '../screens/quality-inspector/QIRecordsScreen';
@@ -141,6 +142,11 @@ function InspectStack() {
         name="QIVoice"
         component={QIVoiceScreen}
         options={{ title: '语音质检' }}
+      />
+      <Stack.Screen
+        name="QIVoiceResult"
+        component={VoiceInspectionResultScreen}
+        options={{ title: '语音质检结果' }}
       />
       <Stack.Screen
         name="QICamera"

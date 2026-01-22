@@ -28,6 +28,7 @@ import { FormTemplateDetailScreen } from "../../screens/factory-admin/config/For
 import RuleConfigurationScreen from "../../screens/management/RuleConfigurationScreen";
 import AIBusinessInitScreen from "../../screens/factory-admin/config/AIBusinessInitScreen";
 import EncodingRuleConfigScreen from "../../screens/factory-admin/config/EncodingRuleConfigScreen";
+import { CodeRuleDetailScreen } from "../../screens/factory-admin/config/CodeRuleDetailScreen";
 import QualityCheckItemConfigScreen from "../../screens/factory-admin/config/QualityCheckItemConfigScreen";
 import QualityCheckItemDetailScreen from "../../screens/factory-admin/management/QualityCheckItemDetailScreen";
 import SopConfigScreen from "../../screens/management/SopConfigScreen";
@@ -59,6 +60,9 @@ import { UnifiedDeviceManagementScreen } from "../../screens/factory-admin/devic
 // 标签自动识别监控
 import { LabelRecognitionMonitorScreen } from "../../screens/production/LabelRecognitionMonitorScreen";
 
+// 设备智能分析
+import { EquipmentAnalysisScreen } from "../../screens/factory-admin/equipment/EquipmentAnalysisScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -83,6 +87,13 @@ export function FAManagementStackNavigator() {
         name="EquipmentList"
         component={EquipmentManagementScreen}
         options={{ title: "设备管理" }}
+      />
+
+      {/* 设备智能分析 */}
+      <Stack.Screen
+        name="EquipmentAnalysis"
+        component={EquipmentAnalysisScreen}
+        options={{ title: "设备智能分析" }}
       />
 
       {/* 员工详情 - 临时使用员工列表 */}
@@ -193,6 +204,13 @@ export function FAManagementStackNavigator() {
         name="EncodingRuleConfig"
         component={EncodingRuleConfigScreen}
         options={{ title: "编码规则" }}
+      />
+
+      {/* 编码规则详情/编辑 */}
+      <Stack.Screen
+        name="CodeRuleDetail"
+        component={CodeRuleDetailScreen}
+        options={{ title: "编码规则详情" }}
       />
 
       {/* 质检项配置 */}
