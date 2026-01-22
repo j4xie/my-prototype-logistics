@@ -32,7 +32,9 @@ import com.cretas.aims.service.ConversationMemoryService;
 import com.cretas.aims.service.MultiLabelIntentClassifier;
 import com.cretas.aims.service.QueryPreprocessorService;
 import com.cretas.aims.service.TwoStageIntentClassifier;
-import com.cretas.aims.service.impl.IntentConfigRollbackService;
+import com.cretas.aims.service.SemanticRouterService;
+import com.cretas.aims.service.LongTextHandler;
+import com.cretas.aims.dto.intent.RouteDecision;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
 import com.cretas.aims.dto.conversation.ConversationContext;
@@ -109,10 +111,34 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final IntentKnowledgeBase knowledgeBase;
 
     /**
+     * v11.0: 语义路由器服务
+     * 在 LLM 调用前进行向量相似度快速决策
+     */
+    private final SemanticRouterService semanticRouterService;
+
+    /**
+     * v11.0: 长文本处理器
+     * 对超长输入进行摘要，避免 LLM 调用超时
+     */
+    private final LongTextHandler longTextHandler;
+
+    /**
      * 是否启用查询预处理
      */
     @Value("${cretas.ai.preprocess.enabled:true}")
     private boolean preprocessEnabled;
+
+    /**
+     * v11.0: 是否启用语义路由器
+     */
+    @Value("${cretas.ai.semantic-router.enabled:true}")
+    private boolean semanticRouterEnabled;
+
+    /**
+     * v11.0: 是否启用长文本处理
+     */
+    @Value("${cretas.ai.long-text.enabled:true}")
+    private boolean longTextEnabled;
 
     // ==================== 意图识别 ====================
 
@@ -305,6 +331,86 @@ public class AIIntentServiceImpl implements AIIntentService {
                 log.info("Query preprocessed: '{}' -> '{}'", userInput, processedInput);
             } catch (Exception e) {
                 log.warn("Query preprocessing failed, using original input", e);
+            }
+        }
+
+        // ========== v11.0: 长文本处理 ==========
+        // 对超长输入进行摘要，避免 LLM 调用超时
+        if (longTextEnabled && longTextHandler != null && longTextHandler.needsProcessing(processedInput)) {
+            try {
+                String originalLength = String.valueOf(processedInput.length());
+                processedInput = longTextHandler.processForIntent(processedInput);
+                log.info("v11.0 LongTextHandler: {}字 -> {}字", originalLength, processedInput.length());
+            } catch (Exception e) {
+                log.warn("Long text processing failed, using original input: {}", e.getMessage());
+            }
+        }
+
+        // ========== v11.0: 语义路由器快速决策 ==========
+        // 在 LLM 调用前使用向量相似度做快速路由决策
+        // - DIRECT_EXECUTE (score >= 0.92): 直接返回，跳过 LLM
+        // - NEED_RERANKING (score >= 0.75): 只对 top candidates 调用 LLM 确认
+        // - NEED_FULL_LLM (score < 0.75): 走完整 LLM 流程
+        if (semanticRouterEnabled && semanticRouterService.isAvailable()) {
+            try {
+                RouteDecision routeDecision = semanticRouterService.route(factoryId, processedInput, topN);
+
+                if (routeDecision != null) {
+                    log.info("v11.0 SemanticRouter: type={}, score={:.3f}, intent={}, latency={}ms",
+                            routeDecision.getRouteType(),
+                            routeDecision.getTopScore(),
+                            routeDecision.getBestMatchIntentCode(),
+                            routeDecision.getRouteLatencyMs());
+
+                    // DIRECT_EXECUTE: 高置信度，直接返回
+                    if (routeDecision.canDirectExecute()) {
+                        IntentMatchResult directResult = convertRouteDecisionToResult(
+                                routeDecision, userInput, processedInput, enhancedResult);
+
+                        // 附加预处理结果
+                        if (preprocessedQuery != null) {
+                            directResult.setPreprocessedQuery(preprocessedQuery);
+                        }
+
+                        // 记录匹配
+                        saveIntentMatchRecord(directResult, factoryId, userId, sessionId, false);
+
+                        log.info("v11.0 DIRECT_EXECUTE: intent={}, score={:.3f}, saved {}ms by skipping LLM",
+                                routeDecision.getBestMatchIntentCode(),
+                                routeDecision.getTopScore(),
+                                estimateLLMSavings());
+
+                        return applyNegationConversion(directResult, enhancedResult, factoryId);
+                    }
+
+                    // NEED_RERANKING: 中等置信度，使用候选进行 LLM Reranking
+                    if (routeDecision.needsReranking() && !routeDecision.getCandidates().isEmpty()) {
+                        IntentMatchResult rerankingResult = performSemanticRouterReranking(
+                                routeDecision, processedInput, userInput, factoryId,
+                                userId, userRole, enhancedResult);
+
+                        if (rerankingResult != null && rerankingResult.hasMatch()) {
+                            // 附加预处理结果
+                            if (preprocessedQuery != null) {
+                                rerankingResult.setPreprocessedQuery(preprocessedQuery);
+                            }
+
+                            log.info("v11.0 NEED_RERANKING completed: intent={}, finalScore={:.3f}",
+                                    rerankingResult.getBestMatch().getIntentCode(),
+                                    rerankingResult.getConfidence());
+
+                            return applyNegationConversion(rerankingResult, enhancedResult, factoryId);
+                        }
+                        // Reranking 失败，继续走完整流程
+                        log.debug("v11.0 NEED_RERANKING failed, falling through to full LLM");
+                    }
+
+                    // NEED_FULL_LLM: 低置信度，继续走完整流程
+                    log.debug("v11.0 NEED_FULL_LLM: proceeding to doRecognizeIntentWithConfidence");
+                }
+            } catch (Exception e) {
+                log.warn("v11.0 SemanticRouter failed, falling back to standard flow: {}", e.getMessage());
+                // 继续走标准流程
             }
         }
 
@@ -2631,6 +2737,187 @@ public class AIIntentServiceImpl implements AIIntentService {
     private String truncate(String s, int maxLen) {
         if (s == null) return "";
         return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
+    }
+
+    // ==================== v11.0 语义路由器辅助方法 ====================
+
+    /**
+     * 将 RouteDecision 转换为 IntentMatchResult
+     *
+     * @param routeDecision 路由决策
+     * @param originalInput 原始用户输入
+     * @param processedInput 预处理后的输入
+     * @param enhancedResult 增强预处理结果
+     * @return IntentMatchResult
+     */
+    private IntentMatchResult convertRouteDecisionToResult(
+            RouteDecision routeDecision,
+            String originalInput,
+            String processedInput,
+            QueryPreprocessorService.EnhancedPreprocessResult enhancedResult) {
+
+        AIIntentConfig bestIntent = routeDecision.getBestMatchIntent();
+        if (bestIntent == null) {
+            return IntentMatchResult.empty(originalInput);
+        }
+
+        // 检测操作类型
+        ActionType actionType = knowledgeBase.detectActionType(processedInput.toLowerCase().trim());
+
+        // 转换候选列表
+        List<CandidateIntent> candidates = routeDecision.getCandidates().stream()
+                .map(c -> CandidateIntent.builder()
+                        .intentCode(c.getIntentCode())
+                        .intentName(c.getIntentName())
+                        .intentCategory(c.getIntentConfig() != null ? c.getIntentConfig().getIntentCategory() : null)
+                        .confidence(c.getScore())
+                        .matchScore((int)(c.getScore() * 100))
+                        .matchedKeywords(Collections.emptyList())
+                        .matchMethod(MatchMethod.SEMANTIC)
+                        .description(c.getDescription())
+                        .build())
+                .collect(Collectors.toList());
+
+        return IntentMatchResult.builder()
+                .bestMatch(bestIntent)
+                .topCandidates(candidates)
+                .confidence(routeDecision.getTopScore())
+                .matchMethod(MatchMethod.SEMANTIC)
+                .matchedKeywords(Collections.emptyList())
+                .isStrongSignal(routeDecision.getTopScore() >= 0.92)
+                .requiresConfirmation(false)
+                .userInput(originalInput)
+                .actionType(actionType)
+                .build();
+    }
+
+    /**
+     * 执行语义路由器的 LLM Reranking
+     *
+     * 使用 RouteDecision 中的候选列表进行快速 LLM 确认
+     *
+     * @param routeDecision 路由决策
+     * @param processedInput 预处理后的输入
+     * @param originalInput 原始用户输入
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param userRole 用户角色
+     * @param enhancedResult 增强预处理结果
+     * @return IntentMatchResult 或 null（如果 Reranking 失败）
+     */
+    private IntentMatchResult performSemanticRouterReranking(
+            RouteDecision routeDecision,
+            String processedInput,
+            String originalInput,
+            String factoryId,
+            Long userId,
+            String userRole,
+            QueryPreprocessorService.EnhancedPreprocessResult enhancedResult) {
+
+        try {
+            // 将 RouteDecision 候选转换为 CandidateIntent 列表
+            List<CandidateIntent> candidates = routeDecision.getCandidates().stream()
+                    .map(c -> CandidateIntent.builder()
+                            .intentCode(c.getIntentCode())
+                            .intentName(c.getIntentName())
+                            .intentCategory(c.getIntentConfig() != null ? c.getIntentConfig().getIntentCategory() : null)
+                            .confidence(c.getScore())
+                            .matchScore((int)(c.getScore() * 100))
+                            .matchedKeywords(Collections.emptyList())
+                            .matchMethod(MatchMethod.SEMANTIC)
+                            .description(c.getDescription())
+                            .build())
+                    .collect(Collectors.toList());
+
+            if (candidates.isEmpty()) {
+                return null;
+            }
+
+            // 检测操作类型
+            ActionType actionType = knowledgeBase.detectActionType(processedInput.toLowerCase().trim());
+
+            // 构建初始结果用于 Reranking
+            IntentMatchResult initialResult = IntentMatchResult.builder()
+                    .bestMatch(routeDecision.getBestMatchIntent())
+                    .topCandidates(candidates)
+                    .confidence(routeDecision.getTopScore())
+                    .matchMethod(MatchMethod.SEMANTIC)
+                    .matchedKeywords(Collections.emptyList())
+                    .isStrongSignal(false)
+                    .requiresConfirmation(true)
+                    .userInput(originalInput)
+                    .actionType(actionType)
+                    .build();
+
+            // 调用现有的 LLM Reranking 方法
+            IntentMatchResult rerankingResult = tryLlmReranking(
+                    processedInput, factoryId, candidates, initialResult, actionType, userId, userRole);
+
+            return rerankingResult;
+
+        } catch (Exception e) {
+            log.warn("v11.0 performSemanticRouterReranking failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 应用否定语义转换
+     *
+     * 提取自 recognizeIntentWithConfidence 的否定语义处理逻辑
+     *
+     * @param result 原始匹配结果
+     * @param enhancedResult 增强预处理结果
+     * @param factoryId 工厂ID
+     * @return 转换后的结果
+     */
+    private IntentMatchResult applyNegationConversion(
+            IntentMatchResult result,
+            QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
+            String factoryId) {
+
+        if (result == null || result.getBestMatch() == null || enhancedResult == null) {
+            return result;
+        }
+
+        QueryPreprocessorService.NegationInfo negationInfo = enhancedResult.getNegationInfo();
+        if (negationInfo == null || !negationInfo.hasNegation()) {
+            return result;
+        }
+
+        String originalIntentCode = result.getBestMatch().getIntentCode();
+        String convertedIntentCode = convertNegationIntent(originalIntentCode, true);
+
+        if (!convertedIntentCode.equals(originalIntentCode)) {
+            // 查找转换后的意图配置
+            AIIntentConfig convertedConfig = getIntentConfigByCode(factoryId, convertedIntentCode);
+            if (convertedConfig != null) {
+                log.info("v11.0否定语义转换: {} -> {}, 否定词='{}'",
+                        originalIntentCode, convertedIntentCode, negationInfo.getNegationWord());
+
+                return result.toBuilder()
+                        .bestMatch(convertedConfig)
+                        .build();
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 估算跳过 LLM 调用节省的时间 (毫秒)
+     *
+     * 基于统计数据估算：
+     * - 平均 LLM Fallback 耗时: 800-1500ms
+     * - 平均 LLM Reranking 耗时: 500-1000ms
+     *
+     * @return 估算节省的毫秒数
+     */
+    private long estimateLLMSavings() {
+        // 基于配置的超时时间估算
+        // 实际节省时间取决于 LLM 响应速度
+        int timeout = matchingConfig.getLlmFallback().getTimeout();
+        return timeout > 0 ? Math.min(timeout / 2, 1000L) : 800L;
     }
 
     // ==================== 反馈记录实现 (委托到 intentFeedbackService) ====================
