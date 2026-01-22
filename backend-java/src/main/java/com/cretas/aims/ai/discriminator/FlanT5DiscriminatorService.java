@@ -264,7 +264,7 @@ public class FlanT5DiscriminatorService {
         // Validate input first
         ValidationResult validation = inputValidator.validate(userInput);
 
-        // Handle invalid/irrelevant inputs
+        // Handle invalid/irrelevant/vague inputs - return all zeros
         if (!validation.isValid()) {
             switch (validation.getQuality()) {
                 case INVALID:
@@ -282,14 +282,19 @@ public class FlanT5DiscriminatorService {
                 case TOO_SHORT:
                 case VAGUE:
                     vagueInputs.incrementAndGet();
-                    // For vague inputs, still try to match but with lower confidence modifier
-                    break;
+                    // Return all zeros for vague/too short input - they need clarification
+                    intentCodes.forEach(code -> scores.put(code, 0.0));
+                    return scores;
             }
         }
 
-        // Track write operations
+        // Handle write operations - return all zeros for query intents
+        // Write operations don't match read/query intents
         if (validation.isWriteOperation()) {
             writeOpInputs.incrementAndGet();
+            // Return all zeros - write ops shouldn't match query intents
+            intentCodes.forEach(code -> scores.put(code, 0.0));
+            return scores;
         }
 
         // Use cleaned input for judgment
