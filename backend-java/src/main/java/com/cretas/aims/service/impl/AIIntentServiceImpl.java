@@ -2210,91 +2210,45 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Override
     @Deprecated
     public Optional<AIIntentConfig> getIntentByCode(String intentCode) {
-        return intentRepository.findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(intentCode);
+        log.debug("Delegating getIntentByCode(intentCode={}) to intentConfigService", intentCode);
+        return intentConfigService.getIntentByCode(intentCode);
     }
 
     @Override
     public Optional<AIIntentConfig> getIntentByCode(String factoryId, String intentCode) {
-        if (factoryId == null || factoryId.isBlank()) {
-            log.warn("getIntentByCode called without factoryId, returning empty");
-            return Optional.empty();
-        }
-        if (intentCode == null || intentCode.isBlank()) {
-            return Optional.empty();
-        }
-
-        // 使用租户隔离：从工厂级+平台级意图中查找
-        return getAllIntents(factoryId).stream()
-                .filter(intent -> intentCode.equals(intent.getIntentCode()))
-                .findFirst();
+        log.debug("Delegating getIntentByCode(factoryId={}, intentCode={}) to intentConfigService", factoryId, intentCode);
+        return intentConfigService.getIntentByCode(factoryId, intentCode);
     }
 
     // ==================== 权限校验 ====================
 
     @Override
     public boolean hasPermission(String factoryId, String intentCode, String userRole) {
-        Optional<AIIntentConfig> intentOpt = getIntentByCode(factoryId, intentCode);
-        if (intentOpt.isEmpty()) {
-            return false;
-        }
-
-        AIIntentConfig intent = intentOpt.get();
-        String requiredRolesJson = intent.getRequiredRoles();
-
-        // 如果没有配置角色限制，则所有角色都可以访问
-        if (requiredRolesJson == null || requiredRolesJson.isEmpty()) {
-            return true;
-        }
-
-        try {
-            List<String> requiredRoles = objectMapper.readValue(requiredRolesJson,
-                    new TypeReference<List<String>>() {});
-            return requiredRoles.isEmpty() || requiredRoles.contains(userRole);
-        } catch (Exception e) {
-            log.warn("Failed to parse required roles for intent {}: {}", intentCode, e.getMessage());
-            return false;
-        }
+        log.debug("Delegating hasPermission(factoryId={}, intentCode={}, userRole={}) to intentPermissionService",
+                factoryId, intentCode, userRole);
+        return intentPermissionService.hasPermission(factoryId, intentCode, userRole);
     }
 
     @Override
     @Deprecated
     public boolean hasPermission(String intentCode, String userRole) {
-        Optional<AIIntentConfig> intentOpt = getIntentByCode(intentCode);
-        if (intentOpt.isEmpty()) {
-            return false;
-        }
-
-        AIIntentConfig intent = intentOpt.get();
-        String requiredRolesJson = intent.getRequiredRoles();
-
-        // 如果没有配置角色限制，则所有角色都可以访问
-        if (requiredRolesJson == null || requiredRolesJson.isEmpty()) {
-            return true;
-        }
-
-        try {
-            List<String> requiredRoles = objectMapper.readValue(requiredRolesJson,
-                    new TypeReference<List<String>>() {});
-            return requiredRoles.isEmpty() || requiredRoles.contains(userRole);
-        } catch (Exception e) {
-            log.warn("Failed to parse required roles for intent {}: {}", intentCode, e.getMessage());
-            return false;
-        }
+        log.debug("Delegating hasPermission(intentCode={}, userRole={}) to intentPermissionService",
+                intentCode, userRole);
+        return intentPermissionService.hasPermission(intentCode, userRole);
     }
 
     @Override
     public boolean requiresApproval(String factoryId, String intentCode) {
-        return getIntentByCode(factoryId, intentCode)
-                .map(AIIntentConfig::needsApproval)
-                .orElse(false);
+        log.debug("Delegating requiresApproval(factoryId={}, intentCode={}) to intentPermissionService",
+                factoryId, intentCode);
+        return intentPermissionService.requiresApproval(factoryId, intentCode);
     }
 
     @Override
     @Deprecated
     public boolean requiresApproval(String intentCode) {
-        return getIntentByCode(intentCode)
-                .map(AIIntentConfig::needsApproval)
-                .orElse(false);
+        log.debug("Delegating requiresApproval(intentCode={}) to intentPermissionService", intentCode);
+        return intentPermissionService.requiresApproval(intentCode);
     }
 
     @Override
@@ -2347,13 +2301,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     // ==================== 意图查询 (租户隔离) ====================
 
     @Override
-    @Cacheable(value = "allIntents", key = "#factoryId")
     public List<AIIntentConfig> getAllIntents(String factoryId) {
-        if (factoryId == null || factoryId.isBlank()) {
-            log.warn("getAllIntents called without factoryId, returning empty list");
-            return List.of();
-        }
-        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId);
+        log.debug("Delegating getAllIntents(factoryId={}) to intentConfigService", factoryId);
+        return intentConfigService.getAllIntents(factoryId);
     }
 
     @Override
@@ -2400,10 +2350,9 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Deprecated
-    @Cacheable(value = "allIntents_legacy")
     public List<AIIntentConfig> getAllIntents() {
-        log.warn("Deprecated getAllIntents() called without factoryId - consider using getAllIntents(factoryId)");
-        return intentRepository.findByIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc();
+        log.debug("Delegating getAllIntents() to intentConfigService");
+        return intentConfigService.getAllIntents();
     }
 
     @Override
@@ -2433,94 +2382,23 @@ public class AIIntentServiceImpl implements AIIntentService {
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
-            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public AIIntentConfig createIntent(AIIntentConfig intentConfig) {
-        if (intentRepository.existsByIntentCodeAndDeletedAtIsNull(intentConfig.getIntentCode())) {
-            throw new IllegalArgumentException("意图代码已存在: " + intentConfig.getIntentCode());
-        }
-
-        return intentRepository.save(intentConfig);
+        log.debug("Delegating createIntent(intentCode={}) to intentConfigService", intentConfig.getIntentCode());
+        return intentConfigService.createIntent(intentConfig);
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
-            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public AIIntentConfig updateIntent(AIIntentConfig intentConfig) {
-        AIIntentConfig existing = intentRepository
-                .findByIntentCodeAndDeletedAtIsNull(intentConfig.getIntentCode())
-                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentConfig.getIntentCode()));
-
-        // ★ 重要：在修改 existing 之前先创建快照！
-        // 因为 Hibernate 一级缓存的原因，修改后再调用 findById 会返回同一个已修改的对象
-        String previousSnapshot = rollbackService.createSnapshotForUpdate(existing);
-
-        // 只更新非null字段，支持部分更新
-        if (intentConfig.getIntentName() != null) {
-            existing.setIntentName(intentConfig.getIntentName());
-        }
-        if (intentConfig.getIntentCategory() != null) {
-            existing.setIntentCategory(intentConfig.getIntentCategory());
-        }
-        if (intentConfig.getSensitivityLevel() != null) {
-            existing.setSensitivityLevel(intentConfig.getSensitivityLevel());
-        }
-        if (intentConfig.getRequiredRoles() != null) {
-            existing.setRequiredRoles(intentConfig.getRequiredRoles());
-        }
-        if (intentConfig.getQuotaCost() != null) {
-            existing.setQuotaCost(intentConfig.getQuotaCost());
-        }
-        if (intentConfig.getCacheTtlMinutes() != null) {
-            existing.setCacheTtlMinutes(intentConfig.getCacheTtlMinutes());
-        }
-        if (intentConfig.getRequiresApproval() != null) {
-            existing.setRequiresApproval(intentConfig.getRequiresApproval());
-        }
-        if (intentConfig.getApprovalChainId() != null) {
-            existing.setApprovalChainId(intentConfig.getApprovalChainId());
-        }
-        if (intentConfig.getKeywords() != null) {
-            existing.setKeywords(intentConfig.getKeywords());
-        }
-        if (intentConfig.getRegexPattern() != null) {
-            existing.setRegexPattern(intentConfig.getRegexPattern());
-        }
-        if (intentConfig.getDescription() != null) {
-            existing.setDescription(intentConfig.getDescription());
-        }
-        if (intentConfig.getHandlerClass() != null) {
-            existing.setHandlerClass(intentConfig.getHandlerClass());
-        }
-        if (intentConfig.getMaxTokens() != null) {
-            existing.setMaxTokens(intentConfig.getMaxTokens());
-        }
-        if (intentConfig.getResponseTemplate() != null) {
-            existing.setResponseTemplate(intentConfig.getResponseTemplate());
-        }
-        if (intentConfig.getPriority() != null) {
-            existing.setPriority(intentConfig.getPriority());
-        }
-        if (intentConfig.getMetadata() != null) {
-            existing.setMetadata(intentConfig.getMetadata());
-        }
-
-        // 使用预先创建的快照保存，支持一键回滚
-        return rollbackService.saveWithPreCreatedSnapshot(existing, previousSnapshot, null, "系统", "意图配置更新");
+        log.debug("Delegating updateIntent(intentCode={}) to intentConfigService", intentConfig.getIntentCode());
+        return intentConfigService.updateIntent(intentConfig);
     }
 
     @Override
     @Transactional
-    @CacheEvict(value = {"allIntents", "intentsByCategory", "intentCategories", "intentsBySensitivity",
-            "allIntents_legacy", "intentsByCategory_legacy", "intentCategories_legacy"}, allEntries = true)
     public void deleteIntent(String intentCode) {
-        AIIntentConfig existing = intentRepository
-                .findByIntentCodeAndDeletedAtIsNull(intentCode)
-                .orElseThrow(() -> new IllegalArgumentException("意图配置不存在: " + intentCode));
-
-        existing.setDeletedAt(LocalDateTime.now());
-        intentRepository.save(existing);
+        log.debug("Delegating deleteIntent(intentCode={}) to intentConfigService", intentCode);
+        intentConfigService.deleteIntent(intentCode);
     }
 
     @Override
@@ -2737,7 +2615,7 @@ public class AIIntentServiceImpl implements AIIntentService {
         return s.length() <= maxLen ? s : s.substring(0, maxLen) + "...";
     }
 
-    // ==================== 反馈记录实现 ====================
+    // ==================== 反馈记录实现 (委托到 intentFeedbackService) ====================
 
     /**
      * 记录正向反馈 - 用户确认匹配正确
@@ -2745,32 +2623,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Override
     @Transactional
     public void recordPositiveFeedback(String factoryId, String intentCode, List<String> matchedKeywords) {
-        if (factoryId == null || intentCode == null || matchedKeywords == null || matchedKeywords.isEmpty()) {
-            log.debug("跳过记录正向反馈: 参数不完整");
-            return;
-        }
-
-        try {
-            for (String keyword : matchedKeywords) {
-                // 记录效果追踪
-                keywordEffectivenessService.recordFeedback(factoryId, intentCode, keyword, true);
-
-                // 更新工厂采用记录
-                keywordEffectivenessService.getKeywordEffectiveness(factoryId, intentCode, keyword)
-                    .ifPresent(effectiveness -> {
-                        BigDecimal score = effectiveness.getEffectivenessScore();
-                        if (score != null) {
-                            keywordPromotionService.recordAdoption(factoryId, intentCode, keyword, score);
-                        }
-                    });
-            }
-
-            log.info("记录正向反馈: factory={}, intent={}, keywords={}",
-                factoryId, intentCode, matchedKeywords.size());
-
-        } catch (Exception e) {
-            log.warn("记录正向反馈失败: {}", e.getMessage());
-        }
+        log.debug("Delegating recordPositiveFeedback(factoryId={}, intentCode={}, keywordCount={}) to intentFeedbackService",
+                factoryId, intentCode, matchedKeywords != null ? matchedKeywords.size() : 0);
+        intentFeedbackService.recordPositiveFeedback(factoryId, intentCode, matchedKeywords);
     }
 
     /**
@@ -2780,40 +2635,9 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Transactional
     public void recordNegativeFeedback(String factoryId, String rejectedIntentCode,
                                        String selectedIntentCode, List<String> matchedKeywords) {
-        if (factoryId == null || rejectedIntentCode == null || matchedKeywords == null || matchedKeywords.isEmpty()) {
-            log.debug("跳过记录负向反馈: 参数不完整");
-            return;
-        }
-
-        try {
-            // 对被拒绝的意图关键词记录负反馈
-            for (String keyword : matchedKeywords) {
-                keywordEffectivenessService.recordFeedback(factoryId, rejectedIntentCode, keyword, false);
-            }
-
-            log.info("记录负向反馈: factory={}, rejected={}, selected={}, keywords={}",
-                factoryId, rejectedIntentCode, selectedIntentCode, matchedKeywords.size());
-
-            // 如果用户选择了正确意图，尝试学习关键词到正确意图
-            if (selectedIntentCode != null && !selectedIntentCode.equals(rejectedIntentCode)) {
-                tryLearnKeywordsForSelectedIntent(factoryId, selectedIntentCode, matchedKeywords);
-            }
-
-        } catch (Exception e) {
-            log.warn("记录负向反馈失败: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * 尝试将关键词学习到用户选择的正确意图
-     * 委托给 KeywordLearningService 统一处理
-     */
-    private void tryLearnKeywordsForSelectedIntent(String factoryId, String selectedIntentCode, List<String> keywords) {
-        // 委托给 KeywordLearningService 统一处理
-        int added = keywordLearningService.learnFromUserFeedback(factoryId, selectedIntentCode, keywords);
-        if (added > 0) {
-            clearCache();
-        }
+        log.debug("Delegating recordNegativeFeedback(factoryId={}, rejectedIntent={}, selectedIntent={}) to intentFeedbackService",
+                factoryId, rejectedIntentCode, selectedIntentCode);
+        intentFeedbackService.recordNegativeFeedback(factoryId, rejectedIntentCode, selectedIntentCode, matchedKeywords);
     }
 
     // ==================== v4.0 并行评分架构 ====================
@@ -3627,36 +3451,8 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Override
     @Transactional
     public void processIntentFeedback(String factoryId, Long userId, IntentFeedbackRequest request) {
-        log.info("处理意图反馈: factoryId={}, userId={}, input='{}', matched={}, correct={}, isCorrect={}",
-                factoryId, userId, request.getUserInput(), request.getMatchedIntentCode(),
-                request.getCorrectIntentCode(), request.getIsCorrect());
-
-        // 1. 记录反馈样本
-        if (matchingConfig.isSampleCollectionEnabled()) {
-            expressionLearningService.recordFeedback(
-                    factoryId,
-                    request.getUserInput(),
-                    request.getMatchedIntentCode(),
-                    request.getCorrectIntentCode(),
-                    request.getIsCorrect(),
-                    request.getSessionId()
-            );
-        }
-
-        // 2. 如果是负向反馈且提供了正确意图，触发学习
-        if (Boolean.FALSE.equals(request.getIsCorrect()) &&
-                request.getCorrectIntentCode() != null &&
-                !request.getCorrectIntentCode().isEmpty()) {
-
-            // 学习正确的表达映射
-            if (matchingConfig.isAutoLearnEnabled()) {
-                expressionLearningService.learnExpression(
-                        factoryId,
-                        request.getUserInput(),
-                        request.getCorrectIntentCode()
-                );
-                log.info("已学习新表达: '{}' -> {}", request.getUserInput(), request.getCorrectIntentCode());
-            }
-        }
+        log.debug("Delegating processIntentFeedback(factoryId={}, userId={}, matchedIntent={}) to intentFeedbackService",
+                factoryId, userId, request.getMatchedIntentCode());
+        intentFeedbackService.processIntentFeedback(factoryId, userId, request);
     }
 }
