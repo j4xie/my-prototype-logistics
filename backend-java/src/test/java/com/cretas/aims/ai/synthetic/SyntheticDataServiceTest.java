@@ -123,17 +123,17 @@ class SyntheticDataServiceTest {
 
             TrainingSample sample1 = new TrainingSample();
             sample1.setUserInput("查询今天的销售额");
-            sample1.setIntentCode(TEST_INTENT_CODE);
+            sample1.setMatchedIntentCode(TEST_INTENT_CODE);
             samples.add(sample1);
 
             TrainingSample sample2 = new TrainingSample();
             sample2.setUserInput("本月产量统计");
-            sample2.setIntentCode(TEST_INTENT_CODE);
+            sample2.setMatchedIntentCode(TEST_INTENT_CODE);
             samples.add(sample2);
 
             TrainingSample sample3 = new TrainingSample();
             sample3.setUserInput("显示上周的库存数量");
-            sample3.setIntentCode(TEST_INTENT_CODE);
+            sample3.setMatchedIntentCode(TEST_INTENT_CODE);
             samples.add(sample3);
 
             return samples;
@@ -328,15 +328,13 @@ class SyntheticDataServiceTest {
 
             List<Slot> slots = createTestSlots();
 
-            return IntentSkel.builder()
-                    .intentCode(TEST_INTENT_CODE)
-                    .factoryId(TEST_FACTORY_ID)
-                    .patterns(patterns)
-                    .slots(slots)
-                    .skeletonId(UUID.randomUUID().toString())
-                    .sampleCount(10)
-                    .createdAt(System.currentTimeMillis())
-                    .build();
+            return IntentSkel.create(
+                    TEST_INTENT_CODE,
+                    TEST_FACTORY_ID,
+                    slots,
+                    patterns,
+                    10
+            );
         }
 
         private List<Slot> createTestSlots() {
@@ -780,14 +778,13 @@ class SyntheticDataServiceTest {
                     .thenReturn(List.of(new Object[]{"REAL", 100L}, new Object[]{"SYNTHETIC", 10L}));
 
             // Mock skeleton building
-            IntentSkel skeleton = IntentSkel.builder()
-                    .intentCode(TEST_INTENT_CODE)
-                    .factoryId(TEST_FACTORY_ID)
-                    .skeletonId("test-skeleton-id")
-                    .patterns(List.of("{ACTION}{TIME}的{METRIC}"))
-                    .slots(createMockSlots())
-                    .sampleCount(10)
-                    .build();
+            IntentSkel skeleton = IntentSkel.create(
+                    TEST_INTENT_CODE,
+                    TEST_FACTORY_ID,
+                    createMockSlots(),
+                    List.of("{ACTION}{TIME}的{METRIC}"),
+                    10
+            );
 
             // Note: The actual SyntheticDataService may use a different method name
             // Adjust based on actual implementation
