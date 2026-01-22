@@ -233,11 +233,11 @@ public class GRAPEFilter {
                     sample.getUserInput()
             );
 
-            // If no match found, score is 0
+            // If no match found, try fallback scoring
             if (matchResult == null || matchResult.getBestMatch() == null) {
-                log.trace("GRAPE: No match found for input '{}', score=0",
+                log.trace("GRAPE: No match found for input '{}', trying fallback",
                         truncateForLog(sample.getUserInput()));
-                return 0.0;
+                return scoreSampleWithFallback(sample);
             }
 
             AIIntentConfig bestMatch = matchResult.getBestMatch();
@@ -262,11 +262,81 @@ public class GRAPEFilter {
                 return 0.0;
             }
         } catch (Exception e) {
-            log.warn("GRAPE: Error scoring sample '{}': {}",
+            log.warn("GRAPE: Error scoring sample '{}': {}, trying fallback",
                     truncateForLog(sample.getUserInput()),
                     e.getMessage());
+            return scoreSampleWithFallback(sample);
+        }
+    }
+
+    /**
+     * Fallback scoring when Embedding/IntentService is unavailable.
+     * Uses keyword-based heuristic scoring.
+     *
+     * @param sample the synthetic sample to score
+     * @return heuristic confidence score (0.0 to 1.0)
+     */
+    private double scoreSampleWithFallback(SyntheticSample sample) {
+        // Check if embedding client is available
+        if (embeddingClient != null && embeddingClient.isAvailable()) {
+            // Should not reach here if embedding is available, return 0
             return 0.0;
         }
+
+        // Fallback: Use keyword-based heuristic
+        // Score based on presence of domain-specific keywords in user input
+        String userInput = sample.getUserInput().toLowerCase();
+        String intentCode = sample.getIntentCode().toLowerCase();
+
+        double score = 0.0;
+
+        // Extract domain from intentCode (e.g., "MATERIAL_QUERY" -> "material")
+        String[] intentParts = intentCode.split("_");
+        if (intentParts.length > 0) {
+            String domain = intentParts[0];
+
+            // Domain keyword mapping for Chinese
+            java.util.Map<String, String[]> domainKeywords = java.util.Map.of(
+                "material", new String[]{"原料", "材料", "物料", "原材料"},
+                "production", new String[]{"生产", "产量", "产线", "制造"},
+                "equipment", new String[]{"设备", "机器", "机台", "设施"},
+                "quality", new String[]{"质量", "质检", "品质", "检验"},
+                "inventory", new String[]{"库存", "仓库", "存量", "库房"},
+                "order", new String[]{"订单", "工单", "任务单"},
+                "traceability", new String[]{"溯源", "追溯", "追踪", "批次"},
+                "scheduling", new String[]{"排产", "排程", "调度", "计划"}
+            );
+
+            String[] keywords = domainKeywords.get(domain);
+            if (keywords != null) {
+                for (String keyword : keywords) {
+                    if (userInput.contains(keyword)) {
+                        score += 0.25; // Each keyword adds 0.25
+                    }
+                }
+            }
+
+            // Action type bonus
+            if (intentCode.contains("query") || intentCode.contains("list") || intentCode.contains("get")) {
+                if (userInput.contains("查") || userInput.contains("看") ||
+                    userInput.contains("显示") || userInput.contains("列出")) {
+                    score += 0.2;
+                }
+            } else if (intentCode.contains("create") || intentCode.contains("add") || intentCode.contains("update")) {
+                if (userInput.contains("创建") || userInput.contains("添加") ||
+                    userInput.contains("修改") || userInput.contains("更新")) {
+                    score += 0.2;
+                }
+            }
+        }
+
+        // Cap at 0.7 (lower than semantic matching to indicate lower confidence)
+        score = Math.min(score, 0.7);
+
+        log.trace("GRAPE fallback: input='{}', intent={}, score={:.4f}",
+                truncateForLog(userInput), intentCode, score);
+
+        return score;
     }
 
     /**

@@ -59,12 +59,12 @@ public class SyntheticDataScheduler {
     private Map<String, Object> lastExecutionResult;
 
     /**
-     * 每天凌晨1点生成合成数据
-     * 在模型训练（凌晨2点）之前运行，确保训练数据充足
+     * 每天凌晨3点生成合成数据
+     * 为所有启用合成数据的工厂自动生成训练样本
      *
      * cron: 秒 分 时 日 月 周
      */
-    @Scheduled(cron = "0 0 1 * * ?")
+    @Scheduled(cron = "0 0 3 * * ?")
     public void dailySyntheticGeneration() {
         if (!syntheticEnabled) {
             log.debug("合成数据生成已禁用，跳过定时任务");
