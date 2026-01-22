@@ -2,6 +2,9 @@ package com.cretas.aims.dto.scheduling;
 
 import com.cretas.aims.entity.SchedulingAlert;
 import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 
@@ -9,6 +12,9 @@ import java.time.LocalDateTime;
  * 调度告警 DTO
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SchedulingAlertDTO {
     private String id;
     private String factoryId;

@@ -75,6 +75,17 @@ public class Supplier extends BaseEntity {
     private String paymentTerms;
     @Column(name = "delivery_days")
     private Integer deliveryDays;
+
+    // 前端兼容字段
+    @Column(name = "business_type", length = 50)
+    private String businessType;
+
+    @Column(name = "credit_level", length = 20)
+    private String creditLevel;
+
+    @Column(name = "delivery_area", length = 200)
+    private String deliveryArea;
+
     @Column(name = "credit_limit", precision = 12, scale = 2)
     private BigDecimal creditLimit;
     @Column(name = "current_balance", precision = 12, scale = 2)

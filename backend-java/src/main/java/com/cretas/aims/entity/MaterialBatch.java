@@ -194,4 +194,48 @@ public class MaterialBatch extends BaseEntity {
         }
         return weightPerUnit.multiply(receiptQuantity);
     }
+
+    // ===================================================================
+    // 前端兼容别名 - 统一字段命名
+    // ===================================================================
+
+    /**
+     * 获取入库数量 (前端使用 inboundQuantity)
+     */
+    @Transient
+    public BigDecimal getInboundQuantity() {
+        return receiptQuantity;
+    }
+
+    /**
+     * 获取过期日期 (前端使用 expiryDate)
+     */
+    @Transient
+    public LocalDate getExpiryDate() {
+        return expireDate;
+    }
+
+    /**
+     * 获取入库日期 (前端使用 inboundDate)
+     */
+    @Transient
+    public LocalDate getInboundDate() {
+        return receiptDate;
+    }
+
+    /**
+     * 获取质量等级 (前端使用 qualityGrade)
+     */
+    @Transient
+    public String getQualityGrade() {
+        return qualityCertificate;
+    }
+
+    /**
+     * 获取总成本 (前端使用 totalCost)
+     */
+    @Transient
+    public BigDecimal getTotalCost() {
+        return getTotalPrice();
+    }
 }

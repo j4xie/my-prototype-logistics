@@ -15,7 +15,13 @@ import type {
   CalibrationConfig,
   CalibrationAlert,
   ToolStatusStats,
-  FactoryOption
+  FactoryOption,
+  CalibrationSession,
+  CalibrationSessionQueryParams,
+  CalibrationSessionPageResponse,
+  CreateCalibrationSessionRequest,
+  CalibrationStatistics,
+  CalibrationHistoryItem
 } from '@/types/calibration';
 
 // API 路径前缀 - 使用绝对路径覆盖 baseURL
@@ -196,4 +202,87 @@ export function exportCalibrationReport(params: {
   return post<Blob>(`${API_PREFIX}/export`, params, {
     responseType: 'blob'
   } as unknown);
+}
+
+// ==================== 校准会话管理 ====================
+
+/**
+ * 获取校准会话列表
+ * @param params 查询参数
+ */
+export function getCalibrationSessions(params: CalibrationSessionQueryParams) {
+  return get<CalibrationSessionPageResponse>(`${API_PREFIX}/sessions`, { params });
+}
+
+/**
+ * 获取校准会话详情
+ * @param sessionId 会话ID
+ */
+export function getCalibrationSession(sessionId: string) {
+  return get<CalibrationSession>(`${API_PREFIX}/sessions/${sessionId}`);
+}
+
+/**
+ * 创建校准会话
+ * @param data 创建请求数据
+ */
+export function createCalibrationSession(data: CreateCalibrationSessionRequest) {
+  return post<CalibrationSession>(`${API_PREFIX}/sessions`, data);
+}
+
+/**
+ * 更新校准会话状态
+ * @param sessionId 会话ID
+ * @param status 新状态
+ */
+export function updateCalibrationSessionStatus(sessionId: string, status: string) {
+  return post<CalibrationSession>(`${API_PREFIX}/sessions/${sessionId}/status`, { status });
+}
+
+/**
+ * 删除校准会话
+ * @param sessionId 会话ID
+ */
+export function deleteCalibrationSession(sessionId: string) {
+  return post<void>(`${API_PREFIX}/sessions/${sessionId}/delete`);
+}
+
+/**
+ * 获取校准指标
+ * @param factoryId 工厂ID
+ */
+export function getCalibrationMetrics(factoryId?: string) {
+  const params = factoryId ? { factoryId } : undefined;
+  return get<CalibrationDashboardData['metrics']>(`${API_PREFIX}/metrics`, { params });
+}
+
+/**
+ * 获取校准统计数据
+ * @param factoryId 工厂ID
+ */
+export function getCalibrationStatistics(factoryId?: string) {
+  const params = factoryId ? { factoryId } : undefined;
+  return get<CalibrationStatistics>(`${API_PREFIX}/statistics`, { params });
+}
+
+/**
+ * 执行校准评估
+ * @param sessionId 会话ID
+ */
+export function executeCalibrationEvaluation(sessionId: string) {
+  return post<CalibrationSession>(`${API_PREFIX}/evaluate`, { sessionId });
+}
+
+/**
+ * 获取校准历史记录
+ * @param params 查询参数
+ */
+export function getCalibrationHistory(params: {
+  sessionId?: string;
+  page?: number;
+  size?: number;
+  startDate?: string;
+  endDate?: string;
+}) {
+  return get<{ content: CalibrationHistoryItem[]; totalElements: number }>(`${API_PREFIX}/history`, { params });
 }

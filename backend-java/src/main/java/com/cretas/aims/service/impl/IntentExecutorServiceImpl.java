@@ -1896,22 +1896,6 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      */
     private IntentExecuteResponse buildNoMatchResponse(IntentMatchResult matchResult, String factoryId) {
         log.debug("[Delegate] buildNoMatchResponse - 委托: responseBuilderServiceDelegate");
-
-        // 尝试委托到 ResponseBuilderService
-        if (responseBuilderServiceDelegate != null) {
-            try {
-                log.info("[Delegate] 委托 buildNoMatchResponse 到 responseBuilderServiceDelegate");
-                IntentExecuteResponse delegateResponse = responseBuilderServiceDelegate.buildNoMatchResponse(
-                        factoryId, null, matchResult);
-                if (delegateResponse != null) {
-                    log.debug("[Delegate] buildNoMatchResponse 委托成功");
-                    return delegateResponse;
-                }
-            } catch (Exception e) {
-                log.warn("[Delegate] buildNoMatchResponse 委托失败，回退到本地实现: {}", e.getMessage());
-            }
-        }
-
         // 本地实现（作为回退）
         log.info("🔍 buildNoMatchResponse调用: sessionId={}, conversationMessage={}, hasMatch={}",
                 matchResult.getSessionId(), matchResult.getConversationMessage(), matchResult.hasMatch());
@@ -1971,21 +1955,6 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
      */
     private IntentExecuteResponse buildClarificationResponse(IntentMatchResult matchResult, String factoryId) {
         log.debug("[Delegate] buildClarificationResponse - 委托: responseBuilderServiceDelegate");
-
-        // 尝试委托到 ResponseBuilderService
-        if (responseBuilderServiceDelegate != null) {
-            try {
-                log.info("[Delegate] 委托 buildClarificationResponse 到 responseBuilderServiceDelegate");
-                IntentExecuteResponse delegateResponse = responseBuilderServiceDelegate.buildClarificationResponse(
-                        factoryId, null, matchResult);
-                if (delegateResponse != null) {
-                    log.debug("[Delegate] buildClarificationResponse 委托成功");
-                    return delegateResponse;
-                }
-            } catch (Exception e) {
-                log.warn("[Delegate] buildClarificationResponse 委托失败，回退到本地实现: {}", e.getMessage());
-            }
-        }
 
         // 本地实现（作为回退）
         AIIntentConfig matchedIntent = matchResult.getBestMatch();
