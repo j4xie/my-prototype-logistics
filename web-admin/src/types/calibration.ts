@@ -158,3 +158,118 @@ export interface FactoryOption {
   name: string;
   factoryId: string;
 }
+
+// ==================== 校准会话相关类型 ====================
+
+/**
+ * 校准会话状态
+ */
+export type CalibrationSessionStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'failed';
+
+/**
+ * 校准会话
+ */
+export interface CalibrationSession {
+  id: string;
+  sessionName: string;
+  sessionType: 'manual' | 'auto' | 'scheduled';
+  status: CalibrationSessionStatus;
+  factoryId: string;
+  factoryName?: string;
+  description?: string;
+  targetMetrics?: string[];
+  startTime?: string;
+  endTime?: string;
+  duration?: number;
+  progress?: number;
+  results?: CalibrationResult;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+/**
+ * 校准结果
+ */
+export interface CalibrationResult {
+  overallScore: number;
+  concisenessScore: number;
+  successRateScore: number;
+  efficiencyScore: number;
+  improvement: number;
+  issues?: CalibrationIssue[];
+  recommendations?: string[];
+}
+
+/**
+ * 校准问题
+ */
+export interface CalibrationIssue {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
+  affectedTools?: string[];
+  suggestedAction?: string;
+}
+
+/**
+ * 校准会话查询参数
+ */
+export interface CalibrationSessionQueryParams {
+  page?: number;
+  size?: number;
+  status?: CalibrationSessionStatus;
+  sessionType?: string;
+  startDate?: string;
+  endDate?: string;
+  factoryId?: string;
+}
+
+/**
+ * 校准会话分页响应
+ */
+export interface CalibrationSessionPageResponse {
+  content: CalibrationSession[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+}
+
+/**
+ * 创建校准会话请求
+ */
+export interface CreateCalibrationSessionRequest {
+  sessionName: string;
+  sessionType: 'manual' | 'auto' | 'scheduled';
+  description?: string;
+  targetMetrics?: string[];
+  factoryId?: string;
+}
+
+/**
+ * 校准统计数据
+ */
+export interface CalibrationStatistics {
+  totalSessions: number;
+  completedSessions: number;
+  averageScore: number;
+  averageImprovement: number;
+  lastSessionDate?: string;
+  weeklyTrend: Array<{ date: string; score: number; count: number }>;
+}
+
+/**
+ * 校准历史记录
+ */
+export interface CalibrationHistoryItem {
+  id: string;
+  sessionId: string;
+  sessionName: string;
+  action: string;
+  details?: string;
+  performedBy?: string;
+  performedByName?: string;
+  performedAt: string;
+}

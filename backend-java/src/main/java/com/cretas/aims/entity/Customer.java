@@ -48,6 +48,14 @@ public class Customer extends BaseEntity {
     private String name;
     @Column(name = "type", length = 50)
     private String type;
+
+    // 前端兼容字段 - businessType 和 customerType
+    @Column(name = "business_type", length = 50)
+    private String businessType;
+
+    @Column(name = "customer_type", length = 50)
+    private String customerType;
+
     @Column(name = "industry", length = 100)
     private String industry;
     @Column(name = "contact_name", length = 100)

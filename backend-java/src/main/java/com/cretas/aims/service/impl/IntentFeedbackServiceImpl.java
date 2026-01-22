@@ -66,11 +66,11 @@ public class IntentFeedbackServiceImpl implements IntentFeedbackService {
         log.debug("Processing intent feedback from user {} in factory {}: {}",
                 userId, factoryId, request);
 
-        if (request.isConfirmed()) {
-            recordPositiveFeedback(factoryId, request.getMatchedIntentCode(), request.getMatchedKeywords());
+        if (Boolean.TRUE.equals(request.getIsCorrect())) {
+            recordPositiveFeedback(factoryId, request.getMatchedIntentCode(), java.util.List.of());
         } else {
             recordNegativeFeedback(factoryId, request.getMatchedIntentCode(),
-                    request.getSelectedIntentCode(), request.getMatchedKeywords());
+                    request.getCorrectIntentCode(), java.util.List.of());
         }
     }
 }
