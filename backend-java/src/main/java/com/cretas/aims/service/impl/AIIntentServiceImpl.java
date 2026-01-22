@@ -2213,13 +2213,29 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Deprecated
     public Optional<AIIntentConfig> getIntentByCode(String intentCode) {
         log.debug("Delegating getIntentByCode(intentCode={}) to intentConfigService", intentCode);
-        return intentConfigService.getIntentByCode(intentCode);
+        return intentRepository.findByIntentCodeAndIsActiveTrueAndDeletedAtIsNull(intentCode);
     }
 
     @Override
     public Optional<AIIntentConfig> getIntentByCode(String factoryId, String intentCode) {
         log.debug("Delegating getIntentByCode(factoryId={}, intentCode={}) to intentConfigService", factoryId, intentCode);
-        return intentConfigService.getIntentByCode(factoryId, intentCode);
+        return intentRepository.findByFactoryIdAndIntentCode(factoryId, intentCode);
+    }
+
+
+    /**
+     * Check if user role has permission for the given intent config
+     */
+    private boolean checkRolePermission(AIIntentConfig config, String userRole) {
+        if (config == null || userRole == null) {
+            return false;
+        }
+        // If no allowed roles specified, allow all
+        if (config.getAllowedRoles() == null || config.getAllowedRoles().isEmpty()) {
+            return true;
+        }
+        // Check if user role is in allowed roles
+        return config.getAllowedRoles().contains(userRole);
     }
 
     // ==================== 权限校验 ====================
@@ -2228,7 +2244,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     public boolean hasPermission(String factoryId, String intentCode, String userRole) {
         log.debug("Delegating hasPermission(factoryId={}, intentCode={}, userRole={}) to intentPermissionService",
                 factoryId, intentCode, userRole);
-        return intentPermissionService.hasPermission(factoryId, intentCode, userRole);
+        return getIntentByCode(factoryId, intentCode).map(config -> checkRolePermission(config, userRole)).orElse(false);
     }
 
     @Override
@@ -2236,21 +2252,21 @@ public class AIIntentServiceImpl implements AIIntentService {
     public boolean hasPermission(String intentCode, String userRole) {
         log.debug("Delegating hasPermission(intentCode={}, userRole={}) to intentPermissionService",
                 intentCode, userRole);
-        return intentPermissionService.hasPermission(intentCode, userRole);
+        return getIntentByCode(intentCode).map(config -> checkRolePermission(config, userRole)).orElse(false);
     }
 
     @Override
     public boolean requiresApproval(String factoryId, String intentCode) {
         log.debug("Delegating requiresApproval(factoryId={}, intentCode={}) to intentPermissionService",
                 factoryId, intentCode);
-        return intentPermissionService.requiresApproval(factoryId, intentCode);
+        return getIntentByCode(factoryId, intentCode).map(AIIntentConfig::needsApproval).orElse(false);
     }
 
     @Override
     @Deprecated
     public boolean requiresApproval(String intentCode) {
         log.debug("Delegating requiresApproval(intentCode={}) to intentPermissionService", intentCode);
-        return intentPermissionService.requiresApproval(intentCode);
+        return getIntentByCode(intentCode).map(AIIntentConfig::needsApproval).orElse(false);
     }
 
     @Override
@@ -2305,7 +2321,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Override
     public List<AIIntentConfig> getAllIntents(String factoryId) {
         log.debug("Delegating getAllIntents(factoryId={}) to intentConfigService", factoryId);
-        return intentConfigService.getAllIntents(factoryId);
+        return intentRepository.findByFactoryIdOrPlatformLevel(factoryId);
     }
 
     @Override
@@ -2354,7 +2370,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Deprecated
     public List<AIIntentConfig> getAllIntents() {
         log.debug("Delegating getAllIntents() to intentConfigService");
-        return intentConfigService.getAllIntents();
+        return intentRepository.findByIsActiveTrueAndDeletedAtIsNullOrderByPriorityDesc();
     }
 
     @Override
@@ -2386,21 +2402,21 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Transactional
     public AIIntentConfig createIntent(AIIntentConfig intentConfig) {
         log.debug("Delegating createIntent(intentCode={}) to intentConfigService", intentConfig.getIntentCode());
-        return intentConfigService.createIntent(intentConfig);
+        return intentRepository.save(intentConfig);
     }
 
     @Override
     @Transactional
     public AIIntentConfig updateIntent(AIIntentConfig intentConfig) {
         log.debug("Delegating updateIntent(intentCode={}) to intentConfigService", intentConfig.getIntentCode());
-        return intentConfigService.updateIntent(intentConfig);
+        return intentRepository.save(intentConfig);
     }
 
     @Override
     @Transactional
     public void deleteIntent(String intentCode) {
         log.debug("Delegating deleteIntent(intentCode={}) to intentConfigService", intentCode);
-        intentConfigService.deleteIntent(intentCode);
+        intentRepository.findByIntentCodeAndDeletedAtIsNull(intentCode).ifPresent(config -> { config.setDeletedAt(java.time.LocalDateTime.now()); intentRepository.save(config); });
     }
 
     @Override
