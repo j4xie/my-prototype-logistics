@@ -29,13 +29,20 @@ import java.util.regex.Pattern;
  *
  * <p>支持的文件类型:
  * <ul>
- *   <li>PDF: 使用文本提取（通过 AI 解析）</li>
+ *   <li>PDF: 使用文本提取（通过 AI 解析），针对中文PDF优化</li>
  *   <li>Excel: 直接解析表格结构</li>
  *   <li>图片: 调用 OCR（DashScope Vision）</li>
  * </ul>
  *
+ * <p>中文PDF优化:
+ * <ul>
+ *   <li>自动检测中文字符提取质量</li>
+ *   <li>当文本提取失败或乱码时，自动切换到Vision AI OCR</li>
+ *   <li>支持扫描件PDF的OCR识别</li>
+ * </ul>
+ *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-01-21
  */
 @Slf4j
@@ -50,6 +57,11 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     @Lazy
     private DashScopeConfig dashScopeConfig;
 
+    // 中文字符范围的正则表达式
+    private static final Pattern CHINESE_CHAR_PATTERN = Pattern.compile("[\\u4e00-\\u9fff]");
+    // 常见乱码字符模式
+    private static final Pattern GARBLED_PATTERN = Pattern.compile("[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f]|[\ufffd]{2,}");
+
     @Override
     public String getToolName() {
         return "sop_parse_document";
@@ -58,7 +70,8 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     @Override
     public String getDescription() {
         return "解析SOP文档(PDF/Excel/图片)，提取工序步骤、时间要求、技能要求等信息。" +
-               "支持自动识别文件类型并选择相应的解析策略。";
+               "支持自动识别文件类型并选择相应的解析策略。针对中文PDF进行了特别优化，" +
+               "当文本提取失败时会自动切换到OCR模式。";
     }
 
     @Override
@@ -81,6 +94,12 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
         fileType.put("enum", Arrays.asList("PDF", "EXCEL", "IMAGE"));
         properties.put("fileType", fileType);
 
+        // forceOcr: 强制使用OCR（可选）
+        Map<String, Object> forceOcr = new HashMap<>();
+        forceOcr.put("type", "boolean");
+        forceOcr.put("description", "是否强制使用Vision AI OCR解析PDF，适用于扫描件");
+        properties.put("forceOcr", forceOcr);
+
         schema.put("properties", properties);
         schema.put("required", Collections.singletonList("fileUrl"));
 
@@ -96,19 +115,25 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     protected Map<String, Object> doExecute(String factoryId, Map<String, Object> params, Map<String, Object> context) throws Exception {
         String fileUrl = getString(params, "fileUrl");
         String fileType = getString(params, "fileType");
+        Boolean forceOcr = getBoolean(params, "forceOcr", false);
 
         // 自动检测文件类型
         if (fileType == null || fileType.isEmpty()) {
             fileType = detectFileType(fileUrl);
         }
 
-        log.info("开始解析SOP文档: factoryId={}, fileUrl={}, fileType={}", factoryId, fileUrl, fileType);
+        log.info("开始解析SOP文档: factoryId={}, fileUrl={}, fileType={}, forceOcr={}",
+                factoryId, fileUrl, fileType, forceOcr);
 
         // 根据文件类型选择解析策略
         SopParseResult result;
         switch (fileType.toUpperCase()) {
             case "PDF":
-                result = parsePdfDocument(fileUrl);
+                if (forceOcr) {
+                    result = parsePdfWithVision(fileUrl, "用户请求强制使用OCR");
+                } else {
+                    result = parsePdfDocument(fileUrl);
+                }
                 break;
             case "EXCEL":
             case "XLS":
@@ -125,7 +150,8 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
                 throw new IllegalArgumentException("不支持的文件类型: " + fileType);
         }
 
-        log.info("SOP文档解析完成: 识别到 {} 个工序步骤", result.getSteps().size());
+        log.info("SOP文档解析完成: 识别到 {} 个工序步骤, 解析方式: {}",
+                result.getSteps().size(), result.getParseMethod());
 
         // 构建返回结果
         Map<String, Object> response = new LinkedHashMap<>();
@@ -135,9 +161,22 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
         response.put("steps", result.getSteps());
         response.put("stepCount", result.getSteps().size());
         response.put("metadata", result.getMetadata());
-        response.put("message", String.format("成功解析SOP文档，识别到 %d 个工序步骤", result.getSteps().size()));
+        response.put("parseMethod", result.getParseMethod());
+        response.put("message", String.format("成功解析SOP文档，识别到 %d 个工序步骤 (方式: %s)",
+                result.getSteps().size(), result.getParseMethod()));
 
         return response;
+    }
+
+    /**
+     * 获取布尔类型参数
+     */
+    private Boolean getBoolean(Map<String, Object> params, String key, Boolean defaultValue) {
+        Object value = params.get(key);
+        if (value == null) return defaultValue;
+        if (value instanceof Boolean) return (Boolean) value;
+        if (value instanceof String) return Boolean.parseBoolean((String) value);
+        return defaultValue;
     }
 
     /**
@@ -162,7 +201,8 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
      * 解析PDF文档
      * 1. 从URL下载PDF
      * 2. 使用PDFBox提取文本
-     * 3. 发送文本给AI进行结构化解析
+     * 3. 检测中文提取质量，必要时使用Vision AI作为备选
+     * 4. 发送文本给AI进行结构化解析
      */
     private SopParseResult parsePdfDocument(String fileUrl) {
         // 1. 下载并提取PDF文本
@@ -172,16 +212,29 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
             log.info("PDF文本提取完成，共 {} 个字符", pdfText.length());
         } catch (Exception e) {
             log.error("PDF文本提取失败: {}", e.getMessage(), e);
-            return createEmptyResult(fileUrl, "PDF文本提取失败: " + e.getMessage());
+            // 尝试使用Vision AI作为备选方案
+            log.info("尝试使用Vision AI解析PDF...");
+            return parsePdfWithVision(fileUrl, "PDF文本提取失败: " + e.getMessage());
         }
 
-        // 如果提取到的文本为空或太短，直接返回
+        // 如果提取到的文本为空或太短，尝试Vision AI
         if (pdfText == null || pdfText.trim().length() < 10) {
-            log.warn("PDF文本内容为空或太短");
-            return createEmptyResult(fileUrl, "PDF文本内容为空或无法提取");
+            log.warn("PDF文本内容为空或太短，尝试使用Vision AI");
+            return parsePdfWithVision(fileUrl, "PDF文本内容为空或无法提取");
         }
 
-        // 2. 使用AI来解析提取的文本内容
+        // 2. 检测中文提取质量
+        ChineseExtractionQuality quality = assessChineseExtractionQuality(pdfText);
+        log.info("中文提取质量评估: score={}, chineseRatio={}, hasGarbled={}",
+                quality.score, quality.chineseCharRatio, quality.hasGarbledChars);
+
+        // 如果中文提取质量差（乱码或无中文），使用Vision AI
+        if (quality.score < 0.3) {
+            log.warn("中文PDF提取质量差(score={}), 切换到Vision AI", quality.score);
+            return parsePdfWithVision(fileUrl, "中文字符提取质量差，使用OCR替代");
+        }
+
+        // 3. 使用AI来解析提取的文本内容
         String systemPrompt = """
             你是一个SOP文档解析专家。请分析提供的SOP文档内容，提取以下信息：
             1. 工序步骤列表（按顺序）
@@ -222,18 +275,160 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
             SopParseResult result = parseAiResponse(response, fileUrl);
             // 保存原始PDF文本
             result.setContent(pdfText);
+            result.setParseMethod("PDFBox文本提取");
             return result;
         } catch (Exception e) {
             log.error("AI解析PDF内容失败: {}", e.getMessage(), e);
             // 返回原始文本，但没有结构化的步骤
             SopParseResult result = createEmptyResult(fileUrl, "AI解析失败: " + e.getMessage());
             result.setContent(pdfText);
+            result.setParseMethod("PDFBox文本提取(AI解析失败)");
             return result;
         }
     }
 
     /**
+     * 评估中文提取质量
+     * 用于判断是否需要切换到Vision AI OCR
+     */
+    private ChineseExtractionQuality assessChineseExtractionQuality(String text) {
+        ChineseExtractionQuality quality = new ChineseExtractionQuality();
+
+        if (text == null || text.isEmpty()) {
+            quality.score = 0;
+            return quality;
+        }
+
+        // 统计中文字符数量
+        Matcher chineseMatcher = CHINESE_CHAR_PATTERN.matcher(text);
+        int chineseCount = 0;
+        while (chineseMatcher.find()) {
+            chineseCount++;
+        }
+
+        // 统计总可见字符数（排除空白）
+        int totalVisibleChars = text.replaceAll("\\s", "").length();
+
+        // 计算中文字符比例
+        quality.chineseCharRatio = totalVisibleChars > 0 ?
+                (double) chineseCount / totalVisibleChars : 0;
+
+        // 检测乱码字符
+        Matcher garbledMatcher = GARBLED_PATTERN.matcher(text);
+        quality.hasGarbledChars = garbledMatcher.find();
+
+        // 检测是否有大量连续的问号或替换字符（乱码的典型特征）
+        int replacementCharCount = (int) text.chars().filter(c -> c == '\ufffd' || c == '?').count();
+        double replacementRatio = totalVisibleChars > 0 ?
+                (double) replacementCharCount / totalVisibleChars : 0;
+
+        // 计算综合得分
+        if (quality.hasGarbledChars || replacementRatio > 0.1) {
+            quality.score = 0.1; // 有明显乱码
+        } else if (quality.chineseCharRatio > 0.1) {
+            // 预期是中文文档，中文比例越高得分越高
+            quality.score = Math.min(1.0, quality.chineseCharRatio * 2);
+        } else {
+            // 可能是英文或中英混合文档，给予中等得分
+            quality.score = 0.7;
+        }
+
+        // 额外检查：如果有大量不可打印字符，降低得分
+        int unprintableCount = (int) text.chars()
+                .filter(c -> c < 32 && c != '\n' && c != '\r' && c != '\t')
+                .count();
+        if (unprintableCount > totalVisibleChars * 0.05) {
+            quality.score *= 0.5;
+        }
+
+        return quality;
+    }
+
+    /**
+     * 使用Vision AI解析PDF（作为备选方案）
+     * 将PDF URL直接传递给Vision模型进行OCR识别
+     */
+    private SopParseResult parsePdfWithVision(String fileUrl, String reason) {
+        log.info("使用Vision AI解析PDF: url={}, reason={}", fileUrl, reason);
+
+        String prompt = """
+            你是一个SOP文档OCR和解析专家。请识别并分析这个PDF文档的内容，提取以下信息：
+            1. 工序步骤列表（按顺序）
+            2. 每个步骤的时间要求
+            3. 每个步骤的技能要求
+            4. 质检点
+            5. 特殊设备要求
+
+            请以JSON格式输出：
+            {
+                "content": "识别到的文档原始内容摘要",
+                "steps": [
+                    {
+                        "orderIndex": 1,
+                        "name": "步骤名称",
+                        "description": "步骤描述",
+                        "timeLimitMinutes": 10,
+                        "skillLevel": 2,
+                        "isQualityCheckpoint": false,
+                        "equipmentRequired": []
+                    }
+                ],
+                "metadata": {
+                    "productName": "产品名称",
+                    "totalEstimatedMinutes": 60,
+                    "specialNotes": "特殊注意事项"
+                }
+            }
+
+            仅返回JSON，不要包含其他文字。
+            """;
+
+        try {
+            // 使用 Vision 模型分析PDF
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model(dashScopeConfig.getVisionModel())
+                    .messages(List.of(ChatMessage.userWithImageUrl(prompt, fileUrl)))
+                    .maxTokens(4000)
+                    .temperature(0.3)
+                    .build();
+
+            ChatCompletionResponse response = dashScopeClient.chatCompletion(request);
+
+            if (response.hasError()) {
+                log.error("Vision API 调用失败: {}", response.getErrorMessage());
+                return createEmptyResult(fileUrl, "Vision API 调用失败: " + response.getErrorMessage());
+            }
+
+            SopParseResult result = parseAiResponse(response.getContent(), fileUrl);
+            result.setParseMethod("Vision AI OCR (" + reason + ")");
+
+            // 尝试从响应中提取content字段
+            try {
+                String jsonStr = extractJson(response.getContent());
+                if (jsonStr != null) {
+                    Map<String, Object> parsed = objectMapper.readValue(jsonStr,
+                            new TypeReference<Map<String, Object>>() {});
+                    if (parsed.containsKey("content")) {
+                        result.setContent((String) parsed.get("content"));
+                    }
+                }
+            } catch (Exception e) {
+                // 如果解析失败，使用原始响应作为content
+                if (result.getContent() == null || result.getContent().isEmpty()) {
+                    result.setContent(response.getContent());
+                }
+            }
+
+            return result;
+        } catch (Exception e) {
+            log.error("Vision AI解析PDF失败: {}", e.getMessage(), e);
+            return createEmptyResult(fileUrl, "Vision AI解析失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 从URL下载PDF并提取文本
+     * 针对中文PDF进行了优化配置
      */
     private String extractPdfText(String fileUrl) throws Exception {
         log.info("开始下载PDF: {}", fileUrl);
@@ -242,7 +437,12 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
              PDDocument document = PDDocument.load(is)) {
 
             PDFTextStripper stripper = new PDFTextStripper();
-            stripper.setSortByPosition(true);
+
+            // 中文PDF优化配置
+            stripper.setSortByPosition(true);  // 按位置排序，更好地保持中文阅读顺序
+            stripper.setAddMoreFormatting(true);  // 添加更多格式化，保持段落结构
+            stripper.setSpacingTolerance(0.5f);  // 调整字符间距容差
+            stripper.setAverageCharTolerance(0.3f);  // 调整平均字符容差
 
             String text = stripper.getText(document);
             log.info("PDF解析成功，页数: {}, 文本长度: {}", document.getNumberOfPages(), text.length());
@@ -259,6 +459,7 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
         result.setContent("");
         result.setSteps(new ArrayList<>());
         result.setMetadata(new HashMap<>());
+        result.setParseMethod("Excel直接解析");
 
         try (InputStream is = new URL(fileUrl).openStream();
              Workbook workbook = new XSSFWorkbook(is)) {
@@ -384,7 +585,9 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
                 return createEmptyResult(fileUrl, "Vision API 调用失败: " + response.getErrorMessage());
             }
 
-            return parseAiResponse(response.getContent(), fileUrl);
+            SopParseResult result = parseAiResponse(response.getContent(), fileUrl);
+            result.setParseMethod("Vision AI OCR (图片)");
+            return result;
         } catch (Exception e) {
             log.error("图片OCR解析失败: {}", e.getMessage(), e);
             return createEmptyResult(fileUrl, "图片OCR解析失败: " + e.getMessage());
@@ -518,6 +721,7 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
         result.setMetadata(new HashMap<>());
         result.getMetadata().put("error", error);
         result.getMetadata().put("fileUrl", fileUrl);
+        result.setParseMethod("解析失败");
         return result;
     }
 
@@ -530,12 +734,22 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     }
 
     /**
+     * 中文提取质量评估结果
+     */
+    private static class ChineseExtractionQuality {
+        double score = 0;           // 综合得分 0-1
+        double chineseCharRatio = 0; // 中文字符比例
+        boolean hasGarbledChars = false; // 是否有乱码
+    }
+
+    /**
      * SOP解析结果内部类
      */
     private static class SopParseResult {
         private String content;
         private List<Map<String, Object>> steps;
         private Map<String, Object> metadata;
+        private String parseMethod;  // 解析方法：PDFBox/Vision AI OCR
 
         public String getContent() { return content; }
         public void setContent(String content) { this.content = content; }
@@ -543,5 +757,7 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
         public void setSteps(List<Map<String, Object>> steps) { this.steps = steps; }
         public Map<String, Object> getMetadata() { return metadata; }
         public void setMetadata(Map<String, Object> metadata) { this.metadata = metadata; }
+        public String getParseMethod() { return parseMethod; }
+        public void setParseMethod(String parseMethod) { this.parseMethod = parseMethod; }
     }
 }
