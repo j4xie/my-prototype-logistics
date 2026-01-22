@@ -2078,7 +2078,7 @@ public class SchedulingServiceImpl implements SchedulingService {
     public SchedulingAlertDTO acknowledgeAlert(String factoryId, String alertId, Long userId) {
         log.debug("Delegating acknowledgeAlert to schedulingAlertService: factoryId={}, alertId={}, userId={}",
             factoryId, alertId, userId);
-        SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId).orElseThrow(() -> new IllegalArgumentException("告警不存在")); alert.setIsAcknowledged(true); alert.setAcknowledgedBy(userId); alert.setAcknowledgedAt(java.time.LocalDateTime.now()); return toAlertDTO(alertRepository.save(alert));
+        SchedulingAlert alert = alertRepository.findByIdAndFactoryId(alertId, factoryId).orElseThrow(() -> new IllegalArgumentException("告警不存在")); alert.setAcknowledgedBy(userId); alert.setAcknowledgedAt(java.time.LocalDateTime.now()); return toAlertDTO(alertRepository.save(alert));
     }
 
     @Override

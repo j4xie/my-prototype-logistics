@@ -1,6 +1,9 @@
 package com.cretas.aims.dto.scheduling;
 
 import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,6 +13,9 @@ import java.util.List;
  * 调度 Dashboard DTO
  */
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class SchedulingDashboardDTO {
     private LocalDate date;
 

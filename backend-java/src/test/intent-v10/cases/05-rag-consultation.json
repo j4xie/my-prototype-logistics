@@ -1,0 +1,216 @@
+{
+  "category": "rag_consultation",
+  "description": "RAG与咨询类测试",
+  "testCases": [
+    {
+      "id": "R001",
+      "input": "带鱼的标准储存温度是多少？保质期一般多长时间？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 食品储存规范",
+      "expectedKeywords": ["温度", "保质期", "-18"]
+    },
+    {
+      "id": "R002",
+      "input": "来料检验的标准流程是什么？需要检查哪些项目？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 质检SOP",
+      "expectedKeywords": ["流程", "检验项目"]
+    },
+    {
+      "id": "R003",
+      "input": "设备日常点检应该包含哪些内容？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 设备维护手册",
+      "expectedKeywords": ["点检", "项目"]
+    },
+    {
+      "id": "R004",
+      "input": "HACCP体系中CCP点的监控要求是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 食品安全知识库",
+      "expectedKeywords": ["HACCP", "CCP", "监控"]
+    },
+    {
+      "id": "R005",
+      "input": "原料入库需要准备什么单据？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 仓储操作规范",
+      "expectedKeywords": ["入库", "单据"]
+    },
+    {
+      "id": "R006",
+      "input": "产品召回的标准流程是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 质量管理体系文档",
+      "expectedKeywords": ["召回", "流程"]
+    },
+    {
+      "id": "R007",
+      "input": "员工食品安全培训的必修内容有哪些？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 培训管理规范",
+      "expectedKeywords": ["培训", "食品安全"]
+    },
+    {
+      "id": "R008",
+      "input": "不合格品的处置选项有哪些？各自的适用场景是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 质量处置指南",
+      "expectedKeywords": ["不合格", "处置", "让步"]
+    },
+    {
+      "id": "R009",
+      "input": "冷链运输的温度监控标准是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 物流管理规范",
+      "expectedKeywords": ["冷链", "温度", "监控"]
+    },
+    {
+      "id": "R010",
+      "input": "供应商准入评审需要审核哪些材料？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 采购管理制度",
+      "expectedKeywords": ["供应商", "准入", "审核"]
+    },
+    {
+      "id": "R011",
+      "input": "设备故障分类标准是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 设备管理手册",
+      "expectedKeywords": ["故障", "分类", "A级", "B级"]
+    },
+    {
+      "id": "R012",
+      "input": "原料批次号的编码规则是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 编码规范",
+      "expectedKeywords": ["批次号", "编码", "规则"]
+    },
+    {
+      "id": "R013",
+      "input": "质检不合格率的计算公式是什么？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 质量指标定义",
+      "expectedKeywords": ["不合格率", "计算", "公式"]
+    },
+    {
+      "id": "R014",
+      "input": "先进先出原则在实际操作中如何执行？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 仓储作业指导书",
+      "expectedKeywords": ["先进先出", "FIFO", "操作"]
+    },
+    {
+      "id": "R015",
+      "input": "食品添加剂的使用限量标准在哪里可以查到？",
+      "expectedIntent": "RAG_QUERY",
+      "description": "知识库检索 - 法规库",
+      "expectedKeywords": ["添加剂", "限量", "GB 2760"]
+    },
+    {
+      "id": "R016",
+      "input": "最新的食品安全法有什么重要修订？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 法规更新摘要",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R017",
+      "input": "带鱼的市场行情最近怎么样？价格趋势如何？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 市场行情",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R018",
+      "input": "同行业的平均库存周转率是多少？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 行业基准数据",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R019",
+      "input": "冷链物流行业有什么新技术趋势？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 行业动态",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R020",
+      "input": "国家对水产品溯源有什么最新要求？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 政策法规",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R021",
+      "input": "ISO 22000最新版本有什么变化？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 标准更新",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R022",
+      "input": "疫情期间冷链食品的防控要求是什么？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 防控政策",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R023",
+      "input": "进口水产品需要什么检验检疫手续？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 海关规定",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R024",
+      "input": "食品企业碳中和的实施路径有哪些？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - ESG实践",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R025",
+      "input": "智能仓储的最佳实践案例有哪些？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 案例库",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R026",
+      "input": "GB 4806食品接触材料的最新要求？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 国标更新",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R027",
+      "input": "冷库节能改造有什么补贴政策？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 政策信息",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R028",
+      "input": "水产品预制菜的市场规模有多大？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 市场报告",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R029",
+      "input": "食品生产许可证的办理流程是什么？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 行政流程",
+      "expectWebSearch": true
+    },
+    {
+      "id": "R030",
+      "input": "BRCGS认证的审核要点是什么？",
+      "expectedIntent": "WEB_SEARCH",
+      "description": "网络搜索 - 认证资料",
+      "expectWebSearch": true
+    }
+  ]
+}
