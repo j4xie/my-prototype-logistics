@@ -310,6 +310,14 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- PyTorch Engine for DJL (Flan-T5 Discriminator) -->
+        <dependency>
+            <groupId>ai.djl.pytorch</groupId>
+            <artifactId>pytorch-engine</artifactId>
+            <version>0.30.0</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- JAVE2 for Audio Format Conversion (外置到服务器，仅保留 linux64) -->
         <dependency>
             <groupId>ws.schild</groupId>
