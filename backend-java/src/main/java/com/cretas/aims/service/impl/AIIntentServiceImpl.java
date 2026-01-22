@@ -2018,8 +2018,8 @@ public class AIIntentServiceImpl implements AIIntentService {
                     .confidenceScore(BigDecimal.valueOf(result.getConfidence()))
                     .topCandidates(topCandidatesJson)
                     .matchedKeywords(matchedKeywordsJson)
-                    .isStrongSignal(result.getIsStrongSignal())
-                    .requiresConfirmation(result.getRequiresConfirmation())
+                    .isStrongSignal(result.getIsStrongSignal() != null ? result.getIsStrongSignal() : false)
+                    .requiresConfirmation(result.getRequiresConfirmation() != null ? result.getRequiresConfirmation() : false)
                     .clarificationQuestion(result.getClarificationQuestion())
                     .llmCalled(llmCalled)
                     .executionStatus(IntentMatchRecord.ExecutionStatus.PENDING);
