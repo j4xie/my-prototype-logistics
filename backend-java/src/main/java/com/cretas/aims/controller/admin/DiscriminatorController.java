@@ -3,6 +3,7 @@ package com.cretas.aims.controller.admin;
 import com.cretas.aims.ai.discriminator.DiscriminatorResult;
 import com.cretas.aims.ai.discriminator.FlanT5Config;
 import com.cretas.aims.ai.discriminator.FlanT5DiscriminatorService;
+import com.cretas.aims.ai.discriminator.InputValidator;
 import com.cretas.aims.ai.discriminator.JudgeAutoTuner;
 import com.cretas.aims.dto.common.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -101,6 +102,23 @@ public class DiscriminatorController {
         );
 
         return ResponseEntity.ok(ApiResponse.success(pruned));
+    }
+
+    /**
+     * Validate user input
+     */
+    @PostMapping("/validate")
+    @Operation(summary = "验证输入", description = "验证用户输入质量，检测模糊、无关、写操作等")
+    public ResponseEntity<ApiResponse<InputValidator.ValidationResult>> validateInput(
+            @RequestBody ValidateRequest request
+    ) {
+        log.info("Validating input: '{}'", request.getUserInput());
+
+        InputValidator.ValidationResult result = discriminatorService.validateInput(
+                request.getUserInput()
+        );
+
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     // ==================== Metrics Endpoints ====================
@@ -233,5 +251,10 @@ public class DiscriminatorController {
         private String userInput;
         private List<String> candidates;
         private boolean writeOperation;
+    }
+
+    @Data
+    public static class ValidateRequest {
+        private String userInput;
     }
 }

@@ -23,6 +23,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import com.cretas.aims.ai.discriminator.InputValidator.InputQuality;
+import com.cretas.aims.ai.discriminator.InputValidator.ValidationResult;
+
 /**
  * Flan-T5 Discriminator Service for JudgeRLVR.
  *
@@ -60,9 +63,16 @@ public class FlanT5DiscriminatorService {
     private final FlanT5Config config;
     private final DashScopeClient dashScopeClient;
     private final AIIntentConfigRepository intentConfigRepository;
+    private final InputValidator inputValidator;
 
     // Cache for judgment results
     private Cache<String, DiscriminatorResult> resultCache;
+
+    // Metrics for input validation
+    private final AtomicLong vagueInputs = new AtomicLong(0);
+    private final AtomicLong writeOpInputs = new AtomicLong(0);
+    private final AtomicLong irrelevantInputs = new AtomicLong(0);
+    private final AtomicLong invalidInputs = new AtomicLong(0);
 
     // Intent description cache
     private final Map<String, String> intentDescriptionCache = new ConcurrentHashMap<>();
@@ -82,11 +92,13 @@ public class FlanT5DiscriminatorService {
     public FlanT5DiscriminatorService(
             FlanT5Config config,
             DashScopeClient dashScopeClient,
-            AIIntentConfigRepository intentConfigRepository
+            AIIntentConfigRepository intentConfigRepository,
+            InputValidator inputValidator
     ) {
         this.config = config;
         this.dashScopeClient = dashScopeClient;
         this.intentConfigRepository = intentConfigRepository;
+        this.inputValidator = inputValidator;
     }
 
     @PostConstruct
@@ -236,7 +248,7 @@ public class FlanT5DiscriminatorService {
     }
 
     /**
-     * Batch judge multiple intents for a single user input.
+     * Batch judge multiple intents for a single user input with input validation.
      *
      * @param userInput    The user's input text
      * @param intentCodes  List of intent codes to judge
@@ -249,6 +261,45 @@ public class FlanT5DiscriminatorService {
 
         Map<String, Double> scores = new HashMap<>();
 
+        // Validate input first
+        ValidationResult validation = inputValidator.validate(userInput);
+
+        // Handle invalid/irrelevant inputs
+        if (!validation.isValid()) {
+            switch (validation.getQuality()) {
+                case INVALID:
+                    invalidInputs.incrementAndGet();
+                    // Return all zeros for invalid input
+                    intentCodes.forEach(code -> scores.put(code, 0.0));
+                    return scores;
+
+                case IRRELEVANT:
+                    irrelevantInputs.incrementAndGet();
+                    // Return all zeros for irrelevant input
+                    intentCodes.forEach(code -> scores.put(code, 0.0));
+                    return scores;
+
+                case TOO_SHORT:
+                case VAGUE:
+                    vagueInputs.incrementAndGet();
+                    // For vague inputs, still try to match but with lower confidence modifier
+                    break;
+            }
+        }
+
+        // Track write operations
+        if (validation.isWriteOperation()) {
+            writeOpInputs.incrementAndGet();
+        }
+
+        // Use cleaned input for judgment
+        String cleanedInput = validation.getCleanedInput() != null
+                ? validation.getCleanedInput()
+                : userInput;
+
+        // Get confidence modifier based on input quality
+        double confidenceModifier = inputValidator.getConfidenceModifier(validation.getQuality());
+
         // Process in batches
         int batchSize = config.getBatchSize();
         for (int i = 0; i < intentCodes.size(); i += batchSize) {
@@ -259,7 +310,7 @@ public class FlanT5DiscriminatorService {
             if (config.isAsyncEnabled()) {
                 List<CompletableFuture<DiscriminatorResult>> futures = batch.stream()
                         .map(intentCode -> CompletableFuture.supplyAsync(
-                                () -> judge(userInput, intentCode)))
+                                () -> judge(cleanedInput, intentCode)))
                         .collect(Collectors.toList());
 
                 CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
@@ -269,20 +320,44 @@ public class FlanT5DiscriminatorService {
                 for (int j = 0; j < batch.size(); j++) {
                     try {
                         DiscriminatorResult result = futures.get(j).get();
-                        scores.put(batch.get(j), result.getScore());
+                        // Apply confidence modifier
+                        double adjustedScore = result.getScore() * confidenceModifier;
+                        scores.put(batch.get(j), adjustedScore);
                     } catch (Exception e) {
                         scores.put(batch.get(j), 0.0);
                     }
                 }
             } else {
                 for (String intentCode : batch) {
-                    DiscriminatorResult result = judge(userInput, intentCode);
-                    scores.put(intentCode, result.getScore());
+                    DiscriminatorResult result = judge(cleanedInput, intentCode);
+                    double adjustedScore = result.getScore() * confidenceModifier;
+                    scores.put(intentCode, adjustedScore);
                 }
             }
         }
 
         return scores;
+    }
+
+    /**
+     * Validate user input and return validation result.
+     * Can be used by callers to handle special cases.
+     *
+     * @param userInput The user's input text
+     * @return Validation result with quality and suggestions
+     */
+    public ValidationResult validateInput(String userInput) {
+        return inputValidator.validate(userInput);
+    }
+
+    /**
+     * Check if input contains write operation keywords.
+     *
+     * @param userInput The user's input text
+     * @return true if write operation detected
+     */
+    public boolean isWriteOperation(String userInput) {
+        return inputValidator.containsWriteKeyword(userInput);
     }
 
     /**
@@ -442,6 +517,12 @@ public class FlanT5DiscriminatorService {
         metrics.put("fallbackCalls", fallbackCalls.get());
         metrics.put("errors", errors.get());
 
+        // Input validation metrics
+        metrics.put("vagueInputs", vagueInputs.get());
+        metrics.put("writeOpInputs", writeOpInputs.get());
+        metrics.put("irrelevantInputs", irrelevantInputs.get());
+        metrics.put("invalidInputs", invalidInputs.get());
+
         if (config.isCacheEnabled() && resultCache != null) {
             metrics.put("cacheSize", resultCache.estimatedSize());
             metrics.put("cacheStats", resultCache.stats().toString());
@@ -459,6 +540,10 @@ public class FlanT5DiscriminatorService {
         localModelCalls.set(0);
         fallbackCalls.set(0);
         errors.set(0);
+        vagueInputs.set(0);
+        writeOpInputs.set(0);
+        irrelevantInputs.set(0);
+        invalidInputs.set(0);
     }
 
     /**

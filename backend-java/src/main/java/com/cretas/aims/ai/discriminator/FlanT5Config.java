@@ -156,18 +156,31 @@ public class FlanT5Config {
             "判断用户输入是否匹配意图。用户输入: {input} 意图: {intentCode} - {intentDescription} 输出是或否:";
 
     /**
-     * Few-shot prompt template (with examples)
+     * Few-shot prompt template (with examples for better accuracy)
+     * Enhanced with more diverse examples and clearer instructions
      */
     private String fewShotPromptTemplate =
-            "判断用户输入是否匹配意图。\n" +
-            "示例1: 输入'查看今天销售' 意图'sales_overview' → 是\n" +
-            "示例2: 输入'删除销售记录' 意图'sales_overview' → 否\n" +
-            "输入: {input} 意图: {intentCode} 输出是或否:";
+            "你是一个意图分类助手。判断用户输入是否表达了查询某个特定意图的需求。只回答'是'或'否'。\n\n" +
+            "规则：\n" +
+            "- '是': 用户明确想要查询/了解该意图相关的信息\n" +
+            "- '否': 用户的需求与该意图不相关，或用户想要执行写入操作(如删除、修改、添加)\n\n" +
+            "示例：\n" +
+            "输入'查看今天销售' 意图'sales_overview'(销售概览) → 是\n" +
+            "输入'销售排名' 意图'sales_overview'(销售概览) → 否（应该是sales_ranking）\n" +
+            "输入'删除销售记录' 意图'sales_overview'(销售概览) → 否（写操作）\n" +
+            "输入'库存多少' 意图'inventory'(库存查询) → 是\n" +
+            "输入'修改库存' 意图'inventory'(库存查询) → 否（写操作）\n" +
+            "输入'设备状态' 意图'EQUIPMENT_STATUS_QUERY'(设备状态) → 是\n" +
+            "输入'生产进度' 意图'EQUIPMENT_STATUS_QUERY'(设备状态) → 否（应该是PRODUCTION_STATUS_QUERY）\n\n" +
+            "现在判断：\n" +
+            "输入: '{input}' 意图: '{intentCode}'({intentDescription})\n" +
+            "输出是或否:";
 
     /**
      * Whether to use few-shot prompting (more accurate but longer)
+     * Enabled by default for better accuracy
      */
-    private boolean useFewShot = false;
+    private boolean useFewShot = true;
 
     // ==================== Monitoring Configuration ====================
 
