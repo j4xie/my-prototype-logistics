@@ -168,13 +168,101 @@ public interface QueryPreprocessorService {
      * 3. 核心提取
      * 4. 排序检测
      * 5. 动作消歧
+     * 6. 语用学处理（反问句、转折句、双重否定）
      *
      * @param input 用户原始输入
      * @return 增强预处理结果
      */
     EnhancedPreprocessResult enhancedPreprocess(String input);
 
+    // ==================== 语用学处理方法 (v8.0) ====================
+
+    /**
+     * 反问句式转换
+     *
+     * 将反问句转换为陈述查询意图
+     * 例如："难道今天没有原料到货吗" → "查询今天原料到货情况"
+     *
+     * 支持的模式：
+     * - 难道.*(吗|呢)
+     * - 怎么.*不
+     * - 为什么.*没
+     * - 不是.*吗
+     *
+     * @param input 用户输入
+     * @return 语用学处理结果
+     */
+    PragmaticProcessingResult convertRhetoricalQuestion(String input);
+
+    /**
+     * 转折句提取
+     *
+     * 从转折句中提取真实意图（通常在转折词之后）
+     * 例如："虽然产量达标了，但是不合格品率上升了不少" → "查询不合格品率变化"
+     *
+     * 支持的模式：
+     * - (虽然|尽管|虽说).*?(但是|可是|然而|不过)(.*)
+     *
+     * @param input 用户输入
+     * @return 语用学处理结果
+     */
+    PragmaticProcessingResult extractConcessionIntent(String input);
+
+    /**
+     * 双重否定转肯定
+     *
+     * 将双重否定转换为肯定语义
+     * 例如："不是不想用这批原料" → "想用这批原料"
+     *
+     * 支持的模式：
+     * - 不是不、并非不、没有不、不能不、不会不
+     *
+     * @param input 用户输入
+     * @return 语用学处理结果
+     */
+    PragmaticProcessingResult convertDoubleNegative(String input);
+
     // ==================== 新增结果类 ====================
+
+    /**
+     * 语用学处理结果 (v8.0)
+     */
+    @lombok.Data
+    @lombok.Builder
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    class PragmaticProcessingResult {
+        /** 原始输入 */
+        private String originalInput;
+        /** 处理后的文本 */
+        private String processedText;
+        /** 处理类型: RHETORICAL_QUESTION, CONCESSION, DOUBLE_NEGATIVE, NONE */
+        private PragmaticType processingType;
+        /** 是否进行了处理 */
+        private boolean processed;
+        /** 检测到的模式 */
+        private String detectedPattern;
+        /** 提取的核心意图 */
+        private String extractedIntent;
+        /** 处理说明 */
+        private String processingNote;
+        /** 置信度 (0-1) */
+        private double confidence;
+    }
+
+    /**
+     * 语用学处理类型枚举 (v8.0)
+     */
+    enum PragmaticType {
+        /** 反问句 */
+        RHETORICAL_QUESTION,
+        /** 转折句 */
+        CONCESSION,
+        /** 双重否定 */
+        DOUBLE_NEGATIVE,
+        /** 无特殊处理 */
+        NONE
+    }
 
     /**
      * 核心提取结果
@@ -278,6 +366,8 @@ public interface QueryPreprocessorService {
         private ActionDisambiguationResult actionDisambiguation;
         /** 否定语义信息 v7.5 */
         private NegationInfo negationInfo;
+        /** 语用学处理结果 v8.0 */
+        private PragmaticProcessingResult pragmaticProcessing;
         /** 检测到的查询特征 */
         private java.util.Set<String> queryFeatures;
         /** 处理耗时(ms) */

@@ -102,4 +102,13 @@ public class IntentExecuteRequest {
      * - 质量评估分数
      */
     private PreprocessedQuery preprocessedQuery;
+
+    /**
+     * 是否跳过 Slot Filling 参数收集 (可选)
+     * 当设置为 true 时，即使有缺失参数也不会触发渐进式参数收集
+     * 适用于已在 context 中提供所有参数的场景
+     * 默认: false
+     */
+    @Builder.Default
+    private Boolean skipSlotFilling = false;
 }

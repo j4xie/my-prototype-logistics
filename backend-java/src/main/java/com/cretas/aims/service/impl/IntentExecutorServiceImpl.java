@@ -32,7 +32,10 @@ import com.cretas.aims.service.ParameterExtractionLearningService;
 import com.cretas.aims.service.AnalysisRouterService;
 import com.cretas.aims.service.ComplexityRouter;
 import com.cretas.aims.service.AgentOrchestrator;
+import com.cretas.aims.service.AgenticRAGRouterService;
 import com.cretas.aims.dto.ai.AnalysisContext;
+import com.cretas.aims.dto.ai.RAGRouteResult;
+import com.cretas.aims.dto.ai.ConsultationType;
 import com.cretas.aims.dto.ai.AnalysisResult;
 import com.cretas.aims.dto.ai.AnalysisTopic;
 import com.cretas.aims.dto.ai.ProcessingMode;
@@ -126,6 +129,9 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
     // 新增：多Agent编排服务 (v7.0 Agentic RAG)
     private final AgentOrchestrator agentOrchestrator;
 
+    // 新增：Agentic RAG 路由服务 (v7.1 咨询类型细分路由)
+    private final AgenticRAGRouterService agenticRAGRouterService;
+
     // 新增：行为校准服务 (ET-Agent)
     private final ToolCallRedundancyService redundancyService;
     private final BehaviorCalibrationService calibrationService;
@@ -137,6 +143,12 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
 
     // 新增：工具结果验证器（扩展纠错触发条件）
     private final ToolResultValidatorService toolResultValidatorService;
+
+    // 新增：意图槽位配置（Slot Filling）
+    private final com.cretas.aims.config.IntentSlotConfiguration intentSlotConfiguration;
+
+    // 新增：Slot Filling 服务
+    private final com.cretas.aims.service.SlotFillingService slotFillingService;
 
     // 处理器映射表: category -> handler
     private final Map<String, IntentHandler> handlerMap = new HashMap<>();
@@ -179,12 +191,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                                      AnalysisRouterService analysisRouterService,
                                      ComplexityRouter complexityRouter,
                                      AgentOrchestrator agentOrchestrator,
+                                     AgenticRAGRouterService agenticRAGRouterService,
                                      ToolCallRedundancyService redundancyService,
                                      BehaviorCalibrationService calibrationService,
                                      SelfCorrectionService selfCorrectionService,
                                      CorrectionAgentService correctionAgentService,
                                      ExternalVerifierService externalVerifierService,
-                                     ToolResultValidatorService toolResultValidatorService) {
+                                     ToolResultValidatorService toolResultValidatorService,
+                                     com.cretas.aims.config.IntentSlotConfiguration intentSlotConfiguration,
+                                     @org.springframework.context.annotation.Lazy com.cretas.aims.service.SlotFillingService slotFillingService) {
         this.aiIntentService = aiIntentService;
         this.handlers = handlers;
         this.semanticsParser = semanticsParser;
@@ -205,12 +220,15 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         this.analysisRouterService = analysisRouterService;
         this.complexityRouter = complexityRouter;
         this.agentOrchestrator = agentOrchestrator;
+        this.agenticRAGRouterService = agenticRAGRouterService;
         this.redundancyService = redundancyService;
         this.calibrationService = calibrationService;
         this.selfCorrectionService = selfCorrectionService;
         this.correctionAgentService = correctionAgentService;
         this.externalVerifierService = externalVerifierService;
         this.toolResultValidatorService = toolResultValidatorService;
+        this.intentSlotConfiguration = intentSlotConfiguration;
+        this.slotFillingService = slotFillingService;
     }
 
     @PostConstruct
@@ -352,6 +370,71 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                             userInput.length() > 30 ? userInput.substring(0, 30) + "..." : userInput);
 
                     return executeAnalysisFlow(factoryId, userInput, request, userId, userRole);
+                }
+
+                // v7.1新增：Agentic RAG 路由 - 对 GENERAL_QUESTION 进行细分路由
+                if (earlyQuestionType == QuestionType.GENERAL_QUESTION) {
+                    RAGRouteResult ragRouteResult = agenticRAGRouterService.route(userInput);
+                    log.info("🔀 RAG路由结果: type={}, confidence={:.2f}, reason='{}'",
+                            ragRouteResult.getConsultationType(),
+                            ragRouteResult.getConfidence(),
+                            ragRouteResult.getRoutingReason());
+
+                    // 根据咨询类型路由到不同处理路径
+                    switch (ragRouteResult.getConsultationType()) {
+                        case KNOWLEDGE_SEARCH:
+                            // 知识库检索
+                            log.info("📚 路由到知识库检索: query='{}'", ragRouteResult.getSuggestedSearchQuery());
+                            String knowledgeResponse = agenticRAGRouterService.executeKnowledgeSearch(userInput, ragRouteResult);
+                            return buildRAGResponse(knowledgeResponse, ragRouteResult, "KNOWLEDGE_SEARCH");
+
+                        case WEB_SEARCH:
+                            // 网络搜索
+                            log.info("🌐 路由到网络搜索: query='{}'", ragRouteResult.getSuggestedSearchQuery());
+                            String webSearchResponse = agenticRAGRouterService.executeWebSearch(userInput, ragRouteResult);
+                            return buildRAGResponse(webSearchResponse, ragRouteResult, "WEB_SEARCH");
+
+                        case TRACEABILITY:
+                            // 追溯查询 - 如果高置信度且有建议意图，转换为业务意图执行
+                            if (ragRouteResult.shouldConvertToIntent() && ragRouteResult.isHighConfidence()) {
+                                log.info("🔗 追溯查询转换为业务意图: suggestedIntent={}, params={}",
+                                        ragRouteResult.getSuggestedIntent(), ragRouteResult.getExtractedParams());
+
+                                // 如果需要澄清，返回澄清请求
+                                if (ragRouteResult.isNeedsClarification()) {
+                                    return IntentExecuteResponse.builder()
+                                            .intentRecognized(false)
+                                            .status("NEED_CLARIFICATION")
+                                            .message(ragRouteResult.getClarificationQuestion())
+                                            .executedAt(LocalDateTime.now())
+                                            .metadata(Map.of(
+                                                    "consultationType", "TRACEABILITY",
+                                                    "suggestedIntent", ragRouteResult.getSuggestedIntent(),
+                                                    "confidence", ragRouteResult.getConfidence()
+                                            ))
+                                            .build();
+                                }
+
+                                // 构建新请求，使用建议的意图代码
+                                Map<String, Object> traceabilityContext = new HashMap<>(ragRouteResult.getExtractedParams());
+                                IntentExecuteRequest traceabilityRequest = IntentExecuteRequest.builder()
+                                        .userInput(userInput)
+                                        .intentCode(ragRouteResult.getSuggestedIntent())
+                                        .context(traceabilityContext)
+                                        .build();
+
+                                // 递归调用执行
+                                return execute(factoryId, traceabilityRequest, userId, userRole);
+                            }
+                            // 低置信度时降级到通用对话
+                            log.info("🔗 追溯查询置信度较低，降级到通用对话");
+                            break;
+
+                        case GENERAL:
+                        default:
+                            // 通用咨询，继续下面的 LLM 对话处理
+                            break;
+                    }
                 }
 
                 log.info("问题类型为{}，跳过缓存直接路由到LLM: input='{}'", earlyQuestionType,
@@ -609,6 +692,18 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
                     .build();
         }
         log.debug("Drools规则验证通过: intentCode={}", intent.getIntentCode());
+
+        // 3.5. 主动参数检查 - Slot Filling 机制
+        // 在执行前检查必需参数是否缺失，如果缺失则主动触发参数收集
+        if (userId != null && !Boolean.TRUE.equals(request.getSkipSlotFilling()) && slotFillingService != null) {
+            IntentExecuteResponse slotFillingResponse = slotFillingService.checkAndStartSlotFilling(
+                    factoryId, userId, intent, request, matchResult);
+            if (slotFillingResponse != null) {
+                log.info("触发 Slot Filling: intentCode={}, sessionId={}",
+                        intent.getIntentCode(), slotFillingResponse.getSessionId());
+                return slotFillingResponse;
+            }
+        }
 
         // 4. 路由到执行器 - Tool 优先，动态选择，Handler 回退
         String toolName = intent.getToolName();
@@ -2803,6 +2898,45 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         }
 
         return result.toString();
+    }
+
+    /**
+     * 构建 RAG 路由响应
+     *
+     * 用于处理 KNOWLEDGE_SEARCH 和 WEB_SEARCH 类型的咨询结果。
+     * 将检索/搜索结果封装为统一的响应格式。
+     *
+     * @param responseContent 响应内容（检索或搜索结果）
+     * @param ragRouteResult RAG 路由结果
+     * @param routeType 路由类型标识
+     * @return 封装的意图执行响应
+     */
+    private IntentExecuteResponse buildRAGResponse(String responseContent,
+                                                    RAGRouteResult ragRouteResult,
+                                                    String routeType) {
+        Map<String, Object> metadata = new HashMap<>();
+        metadata.put("routeType", routeType);
+        metadata.put("consultationType", ragRouteResult.getConsultationType().name());
+        metadata.put("confidence", ragRouteResult.getConfidence());
+        metadata.put("routingReason", ragRouteResult.getRoutingReason());
+
+        if (ragRouteResult.getMatchedKeywords() != null && !ragRouteResult.getMatchedKeywords().isEmpty()) {
+            metadata.put("matchedKeywords", ragRouteResult.getMatchedKeywords());
+        }
+
+        if (ragRouteResult.getSuggestedSearchQuery() != null) {
+            metadata.put("searchQuery", ragRouteResult.getSuggestedSearchQuery());
+        }
+
+        String status = ragRouteResult.isHighConfidence() ? "RAG_COMPLETED" : "RAG_COMPLETED_LOW_CONFIDENCE";
+
+        return IntentExecuteResponse.builder()
+                .intentRecognized(false)  // 不是业务意图
+                .status(status)
+                .message(responseContent)
+                .metadata(metadata)
+                .executedAt(LocalDateTime.now())
+                .build();
     }
 
     /**

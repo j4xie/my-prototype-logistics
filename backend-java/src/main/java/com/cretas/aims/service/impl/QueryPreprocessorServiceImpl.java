@@ -9,6 +9,7 @@ import com.cretas.aims.dto.ai.PreprocessedQuery.QualityAssessment;
 import com.cretas.aims.dto.conversation.ConversationContext;
 import com.cretas.aims.dto.conversation.EntitySlot;
 import com.cretas.aims.service.ConversationMemoryService;
+import com.cretas.aims.service.DialectNormalizationService;
 import com.cretas.aims.service.QueryPreprocessorService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +46,7 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
     private final ConversationMemoryService conversationMemoryService;
     private final DashScopeClient dashScopeClient;
     private final ObjectMapper objectMapper;
+    private final DialectNormalizationService dialectNormalizationService;
 
     /**
      * 是否启用预处理服务
@@ -99,18 +101,70 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             "(除了|排除|不要|不包括|去掉|去除|不含|除开|不是|非|不想要|别给我)"
     );
 
+    // ==================== 语用学处理正则模式 (v8.0) ====================
+
+    /**
+     * 反问句模式1: 难道...吗/呢
+     * 例如: "难道今天没有原料到货吗"
+     */
+    private static final Pattern RHETORICAL_NANDAO_PATTERN = Pattern.compile(
+            "难道(.+?)(吗|呢)[?？]?"
+    );
+
+    /**
+     * 反问句模式2: 怎么...不
+     * 例如: "怎么还不发货", "怎么不检查一下"
+     */
+    private static final Pattern RHETORICAL_ZENME_PATTERN = Pattern.compile(
+            "怎么(.+?)不(.+?)([?？])?$"
+    );
+
+    /**
+     * 反问句模式3: 为什么...没
+     * 例如: "为什么这批货没入库", "为什么还没完成质检"
+     */
+    private static final Pattern RHETORICAL_WEISHENME_PATTERN = Pattern.compile(
+            "为什么(.+?)没(.+?)([?？])?$"
+    );
+
+    /**
+     * 反问句模式4: 不是...吗
+     * 例如: "不是说今天要发货吗", "不是应该入库了吗"
+     */
+    private static final Pattern RHETORICAL_BUSHI_PATTERN = Pattern.compile(
+            "不是(.+?)(吗|么)[?？]?"
+    );
+
+    /**
+     * 转折句模式: (虽然|尽管|虽说)...(但是|可是|然而|不过)...
+     * 例如: "虽然产量达标了，但是不合格品率上升了不少"
+     */
+    private static final Pattern CONCESSION_PATTERN = Pattern.compile(
+            "(虽然|尽管|虽说)(.+?)(但是|可是|然而|不过|但)(.+)"
+    );
+
+    /**
+     * 双重否定模式
+     * 例如: "不是不想用", "并非不知道", "没有不合格", "不能不检查", "不会不通知"
+     */
+    private static final Pattern DOUBLE_NEGATIVE_PATTERN = Pattern.compile(
+            "(不是不|并非不|没有不|不能不|不会不|不得不|无法不|难以不)(.+)"
+    );
+
     @Autowired
     public QueryPreprocessorServiceImpl(
             TimeNormalizationRules timeNormalizationRules,
             ColloquialMappings colloquialMappings,
             @Autowired(required = false) ConversationMemoryService conversationMemoryService,
             @Autowired(required = false) DashScopeClient dashScopeClient,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            @Autowired(required = false) DialectNormalizationService dialectNormalizationService) {
         this.timeNormalizationRules = timeNormalizationRules;
         this.colloquialMappings = colloquialMappings;
         this.conversationMemoryService = conversationMemoryService;
         this.dashScopeClient = dashScopeClient;
         this.objectMapper = objectMapper;
+        this.dialectNormalizationService = dialectNormalizationService;
     }
 
     @Override
@@ -1328,6 +1382,17 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             processed = afterModalFilter;
         }
 
+        // Step 1.5: 方言/口语标准化（优先于 ColloquialMappings）
+        if (dialectNormalizationService != null) {
+            DialectNormalizationService.NormalizationResult dialectResult =
+                    dialectNormalizationService.normalize(processed);
+            if (dialectResult.isHasReplacements()) {
+                features.add("DIALECT_NORMALIZED");
+                processed = dialectResult.getNormalizedText();
+                log.debug("方言标准化: {} 处替换", dialectResult.getReplacements().size());
+            }
+        }
+
         // Step 2: 口语标准化
         ColloquialMappings.StandardizationResult colloquialResult =
                 colloquialMappings.findAndReplace(processed);
@@ -1363,9 +1428,24 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             log.debug("检测到否定语义: {}", negationInfo);
         }
 
+        // Step 7 (v8.0): 语用学处理 - 反问句、转折句、双重否定
+        PragmaticProcessingResult pragmaticResult = performPragmaticProcessing(processed);
+        if (pragmaticResult.isProcessed()) {
+            features.add("PRAGMATIC_PROCESSED");
+            features.add("PRAGMATIC_TYPE:" + pragmaticResult.getProcessingType().name());
+            processed = pragmaticResult.getProcessedText();
+            log.info("语用学处理完成: type={}, pattern={}, confidence={}",
+                    pragmaticResult.getProcessingType(),
+                    pragmaticResult.getDetectedPattern(),
+                    pragmaticResult.getConfidence());
+        }
+
         // 决定最终处理结果
         String finalProcessed = processed;
-        if (coreResult.isExtracted() && coreResult.getCoreQuery() != null
+        if (pragmaticResult.isProcessed()) {
+            // 如果进行了语用学处理，优先使用处理后的结果
+            finalProcessed = pragmaticResult.getProcessedText();
+        } else if (coreResult.isExtracted() && coreResult.getCoreQuery() != null
                 && coreResult.getCoreQuery().length() >= 2) {
             // 如果核心提取有效且不太短，使用核心查询
             finalProcessed = coreResult.getCoreQuery();
@@ -1389,9 +1469,349 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
                 .rankingQuery(rankingResult)
                 .actionDisambiguation(disambiguationResult)
                 .negationInfo(interfaceNegationInfo)
+                .pragmaticProcessing(pragmaticResult)
                 .queryFeatures(features)
                 .processingTimeMs(System.currentTimeMillis() - startTime)
                 .build();
+    }
+
+    /**
+     * 执行语用学处理 (v8.0)
+     *
+     * 按优先级依次检测：
+     * 1. 反问句
+     * 2. 转折句
+     * 3. 双重否定
+     *
+     * 返回第一个匹配的处理结果
+     */
+    private PragmaticProcessingResult performPragmaticProcessing(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(input)
+                    .processingType(PragmaticType.NONE)
+                    .processed(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        log.debug("开始语用学处理: input={}", truncate(input, 50));
+
+        // 1. 检测反问句
+        PragmaticProcessingResult rhetoricalResult = convertRhetoricalQuestion(input);
+        if (rhetoricalResult.isProcessed()) {
+            return rhetoricalResult;
+        }
+
+        // 2. 检测转折句
+        PragmaticProcessingResult concessionResult = extractConcessionIntent(input);
+        if (concessionResult.isProcessed()) {
+            return concessionResult;
+        }
+
+        // 3. 检测双重否定
+        PragmaticProcessingResult doubleNegResult = convertDoubleNegative(input);
+        if (doubleNegResult.isProcessed()) {
+            return doubleNegResult;
+        }
+
+        // 无匹配
+        log.debug("未检测到需要语用学处理的模式");
+        return PragmaticProcessingResult.builder()
+                .originalInput(input)
+                .processedText(input)
+                .processingType(PragmaticType.NONE)
+                .processed(false)
+                .confidence(0.0)
+                .build();
+    }
+
+    // ==================== 语用学处理方法实现 (v8.0) ====================
+
+    @Override
+    public PragmaticProcessingResult convertRhetoricalQuestion(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(input)
+                    .processingType(PragmaticType.NONE)
+                    .processed(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        String text = input.trim();
+        log.debug("反问句检测开始: input={}", truncate(text, 50));
+
+        // 检测模式1: 难道...吗/呢
+        Matcher nandaoMatcher = RHETORICAL_NANDAO_PATTERN.matcher(text);
+        if (nandaoMatcher.find()) {
+            String content = nandaoMatcher.group(1).trim();
+            String converted = convertRhetoricalContent(content, "难道");
+            log.info("反问句转换(难道): '{}' -> '{}'", text, converted);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(converted)
+                    .processingType(PragmaticType.RHETORICAL_QUESTION)
+                    .processed(true)
+                    .detectedPattern("难道...吗/呢")
+                    .extractedIntent(converted)
+                    .processingNote("反问句'难道'转换为查询意图")
+                    .confidence(0.85)
+                    .build();
+        }
+
+        // 检测模式2: 怎么...不
+        Matcher zenmeMatcher = RHETORICAL_ZENME_PATTERN.matcher(text);
+        if (zenmeMatcher.find()) {
+            String subject = zenmeMatcher.group(1).trim();
+            String action = zenmeMatcher.group(2).trim();
+            String converted = "查询" + subject + action + "情况";
+            log.info("反问句转换(怎么不): '{}' -> '{}'", text, converted);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(converted)
+                    .processingType(PragmaticType.RHETORICAL_QUESTION)
+                    .processed(true)
+                    .detectedPattern("怎么...不")
+                    .extractedIntent(converted)
+                    .processingNote("反问句'怎么不'表达期望行为，转换为查询")
+                    .confidence(0.80)
+                    .build();
+        }
+
+        // 检测模式3: 为什么...没
+        Matcher weishenmeMatcher = RHETORICAL_WEISHENME_PATTERN.matcher(text);
+        if (weishenmeMatcher.find()) {
+            String subject = weishenmeMatcher.group(1).trim();
+            String action = weishenmeMatcher.group(2).trim();
+            String converted = "查询" + subject + action + "状态";
+            log.info("反问句转换(为什么没): '{}' -> '{}'", text, converted);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(converted)
+                    .processingType(PragmaticType.RHETORICAL_QUESTION)
+                    .processed(true)
+                    .detectedPattern("为什么...没")
+                    .extractedIntent(converted)
+                    .processingNote("反问句'为什么没'表达疑问，转换为状态查询")
+                    .confidence(0.80)
+                    .build();
+        }
+
+        // 检测模式4: 不是...吗
+        Matcher bushiMatcher = RHETORICAL_BUSHI_PATTERN.matcher(text);
+        if (bushiMatcher.find()) {
+            String content = bushiMatcher.group(1).trim();
+            String converted = "确认" + content + "情况";
+            log.info("反问句转换(不是吗): '{}' -> '{}'", text, converted);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(converted)
+                    .processingType(PragmaticType.RHETORICAL_QUESTION)
+                    .processed(true)
+                    .detectedPattern("不是...吗")
+                    .extractedIntent(converted)
+                    .processingNote("反问句'不是吗'表达确认需求")
+                    .confidence(0.75)
+                    .build();
+        }
+
+        log.debug("未检测到反问句模式: input={}", truncate(text, 50));
+        return PragmaticProcessingResult.builder()
+                .originalInput(input)
+                .processedText(input)
+                .processingType(PragmaticType.NONE)
+                .processed(false)
+                .confidence(0.0)
+                .build();
+    }
+
+    /**
+     * 将反问句内容转换为查询语句
+     */
+    private String convertRhetoricalContent(String content, String rhetoricalWord) {
+        // 处理否定词转肯定
+        content = content.replace("没有", "")
+                        .replace("没", "")
+                        .replace("不", "")
+                        .trim();
+
+        // 检测时间词
+        boolean hasTimeWord = content.contains("今天") || content.contains("昨天") ||
+                             content.contains("本周") || content.contains("本月");
+
+        // 检测常见业务对象
+        if (content.contains("原料") || content.contains("物料")) {
+            return "查询" + (hasTimeWord ? content : content + "原料") + "到货情况";
+        } else if (content.contains("发货") || content.contains("出货")) {
+            return "查询" + content + "情况";
+        } else if (content.contains("入库") || content.contains("库存")) {
+            return "查询" + content + "情况";
+        } else if (content.contains("质检") || content.contains("检测")) {
+            return "查询" + content + "结果";
+        } else if (content.contains("生产") || content.contains("批次")) {
+            return "查询" + content + "进度";
+        }
+
+        return "查询" + content + "情况";
+    }
+
+    @Override
+    public PragmaticProcessingResult extractConcessionIntent(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(input)
+                    .processingType(PragmaticType.NONE)
+                    .processed(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        String text = input.trim();
+        log.debug("转折句检测开始: input={}", truncate(text, 50));
+
+        Matcher concessionMatcher = CONCESSION_PATTERN.matcher(text);
+        if (concessionMatcher.find()) {
+            String concessionWord = concessionMatcher.group(1);  // 虽然/尽管/虽说
+            String concessionPart = concessionMatcher.group(2).trim();  // 让步部分
+            String contrastWord = concessionMatcher.group(3);    // 但是/可是/然而/不过
+            String mainIntent = concessionMatcher.group(4).trim();  // 真实意图部分
+
+            // 清理主意图部分的标点符号
+            mainIntent = mainIntent.replaceAll("[，。！？,.!?]+$", "").trim();
+
+            // 生成查询意图
+            String converted = generateConcessionQuery(mainIntent);
+
+            log.info("转折句提取: '{}' -> '{}' (让步部分: '{}')", text, converted, concessionPart);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(converted)
+                    .processingType(PragmaticType.CONCESSION)
+                    .processed(true)
+                    .detectedPattern(concessionWord + "..." + contrastWord)
+                    .extractedIntent(converted)
+                    .processingNote(String.format("从转折句中提取真实意图，忽略让步部分'%s'", concessionPart))
+                    .confidence(0.85)
+                    .build();
+        }
+
+        log.debug("未检测到转折句模式: input={}", truncate(text, 50));
+        return PragmaticProcessingResult.builder()
+                .originalInput(input)
+                .processedText(input)
+                .processingType(PragmaticType.NONE)
+                .processed(false)
+                .confidence(0.0)
+                .build();
+    }
+
+    /**
+     * 根据转折后的主意图生成查询语句
+     */
+    private String generateConcessionQuery(String mainIntent) {
+        // 检测关键业务词汇
+        if (mainIntent.contains("不合格") || mainIntent.contains("合格率")) {
+            if (mainIntent.contains("上升") || mainIntent.contains("升高") || mainIntent.contains("增加")) {
+                return "查询不合格品率变化趋势";
+            } else if (mainIntent.contains("下降") || mainIntent.contains("降低")) {
+                return "查询合格率改善情况";
+            }
+            return "查询不合格品率数据";
+        } else if (mainIntent.contains("效率") || mainIntent.contains("产能")) {
+            return "查询生产效率变化";
+        } else if (mainIntent.contains("库存") || mainIntent.contains("存货")) {
+            return "查询库存变化情况";
+        } else if (mainIntent.contains("延迟") || mainIntent.contains("延误") || mainIntent.contains("滞后")) {
+            return "查询延迟原因";
+        } else if (mainIntent.contains("设备") || mainIntent.contains("机器")) {
+            return "查询设备运行状态";
+        } else if (mainIntent.contains("成本") || mainIntent.contains("费用")) {
+            return "查询成本变化";
+        } else if (mainIntent.contains("质量") || mainIntent.contains("品质")) {
+            return "查询质量问题";
+        }
+
+        // 默认处理：添加"查询"前缀
+        if (!mainIntent.startsWith("查询") && !mainIntent.startsWith("查看")) {
+            return "查询" + mainIntent;
+        }
+        return mainIntent;
+    }
+
+    @Override
+    public PragmaticProcessingResult convertDoubleNegative(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(input)
+                    .processingType(PragmaticType.NONE)
+                    .processed(false)
+                    .confidence(0.0)
+                    .build();
+        }
+
+        String text = input.trim();
+        log.debug("双重否定检测开始: input={}", truncate(text, 50));
+
+        Matcher doubleNegMatcher = DOUBLE_NEGATIVE_PATTERN.matcher(text);
+        if (doubleNegMatcher.find()) {
+            String negPattern = doubleNegMatcher.group(1);  // 双重否定词
+            String content = doubleNegMatcher.group(2).trim();  // 后续内容
+
+            // 转换双重否定为肯定
+            String positiveForm = convertToPositive(negPattern, content);
+
+            log.info("双重否定转换: '{}' -> '{}' (模式: {})", text, positiveForm, negPattern);
+            return PragmaticProcessingResult.builder()
+                    .originalInput(input)
+                    .processedText(positiveForm)
+                    .processingType(PragmaticType.DOUBLE_NEGATIVE)
+                    .processed(true)
+                    .detectedPattern(negPattern)
+                    .extractedIntent(positiveForm)
+                    .processingNote(String.format("双重否定'%s'转换为肯定语义", negPattern))
+                    .confidence(0.90)
+                    .build();
+        }
+
+        log.debug("未检测到双重否定模式: input={}", truncate(text, 50));
+        return PragmaticProcessingResult.builder()
+                .originalInput(input)
+                .processedText(input)
+                .processingType(PragmaticType.NONE)
+                .processed(false)
+                .confidence(0.0)
+                .build();
+    }
+
+    /**
+     * 将双重否定转换为肯定形式
+     */
+    private String convertToPositive(String negPattern, String content) {
+        switch (negPattern) {
+            case "不是不":
+                return "想" + content;
+            case "并非不":
+                return "确实" + content;
+            case "没有不":
+                return "都" + content;
+            case "不能不":
+                return "必须" + content;
+            case "不会不":
+                return "一定会" + content;
+            case "不得不":
+                return "必须" + content;
+            case "无法不":
+                return "必然" + content;
+            case "难以不":
+                return "很难不" + content;  // 保留部分否定语义
+            default:
+                return content;
+        }
     }
 
     /**
