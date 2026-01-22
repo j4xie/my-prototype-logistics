@@ -190,6 +190,94 @@ export interface IntentCategoryConfig {
 }
 
 /**
+ * 意图规则配置
+ */
+export interface IntentRule {
+  /** 规则ID */
+  id?: string;
+  /** 规则名称 */
+  ruleName: string;
+  /** 规则类型 */
+  ruleType: 'REGEX' | 'KEYWORD' | 'CONDITION' | 'SCRIPT';
+  /** 规则表达式/内容 */
+  ruleExpression: string;
+  /** 优先级 */
+  priority: number;
+  /** 是否启用 */
+  enabled: boolean;
+  /** 描述 */
+  description?: string;
+  /** 创建时间 */
+  createdAt?: string;
+  /** 更新时间 */
+  updatedAt?: string;
+}
+
+/**
+ * 参数数据类型
+ */
+export type ParameterDataType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'DATE' | 'DATETIME' | 'ENUM' | 'ARRAY' | 'OBJECT';
+
+/**
+ * 意图参数配置
+ */
+export interface IntentParameter {
+  /** 参数ID */
+  id?: string;
+  /** 参数名称 */
+  parameterName: string;
+  /** 显示名称 */
+  displayName: string;
+  /** 数据类型 */
+  dataType: ParameterDataType;
+  /** 是否必需 */
+  required: boolean;
+  /** 默认值 */
+  defaultValue?: string;
+  /** 参数描述 */
+  description?: string;
+  /** 验证规则 */
+  validationRule?: string;
+  /** 枚举值（当 dataType 为 ENUM 时） */
+  enumValues?: string[];
+  /** 排序顺序 */
+  sortOrder: number;
+  /** 是否启用 */
+  enabled: boolean;
+  /** 创建时间 */
+  createdAt?: string;
+  /** 更新时间 */
+  updatedAt?: string;
+}
+
+/**
+ * 意图测试结果
+ */
+export interface IntentTestResult {
+  /** 是否匹配成功 */
+  matched: boolean;
+  /** 匹配置信度 (0-1) */
+  confidence: number;
+  /** 匹配方法 */
+  matchMethod: 'REGEX' | 'KEYWORD' | 'LLM' | 'NONE';
+  /** 匹配到的关键词 */
+  matchedKeywords: string[];
+  /** 提取的参数 */
+  extractedParameters: Record<string, unknown>;
+  /** 执行耗时(ms) */
+  executionTimeMs: number;
+  /** 执行结果 */
+  executionResult?: {
+    success: boolean;
+    resultType?: string;
+    message?: string;
+    data?: unknown;
+  };
+  /** 错误信息 */
+  errorMessage?: string;
+}
+
+/**
  * 通用API响应包装
  */
 interface ApiResponseWrapper<T> {
@@ -578,6 +666,106 @@ class IntentConfigApiClient {
       `/api/mobile/${currentFactoryId}/system-config/enums/INTENT_CATEGORY`
     );
     return response.data ?? [];
+  }
+
+  // ==================== 规则管理 ====================
+
+  /**
+   * 获取意图的规则配置
+   *
+   * @param intentCode 意图代码
+   * @param factoryId 工厂ID（可选）
+   * @returns 规则配置列表
+   */
+  async getIntentRules(
+    intentCode: string,
+    factoryId?: string
+  ): Promise<IntentRule[]> {
+    const response = await apiClient.get<ApiResponseWrapper<IntentRule[]>>(
+      `${this.getBasePath(factoryId)}/${intentCode}/rules`
+    );
+    return response.data ?? [];
+  }
+
+  /**
+   * 更新意图的规则配置
+   *
+   * @param intentCode 意图代码
+   * @param rules 规则配置列表
+   * @param factoryId 工厂ID（可选）
+   * @returns 更新后的规则配置列表
+   */
+  async updateIntentRules(
+    intentCode: string,
+    rules: IntentRule[],
+    factoryId?: string
+  ): Promise<IntentRule[]> {
+    const response = await apiClient.put<ApiResponseWrapper<IntentRule[]>>(
+      `${this.getBasePath(factoryId)}/${intentCode}/rules`,
+      rules
+    );
+    return response.data ?? [];
+  }
+
+  // ==================== 参数管理 ====================
+
+  /**
+   * 获取意图的参数配置
+   *
+   * @param intentCode 意图代码
+   * @param factoryId 工厂ID（可选）
+   * @returns 参数配置列表
+   */
+  async getIntentParameters(
+    intentCode: string,
+    factoryId?: string
+  ): Promise<IntentParameter[]> {
+    const response = await apiClient.get<ApiResponseWrapper<IntentParameter[]>>(
+      `${this.getBasePath(factoryId)}/${intentCode}/parameters`
+    );
+    return response.data ?? [];
+  }
+
+  /**
+   * 更新意图的参数配置
+   *
+   * @param intentCode 意图代码
+   * @param parameters 参数配置列表
+   * @param factoryId 工厂ID（可选）
+   * @returns 更新后的参数配置列表
+   */
+  async updateIntentParameters(
+    intentCode: string,
+    parameters: IntentParameter[],
+    factoryId?: string
+  ): Promise<IntentParameter[]> {
+    const response = await apiClient.put<ApiResponseWrapper<IntentParameter[]>>(
+      `${this.getBasePath(factoryId)}/${intentCode}/parameters`,
+      parameters
+    );
+    return response.data ?? [];
+  }
+
+  // ==================== 测试执行 ====================
+
+  /**
+   * 测试意图执行
+   *
+   * @param intentCode 意图代码
+   * @param testInput 测试输入
+   * @param factoryId 工厂ID（可选）
+   * @returns 测试结果
+   */
+  async testIntent(
+    intentCode: string,
+    testInput: string,
+    factoryId?: string
+  ): Promise<IntentTestResult> {
+    const response = await apiClient.post<ApiResponseWrapper<IntentTestResult>>(
+      `${this.getBasePath(factoryId)}/${intentCode}/test`,
+      { userInput: testInput }
+    );
+    return response.data;
   }
 }
 
