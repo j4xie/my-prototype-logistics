@@ -1997,9 +1997,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("最近的供应商", "SUPPLIER_QUERY");
         phraseToIntentMapping.put("近期的客户反馈", "CUSTOMER_QUERY");
         phraseToIntentMapping.put("近期客户反馈", "CUSTOMER_QUERY");
-        // 明天/刚刚类 (v9.0: 使用MATERIAL_INCOMING表示即将到货)
-        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_INCOMING");
-        phraseToIntentMapping.put("明天到的原料", "MATERIAL_INCOMING");
+        // 明天/刚刚类 (v9.0: 使用MATERIAL_BATCH_QUERY处理，MATERIAL_INCOMING暂未注册)
+        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("明天到的原料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("刚刚入库的批次", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("刚入库的批次", "MATERIAL_BATCH_QUERY");
 
@@ -2045,8 +2045,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("紧急的事情", "ALERT_ACTIVE");
         phraseToIntentMapping.put("重点关注", "ALERT_LIST");
 
-        // 修复时态相关 (v9.0: 使用MATERIAL_INCOMING)
-        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_INCOMING");
+        // 修复时态相关 (v9.0: 使用MATERIAL_BATCH_QUERY，MATERIAL_INCOMING暂未注册)
+        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("将要完成的任务", "PROCESSING_BATCH_LIST");
 
         // 修复报告/分析类
