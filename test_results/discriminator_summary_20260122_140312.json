@@ -1,0 +1,165 @@
+{
+  "timestamp": "20260122_140312",
+  "total_cases": 199,
+  "total_correct": 181,
+  "overall_accuracy": 90.95,
+  "simple": {
+    "total": 100,
+    "correct": 99,
+    "accuracy": 99.0,
+    "avg_latency_ms": 3236.56
+  },
+  "complex": {
+    "total": 99,
+    "correct": 82,
+    "accuracy": 82.83,
+    "avg_latency_ms": 3730.64,
+    "by_difficulty": {
+      "ambiguous_short": {
+        "total": 2,
+        "correct": 2,
+        "accuracy": 100.0
+      },
+      "too_vague": {
+        "total": 2,
+        "correct": 0,
+        "accuracy": 0.0
+      },
+      "multi_intent": {
+        "total": 5,
+        "correct": 4,
+        "accuracy": 80.0
+      },
+      "incomplete": {
+        "total": 5,
+        "correct": 2,
+        "accuracy": 40.0
+      },
+      "typo": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "mixed_language": {
+        "total": 1,
+        "correct": 1,
+        "accuracy": 100.0
+      },
+      "english": {
+        "total": 4,
+        "correct": 4,
+        "accuracy": 100.0
+      },
+      "conversational": {
+        "total": 5,
+        "correct": 4,
+        "accuracy": 80.0
+      },
+      "question": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "write_operation": {
+        "total": 5,
+        "correct": 3,
+        "accuracy": 60.0
+      },
+      "long_query": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "single_word": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "specific_entity": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "date_format": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "abbreviation": {
+        "total": 5,
+        "correct": 3,
+        "accuracy": 60.0
+      },
+      "comparison": {
+        "total": 5,
+        "correct": 4,
+        "accuracy": 80.0
+      },
+      "special_chars": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "sentiment": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "chained_query": {
+        "total": 5,
+        "correct": 4,
+        "accuracy": 80.0
+      },
+      "batch_request": {
+        "total": 5,
+        "correct": 4,
+        "accuracy": 80.0
+      },
+      "irrelevant": {
+        "total": 5,
+        "correct": 5,
+        "accuracy": 100.0
+      },
+      "analytical": {
+        "total": 5,
+        "correct": 2,
+        "accuracy": 40.0
+      }
+    }
+  },
+  "performance": {
+    "total_latency_ms": 692989.84,
+    "avg_latency_ms": 3482.36,
+    "min_latency_ms": 416.89,
+    "max_latency_ms": 5518.87
+  },
+  "server_metrics": {
+    "autoTuner": {
+      "currentThreshold": 0.3,
+      "totalRecords": 0,
+      "windowSize": 0,
+      "trackedIntents": 0,
+      "misPruneCount": 0,
+      "misPruneRate": 0.0,
+      "lastAdjustment": "2026-01-22T19:02:34.503605625Z",
+      "targetMisPruneRate": 0.01,
+      "correctPruneCount": 0
+    },
+    "discriminator": {
+      "cacheSize": 1685,
+      "writeOpInputs": 0,
+      "cacheHitRate": 0.0,
+      "enabled": true,
+      "fallbackCalls": 1688,
+      "invalidInputs": 1,
+      "vagueInputs": 4,
+      "cacheStats": "CacheStats{hitCount=0, missCount=4130, loadSuccessCount=0, loadFailureCount=0, totalLoadTime=0, evictionCount=0, evictionWeight=0}",
+      "totalCalls": 1688,
+      "irrelevantInputs": 5,
+      "localModelAvailable": false,
+      "cacheHits": 0,
+      "localModelCalls": 0,
+      "errors": 0
+    }
+  }
+}
