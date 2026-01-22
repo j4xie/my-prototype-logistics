@@ -55,8 +55,9 @@ public class IntentCompositionConfig {
         compositionMapping.put("MATERIAL_CREATE", "MATERIAL_BATCH_CREATE");
 
         // v9.0: MATERIAL 领域多维映射
+        // 注：MATERIAL_INCOMING 暂未在数据库中注册，暂时使用 MATERIAL_BATCH_QUERY 处理未来时态查询
         Map<String, String> materialQueryModifiers = new HashMap<>();
-        materialQueryModifiers.put("FUTURE", "MATERIAL_INCOMING");           // 明天要到的原料
+        materialQueryModifiers.put("FUTURE", "MATERIAL_BATCH_QUERY");        // 明天要到的原料 (使用BATCH_QUERY处理)
         modifierMappings.put("MATERIAL_QUERY", materialQueryModifiers);
 
         // ==================== SHIPMENT 领域 ====================
