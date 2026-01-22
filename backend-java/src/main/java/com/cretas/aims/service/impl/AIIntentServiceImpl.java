@@ -20,6 +20,7 @@ import com.cretas.aims.entity.learning.TrainingSample;
 import com.cretas.aims.service.AIIntentService;
 import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.ExpressionLearningService;
+import com.cretas.aims.service.IntentFeedbackService;
 import com.cretas.aims.service.FactoryConfigService;
 import com.cretas.aims.service.IntentEmbeddingCacheService;
 import com.cretas.aims.service.KeywordEffectivenessService;
@@ -85,6 +86,7 @@ public class AIIntentServiceImpl implements AIIntentService {
     private final QueryPreprocessorService queryPreprocessorService;
     private final ConversationMemoryService conversationMemoryService;
     private final MultiLabelIntentClassifier multiLabelIntentClassifier;
+    private final IntentFeedbackService intentFeedbackService;
 
     /**
      * v8.0: 两阶段意图分类器
