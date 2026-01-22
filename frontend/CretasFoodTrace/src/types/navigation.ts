@@ -297,6 +297,8 @@ export type FAManagementStackParamList = {
   FAManagement: undefined;
   EmployeeList: undefined;
   EquipmentList: undefined;
+  // 设备智能分析
+  EquipmentAnalysis: undefined;
   // 复用现有详情页
   EmployeeDetail: { employeeId: number };
   EquipmentDetail: { equipmentId: number };
@@ -317,6 +319,8 @@ export type FAManagementStackParamList = {
   AIBusinessInit: undefined;
   // 编码规则配置
   EncodingRuleConfig: undefined;
+  // 编码规则详情/编辑
+  CodeRuleDetail: { ruleId?: string; isNew?: boolean };
   // 质检项配置
   QualityCheckItemConfig: undefined;
   // 质检项详情
@@ -508,6 +512,9 @@ export type WHInventoryStackParamList = {
   WHTempMonitor: undefined;
   WHIOStatistics: undefined;
   WHBatchTrace: { batchNumber?: string; batchId?: string };
+  // 库存预警管理
+  WHInventoryAlert: undefined;  // 库存预警列表
+  WHAlertDetail: { alertId: string; alertType: 'low_stock' | 'expiring' | 'expired' | 'quality'; batchNumber: string };  // 预警详情处理
 };
 
 export type WHProfileStackParamList = {

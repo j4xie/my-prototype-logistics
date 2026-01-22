@@ -18,6 +18,9 @@ import WHExpireHandleScreen from "../../screens/warehouse/inventory/WHExpireHand
 import WHTempMonitorScreen from "../../screens/warehouse/inventory/WHTempMonitorScreen";
 import WHIOStatisticsScreen from "../../screens/warehouse/inventory/WHIOStatisticsScreen";
 import WHBatchTraceScreen from "../../screens/warehouse/shared/WHBatchTraceScreen";
+// 库存预警相关页面
+import InventoryAlertScreen from "../../screens/warehouse/alerts/InventoryAlertScreen";
+import AlertDetailScreen from "../../screens/warehouse/alerts/AlertDetailScreen";
 
 const Stack = createNativeStackNavigator<WHInventoryStackParamList>();
 
@@ -92,6 +95,20 @@ export function WHInventoryStackNavigator() {
         name="WHBatchTrace"
         component={WHBatchTraceScreen}
         options={{ title: "批次溯源" }}
+      />
+
+      {/* 库存预警列表 */}
+      <Stack.Screen
+        name="WHInventoryAlert"
+        component={InventoryAlertScreen}
+        options={{ title: "库存预警" }}
+      />
+
+      {/* 预警详情处理 */}
+      <Stack.Screen
+        name="WHAlertDetail"
+        component={AlertDetailScreen}
+        options={{ title: "预警处理" }}
       />
     </Stack.Navigator>
   );

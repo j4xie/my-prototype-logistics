@@ -297,6 +297,12 @@ export type QualityInspectorStackParamList = {
   QIScan: undefined;
   QIForm: { batchId: string; batchNumber: string };
   QIVoice: { batchId: string; batchNumber: string };
+  QIVoiceResult: {
+    batchId: string;
+    batchNumber: string;
+    recordId?: string;      // 已有记录ID（查看/编辑模式）
+    audioUri?: string;      // 新录音文件URI
+  };
   QICamera: { batchId: string; batchNumber: string };
   QIResult: { recordId: string; passed: boolean };
   QIRecords: undefined;
