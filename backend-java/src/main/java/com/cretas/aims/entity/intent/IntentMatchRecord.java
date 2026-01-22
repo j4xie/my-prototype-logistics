@@ -137,17 +137,18 @@ public class IntentMatchRecord extends BaseEntity {
 
     /**
      * 是否为强信号
+     * 注意: insertable=false 让 Hibernate 不插入此列，使用数据库默认值 0
      */
     @Builder.Default
-    @Column(name = "is_strong_signal", nullable = false)
-    private Boolean isStrongSignal = false;
+    @Column(name = "is_strong_signal", nullable = false, insertable = false)
+    private boolean isStrongSignal = false;
 
     /**
      * 是否需要用户确认
      */
     @Builder.Default
-    @Column(name = "requires_confirmation", nullable = false)
-    private Boolean requiresConfirmation = false;
+    @Column(name = "requires_confirmation", nullable = false, insertable = false)
+    private boolean requiresConfirmation = false;
 
     /**
      * 澄清问题内容
