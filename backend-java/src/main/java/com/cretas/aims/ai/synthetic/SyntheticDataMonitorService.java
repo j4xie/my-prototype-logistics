@@ -1,5 +1,6 @@
 package com.cretas.aims.ai.synthetic;
 
+import com.cretas.aims.config.SyntheticDataConfig;
 import com.cretas.aims.entity.learning.SampleSource;
 import com.cretas.aims.repository.learning.TrainingSampleRepository;
 import lombok.AllArgsConstructor;
