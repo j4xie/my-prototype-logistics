@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
     @Index(name = "idx_ats_source", columnList = "source"),
     @Index(name = "idx_ats_generation", columnList = "generation")
 })
+@org.hibernate.annotations.DynamicInsert
 @Data
 @Builder
 @NoArgsConstructor
