@@ -147,7 +147,7 @@ public class DiscriminatorController {
     ) {
         if (threshold < 0 || threshold > 1) {
             return ResponseEntity.badRequest().body(
-                    ApiResponse.failure("阈值必须在 0-1 之间"));
+                    ApiResponse.error("阈值必须在 0-1 之间"));
         }
 
         double oldThreshold = config.getPruneThreshold();
