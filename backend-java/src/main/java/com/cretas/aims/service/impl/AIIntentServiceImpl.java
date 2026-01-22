@@ -2231,11 +2231,11 @@ public class AIIntentServiceImpl implements AIIntentService {
             return false;
         }
         // If no allowed roles specified, allow all
-        if (config.getAllowedRoles() == null || config.getAllowedRoles().isEmpty()) {
+        if (config.getRequiredRoles() == null || config.getRequiredRoles().isBlank()) {
             return true;
         }
         // Check if user role is in allowed roles
-        return config.getAllowedRoles().contains(userRole);
+        return java.util.Arrays.asList(config.getRequiredRoles().split(",")).contains(userRole);
     }
 
     // ==================== 权限校验 ====================
