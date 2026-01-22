@@ -171,7 +171,8 @@ public class SopParseDocumentTool extends AbstractBusinessTool {
     /**
      * 获取布尔类型参数
      */
-    private Boolean getBoolean(Map<String, Object> params, String key, Boolean defaultValue) {
+    @Override
+    protected Boolean getBoolean(Map<String, Object> params, String key, Boolean defaultValue) {
         Object value = params.get(key);
         if (value == null) return defaultValue;
         if (value instanceof Boolean) return (Boolean) value;

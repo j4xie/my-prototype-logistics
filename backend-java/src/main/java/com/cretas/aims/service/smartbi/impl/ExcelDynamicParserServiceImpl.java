@@ -67,7 +67,10 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
             "yyyy-MM-dd",
             "yyyy/MM/dd",
             "yyyyMMdd",
-            "MM/dd/yyyy"
+            "MM/dd/yyyy",
+            "yyyy-M-d",
+            "yyyy/M/d",
+            "M/d/yyyy"
     );
 
     // ==================== 数值识别正则表达式 ====================
@@ -768,6 +771,8 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
         private List<Map<String, Object>> sampleData = new ArrayList<>();
         private AtomicInteger rowCount = new AtomicInteger(0);
         private String sheetName;
+        private boolean headersExtracted = false;
+        private boolean firstRowIsHeader = false;
 
         public DynamicExcelListener(int headerRowIndex, int sampleRowCount, boolean skipEmptyRows) {
             this.headerRowIndex = headerRowIndex;
@@ -777,14 +782,17 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
         @Override
         public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
+            log.info("invokeHeadMap 被调用: headMap={}, isEmpty={}", headMap, headMap == null || headMap.isEmpty());
             // 获取表头
             this.headers = new ArrayList<>();
-            if (headMap != null) {
+            if (headMap != null && !headMap.isEmpty()) {
                 int maxColumn = headMap.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
                 for (int i = 0; i <= maxColumn; i++) {
                     String header = headMap.get(i);
                     this.headers.add(header != null ? header.trim() : "Column_" + i);
                 }
+                this.headersExtracted = true;
+                log.info("从 headMap 提取表头成功: headers={}", headers);
             }
             this.sheetName = context.readSheetHolder().getSheetName();
             log.debug("读取表头: headers={}, sheetName={}", headers, sheetName);
@@ -792,6 +800,50 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
         @Override
         public void invoke(Map<Integer, Object> data, AnalysisContext context) {
+            log.debug("invoke 被调用: rowNum={}, dataSize={}, headersSize={}",
+                    rowCount.get(), data.size(), headers.size());
+
+            // 如果 sheetName 还没获取，现在获取
+            if (this.sheetName == null) {
+                this.sheetName = context.readSheetHolder().getSheetName();
+            }
+
+            // 回退机制：如果 invokeHeadMap 没有提取到表头，从第一行数据提取
+            if (!headersExtracted && headers.isEmpty() && !data.isEmpty()) {
+                int maxColumn = data.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+                log.info("Headers 为空，尝试从第一行数据提取。maxColumn={}, data={}", maxColumn, data);
+
+                // 检查第一行是否看起来像表头（包含非纯数字的文本）
+                boolean looksLikeHeader = data.values().stream()
+                        .filter(Objects::nonNull)
+                        .map(Object::toString)
+                        .anyMatch(v -> !v.trim().isEmpty() && !isNumericValue(v));
+
+                if (looksLikeHeader && headerRowIndex >= 0) {
+                    // 第一行数据实际上是表头
+                    for (int i = 0; i <= maxColumn; i++) {
+                        Object value = data.get(i);
+                        String header = value != null ? value.toString().trim() : "Column_" + i;
+                        if (header.isEmpty()) {
+                            header = "Column_" + i;
+                        }
+                        headers.add(header);
+                    }
+                    headersExtracted = true;
+                    firstRowIsHeader = true;
+                    log.info("从第一行数据提取表头: headers={}", headers);
+                    // 跳过这一行，不计入数据行
+                    return;
+                } else {
+                    // 使用默认列名
+                    for (int i = 0; i <= maxColumn; i++) {
+                        headers.add("Column_" + i);
+                    }
+                    headersExtracted = true;
+                    log.warn("使用默认列名: headers={}", headers);
+                }
+            }
+
             rowCount.incrementAndGet();
 
             // 采样数据
@@ -802,18 +854,26 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
                 if (!skipEmptyRows || !isEmpty) {
                     Map<String, Object> rowData = new LinkedHashMap<>();
-                    for (int i = 0; i < headers.size(); i++) {
+                    int maxDataColumn = data.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+
+                    // 使用 headers 或 data 的列数，取较大者
+                    int columnCount = Math.max(headers.size(), maxDataColumn + 1);
+
+                    for (int i = 0; i < columnCount; i++) {
                         Object value = data.get(i);
-                        rowData.put(headers.get(i), value);
+                        String headerName = i < headers.size() ? headers.get(i) : "Column_" + i;
+                        rowData.put(headerName, value);
                     }
                     sampleData.add(rowData);
+                    log.debug("添加样本行: rowData={}", rowData);
                 }
             }
         }
 
         @Override
         public void doAfterAllAnalysed(AnalysisContext context) {
-            log.debug("Excel读取完成: totalRows={}, sampledRows={}", rowCount.get(), sampleData.size());
+            log.info("Excel读取完成: totalRows={}, sampledRows={}, headers={}",
+                    rowCount.get(), sampleData.size(), headers);
         }
 
         public List<String> getHeaders() {
@@ -840,6 +900,7 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
         private final int headerRowIndex;
         private List<String> headers = new ArrayList<>();
+        private boolean headersExtracted = false;
 
         public HeaderOnlyListener(int headerRowIndex) {
             this.headerRowIndex = headerRowIndex;
@@ -847,23 +908,39 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
         @Override
         public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
-            if (headMap != null) {
+            log.info("HeaderOnlyListener.invokeHeadMap 被调用: headMap={}", headMap);
+            if (headMap != null && !headMap.isEmpty()) {
                 int maxColumn = headMap.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
                 for (int i = 0; i <= maxColumn; i++) {
                     String header = headMap.get(i);
                     headers.add(header != null ? header.trim() : "Column_" + i);
                 }
+                headersExtracted = true;
+                log.info("HeaderOnlyListener 从 headMap 提取表头: headers={}", headers);
             }
         }
 
         @Override
         public void invoke(Map<Integer, Object> data, AnalysisContext context) {
-            // 只读取表头，不处理数据行
+            // 回退机制：如果 invokeHeadMap 没有提取到表头，从第一行数据提取
+            if (!headersExtracted && headers.isEmpty() && !data.isEmpty()) {
+                int maxColumn = data.keySet().stream().mapToInt(Integer::intValue).max().orElse(-1);
+                for (int i = 0; i <= maxColumn; i++) {
+                    Object value = data.get(i);
+                    String header = value != null ? value.toString().trim() : "Column_" + i;
+                    if (header.isEmpty()) {
+                        header = "Column_" + i;
+                    }
+                    headers.add(header);
+                }
+                headersExtracted = true;
+                log.info("HeaderOnlyListener 从第一行数据提取表头: headers={}", headers);
+            }
         }
 
         @Override
         public void doAfterAllAnalysed(AnalysisContext context) {
-            // 完成
+            log.debug("HeaderOnlyListener 完成: headers={}", headers);
         }
 
         public List<String> getHeaders() {
