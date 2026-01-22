@@ -249,6 +249,9 @@ public class SyntheticDataService {
             sample.setGrapeScoreValue(synthetic.getGrapeScore().doubleValue());
         }
 
+        // 显式确保 isStrongSignal 不为 null (Lombok Builder 可能有问题)
+        sample.setIsStrongSignal(false);
+
         return sample;
     }
 
