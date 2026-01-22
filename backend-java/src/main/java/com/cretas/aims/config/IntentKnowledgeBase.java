@@ -466,7 +466,8 @@ public class IntentKnowledgeBase {
                     // 闲聊类
                     "讲个笑话", "聊聊天", "无聊",
                     // === v5.2新增：P3优先级-扩展闲聊指示词 ===
-                    "明天", "天气", "下雨", "你觉得", "随便", "有意思",
+                    // v9.0修复: 移除"明天"因为它可能是业务查询的一部分（如"明天要到的原料"）
+                    "天气", "下雨", "你觉得", "随便", "有意思",
                     "唱", "歌", "写", "诗", "笑话", "聊聊", "闲聊"
             ));
         }
@@ -1996,9 +1997,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("最近的供应商", "SUPPLIER_QUERY");
         phraseToIntentMapping.put("近期的客户反馈", "CUSTOMER_QUERY");
         phraseToIntentMapping.put("近期客户反馈", "CUSTOMER_QUERY");
-        // 明天/刚刚类
-        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_BATCH_QUERY");
-        phraseToIntentMapping.put("明天到的原料", "MATERIAL_BATCH_QUERY");
+        // 明天/刚刚类 (v9.0: 使用MATERIAL_INCOMING表示即将到货)
+        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_INCOMING");
+        phraseToIntentMapping.put("明天到的原料", "MATERIAL_INCOMING");
         phraseToIntentMapping.put("刚刚入库的批次", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("刚入库的批次", "MATERIAL_BATCH_QUERY");
 
@@ -2044,8 +2045,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("紧急的事情", "ALERT_ACTIVE");
         phraseToIntentMapping.put("重点关注", "ALERT_LIST");
 
-        // 修复时态相关
-        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_BATCH_QUERY");
+        // 修复时态相关 (v9.0: 使用MATERIAL_INCOMING)
+        phraseToIntentMapping.put("明天要到的原料", "MATERIAL_INCOMING");
         phraseToIntentMapping.put("将要完成的任务", "PROCESSING_BATCH_LIST");
 
         // 修复报告/分析类
