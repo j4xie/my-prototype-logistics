@@ -322,6 +322,7 @@ public class TrainingSample {
             .source(SampleSource.SYNTHETIC)
             .generation(1)  // 合成数据世代为1
             .syntheticConfidence(BigDecimal.valueOf(syntheticConfidence))
+            .confidence(BigDecimal.valueOf(syntheticConfidence))  // 同步设置 confidence，使其可被训练查询
             .skeletonId(skeletonId)
             .isCorrect(true)  // 合成数据假定正确
             .isStrongSignal(false)  // 合成数据默认非强信号
