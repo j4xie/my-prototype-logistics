@@ -153,8 +153,9 @@ public class TrainingSample {
 
     /**
      * 是否为强信号 (高置信度匹配)
+     * 注意: insertable=false 让 Hibernate 不插入此列，使用数据库默认值 0
      */
-    @Column(name = "is_strong_signal", nullable = false)
+    @Column(name = "is_strong_signal", nullable = false, insertable = false)
     @Builder.Default
     private boolean isStrongSignal = false;
 
