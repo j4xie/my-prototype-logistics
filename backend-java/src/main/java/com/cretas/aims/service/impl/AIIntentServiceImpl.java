@@ -693,8 +693,9 @@ public class AIIntentServiceImpl implements AIIntentService {
         // ========== v11.1: 写操作检测 - 直接拒绝 ==========
         // 对于纯写操作输入（删除、修改、添加等），直接返回 NONE
         // 因为 AI 助手只支持查询操作，不支持数据修改
-        if (isWriteOnlyInput(userInput)) {
-            log.info("检测到写操作，直接拒绝: input='{}'", userInput);
+        // 注意：必须使用 originalInput，因为预处理可能会删除写操作关键词
+        if (isWriteOnlyInput(originalInput)) {
+            log.info("检测到写操作，直接拒绝: input='{}'", originalInput);
             IntentMatchResult noMatchResult = IntentMatchResult.builder()
                     .bestMatch(null)
                     .topCandidates(Collections.emptyList())
