@@ -1089,6 +1089,14 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("数据", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("报表", "REPORT_DASHBOARD_OVERVIEW");
 
+        // === v11.3: 常见错别字短语映射 ===
+        // 复杂测试用例中的错别字
+        phraseToIntentMapping.put("销受情况", "REPORT_DASHBOARD_OVERVIEW");  // 销售情况
+        phraseToIntentMapping.put("物聊批次", "MATERIAL_BATCH_QUERY");       // 物料批次
+        phraseToIntentMapping.put("设背状态", "EQUIPMENT_STATUS_QUERY");     // 设备状态
+        phraseToIntentMapping.put("质减结果", "QUALITY_CHECK_QUERY");        // 质检结果
+        phraseToIntentMapping.put("库村多少", "REPORT_INVENTORY");           // 库存多少
+
         // === v4.1优化：溯源类短语映射（解决TRACE被BATCH抢占）===
         phraseToIntentMapping.put("溯源", "TRACE_BATCH");
         phraseToIntentMapping.put("批次溯源", "TRACE_BATCH");
