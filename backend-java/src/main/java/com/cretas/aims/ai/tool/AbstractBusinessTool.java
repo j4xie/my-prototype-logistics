@@ -73,10 +73,13 @@ public abstract class AbstractBusinessTool extends AbstractTool {
 
         } catch (IllegalArgumentException e) {
             log.warn("⚠️  参数验证失败: {}", e.getMessage());
-            return buildErrorResult("参数验证失败: " + e.getMessage());
+            // 脱敏处理：只返回经过安全检查的消息
+            String safeMessage = sanitizeErrorMessage(e.getMessage());
+            return buildErrorResult("参数验证失败: " + safeMessage);
         } catch (Exception e) {
             logExecutionFailure(toolCall, e);
-            return buildErrorResult("执行失败: " + e.getMessage());
+            // 脱敏处理：不暴露具体异常信息
+            return buildSanitizedErrorResult(e);
         }
     }
 
@@ -119,7 +122,8 @@ public abstract class AbstractBusinessTool extends AbstractTool {
             return objectMapper.writeValueAsString(result);
         } catch (Exception e) {
             log.error("❌ 构建NEED_MORE_INFO结果失败", e);
-            return buildErrorResult("构建响应失败: " + e.getMessage());
+            // 脱敏处理：不暴露序列化错误
+            return buildErrorResult("响应处理失败");
         }
     }
 
