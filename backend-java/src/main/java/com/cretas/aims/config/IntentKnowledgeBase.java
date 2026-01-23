@@ -559,6 +559,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("设备列表", "EQUIPMENT_LIST");
         phraseToIntentMapping.put("设备故障", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复为状态查询
         phraseToIntentMapping.put("有没有设备故障", "EQUIPMENT_STATUS_QUERY");  // v11.2新增
+        // v11.2c: Round1 fixes
+        phraseToIntentMapping.put("设备运行情况", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器状态", "EQUIPMENT_STATUS_QUERY");
         phraseToIntentMapping.put("设备运行", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备概览", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备维护", "EQUIPMENT_MAINTENANCE");
@@ -636,6 +639,7 @@ public class IntentKnowledgeBase {
         // v11.2新增: 生产状态查询
         phraseToIntentMapping.put("生产数据", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("车间产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("生产情况", "PRODUCTION_STATUS_QUERY");  // v11.2c: Round1 fix
         phraseToIntentMapping.put("停止生产", "PROCESSING_BATCH_CANCEL");
         phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
         phraseToIntentMapping.put("恢复生产", "PROCESSING_BATCH_RESUME");
@@ -853,6 +857,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("哪个销售最厉害", "REPORT_KPI");
         // v11.2新增: 更多KPI/排名短语
         phraseToIntentMapping.put("谁最有业绩", "REPORT_KPI");
+        phraseToIntentMapping.put("谁业绩最好", "REPORT_KPI");  // v11.2c: Round1 fix
         phraseToIntentMapping.put("团队销售排行", "REPORT_KPI");
         phraseToIntentMapping.put("团队销售情况", "REPORT_KPI");
         phraseToIntentMapping.put("哪个车间最厉害", "REPORT_KPI");
@@ -919,6 +924,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("缺勤情况", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("本周缺勤情况", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("考勤缺勤记录", "ATTENDANCE_HISTORY");
+        // v11.2c: Round1 fixes
+        phraseToIntentMapping.put("本周考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("迟到记录", "ATTENDANCE_HISTORY");
         // === v4.2优化：考勤类短语映射补充 ===
         phraseToIntentMapping.put("我先撤了", "CLOCK_OUT");
         phraseToIntentMapping.put("今天干完了", "CLOCK_OUT");
