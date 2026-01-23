@@ -510,6 +510,12 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货历史", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("出货历史", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("出货单列表", "SHIPMENT_QUERY");
+        // v11.2新增: 更多发货相关
+        phraseToIntentMapping.put("昨天的发货情况", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货单号查询", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货单号", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货详情", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货详情查", "SHIPMENT_QUERY");
         // v7.2新增：口语化发货查询
         phraseToIntentMapping.put("东西发出去没有", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("货发出去没", "SHIPMENT_QUERY");
@@ -538,6 +544,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("哪些产品缺货", "REPORT_INVENTORY");
         phraseToIntentMapping.put("产品缺货", "REPORT_INVENTORY");
         phraseToIntentMapping.put("缺货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("库存有多少", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("库存有多少货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("有多少货", "REPORT_INVENTORY");
 
         // === 设备相关 (优化5: 扩充设备查询短语) ===
         phraseToIntentMapping.put("看设备", "EQUIPMENT_LIST");
@@ -608,6 +617,13 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("报警记录", "ALERT_LIST");
         phraseToIntentMapping.put("预警信息", "ALERT_LIST");
         phraseToIntentMapping.put("异常告警", "ALERT_LIST");
+        // v11.2新增: 更多告警短语
+        phraseToIntentMapping.put("有没有报警", "ALERT_LIST");
+        phraseToIntentMapping.put("系统有没有报警", "ALERT_LIST");
+        phraseToIntentMapping.put("今天异常警报", "ALERT_LIST");
+        phraseToIntentMapping.put("异常警报", "ALERT_LIST");
+        phraseToIntentMapping.put("警报", "ALERT_LIST");
+        phraseToIntentMapping.put("有没有异常", "ALERT_LIST");
 
         // === 生产/加工相关 ===
         phraseToIntentMapping.put("生产批次", "PROCESSING_BATCH_LIST");
@@ -750,6 +766,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("物料来源", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("这批物料的来源", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("查批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("批次号", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("库存不足预警", "MATERIAL_LOW_STOCK_ALERT");
         phraseToIntentMapping.put("即将到期的物料", "MATERIAL_EXPIRING_ALERT");
         phraseToIntentMapping.put("已失效物料", "MATERIAL_EXPIRED_QUERY");
@@ -834,6 +851,14 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("谁是销售冠军", "REPORT_KPI");
         phraseToIntentMapping.put("销冠是谁", "REPORT_KPI");
         phraseToIntentMapping.put("哪个销售最厉害", "REPORT_KPI");
+        // v11.2新增: 更多KPI/排名短语
+        phraseToIntentMapping.put("谁最有业绩", "REPORT_KPI");
+        phraseToIntentMapping.put("团队销售排行", "REPORT_KPI");
+        phraseToIntentMapping.put("团队销售情况", "REPORT_KPI");
+        phraseToIntentMapping.put("哪个车间最厉害", "REPORT_KPI");
+        phraseToIntentMapping.put("车间排名", "REPORT_KPI");
+        phraseToIntentMapping.put("车间业绩", "REPORT_KPI");
+        phraseToIntentMapping.put("最厉害", "REPORT_KPI");
         phraseToIntentMapping.put("销售情况", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售数据", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售总览", "REPORT_DASHBOARD_OVERVIEW");
@@ -885,13 +910,21 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("历史考勤", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("打卡记录", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("考勤记录", "ATTENDANCE_HISTORY");
+        // v11.2新增: 更多考勤历史短语
+        phraseToIntentMapping.put("考勤统计", "ATTENDANCE_HISTORY");  // v11.2: 按测试期望调整
+        phraseToIntentMapping.put("出勤率", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("我的出勤率", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("迟到", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("这周几次迟到了", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("缺勤情况", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("本周缺勤情况", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("考勤缺勤记录", "ATTENDANCE_HISTORY");
         // === v4.2优化：考勤类短语映射补充 ===
         phraseToIntentMapping.put("我先撤了", "CLOCK_OUT");
         phraseToIntentMapping.put("今天干完了", "CLOCK_OUT");
         phraseToIntentMapping.put("下班了", "CLOCK_OUT");
         phraseToIntentMapping.put("走了", "CLOCK_OUT");
         phraseToIntentMapping.put("考勤数据分析", "ATTENDANCE_STATS");
-        phraseToIntentMapping.put("考勤统计", "ATTENDANCE_STATS");
         phraseToIntentMapping.put("考勤异常人员", "ATTENDANCE_ANOMALY");
         phraseToIntentMapping.put("考勤异常", "ATTENDANCE_ANOMALY");
         // v7.2新增：口语化考勤异常查询
