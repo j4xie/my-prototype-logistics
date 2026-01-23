@@ -2472,7 +2472,10 @@ public class AIIntentServiceImpl implements AIIntentService {
     @Override
     public Optional<AIIntentConfig> getIntentByCode(String factoryId, String intentCode) {
         log.debug("Delegating getIntentByCode(factoryId={}, intentCode={}) to intentConfigService", factoryId, intentCode);
-        return intentRepository.findByFactoryIdAndIntentCode(factoryId, intentCode);
+        // v11.2d: 使用支持全局意图回退的查询方法
+        // 优先返回工厂级配置，如果没有则返回全局配置（factoryId IS NULL）
+        List<AIIntentConfig> results = intentRepository.findByIntentCodeAndFactoryIdOrPlatform(intentCode, factoryId);
+        return results.isEmpty() ? Optional.empty() : Optional.of(results.get(0));
     }
 
 
