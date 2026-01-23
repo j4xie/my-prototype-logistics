@@ -34,6 +34,7 @@ import com.cretas.aims.service.QueryPreprocessorService;
 import com.cretas.aims.service.TwoStageIntentClassifier;
 import com.cretas.aims.service.SemanticRouterService;
 import com.cretas.aims.service.LongTextHandler;
+import com.cretas.aims.service.RAGRetrievalService;
 import com.cretas.aims.dto.intent.RouteDecision;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -121,6 +123,19 @@ public class AIIntentServiceImpl implements AIIntentService {
      * 对超长输入进行摘要，避免 LLM 调用超时
      */
     private final LongTextHandler longTextHandler;
+
+    /**
+     * v11.4: RAG 检索服务
+     * 用于检索历史相似案例，增强意图识别
+     * 使用 setter 注入，因为实现可能不存在
+     */
+    private RAGRetrievalService ragRetrievalService;
+
+    @Autowired(required = false)
+    public void setRagRetrievalService(RAGRetrievalService ragRetrievalService) {
+        this.ragRetrievalService = ragRetrievalService;
+        log.info("[RAG] RAGRetrievalService 注入: {}", ragRetrievalService != null ? "成功" : "未配置");
+    }
 
     /**
      * 是否启用查询预处理
@@ -986,6 +1001,158 @@ public class AIIntentServiceImpl implements AIIntentService {
                                 .build();
                         saveIntentMatchRecord(noMatch, factoryId, null, null, false);
                         return noMatch;
+                    }
+
+                    // ========== v11.4 RAG: 历史相似案例增强 ==========
+                    // 在 LLM Reranking 之前，先检查 RAG 是否有高置信历史匹配
+                    // 如果找到直接匹配，可以避免 LLM 调用，提升响应速度
+                    if (ragRetrievalService != null && matchingConfig.isInRerankingRange(confidence)) {
+                        // Step 1: 尝试查找高置信历史直接复用 (相似度 >= 0.90)
+                        try {
+                            Optional<RAGRetrievalService.RAGCandidate> directMatch =
+                                    ragRetrievalService.findDirectMatch(factoryId, userInput, 0.90);
+                            if (directMatch.isPresent()) {
+                                RAGRetrievalService.RAGCandidate ragCandidate = directMatch.get();
+                                log.info("[RAG] 找到高置信历史匹配: input='{}', intent={}, confidence={:.3f}, similarity={:.3f}, source={}",
+                                        userInput, ragCandidate.getIntentCode(), ragCandidate.getConfidence(),
+                                        ragCandidate.getSimilarity(), ragCandidate.getSource());
+
+                                // 查找对应意图配置
+                                Optional<AIIntentConfig> ragIntentOpt = allIntents.stream()
+                                        .filter(i -> i.getIntentCode().equals(ragCandidate.getIntentCode()))
+                                        .findFirst();
+
+                                if (ragIntentOpt.isPresent()) {
+                                    AIIntentConfig ragIntent = ragIntentOpt.get();
+                                    // 使用 RAG 历史置信度，但不低于语义评分置信度
+                                    double ragConfidence = Math.max(ragCandidate.getConfidence(), confidence);
+
+                                    // 构建 RAG 匹配结果
+                                    CandidateIntent ragTopCandidate = CandidateIntent.builder()
+                                            .intentCode(ragCandidate.getIntentCode())
+                                            .intentName(ragIntent.getIntentName())
+                                            .intentCategory(ragIntent.getIntentCategory())
+                                            .confidence(ragConfidence)
+                                            .matchMethod(MatchMethod.SEMANTIC)
+                                            .config(ragIntent)
+                                            .build();
+
+                                    // 将 RAG 候选放在首位
+                                    List<CandidateIntent> ragCandidates = new ArrayList<>();
+                                    ragCandidates.add(ragTopCandidate);
+                                    for (CandidateIntent c : candidates) {
+                                        if (!c.getIntentCode().equals(ragCandidate.getIntentCode())) {
+                                            ragCandidates.add(c);
+                                        }
+                                    }
+
+                                    IntentMatchResult ragResult = IntentMatchResult.builder()
+                                            .bestMatch(ragIntent)
+                                            .topCandidates(ragCandidates)
+                                            .confidence(ragConfidence)
+                                            .matchMethod(MatchMethod.SEMANTIC)
+                                            .matchedKeywords(Collections.emptyList())
+                                            .isStrongSignal(true)
+                                            .requiresConfirmation(ragConfidence < 0.85)
+                                            .userInput(userInput)
+                                            .actionType(opType)
+                                            .questionType(questionType)
+                                            .build();
+
+                                    saveIntentMatchRecord(ragResult, factoryId, null, null, false);
+                                    return ragResult;
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("[RAG] 直接匹配检索异常: {}", e.getMessage());
+                        }
+
+                        // Step 2: 检索相似案例补充候选 (相似度 >= 0.72)
+                        try {
+                            List<RAGRetrievalService.RAGCandidate> similarCases =
+                                    ragRetrievalService.retrieveSimilarCases(factoryId, userInput, 5, 0.72);
+                            if (!similarCases.isEmpty()) {
+                                log.info("[RAG] 检索到 {} 个相似案例，将补充到候选列表", similarCases.size());
+
+                                // 用于记录已在候选中的意图
+                                Map<String, CandidateIntent> candidateMap = new LinkedHashMap<>();
+                                for (CandidateIntent c : candidates) {
+                                    candidateMap.put(c.getIntentCode(), c);
+                                }
+
+                                // 处理 RAG 候选
+                                for (RAGRetrievalService.RAGCandidate ragCandidate : similarCases) {
+                                    String intentCode = ragCandidate.getIntentCode();
+                                    if (candidateMap.containsKey(intentCode)) {
+                                        // 如果候选列表中已有该意图，提升其权重
+                                        CandidateIntent existing = candidateMap.get(intentCode);
+                                        // 置信度提升: 加权平均，RAG 贡献 20%
+                                        double boostedConfidence = existing.getConfidence() * 0.8 +
+                                                ragCandidate.getConfidence() * 0.2 * ragCandidate.getSimilarity();
+                                        CandidateIntent boosted = existing.toBuilder()
+                                                .confidence(Math.min(boostedConfidence, 0.95))
+                                                .build();
+                                        candidateMap.put(intentCode, boosted);
+                                        log.debug("[RAG] 提升候选权重: intent={}, original={:.3f}, boosted={:.3f}",
+                                                intentCode, existing.getConfidence(), boosted.getConfidence());
+                                    } else {
+                                        // 新候选：查找意图配置并添加
+                                        Optional<AIIntentConfig> ragIntentOpt = allIntents.stream()
+                                                .filter(i -> i.getIntentCode().equals(intentCode))
+                                                .findFirst();
+                                        if (ragIntentOpt.isPresent()) {
+                                            AIIntentConfig ragIntent = ragIntentOpt.get();
+                                            CandidateIntent newCandidate = CandidateIntent.builder()
+                                                    .intentCode(intentCode)
+                                                    .intentName(ragIntent.getIntentName())
+                                                    .intentCategory(ragIntent.getIntentCategory())
+                                                    .confidence(ragCandidate.getConfidence() * ragCandidate.getSimilarity())
+                                                    .matchMethod(MatchMethod.SEMANTIC)
+                                                    .config(ragIntent)
+                                                    .build();
+                                            candidateMap.put(intentCode, newCandidate);
+                                            log.debug("[RAG] 添加新候选: intent={}, confidence={:.3f}",
+                                                    intentCode, newCandidate.getConfidence());
+                                        }
+                                    }
+                                }
+
+                                // 重新排序候选列表
+                                candidates = candidateMap.values().stream()
+                                        .sorted((a, b) -> Double.compare(b.getConfidence(), a.getConfidence()))
+                                        .collect(Collectors.toList());
+
+                                // 更新 semanticResult 的候选列表
+                                semanticResult = semanticResult.toBuilder()
+                                        .topCandidates(candidates)
+                                        .build();
+
+                                // 检查 RAG 增强后是否达到高置信度
+                                if (!candidates.isEmpty() && candidates.get(0).getConfidence() >= 0.85) {
+                                    CandidateIntent topCandidate = candidates.get(0);
+                                    log.info("[RAG] 增强后达到高置信度: intent={}, confidence={:.3f}",
+                                            topCandidate.getIntentCode(), topCandidate.getConfidence());
+
+                                    IntentMatchResult ragEnhancedResult = IntentMatchResult.builder()
+                                            .bestMatch(topCandidate.getConfig())
+                                            .topCandidates(candidates)
+                                            .confidence(topCandidate.getConfidence())
+                                            .matchMethod(MatchMethod.SEMANTIC)
+                                            .matchedKeywords(Collections.emptyList())
+                                            .isStrongSignal(true)
+                                            .requiresConfirmation(false)
+                                            .userInput(userInput)
+                                            .actionType(opType)
+                                            .questionType(questionType)
+                                            .build();
+
+                                    saveIntentMatchRecord(ragEnhancedResult, factoryId, null, null, false);
+                                    return ragEnhancedResult;
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("[RAG] 相似案例检索异常: {}", e.getMessage());
+                        }
                     }
 
                     // 中置信度走 LLM Reranking
