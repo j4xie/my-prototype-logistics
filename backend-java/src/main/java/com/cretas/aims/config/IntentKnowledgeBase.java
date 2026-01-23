@@ -1067,6 +1067,28 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("帮我看告警", "ALERT_LIST");
         phraseToIntentMapping.put("帮我查告警", "ALERT_LIST");
 
+        // === v11.3: 缩写和英文短语 ===
+        phraseToIntentMapping.put("oee数据", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("oee", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("qc报告", "REPORT_QUALITY");
+        phraseToIntentMapping.put("qc", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("kpi达成", "REPORT_KPI");
+        phraseToIntentMapping.put("kpi", "REPORT_KPI");
+        phraseToIntentMapping.put("roi分析", "REPORT_FINANCE");
+        phraseToIntentMapping.put("销量top5", "REPORT_KPI");
+        phraseToIntentMapping.put("top5", "REPORT_KPI");
+        // 英文短语
+        phraseToIntentMapping.put("check inventory", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("inventory", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("sales data", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("sales", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("production status", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("quality report", "REPORT_QUALITY");
+        // 简短模糊输入 - 默认到看板
+        phraseToIntentMapping.put("卖货", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("报表", "REPORT_DASHBOARD_OVERVIEW");
+
         // === v4.1优化：溯源类短语映射（解决TRACE被BATCH抢占）===
         phraseToIntentMapping.put("溯源", "TRACE_BATCH");
         phraseToIntentMapping.put("批次溯源", "TRACE_BATCH");
