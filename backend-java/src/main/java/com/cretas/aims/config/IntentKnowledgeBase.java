@@ -2496,6 +2496,96 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("今天的检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
         phraseToIntentMapping.put("今天检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
 
+        // === v11.4: 复杂测试用例支持 ===
+
+        // sentiment (情感类) - 带情感词的查询
+        phraseToIntentMapping.put("销售业绩好不好", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("库存告急了吧", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("设备又坏了", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("质量还是那么差吗", "REPORT_QUALITY");
+        phraseToIntentMapping.put("利润肯定很低", "REPORT_FINANCE");
+        phraseToIntentMapping.put("业绩好不好", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("数据怎么样", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("情况怎么样", "REPORT_DASHBOARD_OVERVIEW");
+
+        // comparison (对比类)
+        phraseToIntentMapping.put("比较销售和库存", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("对比本月和上月", "REPORT_TRENDS");
+        phraseToIntentMapping.put("A部门vs B部门", "REPORT_KPI");
+        phraseToIntentMapping.put("线上线下销售对比", "REPORT_TRENDS");
+        phraseToIntentMapping.put("新品和老品的销量", "REPORT_TRENDS");
+        phraseToIntentMapping.put("对比", "REPORT_TRENDS");
+        phraseToIntentMapping.put("比较", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("vs", "REPORT_KPI");
+
+        // date_format (日期格式)
+        phraseToIntentMapping.put("1/23销售", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("2024年Q1销量", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("上上周的数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("前天到今天的趋势", "REPORT_TRENDS");
+        phraseToIntentMapping.put("最近30天", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("Q1销量", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("上上周", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("前天", "REPORT_DASHBOARD_OVERVIEW");
+
+        // single_word (单字/短词) - 模糊查询默认到看板
+        phraseToIntentMapping.put("销售", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("今天", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("查", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("看", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("查看", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("统计", "REPORT_DASHBOARD_OVERVIEW");
+
+        // conversational (对话式)
+        phraseToIntentMapping.put("我想知道最近怎么样啊生意", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("老板问销售怎么回事", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("那个谁帮我查下货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("销售跟库存哪个更重要啊查一下", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("不是那个是销售那个", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("最近怎么样", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("生意怎么样", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("查下货", "REPORT_INVENTORY");
+
+        // question (问题式)
+        phraseToIntentMapping.put("利润率和毛利有什么区别查一下", "REPORT_FINANCE");
+        phraseToIntentMapping.put("为什么销售下降了", "REPORT_TRENDS");
+        phraseToIntentMapping.put("设备为什么停机", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("质量问题出在哪", "REPORT_QUALITY");
+        phraseToIntentMapping.put("库存不足怎么办", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("销售下降", "REPORT_TRENDS");
+        phraseToIntentMapping.put("为什么停机", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("问题出在哪", "REPORT_QUALITY");
+
+        // multi_intent (多意图) - 映射到主意图
+        phraseToIntentMapping.put("销售怎么样谁最厉害", "REPORT_KPI");
+        phraseToIntentMapping.put("看下销售趋势和排名", "REPORT_TRENDS");
+        phraseToIntentMapping.put("库存和销售情况", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("生产设备质检", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("销售销量销冠", "REPORT_KPI");
+        phraseToIntentMapping.put("趋势和排名", "REPORT_TRENDS");
+        phraseToIntentMapping.put("销售和库存", "REPORT_DASHBOARD_OVERVIEW");
+
+        // long_query (长查询)
+        phraseToIntentMapping.put("销售情况怎么样上个月比这个月好还是差区域分布", "REPORT_TRENDS");
+        phraseToIntentMapping.put("帮我分析一下最近一个季度的销售趋势变化以及各部门的业绩对比情况", "REPORT_TRENDS");
+        phraseToIntentMapping.put("查询从去年到现在的库存变化趋势以及周转率情况", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("生产线A和B的产量对比以及设备利用率分析", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("综合分析销售利润成本三者的关系", "REPORT_FINANCE");
+
+        // special_chars (特殊字符) - 这些在预处理后应该能匹配
+        phraseToIntentMapping.put("销售报表", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");
+
+        // analytical (分析类)
+        phraseToIntentMapping.put("销售额占比分析按产品线", "REPORT_TRENDS");
+        phraseToIntentMapping.put("库存周转天数计算", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("贡献度分析", "REPORT_FINANCE");
+        phraseToIntentMapping.put("帕累托分析", "REPORT_TRENDS");
+        phraseToIntentMapping.put("ABC分类", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("周转天数", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("占比分析", "REPORT_TRENDS");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
 
