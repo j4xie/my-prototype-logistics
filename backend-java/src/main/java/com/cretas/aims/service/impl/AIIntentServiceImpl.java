@@ -2280,29 +2280,9 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // 4. 过短且无业务关键词（<=6字符）
-        if (normalized.length() <= 6 && !containsBusinessKeyword(normalized)) {
-            log.info("v11.10 检测到过短且无业务关键词: {}", userInput);
-            return true;
-        }
+        // 4. v11.10: 移除"过短且无业务关键词"规则，该规则太激进
+        // 保留其他规则即可
 
-        return false;
-    }
-
-    /**
-     * v11.10: 检查是否包含业务关键词
-     */
-    private boolean containsBusinessKeyword(String input) {
-        String[] businessKeywords = {
-            "销售", "库存", "生产", "设备", "考勤", "质检", "发货", "订单",
-            "物料", "财务", "报表", "数据", "统计", "分析", "查询",
-            "批次", "工单", "产量", "利润", "成本", "效率", "kpi", "趋势"
-        };
-        for (String keyword : businessKeywords) {
-            if (input.contains(keyword)) {
-                return true;
-            }
-        }
         return false;
     }
 
