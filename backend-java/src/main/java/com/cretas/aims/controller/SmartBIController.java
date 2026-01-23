@@ -325,13 +325,18 @@ public class SmartBIController {
                     file.getOriginalFilename(),
                     configs);
 
+            // 始终返回完整结果，通过 message 区分状态
+            String statusPrefix;
             if (result.isAllSuccess()) {
-                return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
+                statusPrefix = "";
+            } else if (result.getRequiresConfirmationCount() > 0) {
+                statusPrefix = "待确认: ";
             } else if (result.isPartialSuccess()) {
-                return ResponseEntity.ok(ApiResponse.success("部分成功: " + result.getMessage(), result));
+                statusPrefix = "部分成功: ";
             } else {
-                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+                statusPrefix = "失败: ";
             }
+            return ResponseEntity.ok(ApiResponse.success(statusPrefix + result.getMessage(), result));
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
             log.error("解析 sheetConfigs 失败: {}", e.getMessage(), e);
