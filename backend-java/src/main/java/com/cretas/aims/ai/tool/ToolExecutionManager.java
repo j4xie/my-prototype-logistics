@@ -80,7 +80,8 @@ public class ToolExecutionManager {
 
             if (response.hasError()) {
                 log.error("LLM 调用失败: {}", response.getErrorMessage());
-                return "抱歉，AI 服务出现错误: " + response.getErrorMessage();
+                // 脱敏处理：不暴露具体 LLM 错误信息
+                return "抱歉，AI 服务暂时不可用，请稍后重试";
             }
 
             // 检查是否需要调用工具
@@ -116,11 +117,12 @@ public class ToolExecutionManager {
                 } catch (Exception e) {
                     log.error("工具执行失败: {}", functionName, e);
 
-                    // 将错误信息返回给 LLM
+                    // 脱敏处理：不暴露具体异常信息给 LLM
+                    // 只返回通用错误消息，避免敏感信息通过 LLM 传递给用户
+                    String sanitizedMessage = sanitizeExceptionMessage(e);
                     String errorResult = String.format(
-                            "{\"error\": \"%s\", \"message\": \"%s\"}",
-                            e.getClass().getSimpleName(),
-                            e.getMessage()
+                            "{\"success\": false, \"error\": \"%s\"}",
+                            sanitizedMessage
                     );
                     conversationHistory.add(ChatMessage.tool(errorResult, toolCall.getId()));
                 }
@@ -191,5 +193,69 @@ public class ToolExecutionManager {
         Map<String, Object> context = new HashMap<>();
         context.put("factoryId", factoryId);
         return executeWithTools(systemPrompt, userInput, context, 5);
+    }
+
+    /**
+     * 脱敏异常消息
+     * 将敏感的异常信息转换为用户友好的消息
+     *
+     * @param e 异常
+     * @return 脱敏后的消息
+     */
+    private String sanitizeExceptionMessage(Exception e) {
+        String message = e.getMessage();
+        String exceptionType = e.getClass().getSimpleName();
+
+        // 数据库相关异常
+        if (exceptionType.contains("SQL") || exceptionType.contains("Data") ||
+            exceptionType.contains("Hibernate") || exceptionType.contains("JPA") ||
+            exceptionType.contains("Persistence")) {
+            return "数据操作失败，请稍后重试";
+        }
+
+        // 网络相关异常
+        if (exceptionType.contains("Connect") || exceptionType.contains("Timeout") ||
+            exceptionType.contains("Socket") || exceptionType.contains("IO")) {
+            return "服务连接失败，请稍后重试";
+        }
+
+        // 空指针和类型异常
+        if (exceptionType.contains("NullPointer") || exceptionType.contains("ClassCast") ||
+            exceptionType.contains("IndexOutOfBounds")) {
+            return "系统处理异常，请稍后重试";
+        }
+
+        // 业务异常可以返回消息（但需要检查是否安全）
+        if (exceptionType.contains("Business") || exceptionType.contains("Validation") ||
+            exceptionType.contains("IllegalArgument") || exceptionType.contains("IllegalState")) {
+            if (message != null && isSafeMessage(message)) {
+                return message;
+            }
+        }
+
+        // 默认返回通用消息
+        return "操作执行失败，请稍后重试";
+    }
+
+    /**
+     * 判断消息是否安全（不包含敏感信息）
+     */
+    private boolean isSafeMessage(String message) {
+        if (message == null || message.isEmpty()) {
+            return false;
+        }
+        String lowerMsg = message.toLowerCase();
+        return !lowerMsg.contains("exception") &&
+               !lowerMsg.contains("sql") &&
+               !lowerMsg.contains("jdbc") &&
+               !lowerMsg.contains("hibernate") &&
+               !lowerMsg.contains("connection") &&
+               !lowerMsg.contains("localhost") &&
+               !lowerMsg.contains("127.0.0.1") &&
+               !lowerMsg.contains(".java:") &&
+               !lowerMsg.contains("at com.") &&
+               !lowerMsg.contains("at org.") &&
+               !lowerMsg.contains("null pointer") &&
+               !lowerMsg.contains("stack trace");
     }
 }
