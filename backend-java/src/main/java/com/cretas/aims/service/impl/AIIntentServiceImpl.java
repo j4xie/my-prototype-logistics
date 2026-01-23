@@ -377,48 +377,77 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        // ========== v11.7: 多意图和不完整输入前置检测 ==========
+        // 在短语短路之前检测特殊场景，避免绕过后续处理逻辑
+        boolean skipPhraseShortcut = false;
+
+        // 检测1: 多意图触发词 - 如果包含 "和/还有/同时" 等，需要走多意图流程
+        if (containsMultiIntentTrigger(userInput)) {
+            log.info("v11.7 检测到多意图触发词，跳过短语短路: input='{}'", userInput);
+            skipPhraseShortcut = true;
+        }
+
+        // 检测2: 不完整输入 - 需要触发 clarification
+        if (!skipPhraseShortcut && isIncompleteInput(userInput)) {
+            log.info("v11.7 检测到不完整输入，需要 clarification: input='{}'", userInput);
+            // 返回需要澄清的结果
+            IntentMatchResult clarificationResult = IntentMatchResult.builder()
+                    .bestMatch(null)
+                    .topCandidates(Collections.emptyList())
+                    .confidence(0.0)
+                    .matchMethod(MatchMethod.REJECTED)
+                    .matchedKeywords(Collections.emptyList())
+                    .isStrongSignal(false)
+                    .requiresConfirmation(true)
+                    .userInput(userInput)
+                    .actionType(ActionType.UNKNOWN)
+                    .clarificationQuestion("您的输入不够明确，请问您想查询什么信息？例如：销售数据、库存情况、生产进度等")
+                    .build();
+            return clarificationResult;
+        }
+
         // ========== v11.5: 短语匹配优先短路 + 实体-意图冲突检测 ==========
-        // 在 SemanticRouter 之前检查短语映射，确保精确短语获得最高优先级
-        // v11.5: 添加实体-意图冲突检测，避免误匹配
-        // 测试结论: 方案A(禁用短路)准确率大幅下降(93%→42%)，保留短语短路
-        Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput);
-        if (earlyPhraseMatch.isPresent()) {
-            String matchedIntentCode = earlyPhraseMatch.get();
+        // 只有明确的单意图输入才走短语短路
+        if (!skipPhraseShortcut) {
+            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput);
+            if (earlyPhraseMatch.isPresent()) {
+                String matchedIntentCode = earlyPhraseMatch.get();
 
-            // v11.5: 检测实体-意图冲突，如果有冲突则不走短路
-            boolean hasConflict = knowledgeBase.hasEntityIntentConflict(userInput, matchedIntentCode);
-            if (hasConflict) {
-                log.info("v11.5 跳过短语短路: input='{}' 存在实体-意图冲突，将走语义路由", userInput);
-            } else {
-                List<AIIntentConfig> allIntents = getAllIntents(factoryId);
-                Optional<AIIntentConfig> intentOpt = allIntents.stream()
-                        .filter(i -> i.getIntentCode().equals(matchedIntentCode))
-                        .findFirst();
+                // v11.5: 检测实体-意图冲突，如果有冲突则不走短路
+                boolean hasConflict = knowledgeBase.hasEntityIntentConflict(userInput, matchedIntentCode);
+                if (hasConflict) {
+                    log.info("v11.5 跳过短语短路: input='{}' 存在实体-意图冲突，将走语义路由", userInput);
+                } else {
+                    List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                    Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                            .filter(i -> i.getIntentCode().equals(matchedIntentCode))
+                            .findFirst();
 
-                if (intentOpt.isPresent()) {
-                    AIIntentConfig intent = intentOpt.get();
-                    ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
-                    log.info("v11.5 PhraseMatch shortcut: input='{}', intent={}", userInput, matchedIntentCode);
+                    if (intentOpt.isPresent()) {
+                        AIIntentConfig intent = intentOpt.get();
+                        ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                        log.info("v11.7 PhraseMatch shortcut: input='{}', intent={}", userInput, matchedIntentCode);
 
-                    IntentMatchResult phraseResult = IntentMatchResult.builder()
-                            .bestMatch(intent)
-                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
-                                    intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
-                            .confidence(0.98)
-                            .matchMethod(MatchMethod.PHRASE_MATCH)
-                            .matchedKeywords(Collections.emptyList())
-                            .isStrongSignal(true)
-                            .requiresConfirmation(false)
-                            .userInput(userInput)
-                            .actionType(detectedActionType)
-                            .build();
+                        IntentMatchResult phraseResult = IntentMatchResult.builder()
+                                .bestMatch(intent)
+                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                        intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                                .confidence(0.98)
+                                .matchMethod(MatchMethod.PHRASE_MATCH)
+                                .matchedKeywords(Collections.emptyList())
+                                .isStrongSignal(true)
+                                .requiresConfirmation(false)
+                                .userInput(userInput)
+                                .actionType(detectedActionType)
+                                .build();
 
-                    if (preprocessedQuery != null) {
-                        phraseResult.setPreprocessedQuery(preprocessedQuery);
+                        if (preprocessedQuery != null) {
+                            phraseResult.setPreprocessedQuery(preprocessedQuery);
+                        }
+
+                        saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
+                        return applyNegationConversion(phraseResult, enhancedResult, factoryId);
                     }
-
-                    saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
-                    return applyNegationConversion(phraseResult, enhancedResult, factoryId);
                 }
             }
         }
@@ -2130,6 +2159,52 @@ public class AIIntentServiceImpl implements AIIntentService {
         for (String trigger : multiIntentTriggers) {
             if (normalized.contains(trigger)) {
                 log.debug("检测到多意图触发词'{}': {}", trigger, userInput);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * v11.7: 检测用户输入是否为不完整输入，需要触发 clarification
+     *
+     * 不完整输入的特征：
+     * 1. 包含指示词但缺少具体对象（如"帮我看看那个"、"就是那个"）
+     * 2. 纯指示词（如"继续"、"再查一次"）
+     * 3. 包含未解析的代词引用（如"上次那个"、"刚才说的"）
+     *
+     * @param userInput 用户输入
+     * @return 如果是不完整输入返回 true
+     */
+    private boolean isIncompleteInput(String userInput) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return true;
+        }
+
+        String normalized = userInput.trim().toLowerCase();
+
+        // 不完整输入模式列表
+        String[] incompletePatterns = {
+            "帮我看看那个", "就是那个", "那个东西", "那个数据",
+            "上次那个", "刚才那个", "刚才说的", "前面那个",
+            "再查一次", "再查一下", "继续", "接着",
+            "帮我查下", "帮我看下", "查一下那个",
+            "就是关于", "关于那个"
+        };
+
+        for (String pattern : incompletePatterns) {
+            if (normalized.contains(pattern)) {
+                log.debug("v11.7 检测到不完整输入模式'{}': {}", pattern, userInput);
+                return true;
+            }
+        }
+
+        // 纯指示词（整个输入就是指示词）
+        String[] pureIndicators = {"继续", "好", "行", "可以", "确定", "是的", "对"};
+        for (String indicator : pureIndicators) {
+            if (normalized.equals(indicator)) {
+                log.debug("v11.7 检测到纯指示词: {}", userInput);
                 return true;
             }
         }
