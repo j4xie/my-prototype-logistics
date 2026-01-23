@@ -291,6 +291,22 @@ public class AIIntentServiceImpl implements AIIntentService {
             return IntentMatchResult.empty(userInput);
         }
 
+        // ========== v11.2: 写操作检测前置 - 必须在 SemanticRouter 之前执行 ==========
+        // 写操作（删除、修改、添加等）不应该被路由到任何意图，直接拒绝
+        if (isWriteOnlyInput(userInput)) {
+            log.info("v11.2 写操作检测前置: 检测到写操作，直接拒绝: input='{}'", userInput);
+            IntentMatchResult noMatchResult = IntentMatchResult.builder()
+                    .bestMatch(null)
+                    .topCandidates(Collections.emptyList())
+                    .confidence(0.0)
+                    .matchMethod(MatchMethod.NONE)
+                    .userInput(userInput)
+                    .requiresConfirmation(true)
+                    .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。如需执行写操作，请使用对应的管理功能。")
+                    .build();
+            return noMatchResult;
+        }
+
         // === 新增：查询预处理 ===
         String processedInput = userInput;
         PreprocessedQuery preprocessedQuery = null;
