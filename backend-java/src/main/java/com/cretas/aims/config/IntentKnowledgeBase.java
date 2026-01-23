@@ -640,6 +640,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("质检报告", "QUALITY_STATS");
         phraseToIntentMapping.put("质量检测", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("检验结果", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检结果", "QUALITY_CHECK_QUERY");  // v11.2: 修复简单查询
         // === v4.2优化：质检类短语映射补充 ===
         phraseToIntentMapping.put("检验内容", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("质量要求", "QUALITY_CHECK_QUERY");
@@ -793,6 +794,23 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("设备效率报告", "REPORT_EFFICIENCY");
         phraseToIntentMapping.put("机器效率", "REPORT_EFFICIENCY");
         phraseToIntentMapping.put("产线效率", "REPORT_EFFICIENCY");
+
+        // === v11.2新增: 销售/KPI报表 (修复销售类查询匹配问题) ===
+        phraseToIntentMapping.put("销售排名", "REPORT_KPI");
+        phraseToIntentMapping.put("销量排名", "REPORT_KPI");
+        phraseToIntentMapping.put("业绩排名", "REPORT_KPI");
+        phraseToIntentMapping.put("销售排行", "REPORT_KPI");
+        phraseToIntentMapping.put("销量排行", "REPORT_KPI");
+        phraseToIntentMapping.put("销售KPI", "REPORT_KPI");
+        phraseToIntentMapping.put("KPI报表", "REPORT_KPI");
+        phraseToIntentMapping.put("绩效排名", "REPORT_KPI");
+        phraseToIntentMapping.put("销售情况", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售数据", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售总览", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售概览", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售报表", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("今日销售", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售怎么样", "REPORT_DASHBOARD_OVERVIEW");
 
         // === 客户相关 ===
         phraseToIntentMapping.put("客户列表", "CUSTOMER_LIST");
