@@ -2151,15 +2151,69 @@ public class AIIntentServiceImpl implements AIIntentService {
             return false;
         }
 
-        // 多意图触发词列表
-        String[] multiIntentTriggers = {"和", "还有", "同时", "另外", "以及", "并且", "顺便"};
+        String normalized = userInput.trim().toLowerCase();
 
-        String normalized = userInput.trim();
+        // ========== v11.9: 精确多意图检测 ==========
+        // 只有明确表达多个独立意图的情况才返回 true
 
-        for (String trigger : multiIntentTriggers) {
+        // 1. 强多意图触发词（明确表示要做多件事）
+        String[] strongMultiIntentTriggers = {"顺便", "另外", "还要", "再查", "再看", "同时还"};
+        for (String trigger : strongMultiIntentTriggers) {
             if (normalized.contains(trigger)) {
-                log.debug("检测到多意图触发词'{}': {}", trigger, userInput);
+                log.info("v11.9 检测到强多意图触发词'{}': {}", trigger, userInput);
                 return true;
+            }
+        }
+
+        // 2. 排除对比模式（不是多意图）
+        // "比较A和B"、"对比A和B"、"A vs B" 都是单意图（对比查询）
+        String[] comparisonPrefixes = {"比较", "对比", "对照", "比对"};
+        for (String prefix : comparisonPrefixes) {
+            if (normalized.contains(prefix)) {
+                log.debug("v11.9 检测到对比模式，不是多意图: {}", userInput);
+                return false;
+            }
+        }
+
+        // 3. 排除时间范围模式（不是多意图）
+        // "本月和上月"、"今天和昨天" 都是单意图（时间范围查询）
+        String[] timeWords = {"月", "周", "天", "日", "年", "季", "今", "昨", "前", "上", "下", "本"};
+        if (normalized.contains("和")) {
+            String[] parts = normalized.split("和");
+            if (parts.length == 2) {
+                boolean leftIsTime = false, rightIsTime = false;
+                for (String tw : timeWords) {
+                    if (parts[0].contains(tw)) leftIsTime = true;
+                    if (parts[1].contains(tw)) rightIsTime = true;
+                }
+                if (leftIsTime && rightIsTime) {
+                    log.debug("v11.9 检测到时间范围模式，不是多意图: {}", userInput);
+                    return false;
+                }
+            }
+        }
+
+        // 4. "和"连接的是两个不同领域的名词时才是多意图
+        // 例如："销售和库存" 可能是多意图，"趋势和排名" 不是
+        // 这里简化处理：只有当"和"两边都是独立的业务领域词时才是多意图
+        String[] domainKeywords = {"销售", "库存", "生产", "设备", "考勤", "质检", "发货", "订单", "物料", "财务"};
+        if (normalized.contains("和") || normalized.contains("还有") || normalized.contains("以及")) {
+            String[] parts = normalized.split("和|还有|以及");
+            if (parts.length >= 2) {
+                int domainCount = 0;
+                for (String part : parts) {
+                    for (String domain : domainKeywords) {
+                        if (part.contains(domain)) {
+                            domainCount++;
+                            break;
+                        }
+                    }
+                }
+                // 两个部分都包含不同的领域关键词才是多意图
+                if (domainCount >= 2) {
+                    log.info("v11.9 检测到多领域关键词，可能是多意图: {}", userInput);
+                    return true;
+                }
             }
         }
 
