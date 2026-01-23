@@ -533,6 +533,11 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("库存列表", "REPORT_INVENTORY");
         phraseToIntentMapping.put("原料库存", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("物料库存", "MATERIAL_BATCH_QUERY");
+        // v11.2新增: 库存预警和缺货查询
+        phraseToIntentMapping.put("库存预警", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("哪些产品缺货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("产品缺货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("缺货", "REPORT_INVENTORY");
 
         // === 设备相关 (优化5: 扩充设备查询短语) ===
         phraseToIntentMapping.put("看设备", "EQUIPMENT_LIST");
@@ -543,7 +548,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("设备都有哪些", "EQUIPMENT_LIST");
         phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复映射
         phraseToIntentMapping.put("设备列表", "EQUIPMENT_LIST");
-        phraseToIntentMapping.put("设备故障", "EQUIPMENT_ALERT_LIST");
+        phraseToIntentMapping.put("设备故障", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复为状态查询
+        phraseToIntentMapping.put("有没有设备故障", "EQUIPMENT_STATUS_QUERY");  // v11.2新增
         phraseToIntentMapping.put("设备运行", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备概览", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备维护", "EQUIPMENT_MAINTENANCE");
@@ -611,6 +617,9 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("批次查询", "PROCESSING_BATCH_LIST");
         phraseToIntentMapping.put("今日生产", "REPORT_PRODUCTION");
         phraseToIntentMapping.put("生产进度", "PROCESSING_BATCH_LIST");
+        // v11.2新增: 生产状态查询
+        phraseToIntentMapping.put("生产数据", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("车间产量", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("停止生产", "PROCESSING_BATCH_CANCEL");
         phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
         phraseToIntentMapping.put("恢复生产", "PROCESSING_BATCH_RESUME");
@@ -637,10 +646,16 @@ public class IntentKnowledgeBase {
 
         // === 质检相关 ===
         phraseToIntentMapping.put("质检记录", "QUALITY_CHECK_QUERY");
-        phraseToIntentMapping.put("质检报告", "QUALITY_STATS");
+        phraseToIntentMapping.put("质检报告", "QUALITY_CHECK_QUERY");  // v11.2: 修复为查询类
         phraseToIntentMapping.put("质量检测", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("检验结果", "QUALITY_CHECK_QUERY");
-        phraseToIntentMapping.put("质检结果", "QUALITY_CHECK_QUERY");  // v11.2: 修复简单查询
+        phraseToIntentMapping.put("质检结果", "QUALITY_CHECK_QUERY");
+        // v11.2新增: 更多质检查询短语
+        phraseToIntentMapping.put("今天合格率", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("合格率", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("不良品数量", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品质检验数据", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("品质检验", "QUALITY_CHECK_QUERY");
         // === v4.2优化：质检类短语映射补充 ===
         phraseToIntentMapping.put("检验内容", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("质量要求", "QUALITY_CHECK_QUERY");
@@ -730,6 +745,11 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("仓库原料", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("材料清单", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("原料数量", "MATERIAL_BATCH_QUERY");
+        // v11.2新增: 原料溯源和来源查询
+        phraseToIntentMapping.put("原料溯源", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("物料来源", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("这批物料的来源", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查批次", "MATERIAL_BATCH_QUERY");
         phraseToIntentMapping.put("库存不足预警", "MATERIAL_LOW_STOCK_ALERT");
         phraseToIntentMapping.put("即将到期的物料", "MATERIAL_EXPIRING_ALERT");
         phraseToIntentMapping.put("已失效物料", "MATERIAL_EXPIRED_QUERY");
@@ -805,6 +825,15 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("销售KPI", "REPORT_KPI");
         phraseToIntentMapping.put("KPI报表", "REPORT_KPI");
         phraseToIntentMapping.put("绩效排名", "REPORT_KPI");
+        // v11.2新增: 更多KPI相关短语
+        phraseToIntentMapping.put("销售冠军", "REPORT_KPI");
+        phraseToIntentMapping.put("销冠", "REPORT_KPI");
+        phraseToIntentMapping.put("业绩前十", "REPORT_KPI");
+        phraseToIntentMapping.put("前十名", "REPORT_KPI");
+        phraseToIntentMapping.put("销售最厉害", "REPORT_KPI");
+        phraseToIntentMapping.put("谁是销售冠军", "REPORT_KPI");
+        phraseToIntentMapping.put("销冠是谁", "REPORT_KPI");
+        phraseToIntentMapping.put("哪个销售最厉害", "REPORT_KPI");
         phraseToIntentMapping.put("销售情况", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售数据", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售总览", "REPORT_DASHBOARD_OVERVIEW");
@@ -812,6 +841,17 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("销售报表", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("今日销售", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售怎么样", "REPORT_DASHBOARD_OVERVIEW");
+        // v11.2新增: 更多销售总览短语
+        phraseToIntentMapping.put("本月销售", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("销售额", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("本月销售额", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("这周卖了多少", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("卖了多少钱", "REPORT_DASHBOARD_OVERVIEW");
+        // v11.2新增: 趋势报表
+        phraseToIntentMapping.put("看下趋势", "REPORT_TRENDS");
+        phraseToIntentMapping.put("趋势分析", "REPORT_TRENDS");
+        phraseToIntentMapping.put("走势", "REPORT_TRENDS");
+        phraseToIntentMapping.put("变化趋势", "REPORT_TRENDS");
 
         // === 客户相关 ===
         phraseToIntentMapping.put("客户列表", "CUSTOMER_LIST");
