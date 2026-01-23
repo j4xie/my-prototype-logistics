@@ -3452,9 +3452,17 @@ public class IntentKnowledgeBase {
     );
 
     /**
+     * 非人员相关的意图前缀 - 当输入包含人员实体词时，这些意图类型不应该被短语短路
+     */
+    private static final Set<String> NON_PERSON_INTENT_PREFIXES = Set.of(
+            "REPORT_", "PROCESSING_", "MATERIAL_", "SHIPMENT_", "EQUIPMENT_",
+            "QUALITY_", "PRODUCTION_", "INVENTORY_", "ALERT_", "TRACE_"
+    );
+
+    /**
      * 检测输入中是否存在实体-意图冲突
      *
-     * <p>场景1: 输入包含"人员实体词"，但匹配到 REPORT 类意图 → 冲突</p>
+     * <p>场景1: 输入包含"人员实体词"，但匹配到非人员相关意图 → 冲突</p>
      * <p>场景2: 输入包含"考勤实体词"，但匹配到非 ATTENDANCE 类意图 → 冲突</p>
      *
      * @param input 用户输入
@@ -3468,15 +3476,20 @@ public class IntentKnowledgeBase {
 
         String normalizedInput = input.toLowerCase();
 
-        // 场景1: 输入包含人员实体词，但匹配到 REPORT 类意图
+        // 场景1: 输入包含人员实体词，但匹配到非人员相关意图
         boolean hasPersonEntity = PERSON_ENTITY_WORDS.stream()
                 .anyMatch(normalizedInput::contains);
-        boolean isReportIntent = matchedIntentCode.startsWith("REPORT_");
 
-        if (hasPersonEntity && isReportIntent) {
-            log.debug("v11.5 实体-意图冲突: input='{}' 包含人员实体，但匹配到 REPORT 类意图 '{}'",
-                    input, matchedIntentCode);
-            return true;
+        if (hasPersonEntity) {
+            // 检查是否是非人员相关的意图
+            boolean isNonPersonIntent = NON_PERSON_INTENT_PREFIXES.stream()
+                    .anyMatch(matchedIntentCode::startsWith);
+
+            if (isNonPersonIntent) {
+                log.debug("v11.5 实体-意图冲突: input='{}' 包含人员实体，但匹配到非人员意图 '{}'",
+                        input, matchedIntentCode);
+                return true;
+            }
         }
 
         // 场景2: 输入包含考勤实体词，但匹配到非 ATTENDANCE 类意图
