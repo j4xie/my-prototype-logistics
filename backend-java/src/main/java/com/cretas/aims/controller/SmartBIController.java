@@ -106,15 +106,19 @@ public class SmartBIController {
     public ResponseEntity<ApiResponse<ExcelParseResponse>> uploadExcel(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
-            @Parameter(description = "数据类型: sales/finance/inventory") @RequestParam(required = false) String dataType) {
+            @Parameter(description = "数据类型: sales/finance/inventory") @RequestParam(required = false) String dataType,
+            @Parameter(description = "Sheet 索引，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer sheetIndex,
+            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow) {
 
-        log.info("上传 Excel 文件: factoryId={}, fileName={}, dataType={}",
-                factoryId, file.getOriginalFilename(), dataType);
+        log.info("上传 Excel 文件: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow);
 
         try {
             ExcelParseRequest request = ExcelParseRequest.builder()
                     .factoryId(factoryId)
                     .businessScene(dataType)
+                    .sheetIndex(sheetIndex)
+                    .headerRow(headerRow)
                     .build();
 
             ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
@@ -143,10 +147,12 @@ public class SmartBIController {
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
             @Parameter(description = "数据类型: sales/finance/inventory/production/quality/procurement")
-            @RequestParam(required = false) String dataType) {
+            @RequestParam(required = false) String dataType,
+            @Parameter(description = "Sheet 索引，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer sheetIndex,
+            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow) {
 
-        log.info("上传并分析: factoryId={}, fileName={}, dataType={}",
-                factoryId, file.getOriginalFilename(), dataType);
+        log.info("上传并分析: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow);
 
         // Check if uploadFlowService is available
         if (uploadFlowService == null) {
@@ -156,6 +162,8 @@ public class SmartBIController {
                 ExcelParseRequest request = ExcelParseRequest.builder()
                         .factoryId(factoryId)
                         .businessScene(dataType)
+                        .sheetIndex(sheetIndex)
+                        .headerRow(headerRow)
                         .build();
 
                 ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
@@ -550,6 +558,76 @@ public class SmartBIController {
         } catch (Exception e) {
             log.error("获取财务分析失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("获取财务分析失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 预算达成分析 ====================
+
+    @GetMapping("/analysis/finance/budget-achievement")
+    @Operation(summary = "预算达成分析", description = "获取预算达成分析图表，展示各月预算金额、实际金额、达成率")
+    public ResponseEntity<ApiResponse<ChartConfig>> getBudgetAchievementChart(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "年份") @RequestParam int year,
+            @Parameter(description = "指标类型: revenue/cost/profit/expense")
+            @RequestParam(defaultValue = "revenue") String metric) {
+
+        log.info("获取预算达成分析: factoryId={}, year={}, metric={}", factoryId, year, metric);
+
+        try {
+            ChartConfig result = financeAnalysisService.getBudgetAchievementChart(factoryId, year, metric);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取预算达成分析失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取预算达成分析失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 同比环比分析 ====================
+
+    @GetMapping("/analysis/finance/yoy-mom")
+    @Operation(summary = "同比环比分析", description = "获取同比环比分析图表，展示指标的同比/环比变化")
+    public ResponseEntity<ApiResponse<ChartConfig>> getYoYMoMComparisonChart(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "期间类型: MONTH/QUARTER/MONTH_RANGE/QUARTER_RANGE")
+            @RequestParam String periodType,
+            @Parameter(description = "开始期间（MONTH格式：2026-01，QUARTER格式：2026-Q1）")
+            @RequestParam String startPeriod,
+            @Parameter(description = "结束期间（范围类型必填）")
+            @RequestParam(required = false) String endPeriod,
+            @Parameter(description = "指标类型: revenue/cost/profit/gross_margin")
+            @RequestParam(defaultValue = "revenue") String metric) {
+
+        log.info("获取同比环比分析: factoryId={}, periodType={}, startPeriod={}, endPeriod={}, metric={}",
+                factoryId, periodType, startPeriod, endPeriod, metric);
+
+        try {
+            ChartConfig result = financeAnalysisService.getYoYMoMComparisonChart(
+                    factoryId, periodType, startPeriod, endPeriod, metric);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取同比环比分析失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取同比环比分析失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 品类结构对比 ====================
+
+    @GetMapping("/analysis/finance/category-comparison")
+    @Operation(summary = "品类结构对比", description = "获取两个年份的品类销售结构对比图表")
+    public ResponseEntity<ApiResponse<ChartConfig>> getCategoryStructureComparisonChart(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "当前年份") @RequestParam int year,
+            @Parameter(description = "对比年份") @RequestParam int compareYear) {
+
+        log.info("获取品类结构对比: factoryId={}, year={}, compareYear={}", factoryId, year, compareYear);
+
+        try {
+            ChartConfig result = financeAnalysisService.getCategoryStructureComparisonChart(
+                    factoryId, year, compareYear);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("获取品类结构对比失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取品类结构对比失败: " + e.getMessage()));
         }
     }
 
