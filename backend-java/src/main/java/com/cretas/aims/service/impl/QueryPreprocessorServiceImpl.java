@@ -199,6 +199,9 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             // 1.1 空白符规范化
             processedText = normalizeWhitespace(processedText);
 
+            // 1.1.5 v11.3: 特殊字符清理
+            processedText = cleanSpecialCharacters(processedText);
+
             // 1.2 口语标准化
             ColloquialMappings.StandardizationResult colloquialResult =
                     colloquialMappings.findAndReplace(processedText);
@@ -338,6 +341,9 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
 
         // 空白符规范化
         processedText = normalizeWhitespace(processedText);
+
+        // v11.3: 特殊字符清理
+        processedText = cleanSpecialCharacters(processedText);
 
         // 口语标准化
         ColloquialMappings.StandardizationResult colloquialResult =
@@ -486,6 +492,22 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
         // 移除标点符号后的多余空格
         result = result.replaceAll("([,，.。!！?？;；:：])\\s+", "$1");
         return result;
+    }
+
+    /**
+     * v11.3: 清理特殊字符
+     * 移除干扰意图识别的特殊符号，保留有意义的字符
+     */
+    private String cleanSpecialCharacters(String text) {
+        if (text == null || text.isEmpty()) return text;
+
+        // 移除装饰性特殊字符
+        String result = text;
+        result = result.replaceAll("[【】\\[\\]「」『』《》<>〈〉]", "");  // 各种括号
+        result = result.replaceAll("[>>><<<——…·•※★☆◆◇▲△▼▽]", "");  // 装饰符号
+        result = result.replaceAll("[!@#$%^&*()+={}|\\\\:\"<>?`~]", "");  // 英文特殊符号
+        result = result.replaceAll("\\s+", " ");  // 清理后再规范空格
+        return result.trim();
     }
 
     /**
