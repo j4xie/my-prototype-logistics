@@ -154,6 +154,7 @@ public class IntentMatchResult {
         SIMILAR,    // 相似表达匹配 (编辑距离)
         LLM,        // LLM fallback 匹配
         DOMAIN_DEFAULT, // 域默认意图匹配 (Layer 3.5)
+        REJECTED,   // v11.7: 输入被拒绝 (不完整/无效输入)
         NONE        // 未匹配
     }
 
