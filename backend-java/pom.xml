@@ -317,6 +317,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Pinyin4j for Chinese Spell Correction -->
+        <dependency>
+            <groupId>com.belerweb</groupId>
+            <artifactId>pinyin4j</artifactId>
+            <version>2.5.1</version>
+        </dependency>
+
         <!-- JAVE2 for Audio Format Conversion (外置到服务器，仅保留 linux64) -->
         <dependency>
             <groupId>ws.schild</groupId>
