@@ -44,7 +44,34 @@ Complex: 80/99 (80.8%) - Target: 70% ✅ PASSED
 
 ### Conclusion
 **短语短路对准确率至关重要**，禁用会导致 93%→42%。
-保留 v11.5 实体-意图冲突检测方案，既保持高准确率，又能处理明显误匹配。
+保留短语优先架构，通过前置检测处理特殊场景。
+
+## v11.9 架构优化 (2026-01-24)
+
+### 优化内容
+1. **精确多意图检测**：
+   - 强触发词：顺便/另外/还要/再查/同时还
+   - 排除对比模式：比较/对比 + 和
+   - 排除时间范围：本月和上月/今天和昨天
+   - 多领域检测：只有两边都是不同业务领域才是多意图
+
+2. **不完整输入 Clarification**：
+   - 检测模式：帮我看看那个/上次那个/继续...
+   - 返回 null + clarificationQuestion
+
+### 测试结果
+
+| 版本 | Simple | Complex | 说明 |
+|------|--------|---------|------|
+| v11.5 | 93% | 80.8% | 之前最佳 |
+| v11.7 | 93% | 74.7% | 粗糙多意图检测 |
+| v11.8 | 42% | 6.1% | 语义优先（失败）|
+| **v11.9** | **93%** | **83.8%** | **新最佳** |
+
+### 按难度类型 (v11.9)
+- 100%: abbreviation, analytical, comparison, date_format, english, long_query, **multi_intent**, question, sentiment, typo, write_operation
+- 80%+: conversational, irrelevant, incomplete(clarification)
+- 需优化: batch_request, special_chars, mixed_language
 
 ## Key Discoveries
 
