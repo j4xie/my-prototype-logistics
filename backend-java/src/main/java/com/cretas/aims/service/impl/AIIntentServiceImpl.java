@@ -372,7 +372,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                 RouteDecision routeDecision = semanticRouterService.route(factoryId, processedInput, topN);
 
                 if (routeDecision != null) {
-                    log.info("v11.0 SemanticRouter: type={}, score={:.3f}, intent={}, latency={}ms",
+                    log.info("v11.0 SemanticRouter: type={}, score={}, intent={}, latency={}ms",
                             routeDecision.getRouteType(),
                             routeDecision.getTopScore(),
                             routeDecision.getBestMatchIntentCode(),
@@ -391,7 +391,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                         // 记录匹配
                         saveIntentMatchRecord(directResult, factoryId, userId, sessionId, false);
 
-                        log.info("v11.0 DIRECT_EXECUTE: intent={}, score={:.3f}, saved {}ms by skipping LLM",
+                        log.info("v11.0 DIRECT_EXECUTE: intent={}, score={}, saved {}ms by skipping LLM",
                                 routeDecision.getBestMatchIntentCode(),
                                 routeDecision.getTopScore(),
                                 estimateLLMSavings());
@@ -411,7 +411,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                 rerankingResult.setPreprocessedQuery(preprocessedQuery);
                             }
 
-                            log.info("v11.0 NEED_RERANKING completed: intent={}, finalScore={:.3f}",
+                            log.info("v11.0 NEED_RERANKING completed: intent={}, finalScore={}",
                                     rerankingResult.getBestMatch().getIntentCode(),
                                     rerankingResult.getConfidence());
 
