@@ -377,51 +377,10 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // ========== v11.2: 短语匹配优先短路 ==========
-        // 在 SemanticRouter 之前检查短语映射，确保精确短语获得最高优先级
-        // 这修复了 v11.0 SemanticRouter 绕过 Layer 0 短语匹配的问题
-        // v11.5: 添加实体-意图冲突检测，避免误匹配
-        Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput);
-        if (earlyPhraseMatch.isPresent()) {
-            String matchedIntentCode = earlyPhraseMatch.get();
-
-            // v11.5: 检测实体-意图冲突，如果有冲突则不走短路
-            boolean hasConflict = knowledgeBase.hasEntityIntentConflict(userInput, matchedIntentCode);
-            if (hasConflict) {
-                log.info("v11.5 跳过短语短路: input='{}' 存在实体-意图冲突，将走语义路由", userInput);
-            } else {
-                List<AIIntentConfig> allIntents = getAllIntents(factoryId);
-                Optional<AIIntentConfig> intentOpt = allIntents.stream()
-                        .filter(i -> i.getIntentCode().equals(matchedIntentCode))
-                        .findFirst();
-
-                if (intentOpt.isPresent()) {
-                    AIIntentConfig intent = intentOpt.get();
-                    ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
-                    log.info("v11.2 PhraseMatch shortcut: input='{}', intent={}", userInput, matchedIntentCode);
-
-                    IntentMatchResult phraseResult = IntentMatchResult.builder()
-                            .bestMatch(intent)
-                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
-                                    intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
-                            .confidence(0.98)
-                            .matchMethod(MatchMethod.PHRASE_MATCH)
-                            .matchedKeywords(Collections.emptyList())
-                            .isStrongSignal(true)
-                            .requiresConfirmation(false)
-                            .userInput(userInput)
-                            .actionType(detectedActionType)
-                            .build();
-
-                    if (preprocessedQuery != null) {
-                        phraseResult.setPreprocessedQuery(preprocessedQuery);
-                    }
-
-                    saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
-                    return applyNegationConversion(phraseResult, enhancedResult, factoryId);
-                }
-            }
-        }
+        // ========== v11.6 方案A测试: 禁用短语短路，让短语走候选竞争 ==========
+        // 原 v11.2 短语短路代码已禁用，短语匹配将在 v7.0 候选竞争路径中处理
+        // 短语匹配会作为候选注入，获得 +0.15 加分，但不会直接返回
+        log.debug("v11.6 方案A: 短语短路已禁用，将走语义路由 + 候选竞争");
 
         // ========== v11.0: 语义路由器快速决策 ==========
         // 在 LLM 调用前使用向量相似度做快速路由决策
