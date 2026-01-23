@@ -853,15 +853,21 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("厂里现在什么情况", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("今天忙不忙", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("最近怎么样", "REPORT_DASHBOARD_OVERVIEW");
-        // v7.2新增：口语化生产查询
-        phraseToIntentMapping.put("今天干了多少活", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("今天干了多少", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("干了多少活", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("干了多少", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("做了多少", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("今天做了多少", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("今天产量", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("产量多少", "REPORT_PRODUCTION");
+        // v7.2新增：口语化生产查询 - v11.3: 改为 PRODUCTION_STATUS_QUERY
+        phraseToIntentMapping.put("今天干了多少活", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天干了多少", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("干了多少活", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("干了多少", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("做了多少", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天做了多少", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产量多少", "PRODUCTION_STATUS_QUERY");
+        // v11.3: 更多产量状态查询
+        phraseToIntentMapping.put("今天的产量", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("日产量统计", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("生产进度查询", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("当前产线情况", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("完成率", "PRODUCTION_STATUS_QUERY");
         // v7.2新增：库存状态查询
         phraseToIntentMapping.put("库存够不够啊", "MATERIAL_LOW_STOCK_ALERT");
         phraseToIntentMapping.put("库存够用吗", "MATERIAL_LOW_STOCK_ALERT");
@@ -933,6 +939,12 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("本月销售额", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("这周卖了多少", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("卖了多少钱", "REPORT_DASHBOARD_OVERVIEW");
+        // v11.3: 更多销售总览短语
+        phraseToIntentMapping.put("销售总额", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("营业额", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("收入多少", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("业绩如何", "REPORT_DASHBOARD_OVERVIEW");
+        phraseToIntentMapping.put("卖了多少", "REPORT_DASHBOARD_OVERVIEW");
         // v11.2新增: 趋势报表
         phraseToIntentMapping.put("看下趋势", "REPORT_TRENDS");
         phraseToIntentMapping.put("趋势分析", "REPORT_TRENDS");
