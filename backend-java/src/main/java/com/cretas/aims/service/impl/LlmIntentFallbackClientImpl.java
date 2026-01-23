@@ -349,6 +349,50 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
     private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents) {
         StringBuilder sb = new StringBuilder();
         sb.append("你是一个意图识别助手。根据用户输入，从以下意图列表中选择最匹配的意图。\n\n");
+
+        // Few-Shot 示例 - 口语化表达映射
+        sb.append("## 口语化表达示例\n\n");
+        sb.append("以下是常见的口语化表达与标准意图的映射关系，请参考这些示例进行判断：\n\n");
+        sb.append("| 口语化表达 | 对应意图 |\n");
+        sb.append("|-----------|--------|\n");
+        // 考勤类
+        sb.append("| 打个卡、签到、我要打卡 | CLOCK_IN |\n");
+        sb.append("| 签退、下班打卡 | CLOCK_OUT |\n");
+        sb.append("| 我打卡了没、今天出勤了没 | ATTENDANCE_STATUS |\n");
+        sb.append("| 这周考勤、看看考勤记录 | ATTENDANCE_HISTORY |\n");
+        // 原材料类
+        sb.append("| 看看原料库存、查一下原材料 | MATERIAL_BATCH_QUERY |\n");
+        sb.append("| 领用原材料、使用原料 | MATERIAL_BATCH_USE |\n");
+        sb.append("| 快过期的原料、临期原材料 | MATERIAL_EXPIRING_ALERT |\n");
+        sb.append("| 原料快没了、缺货预警 | MATERIAL_LOW_STOCK_ALERT |\n");
+        // 设备类 - 注意区分查询和更新
+        sb.append("| 秤有哪些、电子秤列表 | SCALE_LIST_DEVICES |\n");
+        sb.append("| 设备保养、维护记录 | EQUIPMENT_MAINTENANCE |\n");
+        sb.append("| 设备状态、机台运行情况、设备健康度 | EQUIPMENT_STATUS_QUERY |\n");
+        sb.append("| 更新设备状态、修改设备状态 | EQUIPMENT_STATUS_UPDATE |\n");
+        // 质检类 - 注意区分查询和统计
+        sb.append("| 做一下质检、开始QC | QUALITY_CHECK_EXECUTE |\n");
+        sb.append("| 看看质检记录、QC检测有哪些 | QUALITY_CHECK_QUERY |\n");
+        sb.append("| 质检结果、今天合格率、不良品数量 | QUALITY_CHECK_QUERY |\n");
+        sb.append("| 不合格品怎么处理、处置不良品 | QUALITY_DISPOSITION_EXECUTE |\n");
+        // 告警类
+        sb.append("| 有什么警报、所有告警 | ALERT_LIST |\n");
+        sb.append("| 处理掉这个警报、关闭告警 | ALERT_RESOLVE |\n");
+        // 报表类 - 销售相关归入看板概览
+        sb.append("| 看看报表、数据总览 | REPORT_DASHBOARD_OVERVIEW |\n");
+        sb.append("| 销售情况、销售数据、销售报表、本月销售 | REPORT_DASHBOARD_OVERVIEW |\n");
+        sb.append("| 销售排名、销冠、业绩排名、谁最厉害 | REPORT_KPI |\n");
+        sb.append("| 销售趋势、销售走势 | REPORT_TRENDS |\n");
+        sb.append("| 库存情况、库存多少 | REPORT_INVENTORY |\n");
+        // 生产类 - 区分实时状态和报表
+        sb.append("| 今天生产了多少、产量、车间产量、生产进度 | PRODUCTION_STATUS_QUERY |\n");
+        sb.append("| 生产报表、产量统计报告 | REPORT_PRODUCTION |\n");
+        // 供应商/客户类
+        sb.append("| 供货商名单、供货方有哪些 | SUPPLIER_LIST |\n");
+        sb.append("| 找一下供货商、查询供货方 | SUPPLIER_SEARCH |\n");
+        sb.append("| 老客户名单、买家列表 | CUSTOMER_LIST |\n");
+        sb.append("\n");
+
         sb.append("## 可用意图列表\n\n");
 
         for (AIIntentConfig intent : availableIntents) {
@@ -361,13 +405,20 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             }
         }
 
-        sb.append("\n## 输出格式\n\n");
+        sb.append("\n## 重要规则\n\n");
+        sb.append("1. **必须做出决策**：尽量从已有意图中选择最接近的，只有在用户输入完全无法理解时才返回 UNKNOWN\n");
+        sb.append("2. **理解同义词**：参考上面的口语化示例，用户可能使用不同的表达方式描述相同的意图\n");
+        sb.append("3. **优先语义匹配**：即使没有完全匹配的关键词，也要根据语义选择最相关的意图\n");
+        sb.append("4. **置信度校准**：如果有合理的匹配，置信度应该在 0.6 以上\n");
+        sb.append("5. **区分查询和更新**：\"设备状态\"是查询(QUERY)，\"更新设备状态\"才是更新(UPDATE)\n\n");
+
+        sb.append("## 输出格式\n\n");
         sb.append("请以 JSON 格式返回，包含以下字段：\n");
         sb.append("```json\n");
         sb.append("{\n");
-        sb.append("  \"intent_code\": \"匹配的意图代码，如果无法匹配返回 UNKNOWN\",\n");
+        sb.append("  \"intent_code\": \"匹配的意图代码，尽量避免返回 UNKNOWN\",\n");
         sb.append("  \"confidence\": 0.0-1.0 之间的置信度,\n");
-        sb.append("  \"reasoning\": \"判断理由\",\n");
+        sb.append("  \"reasoning\": \"判断理由，说明为什么选择这个意图\",\n");
         sb.append("  \"other_candidates\": [\n");
         sb.append("    {\"intent_code\": \"其他可能的意图\", \"confidence\": 0.0-1.0}\n");
         sb.append("  ]\n");
