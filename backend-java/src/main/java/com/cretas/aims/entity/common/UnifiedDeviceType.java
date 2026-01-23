@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
  * - {@link com.cretas.aims.entity.enums.DeviceCategory} (TRADITIONAL, IOT_SCALE, IOT_CAMERA, IOT_SENSOR)
  * - {@link com.cretas.aims.entity.iot.DeviceType} (SCALE, CAMERA, SENSOR, GATEWAY)
  * - {@link com.cretas.aims.entity.isapi.IsapiDevice.DeviceType} (IPC, NVR, DVR, ENCODER)
+ * - {@link com.cretas.aims.entity.dahua.DahuaDevice.DeviceType} (IPC, NVR, DVR, XVR)
  *
  * @author Cretas Team
  * @version 1.0.0
@@ -29,6 +30,7 @@ public enum UnifiedDeviceType {
     CAMERA_NVR("网络硬盘录像机", DeviceTypeCategory.IOT, "camera_nvr"),
     CAMERA_DVR("硬盘录像机", DeviceTypeCategory.IOT, "camera_dvr"),
     CAMERA_ENCODER("编码器", DeviceTypeCategory.IOT, "camera_encoder"),
+    CAMERA_XVR("混合硬盘录像机", DeviceTypeCategory.IOT, "camera_xvr"),
     CAMERA_GENERIC("通用摄像头", DeviceTypeCategory.IOT, "camera"),
 
     // ==================== IoT 传感器 ====================
@@ -81,7 +83,7 @@ public enum UnifiedDeviceType {
      */
     public boolean isCameraDevice() {
         return this == CAMERA_IPC || this == CAMERA_NVR || this == CAMERA_DVR
-                || this == CAMERA_ENCODER || this == CAMERA_GENERIC;
+                || this == CAMERA_ENCODER || this == CAMERA_XVR || this == CAMERA_GENERIC;
     }
 
     /**
@@ -89,6 +91,13 @@ public enum UnifiedDeviceType {
      */
     public boolean isIsapiDevice() {
         return this == CAMERA_IPC || this == CAMERA_NVR || this == CAMERA_DVR || this == CAMERA_ENCODER;
+    }
+
+    /**
+     * 是否是大华设备
+     */
+    public boolean isDahuaDevice() {
+        return this == CAMERA_IPC || this == CAMERA_NVR || this == CAMERA_DVR || this == CAMERA_XVR;
     }
 
     // ==================== 从旧枚举转换的静态方法 ====================
@@ -166,6 +175,30 @@ public enum UnifiedDeviceType {
     }
 
     /**
+     * 从 DahuaDevice.DeviceType 枚举转换
+     *
+     * @param deviceType 大华设备类型枚举
+     * @return 统一设备类型
+     */
+    public static UnifiedDeviceType fromDahuaDeviceType(com.cretas.aims.entity.dahua.DahuaDevice.DeviceType deviceType) {
+        if (deviceType == null) {
+            return null;
+        }
+        switch (deviceType) {
+            case IPC:
+                return CAMERA_IPC;
+            case NVR:
+                return CAMERA_NVR;
+            case DVR:
+                return CAMERA_DVR;
+            case XVR:
+                return CAMERA_XVR;
+            default:
+                throw new IllegalArgumentException("Unknown DahuaDevice.DeviceType: " + deviceType);
+        }
+    }
+
+    /**
      * 从前端值或枚举名反序列化
      */
     @JsonCreator
@@ -205,6 +238,7 @@ public enum UnifiedDeviceType {
             case CAMERA_NVR:
             case CAMERA_DVR:
             case CAMERA_ENCODER:
+            case CAMERA_XVR:
             case CAMERA_GENERIC:
                 return com.cretas.aims.entity.enums.DeviceCategory.IOT_CAMERA;
             case SENSOR:
@@ -230,6 +264,7 @@ public enum UnifiedDeviceType {
             case CAMERA_NVR:
             case CAMERA_DVR:
             case CAMERA_ENCODER:
+            case CAMERA_XVR:
             case CAMERA_GENERIC:
                 return com.cretas.aims.entity.iot.DeviceType.CAMERA;
             case SENSOR:
@@ -256,6 +291,26 @@ public enum UnifiedDeviceType {
                 return com.cretas.aims.entity.isapi.IsapiDevice.DeviceType.DVR;
             case CAMERA_ENCODER:
                 return com.cretas.aims.entity.isapi.IsapiDevice.DeviceType.ENCODER;
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * 转换为 DahuaDevice.DeviceType (向后兼容)
+     *
+     * @return 对应的 DeviceType，如果无法映射则返回 null
+     */
+    public com.cretas.aims.entity.dahua.DahuaDevice.DeviceType toDahuaDeviceType() {
+        switch (this) {
+            case CAMERA_IPC:
+                return com.cretas.aims.entity.dahua.DahuaDevice.DeviceType.IPC;
+            case CAMERA_NVR:
+                return com.cretas.aims.entity.dahua.DahuaDevice.DeviceType.NVR;
+            case CAMERA_DVR:
+                return com.cretas.aims.entity.dahua.DahuaDevice.DeviceType.DVR;
+            case CAMERA_XVR:
+                return com.cretas.aims.entity.dahua.DahuaDevice.DeviceType.XVR;
             default:
                 return null;
         }

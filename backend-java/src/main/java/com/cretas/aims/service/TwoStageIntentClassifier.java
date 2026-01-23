@@ -1,7 +1,5 @@
 package com.cretas.aims.service;
 
-import com.cretas.aims.ai.discriminator.FlanT5Config;
-import com.cretas.aims.ai.discriminator.FlanT5DiscriminatorService;
 import com.cretas.aims.config.IntentCompositionConfig;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -54,12 +52,6 @@ import java.util.stream.Collectors;
 public class TwoStageIntentClassifier {
 
     private final IntentCompositionConfig compositionConfig;
-
-    @Autowired(required = false)
-    private FlanT5DiscriminatorService flanT5Discriminator;
-
-    @Autowired(required = false)
-    private FlanT5Config flanT5Config;
 
     // ==================== Enums ====================
 
@@ -796,83 +788,5 @@ public class TwoStageIntentClassifier {
             this.action = action;
             this.context = context;
         }
-    }
-
-    // ==================== v10.0: JudgeRLVR Discriminator Integration ====================
-
-    /**
-     * v10.0: Prune candidates using Flan-T5 discriminator.
-     *
-     * <p>This method filters out unlikely intent candidates before ArenaRL comparison,
-     * reducing LLM token consumption by 40%+.
-     *
-     * @param userInput The user's input text
-     * @param candidates List of candidate intent codes
-     * @param currentConfidence Current matching confidence
-     * @return Pruned list of candidates
-     */
-    public List<String> pruneWithDiscriminator(
-            String userInput,
-            List<String> candidates,
-            double currentConfidence
-    ) {
-        // Check if discriminator should be triggered
-        if (!shouldTriggerDiscriminator(currentConfidence)) {
-            log.debug("Discriminator not triggered: confidence={} outside range [{}, {}]",
-                    currentConfidence,
-                    flanT5Config != null ? flanT5Config.getTriggerMinConfidence() : "N/A",
-                    flanT5Config != null ? flanT5Config.getTriggerMaxConfidence() : "N/A");
-            return candidates;
-        }
-
-        // Check if action is a write operation (use safe mode)
-        ClassifiedAction action = classifyAction(userInput);
-        boolean isWriteOp = action == ClassifiedAction.CREATE
-                || action == ClassifiedAction.UPDATE
-                || action == ClassifiedAction.DELETE;
-
-        // Use discriminator to prune
-        List<String> pruned = flanT5Discriminator.judgeAndPrune(
-                userInput, candidates, isWriteOp);
-
-        log.info("Discriminator pruning: {} -> {} candidates (isWriteOp={})",
-                candidates.size(), pruned.size(), isWriteOp);
-
-        return pruned;
-    }
-
-    /**
-     * Check if Flan-T5 discriminator should be triggered.
-     *
-     * @param confidence Current matching confidence
-     * @return true if discriminator should be used
-     */
-    public boolean shouldTriggerDiscriminator(double confidence) {
-        if (flanT5Config == null || !flanT5Config.isEnabled() || flanT5Discriminator == null) {
-            return false;
-        }
-        return confidence >= flanT5Config.getTriggerMinConfidence()
-                && confidence < flanT5Config.getTriggerMaxConfidence();
-    }
-
-    /**
-     * v10.0: Check if discriminator is available.
-     */
-    public boolean isDiscriminatorAvailable() {
-        return flanT5Config != null
-                && flanT5Config.isEnabled()
-                && flanT5Discriminator != null;
-    }
-
-    /**
-     * v10.0: Get discriminator metrics for monitoring.
-     */
-    public Map<String, Object> getDiscriminatorMetrics() {
-        if (flanT5Discriminator == null) {
-            return Map.of("available", false);
-        }
-        Map<String, Object> metrics = new HashMap<>(flanT5Discriminator.getMetrics());
-        metrics.put("available", isDiscriminatorAvailable());
-        return metrics;
     }
 }

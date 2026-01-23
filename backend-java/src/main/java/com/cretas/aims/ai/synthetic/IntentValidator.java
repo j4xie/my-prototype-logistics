@@ -1,11 +1,7 @@
 package com.cretas.aims.ai.synthetic;
 
-import com.cretas.aims.ai.discriminator.DiscriminatorResult;
-import com.cretas.aims.ai.discriminator.FlanT5Config;
-import com.cretas.aims.ai.discriminator.FlanT5DiscriminatorService;
 import com.cretas.aims.ai.synthetic.IntentScenGenerator.SyntheticSample;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -19,20 +15,12 @@ import java.util.Set;
  *
  * Validates synthetic samples through three checks:
  * 1. Structure validation - checks required slots exist
- * 2. Semantic validation - checks slot values are valid (enhanced with Flan-T5)
+ * 2. Semantic validation - checks slot values are valid
  * 3. Executability validation - basic sanity check
- *
- * <p>v10.0: Added Flan-T5 discriminator support for LLM-based semantic validation.
  */
 @Slf4j
 @Service
 public class IntentValidator {
-
-    @Autowired(required = false)
-    private FlanT5DiscriminatorService flanT5Discriminator;
-
-    @Autowired(required = false)
-    private FlanT5Config flanT5Config;
 
     // Valid time expressions in Chinese
     private static final Set<String> VALID_TIME_EXPRESSIONS = Set.of(
@@ -295,59 +283,24 @@ public class IntentValidator {
         return false;
     }
 
-    // ==================== v10.0: Flan-T5 Enhanced Validation ====================
+    // ==================== Enhanced Validation Methods ====================
 
     /**
-     * v10.0: Validate semantic coherence using Flan-T5 discriminator.
+     * Validate semantic coherence using LLM discriminator.
      *
-     * <p>This method uses the LLM to determine if the user input semantically
-     * matches the expected intent, going beyond rule-based validation.
+     * <p>Note: Flan-T5 support has been removed. This method now directly
+     * uses rule-based validation via validateSemantics().
      *
      * @param sample the synthetic sample to validate
      * @return true if semantically coherent, false otherwise
      */
     public boolean validateSemanticsWithLLM(SyntheticSample sample) {
-        if (!useFlanT5Discriminator() || sample == null) {
-            // Fall back to rule-based validation when discriminator unavailable
-            return validateSemantics(sample);
-        }
-
-        try {
-            DiscriminatorResult result = flanT5Discriminator.judge(
-                    sample.getUserInput(),
-                    sample.getIntentCode()
-            );
-
-            if (!result.isSuccessful()) {
-                log.warn("IntentValidator/Flan-T5: Semantic validation failed for '{}': {}",
-                        truncate(sample.getUserInput(), 50),
-                        result.getErrorMessage());
-                return validateSemantics(sample); // Fallback
-            }
-
-            // Use threshold of 0.6 for semantic coherence
-            boolean isCoherent = result.getScore() >= 0.6;
-
-            if (log.isDebugEnabled()) {
-                log.debug("IntentValidator/Flan-T5: Semantic validation for '{}', " +
-                                "intent={}, score={:.4f}, coherent={}",
-                        truncate(sample.getUserInput(), 50),
-                        sample.getIntentCode(),
-                        result.getScore(),
-                        isCoherent);
-            }
-
-            return isCoherent;
-
-        } catch (Exception e) {
-            log.warn("IntentValidator/Flan-T5: Error during semantic validation: {}",
-                    e.getMessage());
-            return validateSemantics(sample); // Fallback to rule-based
-        }
+        // Flan-T5 support removed, use rule-based validation
+        return validateSemantics(sample);
     }
 
     /**
-     * v10.0: Extended validation that includes LLM semantic check.
+     * Extended validation that includes semantic check.
      *
      * @param sample the synthetic sample to validate
      * @return validation result with status and any errors
@@ -360,15 +313,9 @@ public class IntentValidator {
             allErrors.add("Structure validation failed: missing required slots (TIME or METRIC)");
         }
 
-        // Run semantic validation (LLM-enhanced)
-        if (useFlanT5Discriminator()) {
-            if (!validateSemanticsWithLLM(sample)) {
-                allErrors.add("Semantic validation (LLM) failed: input does not match intent semantically");
-            }
-        } else {
-            if (!validateSemantics(sample)) {
-                allErrors.add("Semantic validation failed: invalid slot values");
-            }
+        // Run semantic validation
+        if (!validateSemantics(sample)) {
+            allErrors.add("Semantic validation failed: invalid slot values");
         }
 
         // Run executability validation
@@ -380,22 +327,5 @@ public class IntentValidator {
             return ValidationResult.success();
         }
         return ValidationResult.failure(allErrors);
-    }
-
-    /**
-     * Check if Flan-T5 discriminator is available.
-     */
-    private boolean useFlanT5Discriminator() {
-        return flanT5Config != null
-                && flanT5Config.isEnabled()
-                && flanT5Discriminator != null;
-    }
-
-    /**
-     * Truncate string for logging.
-     */
-    private String truncate(String s, int maxLen) {
-        if (s == null) return "null";
-        return s.length() > maxLen ? s.substring(0, maxLen - 3) + "..." : s;
     }
 }

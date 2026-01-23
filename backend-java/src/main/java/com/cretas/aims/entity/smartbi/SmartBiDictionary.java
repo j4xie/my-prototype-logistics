@@ -102,4 +102,42 @@ public class SmartBiDictionary extends BaseEntity {
     @Builder.Default
     @Column(name = "priority")
     private Integer priority = 100;
+
+    /**
+     * 字段语义角色
+     * DIMENSION: 维度字段（如区域、部门）
+     * METRIC: 指标字段（如销售额、利润）
+     * TIME: 时间字段（如订单日期）
+     * IDENTIFIER: 标识字段（如订单ID、批次号）
+     */
+    @Column(name = "field_role", length = 20)
+    private String fieldRole;
+
+    /**
+     * 图表轴位置建议
+     * X_AXIS: 作为X轴
+     * SERIES: 作为系列/图例分组
+     * Y_AXIS: 作为Y轴数值
+     * NONE: 不直接用于图表轴
+     */
+    @Column(name = "chart_axis", length = 20)
+    private String chartAxis;
+
+    /**
+     * 轴优先级（当多个字段竞争同一轴时）
+     * 数值越小优先级越高，1 = 首选
+     */
+    @Builder.Default
+    @Column(name = "axis_priority")
+    private Integer axisPriority = 99;
+
+    /**
+     * 默认聚合方式
+     * SUM: 求和（如总销售额）
+     * AVG: 平均值（如平均价格）
+     * COUNT: 计数（如订单数量）
+     * GROUP_BY: 用于分组，不聚合
+     */
+    @Column(name = "aggregation_type", length = 20)
+    private String aggregationType;
 }

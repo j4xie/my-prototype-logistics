@@ -4,6 +4,7 @@ import com.cretas.aims.dto.smartbi.DataFeatureResult;
 import com.cretas.aims.dto.smartbi.ExcelParseRequest;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
+import com.cretas.aims.dto.smartbi.SheetInfo;
 
 import java.io.InputStream;
 import java.util.List;
@@ -128,4 +129,14 @@ public interface ExcelDynamicParserService {
             int sampleRowCount,
             boolean skipEmptyRows
     );
+
+    /**
+     * 获取 Excel 文件中所有 Sheet 的基本信息
+     *
+     * 用于批量处理前的预览，让用户选择需要处理的 Sheet。
+     *
+     * @param inputStream Excel 文件输入流
+     * @return Sheet 信息列表
+     */
+    List<SheetInfo> listSheets(InputStream inputStream);
 }

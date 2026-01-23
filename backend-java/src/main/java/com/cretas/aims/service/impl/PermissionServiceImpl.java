@@ -128,13 +128,14 @@ public class PermissionServiceImpl implements PermissionService {
         salesPerms.put("warehouse", "read");
         PERMISSION_MATRIX.put(FactoryUserRole.sales_manager, salesPerms);
 
-        // finance_manager
+        // finance_manager: 财务主管 - SmartBI完整权限（含上传Excel）
         Map<String, String> financePerms = new HashMap<>();
         financePerms.put("dashboard", "read");
         financePerms.put("finance", "read_write");
         financePerms.put("production", "read");
         financePerms.put("procurement", "read");
         financePerms.put("sales", "read");
+        financePerms.put("analytics", "read_write");  // SmartBI 完整权限
         PERMISSION_MATRIX.put(FactoryUserRole.finance_manager, financePerms);
 
         // viewer: 所有模块只读

@@ -1,8 +1,5 @@
 package com.cretas.aims.ai.synthetic;
 
-import com.cretas.aims.ai.discriminator.DiscriminatorResult;
-import com.cretas.aims.ai.discriminator.FlanT5Config;
-import com.cretas.aims.ai.discriminator.FlanT5DiscriminatorService;
 import com.cretas.aims.ai.synthetic.IntentScenGenerator.SyntheticSample;
 import com.cretas.aims.config.SyntheticDataConfig;
 import com.cretas.aims.dto.intent.IntentMatchResult;
@@ -55,12 +52,6 @@ public class GRAPEFilter {
 
     private final SyntheticDataConfig syntheticDataConfig;
     private final AIIntentService aiIntentService;
-
-    @Autowired(required = false)
-    private FlanT5DiscriminatorService flanT5Discriminator;
-
-    @Autowired(required = false)
-    private FlanT5Config flanT5Config;
 
     @Autowired
     private EmbeddingClient embeddingClient;
@@ -144,10 +135,9 @@ public class GRAPEFilter {
     /**
      * Scores a synthetic sample using the current intent matching model.
      *
-     * <p>The scoring logic (with Flan-T5 enhancement):
+     * <p>The scoring logic:
      * <ul>
-     *   <li>If Flan-T5 is enabled, use discriminator for more precise judgment</li>
-     *   <li>Otherwise, use AIIntentService to recognize the intent from the sample's userInput</li>
+     *   <li>Use AIIntentService to recognize the intent from the sample's userInput</li>
      *   <li>If the matched intent code equals the sample's expected intentCode,
      *       return the confidence score</li>
      *   <li>Otherwise, return 0 (the model predicted the wrong intent)</li>
@@ -165,59 +155,8 @@ public class GRAPEFilter {
             return 0.0;
         }
 
-        // v10.0: Use Flan-T5 discriminator if enabled
-        if (useFlanT5Discriminator()) {
-            return scoreSampleWithFlanT5(sample);
-        }
-
-        // Fallback to original AIIntentService matching
+        // Use AIIntentService matching
         return scoreSampleWithIntentService(sample);
-    }
-
-    /**
-     * Check if Flan-T5 discriminator should be used.
-     */
-    private boolean useFlanT5Discriminator() {
-        return flanT5Config != null
-                && flanT5Config.isEnabled()
-                && flanT5Discriminator != null;
-    }
-
-    /**
-     * Score sample using Flan-T5 discriminator (v10.0 enhancement).
-     *
-     * @param sample the synthetic sample to score
-     * @return confidence score from discriminator
-     */
-    private double scoreSampleWithFlanT5(SyntheticSample sample) {
-        try {
-            DiscriminatorResult result = flanT5Discriminator.judge(
-                    sample.getUserInput(),
-                    sample.getIntentCode()
-            );
-
-            if (!result.isSuccessful()) {
-                log.trace("GRAPE/Flan-T5: Judgment failed for '{}', intent={}: {}",
-                        truncateForLog(sample.getUserInput()),
-                        sample.getIntentCode(),
-                        result.getErrorMessage());
-                return 0.0;
-            }
-
-            double score = result.getScore();
-            log.trace("GRAPE/Flan-T5: Scored '{}' for intent={}, score={:.4f}",
-                    truncateForLog(sample.getUserInput()),
-                    sample.getIntentCode(),
-                    score);
-            return score;
-
-        } catch (Exception e) {
-            log.warn("GRAPE/Flan-T5: Error scoring sample '{}': {}",
-                    truncateForLog(sample.getUserInput()),
-                    e.getMessage());
-            // Fallback to intent service on error
-            return scoreSampleWithIntentService(sample);
-        }
     }
 
     /**

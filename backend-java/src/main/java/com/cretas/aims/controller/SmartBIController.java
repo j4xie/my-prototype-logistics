@@ -2,6 +2,8 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.smartbi.*;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cretas.aims.entity.smartbi.SmartBiDatasource;
 import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
 import com.cretas.aims.entity.smartbi.SmartBiSchemaHistory;
@@ -69,6 +71,8 @@ public class SmartBIController {
     // Optional service - may not be available yet
     private final SmartBIUploadFlowService uploadFlowService;
 
+    private final ObjectMapper objectMapper;
+
     @Autowired
     public SmartBIController(
             SalesAnalysisService salesAnalysisService,
@@ -83,7 +87,8 @@ public class SmartBIController {
             QualityAnalysisService qualityAnalysisService,
             InventoryHealthAnalysisService inventoryHealthAnalysisService,
             ProcurementAnalysisService procurementAnalysisService,
-            @Autowired(required = false) SmartBIUploadFlowService uploadFlowService) {
+            @Autowired(required = false) SmartBIUploadFlowService uploadFlowService,
+            ObjectMapper objectMapper) {
         this.salesAnalysisService = salesAnalysisService;
         this.departmentAnalysisService = departmentAnalysisService;
         this.regionAnalysisService = regionAnalysisService;
@@ -97,6 +102,7 @@ public class SmartBIController {
         this.inventoryHealthAnalysisService = inventoryHealthAnalysisService;
         this.procurementAnalysisService = procurementAnalysisService;
         this.uploadFlowService = uploadFlowService;
+        this.objectMapper = objectMapper;
     }
 
     // ==================== Excel 上传 ====================
@@ -250,6 +256,92 @@ public class SmartBIController {
         } catch (Exception e) {
             log.error("确认映射并保存失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error("保存失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 批量 Sheet 处理 ====================
+
+    /**
+     * 获取 Excel 文件中所有 Sheet 的信息
+     * 用于批量处理前的预览，让用户选择需要处理的 Sheet
+     */
+    @PostMapping(value = "/sheets", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "获取 Sheet 列表", description = "预览 Excel 文件中所有 Sheet 的基本信息")
+    public ResponseEntity<ApiResponse<List<SheetInfo>>> listSheets(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file) {
+
+        log.info("获取 Sheet 列表: factoryId={}, fileName={}", factoryId, file.getOriginalFilename());
+
+        try {
+            List<SheetInfo> sheets = excelParserService.listSheets(file.getInputStream());
+            log.info("成功获取 {} 个 Sheet 的信息", sheets.size());
+            return ResponseEntity.ok(ApiResponse.success("获取成功", sheets));
+        } catch (IOException e) {
+            log.error("读取文件失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("读取文件失败: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("获取 Sheet 列表失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 批量上传多个 Sheet
+     * 根据配置处理多个 Sheet，每个 Sheet 独立解析和持久化
+     */
+    @PostMapping(value = "/upload-batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "批量上传 Sheet", description = "一次上传并处理 Excel 文件中的多个 Sheet")
+    public ResponseEntity<ApiResponse<BatchUploadResult>> uploadBatch(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Sheet 配置 JSON 数组") @RequestParam("sheetConfigs") String sheetConfigsJson) {
+
+        log.info("批量上传: factoryId={}, fileName={}, sheetConfigs={}",
+                factoryId, file.getOriginalFilename(),
+                sheetConfigsJson.length() > 100 ? sheetConfigsJson.substring(0, 100) + "..." : sheetConfigsJson);
+
+        // 检查 uploadFlowService 是否可用
+        if (uploadFlowService == null) {
+            log.warn("SmartBIUploadFlowService 尚未实现");
+            return ResponseEntity.ok(ApiResponse.error("批量上传服务尚未实现"));
+        }
+
+        try {
+            // 解析 Sheet 配置
+            List<SheetConfig> configs = objectMapper.readValue(sheetConfigsJson,
+                    new TypeReference<List<SheetConfig>>() {});
+
+            if (configs == null || configs.isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.error("sheetConfigs 不能为空"));
+            }
+
+            log.info("解析到 {} 个 Sheet 配置", configs.size());
+
+            // 执行批量上传
+            BatchUploadResult result = uploadFlowService.executeBatchUpload(
+                    factoryId,
+                    file.getInputStream(),
+                    file.getOriginalFilename(),
+                    configs);
+
+            if (result.isAllSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
+            } else if (result.isPartialSuccess()) {
+                return ResponseEntity.ok(ApiResponse.success("部分成功: " + result.getMessage(), result));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error(result.getMessage()));
+            }
+
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            log.error("解析 sheetConfigs 失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("sheetConfigs 格式错误: " + e.getMessage()));
+        } catch (IOException e) {
+            log.error("读取文件失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("读取文件失败: " + e.getMessage()));
+        } catch (Exception e) {
+            log.error("批量上传失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("批量上传失败: " + e.getMessage()));
         }
     }
 
