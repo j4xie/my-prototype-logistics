@@ -2026,8 +2026,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("用掉原料", "MATERIAL_BATCH_CONSUME");
         // 记录类
         phraseToIntentMapping.put("记录考勤", "ATTENDANCE_RECORD");
-        phraseToIntentMapping.put("考勤记录", "ATTENDANCE_QUERY");
-        phraseToIntentMapping.put("打卡记录", "ATTENDANCE_QUERY");
+        // v11.2: 移除重复映射，"考勤记录"已在887行映射到ATTENDANCE_HISTORY
+        phraseToIntentMapping.put("打卡记录", "ATTENDANCE_HISTORY");  // v11.2: 改为HISTORY
         // 启动类
         phraseToIntentMapping.put("启动生产线", "PROCESSING_BATCH_START");
         phraseToIntentMapping.put("启动产线", "PROCESSING_BATCH_START");
@@ -2092,8 +2092,7 @@ public class IntentKnowledgeBase {
 
         // 修复 "记录" 类短语 - 避免误匹配 EQUIPMENT_MAINTENANCE
         phraseToIntentMapping.put("记录考勤", "ATTENDANCE_RECORD");
-        phraseToIntentMapping.put("考勤记录", "ATTENDANCE_QUERY");
-        phraseToIntentMapping.put("打卡记录", "ATTENDANCE_QUERY");
+        // v11.2: 移除重复映射，"考勤记录"和"打卡记录"已在前面正确映射
         phraseToIntentMapping.put("今早的打卡记录", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("今天打卡记录", "ATTENDANCE_TODAY");
 
