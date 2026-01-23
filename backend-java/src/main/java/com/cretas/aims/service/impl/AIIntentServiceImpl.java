@@ -490,12 +490,13 @@ public class AIIntentServiceImpl implements AIIntentService {
                                                               IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult) {
         String userInput = processedInput; // 使用处理后的输入进行匹配
 
-        // ========== v4.5修复: Layer 0 - 原始输入短语匹配优先检查 ==========
-        // 当原始输入包含时间上下文时（如"上周入库的原料"），短语匹配应使用原始输入
-        // 因为预处理可能已将其简化为"入库原料"，丢失时间上下文
+        // ========== v11.2修复: Layer 0 - 短语匹配优先短路 ==========
+        // v4.5原逻辑：只有当原始/处理后短语匹配结果不同时才短路
+        // v11.2修复：短语匹配成功即短路，确保高质量短语映射优先生效
+        // 这修复了 "销售排名"、"质检结果" 等精确短语被语义匹配覆盖的问题
         Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput);
-        if (originalPhraseMatch.isPresent() && !originalPhraseMatch.get().equals(knowledgeBase.matchPhrase(processedInput).orElse(null))) {
-            // 原始输入和处理后输入的短语匹配结果不同，使用原始输入的结果
+        if (originalPhraseMatch.isPresent()) {
+            // 短语匹配成功，直接使用短语映射结果
             String matchedIntent = originalPhraseMatch.get();
             List<AIIntentConfig> allIntents = getAllIntents(factoryId);
             Optional<AIIntentConfig> intentOpt = allIntents.stream()
