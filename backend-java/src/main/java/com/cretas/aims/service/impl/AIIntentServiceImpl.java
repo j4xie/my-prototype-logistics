@@ -377,10 +377,20 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // ========== v11.8: 不完整输入前置检测 ==========
-        // 不完整输入需要触发 clarification，在所有匹配之前检测
-        if (isIncompleteInput(userInput)) {
-            log.info("v11.8 检测到不完整输入，需要 clarification: input='{}'", userInput);
+        // ========== v11.7: 多意图和不完整输入前置检测 ==========
+        // 在短语短路之前检测特殊场景，避免绕过后续处理逻辑
+        boolean skipPhraseShortcut = false;
+
+        // 检测1: 多意图触发词 - 如果包含 "和/还有/同时" 等，需要走多意图流程
+        if (containsMultiIntentTrigger(userInput)) {
+            log.info("v11.7 检测到多意图触发词，跳过短语短路: input='{}'", userInput);
+            skipPhraseShortcut = true;
+        }
+
+        // 检测2: 不完整输入 - 需要触发 clarification
+        if (!skipPhraseShortcut && isIncompleteInput(userInput)) {
+            log.info("v11.7 检测到不完整输入，需要 clarification: input='{}'", userInput);
+            // 返回需要澄清的结果
             IntentMatchResult clarificationResult = IntentMatchResult.builder()
                     .bestMatch(null)
                     .topCandidates(Collections.emptyList())
@@ -396,8 +406,52 @@ public class AIIntentServiceImpl implements AIIntentService {
             return clarificationResult;
         }
 
-        // ========== v11.8: 语义路由优先 (测试调换顺序) ==========
-        // 短语匹配移到语义路由之后，作为候选参与竞争
+        // ========== v11.5: 短语匹配优先短路 + 实体-意图冲突检测 ==========
+        // 只有明确的单意图输入才走短语短路
+        if (!skipPhraseShortcut) {
+            Optional<String> earlyPhraseMatch = knowledgeBase.matchPhrase(userInput);
+            if (earlyPhraseMatch.isPresent()) {
+                String matchedIntentCode = earlyPhraseMatch.get();
+
+                // v11.5: 检测实体-意图冲突，如果有冲突则不走短路
+                boolean hasConflict = knowledgeBase.hasEntityIntentConflict(userInput, matchedIntentCode);
+                if (hasConflict) {
+                    log.info("v11.5 跳过短语短路: input='{}' 存在实体-意图冲突，将走语义路由", userInput);
+                } else {
+                    List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                    Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                            .filter(i -> i.getIntentCode().equals(matchedIntentCode))
+                            .findFirst();
+
+                    if (intentOpt.isPresent()) {
+                        AIIntentConfig intent = intentOpt.get();
+                        ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+                        log.info("v11.7 PhraseMatch shortcut: input='{}', intent={}", userInput, matchedIntentCode);
+
+                        IntentMatchResult phraseResult = IntentMatchResult.builder()
+                                .bestMatch(intent)
+                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                        intent, 0.98, 98, Collections.emptyList(), MatchMethod.PHRASE_MATCH)))
+                                .confidence(0.98)
+                                .matchMethod(MatchMethod.PHRASE_MATCH)
+                                .matchedKeywords(Collections.emptyList())
+                                .isStrongSignal(true)
+                                .requiresConfirmation(false)
+                                .userInput(userInput)
+                                .actionType(detectedActionType)
+                                .build();
+
+                        if (preprocessedQuery != null) {
+                            phraseResult.setPreprocessedQuery(preprocessedQuery);
+                        }
+
+                        saveIntentMatchRecord(phraseResult, factoryId, userId, sessionId, false);
+                        return applyNegationConversion(phraseResult, enhancedResult, factoryId);
+                    }
+                }
+            }
+        }
+
         // ========== v11.0: 语义路由器快速决策 ==========
         // 在 LLM 调用前使用向量相似度做快速路由决策
         // - DIRECT_EXECUTE (score >= 0.92): 直接返回，跳过 LLM
