@@ -1,18 +1,22 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.dto.smartbi.DynamicChartConfig;
 import com.cretas.aims.dto.smartbi.ExcelParseRequest;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
+import com.cretas.aims.dto.smartbi.FieldMappingWithChartRole;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 import com.cretas.aims.entity.smartbi.SmartBiFinanceData;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
 import com.cretas.aims.repository.smartbi.SmartBiFinanceDataRepository;
 import com.cretas.aims.repository.smartbi.SmartBiSalesDataRepository;
 import com.cretas.aims.service.smartbi.ChartTemplateService;
+import com.cretas.aims.service.smartbi.DynamicChartConfigBuilderService;
 import com.cretas.aims.service.smartbi.ExcelDataPersistenceService;
 import com.cretas.aims.service.smartbi.ExcelDataPersistenceService.DataType;
 import com.cretas.aims.service.smartbi.ExcelDataPersistenceService.PersistenceResult;
 import com.cretas.aims.service.smartbi.ExcelDynamicParserService;
+import com.cretas.aims.service.smartbi.LLMFieldMappingService;
 import com.cretas.aims.service.smartbi.SmartBIUploadFlowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +51,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     private final ChartTemplateService chartTemplateService;
     private final SmartBiSalesDataRepository salesDataRepository;
     private final SmartBiFinanceDataRepository financeDataRepository;
+    private final LLMFieldMappingService llmFieldMappingService;
+    private final DynamicChartConfigBuilderService dynamicChartConfigBuilder;
 
     // 数据类型到模板分类的映射
     private static final Map<String, String> DATA_TYPE_TO_CATEGORY = Map.of(
@@ -204,6 +210,9 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             log.info("确认后数据持久化成功: uploadId={}, savedRows={}",
                     persistResult.getUploadId(), persistResult.getSavedRows());
 
+            // 2.1 自动学习：将用户手动确认的映射保存到字典数据库
+            saveManualMappingsToDatabase(factoryId, confirmedMappings);
+
             // 3. 推荐图表
             String recommendedChartType = recommendChartType(parseResponse, dataType);
             List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResponse);
@@ -326,6 +335,41 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 保存用户手动确认的字段映射到数据库（自动学习功能）
+     *
+     * 只有来源为 MANUAL 的映射才会被保存，用于下次 LLM 或字典直接匹配
+     */
+    private void saveManualMappingsToDatabase(String factoryId, List<FieldMappingResult> confirmedMappings) {
+        if (confirmedMappings == null || confirmedMappings.isEmpty()) {
+            return;
+        }
+
+        int savedCount = 0;
+        for (FieldMappingResult mapping : confirmedMappings) {
+            // 只保存用户手动确认的映射
+            if (mapping.getMappingSource() == FieldMappingResult.MappingSource.MANUAL) {
+                try {
+                    llmFieldMappingService.saveUserMapping(
+                            factoryId,
+                            mapping.getStandardField(),
+                            mapping.getOriginalColumn(),
+                            "USER"
+                    );
+                    savedCount++;
+                } catch (Exception e) {
+                    log.warn("保存用户映射失败: {} -> {}, error={}",
+                            mapping.getOriginalColumn(), mapping.getStandardField(), e.getMessage());
+                }
+            }
+        }
+
+        if (savedCount > 0) {
+            log.info("自动学习完成: 已保存 {} 条用户手动确认的字段映射到字典 (factoryId={})",
+                    savedCount, factoryId);
+        }
+    }
 
     /**
      * 检测数据类型
@@ -487,6 +531,149 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             default:
                 return Collections.emptyMap();
         }
+    }
+
+    /**
+     * 使用 DynamicChartConfigBuilder 构建动态图表配置
+     *
+     * 根据字段的 chartAxis 角色自动聚合数据，而不是硬编码的 byDate/byCategory/byRegion
+     *
+     * @param factoryId        工厂ID
+     * @param uploadId         上传ID
+     * @param dataType         数据类型
+     * @param fieldMappings    带图表角色的字段映射列表
+     * @return 动态图表配置
+     */
+    public DynamicChartConfig buildDynamicChartConfig(String factoryId, Long uploadId,
+                                                       DataType dataType,
+                                                       List<FieldMappingWithChartRole> fieldMappings) {
+        if (fieldMappings == null || fieldMappings.isEmpty()) {
+            log.warn("字段映射为空，无法构建动态图表配置");
+            return null;
+        }
+
+        // 1. 获取原始数据
+        Map<String, Object> rawData = buildChartData(factoryId, uploadId, dataType);
+        if (rawData.isEmpty()) {
+            log.warn("原始数据为空，无法构建动态图表配置");
+            return null;
+        }
+
+        // 2. 将原始数据转换为 DynamicChartConfigBuilder 可接受的格式
+        Map<String, Object> aggregatedData = new LinkedHashMap<>();
+        aggregatedData.put("data", convertToDataList(rawData, dataType));
+        aggregatedData.put("totalRows", rawData.get("recordCount"));
+
+        // 3. 使用 DynamicChartConfigBuilder 构建配置
+        try {
+            DynamicChartConfig config = dynamicChartConfigBuilder.buildConfig(fieldMappings, aggregatedData);
+            log.info("成功构建动态图表配置: chartType={}, totalRows={}",
+                    config.getChartType(), config.getTotalRows());
+            return config;
+        } catch (Exception e) {
+            log.error("构建动态图表配置失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 使用指定的字段构建动态图表配置
+     *
+     * @param factoryId         工厂ID
+     * @param uploadId          上传ID
+     * @param dataType          数据类型
+     * @param fieldMappings     字段映射列表
+     * @param xAxisFieldName    指定的 X 轴字段名
+     * @param seriesFieldName   指定的 Series 字段名（可为 null）
+     * @param measureFieldNames 指定的度量字段名列表
+     * @return 动态图表配置
+     */
+    public DynamicChartConfig buildDynamicChartConfigWithFields(String factoryId, Long uploadId,
+                                                                  DataType dataType,
+                                                                  List<FieldMappingWithChartRole> fieldMappings,
+                                                                  String xAxisFieldName,
+                                                                  String seriesFieldName,
+                                                                  List<String> measureFieldNames) {
+        if (fieldMappings == null || fieldMappings.isEmpty()) {
+            log.warn("字段映射为空，无法构建动态图表配置");
+            return null;
+        }
+
+        // 1. 获取原始数据
+        Map<String, Object> rawData = buildChartData(factoryId, uploadId, dataType);
+        if (rawData.isEmpty()) {
+            log.warn("原始数据为空，无法构建动态图表配置");
+            return null;
+        }
+
+        // 2. 转换数据格式
+        Map<String, Object> aggregatedData = new LinkedHashMap<>();
+        aggregatedData.put("data", convertToDataList(rawData, dataType));
+        aggregatedData.put("totalRows", rawData.get("recordCount"));
+
+        // 3. 使用指定字段构建配置
+        try {
+            DynamicChartConfig config = dynamicChartConfigBuilder.buildConfigWithFields(
+                    fieldMappings, aggregatedData, xAxisFieldName, seriesFieldName, measureFieldNames);
+            log.info("成功构建动态图表配置（指定字段）: chartType={}, xAxis={}, series={}",
+                    config.getChartType(), xAxisFieldName, seriesFieldName);
+            return config;
+        } catch (Exception e) {
+            log.error("构建动态图表配置失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 将聚合数据转换为数据列表格式
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> convertToDataList(Map<String, Object> rawData, DataType dataType) {
+        List<Map<String, Object>> dataList = new ArrayList<>();
+
+        // 根据数据类型选择适当的分组数据
+        Map<String, BigDecimal> primaryGroup = null;
+        String groupKey = null;
+        String valueKey = null;
+
+        switch (dataType) {
+            case SALES:
+                // 优先使用按日期分组，如果为空则尝试按分类
+                primaryGroup = (Map<String, BigDecimal>) rawData.get("byDate");
+                if (primaryGroup == null || primaryGroup.isEmpty()) {
+                    primaryGroup = (Map<String, BigDecimal>) rawData.get("byCategory");
+                    groupKey = "category";
+                    valueKey = "amount";
+                } else {
+                    groupKey = "date";
+                    valueKey = "amount";
+                }
+                break;
+            case FINANCE:
+                primaryGroup = (Map<String, BigDecimal>) rawData.get("byDate");
+                if (primaryGroup == null || primaryGroup.isEmpty()) {
+                    primaryGroup = (Map<String, BigDecimal>) rawData.get("byDepartment");
+                    groupKey = "department";
+                    valueKey = "cost";
+                } else {
+                    groupKey = "date";
+                    valueKey = "cost";
+                }
+                break;
+            default:
+                return dataList;
+        }
+
+        if (primaryGroup != null && !primaryGroup.isEmpty()) {
+            for (Map.Entry<String, BigDecimal> entry : primaryGroup.entrySet()) {
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put(groupKey, entry.getKey());
+                row.put(valueKey, entry.getValue());
+                dataList.add(row);
+            }
+        }
+
+        return dataList;
     }
 
     /**
