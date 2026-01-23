@@ -2221,15 +2221,13 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
-     * v11.7: 检测用户输入是否为不完整输入，需要触发 clarification
+     * v11.10: 增强不完整输入检测，需要触发 clarification
      *
      * 不完整输入的特征：
-     * 1. 包含指示词但缺少具体对象（如"帮我看看那个"、"就是那个"）
-     * 2. 纯指示词（如"继续"、"再查一次"）
-     * 3. 包含未解析的代词引用（如"上次那个"、"刚才说的"）
-     *
-     * @param userInput 用户输入
-     * @return 如果是不完整输入返回 true
+     * 1. 短输入 + 纯指示词/代词（如"那个"、"帮我看看"）
+     * 2. 包含代词引用（如"上次那个"、"刚才说的"）
+     * 3. 重复/继续请求（如"再来一次"）
+     * 4. 过短且无业务关键词
      */
     private boolean isIncompleteInput(String userInput) {
         if (userInput == null || userInput.trim().isEmpty()) {
@@ -2238,31 +2236,73 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         String normalized = userInput.trim().toLowerCase();
 
-        // 不完整输入模式列表
+        // 1. 短输入检测（<=4字符且是常见不完整模式）
+        if (normalized.length() <= 4) {
+            String[] shortIncomplete = {"那个", "这个", "哪个", "什么", "帮我", "查下", "看下", "再来"};
+            for (String pattern : shortIncomplete) {
+                if (normalized.equals(pattern) || normalized.contains(pattern)) {
+                    log.info("v11.10 检测到短不完整输入: {}", userInput);
+                    return true;
+                }
+            }
+        }
+
+        // 2. 不完整输入模式列表（扩展）
         String[] incompletePatterns = {
-            "帮我看看那个", "就是那个", "那个东西", "那个数据",
-            "上次那个", "刚才那个", "刚才说的", "前面那个",
-            "再查一次", "再查一下", "继续", "接着",
-            "帮我查下", "帮我看下", "查一下那个",
-            "就是关于", "关于那个"
+            // 代词引用
+            "帮我看看那个", "就是那个", "那个东西", "那个数据", "那个报表",
+            "上次那个", "刚才那个", "刚才说的", "前面那个", "之前那个",
+            "你刚才查的", "刚才查的", "刚刚那个", "你刚才",
+            // 重复/继续请求
+            "再查一次", "再查一下", "再来一次", "再来一下",
+            "接着", "接着看", "继续查",
+            // 模糊请求
+            "帮我查下", "帮我看下", "帮我看看", "查一下那个",
+            "就是关于", "关于那个", "有关那个",
+            // 上下文依赖
+            "是什么来着", "叫什么来着", "在哪来着",
+            "上次说的", "之前说的", "前面说的"
         };
 
         for (String pattern : incompletePatterns) {
             if (normalized.contains(pattern)) {
-                log.debug("v11.7 检测到不完整输入模式'{}': {}", pattern, userInput);
+                log.info("v11.10 检测到不完整输入模式'{}': {}", pattern, userInput);
                 return true;
             }
         }
 
-        // 纯指示词（整个输入就是指示词）
-        String[] pureIndicators = {"继续", "好", "行", "可以", "确定", "是的", "对"};
+        // 3. 纯指示词（整个输入就是指示词）
+        String[] pureIndicators = {"继续", "好", "行", "可以", "确定", "是的", "对", "嗯", "好的", "再来", "再来一次"};
         for (String indicator : pureIndicators) {
             if (normalized.equals(indicator)) {
-                log.debug("v11.7 检测到纯指示词: {}", userInput);
+                log.info("v11.10 检测到纯指示词: {}", userInput);
                 return true;
             }
         }
 
+        // 4. 过短且无业务关键词（<=6字符）
+        if (normalized.length() <= 6 && !containsBusinessKeyword(normalized)) {
+            log.info("v11.10 检测到过短且无业务关键词: {}", userInput);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * v11.10: 检查是否包含业务关键词
+     */
+    private boolean containsBusinessKeyword(String input) {
+        String[] businessKeywords = {
+            "销售", "库存", "生产", "设备", "考勤", "质检", "发货", "订单",
+            "物料", "财务", "报表", "数据", "统计", "分析", "查询",
+            "批次", "工单", "产量", "利润", "成本", "效率", "kpi", "趋势"
+        };
+        for (String keyword : businessKeywords) {
+            if (input.contains(keyword)) {
+                return true;
+            }
+        }
         return false;
     }
 
