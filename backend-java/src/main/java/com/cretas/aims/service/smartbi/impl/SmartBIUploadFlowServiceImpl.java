@@ -1,10 +1,14 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.dto.smartbi.BatchUploadResult;
 import com.cretas.aims.dto.smartbi.DynamicChartConfig;
 import com.cretas.aims.dto.smartbi.ExcelParseRequest;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.dto.smartbi.FieldMappingWithChartRole;
+import com.cretas.aims.dto.smartbi.SheetConfig;
+import com.cretas.aims.dto.smartbi.SheetInfo;
+import com.cretas.aims.dto.smartbi.SheetUploadResult;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 import com.cretas.aims.entity.smartbi.SmartBiFinanceData;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
@@ -24,7 +28,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -810,5 +817,173 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         return result;
+    }
+
+    // ==================== 批量 Sheet 上传 ====================
+
+    @Override
+    @Transactional
+    public BatchUploadResult executeBatchUpload(String factoryId, InputStream inputStream,
+                                                  String fileName, List<SheetConfig> sheetConfigs) {
+        log.info("开始批量上传: factoryId={}, fileName={}, sheetCount={}",
+                factoryId, fileName, sheetConfigs != null ? sheetConfigs.size() : 0);
+
+        if (sheetConfigs == null || sheetConfigs.isEmpty()) {
+            return BatchUploadResult.builder()
+                    .totalSheets(0)
+                    .message("没有指定要处理的 Sheet")
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        // 将输入流读入内存，以便多次读取
+        byte[] fileBytes;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            fileBytes = baos.toByteArray();
+            log.info("文件读入内存: {} bytes", fileBytes.length);
+        } catch (IOException e) {
+            log.error("读取文件失败: {}", e.getMessage(), e);
+            return BatchUploadResult.builder()
+                    .totalSheets(sheetConfigs.size())
+                    .failedCount(sheetConfigs.size())
+                    .message("读取文件失败: " + e.getMessage())
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        // 获取 Sheet 信息列表
+        List<SheetInfo> sheetInfoList;
+        try {
+            sheetInfoList = excelParserService.listSheets(new ByteArrayInputStream(fileBytes));
+        } catch (Exception e) {
+            log.error("获取 Sheet 列表失败: {}", e.getMessage(), e);
+            return BatchUploadResult.builder()
+                    .totalSheets(sheetConfigs.size())
+                    .failedCount(sheetConfigs.size())
+                    .message("获取 Sheet 列表失败: " + e.getMessage())
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        // 处理每个 Sheet
+        List<SheetUploadResult> results = new ArrayList<>();
+
+        for (SheetConfig config : sheetConfigs) {
+            int sheetIndex = config.getSheetIndex();
+            String sheetName = getSheetName(sheetInfoList, sheetIndex);
+
+            log.info("处理 Sheet[{}] {}: headerRow={}, dataType={}",
+                    sheetIndex, sheetName, config.getHeaderRow(), config.getDataType());
+
+            // 验证 Sheet 索引
+            if (sheetIndex < 0 || sheetIndex >= sheetInfoList.size()) {
+                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
+                        "无效的 Sheet 索引: " + sheetIndex));
+                continue;
+            }
+
+            // 检查是否为空 Sheet
+            SheetInfo sheetInfo = sheetInfoList.get(sheetIndex);
+            if (Boolean.TRUE.equals(sheetInfo.getEmpty())) {
+                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
+                        "Sheet 为空"));
+                continue;
+            }
+
+            try {
+                // 解析 Excel
+                ExcelParseRequest parseRequest = ExcelParseRequest.builder()
+                        .factoryId(factoryId)
+                        .fileName(fileName)
+                        .sheetIndex(sheetIndex)
+                        .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
+                        .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
+                        .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
+                        .businessScene(config.getDataType())
+                        .build();
+
+                ExcelParseResponse parseResult = excelParserService.parseExcel(
+                        new ByteArrayInputStream(fileBytes), parseRequest);
+
+                if (!parseResult.isSuccess()) {
+                    results.add(SheetUploadResult.failed(sheetIndex, sheetName,
+                            "解析失败: " + parseResult.getErrorMessage()));
+                    continue;
+                }
+
+                // 检测数据类型
+                DataType detectedType = detectDataType(parseResult, config.getDataType());
+                String detectedTypeStr = detectedType.name();
+
+                // 检查是否需要用户确认
+                boolean needsConfirmation = checkNeedsConfirmation(parseResult);
+
+                if (needsConfirmation) {
+                    // 需要确认的情况，返回解析结果但不持久化
+                    UploadFlowResult flowResult = UploadFlowResult.builder()
+                            .success(true)
+                            .message("字段映射需要用户确认")
+                            .parseResult(parseResult)
+                            .requiresConfirmation(true)
+                            .detectedDataType(detectedTypeStr)
+                            .build();
+
+                    results.add(SheetUploadResult.success(sheetIndex, sheetName, flowResult));
+                    continue;
+                }
+
+                // 持久化数据
+                PersistenceResult persistResult = persistenceService.persistData(
+                        factoryId, parseResult, detectedType);
+
+                if (!persistResult.isSuccess()) {
+                    results.add(SheetUploadResult.failed(sheetIndex, sheetName,
+                            "持久化失败: " + persistResult.getMessage()));
+                    continue;
+                }
+
+                // 成功
+                UploadFlowResult flowResult = UploadFlowResult.builder()
+                        .success(true)
+                        .message(String.format("成功处理 %d 条%s数据",
+                                persistResult.getSavedRows(), detectedType.getDisplayName()))
+                        .parseResult(parseResult)
+                        .persistResult(persistResult)
+                        .detectedDataType(detectedTypeStr)
+                        .requiresConfirmation(false)
+                        .uploadId(persistResult.getUploadId())
+                        .build();
+
+                results.add(SheetUploadResult.success(sheetIndex, sheetName, flowResult));
+                log.info("Sheet[{}] {} 处理成功: savedRows={}, uploadId={}",
+                        sheetIndex, sheetName, persistResult.getSavedRows(), persistResult.getUploadId());
+
+            } catch (Exception e) {
+                log.error("处理 Sheet[{}] {} 失败: {}", sheetIndex, sheetName, e.getMessage(), e);
+                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
+                        "处理异常: " + e.getMessage()));
+            }
+        }
+
+        BatchUploadResult batchResult = BatchUploadResult.fromResults(results);
+        log.info("批量上传完成: {}", batchResult.getMessage());
+
+        return batchResult;
+    }
+
+    /**
+     * 根据索引获取 Sheet 名称
+     */
+    private String getSheetName(List<SheetInfo> sheetInfoList, int sheetIndex) {
+        if (sheetIndex >= 0 && sheetIndex < sheetInfoList.size()) {
+            return sheetInfoList.get(sheetIndex).getName();
+        }
+        return "Sheet" + sheetIndex;
     }
 }

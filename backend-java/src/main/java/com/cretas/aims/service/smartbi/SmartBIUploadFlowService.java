@@ -1,12 +1,15 @@
 package com.cretas.aims.service.smartbi;
 
+import com.cretas.aims.dto.smartbi.BatchUploadResult;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
+import com.cretas.aims.dto.smartbi.SheetConfig;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 import lombok.Builder;
 import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
@@ -172,4 +175,19 @@ public interface SmartBIUploadFlowService {
      * @return 默认模板列表
      */
     List<SmartBiChartTemplate> getDefaultTemplates(String dataType, String factoryId);
+
+    /**
+     * 批量上传多个 Sheet
+     *
+     * 并行处理多个 Sheet，每个 Sheet 按照配置独立解析和持久化。
+     * 部分 Sheet 失败不影响其他 Sheet 的处理。
+     *
+     * @param factoryId    工厂ID
+     * @param inputStream  Excel 文件输入流
+     * @param fileName     文件名
+     * @param sheetConfigs 各 Sheet 的处理配置
+     * @return 批量上传结果
+     */
+    BatchUploadResult executeBatchUpload(String factoryId, InputStream inputStream,
+                                          String fileName, List<SheetConfig> sheetConfigs);
 }

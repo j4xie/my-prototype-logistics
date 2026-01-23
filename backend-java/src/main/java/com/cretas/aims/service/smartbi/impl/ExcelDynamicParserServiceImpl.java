@@ -13,8 +13,13 @@ import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.dto.smartbi.FieldMappingResult.MappingSource;
 import com.cretas.aims.dto.smartbi.FieldMappingWithChartRole;
+import com.cretas.aims.dto.smartbi.SheetInfo;
 import com.cretas.aims.service.smartbi.ExcelDynamicParserService;
 import com.cretas.aims.service.smartbi.LLMFieldMappingService;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.usermodel.WorkbookFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1125,6 +1130,123 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
         public List<String> getHeaders() {
             return headers;
+        }
+    }
+
+    // ==================== Sheet 列表功能 ====================
+
+    @Override
+    public List<SheetInfo> listSheets(InputStream inputStream) {
+        log.info("开始获取 Excel Sheet 列表");
+        List<SheetInfo> sheetInfoList = new ArrayList<>();
+
+        try (Workbook workbook = WorkbookFactory.create(inputStream)) {
+            int numberOfSheets = workbook.getNumberOfSheets();
+            log.info("Excel 文件包含 {} 个 Sheet", numberOfSheets);
+
+            for (int i = 0; i < numberOfSheets; i++) {
+                Sheet sheet = workbook.getSheetAt(i);
+                String sheetName = sheet.getSheetName();
+                int physicalRows = sheet.getPhysicalNumberOfRows();
+                int maxColumnCount = getMaxColumnCount(sheet);
+                boolean isEmpty = physicalRows == 0;
+
+                // 获取预览表头（第一行）
+                List<String> previewHeaders = new ArrayList<>();
+                if (!isEmpty) {
+                    Row firstRow = sheet.getRow(sheet.getFirstRowNum());
+                    if (firstRow != null) {
+                        int maxCols = Math.min(firstRow.getLastCellNum(), 10); // 最多预览10列
+                        for (int j = 0; j < maxCols; j++) {
+                            if (firstRow.getCell(j) != null) {
+                                String cellValue = getCellValueAsString(firstRow.getCell(j));
+                                previewHeaders.add(cellValue != null && !cellValue.isEmpty()
+                                        ? cellValue : "Column_" + j);
+                            } else {
+                                previewHeaders.add("Column_" + j);
+                            }
+                        }
+                    }
+                }
+
+                SheetInfo sheetInfo = SheetInfo.builder()
+                        .index(i)
+                        .name(sheetName)
+                        .rowCount(physicalRows)
+                        .columnCount(maxColumnCount)
+                        .empty(isEmpty)
+                        .previewHeaders(previewHeaders)
+                        .build();
+
+                sheetInfoList.add(sheetInfo);
+                log.debug("Sheet[{}] {}: {} 行, {} 列, empty={}",
+                        i, sheetName, physicalRows, maxColumnCount, isEmpty);
+            }
+
+            log.info("成功获取 {} 个 Sheet 的信息", sheetInfoList.size());
+            return sheetInfoList;
+
+        } catch (Exception e) {
+            log.error("获取 Sheet 列表失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取 Sheet 列表失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 获取 Sheet 的最大列数
+     */
+    private int getMaxColumnCount(Sheet sheet) {
+        int maxCols = 0;
+        for (int i = 0; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row != null) {
+                int cols = row.getLastCellNum();
+                if (cols > maxCols) {
+                    maxCols = cols;
+                }
+            }
+            // 只扫描前100行以提高性能
+            if (i >= 100) break;
+        }
+        return maxCols;
+    }
+
+    /**
+     * 获取单元格值（字符串形式）
+     */
+    private String getCellValueAsString(org.apache.poi.ss.usermodel.Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        try {
+            switch (cell.getCellType()) {
+                case STRING:
+                    return cell.getStringCellValue();
+                case NUMERIC:
+                    if (org.apache.poi.ss.usermodel.DateUtil.isCellDateFormatted(cell)) {
+                        return cell.getLocalDateTimeCellValue().toLocalDate().toString();
+                    }
+                    double numVal = cell.getNumericCellValue();
+                    if (numVal == Math.floor(numVal)) {
+                        return String.valueOf((long) numVal);
+                    }
+                    return String.valueOf(numVal);
+                case BOOLEAN:
+                    return String.valueOf(cell.getBooleanCellValue());
+                case FORMULA:
+                    try {
+                        return cell.getStringCellValue();
+                    } catch (Exception e) {
+                        return String.valueOf(cell.getNumericCellValue());
+                    }
+                case BLANK:
+                    return "";
+                default:
+                    return "";
+            }
+        } catch (Exception e) {
+            log.warn("获取单元格值失败: {}", e.getMessage());
+            return "";
         }
     }
 }
