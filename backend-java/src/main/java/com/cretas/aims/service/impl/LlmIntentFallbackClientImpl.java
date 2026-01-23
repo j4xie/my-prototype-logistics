@@ -512,15 +512,17 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("| 有什么警报、所有告警 | ALERT_LIST |\n");
         sb.append("| 处理掉这个警报、关闭告警 | ALERT_RESOLVE |\n");
         sb.append("| 分析一下警报原因、告警诊断 | ALERT_DIAGNOSE |\n");
-        // 报表类 - 销售相关归入看板概览
+        // 报表类 - 销售相关归入看板概览（注意：销售查询用REPORT_DASHBOARD_OVERVIEW，不是REPORT_FINANCE）
         sb.append("| 看看报表、数据总览 | REPORT_DASHBOARD_OVERVIEW |\n");
-        sb.append("| 销售情况、销售数据、销售报表、本月销售 | REPORT_DASHBOARD_OVERVIEW |\n");
-        sb.append("| 销售排名、销冠、业绩排名、谁最厉害 | REPORT_KPI |\n");
+        sb.append("| 销售情况、销售数据、销售报表、本月销售、卖了多少 | REPORT_DASHBOARD_OVERVIEW |\n");
+        sb.append("| 销售排名、销冠、业绩排名、谁卖得最好、谁最厉害 | REPORT_KPI |\n");
         sb.append("| 销售趋势、销售走势 | REPORT_TRENDS |\n");
         sb.append("| 库存情况、库存多少 | REPORT_INVENTORY |\n");
-        // 生产类 - 区分实时状态和报表
-        sb.append("| 今天生产了多少、产量、车间产量、生产进度 | PRODUCTION_STATUS_QUERY |\n");
+        // 生产类 - 区分实时状态和报表（注意：产量查询用PRODUCTION_STATUS_QUERY，不是PROCESSING_BATCH_TIMELINE）
+        sb.append("| 今天生产了多少、产量多少、车间产量、生产进度、产量 | PRODUCTION_STATUS_QUERY |\n");
         sb.append("| 生产报表、产量统计报告 | REPORT_PRODUCTION |\n");
+        // 原料消耗报表
+        sb.append("| 原料消耗、原材料使用量、用了多少原料 | REPORT_MATERIAL_CONSUMPTION |\n");
         // 供应商/客户类
         sb.append("| 供货商名单、供货方有哪些 | SUPPLIER_LIST |\n");
         sb.append("| 找一下供货商、查询供货方 | SUPPLIER_SEARCH |\n");
@@ -544,7 +546,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("2. **理解同义词**：参考上面的口语化示例，用户可能使用不同的表达方式描述相同的意图\n");
         sb.append("3. **优先语义匹配**：即使没有完全匹配的关键词，也要根据语义选择最相关的意图\n");
         sb.append("4. **置信度校准**：如果有合理的匹配，置信度应该在 0.6 以上\n");
-        sb.append("5. **区分查询和更新**：\"设备状态\"是查询(QUERY)，\"更新设备状态\"才是更新(UPDATE)\n\n");
+        sb.append("5. **区分查询和更新**：\"设备状态\"是查询(QUERY)，\"更新设备状态\"才是更新(UPDATE)\n");
+        sb.append("6. **销售类意图优先级**：销售情况/数据→REPORT_DASHBOARD_OVERVIEW，销售排名→REPORT_KPI，不要用REPORT_FINANCE\n");
+        sb.append("7. **生产类意图优先级**：产量/今天生产→PRODUCTION_STATUS_QUERY，不要用PROCESSING_BATCH_TIMELINE\n");
+        sb.append("8. **质检类意图优先级**：质检结果/合格率→QUALITY_CHECK_QUERY，不要用QUALITY_STATS\n");
+        sb.append("9. **供应商排名 vs 销售排名**：供应商排名→SUPPLIER_RANKING，销售排名/业绩排名→REPORT_KPI\n\n");
 
         sb.append("## 输出格式\n\n");
         sb.append("请以 JSON 格式返回，包含以下字段：\n");
