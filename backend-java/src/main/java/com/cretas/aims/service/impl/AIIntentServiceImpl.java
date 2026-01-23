@@ -1034,7 +1034,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                             .intentCategory(ragIntent.getIntentCategory())
                                             .confidence(ragConfidence)
                                             .matchMethod(MatchMethod.SEMANTIC)
-                                            .config(ragIntent)
+                                            .description(ragIntent.getDescription())
                                             .build();
 
                                     // 将 RAG 候选放在首位
@@ -1089,8 +1089,15 @@ public class AIIntentServiceImpl implements AIIntentService {
                                         // 置信度提升: 加权平均，RAG 贡献 20%
                                         double boostedConfidence = existing.getConfidence() * 0.8 +
                                                 ragCandidate.getConfidence() * 0.2 * ragCandidate.getSimilarity();
-                                        CandidateIntent boosted = existing.toBuilder()
+                                        CandidateIntent boosted = CandidateIntent.builder()
+                                                .intentCode(existing.getIntentCode())
+                                                .intentName(existing.getIntentName())
+                                                .intentCategory(existing.getIntentCategory())
                                                 .confidence(Math.min(boostedConfidence, 0.95))
+                                                .matchScore(existing.getMatchScore())
+                                                .matchedKeywords(existing.getMatchedKeywords())
+                                                .matchMethod(existing.getMatchMethod())
+                                                .description(existing.getDescription())
                                                 .build();
                                         candidateMap.put(intentCode, boosted);
                                         log.debug("[RAG] 提升候选权重: intent={}, original={:.3f}, boosted={:.3f}",
@@ -1108,7 +1115,7 @@ public class AIIntentServiceImpl implements AIIntentService {
                                                     .intentCategory(ragIntent.getIntentCategory())
                                                     .confidence(ragCandidate.getConfidence() * ragCandidate.getSimilarity())
                                                     .matchMethod(MatchMethod.SEMANTIC)
-                                                    .config(ragIntent)
+                                                    .description(ragIntent.getDescription())
                                                     .build();
                                             candidateMap.put(intentCode, newCandidate);
                                             log.debug("[RAG] 添加新候选: intent={}, confidence={:.3f}",
@@ -1133,8 +1140,14 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     log.info("[RAG] 增强后达到高置信度: intent={}, confidence={:.3f}",
                                             topCandidate.getIntentCode(), topCandidate.getConfidence());
 
+                                    // 查找对应的意图配置
+                                    AIIntentConfig topIntent = allIntents.stream()
+                                            .filter(i -> i.getIntentCode().equals(topCandidate.getIntentCode()))
+                                            .findFirst()
+                                            .orElse(null);
+
                                     IntentMatchResult ragEnhancedResult = IntentMatchResult.builder()
-                                            .bestMatch(topCandidate.getConfig())
+                                            .bestMatch(topIntent)
                                             .topCandidates(candidates)
                                             .confidence(topCandidate.getConfidence())
                                             .matchMethod(MatchMethod.SEMANTIC)
