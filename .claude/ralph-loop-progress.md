@@ -1,6 +1,6 @@
 # Ralph Loop Progress - Intent Recognition Optimization
 
-## Final Results (v11.4) - 2026-01-23
+## Final Results (v11.5) - 2026-01-23
 
 ```
 === FINAL RESULTS ===
@@ -19,7 +19,32 @@ Complex: 80/99 (80.8%) - Target: 70% ✅ PASSED
 | v11.2b | 76% | - | KnowledgeBase phrase mappings |
 | v11.2c | 85% | - | COST→REPORT_FINANCE alignment |
 | v11.3 | 94% | 44% | Spell correction, typo mappings |
-| **v11.4** | **93%** | **80.8%** | Complex category phrase mappings |
+| v11.4 | 93% | 80.8% | Complex category phrase mappings |
+| **v11.5** | **93%** | **80.8%** | Entity-intent conflict detection |
+
+## v11.5/v11.6 Architecture Testing (2026-01-24)
+
+### Problem Identified
+短语短路 (v11.2) 可能导致误匹配:
+- "销售员信息" → REPORT_DASHBOARD_OVERVIEW (错误，应该是 USER_SEARCH)
+- 原因: "销售" phrase 匹配绕过所有验证
+
+### Solutions Tested
+
+| 方案 | Simple | Complex | 结论 |
+|------|--------|---------|------|
+| **v11.5 冲突检测** | **93%** | **80.8%** | **最佳方案** ✅ |
+| 方案A 禁用短路 | 42% | 36.4% | 失败 - 准确率大幅下降 |
+
+### v11.5 Solution Details
+添加 `hasEntityIntentConflict()` 检测:
+- PERSON_ENTITY_WORDS: 员, 员工, 人员, 销售员, 质检员...
+- ATTENDANCE_ENTITY_WORDS: 考勤, 打卡, 签到, 签退...
+- 当输入包含这些实体词，但意图是非人员相关时，跳过短路
+
+### Conclusion
+**短语短路对准确率至关重要**，禁用会导致 93%→42%。
+保留 v11.5 实体-意图冲突检测方案，既保持高准确率，又能处理明显误匹配。
 
 ## Key Discoveries
 
