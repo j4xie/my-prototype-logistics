@@ -3434,6 +3434,67 @@ public class IntentKnowledgeBase {
         return Optional.empty();
     }
 
+    // ==================== v11.5: 实体-意图冲突检测 ====================
+
+    /**
+     * 人员相关实体词 - 出现时不应该匹配到 REPORT 类意图
+     */
+    private static final Set<String> PERSON_ENTITY_WORDS = Set.of(
+            "员", "员工", "人员", "管理员", "主管", "操作员", "质检员",
+            "销售员", "仓管员", "调度员", "工人", "技术员", "维修员"
+    );
+
+    /**
+     * 考勤相关实体词 - 出现时应该匹配到 ATTENDANCE 类意图
+     */
+    private static final Set<String> ATTENDANCE_ENTITY_WORDS = Set.of(
+            "考勤", "打卡", "签到", "签退", "出勤", "缺勤", "迟到", "早退", "请假"
+    );
+
+    /**
+     * 检测输入中是否存在实体-意图冲突
+     *
+     * <p>场景1: 输入包含"人员实体词"，但匹配到 REPORT 类意图 → 冲突</p>
+     * <p>场景2: 输入包含"考勤实体词"，但匹配到非 ATTENDANCE 类意图 → 冲突</p>
+     *
+     * @param input 用户输入
+     * @param matchedIntentCode 短语匹配到的意图代码
+     * @return true 如果存在冲突，短语匹配结果不应被信任
+     */
+    public boolean hasEntityIntentConflict(String input, String matchedIntentCode) {
+        if (input == null || matchedIntentCode == null) {
+            return false;
+        }
+
+        String normalizedInput = input.toLowerCase();
+
+        // 场景1: 输入包含人员实体词，但匹配到 REPORT 类意图
+        boolean hasPersonEntity = PERSON_ENTITY_WORDS.stream()
+                .anyMatch(normalizedInput::contains);
+        boolean isReportIntent = matchedIntentCode.startsWith("REPORT_");
+
+        if (hasPersonEntity && isReportIntent) {
+            log.debug("v11.5 实体-意图冲突: input='{}' 包含人员实体，但匹配到 REPORT 类意图 '{}'",
+                    input, matchedIntentCode);
+            return true;
+        }
+
+        // 场景2: 输入包含考勤实体词，但匹配到非 ATTENDANCE 类意图
+        boolean hasAttendanceEntity = ATTENDANCE_ENTITY_WORDS.stream()
+                .anyMatch(normalizedInput::contains);
+        boolean isAttendanceIntent = matchedIntentCode.startsWith("ATTENDANCE_") ||
+                matchedIntentCode.equals("CLOCK_IN") ||
+                matchedIntentCode.equals("CLOCK_OUT");
+
+        if (hasAttendanceEntity && !isAttendanceIntent) {
+            log.debug("v11.5 实体-意图冲突: input='{}' 包含考勤实体，但匹配到非考勤意图 '{}'",
+                    input, matchedIntentCode);
+            return true;
+        }
+
+        return false;
+    }
+
     /**
      * 获取短语映射（只读）
      *
