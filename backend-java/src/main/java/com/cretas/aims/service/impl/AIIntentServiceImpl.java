@@ -811,6 +811,64 @@ public class AIIntentServiceImpl implements AIIntentService {
                                     .build())
                             .collect(Collectors.toList());
 
+                    // ========== Step 2.5: 多意图检测 (MultiLabelIntentClassifier) ==========
+                    // 当用户输入包含多意图触发词时，调用多标签分类器
+                    // 触发词: "和", "还有", "同时", "另外", "以及", "并且", "顺便"
+                    if (containsMultiIntentTrigger(userInput) && multiLabelIntentClassifier.isAvailable()) {
+                        try {
+                            MultiIntentResult multiResult = multiLabelIntentClassifier.classifyMultiLabel(userInput, factoryId);
+
+                            if (multiResult.isMultiIntent() && multiResult.getIntents() != null
+                                    && multiResult.getIntents().size() > 1) {
+                                log.info("多意图检测成功: input='{}', intentCount={}, strategy={}",
+                                        userInput, multiResult.getIntents().size(), multiResult.getExecutionStrategy());
+
+                                // 获取第一个意图作为 bestMatch
+                                MultiIntentResult.SingleIntentMatch firstIntent = multiResult.getIntents().get(0);
+                                AIIntentConfig firstConfig = getAllIntents(factoryId).stream()
+                                        .filter(c -> c.getIntentCode().equals(firstIntent.getIntentCode()))
+                                        .findFirst()
+                                        .orElse(null);
+
+                                if (firstConfig != null) {
+                                    // 构建附加意图列表 (除第一个外的其他意图)
+                                    List<IntentMatchResult.IntentMatch> additionalIntents = new ArrayList<>();
+                                    for (int i = 1; i < multiResult.getIntents().size(); i++) {
+                                        MultiIntentResult.SingleIntentMatch intent = multiResult.getIntents().get(i);
+                                        additionalIntents.add(IntentMatchResult.IntentMatch.builder()
+                                                .intentCode(intent.getIntentCode())
+                                                .intentName(intent.getIntentName())
+                                                .confidence(intent.getConfidence())
+                                                .extractedParams(intent.getExtractedParams())
+                                                .executionOrder(intent.getExecutionOrder())
+                                                .reasoning(intent.getReasoning())
+                                                .build());
+                                    }
+
+                                    IntentMatchResult multiIntentMatchResult = IntentMatchResult.builder()
+                                            .bestMatch(firstConfig)
+                                            .topCandidates(candidates)
+                                            .confidence(firstIntent.getConfidence())
+                                            .matchMethod(MatchMethod.SEMANTIC)
+                                            .matchedKeywords(Collections.emptyList())
+                                            .isStrongSignal(multiResult.getOverallConfidence() >= 0.75)
+                                            .requiresConfirmation(multiResult.requiresUserConfirmation())
+                                            .userInput(userInput)
+                                            .actionType(opType)
+                                            .isMultiIntent(true)
+                                            .additionalIntents(additionalIntents)
+                                            .executionStrategy(multiResult.getExecutionStrategy())
+                                            .build();
+
+                                    saveIntentMatchRecord(multiIntentMatchResult, factoryId, null, null, false);
+                                    return multiIntentMatchResult;
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.warn("多意图检测异常，继续单意图流程: {}", e.getMessage());
+                        }
+                    }
+
                     // Step 3: 置信度决策
                     double highThreshold = matchingConfig.getSemanticFirstHighThreshold();
 
@@ -1863,6 +1921,35 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
+     * 检测用户输入是否包含多意图触发词
+     *
+     * 多意图触发词表明用户可能在一次输入中表达了多个独立的意图，
+     * 例如："查询今天的生产量和员工出勤" 包含两个独立查询
+     *
+     * @param userInput 用户输入
+     * @return 如果包含多意图触发词返回 true
+     */
+    private boolean containsMultiIntentTrigger(String userInput) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return false;
+        }
+
+        // 多意图触发词列表
+        String[] multiIntentTriggers = {"和", "还有", "同时", "另外", "以及", "并且", "顺便"};
+
+        String normalized = userInput.trim();
+
+        for (String trigger : multiIntentTriggers) {
+            if (normalized.contains(trigger)) {
+                log.debug("检测到多意图触发词'{}': {}", trigger, userInput);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * v7.1.1: 查找强短语匹配的候选
      *
      * 强短语匹配是指用户输入完全包含某个已知会被 ArenaRL 误判的关键短语，
@@ -1910,6 +1997,40 @@ public class AIIntentServiceImpl implements AIIntentService {
         strongPhrases.put("原料批次详情", "MATERIAL_BATCH_QUERY");
         strongPhrases.put("原材料批次", "MATERIAL_BATCH_QUERY");
         strongPhrases.put("原料批次", "MATERIAL_BATCH_QUERY");
+        strongPhrases.put("查批次", "MATERIAL_BATCH_QUERY");
+
+        // v11.3: 出勤历史 - "今天几个人上班"容易被误判为 ATTENDANCE_TODAY
+        strongPhrases.put("今天几个人上班", "ATTENDANCE_HISTORY");
+        strongPhrases.put("出勤统计", "ATTENDANCE_HISTORY");
+        strongPhrases.put("张三的出勤", "ATTENDANCE_HISTORY");
+        strongPhrases.put("员工考勤", "ATTENDANCE_HISTORY");
+
+        // v11.3: 发货/物流查询
+        strongPhrases.put("物流到哪了", "SHIPMENT_QUERY");
+        strongPhrases.put("今天出货量", "SHIPMENT_QUERY");
+        strongPhrases.put("发货状态", "SHIPMENT_QUERY");
+        strongPhrases.put("出货统计", "SHIPMENT_QUERY");
+
+        // v11.3: 告警列表 - "异常情况"容易被误判为 REPORT_ANOMALY
+        strongPhrases.put("今天异常情况", "ALERT_LIST");
+        strongPhrases.put("今天异常", "ALERT_LIST");
+        strongPhrases.put("有什么警报", "ALERT_LIST");
+
+        // v11.3: 部门业绩/排名 - 容易被误判为 ATTENDANCE_DEPARTMENT
+        strongPhrases.put("各部门业绩", "REPORT_KPI");
+        strongPhrases.put("部门排名", "REPORT_KPI");
+        strongPhrases.put("哪个部门最好", "REPORT_KPI");
+
+        // v11.3: 地区/区域销售 - 容易被误判为其他意图
+        strongPhrases.put("华东区销售", "REPORT_TRENDS");
+        strongPhrases.put("北京销售额", "REPORT_TRENDS");
+        strongPhrases.put("各地区数据", "REPORT_TRENDS");
+        strongPhrases.put("区域分析", "REPORT_TRENDS");
+        strongPhrases.put("地区销售", "REPORT_TRENDS");
+
+        // v11.3: 财务指标
+        strongPhrases.put("毛利率多少", "REPORT_FINANCE");
+        strongPhrases.put("利润率", "REPORT_FINANCE");
 
         // 检查用户输入是否包含强短语
         for (Map.Entry<String, String> entry : strongPhrases.entrySet()) {
