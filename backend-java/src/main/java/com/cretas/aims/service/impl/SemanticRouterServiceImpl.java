@@ -57,15 +57,17 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
     // ==================== 路由阈值配置 ====================
 
     /**
-     * 直接执行阈值 (默认 0.92)
+     * 直接执行阈值 (默认 0.95) - v11.3 提高阈值减少误匹配
+     * 只有非常高置信度的匹配才直接执行，避免错误的语义匹配
      */
-    @Value("${cretas.router.threshold.direct-execute:0.92}")
+    @Value("${cretas.router.threshold.direct-execute:0.95}")
     private double directExecuteThreshold;
 
     /**
-     * Reranking 阈值 (默认 0.75)
+     * Reranking 阈值 (默认 0.85) - v11.3 提高阈值
+     * 中等置信度走Reranking，低于此值走完整LLM
      */
-    @Value("${cretas.router.threshold.reranking:0.75}")
+    @Value("${cretas.router.threshold.reranking:0.85}")
     private double rerankingThreshold;
 
     /**
