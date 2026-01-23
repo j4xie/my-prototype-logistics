@@ -606,7 +606,7 @@ public class DahuaDeviceService {
             deviceRepository.save(device);
 
             // 3. 删除旧通道
-            channelRepository.deleteByDeviceId(device.getId());
+            channelRepository.deleteByDevice_Id(device.getId());
 
             // 4. 创建新通道
             for (Map<String, Object> channelInfo : channels) {
