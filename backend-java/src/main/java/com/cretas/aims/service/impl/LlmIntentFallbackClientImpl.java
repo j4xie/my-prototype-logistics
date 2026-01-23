@@ -491,9 +491,11 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("| 打个卡、签到、我要打卡 | CLOCK_IN |\n");
         sb.append("| 签退、下班打卡 | CLOCK_OUT |\n");
         sb.append("| 我打卡了没、今天出勤了没 | ATTENDANCE_STATUS |\n");
-        sb.append("| 这周考勤、看看考勤记录 | ATTENDANCE_HISTORY |\n");
+        sb.append("| 这周考勤、看看考勤记录、今天几个人上班 | ATTENDANCE_HISTORY |\n");
+        sb.append("| 张三的出勤、某人出勤记录、员工考勤 | ATTENDANCE_HISTORY |\n");
+        sb.append("| 出勤统计、考勤汇总 | ATTENDANCE_HISTORY |\n");
         // 原材料类
-        sb.append("| 看看原料库存、查一下原材料 | MATERIAL_BATCH_QUERY |\n");
+        sb.append("| 看看原料库存、查一下原材料、查批次 | MATERIAL_BATCH_QUERY |\n");
         sb.append("| 领用原材料、使用原料 | MATERIAL_BATCH_USE |\n");
         sb.append("| 快过期的原料、临期原材料 | MATERIAL_EXPIRING_ALERT |\n");
         sb.append("| 原料快没了、缺货预警 | MATERIAL_LOW_STOCK_ALERT |\n");
@@ -509,15 +511,21 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("| 质检结果、今天合格率、不良品数量 | QUALITY_CHECK_QUERY |\n");
         sb.append("| 不合格品怎么处理、处置不良品 | QUALITY_DISPOSITION_EXECUTE |\n");
         // 告警类
-        sb.append("| 有什么警报、所有告警 | ALERT_LIST |\n");
+        sb.append("| 有什么警报、所有告警、今天异常情况 | ALERT_LIST |\n");
         sb.append("| 处理掉这个警报、关闭告警 | ALERT_RESOLVE |\n");
         sb.append("| 分析一下警报原因、告警诊断 | ALERT_DIAGNOSE |\n");
+        // 发货/物流类
+        sb.append("| 物流到哪了、发货状态、物流跟踪 | SHIPMENT_QUERY |\n");
+        sb.append("| 今天出货量、发货量、出货统计 | SHIPMENT_QUERY |\n");
         // 报表类 - 销售相关归入看板概览（注意：销售查询用REPORT_DASHBOARD_OVERVIEW，不是REPORT_FINANCE）
         sb.append("| 看看报表、数据总览 | REPORT_DASHBOARD_OVERVIEW |\n");
         sb.append("| 销售情况、销售数据、销售报表、本月销售、卖了多少 | REPORT_DASHBOARD_OVERVIEW |\n");
         sb.append("| 销售排名、销冠、业绩排名、谁卖得最好、谁最厉害 | REPORT_KPI |\n");
-        sb.append("| 销售趋势、销售走势 | REPORT_TRENDS |\n");
+        sb.append("| 各部门业绩、部门排名、哪个部门最好 | REPORT_KPI |\n");
+        sb.append("| 销售趋势、销售走势、华东区销售、北京销售额 | REPORT_TRENDS |\n");
+        sb.append("| 各地区数据、区域分析、地区销售 | REPORT_TRENDS |\n");
         sb.append("| 库存情况、库存多少 | REPORT_INVENTORY |\n");
+        sb.append("| 毛利率多少、利润率、财务指标 | REPORT_FINANCE |\n");
         // 生产类 - 区分实时状态和报表（注意：产量查询用PRODUCTION_STATUS_QUERY，不是PROCESSING_BATCH_TIMELINE）
         sb.append("| 今天生产了多少、产量多少、车间产量、生产进度、产量 | PRODUCTION_STATUS_QUERY |\n");
         sb.append("| 生产报表、产量统计报告 | REPORT_PRODUCTION |\n");
