@@ -24,12 +24,12 @@ public interface DahuaDeviceChannelRepository extends JpaRepository<DahuaDeviceC
     /**
      * 根据设备ID查询所有通道
      */
-    List<DahuaDeviceChannel> findByDeviceId(String deviceId);
+    List<DahuaDeviceChannel> findByDevice_Id(String deviceId);
 
     /**
      * 根据设备ID查询所有通道（按通道ID排序）
      */
-    List<DahuaDeviceChannel> findByDeviceIdOrderByChannelId(String deviceId);
+    List<DahuaDeviceChannel> findByDevice_IdOrderByChannelId(String deviceId);
 
     /**
      * 根据工厂ID查询所有通道
@@ -39,28 +39,28 @@ public interface DahuaDeviceChannelRepository extends JpaRepository<DahuaDeviceC
     /**
      * 根据设备ID和通道ID查询
      */
-    Optional<DahuaDeviceChannel> findByDeviceIdAndChannelId(String deviceId, Integer channelId);
+    Optional<DahuaDeviceChannel> findByDevice_IdAndChannelId(String deviceId, Integer channelId);
 
     /**
      * 根据设备ID删除所有通道
      */
-    void deleteByDeviceId(String deviceId);
+    void deleteByDevice_Id(String deviceId);
 
     /**
      * 统计设备的通道数量
      */
-    long countByDeviceId(String deviceId);
+    long countByDevice_Id(String deviceId);
 
     /**
      * 查询在线通道
      */
-    @Query("SELECT c FROM DahuaDeviceChannel c WHERE c.deviceId = :deviceId AND c.status = 'ONLINE'")
+    @Query("SELECT c FROM DahuaDeviceChannel c WHERE c.device.id = :deviceId AND c.status = 'ONLINE'")
     List<DahuaDeviceChannel> findOnlineChannels(@Param("deviceId") String deviceId);
 
     /**
      * 更新通道状态
      */
     @Modifying
-    @Query("UPDATE DahuaDeviceChannel c SET c.status = :status WHERE c.deviceId = :deviceId")
+    @Query("UPDATE DahuaDeviceChannel c SET c.status = :status WHERE c.device.id = :deviceId")
     int updateStatusByDeviceId(@Param("deviceId") String deviceId, @Param("status") ChannelStatus status);
 }
