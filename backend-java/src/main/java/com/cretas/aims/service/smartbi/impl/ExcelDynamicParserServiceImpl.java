@@ -423,7 +423,14 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
     }
 
     /**
-     * 映射字段（带工厂ID）
+     * 映射字段（带工厂ID）- 两阶段批量优化版本
+     *
+     * 优化流程：
+     * 1. 阶段1: 字典快速匹配（遍历所有字段，尝试字典/缓存匹配）
+     * 2. 阶段2: 批量 LLM 分析（一次调用分析所有未匹配字段）
+     * 3. 阶段3: 合并结果 + 保存高置信度映射
+     *
+     * 性能提升：从 N 次 LLM 调用优化为 1 次
      *
      * @param headers   列名列表
      * @param features  数据特征列表
@@ -431,19 +438,227 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
      * @return 字段映射结果列表
      */
     public List<FieldMappingResult> mapFields(List<String> headers, List<DataFeatureResult> features, String factoryId) {
-        log.info("开始映射字段: headerCount={}, factoryId={}", headers.size(), factoryId);
+        long startTime = System.currentTimeMillis();
+        log.info("开始映射字段(批量优化): headerCount={}, factoryId={}", headers.size(), factoryId);
 
-        List<FieldMappingResult> results = new ArrayList<>();
+        // 初始化结果数组（占位）
+        FieldMappingResult[] results = new FieldMappingResult[headers.size()];
 
+        // 收集需要 LLM 分析的字段
+        List<UnmappedFieldInfo> unmappedFields = new ArrayList<>();
+
+        // ========== 阶段1: 字典快速匹配 ==========
         for (int i = 0; i < headers.size(); i++) {
             String header = headers.get(i);
             DataFeatureResult feature = i < features.size() ? features.get(i) : null;
 
-            FieldMappingResult mapping = mapSingleField(header, i, feature, factoryId);
-            results.add(mapping);
+            // 尝试字典匹配
+            FieldMappingResult dictResult = tryDictionaryMatch(header, i, feature);
+            if (dictResult != null) {
+                results[i] = dictResult;
+                log.debug("字典匹配成功: {} -> {}", header, dictResult.getStandardField());
+            } else {
+                // 收集未匹配字段（占位为 null）
+                unmappedFields.add(new UnmappedFieldInfo(i, header, feature));
+            }
         }
 
-        return results;
+        int dictMatchCount = headers.size() - unmappedFields.size();
+        log.info("阶段1完成: 字典匹配={}, 待LLM分析={}", dictMatchCount, unmappedFields.size());
+
+        // ========== 阶段2: 批量 LLM 分析 ==========
+        if (!unmappedFields.isEmpty() && llmFieldMappingService != null
+                && llmFieldMappingService.isAvailable()) {
+            try {
+                List<FieldMappingWithChartRole> llmResults = batchAnalyzeWithLLM(unmappedFields, factoryId);
+
+                // ========== 阶段3: 合并结果（按 originalField 名称匹配，而非索引顺序）==========
+                // 构建 LLM 结果映射表（按列名查找）
+                Map<String, FieldMappingWithChartRole> llmResultMap = new HashMap<>();
+                for (FieldMappingWithChartRole result : llmResults) {
+                    if (result.getOriginalField() != null) {
+                        llmResultMap.put(result.getOriginalField(), result);
+                    }
+                }
+
+                for (UnmappedFieldInfo info : unmappedFields) {
+                    FieldMappingWithChartRole llmResult = llmResultMap.get(info.header);
+                    results[info.index] = convertLLMResultToMapping(info.header, info.index, info.feature, llmResult);
+                }
+
+                log.info("阶段2完成: LLM批量分析成功, 处理{}个字段", unmappedFields.size());
+            } catch (Exception e) {
+                log.warn("LLM批量分析失败，回退到特征推断: {}", e.getMessage());
+                // 回退：为未匹配字段构建默认映射
+                for (UnmappedFieldInfo info : unmappedFields) {
+                    results[info.index] = buildFeatureInferMapping(info.header, info.index, info.feature);
+                }
+            }
+        } else {
+            // LLM 不可用：使用特征推断
+            log.info("LLM不可用，使用特征推断处理{}个未匹配字段", unmappedFields.size());
+            for (UnmappedFieldInfo info : unmappedFields) {
+                results[info.index] = buildFeatureInferMapping(info.header, info.index, info.feature);
+            }
+        }
+
+        // 填充任何剩余的 null 值（防御性编程）
+        for (int i = 0; i < results.length; i++) {
+            if (results[i] == null) {
+                String header = headers.get(i);
+                DataFeatureResult feature = i < features.size() ? features.get(i) : null;
+                results[i] = buildFeatureInferMapping(header, i, feature);
+            }
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("字段映射完成: 总耗时={}ms, 字典匹配={}, LLM分析={}",
+                elapsed, dictMatchCount, unmappedFields.size());
+
+        return Arrays.asList(results);
+    }
+
+    /**
+     * 尝试字典匹配
+     *
+     * @return 匹配成功返回 FieldMappingResult，否则返回 null
+     */
+    private FieldMappingResult tryDictionaryMatch(String header, int columnIndex, DataFeatureResult feature) {
+        Optional<String> standardField = fieldMappingDictionary.findStandardField(header);
+
+        if (standardField.isPresent()) {
+            String field = standardField.get();
+            int confidence = fieldMappingDictionary.getMatchConfidence(header, field);
+            String dataType = fieldMappingDictionary.getDataType(field);
+            boolean isRequired = fieldMappingDictionary.isRequired(field);
+
+            MappingSource source = confidence == 100 ? MappingSource.EXACT_MATCH : MappingSource.SYNONYM_MATCH;
+
+            FieldMappingResult.FieldMappingResultBuilder builder = FieldMappingResult.builder()
+                    .originalColumn(header)
+                    .columnIndex(columnIndex)
+                    .dataFeature(feature)
+                    .standardField(field)
+                    .standardFieldLabel(getFieldLabel(field))
+                    .confidence((double) confidence)
+                    .mappingSource(source)
+                    .dataType(dataType)
+                    .subType(getSubType(dataType, feature))
+                    .isRequired(isRequired)
+                    .requiresConfirmation(confidence < CONFIDENCE_THRESHOLD);
+
+            if (feature != null && feature.getDataType() == DataType.CATEGORICAL) {
+                builder.uniqueValues(feature.getUniqueValues());
+            }
+
+            return builder.build();
+        }
+
+        return null;
+    }
+
+    /**
+     * 批量调用 LLM 分析未匹配字段
+     */
+    private List<FieldMappingWithChartRole> batchAnalyzeWithLLM(
+            List<UnmappedFieldInfo> unmappedFields, String factoryId) {
+
+        // 构建 FieldInfo 列表
+        List<LLMFieldMappingService.FieldInfo> fieldInfoList = unmappedFields.stream()
+                .map(f -> {
+                    LLMFieldMappingService.FieldInfo info = new LLMFieldMappingService.FieldInfo();
+                    info.setColumnName(f.header);
+                    info.setDataType(f.feature != null ? f.feature.getDataType().name() : "TEXT");
+                    info.setSampleValues(f.feature != null && f.feature.getSampleValues() != null
+                            ? f.feature.getSampleValues().stream()
+                                .map(s -> (Object) s).collect(Collectors.toList())
+                            : Collections.emptyList());
+                    info.setUniqueValueCount(f.feature != null ? f.feature.getUniqueCount() : 0);
+                    return info;
+                })
+                .collect(Collectors.toList());
+
+        log.info("调用LLM批量分析: fieldCount={}, factoryId={}", fieldInfoList.size(), factoryId);
+
+        // 一次 LLM 调用分析所有字段
+        return llmFieldMappingService.analyzeAndSaveAll(fieldInfoList, factoryId);
+    }
+
+    /**
+     * 将 LLM 结果转换为 FieldMappingResult
+     */
+    private FieldMappingResult convertLLMResultToMapping(String header, int columnIndex,
+            DataFeatureResult feature, FieldMappingWithChartRole llmResult) {
+
+        if (llmResult == null || llmResult.getStandardField() == null) {
+            return buildFeatureInferMapping(header, columnIndex, feature);
+        }
+
+        double confidencePercent = llmResult.getConfidence() != null
+                ? llmResult.getConfidence() * 100
+                : 90.0;
+
+        String dataType = llmResult.getDataType() != null
+                ? llmResult.getDataType()
+                : (feature != null ? feature.getDataType().name() : "TEXT");
+
+        return FieldMappingResult.builder()
+                .originalColumn(header)
+                .columnIndex(columnIndex)
+                .dataFeature(feature)
+                .standardField(llmResult.getStandardField())
+                .standardFieldLabel(llmResult.getAlias())
+                .mappingSource(MappingSource.AI_SEMANTIC)
+                .confidence(confidencePercent)
+                .requiresConfirmation(llmResult.getConfidence() != null && llmResult.getConfidence() < 0.8)
+                .dataType(dataType)
+                .uniqueValues(feature != null && feature.getDataType() == DataType.CATEGORICAL
+                        ? feature.getUniqueValues() : null)
+                .build();
+    }
+
+    /**
+     * 构建特征推断映射（当字典和LLM都无法匹配时）
+     */
+    private FieldMappingResult buildFeatureInferMapping(String header, int columnIndex, DataFeatureResult feature) {
+        FieldMappingResult.FieldMappingResultBuilder builder = FieldMappingResult.builder()
+                .originalColumn(header)
+                .columnIndex(columnIndex)
+                .dataFeature(feature)
+                .requiresConfirmation(true)
+                .mappingSource(MappingSource.FEATURE_INFER)
+                .confidence(0.0);
+
+        if (feature != null) {
+            builder.dataType(feature.getDataType().name());
+            if (feature.getNumericSubType() != null) {
+                builder.subType(feature.getNumericSubType().name());
+            }
+            if (feature.getDataType() == DataType.CATEGORICAL) {
+                builder.uniqueValues(feature.getUniqueValues());
+            }
+        }
+
+        // 提供候选字段建议
+        List<FieldMappingResult.CandidateField> candidates = suggestCandidates(header, feature);
+        builder.candidateFields(candidates);
+
+        return builder.build();
+    }
+
+    /**
+     * 未匹配字段信息（内部类）
+     */
+    private static class UnmappedFieldInfo {
+        final int index;
+        final String header;
+        final DataFeatureResult feature;
+
+        UnmappedFieldInfo(int index, String header, DataFeatureResult feature) {
+            this.index = index;
+            this.header = header;
+            this.feature = feature;
+        }
     }
 
     @Override
@@ -478,130 +693,6 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
     }
 
     // ==================== 私有辅助方法 ====================
-
-    /**
-     * 映射单个字段（兼容旧接口）
-     */
-    private FieldMappingResult mapSingleField(String header, int columnIndex, DataFeatureResult feature) {
-        return mapSingleField(header, columnIndex, feature, null);
-    }
-
-    /**
-     * 映射单个字段（带工厂ID，支持LLM映射）
-     *
-     * 映射优先级：
-     * 1. 字典匹配（同义词）
-     * 2. LLM 语义分析（如果字典无法匹配且 LLM 可用）
-     * 3. 特征推断 + 候选建议
-     *
-     * @param header      列名
-     * @param columnIndex 列索引
-     * @param feature     数据特征
-     * @param factoryId   工厂ID（用于LLM保存映射结果）
-     * @return 字段映射结果
-     */
-    private FieldMappingResult mapSingleField(String header, int columnIndex, DataFeatureResult feature, String factoryId) {
-        FieldMappingResult.FieldMappingResultBuilder builder = FieldMappingResult.builder()
-                .originalColumn(header)
-                .columnIndex(columnIndex)
-                .dataFeature(feature);
-
-        // 1. 先尝试字典匹配（现有逻辑）
-        Optional<String> standardField = fieldMappingDictionary.findStandardField(header);
-
-        if (standardField.isPresent()) {
-            String field = standardField.get();
-            int confidence = fieldMappingDictionary.getMatchConfidence(header, field);
-            String dataType = fieldMappingDictionary.getDataType(field);
-            boolean isRequired = fieldMappingDictionary.isRequired(field);
-
-            MappingSource source = confidence == 100 ? MappingSource.EXACT_MATCH : MappingSource.SYNONYM_MATCH;
-
-            builder.standardField(field)
-                    .standardFieldLabel(getFieldLabel(field))
-                    .confidence((double) confidence)
-                    .mappingSource(source)
-                    .dataType(dataType)
-                    .subType(getSubType(dataType, feature))
-                    .isRequired(isRequired)
-                    .requiresConfirmation(confidence < CONFIDENCE_THRESHOLD);
-
-            if (feature != null && feature.getDataType() == DataType.CATEGORICAL) {
-                builder.uniqueValues(feature.getUniqueValues());
-            }
-
-            return builder.build();
-        }
-
-        // 2. 字典无法匹配 → 调用 LLM（新增）
-        if (llmFieldMappingService != null && llmFieldMappingService.isAvailable()) {
-            try {
-                log.debug("字典无法匹配，尝试 LLM 映射: header={}, factoryId={}", header, factoryId);
-
-                // 准备参数
-                String dataType = feature != null ? feature.getDataType().name() : "TEXT";
-                List<Object> sampleValues = feature != null && feature.getSampleValues() != null
-                        ? feature.getSampleValues().stream().map(s -> (Object) s).collect(Collectors.toList())
-                        : Collections.emptyList();
-                int uniqueCount = feature != null ? feature.getUniqueCount() : 0;
-
-                // 调用 LLM 分析并保存
-                FieldMappingWithChartRole llmResult = llmFieldMappingService.analyzeAndSave(
-                        header,
-                        dataType,
-                        sampleValues,
-                        uniqueCount,
-                        factoryId
-                );
-
-                if (llmResult != null && llmResult.getStandardField() != null) {
-                    log.info("LLM 映射成功: header={} -> standardField={}, confidence={}",
-                            header, llmResult.getStandardField(), llmResult.getConfidence());
-
-                    double confidencePercent = llmResult.getConfidence() != null
-                            ? llmResult.getConfidence() * 100
-                            : 90.0;
-
-                    return FieldMappingResult.builder()
-                            .originalColumn(header)
-                            .columnIndex(columnIndex)
-                            .dataFeature(feature)
-                            .standardField(llmResult.getStandardField())
-                            .standardFieldLabel(llmResult.getAlias())
-                            .mappingSource(MappingSource.AI_SEMANTIC)
-                            .confidence(confidencePercent)
-                            .requiresConfirmation(llmResult.getConfidence() != null && llmResult.getConfidence() < 0.8)
-                            .dataType(llmResult.getDataType() != null ? llmResult.getDataType() : dataType)
-                            .uniqueValues(feature != null && feature.getDataType() == DataType.CATEGORICAL
-                                    ? feature.getUniqueValues() : null)
-                            .build();
-                }
-            } catch (Exception e) {
-                log.warn("LLM 字段映射失败，回退到特征推断: header={}, error={}", header, e.getMessage());
-            }
-        }
-
-        // 3. LLM 也无法识别 → 回退到特征推断 + 用户确认（现有逻辑）
-        builder.requiresConfirmation(true)
-                .mappingSource(MappingSource.FEATURE_INFER)
-                .confidence(0.0);
-
-        if (feature != null) {
-            builder.dataType(feature.getDataType().name());
-            if (feature.getNumericSubType() != null) {
-                builder.subType(feature.getNumericSubType().name());
-            }
-            if (feature.getDataType() == DataType.CATEGORICAL) {
-                builder.uniqueValues(feature.getUniqueValues());
-            }
-        }
-
-        // 提供候选字段建议
-        List<FieldMappingResult.CandidateField> candidates = suggestCandidates(header, feature);
-        builder.candidateFields(candidates);
-
-        return builder.build();
-    }
 
     /**
      * 获取字段中文标签
