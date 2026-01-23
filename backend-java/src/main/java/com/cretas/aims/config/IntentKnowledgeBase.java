@@ -541,7 +541,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("有什么设备", "EQUIPMENT_LIST");
         phraseToIntentMapping.put("有哪些设备", "EQUIPMENT_LIST");
         phraseToIntentMapping.put("设备都有哪些", "EQUIPMENT_LIST");
-        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复映射
         phraseToIntentMapping.put("设备列表", "EQUIPMENT_LIST");
         phraseToIntentMapping.put("设备故障", "EQUIPMENT_ALERT_LIST");
         phraseToIntentMapping.put("设备运行", "EQUIPMENT_STATS");
@@ -746,7 +746,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("数据报表", "REPORT_DASHBOARD_OVERVIEW");
         // === v4.2优化：报表类短语映射补充 ===
         phraseToIntentMapping.put("生产情况报告", "REPORT_PRODUCTION");
-        phraseToIntentMapping.put("今天生产了多少", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("今天生产了多少", "PRODUCTION_STATUS_QUERY");  // v11.2: 修复映射
+        phraseToIntentMapping.put("产线进度", "PRODUCTION_STATUS_QUERY");  // v11.2: 新增
         phraseToIntentMapping.put("产量报表", "REPORT_PRODUCTION");
         phraseToIntentMapping.put("生产统计", "REPORT_PRODUCTION");
         phraseToIntentMapping.put("产出报表", "REPORT_PRODUCTION");
@@ -1378,7 +1379,7 @@ public class IntentKnowledgeBase {
         // === v5.0优化：H类-高置信短语 ===
         phraseToIntentMapping.put("发货查询", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("库存查询", "REPORT_INVENTORY");
-        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复映射
         phraseToIntentMapping.put("告警列表", "ALERT_LIST");
         phraseToIntentMapping.put("质检记录", "QUALITY_CHECK_QUERY");
         phraseToIntentMapping.put("生产批次", "PROCESSING_BATCH_LIST");
@@ -1676,7 +1677,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("预警监控平台", "ALERT_LIST");
 
         // 设备统计补充
-        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("设备状态", "EQUIPMENT_STATUS_QUERY");  // v11.2: 修复映射
         phraseToIntentMapping.put("机器状态怎样", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("机器有事儿没", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("机子转着呢吗", "EQUIPMENT_STATS");
