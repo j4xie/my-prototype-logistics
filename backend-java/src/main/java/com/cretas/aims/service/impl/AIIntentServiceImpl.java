@@ -2490,8 +2490,16 @@ public class AIIntentServiceImpl implements AIIntentService {
         if (config.getRequiredRoles() == null || config.getRequiredRoles().isBlank()) {
             return true;
         }
-        // Check if user role is in allowed roles
-        return java.util.Arrays.asList(config.getRequiredRoles().split(",")).contains(userRole);
+        // v11.2d: Support both JSON array and comma-separated formats
+        String roles = config.getRequiredRoles().trim();
+        if (roles.startsWith("[")) {
+            // JSON array format: ["role1", "role2"]
+            // Simple parsing without ObjectMapper for performance
+            return roles.contains("\"" + userRole + "\"");
+        } else {
+            // Legacy comma-separated format: role1,role2
+            return java.util.Arrays.asList(roles.split(",")).contains(userRole);
+        }
     }
 
     // ==================== 权限校验 ====================
