@@ -160,14 +160,14 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
                 // 高置信度: 直接执行
                 directExecuteCount.incrementAndGet();
                 decision = RouteDecision.directExecute(bestIntent, topScore, candidates, userInput, latencyMs);
-                log.info("SemanticRouter: DIRECT_EXECUTE for '{}' -> {} (score={:.3f}, latency={}ms)",
+                log.info("SemanticRouter: DIRECT_EXECUTE for '{}' -> {} (score={}, latency={}ms)",
                         truncate(userInput, 50), bestIntent.getIntentCode(), topScore, latencyMs);
 
             } else if (topScore >= rerankingThreshold) {
                 // 中等置信度: 需要 Reranking
                 needRerankingCount.incrementAndGet();
                 decision = RouteDecision.needReranking(bestIntent, topScore, candidates, userInput, latencyMs);
-                log.info("SemanticRouter: NEED_RERANKING for '{}' -> {} (score={:.3f}, latency={}ms)",
+                log.info("SemanticRouter: NEED_RERANKING for '{}' -> {} (score={}, latency={}ms)",
                         truncate(userInput, 50),
                         bestIntent != null ? bestIntent.getIntentCode() : "null",
                         topScore, latencyMs);
@@ -176,7 +176,7 @@ public class SemanticRouterServiceImpl implements SemanticRouterService {
                 // 低置信度: 需要完整 LLM
                 needFullLLMCount.incrementAndGet();
                 decision = RouteDecision.needFullLLM(topScore, candidates, userInput, latencyMs);
-                log.info("SemanticRouter: NEED_FULL_LLM for '{}' (topScore={:.3f}, latency={}ms)",
+                log.info("SemanticRouter: NEED_FULL_LLM for '{}' (topScore={}, latency={}ms)",
                         truncate(userInput, 50), topScore, latencyMs);
             }
 
