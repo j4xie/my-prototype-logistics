@@ -11,6 +11,7 @@ import com.cretas.aims.dto.conversation.EntitySlot;
 import com.cretas.aims.service.ConversationMemoryService;
 import com.cretas.aims.service.DialectNormalizationService;
 import com.cretas.aims.service.QueryPreprocessorService;
+import com.cretas.aims.service.SpellCorrectionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -47,6 +48,7 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
     private final DashScopeClient dashScopeClient;
     private final ObjectMapper objectMapper;
     private final DialectNormalizationService dialectNormalizationService;
+    private final SpellCorrectionService spellCorrectionService;
 
     /**
      * 是否启用预处理服务
@@ -158,13 +160,15 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
             @Autowired(required = false) ConversationMemoryService conversationMemoryService,
             @Autowired(required = false) DashScopeClient dashScopeClient,
             ObjectMapper objectMapper,
-            @Autowired(required = false) DialectNormalizationService dialectNormalizationService) {
+            @Autowired(required = false) DialectNormalizationService dialectNormalizationService,
+            @Autowired(required = false) SpellCorrectionService spellCorrectionService) {
         this.timeNormalizationRules = timeNormalizationRules;
         this.colloquialMappings = colloquialMappings;
         this.conversationMemoryService = conversationMemoryService;
         this.dashScopeClient = dashScopeClient;
         this.objectMapper = objectMapper;
         this.dialectNormalizationService = dialectNormalizationService;
+        this.spellCorrectionService = spellCorrectionService;
     }
 
     @Override
@@ -201,6 +205,11 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
 
             // 1.1.5 v11.3: 特殊字符清理
             processedText = cleanSpecialCharacters(processedText);
+
+            // 1.1.6 v11.4: 拼写纠正（同音错别字）
+            if (spellCorrectionService != null) {
+                processedText = spellCorrectionService.correct(processedText);
+            }
 
             // 1.2 口语标准化
             ColloquialMappings.StandardizationResult colloquialResult =
@@ -344,6 +353,11 @@ public class QueryPreprocessorServiceImpl implements QueryPreprocessorService {
 
         // v11.3: 特殊字符清理
         processedText = cleanSpecialCharacters(processedText);
+
+        // v11.4: 拼写纠正（同音错别字）
+        if (spellCorrectionService != null) {
+            processedText = spellCorrectionService.correct(processedText);
+        }
 
         // 口语标准化
         ColloquialMappings.StandardizationResult colloquialResult =

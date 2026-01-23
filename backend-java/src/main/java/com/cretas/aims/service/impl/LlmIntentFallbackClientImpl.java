@@ -28,6 +28,7 @@ import com.cretas.aims.repository.IntentOptimizationSuggestionRepository;
 import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.service.ConversationService;
 import com.cretas.aims.service.LlmIntentFallbackClient;
+import com.cretas.aims.service.RAGRetrievalService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -118,6 +119,9 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
     private final ArenaRLConfig arenaRLConfig;
 
+    // v11.4 RAG: RAG 检索服务，用于动态 Few-Shot 示例
+    private final RAGRetrievalService ragRetrievalService;
+
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json; charset=utf-8");
 
     // ==================== Category 定义（两阶段分类用） ====================
@@ -184,7 +188,8 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             @Autowired(required = false) ToolRegistry toolRegistry,
             @Autowired(required = false) IntentMatchingConfig intentMatchingConfig,
             @Autowired(required = false) ArenaRLTournamentService arenaRLTournamentService,
-            @Autowired(required = false) ArenaRLConfig arenaRLConfig) {
+            @Autowired(required = false) ArenaRLConfig arenaRLConfig,
+            @Autowired(required = false) RAGRetrievalService ragRetrievalService) {
         // OkHttp 客户端
         if (aiServiceHttpClient != null) {
             this.httpClient = aiServiceHttpClient;
@@ -252,6 +257,12 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         // ArenaRL 锦标赛服务
         this.arenaRLTournamentService = arenaRLTournamentService;
         this.arenaRLConfig = arenaRLConfig;
+
+        // v11.4 RAG: RAG 检索服务
+        this.ragRetrievalService = ragRetrievalService;
+        if (ragRetrievalService != null) {
+            log.info("RAG Few-Shot enhancement ENABLED for LLM fallback");
+        }
 
         if (arenaRLConfig != null && arenaRLConfig.isIntentDisambiguationEnabled()) {
             log.info("ArenaRL intent disambiguation ENABLED (ambiguity threshold={})",
@@ -477,8 +488,13 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
      * 优化点：
      * 1. 添加 Few-Shot 示例，覆盖口语化/同义词表达
      * 2. 强调必须做出决策，避免返回 UNKNOWN
+     * 3. v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例
+     *
+     * @param availableIntents 可用意图列表
+     * @param userInput        用户输入（用于 RAG 检索）
+     * @param factoryId        工厂ID（用于 RAG 检索）
      */
-    private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents) {
+    private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents, String userInput, String factoryId) {
         StringBuilder sb = new StringBuilder();
         sb.append("你是一个意图识别助手。根据用户输入，从以下意图列表中选择最匹配的意图。\n\n");
 
@@ -536,6 +552,32 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("| 找一下供货商、查询供货方 | SUPPLIER_SEARCH |\n");
         sb.append("| 老客户名单、买家列表 | CUSTOMER_LIST |\n");
         sb.append("\n");
+
+        // v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例
+        if (ragRetrievalService != null && userInput != null && !userInput.isEmpty()) {
+            try {
+                List<RAGRetrievalService.RAGExample> ragExamples =
+                    ragRetrievalService.getFewShotExamples(factoryId, userInput, 3);
+                if (ragExamples != null && !ragExamples.isEmpty()) {
+                    sb.append("## 相似历史案例参考\n\n");
+                    sb.append("以下是与当前输入相似的历史成功案例，请优先参考：\n\n");
+                    sb.append("| 用户输入 | 意图代码 | 意图名称 |\n");
+                    sb.append("|---------|---------|--------|\n");
+                    for (RAGRetrievalService.RAGExample example : ragExamples) {
+                        sb.append(String.format("| %s | %s | %s |\n",
+                            example.getUserInput(),
+                            example.getIntentCode(),
+                            example.getIntentName() != null ? example.getIntentName() : ""));
+                    }
+                    sb.append("\n");
+                    log.debug("[RAG Few-Shot] Injected {} dynamic examples for input: '{}'",
+                        ragExamples.size(), truncate(userInput, 30));
+                }
+            } catch (Exception e) {
+                log.warn("[RAG Few-Shot] Failed to retrieve examples: {}", e.getMessage());
+                // 静默失败，不影响主流程
+            }
+        }
 
         sb.append("## 可用意图列表\n\n");
 
@@ -704,7 +746,7 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
             String userRole) {
 
         log.debug("[Single-Phase] Using single-phase classification");
-        String systemPrompt = buildIntentClassifyPrompt(availableIntents);
+        String systemPrompt = buildIntentClassifyPrompt(availableIntents, userInput, factoryId);
         String responseJson = dashScopeClient.classifyIntent(systemPrompt, userInput);
         return parseDirectClassifyResponse(responseJson, userInput, availableIntents, factoryId, userId, userRole);
     }

@@ -237,6 +237,68 @@ public interface IntentMatchRecordRepository extends JpaRepository<IntentMatchRe
             @Param("factoryId") String factoryId,
             @Param("startDate") LocalDateTime startDate);
 
+    // ==================== RAG 检索查询 ====================
+
+    /**
+     * 查询高置信度成功案例（用于 RAG 检索）
+     * 用于为新输入提供高质量的参考示例
+     */
+    @Query("SELECT r FROM IntentMatchRecord r WHERE r.factoryId = :factoryId " +
+           "AND r.confidenceScore >= :minConfidence " +
+           "AND r.matchedIntentCode IS NOT NULL " +
+           "AND r.createdAt >= :startDate " +
+           "ORDER BY r.confidenceScore DESC")
+    List<IntentMatchRecord> findHighConfidenceSuccesses(
+            @Param("factoryId") String factoryId,
+            @Param("minConfidence") java.math.BigDecimal minConfidence,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable);
+
+    /**
+     * 查询用户确认的记录（用于 RAG 检索）
+     * 用户确认的记录是最可靠的训练数据来源
+     */
+    @Query("SELECT r FROM IntentMatchRecord r WHERE r.factoryId = :factoryId " +
+           "AND r.userConfirmed = true " +
+           "AND r.userSelectedIntent IS NOT NULL " +
+           "AND r.createdAt >= :startDate " +
+           "ORDER BY r.createdAt DESC")
+    List<IntentMatchRecord> findUserConfirmedRecords(
+            @Param("factoryId") String factoryId,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable);
+
+    /**
+     * 模糊匹配相似输入（用于 RAG 检索）
+     * 根据标准化输入查找相似的历史记录
+     */
+    @Query("SELECT r FROM IntentMatchRecord r WHERE r.factoryId = :factoryId " +
+           "AND r.normalizedInput LIKE :pattern " +
+           "AND r.confidenceScore >= :minConfidence " +
+           "AND r.createdAt >= :startDate " +
+           "ORDER BY r.confidenceScore DESC")
+    List<IntentMatchRecord> findByNormalizedInputLike(
+            @Param("factoryId") String factoryId,
+            @Param("pattern") String pattern,
+            @Param("minConfidence") java.math.BigDecimal minConfidence,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable);
+
+    /**
+     * 查询 LLM 高置信度记录（用于 RAG 检索）
+     * LLM 判定高置信度的记录可作为 few-shot 示例
+     */
+    @Query("SELECT r FROM IntentMatchRecord r WHERE r.factoryId = :factoryId " +
+           "AND r.llmCalled = true " +
+           "AND r.llmConfidence >= :minConfidence " +
+           "AND r.createdAt >= :startDate " +
+           "ORDER BY r.llmConfidence DESC")
+    List<IntentMatchRecord> findLlmHighConfidenceRecords(
+            @Param("factoryId") String factoryId,
+            @Param("minConfidence") java.math.BigDecimal minConfidence,
+            @Param("startDate") LocalDateTime startDate,
+            Pageable pageable);
+
     // ==================== 更新操作 ====================
 
     /**
