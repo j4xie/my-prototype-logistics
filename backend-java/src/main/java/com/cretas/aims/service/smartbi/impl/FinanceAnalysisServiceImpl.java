@@ -868,6 +868,255 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         return metrics;
     }
 
+    // ==================== 预算达成分析 ====================
+
+    @Override
+    public ChartConfig getBudgetAchievementChart(String factoryId, int year, String metric) {
+        log.info("获取预算达成分析图表: factoryId={}, year={}, metric={}", factoryId, year, metric);
+
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+
+        List<SmartBiFinanceData> budgetData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                factoryId, RecordType.BUDGET, startDate, endDate);
+
+        // 按月聚合预算和实际数据
+        Map<Integer, BigDecimal[]> monthlyData = new TreeMap<>();
+        for (int month = 1; month <= 12; month++) {
+            // [预算, 实际]
+            monthlyData.put(month, new BigDecimal[]{BigDecimal.ZERO, BigDecimal.ZERO});
+        }
+
+        for (SmartBiFinanceData data : budgetData) {
+            int month = data.getRecordDate().getMonthValue();
+            BigDecimal[] values = monthlyData.get(month);
+
+            // 根据metric类型聚合数据
+            BigDecimal budgetAmount = getBudgetAmountByMetric(data, metric);
+            BigDecimal actualAmount = getActualAmountByMetric(data, metric);
+
+            values[0] = values[0].add(budgetAmount);
+            values[1] = values[1].add(actualAmount);
+        }
+
+        // 构建图表数据
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        for (Map.Entry<Integer, BigDecimal[]> entry : monthlyData.entrySet()) {
+            Map<String, Object> point = new LinkedHashMap<>();
+            int month = entry.getKey();
+            BigDecimal budget = entry.getValue()[0];
+            BigDecimal actual = entry.getValue()[1];
+
+            // 计算达成率 = 实际 / 预算 * 100%
+            BigDecimal achievementRate = budget.compareTo(BigDecimal.ZERO) > 0
+                    ? actual.divide(budget, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
+                    : BigDecimal.ZERO;
+
+            point.put("month", month + "月");
+            point.put("budget", budget.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("actual", actual.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("achievementRate", achievementRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("variance", actual.subtract(budget).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            point.put("alertLevel", determineBudgetAchievementAlertLevel(achievementRate));
+            chartData.add(point);
+        }
+
+        // 配置图表选项
+        Map<String, Object> options = new LinkedHashMap<>();
+        options.put("yAxis", Arrays.asList(
+                Map.of("name", "金额", "position", "left"),
+                Map.of("name", "达成率(%)", "position", "right", "min", 0, "max", 150)
+        ));
+        options.put("series", Arrays.asList(
+                Map.of("name", "预算", "type", "bar", "yAxisIndex", 0, "color", "#5470c6"),
+                Map.of("name", "实际", "type", "bar", "yAxisIndex", 0, "color", "#91cc75"),
+                Map.of("name", "达成率", "type", "line", "yAxisIndex", 1, "color", "#ee6666")
+        ));
+        options.put("referenceLine", Map.of("value", 100, "label", "目标线"));
+
+        String metricName = getMetricDisplayName(metric);
+
+        return ChartConfig.builder()
+                .chartType("LINE_BAR")
+                .title(year + "年" + metricName + "预算达成分析")
+                .xAxisField("month")
+                .yAxisField("budget")
+                .seriesField("metric")
+                .data(chartData)
+                .options(options)
+                .build();
+    }
+
+    // ==================== 同比环比分析 ====================
+
+    @Override
+    public ChartConfig getYoYMoMComparisonChart(
+            String factoryId,
+            String periodType,
+            String startPeriod,
+            String endPeriod,
+            String metric) {
+        log.info("获取同比环比分析图表: factoryId={}, periodType={}, startPeriod={}, endPeriod={}, metric={}",
+                factoryId, periodType, startPeriod, endPeriod, metric);
+
+        List<Map<String, Object>> chartData = new ArrayList<>();
+
+        switch (periodType) {
+            case PERIOD_TYPE_MONTH:
+                chartData = calculateMonthYoYMoM(factoryId, startPeriod, metric);
+                break;
+            case PERIOD_TYPE_QUARTER:
+                chartData = calculateQuarterYoYMoM(factoryId, startPeriod, metric);
+                break;
+            case PERIOD_TYPE_MONTH_RANGE:
+                chartData = calculateMonthRangeYoYMoM(factoryId, startPeriod, endPeriod, metric);
+                break;
+            case PERIOD_TYPE_QUARTER_RANGE:
+                chartData = calculateQuarterRangeYoYMoM(factoryId, startPeriod, endPeriod, metric);
+                break;
+            default:
+                log.warn("未知的期间类型: {}, 使用默认月份模式", periodType);
+                chartData = calculateMonthYoYMoM(factoryId, startPeriod, metric);
+        }
+
+        // 配置图表选项
+        Map<String, Object> options = new LinkedHashMap<>();
+        options.put("yAxis", Arrays.asList(
+                Map.of("name", "金额", "position", "left"),
+                Map.of("name", "增长率(%)", "position", "right")
+        ));
+        options.put("series", Arrays.asList(
+                Map.of("name", "本期", "type", "bar", "yAxisIndex", 0, "color", "#5470c6"),
+                Map.of("name", "同期", "type", "bar", "yAxisIndex", 0, "color", "#91cc75"),
+                Map.of("name", "同比增长率", "type", "line", "yAxisIndex", 1, "color", "#ee6666"),
+                Map.of("name", "环比增长率", "type", "line", "yAxisIndex", 1, "color", "#fac858")
+        ));
+        options.put("tooltip", Map.of("trigger", "axis"));
+
+        String metricName = getMetricDisplayName(metric);
+
+        return ChartConfig.builder()
+                .chartType("LINE_BAR")
+                .title(metricName + "同比环比分析")
+                .xAxisField("period")
+                .yAxisField("currentValue")
+                .seriesField("metric")
+                .data(chartData)
+                .options(options)
+                .build();
+    }
+
+    // ==================== 品类结构对比 ====================
+
+    @Override
+    public ChartConfig getCategoryStructureComparisonChart(String factoryId, int year, int compareYear) {
+        log.info("获取品类结构对比图表: factoryId={}, year={}, compareYear={}", factoryId, year, compareYear);
+
+        // 获取两个年份的销售数据
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        LocalDate compareYearStart = LocalDate.of(compareYear, 1, 1);
+        LocalDate compareYearEnd = LocalDate.of(compareYear, 12, 31);
+
+        List<SmartBiSalesData> currentYearSales = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                factoryId, yearStart, yearEnd);
+        List<SmartBiSalesData> compareYearSales = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                factoryId, compareYearStart, compareYearEnd);
+
+        // 按品类聚合销售额
+        Map<String, BigDecimal> currentCategoryAmount = aggregateSalesByCategory(currentYearSales);
+        Map<String, BigDecimal> compareCategoryAmount = aggregateSalesByCategory(compareYearSales);
+
+        // 计算各年度总额
+        BigDecimal currentTotal = currentCategoryAmount.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal compareTotal = compareCategoryAmount.values().stream()
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // 获取所有品类（合并两个年份的品类）
+        Set<String> allCategories = new LinkedHashSet<>();
+        allCategories.addAll(currentCategoryAmount.keySet());
+        allCategories.addAll(compareCategoryAmount.keySet());
+
+        // 构建图表数据
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        for (String category : allCategories) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            BigDecimal currentAmount = currentCategoryAmount.getOrDefault(category, BigDecimal.ZERO);
+            BigDecimal compareAmount = compareCategoryAmount.getOrDefault(category, BigDecimal.ZERO);
+
+            // 计算占比
+            BigDecimal currentRatio = currentTotal.compareTo(BigDecimal.ZERO) > 0
+                    ? currentAmount.divide(currentTotal, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
+                    : BigDecimal.ZERO;
+            BigDecimal compareRatio = compareTotal.compareTo(BigDecimal.ZERO) > 0
+                    ? compareAmount.divide(compareTotal, SCALE, ROUNDING_MODE).multiply(new BigDecimal("100"))
+                    : BigDecimal.ZERO;
+
+            // 计算同比变化率 = (本期 - 去年同期) / 去年同期 * 100%
+            BigDecimal yoyGrowthRate = compareAmount.compareTo(BigDecimal.ZERO) > 0
+                    ? currentAmount.subtract(compareAmount)
+                            .divide(compareAmount, SCALE, ROUNDING_MODE)
+                            .multiply(new BigDecimal("100"))
+                    : (currentAmount.compareTo(BigDecimal.ZERO) > 0 ? new BigDecimal("100") : BigDecimal.ZERO);
+
+            // 计算占比变化
+            BigDecimal ratioChange = currentRatio.subtract(compareRatio);
+
+            item.put("category", category);
+            item.put("currentAmount", currentAmount.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("compareAmount", compareAmount.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("currentRatio", currentRatio.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("compareRatio", compareRatio.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("yoyGrowthRate", yoyGrowthRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("ratioChange", ratioChange.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+            item.put("currentYear", year);
+            item.put("compareYear", compareYear);
+
+            chartData.add(item);
+        }
+
+        // 按当前年度金额降序排序
+        chartData.sort((a, b) -> {
+            BigDecimal amountA = (BigDecimal) a.get("currentAmount");
+            BigDecimal amountB = (BigDecimal) b.get("currentAmount");
+            return amountB.compareTo(amountA);
+        });
+
+        // 配置图表选项
+        Map<String, Object> options = new LinkedHashMap<>();
+        options.put("groupedBar", true);
+        options.put("yAxis", Arrays.asList(
+                Map.of("name", "金额", "position", "left"),
+                Map.of("name", "同比增长率(%)", "position", "right")
+        ));
+        options.put("series", Arrays.asList(
+                Map.of("name", year + "年", "type", "bar", "yAxisIndex", 0, "color", "#5470c6"),
+                Map.of("name", compareYear + "年", "type", "bar", "yAxisIndex", 0, "color", "#91cc75"),
+                Map.of("name", "同比增长率", "type", "line", "yAxisIndex", 1, "color", "#ee6666")
+        ));
+        options.put("summary", Map.of(
+                "currentTotal", currentTotal.setScale(DISPLAY_SCALE, ROUNDING_MODE),
+                "compareTotal", compareTotal.setScale(DISPLAY_SCALE, ROUNDING_MODE),
+                "totalYoyGrowthRate", compareTotal.compareTo(BigDecimal.ZERO) > 0
+                        ? currentTotal.subtract(compareTotal)
+                                .divide(compareTotal, SCALE, ROUNDING_MODE)
+                                .multiply(new BigDecimal("100"))
+                                .setScale(DISPLAY_SCALE, ROUNDING_MODE)
+                        : BigDecimal.ZERO
+        ));
+
+        return ChartConfig.builder()
+                .chartType("BAR")
+                .title(year + "年 vs " + compareYear + "年 品类结构对比")
+                .xAxisField("category")
+                .yAxisField("currentAmount")
+                .seriesField("year")
+                .data(chartData)
+                .options(options)
+                .build();
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**
@@ -1211,6 +1460,375 @@ public class FinanceAnalysisServiceImpl implements FinanceAnalysisService {
         }
 
         return insights;
+    }
+
+    /**
+     * 根据指标类型获取预算金额
+     */
+    private BigDecimal getBudgetAmountByMetric(SmartBiFinanceData data, String metric) {
+        if (data == null || data.getBudgetAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+        // 如果有分类字段，可以按metric筛选
+        String category = data.getCategory();
+        if (category != null && metric != null) {
+            switch (metric.toLowerCase()) {
+                case "revenue":
+                    if (category.contains("收入") || category.contains("销售")) {
+                        return data.getBudgetAmount();
+                    }
+                    break;
+                case "cost":
+                    if (category.contains("成本")) {
+                        return data.getBudgetAmount();
+                    }
+                    break;
+                case "expense":
+                    if (category.contains("费用")) {
+                        return data.getBudgetAmount();
+                    }
+                    break;
+                case "profit":
+                    if (category.contains("利润")) {
+                        return data.getBudgetAmount();
+                    }
+                    break;
+                default:
+                    return data.getBudgetAmount();
+            }
+        }
+        return data.getBudgetAmount();
+    }
+
+    /**
+     * 根据指标类型获取实际金额
+     */
+    private BigDecimal getActualAmountByMetric(SmartBiFinanceData data, String metric) {
+        if (data == null || data.getActualAmount() == null) {
+            return BigDecimal.ZERO;
+        }
+        String category = data.getCategory();
+        if (category != null && metric != null) {
+            switch (metric.toLowerCase()) {
+                case "revenue":
+                    if (category.contains("收入") || category.contains("销售")) {
+                        return data.getActualAmount();
+                    }
+                    break;
+                case "cost":
+                    if (category.contains("成本")) {
+                        return data.getActualAmount();
+                    }
+                    break;
+                case "expense":
+                    if (category.contains("费用")) {
+                        return data.getActualAmount();
+                    }
+                    break;
+                case "profit":
+                    if (category.contains("利润")) {
+                        return data.getActualAmount();
+                    }
+                    break;
+                default:
+                    return data.getActualAmount();
+            }
+        }
+        return data.getActualAmount();
+    }
+
+    /**
+     * 判断预算达成率预警级别
+     * - 达成率 > 120%：RED（超支严重）
+     * - 达成率 100%-120%：YELLOW（略有超支）
+     * - 达成率 < 100%：GREEN（正常）
+     */
+    private String determineBudgetAchievementAlertLevel(BigDecimal achievementRate) {
+        double v = achievementRate.doubleValue();
+        if (v > 120) return MetricResult.AlertLevel.RED.name();
+        if (v > 100) return MetricResult.AlertLevel.YELLOW.name();
+        return MetricResult.AlertLevel.GREEN.name();
+    }
+
+    /**
+     * 获取指标显示名称
+     */
+    private String getMetricDisplayName(String metric) {
+        if (metric == null) return "综合";
+        switch (metric.toLowerCase()) {
+            case "revenue":
+                return "收入";
+            case "cost":
+                return "成本";
+            case "expense":
+                return "费用";
+            case "profit":
+                return "利润";
+            case "gross_margin":
+                return "毛利率";
+            default:
+                return "综合";
+        }
+    }
+
+    /**
+     * 计算单月同比环比
+     */
+    private List<Map<String, Object>> calculateMonthYoYMoM(String factoryId, String period, String metric) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        // 解析期间 (格式: 2026-01)
+        YearMonth currentYM = YearMonth.parse(period);
+        YearMonth lastYearYM = currentYM.minusYears(1);
+        YearMonth lastMonthYM = currentYM.minusMonths(1);
+
+        // 获取各期间数据
+        BigDecimal currentValue = getMetricValueForPeriod(factoryId, currentYM, metric);
+        BigDecimal lastYearValue = getMetricValueForPeriod(factoryId, lastYearYM, metric);
+        BigDecimal lastMonthValue = getMetricValueForPeriod(factoryId, lastMonthYM, metric);
+
+        // 计算同比增长率 = (本期 - 去年同期) / 去年同期 * 100%
+        BigDecimal yoyGrowthRate = lastYearValue.compareTo(BigDecimal.ZERO) > 0
+                ? currentValue.subtract(lastYearValue)
+                        .divide(lastYearValue, SCALE, ROUNDING_MODE)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        // 计算环比增长率 = (本期 - 上期) / 上期 * 100%
+        BigDecimal momGrowthRate = lastMonthValue.compareTo(BigDecimal.ZERO) > 0
+                ? currentValue.subtract(lastMonthValue)
+                        .divide(lastMonthValue, SCALE, ROUNDING_MODE)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("period", period);
+        data.put("currentValue", currentValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("lastYearValue", lastYearValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("lastPeriodValue", lastMonthValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("yoyGrowthRate", yoyGrowthRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("momGrowthRate", momGrowthRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("yoyChange", currentValue.subtract(lastYearValue).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("momChange", currentValue.subtract(lastMonthValue).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        result.add(data);
+
+        return result;
+    }
+
+    /**
+     * 计算单季度同比环比
+     */
+    private List<Map<String, Object>> calculateQuarterYoYMoM(String factoryId, String period, String metric) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        // 解析期间 (格式: 2026-Q1)
+        String[] parts = period.split("-Q");
+        int year = Integer.parseInt(parts[0]);
+        int quarter = Integer.parseInt(parts[1]);
+
+        // 计算去年同季度和上季度
+        int lastYearQ = quarter;
+        int lastYearY = year - 1;
+        int lastQuarterQ = quarter == 1 ? 4 : quarter - 1;
+        int lastQuarterY = quarter == 1 ? year - 1 : year;
+
+        // 获取各期间数据
+        BigDecimal currentValue = getMetricValueForQuarter(factoryId, year, quarter, metric);
+        BigDecimal lastYearValue = getMetricValueForQuarter(factoryId, lastYearY, lastYearQ, metric);
+        BigDecimal lastQuarterValue = getMetricValueForQuarter(factoryId, lastQuarterY, lastQuarterQ, metric);
+
+        // 计算同比和环比
+        BigDecimal yoyGrowthRate = lastYearValue.compareTo(BigDecimal.ZERO) > 0
+                ? currentValue.subtract(lastYearValue)
+                        .divide(lastYearValue, SCALE, ROUNDING_MODE)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        BigDecimal qoqGrowthRate = lastQuarterValue.compareTo(BigDecimal.ZERO) > 0
+                ? currentValue.subtract(lastQuarterValue)
+                        .divide(lastQuarterValue, SCALE, ROUNDING_MODE)
+                        .multiply(new BigDecimal("100"))
+                : BigDecimal.ZERO;
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("period", period);
+        data.put("currentValue", currentValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("lastYearValue", lastYearValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("lastPeriodValue", lastQuarterValue.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("yoyGrowthRate", yoyGrowthRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("momGrowthRate", qoqGrowthRate.setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("yoyChange", currentValue.subtract(lastYearValue).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        data.put("momChange", currentValue.subtract(lastQuarterValue).setScale(DISPLAY_SCALE, ROUNDING_MODE));
+        result.add(data);
+
+        return result;
+    }
+
+    /**
+     * 计算月份范围同比环比
+     */
+    private List<Map<String, Object>> calculateMonthRangeYoYMoM(String factoryId, String startPeriod, String endPeriod, String metric) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        YearMonth start = YearMonth.parse(startPeriod);
+        YearMonth end = YearMonth.parse(endPeriod);
+        YearMonth current = start;
+
+        while (!current.isAfter(end)) {
+            List<Map<String, Object>> monthData = calculateMonthYoYMoM(factoryId, current.toString(), metric);
+            result.addAll(monthData);
+            current = current.plusMonths(1);
+        }
+
+        return result;
+    }
+
+    /**
+     * 计算季度范围同比环比
+     */
+    private List<Map<String, Object>> calculateQuarterRangeYoYMoM(String factoryId, String startPeriod, String endPeriod, String metric) {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        // 解析开始和结束季度
+        String[] startParts = startPeriod.split("-Q");
+        String[] endParts = endPeriod.split("-Q");
+        int startYear = Integer.parseInt(startParts[0]);
+        int startQuarter = Integer.parseInt(startParts[1]);
+        int endYear = Integer.parseInt(endParts[0]);
+        int endQuarter = Integer.parseInt(endParts[1]);
+
+        int currentYear = startYear;
+        int currentQuarter = startQuarter;
+
+        while (currentYear < endYear || (currentYear == endYear && currentQuarter <= endQuarter)) {
+            String period = currentYear + "-Q" + currentQuarter;
+            List<Map<String, Object>> quarterData = calculateQuarterYoYMoM(factoryId, period, metric);
+            result.addAll(quarterData);
+
+            // 移动到下一个季度
+            currentQuarter++;
+            if (currentQuarter > 4) {
+                currentQuarter = 1;
+                currentYear++;
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * 获取指定月份的指标值
+     */
+    private BigDecimal getMetricValueForPeriod(String factoryId, YearMonth yearMonth, String metric) {
+        LocalDate startDate = yearMonth.atDay(1);
+        LocalDate endDate = yearMonth.atEndOfMonth();
+
+        switch (metric != null ? metric.toLowerCase() : "") {
+            case "revenue":
+            case "profit":
+            case "gross_margin":
+                // 从销售数据获取
+                List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                        factoryId, startDate, endDate);
+                return calculateMetricFromSales(salesData, metric);
+            case "cost":
+            case "expense":
+                // 从财务数据获取
+                List<SmartBiFinanceData> financeData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                        factoryId, RecordType.COST, startDate, endDate);
+                return financeData.stream()
+                        .map(SmartBiFinanceData::getTotalCost)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            default:
+                // 默认返回销售收入
+                List<SmartBiSalesData> defaultSales = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                        factoryId, startDate, endDate);
+                return defaultSales.stream()
+                        .map(SmartBiSalesData::getAmount)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+    }
+
+    /**
+     * 获取指定季度的指标值
+     */
+    private BigDecimal getMetricValueForQuarter(String factoryId, int year, int quarter, String metric) {
+        int startMonth = (quarter - 1) * 3 + 1;
+        int endMonth = quarter * 3;
+
+        LocalDate startDate = LocalDate.of(year, startMonth, 1);
+        LocalDate endDate = LocalDate.of(year, endMonth, 1).plusMonths(1).minusDays(1);
+
+        switch (metric != null ? metric.toLowerCase() : "") {
+            case "revenue":
+            case "profit":
+            case "gross_margin":
+                List<SmartBiSalesData> salesData = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                        factoryId, startDate, endDate);
+                return calculateMetricFromSales(salesData, metric);
+            case "cost":
+            case "expense":
+                List<SmartBiFinanceData> financeData = financeDataRepository.findByFactoryIdAndRecordTypeAndRecordDateBetween(
+                        factoryId, RecordType.COST, startDate, endDate);
+                return financeData.stream()
+                        .map(SmartBiFinanceData::getTotalCost)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+            default:
+                List<SmartBiSalesData> defaultSales = salesDataRepository.findByFactoryIdAndOrderDateBetween(
+                        factoryId, startDate, endDate);
+                return defaultSales.stream()
+                        .map(SmartBiSalesData::getAmount)
+                        .filter(Objects::nonNull)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        }
+    }
+
+    /**
+     * 从销售数据计算指标值
+     */
+    private BigDecimal calculateMetricFromSales(List<SmartBiSalesData> salesData, String metric) {
+        BigDecimal totalRevenue = salesData.stream()
+                .map(SmartBiSalesData::getAmount)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalCost = salesData.stream()
+                .map(SmartBiSalesData::getCost)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        switch (metric != null ? metric.toLowerCase() : "") {
+            case "revenue":
+                return totalRevenue;
+            case "profit":
+                return totalRevenue.subtract(totalCost);
+            case "gross_margin":
+                return totalRevenue.compareTo(BigDecimal.ZERO) > 0
+                        ? totalRevenue.subtract(totalCost)
+                                .divide(totalRevenue, SCALE, ROUNDING_MODE)
+                                .multiply(new BigDecimal("100"))
+                        : BigDecimal.ZERO;
+            default:
+                return totalRevenue;
+        }
+    }
+
+    /**
+     * 按品类聚合销售额
+     */
+    private Map<String, BigDecimal> aggregateSalesByCategory(List<SmartBiSalesData> salesData) {
+        Map<String, BigDecimal> result = new LinkedHashMap<>();
+
+        for (SmartBiSalesData data : salesData) {
+            String category = data.getProductCategory() != null ? data.getProductCategory() : "其他";
+            BigDecimal amount = data.getAmount() != null ? data.getAmount() : BigDecimal.ZERO;
+            result.merge(category, amount, BigDecimal::add);
+        }
+
+        return result;
     }
 
     /**

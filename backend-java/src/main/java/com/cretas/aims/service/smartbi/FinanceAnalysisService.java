@@ -270,4 +270,88 @@ public interface FinanceAnalysisService {
      * @return 预算指标列表
      */
     List<MetricResult> getBudgetMetrics(String factoryId, int year, int month);
+
+    // ==================== 预算达成分析 ====================
+
+    /**
+     * 获取预算达成分析图表数据
+     *
+     * 返回柱状图配置，展示各指标的预算达成情况：
+     * - 按月展示预算金额、实际金额、达成率
+     * - 达成率 = 实际 / 预算 * 100%
+     *
+     * 预警规则：
+     * - 达成率 > 120%：RED（超支严重）
+     * - 达成率 100%-120%：YELLOW（略有超支）
+     * - 达成率 < 100%：GREEN（正常）
+     *
+     * @param factoryId 工厂ID
+     * @param year      年份
+     * @param metric    指标类型：revenue/cost/profit/expense
+     * @return 预算达成图表配置
+     */
+    ChartConfig getBudgetAchievementChart(String factoryId, int year, String metric);
+
+    // ==================== 同比环比分析 ====================
+
+    /** 期间类型：单月 */
+    String PERIOD_TYPE_MONTH = "MONTH";
+    /** 期间类型：单季度 */
+    String PERIOD_TYPE_QUARTER = "QUARTER";
+    /** 期间类型：月份范围 */
+    String PERIOD_TYPE_MONTH_RANGE = "MONTH_RANGE";
+    /** 期间类型：季度范围 */
+    String PERIOD_TYPE_QUARTER_RANGE = "QUARTER_RANGE";
+
+    /**
+     * 获取同比环比分析图表数据
+     *
+     * 返回复合图表配置，展示指标的同比/环比变化：
+     * - 柱状图：本期值、同期值
+     * - 折线图：同比增长率、环比增长率
+     *
+     * 计算公式：
+     * - 同比增长率 = (本期 - 去年同期) / 去年同期 * 100%
+     * - 环比增长率 = (本期 - 上期) / 上期 * 100%
+     *
+     * 支持的期间类型：
+     * - MONTH：单个月份（startPeriod格式：2026-01）
+     * - QUARTER：单个季度（startPeriod格式：2026-Q1）
+     * - MONTH_RANGE：月份范围（startPeriod=2026-01, endPeriod=2026-06）
+     * - QUARTER_RANGE：季度范围（startPeriod=2026-Q1, endPeriod=2026-Q4）
+     *
+     * @param factoryId   工厂ID
+     * @param periodType  期间类型：MONTH/QUARTER/MONTH_RANGE/QUARTER_RANGE
+     * @param startPeriod 开始期间
+     * @param endPeriod   结束期间（范围类型时必填）
+     * @param metric      指标类型：revenue/cost/profit/gross_margin
+     * @return 同比环比图表配置
+     */
+    ChartConfig getYoYMoMComparisonChart(
+            String factoryId,
+            String periodType,
+            String startPeriod,
+            String endPeriod,
+            String metric
+    );
+
+    // ==================== 品类结构对比 ====================
+
+    /**
+     * 获取品类结构对比图表数据
+     *
+     * 返回堆叠柱状图或双饼图配置，对比两个年份的品类销售结构：
+     * - 各品类销售额及占比
+     * - 同比变化率
+     *
+     * @param factoryId   工厂ID
+     * @param year        当前年份
+     * @param compareYear 对比年份（通常为上一年）
+     * @return 品类结构对比图表配置
+     */
+    ChartConfig getCategoryStructureComparisonChart(
+            String factoryId,
+            int year,
+            int compareYear
+    );
 }

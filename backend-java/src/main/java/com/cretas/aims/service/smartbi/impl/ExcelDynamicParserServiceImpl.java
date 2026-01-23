@@ -12,9 +12,12 @@ import com.cretas.aims.dto.smartbi.ExcelParseRequest;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.dto.smartbi.FieldMappingResult.MappingSource;
+import com.cretas.aims.dto.smartbi.FieldMappingWithChartRole;
 import com.cretas.aims.service.smartbi.ExcelDynamicParserService;
+import com.cretas.aims.service.smartbi.LLMFieldMappingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -47,6 +50,13 @@ import java.util.stream.Collectors;
 public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService {
 
     private final FieldMappingDictionary fieldMappingDictionary;
+
+    /**
+     * LLM 字段映射服务（可选注入）
+     * 用于在字典无法匹配时调用 LLM 进行语义分析
+     */
+    @Autowired(required = false)
+    private LLMFieldMappingService llmFieldMappingService;
 
     // ==================== 日期格式定义 ====================
 
@@ -165,7 +175,7 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
             }
 
             // 4. 映射字段
-            List<FieldMappingResult> fieldMappings = mapFields(headers, dataFeatures);
+            List<FieldMappingResult> fieldMappings = mapFields(headers, dataFeatures, request.getFactoryId());
 
             // 5. 检查必填字段
             Set<String> mappedStandardFields = fieldMappings.stream()
@@ -409,7 +419,19 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
 
     @Override
     public List<FieldMappingResult> mapFields(List<String> headers, List<DataFeatureResult> features) {
-        log.info("开始映射字段: headerCount={}", headers.size());
+        return mapFields(headers, features, null);
+    }
+
+    /**
+     * 映射字段（带工厂ID）
+     *
+     * @param headers   列名列表
+     * @param features  数据特征列表
+     * @param factoryId 工厂ID（用于LLM保存映射）
+     * @return 字段映射结果列表
+     */
+    public List<FieldMappingResult> mapFields(List<String> headers, List<DataFeatureResult> features, String factoryId) {
+        log.info("开始映射字段: headerCount={}, factoryId={}", headers.size(), factoryId);
 
         List<FieldMappingResult> results = new ArrayList<>();
 
@@ -417,7 +439,7 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
             String header = headers.get(i);
             DataFeatureResult feature = i < features.size() ? features.get(i) : null;
 
-            FieldMappingResult mapping = mapSingleField(header, i, feature);
+            FieldMappingResult mapping = mapSingleField(header, i, feature, factoryId);
             results.add(mapping);
         }
 
@@ -458,15 +480,33 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 映射单个字段
+     * 映射单个字段（兼容旧接口）
      */
     private FieldMappingResult mapSingleField(String header, int columnIndex, DataFeatureResult feature) {
+        return mapSingleField(header, columnIndex, feature, null);
+    }
+
+    /**
+     * 映射单个字段（带工厂ID，支持LLM映射）
+     *
+     * 映射优先级：
+     * 1. 字典匹配（同义词）
+     * 2. LLM 语义分析（如果字典无法匹配且 LLM 可用）
+     * 3. 特征推断 + 候选建议
+     *
+     * @param header      列名
+     * @param columnIndex 列索引
+     * @param feature     数据特征
+     * @param factoryId   工厂ID（用于LLM保存映射结果）
+     * @return 字段映射结果
+     */
+    private FieldMappingResult mapSingleField(String header, int columnIndex, DataFeatureResult feature, String factoryId) {
         FieldMappingResult.FieldMappingResultBuilder builder = FieldMappingResult.builder()
                 .originalColumn(header)
                 .columnIndex(columnIndex)
                 .dataFeature(feature);
 
-        // 1. 尝试同义词匹配
+        // 1. 先尝试字典匹配（现有逻辑）
         Optional<String> standardField = fieldMappingDictionary.findStandardField(header);
 
         if (standardField.isPresent()) {
@@ -490,26 +530,75 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
                 builder.uniqueValues(feature.getUniqueValues());
             }
 
-        } else {
-            // 2. 无法匹配，根据特征推断
-            builder.requiresConfirmation(true)
-                    .mappingSource(MappingSource.FEATURE_INFER)
-                    .confidence(0.0);
-
-            if (feature != null) {
-                builder.dataType(feature.getDataType().name());
-                if (feature.getNumericSubType() != null) {
-                    builder.subType(feature.getNumericSubType().name());
-                }
-                if (feature.getDataType() == DataType.CATEGORICAL) {
-                    builder.uniqueValues(feature.getUniqueValues());
-                }
-            }
-
-            // 提供候选字段建议
-            List<FieldMappingResult.CandidateField> candidates = suggestCandidates(header, feature);
-            builder.candidateFields(candidates);
+            return builder.build();
         }
+
+        // 2. 字典无法匹配 → 调用 LLM（新增）
+        if (llmFieldMappingService != null && llmFieldMappingService.isAvailable()) {
+            try {
+                log.debug("字典无法匹配，尝试 LLM 映射: header={}, factoryId={}", header, factoryId);
+
+                // 准备参数
+                String dataType = feature != null ? feature.getDataType().name() : "TEXT";
+                List<Object> sampleValues = feature != null && feature.getSampleValues() != null
+                        ? feature.getSampleValues().stream().map(s -> (Object) s).collect(Collectors.toList())
+                        : Collections.emptyList();
+                int uniqueCount = feature != null ? feature.getUniqueCount() : 0;
+
+                // 调用 LLM 分析并保存
+                FieldMappingWithChartRole llmResult = llmFieldMappingService.analyzeAndSave(
+                        header,
+                        dataType,
+                        sampleValues,
+                        uniqueCount,
+                        factoryId
+                );
+
+                if (llmResult != null && llmResult.getStandardField() != null) {
+                    log.info("LLM 映射成功: header={} -> standardField={}, confidence={}",
+                            header, llmResult.getStandardField(), llmResult.getConfidence());
+
+                    double confidencePercent = llmResult.getConfidence() != null
+                            ? llmResult.getConfidence() * 100
+                            : 90.0;
+
+                    return FieldMappingResult.builder()
+                            .originalColumn(header)
+                            .columnIndex(columnIndex)
+                            .dataFeature(feature)
+                            .standardField(llmResult.getStandardField())
+                            .standardFieldLabel(llmResult.getAlias())
+                            .mappingSource(MappingSource.AI_SEMANTIC)
+                            .confidence(confidencePercent)
+                            .requiresConfirmation(llmResult.getConfidence() != null && llmResult.getConfidence() < 0.8)
+                            .dataType(llmResult.getDataType() != null ? llmResult.getDataType() : dataType)
+                            .uniqueValues(feature != null && feature.getDataType() == DataType.CATEGORICAL
+                                    ? feature.getUniqueValues() : null)
+                            .build();
+                }
+            } catch (Exception e) {
+                log.warn("LLM 字段映射失败，回退到特征推断: header={}, error={}", header, e.getMessage());
+            }
+        }
+
+        // 3. LLM 也无法识别 → 回退到特征推断 + 用户确认（现有逻辑）
+        builder.requiresConfirmation(true)
+                .mappingSource(MappingSource.FEATURE_INFER)
+                .confidence(0.0);
+
+        if (feature != null) {
+            builder.dataType(feature.getDataType().name());
+            if (feature.getNumericSubType() != null) {
+                builder.subType(feature.getNumericSubType().name());
+            }
+            if (feature.getDataType() == DataType.CATEGORICAL) {
+                builder.uniqueValues(feature.getUniqueValues());
+            }
+        }
+
+        // 提供候选字段建议
+        List<FieldMappingResult.CandidateField> candidates = suggestCandidates(header, feature);
+        builder.candidateFields(candidates);
 
         return builder.build();
     }
