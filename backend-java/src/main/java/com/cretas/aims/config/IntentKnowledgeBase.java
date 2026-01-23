@@ -330,25 +330,40 @@ public class IntentKnowledgeBase {
             ));
         }
 
-        // 初始化查询指示词
+        // 初始化查询指示词 - v12.0增强：扩展查询类动词，提高查询/更新区分度
         if (queryIndicators.isEmpty()) {
             queryIndicators.addAll(Set.of(
-                    "查询", "查看", "多少", "还剩", "有几", "列表", "统计", "查",
-                    "显示", "获取", "看看", "有多少", "剩多少", "剩余", "库存",
-                    "情况", "状态", "有什么", "有哪些", "是多少", "数量",
-                    "搜索", "找", "查找", "了解", "汇总"
+                    // 核心查询动词
+                    "查询", "查看", "查", "看", "显示", "列出", "获取", "搜索", "查找", "浏览",
+                    // 数量相关查询
+                    "多少", "还剩", "有几", "有多少", "剩多少", "剩余", "数量", "是多少",
+                    // 状态相关查询
+                    "情况", "状态", "有什么", "有哪些", "怎么样", "咋样", "如何",
+                    // 列表/统计类
+                    "列表", "统计", "汇总", "清单", "概览", "总览", "一览",
+                    // 辅助查询词
+                    "了解", "看看", "瞧瞧", "瞅瞅", "给我看", "让我看",
+                    // 库存相关
+                    "库存", "存货", "余量"
             ));
         }
 
-        // 初始化更新指示词（包含状态控制类动作）
+        // 初始化更新指示词（包含状态控制类动作）- v12.0增强：扩展更新类动词，提高查询/更新区分度
         if (updateIndicators.isEmpty()) {
             updateIndicators.addAll(Set.of(
-                    // 常规更新操作
-                    "修改", "更新", "改成", "改为", "设置", "调整", "编辑", "变更", "改",
-                    "把", "设成", "设为", "更改", "修订", "调为", "换成",
+                    // 核心更新动词
+                    "修改", "更新", "编辑", "变更", "更改", "修订", "改动",
+                    // 设置类动词
+                    "设置", "设定", "配置", "调整", "调为", "改成", "改为", "设成", "设为", "换成",
+                    // 单字动词（需结合上下文）
+                    "改", "换", "调",
                     // 状态控制操作 - 生产/设备控制
                     "停", "停止", "暂停", "中断", "启动", "开始", "恢复", "继续",
-                    "完成", "结束", "开工", "收工", "关闭", "打开", "开启"
+                    "完成", "结束", "开工", "收工", "关闭", "打开", "开启",
+                    // 确认/提交类
+                    "确认", "提交", "执行", "处理",
+                    // 强制性更新词
+                    "把...改成", "把...设为", "把...调整为"
             ));
         }
 
@@ -1428,6 +1443,131 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("供应商怎么样", "SUPPLIER_RANKING");
         phraseToIntentMapping.put("供应商好不好", "SUPPLIER_RANKING");
 
+        // === v12.0优化：查询/更新区分增强 - 原料批次领域 ===
+        // 查询类短语 - MATERIAL_BATCH_QUERY
+        phraseToIntentMapping.put("查看原料批次信息", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("显示原料库存", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("获取原料信息", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("列出原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("浏览原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("搜索原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料有什么", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("原料还有多少", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("看下原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("瞧瞧原料", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("给我看原料", "MATERIAL_BATCH_QUERY");
+        // 更新类短语 - MATERIAL_ADJUST_QUANTITY / MATERIAL_BATCH_UPDATE
+        phraseToIntentMapping.put("修改原料批次", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("更新原料信息", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("编辑原料批次", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("变更原料数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("更改原料库存", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("修订原料数据", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("改原料数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("把原料数量改成", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("原料库存修改", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("原料信息修改", "MATERIAL_ADJUST_QUANTITY");
+
+        // === v12.0优化：查询/更新区分增强 - 生产批次领域 ===
+        // 查询类短语 - PROCESSING_BATCH_LIST
+        phraseToIntentMapping.put("查看生产批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("显示生产进度", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("获取批次信息", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("列出生产任务", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("浏览批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("搜索生产批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("批次有哪些", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("看下批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("给我看批次", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("生产情况怎么样", "PROCESSING_BATCH_LIST");
+        phraseToIntentMapping.put("批次状态查询", "PROCESSING_BATCH_LIST");
+        // 更新/控制类短语 - PROCESSING_BATCH_*
+        phraseToIntentMapping.put("修改批次信息", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("更新生产批次", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("编辑批次数据", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("变更批次状态", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("把批次改成", "PROCESSING_BATCH_DETAIL");
+
+        // === v12.0优化：查询/更新区分增强 - 设备领域 ===
+        // 查询类短语 - EQUIPMENT_LIST / EQUIPMENT_STATS
+        phraseToIntentMapping.put("查看设备状态", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("显示设备列表", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("获取设备信息", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("列出设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("浏览设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("搜索设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("看下设备状态", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("给我看设备", "EQUIPMENT_LIST");
+        phraseToIntentMapping.put("设备运行状态", "EQUIPMENT_STATUS_QUERY");
+        // 更新/控制类短语 - EQUIPMENT_STATUS_UPDATE
+        phraseToIntentMapping.put("修改设备状态", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("更新设备信息", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("编辑设备配置", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("变更设备参数", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("更改设备设置", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("把设备状态改成", "EQUIPMENT_STATUS_UPDATE");
+        phraseToIntentMapping.put("设备状态修改", "EQUIPMENT_STATUS_UPDATE");
+
+        // === v12.0优化：查询/更新区分增强 - 发货领域 ===
+        // 查询类短语 - SHIPMENT_QUERY (已有很多，补充)
+        phraseToIntentMapping.put("显示发货单", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("获取发货信息", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("列出发货记录", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("浏览发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("给我看发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货单有哪些", "SHIPMENT_QUERY");
+        // 更新类短语 - SHIPMENT_UPDATE (已有很多，补充)
+        phraseToIntentMapping.put("变更发货信息", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("修订发货单", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("把发货单改成", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("发货信息修改", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("调整发货信息", "SHIPMENT_UPDATE");
+
+        // === v12.0优化：查询/更新区分增强 - 告警领域 ===
+        // 查询类短语 - ALERT_LIST
+        phraseToIntentMapping.put("查看告警", "ALERT_LIST");
+        phraseToIntentMapping.put("显示告警列表", "ALERT_LIST");
+        phraseToIntentMapping.put("获取告警信息", "ALERT_LIST");
+        phraseToIntentMapping.put("列出告警", "ALERT_LIST");
+        phraseToIntentMapping.put("浏览告警", "ALERT_LIST");
+        phraseToIntentMapping.put("看下告警", "ALERT_LIST");
+        phraseToIntentMapping.put("给我看告警", "ALERT_LIST");
+        // 更新/处理类短语 - ALERT_ACKNOWLEDGE / ALERT_RESOLVE
+        phraseToIntentMapping.put("处理告警", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("确认告警", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("解决告警", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("关闭告警", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("把告警处理掉", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("告警已处理", "ALERT_ACKNOWLEDGE");
+
+        // === v12.0优化：查询/更新区分增强 - 质检领域 ===
+        // 查询类短语 - QUALITY_CHECK_QUERY
+        phraseToIntentMapping.put("查看质检结果", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("显示质检记录", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("获取质检信息", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("列出质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("浏览质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("看下质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("给我看质检", "QUALITY_CHECK_QUERY");
+        phraseToIntentMapping.put("质检情况如何", "QUALITY_CHECK_QUERY");
+        // 执行类短语 - QUALITY_CHECK_EXECUTE
+        phraseToIntentMapping.put("进行质检", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("开始质检", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("提交质检结果", "QUALITY_CHECK_EXECUTE");
+        phraseToIntentMapping.put("录入质检数据", "QUALITY_CHECK_EXECUTE");
+
+        // === v12.0优化：查询/更新区分增强 - 考勤领域 ===
+        // 查询类短语 - ATTENDANCE_TODAY / ATTENDANCE_HISTORY
+        phraseToIntentMapping.put("查看考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("显示考勤记录", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("获取考勤信息", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("列出考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("浏览考勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("看下考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("给我看考勤", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("考勤怎么样", "ATTENDANCE_TODAY");
+
         // === v4.2优化：系统配置类短语映射 ===
         phraseToIntentMapping.put("排产改为自动", "SCHEDULING_SET_AUTO");
         phraseToIntentMapping.put("开启自动排产", "SCHEDULING_SET_AUTO");
@@ -2300,6 +2440,61 @@ public class IntentKnowledgeBase {
 
         // 修复程度表达
         phraseToIntentMapping.put("最严重的告警", "ALERT_LIST");
+
+        // === v11.4新增：ISAPI智能分析相关短语映射 ===
+        // 行为检测/越界检测配置
+        phraseToIntentMapping.put("配置行为检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("行为检测配置", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("设置行为检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("越界检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("配置越界检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("设置越界检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("警戒线", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("配置警戒线", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("设置警戒线", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("添加警戒线", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("虚拟警戒线", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("越线检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("跨线检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("划线检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("开启越界检测", "ISAPI_CONFIG_LINE_DETECTION");
+        phraseToIntentMapping.put("启用行为检测", "ISAPI_CONFIG_LINE_DETECTION");
+
+        // 区域入侵检测配置
+        phraseToIntentMapping.put("配置区域入侵", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("区域入侵配置", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("设置区域入侵", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("入侵检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("配置入侵检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("设置入侵检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("区域检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("配置禁区", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("设置禁区", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("入侵报警配置", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("区域布防", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("开启入侵检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("启用区域检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("智能区域检测", "ISAPI_CONFIG_FIELD_DETECTION");
+        phraseToIntentMapping.put("区域防护", "ISAPI_CONFIG_FIELD_DETECTION");
+
+        // 智能分析事件查询
+        phraseToIntentMapping.put("查询检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("智能分析事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("入侵事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("越界事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("行为分析记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("智能检测记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("智能分析记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("检测告警记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("行为告警", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("越界告警记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("入侵告警记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("智能告警记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("查看检测记录", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("检测日志", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("今天的检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
+        phraseToIntentMapping.put("今天检测事件", "ISAPI_QUERY_DETECTION_EVENTS");
 
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
@@ -3182,20 +3377,47 @@ public class IntentKnowledgeBase {
     /**
      * 核心动词集合
      */
+    // v12.0增强: 扩展核心动词集合，提高查询/更新区分度
     private static final Set<String> CORE_VERBS_FOR_DISAMBIGUATION = Set.of(
-            "查询", "查看", "查", "看", "显示", "统计", "分析", "计算", "获取", "导出",
-            "添加", "新增", "创建", "修改", "更新", "删除", "入库", "出库", "发货", "收货",
-            "处理", "提交", "执行", "确认", "开始", "启动", "停止", "暂停", "恢复", "完成", "结束",
-            "安排", "调整", "设置", "录入", "做", "弄"
+            // 查询类动词
+            "查询", "查看", "查", "看", "显示", "列出", "获取", "搜索", "查找", "浏览",
+            "统计", "分析", "计算", "导出", "汇总", "了解",
+            // 创建类动词
+            "添加", "新增", "创建", "录入", "登记", "生成", "建立", "新建",
+            // 更新类动词
+            "修改", "更新", "编辑", "变更", "更改", "调整", "设置", "配置", "改动", "修订",
+            // 删除类动词
+            "删除", "移除", "作废", "取消",
+            // 状态控制动词
+            "开始", "启动", "停止", "暂停", "恢复", "完成", "结束", "继续",
+            // 操作类动词
+            "入库", "出库", "发货", "收货", "处理", "提交", "执行", "确认",
+            // 其他动词
+            "安排", "做", "弄"
     );
 
     /**
-     * 核心名词集合
+     * 核心名词集合 - v12.0增强: 扩展名词集合，提高查询/更新区分度
      */
     private static final Set<String> CORE_NOUNS_FOR_DISAMBIGUATION = Set.of(
-            "原料", "物料", "批次", "库存", "发货", "收货", "告警", "预警", "设备", "机器",
-            "质检", "检测", "检验", "客户", "供应商", "订单", "记录", "数据", "报表", "统计",
-            "生产", "加工", "产量", "效率", "状态", "信息", "列表", "详情", "考勤", "出勤"
+            // 原料/物料领域
+            "原料", "物料", "材料", "原材料", "辅料", "批次", "库存", "存货",
+            // 发货/物流领域
+            "发货", "收货", "出货", "物流", "配送", "发货单", "出货单",
+            // 告警领域
+            "告警", "预警", "报警", "异常", "警报",
+            // 设备领域
+            "设备", "机器", "机械", "产线", "生产线",
+            // 质检领域
+            "质检", "检测", "检验", "品质", "质量", "合格率",
+            // 客户/供应商领域
+            "客户", "供应商", "客户信息", "供应商信息",
+            // 生产领域
+            "生产", "加工", "产量", "效率", "产出", "进度",
+            // 考勤领域
+            "考勤", "出勤", "打卡", "签到", "签退",
+            // 通用名词
+            "订单", "记录", "数据", "报表", "统计", "状态", "信息", "列表", "详情"
     );
 
     static {
@@ -3290,6 +3512,85 @@ public class IntentKnowledgeBase {
         VERB_NOUN_INTENT_MAPPINGS.put("查询+考勤", "ATTENDANCE_TODAY");
         VERB_NOUN_INTENT_MAPPINGS.put("查看+考勤", "ATTENDANCE_TODAY");
         VERB_NOUN_INTENT_MAPPINGS.put("统计+考勤", "ATTENDANCE_STATS");
+
+        // === v12.0: 查询/更新区分增强 - 更多查询类动词映射 ===
+        // 显示/列出/获取类动词 → 查询意图
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+库存", "REPORT_INVENTORY");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+质检", "QUALITY_CHECK_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("显示+考勤", "ATTENDANCE_TODAY");
+        VERB_NOUN_INTENT_MAPPINGS.put("列出+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("列出+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("列出+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("列出+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("列出+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+设备", "EQUIPMENT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+告警", "ALERT_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("获取+库存", "REPORT_INVENTORY");
+        // 搜索/查找类动词 → 查询意图
+        VERB_NOUN_INTENT_MAPPINGS.put("搜索+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("搜索+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("搜索+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("搜索+客户", "CUSTOMER_SEARCH");
+        VERB_NOUN_INTENT_MAPPINGS.put("查找+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查找+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("查找+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("查找+客户", "CUSTOMER_SEARCH");
+        // 浏览类动词 → 查询意图
+        VERB_NOUN_INTENT_MAPPINGS.put("浏览+原料", "MATERIAL_BATCH_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("浏览+批次", "PROCESSING_BATCH_LIST");
+        VERB_NOUN_INTENT_MAPPINGS.put("浏览+发货", "SHIPMENT_QUERY");
+        VERB_NOUN_INTENT_MAPPINGS.put("浏览+设备", "EQUIPMENT_LIST");
+
+        // === v12.0: 查询/更新区分增强 - 更多更新类动词映射 ===
+        // 修改/编辑类动词 → 更新意图
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+设备", "EQUIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+告警", "ALERT_ACKNOWLEDGE");
+        VERB_NOUN_INTENT_MAPPINGS.put("修改+质检", "QUALITY_CHECK_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("编辑+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("编辑+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("编辑+发货", "SHIPMENT_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("编辑+设备", "EQUIPMENT_STATUS_UPDATE");
+        // 更新/变更类动词 → 更新意图
+        VERB_NOUN_INTENT_MAPPINGS.put("更新+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("更新+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("更新+设备", "EQUIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("变更+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("变更+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("变更+发货", "SHIPMENT_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("变更+设备", "EQUIPMENT_STATUS_UPDATE");
+        // 更改/调整类动词 → 更新意图
+        VERB_NOUN_INTENT_MAPPINGS.put("更改+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("更改+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("更改+发货", "SHIPMENT_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("更改+设备", "EQUIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("调整+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("调整+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("调整+发货", "SHIPMENT_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("调整+设备", "EQUIPMENT_STATUS_UPDATE");
+        // 设置/配置类动词 → 更新意图
+        VERB_NOUN_INTENT_MAPPINGS.put("设置+原料", "MATERIAL_ADJUST_QUANTITY");
+        VERB_NOUN_INTENT_MAPPINGS.put("设置+批次", "PROCESSING_BATCH_DETAIL");
+        VERB_NOUN_INTENT_MAPPINGS.put("设置+设备", "EQUIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("配置+设备", "EQUIPMENT_STATUS_UPDATE");
+        // 处理类动词 → 处理/确认意图
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+发货", "SHIPMENT_STATUS_UPDATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+质检", "QUALITY_DISPOSITION_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("处理+订单", "SHIPMENT_STATUS_UPDATE");
+        // 确认类动词 → 确认意图
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+原料", "MATERIAL_BATCH_CREATE");
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+批次", "PROCESSING_BATCH_COMPLETE");
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+质检", "QUALITY_CHECK_EXECUTE");
+        VERB_NOUN_INTENT_MAPPINGS.put("确认+告警", "ALERT_ACKNOWLEDGE");
     }
 
     /**
@@ -3312,9 +3613,12 @@ public class IntentKnowledgeBase {
             "月底", "季度", "年底"
     );
 
-    // 查询态模式 - 带"的"结构通常是查询而非执行
+    // 查询态模式 - 带"的"结构通常是查询而非执行 - v12.0增强: 扩展查询上下文模式
     private static final java.util.regex.Pattern QUERY_CONTEXT_PATTERN = java.util.regex.Pattern.compile(
-            ".*(了多少|了几|过的|的记录|的情况|的状态|的批次|的原料|的发货|的生产|的统计).*"
+            ".*(了多少|了几|过的|的记录|的情况|的状态|的批次|的原料|的发货|的生产|的统计|" +
+            "有多少|有几个|有哪些|是什么|怎么样|咋样|如何|还剩|剩多少|剩余|" +
+            "的列表|的详情|的信息|的数据|的报表|有什么|是多少|" +
+            "查看一下|看一下|给我看|让我看|帮我查|帮我看).*"
     );
 
     // v4.5修复: 检测日期范围格式（时间预处理后的格式）

@@ -42,7 +42,8 @@ public abstract class AbstractTool implements ToolExecutor {
         } catch (Exception e) {
             log.error("❌ 参数解析失败: toolName={}, arguments={}",
                     toolCall.getFunction().getName(), toolCall.getFunction().getArguments(), e);
-            throw new IllegalArgumentException("Invalid tool arguments: " + e.getMessage());
+            // 脱敏处理：不暴露具体解析错误
+            throw new IllegalArgumentException("参数格式不正确");
         }
     }
 
@@ -89,26 +90,68 @@ public abstract class AbstractTool implements ToolExecutor {
             return objectMapper.writeValueAsString(result);
         } catch (Exception e) {
             log.error("❌ 构建结果失败", e);
-            return buildErrorResult("Failed to build result: " + e.getMessage());
+            // 脱敏处理：不暴露具体序列化错误
+            return buildErrorResult("结果处理失败");
         }
     }
 
     /**
-     * 构建错误结果 JSON
+     * 构建错误结果 JSON（已脱敏的消息）
      *
-     * @param message 错误消息
+     * @param message 错误消息（应为用户友好消息，不含敏感信息）
      * @return JSON 字符串
      */
     protected String buildErrorResult(String message) {
         try {
             Map<String, Object> result = new HashMap<>();
             result.put("success", false);
-            result.put("error", message);
+            result.put("error", sanitizeErrorMessage(message));
             return objectMapper.writeValueAsString(result);
         } catch (Exception e) {
             log.error("❌ 构建错误结果失败", e);
-            return "{\"success\":false,\"error\":\"Internal error\"}";
+            return "{\"success\":false,\"error\":\"操作失败\"}";
         }
+    }
+
+    /**
+     * 构建脱敏的错误结果（用于捕获未预期的异常）
+     *
+     * @param e 异常
+     * @return JSON 字符串
+     */
+    protected String buildSanitizedErrorResult(Exception e) {
+        log.error("❌ 工具执行异常", e);
+        return buildErrorResult("操作执行失败，请稍后重试");
+    }
+
+    /**
+     * 脱敏错误消息
+     * 检测并移除可能包含敏感信息的内容
+     *
+     * @param message 原始消息
+     * @return 脱敏后的消息
+     */
+    protected String sanitizeErrorMessage(String message) {
+        if (message == null || message.isEmpty()) {
+            return "操作失败";
+        }
+        String lowerMsg = message.toLowerCase();
+        // 检测敏感关键词
+        if (lowerMsg.contains("exception") ||
+            lowerMsg.contains("sql") ||
+            lowerMsg.contains("jdbc") ||
+            lowerMsg.contains("hibernate") ||
+            lowerMsg.contains("connection") ||
+            lowerMsg.contains("localhost") ||
+            lowerMsg.contains("127.0.0.1") ||
+            lowerMsg.contains("null pointer") ||
+            lowerMsg.contains("stack trace") ||
+            lowerMsg.contains(".java:") ||
+            lowerMsg.contains("at com.") ||
+            lowerMsg.contains("at org.")) {
+            return "操作失败，请稍后重试";
+        }
+        return message;
     }
 
     /**
