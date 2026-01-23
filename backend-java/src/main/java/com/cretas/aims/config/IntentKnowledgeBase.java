@@ -541,6 +541,11 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("发货进度咋样", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("今天东西发出去了吗", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("今天出货了吗", "SHIPMENT_QUERY");
+        // v11.3: 更多发货/物流短语
+        phraseToIntentMapping.put("物流到哪了", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("今天出货量", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("订单发货了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("出货量", "SHIPMENT_QUERY");
 
         // === 库存相关 (使用实际存在的意图代码) ===
         phraseToIntentMapping.put("库存查询", "REPORT_INVENTORY");
@@ -659,6 +664,10 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("异常警报", "ALERT_LIST");
         phraseToIntentMapping.put("警报", "ALERT_LIST");
         phraseToIntentMapping.put("有没有异常", "ALERT_LIST");
+        // v11.3: 更多告警短语
+        phraseToIntentMapping.put("今天异常情况", "ALERT_LIST");
+        phraseToIntentMapping.put("今天异常", "ALERT_LIST");
+        phraseToIntentMapping.put("异常情况", "ALERT_LIST");
 
         // === 生产/加工相关 ===
         phraseToIntentMapping.put("生产批次", "PROCESSING_BATCH_LIST");
@@ -907,6 +916,10 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("车间排名", "REPORT_KPI");
         phraseToIntentMapping.put("车间业绩", "REPORT_KPI");
         phraseToIntentMapping.put("最厉害", "REPORT_KPI");
+        // v11.3: 更多KPI/业绩短语
+        phraseToIntentMapping.put("各部门业绩", "REPORT_KPI");
+        phraseToIntentMapping.put("部门排名", "REPORT_KPI");
+        phraseToIntentMapping.put("哪个部门最好", "REPORT_KPI");
         phraseToIntentMapping.put("销售情况", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售数据", "REPORT_DASHBOARD_OVERVIEW");
         phraseToIntentMapping.put("销售总览", "REPORT_DASHBOARD_OVERVIEW");
@@ -925,6 +938,20 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("趋势分析", "REPORT_TRENDS");
         phraseToIntentMapping.put("走势", "REPORT_TRENDS");
         phraseToIntentMapping.put("变化趋势", "REPORT_TRENDS");
+        // v11.3: 地区/区域销售分析
+        phraseToIntentMapping.put("华东区销售", "REPORT_TRENDS");
+        phraseToIntentMapping.put("北京销售额", "REPORT_TRENDS");
+        phraseToIntentMapping.put("各地区数据", "REPORT_TRENDS");
+        phraseToIntentMapping.put("区域分析", "REPORT_TRENDS");
+        phraseToIntentMapping.put("地区销售", "REPORT_TRENDS");
+        phraseToIntentMapping.put("区域销售", "REPORT_TRENDS");
+        // v11.3: 财务报表
+        phraseToIntentMapping.put("毛利率多少", "REPORT_FINANCE");
+        phraseToIntentMapping.put("毛利率", "REPORT_FINANCE");
+        phraseToIntentMapping.put("利润率", "REPORT_FINANCE");
+        phraseToIntentMapping.put("财务指标", "REPORT_FINANCE");
+        phraseToIntentMapping.put("财务数据", "REPORT_FINANCE");
+        phraseToIntentMapping.put("财务报表", "REPORT_FINANCE");
 
         // === 客户相关 ===
         phraseToIntentMapping.put("客户列表", "CUSTOMER_LIST");
@@ -970,6 +997,12 @@ public class IntentKnowledgeBase {
         // v11.2c: Round1 fixes
         phraseToIntentMapping.put("本周考勤", "ATTENDANCE_HISTORY");
         phraseToIntentMapping.put("迟到记录", "ATTENDANCE_HISTORY");
+        // v11.3: 更多出勤历史短语
+        phraseToIntentMapping.put("今天几个人上班", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("出勤统计", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("张三的出勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("员工出勤", "ATTENDANCE_HISTORY");
+        phraseToIntentMapping.put("员工考勤", "ATTENDANCE_HISTORY");
         // === v4.2优化：考勤类短语映射补充 ===
         phraseToIntentMapping.put("我先撤了", "CLOCK_OUT");
         phraseToIntentMapping.put("今天干完了", "CLOCK_OUT");
