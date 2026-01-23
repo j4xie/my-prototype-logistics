@@ -530,6 +530,17 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("出货了没", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("发货状态", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("出货状态", "SHIPMENT_QUERY");
+        // v11.2d: Round2口语修复 - 发货类
+        phraseToIntentMapping.put("货发走了没", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("东西都发了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货没发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("货出了没有", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("物流走了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("东西寄出去了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("货到哪了", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货进度咋样", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("今天东西发出去了吗", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("今天出货了吗", "SHIPMENT_QUERY");
 
         // === 库存相关 (使用实际存在的意图代码) ===
         phraseToIntentMapping.put("库存查询", "REPORT_INVENTORY");
@@ -547,6 +558,16 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("库存有多少", "REPORT_INVENTORY");
         phraseToIntentMapping.put("库存有多少货", "REPORT_INVENTORY");
         phraseToIntentMapping.put("有多少货", "REPORT_INVENTORY");
+        // v11.2d: Round2口语修复
+        phraseToIntentMapping.put("还有多少存货", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("仓库里还有啥", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("货还够不够", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("东西还有多少", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("库存够用吗", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("剩多少库存了", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("库存啥情况", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("仓库空了没", "REPORT_INVENTORY");
+        phraseToIntentMapping.put("货物还剩多少", "REPORT_INVENTORY");
 
         // === 设备相关 (优化5: 扩充设备查询短语) ===
         phraseToIntentMapping.put("看设备", "EQUIPMENT_LIST");
@@ -562,6 +583,17 @@ public class IntentKnowledgeBase {
         // v11.2c: Round1 fixes
         phraseToIntentMapping.put("设备运行情况", "EQUIPMENT_STATUS_QUERY");
         phraseToIntentMapping.put("机器状态", "EQUIPMENT_STATUS_QUERY");
+        // v11.2d: Round2口语修复 - 设备类
+        phraseToIntentMapping.put("机器有没有问题", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备正常吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器转着呢吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备还行吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器坏了没", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备有毛病吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器咋样了", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("设备能用吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("生产线还转着吗", "EQUIPMENT_STATUS_QUERY");
+        phraseToIntentMapping.put("机器有没有故障", "EQUIPMENT_STATUS_QUERY");
         phraseToIntentMapping.put("设备运行", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备概览", "EQUIPMENT_STATS");
         phraseToIntentMapping.put("设备维护", "EQUIPMENT_MAINTENANCE");
@@ -640,6 +672,17 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("生产数据", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("车间产量", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("生产情况", "PRODUCTION_STATUS_QUERY");  // v11.2c: Round1 fix
+        // v11.2d: Round2口语修复 - 生产类
+        phraseToIntentMapping.put("今天产量咋样", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("做了多少了", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天出了多少货", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产能怎么样", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("干了多少活", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天忙不忙", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("生产够不够数", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("完成多少了", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("产出怎么样", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("今天做了几批", "PRODUCTION_STATUS_QUERY");
         phraseToIntentMapping.put("停止生产", "PROCESSING_BATCH_CANCEL");
         phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
         phraseToIntentMapping.put("恢复生产", "PROCESSING_BATCH_RESUME");
