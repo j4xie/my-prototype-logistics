@@ -310,7 +310,7 @@ public class CoreferenceResolutionServiceImpl implements CoreferenceResolutionSe
             String prompt = buildLLMPrompt(userInput, references, contextSummary);
 
             // 调用 LLM
-            String response = dashScopeClient.chatCompletionWithPrompt(prompt);
+            String response = dashScopeClient.chat("你是一个指代消解助手，帮助解析用户输入中的代词和指示词。", prompt);
 
             // 解析响应
             Map<String, String> resolvedMap = parseLLMResponse(response, references);

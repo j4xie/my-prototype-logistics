@@ -24,7 +24,13 @@ import java.util.Map;
  * @author Cretas Team
  * @version 1.1.0
  * @since 2026-01-18
+ * @deprecated 此类将作为 {@link UnifiedDashboardResponse} 的内部组件使用。
+ *             对于新的仪表盘接口，请优先使用 {@link UnifiedDashboardResponse}，
+ *             它提供多维度聚合视图（销售、财务、库存、生产、质量、采购）。
+ *             此类仍可用于单一维度的仪表盘数据返回。
+ * @see UnifiedDashboardResponse
  */
+@Deprecated
 @Data
 @Builder
 @NoArgsConstructor

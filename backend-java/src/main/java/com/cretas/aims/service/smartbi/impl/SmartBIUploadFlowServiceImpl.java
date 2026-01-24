@@ -28,12 +28,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.cretas.aims.dto.smartbi.UploadProgressEvent;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +63,21 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     private final ChartTemplateService chartTemplateService;
     private final SmartBiSalesDataRepository salesDataRepository;
     private final SmartBiFinanceDataRepository financeDataRepository;
+
+    /**
+     * Sheet 并行处理线程池
+     * 5 个线程，避免 DashScope API 限流
+     */
+    private static final ExecutorService SHEET_EXECUTOR = Executors.newFixedThreadPool(5, r -> {
+        Thread t = new Thread(r, "sheet-processor");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /**
+     * 单个 Sheet 处理超时时间（秒）
+     */
+    private static final int SHEET_TIMEOUT_SECONDS = 180;
     private final LLMFieldMappingService llmFieldMappingService;
     private final DynamicChartConfigBuilderService dynamicChartConfigBuilder;
 
@@ -71,8 +91,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     @Override
     @Transactional
     public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType) {
-        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}",
-                factoryId, file.getOriginalFilename(), dataType);
+        // 默认使用 Sheet 0, headerRow 0, 不自动确认
+        return executeUploadFlow(factoryId, file, dataType, 0, 0, false);
+    }
+
+    @Override
+    @Transactional
+    public UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                               Integer sheetIndex, Integer headerRow, boolean autoConfirm) {
+        log.info("开始执行上传流程: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm);
 
         // 1. 验证文件
         if (file == null || file.isEmpty()) {
@@ -89,7 +117,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             ExcelParseRequest parseRequest = ExcelParseRequest.builder()
                     .factoryId(factoryId)
                     .fileName(fileName)
-                    .headerRow(0)
+                    .sheetIndex(sheetIndex != null ? sheetIndex : 0)
+                    .headerRow(headerRow != null ? headerRow : 0)
                     .sampleSize(100)
                     .skipEmptyRows(true)
                     .businessScene(dataType)
@@ -111,8 +140,8 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             String detectedTypeStr = detectedType.name();
             log.info("检测到数据类型: {}", detectedTypeStr);
 
-            // 4. 检查是否需要用户确认字段映射
-            boolean needsConfirmation = checkNeedsConfirmation(parseResult);
+            // 4. 检查是否需要用户确认字段映射（autoConfirm=true 时跳过）
+            boolean needsConfirmation = !autoConfirm && checkNeedsConfirmation(parseResult);
 
             if (needsConfirmation) {
                 log.info("字段映射需要用户确认");
@@ -124,6 +153,10 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                         .detectedDataType(detectedTypeStr)
                         .recommendedTemplates(getDefaultTemplates(detectedTypeStr, factoryId))
                         .build();
+            }
+
+            if (autoConfirm) {
+                log.info("autoConfirm=true，跳过用户确认，直接持久化数据");
             }
 
             // 5. 自动持久化数据
@@ -310,11 +343,16 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             return Collections.emptyList();
         }
 
-        // 1. 检测数据类型
+        // 1. 使用智能匹配获取最佳模板
+        List<FieldMappingResult> fieldMappings = parseResponse.getFieldMappings();
+        SmartBiChartTemplate bestTemplate = chartTemplateService.matchBestTemplate(
+                fieldMappings, parseResponse, factoryId);
+
+        // 2. 检测数据类型
         DataType dataType = persistenceService.detectDataType(parseResponse);
         String category = DATA_TYPE_TO_CATEGORY.getOrDefault(dataType.name(), SmartBiChartTemplate.CATEGORY_GENERAL);
 
-        // 2. 获取该分类下的模板
+        // 3. 获取该分类下的模板
         List<SmartBiChartTemplate> categoryTemplates = chartTemplateService.getTemplatesByCategory(category);
 
         if (categoryTemplates.isEmpty()) {
@@ -322,8 +360,26 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             categoryTemplates = chartTemplateService.getTemplatesByCategory(SmartBiChartTemplate.CATEGORY_GENERAL);
         }
 
-        // 3. 根据数据特征排序
-        return sortTemplatesByDataFeatures(categoryTemplates, parseResponse);
+        // 4. 将最佳模板放在首位
+        List<SmartBiChartTemplate> result = new ArrayList<>();
+        if (bestTemplate != null) {
+            result.add(bestTemplate);
+            // 添加其他模板（排除已添加的最佳模板）
+            for (SmartBiChartTemplate t : categoryTemplates) {
+                if (!t.getTemplateCode().equals(bestTemplate.getTemplateCode())) {
+                    result.add(t);
+                }
+            }
+        } else {
+            // 如果没有最佳匹配，使用原来的排序逻辑
+            result = sortTemplatesByDataFeatures(categoryTemplates, parseResponse);
+        }
+
+        log.info("推荐模板: 最佳匹配={}, 总数={}",
+                bestTemplate != null ? bestTemplate.getTemplateCode() : "无",
+                result.size());
+
+        return result;
     }
 
     @Override
@@ -822,7 +878,6 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     // ==================== 批量 Sheet 上传 ====================
 
     @Override
-    @Transactional
     public BatchUploadResult executeBatchUpload(String factoryId, InputStream inputStream,
                                                   String fileName, List<SheetConfig> sheetConfigs) {
         log.info("开始批量上传: factoryId={}, fileName={}, sheetCount={}",
@@ -871,110 +926,351 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .build();
         }
 
-        // 处理每个 Sheet
-        List<SheetUploadResult> results = new ArrayList<>();
+        // 并行处理每个 Sheet
+        log.info("开始并行处理 {} 个 Sheet (线程池大小: 5)", sheetConfigs.size());
+        long startTime = System.currentTimeMillis();
+
+        // 创建并行任务
+        List<CompletableFuture<SheetUploadResult>> futures = new ArrayList<>();
+        final byte[] fileBytesRef = fileBytes;
+        final List<SheetInfo> sheetInfoRef = sheetInfoList;
 
         for (SheetConfig config : sheetConfigs) {
-            int sheetIndex = config.getSheetIndex();
-            String sheetName = getSheetName(sheetInfoList, sheetIndex);
-
-            log.info("处理 Sheet[{}] {}: headerRow={}, dataType={}",
-                    sheetIndex, sheetName, config.getHeaderRow(), config.getDataType());
-
-            // 验证 Sheet 索引
-            if (sheetIndex < 0 || sheetIndex >= sheetInfoList.size()) {
-                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
-                        "无效的 Sheet 索引: " + sheetIndex));
-                continue;
-            }
-
-            // 检查是否为空 Sheet
-            SheetInfo sheetInfo = sheetInfoList.get(sheetIndex);
-            if (Boolean.TRUE.equals(sheetInfo.getEmpty())) {
-                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
-                        "Sheet 为空"));
-                continue;
-            }
-
-            try {
-                // 解析 Excel
-                ExcelParseRequest parseRequest = ExcelParseRequest.builder()
-                        .factoryId(factoryId)
-                        .fileName(fileName)
-                        .sheetIndex(sheetIndex)
-                        .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
-                        .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
-                        .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
-                        .businessScene(config.getDataType())
-                        .build();
-
-                ExcelParseResponse parseResult = excelParserService.parseExcel(
-                        new ByteArrayInputStream(fileBytes), parseRequest);
-
-                if (!parseResult.isSuccess()) {
-                    results.add(SheetUploadResult.failed(sheetIndex, sheetName,
-                            "解析失败: " + parseResult.getErrorMessage()));
-                    continue;
-                }
-
-                // 检测数据类型
-                DataType detectedType = detectDataType(parseResult, config.getDataType());
-                String detectedTypeStr = detectedType.name();
-
-                // 检查是否需要用户确认
-                boolean needsConfirmation = checkNeedsConfirmation(parseResult);
-
-                if (needsConfirmation) {
-                    // 需要确认的情况，返回解析结果但不持久化
-                    UploadFlowResult flowResult = UploadFlowResult.builder()
-                            .success(true)
-                            .message("字段映射需要用户确认")
-                            .parseResult(parseResult)
-                            .requiresConfirmation(true)
-                            .detectedDataType(detectedTypeStr)
-                            .build();
-
-                    results.add(SheetUploadResult.success(sheetIndex, sheetName, flowResult));
-                    continue;
-                }
-
-                // 持久化数据
-                PersistenceResult persistResult = persistenceService.persistData(
-                        factoryId, parseResult, detectedType);
-
-                if (!persistResult.isSuccess()) {
-                    results.add(SheetUploadResult.failed(sheetIndex, sheetName,
-                            "持久化失败: " + persistResult.getMessage()));
-                    continue;
-                }
-
-                // 成功
-                UploadFlowResult flowResult = UploadFlowResult.builder()
-                        .success(true)
-                        .message(String.format("成功处理 %d 条%s数据",
-                                persistResult.getSavedRows(), detectedType.getDisplayName()))
-                        .parseResult(parseResult)
-                        .persistResult(persistResult)
-                        .detectedDataType(detectedTypeStr)
-                        .requiresConfirmation(false)
-                        .uploadId(persistResult.getUploadId())
-                        .build();
-
-                results.add(SheetUploadResult.success(sheetIndex, sheetName, flowResult));
-                log.info("Sheet[{}] {} 处理成功: savedRows={}, uploadId={}",
-                        sheetIndex, sheetName, persistResult.getSavedRows(), persistResult.getUploadId());
-
-            } catch (Exception e) {
-                log.error("处理 Sheet[{}] {} 失败: {}", sheetIndex, sheetName, e.getMessage(), e);
-                results.add(SheetUploadResult.failed(sheetIndex, sheetName,
-                        "处理异常: " + e.getMessage()));
-            }
+            CompletableFuture<SheetUploadResult> future = CompletableFuture.supplyAsync(() ->
+                processSingleSheet(factoryId, fileName, fileBytesRef, sheetInfoRef, config),
+                SHEET_EXECUTOR
+            ).orTimeout(SHEET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+             .exceptionally(e -> {
+                 int sheetIndex = config.getSheetIndex();
+                 String sheetName = getSheetName(sheetInfoRef, sheetIndex);
+                 String errorMsg = e instanceof TimeoutException
+                     ? "处理超时 (>" + SHEET_TIMEOUT_SECONDS + "秒)"
+                     : "处理异常: " + e.getMessage();
+                 log.error("Sheet[{}] {} 失败: {}", sheetIndex, sheetName, errorMsg);
+                 return SheetUploadResult.failed(sheetIndex, sheetName, errorMsg);
+             });
+            futures.add(future);
         }
+
+        // 等待所有任务完成
+        List<SheetUploadResult> results;
+        try {
+            CompletableFuture<Void> allFutures = CompletableFuture.allOf(
+                futures.toArray(new CompletableFuture[0])
+            );
+            allFutures.join();
+
+            results = futures.stream()
+                .map(CompletableFuture::join)
+                .sorted(Comparator.comparingInt(SheetUploadResult::getSheetIndex))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("并行处理异常: {}", e.getMessage(), e);
+            results = Collections.emptyList();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("并行处理完成: {} 个 Sheet, 耗时 {} 秒", results.size(), elapsed / 1000.0);
 
         BatchUploadResult batchResult = BatchUploadResult.fromResults(results);
         log.info("批量上传完成: {}", batchResult.getMessage());
 
         return batchResult;
+    }
+
+    @Override
+    public BatchUploadResult executeBatchUploadWithProgress(String factoryId, InputStream inputStream,
+                                                             String fileName, List<SheetConfig> sheetConfigs,
+                                                             Consumer<UploadProgressEvent> progressCallback) {
+        log.info("开始带进度的批量上传: factoryId={}, fileName={}, sheetCount={}",
+                factoryId, fileName, sheetConfigs != null ? sheetConfigs.size() : 0);
+
+        // 安全的进度回调
+        Consumer<UploadProgressEvent> safeCallback = event -> {
+            try {
+                if (progressCallback != null) {
+                    progressCallback.accept(event);
+                }
+            } catch (Exception e) {
+                log.warn("进度回调失败: {}", e.getMessage());
+            }
+        };
+
+        if (sheetConfigs == null || sheetConfigs.isEmpty()) {
+            safeCallback.accept(UploadProgressEvent.error("没有指定要处理的 Sheet"));
+            return BatchUploadResult.builder()
+                    .totalSheets(0)
+                    .message("没有指定要处理的 Sheet")
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        int totalSheets = sheetConfigs.size();
+        safeCallback.accept(UploadProgressEvent.start(totalSheets));
+
+        // 将输入流读入内存
+        byte[] fileBytes;
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                baos.write(buffer, 0, bytesRead);
+            }
+            fileBytes = baos.toByteArray();
+            log.info("文件读入内存: {} bytes", fileBytes.length);
+        } catch (IOException e) {
+            log.error("读取文件失败: {}", e.getMessage(), e);
+            safeCallback.accept(UploadProgressEvent.error("读取文件失败: " + e.getMessage()));
+            return BatchUploadResult.builder()
+                    .totalSheets(totalSheets)
+                    .failedCount(totalSheets)
+                    .message("读取文件失败: " + e.getMessage())
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        // 获取 Sheet 信息列表
+        List<SheetInfo> sheetInfoList;
+        try {
+            sheetInfoList = excelParserService.listSheets(new ByteArrayInputStream(fileBytes));
+        } catch (Exception e) {
+            log.error("获取 Sheet 列表失败: {}", e.getMessage(), e);
+            safeCallback.accept(UploadProgressEvent.error("获取 Sheet 列表失败: " + e.getMessage()));
+            return BatchUploadResult.builder()
+                    .totalSheets(totalSheets)
+                    .failedCount(totalSheets)
+                    .message("获取 Sheet 列表失败: " + e.getMessage())
+                    .results(Collections.emptyList())
+                    .build();
+        }
+
+        // 并行处理每个 Sheet（带进度回调）
+        log.info("开始并行处理 {} 个 Sheet (线程池大小: 5)", sheetConfigs.size());
+        long startTime = System.currentTimeMillis();
+
+        AtomicInteger completedCount = new AtomicInteger(0);
+        List<CompletableFuture<SheetUploadResult>> futures = new ArrayList<>();
+        final byte[] fileBytesRef = fileBytes;
+        final List<SheetInfo> sheetInfoRef = sheetInfoList;
+
+        for (SheetConfig config : sheetConfigs) {
+            CompletableFuture<SheetUploadResult> future = CompletableFuture.supplyAsync(() ->
+                processSingleSheetWithProgress(factoryId, fileName, fileBytesRef, sheetInfoRef, config,
+                        totalSheets, completedCount, safeCallback),
+                SHEET_EXECUTOR
+            ).orTimeout(SHEET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+             .exceptionally(e -> {
+                 int sheetIndex = config.getSheetIndex();
+                 String sheetName = getSheetName(sheetInfoRef, sheetIndex);
+                 String errorMsg = e instanceof TimeoutException
+                     ? "处理超时 (>" + SHEET_TIMEOUT_SECONDS + "秒)"
+                     : "处理异常: " + e.getMessage();
+                 log.error("Sheet[{}] {} 失败: {}", sheetIndex, sheetName, errorMsg);
+
+                 int completed = completedCount.incrementAndGet();
+                 safeCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, errorMsg, completed, totalSheets));
+
+                 return SheetUploadResult.failed(sheetIndex, sheetName, errorMsg);
+             });
+            futures.add(future);
+        }
+
+        // 等待所有任务完成
+        List<SheetUploadResult> results;
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+            results = futures.stream()
+                .map(CompletableFuture::join)
+                .sorted(Comparator.comparingInt(SheetUploadResult::getSheetIndex))
+                .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("并行处理异常: {}", e.getMessage(), e);
+            results = Collections.emptyList();
+        }
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        log.info("并行处理完成: {} 个 Sheet, 耗时 {} 秒", results.size(), elapsed / 1000.0);
+
+        BatchUploadResult batchResult = BatchUploadResult.fromResults(results);
+        safeCallback.accept(UploadProgressEvent.complete(batchResult));
+        log.info("批量上传完成: {}", batchResult.getMessage());
+
+        return batchResult;
+    }
+
+    /**
+     * 处理单个 Sheet（带进度回调）
+     */
+    private SheetUploadResult processSingleSheetWithProgress(String factoryId, String fileName,
+                                                               byte[] fileBytes, List<SheetInfo> sheetInfoList,
+                                                               SheetConfig config, int totalSheets,
+                                                               AtomicInteger completedCount,
+                                                               Consumer<UploadProgressEvent> progressCallback) {
+        int sheetIndex = config.getSheetIndex();
+        String sheetName = getSheetName(sheetInfoList, sheetIndex);
+
+        log.info("[Thread-{}] 开始处理 Sheet[{}] {}", Thread.currentThread().getName(), sheetIndex, sheetName);
+
+        // 发送 Sheet 开始事件
+        progressCallback.accept(UploadProgressEvent.sheetStart(sheetIndex, sheetName, totalSheets));
+
+        // 验证 Sheet 索引
+        if (sheetIndex < 0 || sheetIndex >= sheetInfoList.size()) {
+            int completed = completedCount.incrementAndGet();
+            String error = "无效的 Sheet 索引: " + sheetIndex;
+            progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+            return SheetUploadResult.failed(sheetIndex, sheetName, error);
+        }
+
+        // 检查是否为空 Sheet
+        SheetInfo sheetInfo = sheetInfoList.get(sheetIndex);
+        if (Boolean.TRUE.equals(sheetInfo.getEmpty())) {
+            int completed = completedCount.incrementAndGet();
+            String error = "Sheet 为空";
+            progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+            return SheetUploadResult.failed(sheetIndex, sheetName, error);
+        }
+
+        try {
+            // 发送解析中事件
+            progressCallback.accept(UploadProgressEvent.parsing(sheetIndex, sheetName));
+
+            // 解析 Excel
+            ExcelParseRequest parseRequest = ExcelParseRequest.builder()
+                    .factoryId(factoryId)
+                    .fileName(fileName)
+                    .sheetIndex(sheetIndex)
+                    .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
+                    .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
+                    .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
+                    .businessScene(config.getDataType())
+                    .build();
+
+            ExcelParseResponse parseResult = excelParserService.parseExcel(
+                    new ByteArrayInputStream(fileBytes), parseRequest);
+
+            if (!parseResult.isSuccess()) {
+                int completed = completedCount.incrementAndGet();
+                String error = "解析失败: " + parseResult.getErrorMessage();
+                progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+                return SheetUploadResult.failed(sheetIndex, sheetName, error);
+            }
+
+            // 发送字段映射事件
+            int dictionaryHits = 0;
+            int llmFields = 0;
+            if (parseResult.getFieldMappings() != null) {
+                for (FieldMappingResult mapping : parseResult.getFieldMappings()) {
+                    FieldMappingResult.MappingSource source = mapping.getMappingSource();
+                    // EXACT_MATCH 和 SYNONYM_MATCH 视为字典命中
+                    if (source == FieldMappingResult.MappingSource.EXACT_MATCH
+                            || source == FieldMappingResult.MappingSource.SYNONYM_MATCH) {
+                        dictionaryHits++;
+                    } else if (source == FieldMappingResult.MappingSource.AI_SEMANTIC) {
+                        // AI_SEMANTIC 视为 LLM 分析
+                        llmFields++;
+                    }
+                }
+            }
+            progressCallback.accept(UploadProgressEvent.fieldMapping(sheetIndex, sheetName, dictionaryHits, llmFields));
+
+            // 检测数据类型
+            DataType detectedType = detectDataType(parseResult, config.getDataType());
+            String detectedTypeStr = detectedType.name();
+
+            // 检查是否需要用户确认
+            boolean autoConfirm = Boolean.TRUE.equals(config.getAutoConfirm());
+            boolean needsConfirmation = !autoConfirm && checkNeedsConfirmation(parseResult);
+
+            if (needsConfirmation) {
+                int completed = completedCount.incrementAndGet();
+                UploadFlowResult flowResult = UploadFlowResult.builder()
+                        .success(true)
+                        .message("字段映射需要用户确认")
+                        .parseResult(parseResult)
+                        .requiresConfirmation(true)
+                        .detectedDataType(detectedTypeStr)
+                        .build();
+                progressCallback.accept(UploadProgressEvent.sheetComplete(sheetIndex, sheetName, completed, totalSheets, 0));
+                return SheetUploadResult.success(sheetIndex, sheetName, flowResult);
+            }
+
+            // 发送持久化事件
+            int rowCount = parseResult.getRowCount() != null ? parseResult.getRowCount() : 0;
+            progressCallback.accept(UploadProgressEvent.persisting(sheetIndex, sheetName, rowCount));
+
+            // 持久化数据
+            PersistenceResult persistResult;
+            synchronized (this) {
+                persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+            }
+
+            if (!persistResult.isSuccess()) {
+                int completed = completedCount.incrementAndGet();
+                String error = "持久化失败: " + persistResult.getMessage();
+                progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+                return SheetUploadResult.failed(sheetIndex, sheetName, error);
+            }
+
+            // 推荐图表模板
+            String recommendedChartType = recommendChartType(parseResult, detectedTypeStr);
+            List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResult);
+
+            // 生成图表配置和 AI 分析
+            Map<String, Object> chartConfig = null;
+            String aiAnalysis = null;
+
+            if (!recommendedTemplates.isEmpty()) {
+                try {
+                    progressCallback.accept(UploadProgressEvent.builder()
+                            .type(UploadProgressEvent.EventType.CHART_GENERATING)
+                            .sheetIndex(sheetIndex)
+                            .sheetName(sheetName)
+                            .stage("生成图表")
+                            .message("正在生成图表配置和 AI 分析...")
+                            .build());
+
+                    SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
+                    Map<String, Object> chartData = buildChartData(factoryId, persistResult.getUploadId(), detectedType);
+                    Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
+                            primaryTemplate.getTemplateCode(), chartData, factoryId);
+                    chartConfig = chartWithAnalysis;
+                    aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
+                    log.info("Sheet[{}] {} 图表生成成功", sheetIndex, sheetName);
+                } catch (Exception e) {
+                    log.warn("Sheet[{}] {} 图表生成失败: {}", sheetIndex, sheetName, e.getMessage());
+                }
+            }
+
+            // 成功完成
+            int completed = completedCount.incrementAndGet();
+            UploadFlowResult flowResult = UploadFlowResult.builder()
+                    .success(true)
+                    .message(String.format("成功处理 %d 条%s数据", persistResult.getSavedRows(), detectedType.getDisplayName()))
+                    .parseResult(parseResult)
+                    .persistResult(persistResult)
+                    .detectedDataType(detectedTypeStr)
+                    .recommendedChartType(recommendedChartType)
+                    .recommendedTemplates(recommendedTemplates)
+                    .chartConfig(chartConfig)
+                    .aiAnalysis(aiAnalysis)
+                    .requiresConfirmation(false)
+                    .uploadId(persistResult.getUploadId())
+                    .build();
+
+            progressCallback.accept(UploadProgressEvent.sheetComplete(sheetIndex, sheetName, completed, totalSheets, persistResult.getSavedRows()));
+            log.info("Sheet[{}] {} 处理成功: savedRows={}", sheetIndex, sheetName, persistResult.getSavedRows());
+
+            return SheetUploadResult.success(sheetIndex, sheetName, flowResult);
+
+        } catch (Exception e) {
+            log.error("处理 Sheet[{}] {} 失败: {}", sheetIndex, sheetName, e.getMessage(), e);
+            int completed = completedCount.incrementAndGet();
+            String error = "处理异常: " + e.getMessage();
+            progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+            return SheetUploadResult.failed(sheetIndex, sheetName, error);
+        }
     }
 
     /**
@@ -985,5 +1281,138 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             return sheetInfoList.get(sheetIndex).getName();
         }
         return "Sheet" + sheetIndex;
+    }
+
+    /**
+     * 处理单个 Sheet（供并行调用）
+     */
+    private SheetUploadResult processSingleSheet(String factoryId, String fileName,
+                                                  byte[] fileBytes, List<SheetInfo> sheetInfoList,
+                                                  SheetConfig config) {
+        int sheetIndex = config.getSheetIndex();
+        String sheetName = getSheetName(sheetInfoList, sheetIndex);
+
+        log.info("[Thread-{}] 开始处理 Sheet[{}] {}: headerRow={}, dataType={}",
+                Thread.currentThread().getName(), sheetIndex, sheetName,
+                config.getHeaderRow(), config.getDataType());
+
+        // 验证 Sheet 索引
+        if (sheetIndex < 0 || sheetIndex >= sheetInfoList.size()) {
+            return SheetUploadResult.failed(sheetIndex, sheetName,
+                    "无效的 Sheet 索引: " + sheetIndex);
+        }
+
+        // 检查是否为空 Sheet
+        SheetInfo sheetInfo = sheetInfoList.get(sheetIndex);
+        if (Boolean.TRUE.equals(sheetInfo.getEmpty())) {
+            return SheetUploadResult.failed(sheetIndex, sheetName, "Sheet 为空");
+        }
+
+        try {
+            // 解析 Excel
+            ExcelParseRequest parseRequest = ExcelParseRequest.builder()
+                    .factoryId(factoryId)
+                    .fileName(fileName)
+                    .sheetIndex(sheetIndex)
+                    .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
+                    .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
+                    .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
+                    .businessScene(config.getDataType())
+                    .build();
+
+            ExcelParseResponse parseResult = excelParserService.parseExcel(
+                    new ByteArrayInputStream(fileBytes), parseRequest);
+
+            if (!parseResult.isSuccess()) {
+                return SheetUploadResult.failed(sheetIndex, sheetName,
+                        "解析失败: " + parseResult.getErrorMessage());
+            }
+
+            // 检测数据类型
+            DataType detectedType = detectDataType(parseResult, config.getDataType());
+            String detectedTypeStr = detectedType.name();
+
+            // 检查是否需要用户确认（如果 autoConfirm=true，则跳过确认）
+            boolean autoConfirm = Boolean.TRUE.equals(config.getAutoConfirm());
+            boolean needsConfirmation = !autoConfirm && checkNeedsConfirmation(parseResult);
+
+            if (needsConfirmation) {
+                UploadFlowResult flowResult = UploadFlowResult.builder()
+                        .success(true)
+                        .message("字段映射需要用户确认")
+                        .parseResult(parseResult)
+                        .requiresConfirmation(true)
+                        .detectedDataType(detectedTypeStr)
+                        .build();
+                return SheetUploadResult.success(sheetIndex, sheetName, flowResult);
+            }
+
+            if (autoConfirm) {
+                log.debug("Sheet[{}] {} autoConfirm=true，跳过用户确认", sheetIndex, sheetName);
+            }
+
+            // 持久化数据（同步执行，避免事务问题）
+            PersistenceResult persistResult;
+            synchronized (this) {
+                persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+            }
+
+            if (!persistResult.isSuccess()) {
+                return SheetUploadResult.failed(sheetIndex, sheetName,
+                        "持久化失败: " + persistResult.getMessage());
+            }
+
+            // 推荐图表模板
+            String recommendedChartType = recommendChartType(parseResult, detectedTypeStr);
+            List<SmartBiChartTemplate> recommendedTemplates = recommendTemplates(factoryId, parseResult);
+
+            // 生成图表配置和 AI 分析
+            Map<String, Object> chartConfig = null;
+            String aiAnalysis = null;
+
+            if (!recommendedTemplates.isEmpty()) {
+                try {
+                    SmartBiChartTemplate primaryTemplate = recommendedTemplates.get(0);
+                    Map<String, Object> chartData = buildChartData(
+                            factoryId, persistResult.getUploadId(), detectedType);
+
+                    Map<String, Object> chartWithAnalysis = chartTemplateService.buildChartWithAnalysis(
+                            primaryTemplate.getTemplateCode(), chartData, factoryId);
+
+                    chartConfig = chartWithAnalysis;
+                    aiAnalysis = (String) chartWithAnalysis.get("aiAnalysis");
+                    log.info("Sheet[{}] {} 图表生成成功: template={}",
+                            sheetIndex, sheetName, primaryTemplate.getTemplateCode());
+                } catch (Exception e) {
+                    log.warn("Sheet[{}] {} 图表生成失败: {}", sheetIndex, sheetName, e.getMessage());
+                }
+            }
+
+            // 成功
+            UploadFlowResult flowResult = UploadFlowResult.builder()
+                    .success(true)
+                    .message(String.format("成功处理 %d 条%s数据",
+                            persistResult.getSavedRows(), detectedType.getDisplayName()))
+                    .parseResult(parseResult)
+                    .persistResult(persistResult)
+                    .detectedDataType(detectedTypeStr)
+                    .recommendedChartType(recommendedChartType)
+                    .recommendedTemplates(recommendedTemplates)
+                    .chartConfig(chartConfig)
+                    .aiAnalysis(aiAnalysis)
+                    .requiresConfirmation(false)
+                    .uploadId(persistResult.getUploadId())
+                    .build();
+
+            log.info("[Thread-{}] Sheet[{}] {} 处理成功: savedRows={}, uploadId={}",
+                    Thread.currentThread().getName(), sheetIndex, sheetName,
+                    persistResult.getSavedRows(), persistResult.getUploadId());
+
+            return SheetUploadResult.success(sheetIndex, sheetName, flowResult);
+
+        } catch (Exception e) {
+            log.error("处理 Sheet[{}] {} 失败: {}", sheetIndex, sheetName, e.getMessage(), e);
+            return SheetUploadResult.failed(sheetIndex, sheetName, "处理异常: " + e.getMessage());
+        }
     }
 }

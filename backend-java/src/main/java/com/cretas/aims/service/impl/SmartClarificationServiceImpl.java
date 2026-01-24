@@ -326,8 +326,9 @@ public class SmartClarificationServiceImpl implements SmartClarificationService 
 
                 // 尝试解析为具体日期范围
                 try {
-                    TimeNormalizationRules.TimeRange range = timeNormalizationRules.normalize(timeExpr);
-                    if (range != null && range.isValid()) {
+                    java.util.Optional<TimeNormalizationRules.TimeRange> rangeOpt = timeNormalizationRules.normalize(timeExpr, java.time.LocalDateTime.now());
+                    if (rangeOpt.isPresent() && rangeOpt.get().isValid()) {
+                        TimeNormalizationRules.TimeRange range = rangeOpt.get();
                         entities.put("startDate", range.getStart().toLocalDate().toString());
                         entities.put("endDate", range.getEnd().toLocalDate().toString());
                     }
@@ -450,9 +451,9 @@ public class SmartClarificationServiceImpl implements SmartClarificationService 
 
     @Override
     public boolean requiresMandatoryClarification(AIIntentConfig intent, String detectedAction) {
-        // 检查意图敏感度级别
+        // 检查意图敏感度级别 (HIGH 或 CRITICAL 视为高风险)
         if (intent != null && intent.getSensitivityLevel() != null
-                && intent.getSensitivityLevel() >= highRiskSensitivity) {
+                && ("HIGH".equals(intent.getSensitivityLevel()) || "CRITICAL".equals(intent.getSensitivityLevel()))) {
             return true;
         }
 

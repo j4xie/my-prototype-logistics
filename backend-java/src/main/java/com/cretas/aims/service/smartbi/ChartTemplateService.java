@@ -1,5 +1,7 @@
 package com.cretas.aims.service.smartbi;
 
+import com.cretas.aims.dto.smartbi.ExcelParseResponse;
+import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 
 import java.util.List;
@@ -111,6 +113,26 @@ public interface ChartTemplateService {
     void reload();
 
     /**
+     * 获取利润表专用分析模板
+     *
+     * 返回专门用于利润表数据分析的图表模板，包括：
+     * - profit_trend: 利润趋势分析图（收入、成本、毛利的月度趋势）
+     * - budget_vs_actual: 预实对比分析图（预算完成率、差异分析）
+     * - cost_structure_detail: 成本结构详细分析图（成本构成双层饼图）
+     *
+     * @return 利润表专用模板列表
+     */
+    List<SmartBiChartTemplate> getProfitStatementTemplates();
+
+    /**
+     * 获取利润表专用分析模板（支持工厂级别配置）
+     *
+     * @param factoryId 工厂ID
+     * @return 利润表专用模板列表
+     */
+    List<SmartBiChartTemplate> getProfitStatementTemplates(String factoryId);
+
+    /**
      * 创建新模板
      *
      * @param template 模板实体
@@ -133,4 +155,31 @@ public interface ChartTemplateService {
      * @param id 模板ID
      */
     void deleteTemplate(Long id);
+
+    /**
+     * 智能匹配最佳图表模板
+     *
+     * 根据字段映射结果和数据特征计算每个模板的匹配分数，返回最佳匹配的模板。
+     * 匹配规则：
+     * - budget_amount + actual_amount → budget_vs_actual (预实对比)
+     * - revenue + cost + profit + 时间序列 → profit_trend (利润趋势)
+     * - 多个成本项 + 无时间序列 → cost_structure (成本结构饼图)
+     * - yoy_amount 或 mom_amount → yoy_comparison (同环比分析)
+     * - quantity + amount + 时间序列 → sales_trend (销售趋势)
+     *
+     * @param fieldMappings 字段映射结果列表
+     * @param parseResult   Excel 解析结果
+     * @return 最佳匹配的图表模板，如果没有匹配返回默认模板
+     */
+    SmartBiChartTemplate matchBestTemplate(List<FieldMappingResult> fieldMappings, ExcelParseResponse parseResult);
+
+    /**
+     * 智能匹配最佳图表模板（支持工厂级别配置）
+     *
+     * @param fieldMappings 字段映射结果列表
+     * @param parseResult   Excel 解析结果
+     * @param factoryId     工厂ID（可选）
+     * @return 最佳匹配的图表模板，如果没有匹配返回默认模板
+     */
+    SmartBiChartTemplate matchBestTemplate(List<FieldMappingResult> fieldMappings, ExcelParseResponse parseResult, String factoryId);
 }

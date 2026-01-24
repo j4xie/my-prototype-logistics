@@ -2,7 +2,7 @@ package com.cretas.aims.service.impl;
 
 import com.cretas.aims.service.EmbeddingClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
@@ -10,25 +10,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * No-op Embedding Client - 当 DJL 未启用时的 fallback 实现
+ * No-op Embedding Client - Fallback when gRPC embedding service is not configured
  *
- * 返回零向量，允许应用在没有 ONNX Runtime 的环境中正常启动
- * 语义匹配功能将被禁用
+ * Returns zero vectors, allowing the application to start without embedding service.
+ * Semantic matching features will be disabled.
+ *
+ * Active when: embedding.mode != "grpc" OR embedding.mode not set (default fallback)
  *
  * @author Cretas Team
- * @version 1.0.0
- * @since 2026-01-21
+ * @version 2.1.0
+ * @since 2026-01-24
  */
 @Service
-@ConditionalOnMissingBean(DjlEmbeddingClient.class)
+@ConditionalOnProperty(name = "embedding.mode", havingValue = "noop", matchIfMissing = true)
 @Slf4j
 public class NoOpEmbeddingClient implements EmbeddingClient {
 
     private static final int VECTOR_DIMENSION = 768;
 
     public NoOpEmbeddingClient() {
-        log.warn("⚠️ NoOpEmbeddingClient initialized - semantic matching is disabled. " +
-                 "Set embedding.djl.enabled=true to enable DJL-based embeddings.");
+        log.warn("NoOpEmbeddingClient initialized - semantic matching is disabled. " +
+                 "Set embedding.mode=grpc and start embedding-service for full functionality.");
     }
 
     @Override

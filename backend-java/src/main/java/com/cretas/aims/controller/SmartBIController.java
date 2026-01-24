@@ -2,12 +2,15 @@ package com.cretas.aims.controller;
 
 import com.cretas.aims.dto.common.ApiResponse;
 import com.cretas.aims.dto.smartbi.*;
+import com.cretas.aims.dto.smartbi.chart.AdaptiveChartRequest;
+import com.cretas.aims.dto.smartbi.chart.AdaptiveChartResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cretas.aims.entity.smartbi.SmartBiDatasource;
 import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
 import com.cretas.aims.entity.smartbi.SmartBiSchemaHistory;
 import com.cretas.aims.service.smartbi.*;
+import com.cretas.aims.service.smartbi.chart.AdaptiveChartGenerator;
 import com.cretas.aims.util.DateRangeUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import javax.validation.Valid;
 import java.io.IOException;
@@ -71,6 +75,12 @@ public class SmartBIController {
     // Optional service - may not be available yet
     private final SmartBIUploadFlowService uploadFlowService;
 
+    // SmartBI 门面服务（包含缓存、配额、使用记录）- 可选注入
+    private final SmartBIService smartBIService;
+
+    // Adaptive chart generation service
+    private final AdaptiveChartGenerator adaptiveChartGenerator;
+
     private final ObjectMapper objectMapper;
 
     @Autowired
@@ -88,6 +98,8 @@ public class SmartBIController {
             InventoryHealthAnalysisService inventoryHealthAnalysisService,
             ProcurementAnalysisService procurementAnalysisService,
             @Autowired(required = false) SmartBIUploadFlowService uploadFlowService,
+            @Autowired(required = false) AdaptiveChartGenerator adaptiveChartGenerator,
+            @Autowired(required = false) SmartBIService smartBIService,
             ObjectMapper objectMapper) {
         this.salesAnalysisService = salesAnalysisService;
         this.departmentAnalysisService = departmentAnalysisService;
@@ -102,6 +114,8 @@ public class SmartBIController {
         this.inventoryHealthAnalysisService = inventoryHealthAnalysisService;
         this.procurementAnalysisService = procurementAnalysisService;
         this.uploadFlowService = uploadFlowService;
+        this.adaptiveChartGenerator = adaptiveChartGenerator;
+        this.smartBIService = smartBIService;
         this.objectMapper = objectMapper;
     }
 
@@ -114,10 +128,13 @@ public class SmartBIController {
             @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
             @Parameter(description = "数据类型: sales/finance/inventory") @RequestParam(required = false) String dataType,
             @Parameter(description = "Sheet 索引，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer sheetIndex,
-            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow) {
+            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow,
+            @Parameter(description = "是否转置数据（将列方向数据转为行方向，用于利润表等）") @RequestParam(required = false, defaultValue = "false") Boolean transpose,
+            @Parameter(description = "转置时的行标签列索引（默认0）") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
+            @Parameter(description = "转置时的表头行数（默认1）") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
 
-        log.info("上传 Excel 文件: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}",
-                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow);
+        log.info("上传 Excel 文件: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, transpose={}",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, transpose);
 
         try {
             ExcelParseRequest request = ExcelParseRequest.builder()
@@ -125,6 +142,9 @@ public class SmartBIController {
                     .businessScene(dataType)
                     .sheetIndex(sheetIndex)
                     .headerRow(headerRow)
+                    .transpose(transpose)
+                    .rowLabelColumn(rowLabelColumn)
+                    .headerRowCount(headerRowCount)
                     .build();
 
             ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
@@ -155,10 +175,14 @@ public class SmartBIController {
             @Parameter(description = "数据类型: sales/finance/inventory/production/quality/procurement")
             @RequestParam(required = false) String dataType,
             @Parameter(description = "Sheet 索引，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer sheetIndex,
-            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow) {
+            @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow,
+            @Parameter(description = "是否自动确认字段映射（跳过用户确认步骤）") @RequestParam(required = false, defaultValue = "false") Boolean autoConfirm,
+            @Parameter(description = "是否转置数据（将列方向数据转为行方向，用于利润表等）") @RequestParam(required = false, defaultValue = "false") Boolean transpose,
+            @Parameter(description = "转置时的行标签列索引（默认0）") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
+            @Parameter(description = "转置时的表头行数（默认1）") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
 
-        log.info("上传并分析: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}",
-                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow);
+        log.info("上传并分析: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}, transpose={}",
+                factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm, transpose);
 
         // Check if uploadFlowService is available
         if (uploadFlowService == null) {
@@ -170,6 +194,9 @@ public class SmartBIController {
                         .businessScene(dataType)
                         .sheetIndex(sheetIndex)
                         .headerRow(headerRow)
+                        .transpose(transpose)
+                        .rowLabelColumn(rowLabelColumn)
+                        .headerRowCount(headerRowCount)
                         .build();
 
                 ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
@@ -195,8 +222,9 @@ public class SmartBIController {
         }
 
         try {
-            // Call the full upload flow service
-            SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.executeUploadFlow(factoryId, file, dataType);
+            // Call the full upload flow service with all parameters
+            SmartBIUploadFlowService.UploadFlowResult result = uploadFlowService.executeUploadFlow(
+                    factoryId, file, dataType, sheetIndex, headerRow, Boolean.TRUE.equals(autoConfirm));
             if (result.isSuccess()) {
                 return ResponseEntity.ok(ApiResponse.success(result.getMessage(), result));
             } else {
@@ -350,6 +378,168 @@ public class SmartBIController {
         }
     }
 
+    /**
+     * 批量上传多个 Sheet (流式进度)
+     * 使用 SSE 实时推送处理进度
+     */
+    @PostMapping(value = "/upload-batch-stream", consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+                 produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "批量上传 Sheet (流式)", description = "使用 SSE 实时推送处理进度")
+    public SseEmitter uploadBatchStream(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
+            @Parameter(description = "Sheet 配置 JSON 数组") @RequestParam("sheetConfigs") String sheetConfigsJson) {
+
+        log.info("批量上传(流式): factoryId={}, fileName={}", factoryId, file.getOriginalFilename());
+
+        // 创建 SSE 发射器，超时 10 分钟
+        SseEmitter emitter = new SseEmitter(600000L);
+
+        // 异步处理
+        new Thread(() -> {
+            try {
+                // 检查服务
+                if (uploadFlowService == null) {
+                    sendEvent(emitter, UploadProgressEvent.error("批量上传服务尚未实现"));
+                    emitter.complete();
+                    return;
+                }
+
+                // 解析配置
+                List<SheetConfig> configs = objectMapper.readValue(sheetConfigsJson,
+                        new TypeReference<List<SheetConfig>>() {});
+
+                if (configs == null || configs.isEmpty()) {
+                    sendEvent(emitter, UploadProgressEvent.error("sheetConfigs 不能为空"));
+                    emitter.complete();
+                    return;
+                }
+
+                // 执行带进度回调的批量上传
+                BatchUploadResult result = uploadFlowService.executeBatchUploadWithProgress(
+                        factoryId,
+                        file.getInputStream(),
+                        file.getOriginalFilename(),
+                        configs,
+                        event -> sendEvent(emitter, event)
+                );
+
+                // 发送完成事件
+                sendEvent(emitter, UploadProgressEvent.complete(result));
+                emitter.complete();
+
+            } catch (Exception e) {
+                log.error("批量上传(流式)失败: {}", e.getMessage(), e);
+                try {
+                    sendEvent(emitter, UploadProgressEvent.error(e.getMessage()));
+                    emitter.complete();
+                } catch (Exception ex) {
+                    emitter.completeWithError(ex);
+                }
+            }
+        }, "upload-stream-" + System.currentTimeMillis()).start();
+
+        // 错误处理
+        emitter.onCompletion(() -> log.debug("SSE 连接完成"));
+        emitter.onTimeout(() -> log.warn("SSE 连接超时"));
+        emitter.onError(e -> log.error("SSE 连接错误: {}", e.getMessage()));
+
+        return emitter;
+    }
+
+    /**
+     * 发送 SSE 事件
+     */
+    private void sendEvent(SseEmitter emitter, UploadProgressEvent event) {
+        try {
+            emitter.send(SseEmitter.event()
+                    .name(event.getType().name().toLowerCase())
+                    .data(event, MediaType.APPLICATION_JSON));
+        } catch (Exception e) {
+            log.warn("发送 SSE 事件失败: {}", e.getMessage());
+        }
+    }
+
+    // ==================== 自适应图表生成 ====================
+
+    /**
+     * 生成自适应图表
+     * 根据上传的数据特征，使用 LLM 评估并生成最优图表配置
+     */
+    @PostMapping("/generate-adaptive-charts")
+    @Operation(summary = "生成自适应图表", description = "根据数据特征自动评估并生成最优图表配置")
+    public ResponseEntity<ApiResponse<AdaptiveChartResponse>> generateAdaptiveCharts(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @RequestBody @Valid AdaptiveChartRequest request) {
+
+        log.info("生成自适应图表: factoryId={}, uploadId={}, evaluateFirst={}, maxCharts={}, fusionEnabled={}",
+                factoryId, request.getUploadId(), request.isEvaluateFirst(),
+                request.getMaxCharts(), request.isFusionEnabled());
+
+        // 检查服务是否可用
+        if (adaptiveChartGenerator == null) {
+            log.warn("AdaptiveChartGenerator 服务未配置");
+            return ResponseEntity.ok(ApiResponse.error("自适应图表服务未配置"));
+        }
+
+        try {
+            AdaptiveChartResponse response = adaptiveChartGenerator.generateAdaptive(
+                    request.getUploadId(), request);
+
+            String message = response.getCharts() != null && !response.getCharts().isEmpty()
+                    ? String.format("成功生成 %d 个图表", response.getCharts().size())
+                    : "图表生成完成";
+
+            return ResponseEntity.ok(ApiResponse.success(message, response));
+        } catch (Exception e) {
+            log.error("生成自适应图表失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("生成图表失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 快速生成单个图表
+     * 根据指定的图表类型和数据生成 ECharts 配置
+     */
+    @PostMapping("/generate-chart")
+    @Operation(summary = "快速生成单个图表", description = "根据指定类型生成单个图表配置")
+    public ResponseEntity<ApiResponse<AdaptiveChartResponse.GeneratedChart>> generateSingleChart(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "上传记录ID") @RequestParam Long uploadId,
+            @Parameter(description = "图表类型: bar/line/pie/radar/treemap/waterfall/combo")
+            @RequestParam String chartType,
+            @Parameter(description = "图表用途描述") @RequestParam(required = false) String purpose) {
+
+        log.info("快速生成图表: factoryId={}, uploadId={}, chartType={}, purpose={}",
+                factoryId, uploadId, chartType, purpose);
+
+        if (adaptiveChartGenerator == null) {
+            return ResponseEntity.ok(ApiResponse.error("自适应图表服务未配置"));
+        }
+
+        try {
+            // 构建简单请求
+            AdaptiveChartRequest request = AdaptiveChartRequest.builder()
+                    .uploadId(uploadId)
+                    .evaluateFirst(false)
+                    .maxCharts(1)
+                    .fusionEnabled(false)
+                    .preferredChartType(chartType)
+                    .build();
+
+            AdaptiveChartResponse response = adaptiveChartGenerator.generateAdaptive(uploadId, request);
+
+            if (response.getCharts() != null && !response.getCharts().isEmpty()) {
+                return ResponseEntity.ok(ApiResponse.success("图表生成成功", response.getCharts().get(0)));
+            } else {
+                return ResponseEntity.ok(ApiResponse.error("未能生成图表"));
+            }
+        } catch (Exception e) {
+            log.error("快速生成图表失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("生成图表失败: " + e.getMessage()));
+        }
+    }
+
     // ==================== 经营驾驶舱 ====================
 
     @GetMapping("/dashboard/executive")
@@ -362,6 +552,13 @@ public class SmartBIController {
         log.info("获取经营驾驶舱: factoryId={}, period={}", factoryId, period);
 
         try {
+            // 优先使用 SmartBIService（包含缓存、配额、使用记录）
+            if (smartBIService != null) {
+                DashboardResponse dashboard = smartBIService.getExecutiveDashboard(factoryId, period);
+                return ResponseEntity.ok(ApiResponse.success(dashboard));
+            }
+
+            // 降级到原有逻辑
             LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
             LocalDate startDate = dateRange[0];
             LocalDate endDate = dateRange[1];
@@ -386,6 +583,91 @@ public class SmartBIController {
         long startTime = System.currentTimeMillis();
 
         try {
+            // 优先使用门面服务（包含缓存、配额、使用记录）
+            if (smartBIService != null) {
+                DashboardResponse dashboard = smartBIService.getExecutiveDashboard(factoryId, period);
+
+                LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
+                LocalDate startDate = dateRange[0];
+                LocalDate endDate = dateRange[1];
+
+                // 转换为 UnifiedDashboardResponse
+                UnifiedDashboardResponse response = UnifiedDashboardResponse.builder()
+                        .period(period)
+                        .startDate(startDate)
+                        .endDate(endDate)
+                        .sales(dashboard)
+                        .generatedAt(java.time.LocalDateTime.now())
+                        .dataVersion(String.valueOf(System.currentTimeMillis()))
+                        .build();
+
+                // 补充其他维度数据（如果门面服务未包含）
+                try {
+                    response.setFinance(financeAnalysisService.getFinanceOverview(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取财务数据失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setInventory(inventoryHealthAnalysisService.getInventoryHealth(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取库存数据失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setProduction(productionAnalysisService.getOEEOverview(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取生产数据失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setQuality(qualityAnalysisService.getQualitySummary(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取质量数据失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setProcurement(procurementAnalysisService.getProcurementOverview(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取采购数据失败: {}", e.getMessage());
+                }
+
+                // 聚合部门和区域排名
+                try {
+                    response.setDepartmentRanking(departmentAnalysisService.getDepartmentRanking(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取部门排名失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setRegionRanking(regionAnalysisService.getRegionRanking(factoryId, startDate, endDate));
+                } catch (Exception e) {
+                    log.warn("获取区域排名失败: {}", e.getMessage());
+                }
+
+                // 聚合预警和建议
+                try {
+                    DateRangeUtils.DateRange range = DateRangeUtils.rangeByPeriod(period);
+                    response.setAlerts(recommendationService.generateAllAlerts(factoryId, range));
+                } catch (Exception e) {
+                    log.warn("获取预警失败: {}", e.getMessage());
+                }
+
+                try {
+                    response.setRecommendations(recommendationService.generateRecommendations(factoryId, "all"));
+                } catch (Exception e) {
+                    log.warn("获取建议失败: {}", e.getMessage());
+                }
+
+                long elapsed = System.currentTimeMillis() - startTime;
+                log.info("统一仪表盘生成完成(via SmartBIService): factoryId={}, period={}, elapsed={}ms", factoryId, period, elapsed);
+
+                return ResponseEntity.ok(ApiResponse.success(response));
+            }
+
+            // 降级到原有逻辑（SmartBIService 不可用时）
+            log.info("SmartBIService 不可用，降级到原有聚合逻辑");
+
             LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
             LocalDate startDate = dateRange[0];
             LocalDate endDate = dateRange[1];
@@ -466,7 +748,7 @@ public class SmartBIController {
             response.setDataVersion(String.valueOf(System.currentTimeMillis()));
 
             long elapsed = System.currentTimeMillis() - startTime;
-            log.info("统一仪表盘生成完成: factoryId={}, period={}, elapsed={}ms", factoryId, period, elapsed);
+            log.info("统一仪表盘生成完成(fallback): factoryId={}, period={}, elapsed={}ms", factoryId, period, elapsed);
 
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
@@ -493,6 +775,14 @@ public class SmartBIController {
                 factoryId, startDate, endDate, department, dimension);
 
         try {
+            // 优先使用门面服务
+            if (smartBIService != null) {
+                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(
+                        factoryId, startDate, endDate, "sales");
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            // 降级到原有逻辑
             Map<String, Object> result = new HashMap<>();
             result.put("startDate", startDate);
             result.put("endDate", endDate);
@@ -536,6 +826,14 @@ public class SmartBIController {
                 factoryId, startDate, endDate, department);
 
         try {
+            // 优先使用门面服务
+            if (smartBIService != null) {
+                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(
+                        factoryId, startDate, endDate, "department");
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            // 降级到原有逻辑
             Map<String, Object> result = new HashMap<>();
             result.put("startDate", startDate);
             result.put("endDate", endDate);
@@ -576,6 +874,14 @@ public class SmartBIController {
                 factoryId, startDate, endDate, region);
 
         try {
+            // 优先使用门面服务
+            if (smartBIService != null) {
+                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(
+                        factoryId, startDate, endDate, "region");
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            // 降级到原有逻辑
             Map<String, Object> result = new HashMap<>();
             result.put("startDate", startDate);
             result.put("endDate", endDate);
@@ -621,6 +927,14 @@ public class SmartBIController {
                 factoryId, startDate, endDate, analysisType);
 
         try {
+            // 优先使用门面服务
+            if (smartBIService != null) {
+                Map<String, Object> result = smartBIService.getComprehensiveAnalysis(
+                        factoryId, startDate, endDate, "finance");
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            // 降级到原有逻辑
             Map<String, Object> result = new HashMap<>();
             result.put("startDate", startDate);
             result.put("endDate", endDate);
@@ -921,6 +1235,13 @@ public class SmartBIController {
             // 设置工厂ID
             request.setFactoryId(factoryId);
 
+            // 优先使用 SmartBIService（包含缓存、配额、使用记录）
+            if (smartBIService != null) {
+                NLQueryResponse response = smartBIService.processQuery(factoryId, null, request);
+                return ResponseEntity.ok(ApiResponse.success(response));
+            }
+
+            // 降级到原有逻辑
             // 识别意图
             IntentResult intentResult = intentService.recognizeIntent(
                     request.getEffectiveQuery(), request.getContext());
@@ -948,7 +1269,7 @@ public class SmartBIController {
     // ==================== 数据下钻 ====================
 
     @PostMapping("/drill-down")
-    @Operation(summary = "数据下钻", description = "根据当前分析结果进行数据下钻")
+    @Operation(summary = "数据下钻", description = "支持多维度数据下钻分析")
     public ResponseEntity<ApiResponse<Map<String, Object>>> drillDown(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @RequestBody DrillDownRequest request) {
@@ -957,6 +1278,25 @@ public class SmartBIController {
                 factoryId, request.getDimension(), request.getValue());
 
         try {
+            // 优先使用门面服务（包含使用记录）
+            if (smartBIService != null) {
+                // 转换为 DTO 类型
+                com.cretas.aims.dto.smartbi.DrillDownRequest dtoRequest =
+                        com.cretas.aims.dto.smartbi.DrillDownRequest.builder()
+                                .dimension(request.getDimension())
+                                .filterValue(request.getValue())
+                                .parentDimension(request.getParentDimension())
+                                .parentValue(request.getParentValue())
+                                .startDate(request.getStartDate())
+                                .endDate(request.getEndDate())
+                                .additionalFilters(request.getFilters() != null ? request.getFilters() : new HashMap<>())
+                                .build();
+
+                Map<String, Object> result = smartBIService.processDrillDown(factoryId, dtoRequest);
+                return ResponseEntity.ok(ApiResponse.success(result));
+            }
+
+            // 降级到原有逻辑
             Map<String, Object> result = new HashMap<>();
             result.put("dimension", request.getDimension());
             result.put("value", request.getValue());
@@ -994,8 +1334,8 @@ public class SmartBIController {
 
             return ResponseEntity.ok(ApiResponse.success(result));
         } catch (Exception e) {
-            log.error("数据下钻失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("下钻失败: " + e.getMessage()));
+            log.error("数据下钻失败", e);
+            return ResponseEntity.ok(ApiResponse.error("下钻查询失败: " + e.getMessage()));
         }
     }
 

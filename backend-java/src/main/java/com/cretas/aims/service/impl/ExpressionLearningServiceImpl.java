@@ -389,9 +389,55 @@ public class ExpressionLearningServiceImpl implements ExpressionLearningService 
             log.info("记录样本反馈: sampleId={}, correct={}, correctIntent={}",
                     sampleId, isCorrect, correctIntentCode);
 
-            // 如果反馈正确，可考虑自动学习该表达
-            if (isCorrect) {
-                // TODO: 从样本中提取表达并学习
+            // 获取样本数据用于学习
+            Optional<TrainingSample> sampleOpt = sampleRepository.findById(sampleId);
+            if (sampleOpt.isPresent()) {
+                TrainingSample sample = sampleOpt.get();
+                String factoryId = sample.getFactoryId();
+                String userInput = sample.getUserInput();
+
+                if (isCorrect) {
+                    // 正确反馈: 强化学习该表达 -> 意图映射
+                    String intentCode = sample.getMatchedIntentCode();
+                    if (intentCode != null && userInput != null && !userInput.isEmpty()) {
+                        try {
+                            LearnedExpression learned = self.learnExpression(
+                                    factoryId,
+                                    intentCode,
+                                    userInput,
+                                    1.0, // 用户确认，置信度为1
+                                    LearnedExpression.SourceType.USER_FEEDBACK
+                            );
+                            if (learned != null) {
+                                log.info("正向反馈触发表达学习: sampleId={}, intent={}, expr={}",
+                                        sampleId, intentCode, truncate(userInput, 50));
+                            }
+                        } catch (Exception e) {
+                            log.warn("正向反馈学习表达失败: sampleId={}, error={}", sampleId, e.getMessage());
+                        }
+                    }
+                } else {
+                    // 错误反馈: 学习新关键词模式到正确意图
+                    if (correctIntentCode != null && userInput != null && !userInput.isEmpty()) {
+                        try {
+                            // 将用户输入作为新表达学习到正确意图
+                            LearnedExpression learned = self.learnExpression(
+                                    factoryId,
+                                    correctIntentCode,
+                                    userInput,
+                                    0.9, // 错误纠正，置信度略低
+                                    LearnedExpression.SourceType.USER_FEEDBACK
+                            );
+                            if (learned != null) {
+                                log.info("负向反馈触发表达学习: sampleId={}, wrongIntent={}, correctIntent={}, expr={}",
+                                        sampleId, sample.getMatchedIntentCode(), correctIntentCode,
+                                        truncate(userInput, 50));
+                            }
+                        } catch (Exception e) {
+                            log.warn("负向反馈学习表达失败: sampleId={}, error={}", sampleId, e.getMessage());
+                        }
+                    }
+                }
             }
         }
 

@@ -1,22 +1,31 @@
 package com.cretas.aims.dto.smartbi;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 import java.util.List;
 
 /**
- * LLM 推断的字段映射 DTO
+ * LLM 推断的字段映射 DTO (基础版)
  * 表示由 LLM 推断的字段语义映射信息，用于智能 BI 分析
  *
+ * 包含字段的基础语义信息：
+ * - fieldName: 原始字段名
+ * - alias: 中文别名
+ * - dataType: 数据类型 (NUMBER, STRING, DATE, BOOLEAN)
+ * - metricType: 指标类型 (MEASURE, DIMENSION, TIME)
+ * - aggregation: 聚合方式
+ * - confidence: LLM 推断置信度
+ *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2026-01-18
+ * @see FieldMappingWithChartRole 扩展版，增加图表轴角色和优先级配置
  */
 @Data
-@Builder
+@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FieldMapping {
@@ -70,8 +79,9 @@ public class FieldMapping {
     /**
      * LLM 推断置信度
      * 0.0 - 1.0，表示推断结果的可信程度
+     * 使用 Double 包装类以支持 null 值（表示未推断）
      */
-    private double confidence;
+    private Double confidence;
 
     /**
      * 数据类型枚举
@@ -183,13 +193,13 @@ public class FieldMapping {
      * 判断是否为高置信度映射
      */
     public boolean isHighConfidence() {
-        return confidence >= 0.8;
+        return confidence != null && confidence >= 0.8;
     }
 
     /**
      * 判断是否需要用户确认
      */
     public boolean requiresConfirmation() {
-        return confidence < 0.7;
+        return confidence == null || confidence < 0.7;
     }
 }
