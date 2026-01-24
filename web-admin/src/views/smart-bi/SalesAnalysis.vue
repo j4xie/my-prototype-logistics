@@ -29,6 +29,8 @@ const categoryFilter = ref<string>('all');
 const loading = ref(false);
 const kpiLoading = ref(false);
 const rankingLoading = ref(false);
+const trendLoading = ref(false);
+const pieLoading = ref(false);
 
 // 日期快捷选项
 const shortcuts = [
@@ -69,30 +71,23 @@ const shortcuts = [
   }
 ];
 
-// KPI 数据
-interface SalesKPI {
-  totalSales: number;
-  salesGrowth: number;
-  orderCount: number;
-  orderGrowth: number;
-  avgOrderValue: number;
-  avgValueGrowth: number;
-  conversionRate: number;
-  conversionGrowth: number;
+// KPI 卡片数据 (来自 API 的 KPICard 结构)
+interface KPICard {
+  key: string;
+  title: string;
+  value: string;
+  rawValue: number;
+  unit: string;
+  change: number;
+  changeRate: number;
+  trend: 'up' | 'down' | 'flat';
+  status: string;
+  compareText: string;
 }
 
-const kpiData = ref<SalesKPI>({
-  totalSales: 0,
-  salesGrowth: 0,
-  orderCount: 0,
-  orderGrowth: 0,
-  avgOrderValue: 0,
-  avgValueGrowth: 0,
-  conversionRate: 0,
-  conversionGrowth: 0
-});
+const kpiCards = ref<KPICard[]>([]);
 
-// 销售员排行
+// 销售员排行 (来自 API)
 interface SalesPersonRank {
   name: string;
   avatar?: string;
@@ -101,6 +96,19 @@ interface SalesPersonRank {
   growth: number;
 }
 const salesPersonRanking = ref<SalesPersonRank[]>([]);
+
+// 图表数据 (来自 API 的 ChartConfig 结构)
+interface ChartConfig {
+  chartType: string;
+  title: string;
+  xAxisField: string;
+  yAxisField: string;
+  seriesField?: string;
+  data: Array<Record<string, unknown>>;
+  options?: Record<string, unknown>;
+}
+const trendChartConfig = ref<ChartConfig | null>(null);
+const pieChartConfig = ref<ChartConfig | null>(null);
 
 // 产品类别
 const categories = ref([
@@ -129,86 +137,141 @@ onMounted(() => {
 // 监听筛选条件变化
 watch([dateRange, dimensionType, categoryFilter], () => {
   loadSalesData();
-  updateCharts();
 });
 
 async function loadSalesData() {
   loading.value = true;
   try {
     await Promise.all([
-      loadKPIData(),
-      loadRankingData()
+      loadOverviewData(),
+      loadRankingData(),
+      loadTrendData(),
+      loadProductData()
     ]);
   } finally {
     loading.value = false;
   }
 }
 
-async function loadKPIData() {
-  if (!factoryId.value) return;
+/**
+ * 加载概览数据 (包含 KPI 卡片)
+ * API: GET /{factoryId}/smart-bi/analysis/sales
+ */
+async function loadOverviewData() {
+  if (!factoryId.value || !dateRange.value) return;
   kpiLoading.value = true;
   try {
-    const params = buildQueryParams();
-    const response = await get(`/${factoryId.value}/smart-bi/sales/kpi`, { params });
+    const params = {
+      startDate: formatDate(dateRange.value[0]),
+      endDate: formatDate(dateRange.value[1])
+    };
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      kpiData.value = response.data as SalesKPI;
+      const data = response.data as { overview?: { kpiCards?: KPICard[] } };
+      if (data.overview?.kpiCards) {
+        kpiCards.value = data.overview.kpiCards;
+      }
+    } else {
+      ElMessage.error(response.message || '加载销售概览失败');
     }
   } catch (error) {
     console.error('加载销售 KPI 失败:', error);
-    // 使用示例数据
-    kpiData.value = {
-      totalSales: 2856000,
-      salesGrowth: 12.5,
-      orderCount: 1256,
-      orderGrowth: 15.2,
-      avgOrderValue: 2273,
-      avgValueGrowth: -2.3,
-      conversionRate: 23.5,
-      conversionGrowth: 3.8
-    };
+    ElMessage.error('加载销售 KPI 数据失败，请稍后重试');
   } finally {
     kpiLoading.value = false;
   }
 }
 
+/**
+ * 加载销售员排行数据
+ * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=salesperson
+ */
 async function loadRankingData() {
-  if (!factoryId.value) return;
+  if (!factoryId.value || !dateRange.value) return;
   rankingLoading.value = true;
   try {
-    const params = buildQueryParams();
-    const response = await get(`/${factoryId.value}/smart-bi/sales/ranking`, { params });
+    const params = {
+      startDate: formatDate(dateRange.value[0]),
+      endDate: formatDate(dateRange.value[1]),
+      dimension: 'salesperson'
+    };
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
     if (response.success && response.data) {
-      salesPersonRanking.value = response.data as SalesPersonRank[];
+      const data = response.data as { ranking?: SalesPersonRank[] };
+      if (data.ranking) {
+        salesPersonRanking.value = data.ranking;
+      }
+    } else {
+      ElMessage.error(response.message || '加载销售员排行失败');
     }
   } catch (error) {
     console.error('加载销售员排行失败:', error);
-    // 使用示例数据
-    salesPersonRanking.value = [
-      { name: '张三', sales: 456000, orderCount: 128, growth: 22.5 },
-      { name: '李四', sales: 398000, orderCount: 105, growth: 18.3 },
-      { name: '王五', sales: 356000, orderCount: 96, growth: 12.8 },
-      { name: '赵六', sales: 312000, orderCount: 88, growth: 8.5 },
-      { name: '钱七', sales: 285000, orderCount: 76, growth: 5.2 },
-      { name: '孙八', sales: 268000, orderCount: 72, growth: -2.3 },
-      { name: '周九', sales: 245000, orderCount: 68, growth: -5.8 },
-      { name: '吴十', sales: 218000, orderCount: 62, growth: -8.2 }
-    ];
+    ElMessage.error('加载销售员排行数据失败，请稍后重试');
   } finally {
     rankingLoading.value = false;
   }
 }
 
-function buildQueryParams() {
-  const params: Record<string, string> = {};
-  if (dateRange.value) {
-    params.startDate = formatDate(dateRange.value[0]);
-    params.endDate = formatDate(dateRange.value[1]);
+/**
+ * 加载趋势图数据
+ * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=trend
+ */
+async function loadTrendData() {
+  if (!factoryId.value || !dateRange.value) return;
+  trendLoading.value = true;
+  try {
+    const params = {
+      startDate: formatDate(dateRange.value[0]),
+      endDate: formatDate(dateRange.value[1]),
+      dimension: 'trend'
+    };
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    if (response.success && response.data) {
+      const data = response.data as { chart?: ChartConfig };
+      if (data.chart) {
+        trendChartConfig.value = data.chart;
+        updateTrendChart();
+      }
+    } else {
+      ElMessage.error(response.message || '加载趋势图失败');
+    }
+  } catch (error) {
+    console.error('加载趋势图失败:', error);
+    ElMessage.error('加载销售趋势数据失败，请稍后重试');
+  } finally {
+    trendLoading.value = false;
   }
-  params.dimension = dimensionType.value;
-  if (categoryFilter.value !== 'all') {
-    params.category = categoryFilter.value;
+}
+
+/**
+ * 加载产品分布图数据
+ * API: GET /{factoryId}/smart-bi/analysis/sales?dimension=product
+ */
+async function loadProductData() {
+  if (!factoryId.value || !dateRange.value) return;
+  pieLoading.value = true;
+  try {
+    const params = {
+      startDate: formatDate(dateRange.value[0]),
+      endDate: formatDate(dateRange.value[1]),
+      dimension: 'product'
+    };
+    const response = await get(`/${factoryId.value}/smart-bi/analysis/sales`, { params });
+    if (response.success && response.data) {
+      const data = response.data as { chart?: ChartConfig };
+      if (data.chart) {
+        pieChartConfig.value = data.chart;
+        updatePieChart();
+      }
+    } else {
+      ElMessage.error(response.message || '加载产品分布图失败');
+    }
+  } catch (error) {
+    console.error('加载产品分布图失败:', error);
+    ElMessage.error('加载产品分布数据失败，请稍后重试');
+  } finally {
+    pieLoading.value = false;
   }
-  return params;
 }
 
 function formatDate(date: Date): string {
@@ -226,7 +289,6 @@ function initTrendChart() {
   if (!chartDom) return;
 
   trendChart = echarts.init(chartDom);
-  updateTrendChart();
 }
 
 function initPieChart() {
@@ -234,35 +296,38 @@ function initPieChart() {
   if (!chartDom) return;
 
   pieChart = echarts.init(chartDom);
-  updatePieChart();
 }
 
-function updateCharts() {
-  updateTrendChart();
-  updatePieChart();
-}
-
+/**
+ * 根据 API 返回的 ChartConfig 更新趋势图
+ */
 function updateTrendChart() {
   if (!trendChart) return;
 
-  // 根据维度生成不同的数据
-  let xAxisData: string[];
-  let salesData: number[];
-  let orderData: number[];
-
-  if (dimensionType.value === 'daily') {
-    xAxisData = Array.from({ length: 30 }, (_, i) => `${i + 1}日`);
-    salesData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 50000 + 80000));
-    orderData = Array.from({ length: 30 }, () => Math.floor(Math.random() * 30 + 35));
-  } else if (dimensionType.value === 'weekly') {
-    xAxisData = ['第1周', '第2周', '第3周', '第4周'];
-    salesData = [685000, 720000, 756000, 695000];
-    orderData = [285, 312, 328, 331];
-  } else {
-    xAxisData = ['1月', '2月', '3月', '4月', '5月', '6月'];
-    salesData = [2100000, 2350000, 2580000, 2450000, 2680000, 2856000];
-    orderData = [985, 1050, 1128, 1085, 1198, 1256];
+  const config = trendChartConfig.value;
+  if (!config || !config.data || config.data.length === 0) {
+    // 无数据时显示空状态
+    trendChart.setOption({
+      title: {
+        text: '暂无趋势数据',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: '#909399', fontSize: 14 }
+      }
+    });
+    return;
   }
+
+  // 从 API 数据中提取 X 轴和 Y 轴数据
+  const xAxisField = config.xAxisField || 'date';
+  const yAxisField = config.yAxisField || 'value';
+
+  const xAxisData = config.data.map(item => String(item[xAxisField] || ''));
+  const salesData = config.data.map(item => Number(item[yAxisField]) || 0);
+
+  // 尝试获取订单数据（如果存在 seriesField 或 orderCount 字段）
+  const orderData = config.data.map(item => Number(item['orderCount'] || item['count']) || 0);
+  const hasOrderData = orderData.some(v => v > 0);
 
   const option: echarts.EChartsOption = {
     tooltip: {
@@ -270,7 +335,7 @@ function updateTrendChart() {
       axisPointer: { type: 'cross' }
     },
     legend: {
-      data: ['销售额', '订单数'],
+      data: hasOrderData ? ['销售额', '订单数'] : ['销售额'],
       bottom: 0
     },
     grid: {
@@ -285,7 +350,7 @@ function updateTrendChart() {
       boundaryGap: false,
       data: xAxisData
     },
-    yAxis: [
+    yAxis: hasOrderData ? [
       {
         type: 'value',
         name: '销售额',
@@ -300,8 +365,16 @@ function updateTrendChart() {
           formatter: '{value}'
         }
       }
+    ] : [
+      {
+        type: 'value',
+        name: '销售额',
+        axisLabel: {
+          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+        }
+      }
     ],
-    series: [
+    series: hasOrderData ? [
       {
         name: '销售额',
         type: 'line',
@@ -330,14 +403,56 @@ function updateTrendChart() {
           borderRadius: [4, 4, 0, 0]
         }
       }
+    ] : [
+      {
+        name: '销售额',
+        type: 'line',
+        smooth: true,
+        data: salesData,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
+            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+          ])
+        },
+        lineStyle: { width: 3, color: '#409EFF' },
+        itemStyle: { color: '#409EFF' }
+      }
     ]
   };
 
-  trendChart.setOption(option);
+  trendChart.setOption(option, true);
 }
 
+/**
+ * 根据 API 返回的 ChartConfig 更新饼图
+ */
 function updatePieChart() {
   if (!pieChart) return;
+
+  const config = pieChartConfig.value;
+  if (!config || !config.data || config.data.length === 0) {
+    // 无数据时显示空状态
+    pieChart.setOption({
+      title: {
+        text: '暂无产品分布数据',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: '#909399', fontSize: 14 }
+      }
+    });
+    return;
+  }
+
+  // 预定义颜色
+  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00CED1', '#FF69B4', '#8A2BE2'];
+
+  // 从 API 数据中提取饼图数据
+  const pieData = config.data.map((item, index) => ({
+    value: Number(item[config.yAxisField || 'value']) || 0,
+    name: String(item[config.xAxisField || 'name'] || `类别${index + 1}`),
+    itemStyle: { color: colors[index % colors.length] }
+  }));
 
   const option: echarts.EChartsOption = {
     tooltip: {
@@ -367,18 +482,12 @@ function updatePieChart() {
           }
         },
         labelLine: { show: false },
-        data: [
-          { value: 128, name: '冷冻肉类', itemStyle: { color: '#409EFF' } },
-          { value: 86, name: '海鲜产品', itemStyle: { color: '#67C23A' } },
-          { value: 52, name: '速冻食品', itemStyle: { color: '#E6A23C' } },
-          { value: 34, name: '乳制品', itemStyle: { color: '#F56C6C' } },
-          { value: 28, name: '其他', itemStyle: { color: '#909399' } }
-        ]
+        data: pieData
       }
     ]
   };
 
-  pieChart.setOption(option);
+  pieChart.setOption(option, true);
 }
 
 function handleResize() {
@@ -407,7 +516,6 @@ function handleExport() {
 
 function handleRefresh() {
   loadSalesData();
-  updateCharts();
 }
 
 onUnmounted(() => {
@@ -481,41 +589,30 @@ onUnmounted(() => {
 
     <!-- KPI 卡片 -->
     <el-row :gutter="16" class="kpi-section" v-loading="kpiLoading">
-      <el-col :xs="24" :sm="12" :md="6">
+      <el-col
+        v-for="card in kpiCards"
+        :key="card.key"
+        :xs="24"
+        :sm="12"
+        :md="6"
+      >
         <el-card class="kpi-card">
-          <div class="kpi-label">销售总额</div>
-          <div class="kpi-value">{{ formatMoney(kpiData.totalSales) }}</div>
-          <div class="kpi-trend" :class="getGrowthClass(kpiData.salesGrowth)">
-            {{ formatPercent(kpiData.salesGrowth) }}
+          <div class="kpi-label">{{ card.title }}</div>
+          <div class="kpi-value">{{ card.value }}</div>
+          <div
+            class="kpi-trend"
+            :class="card.trend === 'up' ? 'growth-up' : card.trend === 'down' ? 'growth-down' : ''"
+          >
+            <span v-if="card.changeRate !== null && card.changeRate !== undefined">
+              {{ card.changeRate >= 0 ? '+' : '' }}{{ card.changeRate.toFixed(1) }}%
+            </span>
+            <span v-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
           </div>
         </el-card>
       </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="kpi-card">
-          <div class="kpi-label">订单数量</div>
-          <div class="kpi-value">{{ kpiData.orderCount.toLocaleString() }}</div>
-          <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)">
-            {{ formatPercent(kpiData.orderGrowth) }}
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="kpi-card">
-          <div class="kpi-label">客单价</div>
-          <div class="kpi-value">{{ kpiData.avgOrderValue.toLocaleString() }}</div>
-          <div class="kpi-trend" :class="getGrowthClass(kpiData.avgValueGrowth)">
-            {{ formatPercent(kpiData.avgValueGrowth) }}
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :xs="24" :sm="12" :md="6">
-        <el-card class="kpi-card">
-          <div class="kpi-label">转化率</div>
-          <div class="kpi-value">{{ kpiData.conversionRate.toFixed(1) }}%</div>
-          <div class="kpi-trend" :class="getGrowthClass(kpiData.conversionGrowth)">
-            {{ formatPercent(kpiData.conversionGrowth) }}
-          </div>
-        </el-card>
+      <!-- 无数据时的占位 -->
+      <el-col v-if="kpiCards.length === 0 && !kpiLoading" :span="24">
+        <el-empty description="暂无 KPI 数据" :image-size="80" />
       </el-col>
     </el-row>
 
@@ -560,7 +657,7 @@ onUnmounted(() => {
 
       <!-- 图表区 -->
       <el-col :xs="24" :lg="14">
-        <el-card class="chart-card">
+        <el-card class="chart-card" v-loading="trendLoading">
           <template #header>
             <div class="card-header">
               <el-icon><TrendCharts /></el-icon>
@@ -575,7 +672,7 @@ onUnmounted(() => {
     <!-- 产品占比图 -->
     <el-row :gutter="16" class="pie-section">
       <el-col :span="24">
-        <el-card class="chart-card">
+        <el-card class="chart-card" v-loading="pieLoading">
           <template #header>
             <div class="card-header">
               <el-icon><TrendCharts /></el-icon>
@@ -683,6 +780,13 @@ onUnmounted(() => {
 
     &.growth-down {
       color: #F56C6C;
+    }
+
+    .compare-text {
+      margin-left: 4px;
+      font-size: 12px;
+      color: #909399;
+      font-weight: normal;
     }
   }
 }

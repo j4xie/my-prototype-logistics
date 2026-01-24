@@ -42,9 +42,12 @@ const PERMISSION_MATRIX: Record<string, Record<string, string>> = {
     analytics: 'read'  // SmartBI 只读访问
   },
   finance_manager: {
-    dashboard: 'read', finance: 'read_write',
-    production: 'read', procurement: 'read', sales: 'read',
-    analytics: 'read'  // SmartBI 只读访问
+    dashboard: 'none',       // 隐藏旧首页（用 SmartBI 驾驶舱替代）
+    finance: 'none',         // 隐藏旧财务管理（合并到 SmartBI）
+    production: 'none',      // 隐藏生产管理（财务主管不需要）
+    procurement: 'none',     // 隐藏采购管理（财务主管不需要）
+    sales: 'none',           // 隐藏销售管理（用 SmartBI 销售分析替代）
+    analytics: 'read_write'  // 保留 SmartBI 完整权限
   },
   viewer: {
     dashboard: 'read', production: 'read', warehouse: 'read', quality: 'read',

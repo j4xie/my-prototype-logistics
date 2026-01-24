@@ -2,23 +2,28 @@
 import { computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAppStore } from '@/store/modules/app';
+import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore, ModuleName } from '@/store/modules/permission';
 import {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
-  TrendCharts, Sell, Upload, ChatDotRound, Aim
+  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer
 } from '@element-plus/icons-vue';
 
 const router = useRouter();
 const route = useRoute();
 const appStore = useAppStore();
+const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
+
+// 当前用户角色
+const roleCode = computed(() => authStore.currentRole);
 
 // 图标映射
 const iconMap: Record<string, any> = {
   House, Operation, Box, Checked, ShoppingCart, Goods,
   User, Monitor, Money, Setting, DataAnalysis, Calendar,
-  TrendCharts, Sell, Upload, ChatDotRound, Aim
+  TrendCharts, Sell, Upload, ChatDotRound, Aim, Odometer
 };
 
 // 菜单配置
@@ -30,6 +35,15 @@ interface MenuItem {
   roles?: string[];  // 可选：限制特定角色可见
   children?: MenuItem[];
 }
+
+// 财务主管专用菜单 - 简化版
+const financeManagerMenu: MenuItem[] = [
+  { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Odometer', module: 'analytics' },
+  { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
+  { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'analytics' },
+  { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
+  { path: '/smart-bi/analysis', title: '数据导入', icon: 'Upload', module: 'analytics' }
+];
 
 const menuConfig: MenuItem[] = [
   { path: '/dashboard', title: '首页', icon: 'House', module: 'dashboard' },
@@ -138,7 +152,8 @@ const menuConfig: MenuItem[] = [
       { path: '/smart-bi/dashboard', title: '经营驾驶舱', icon: 'Monitor', module: 'analytics' },
       { path: '/smart-bi/sales', title: '智能销售分析', icon: 'Sell', module: 'analytics' },
       { path: '/smart-bi/finance', title: '智能财务分析', icon: 'Money', module: 'analytics' },
-      { path: '/smart-bi/upload', title: 'Excel上传', icon: 'Upload', module: 'analytics' },
+      { path: '/smart-bi/upload', title: 'Excel上传(旧)', icon: 'Upload', module: 'analytics' },
+      { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'Upload', module: 'analytics' },
       { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
       { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
     ]
@@ -157,6 +172,11 @@ function canSeeMenuItem(item: MenuItem): boolean {
 
 // 过滤有权限的菜单
 const filteredMenu = computed(() => {
+  // 财务主管使用简化菜单
+  if (roleCode.value === 'finance_manager') {
+    return financeManagerMenu;
+  }
+
   return menuConfig
     .filter(item => permissionStore.canAccess(item.module))
     .map(item => {
