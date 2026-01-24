@@ -95,11 +95,11 @@
   {"userInput": "库存ABC分类", "expectedIntent": "REPORT_INVENTORY", "category": "complex", "difficulty": "analytical"},
   {"userInput": "产能利用率分析", "expectedIntent": "REPORT_PRODUCTION", "category": "complex", "difficulty": "analytical"},
 
-  {"userInput": "删除发货记录", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "添加设备", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "修改考勤", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "更新库存数量", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "新建生产计划", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
+  {"userInput": "删除发货记录", "expectedIntent": "BATCH_DELETE", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 写操作意图应被正常识别"},
+  {"userInput": "添加设备", "expectedIntent": "EQUIPMENT_MAINTENANCE", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 最接近的设备写操作意图"},
+  {"userInput": "修改考勤", "expectedIntent": "ATTENDANCE_HISTORY", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 无专门考勤更新意图，回退到考勤查询"},
+  {"userInput": "更新库存数量", "expectedIntent": "MATERIAL_ADJUST_QUANTITY", "category": "complex", "difficulty": "write_operation"},
+  {"userInput": "新建生产计划", "expectedIntent": "PROCESSING_BATCH_CREATE", "category": "complex", "difficulty": "write_operation"},
 
   {"userInput": "今天天气不错", "expectedIntent": null, "category": "complex", "difficulty": "irrelevant"},
   {"userInput": "你能帮我点外卖吗", "expectedIntent": null, "category": "complex", "difficulty": "irrelevant"},
@@ -203,11 +203,11 @@
   {"userInput": "BOM物料", "expectedIntent": "MATERIAL_BATCH_QUERY", "category": "complex", "difficulty": "abbreviation"},
   {"userInput": "WO进度", "expectedIntent": "PRODUCTION_STATUS_QUERY", "category": "complex", "difficulty": "abbreviation"},
 
-  {"userInput": "取消发货订单", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "报废设备", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "补签考勤", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "调整库存", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
-  {"userInput": "暂停生产", "expectedIntent": null, "category": "complex", "difficulty": "write_operation"},
+  {"userInput": "取消发货订单", "expectedIntent": "SHIPMENT_UPDATE", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 无SHIPMENT_CANCEL，使用SHIPMENT_UPDATE"},
+  {"userInput": "报废设备", "expectedIntent": "EQUIPMENT_MAINTENANCE", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 设备维护意图"},
+  {"userInput": "补签考勤", "expectedIntent": "ATTENDANCE_HISTORY", "category": "complex", "difficulty": "write_operation", "note": "v11.12: 无考勤更新意图"},
+  {"userInput": "调整库存", "expectedIntent": "MATERIAL_ADJUST_QUANTITY", "category": "complex", "difficulty": "write_operation"},
+  {"userInput": "暂停生产", "expectedIntent": "PROCESSING_BATCH_PAUSE", "category": "complex", "difficulty": "write_operation"},
 
   {"userInput": "你叫什么名字", "expectedIntent": null, "category": "complex", "difficulty": "irrelevant"},
   {"userInput": "今天星期几", "expectedIntent": null, "category": "complex", "difficulty": "irrelevant"},
