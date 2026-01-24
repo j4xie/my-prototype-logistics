@@ -1,0 +1,185 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "All intents comprehensive test - Basic + SmartBI",
+    "createdAt": "2026-01-24"
+  },
+  "basic_intents": [
+    {"userInput": "今天销售情况", "expectedIntent": "REPORT_DASHBOARD_OVERVIEW", "category": "report"},
+    {"userInput": "库存报表", "expectedIntent": "REPORT_INVENTORY", "category": "report"},
+    {"userInput": "生产报告", "expectedIntent": "REPORT_PRODUCTION", "category": "report"},
+    {"userInput": "质量报表", "expectedIntent": "REPORT_QUALITY", "category": "report"},
+    {"userInput": "财务报表", "expectedIntent": "REPORT_FINANCE", "category": "report"},
+    {"userInput": "KPI报告", "expectedIntent": "REPORT_KPI", "category": "report"},
+    {"userInput": "趋势分析", "expectedIntent": "REPORT_TRENDS", "category": "report"},
+    {"userInput": "效率报告", "expectedIntent": "REPORT_EFFICIENCY", "category": "report"},
+    {"userInput": "异常报告", "expectedIntent": "REPORT_ANOMALY", "category": "report"},
+
+    {"userInput": "设备列表", "expectedIntent": "EQUIPMENT_LIST", "category": "equipment"},
+    {"userInput": "设备详情", "expectedIntent": "EQUIPMENT_DETAIL", "category": "equipment"},
+    {"userInput": "设备统计", "expectedIntent": "EQUIPMENT_STATS", "category": "equipment"},
+    {"userInput": "设备状态查询", "expectedIntent": "EQUIPMENT_STATUS_QUERY", "category": "equipment"},
+    {"userInput": "设备维护", "expectedIntent": "EQUIPMENT_MAINTENANCE", "category": "equipment"},
+    {"userInput": "启动设备", "expectedIntent": "EQUIPMENT_START", "category": "equipment"},
+    {"userInput": "停止设备", "expectedIntent": "EQUIPMENT_STOP", "category": "equipment"},
+    {"userInput": "设备警报列表", "expectedIntent": "EQUIPMENT_ALERT_LIST", "category": "equipment"},
+    {"userInput": "设备警报统计", "expectedIntent": "EQUIPMENT_ALERT_STATS", "category": "equipment"},
+
+    {"userInput": "创建生产批次", "expectedIntent": "PROCESSING_BATCH_CREATE", "category": "processing"},
+    {"userInput": "开始生产", "expectedIntent": "PROCESSING_BATCH_START", "category": "processing"},
+    {"userInput": "暂停生产", "expectedIntent": "PROCESSING_BATCH_PAUSE", "category": "processing"},
+    {"userInput": "恢复生产", "expectedIntent": "PROCESSING_BATCH_RESUME", "category": "processing"},
+    {"userInput": "完成生产", "expectedIntent": "PROCESSING_BATCH_COMPLETE", "category": "processing"},
+    {"userInput": "取消生产批次", "expectedIntent": "PROCESSING_BATCH_CANCEL", "category": "processing"},
+    {"userInput": "生产批次详情", "expectedIntent": "PROCESSING_BATCH_DETAIL", "category": "processing"},
+    {"userInput": "生产批次列表", "expectedIntent": "PROCESSING_BATCH_LIST", "category": "processing"},
+    {"userInput": "生产状态查询", "expectedIntent": "PRODUCTION_STATUS_QUERY", "category": "processing"},
+    {"userInput": "分配员工", "expectedIntent": "PROCESSING_WORKER_ASSIGN", "category": "processing"},
+
+    {"userInput": "原料批次查询", "expectedIntent": "MATERIAL_BATCH_QUERY", "category": "material"},
+    {"userInput": "原料入库", "expectedIntent": "MATERIAL_BATCH_CREATE", "category": "material"},
+    {"userInput": "使用原料", "expectedIntent": "MATERIAL_BATCH_USE", "category": "material"},
+    {"userInput": "调整库存数量", "expectedIntent": "MATERIAL_ADJUST_QUANTITY", "category": "material"},
+    {"userInput": "过期物料查询", "expectedIntent": "MATERIAL_EXPIRED_QUERY", "category": "material"},
+    {"userInput": "低库存预警", "expectedIntent": "MATERIAL_LOW_STOCK_ALERT", "category": "material"},
+    {"userInput": "临期预警", "expectedIntent": "MATERIAL_EXPIRING_ALERT", "category": "material"},
+    {"userInput": "FIFO推荐", "expectedIntent": "MATERIAL_FIFO_RECOMMEND", "category": "material"},
+
+    {"userInput": "发货查询", "expectedIntent": "SHIPMENT_QUERY", "category": "shipment"},
+    {"userInput": "创建发货单", "expectedIntent": "SHIPMENT_CREATE", "category": "shipment"},
+    {"userInput": "更新发货", "expectedIntent": "SHIPMENT_UPDATE", "category": "shipment"},
+    {"userInput": "发货统计", "expectedIntent": "SHIPMENT_STATS", "category": "shipment"},
+    {"userInput": "按日期发货", "expectedIntent": "SHIPMENT_BY_DATE", "category": "shipment"},
+    {"userInput": "按客户发货", "expectedIntent": "SHIPMENT_BY_CUSTOMER", "category": "shipment"},
+
+    {"userInput": "质检查询", "expectedIntent": "QUALITY_CHECK_QUERY", "category": "quality"},
+    {"userInput": "执行质检", "expectedIntent": "QUALITY_CHECK_EXECUTE", "category": "quality"},
+    {"userInput": "质检统计", "expectedIntent": "QUALITY_STATS", "category": "quality"},
+    {"userInput": "关键质检项", "expectedIntent": "QUALITY_CRITICAL_ITEMS", "category": "quality"},
+
+    {"userInput": "今日打卡记录", "expectedIntent": "ATTENDANCE_TODAY", "category": "attendance"},
+    {"userInput": "考勤历史", "expectedIntent": "ATTENDANCE_HISTORY", "category": "attendance"},
+    {"userInput": "考勤统计", "expectedIntent": "ATTENDANCE_STATS", "category": "attendance"},
+    {"userInput": "月度考勤", "expectedIntent": "ATTENDANCE_MONTHLY", "category": "attendance"},
+    {"userInput": "部门考勤", "expectedIntent": "ATTENDANCE_DEPARTMENT", "category": "attendance"},
+    {"userInput": "考勤异常", "expectedIntent": "ATTENDANCE_ANOMALY", "category": "attendance"},
+    {"userInput": "上班打卡", "expectedIntent": "CLOCK_IN", "category": "attendance"},
+    {"userInput": "下班打卡", "expectedIntent": "CLOCK_OUT", "category": "attendance"},
+
+    {"userInput": "警报列表", "expectedIntent": "ALERT_LIST", "category": "alert"},
+    {"userInput": "警报统计", "expectedIntent": "ALERT_STATS", "category": "alert"},
+    {"userInput": "确认警报", "expectedIntent": "ALERT_ACKNOWLEDGE", "category": "alert"},
+    {"userInput": "解决警报", "expectedIntent": "ALERT_RESOLVE", "category": "alert"},
+    {"userInput": "按级别警报", "expectedIntent": "ALERT_BY_LEVEL", "category": "alert"},
+    {"userInput": "按设备警报", "expectedIntent": "ALERT_BY_EQUIPMENT", "category": "alert"},
+
+    {"userInput": "客户搜索", "expectedIntent": "CUSTOMER_SEARCH", "category": "customer"},
+    {"userInput": "客户列表", "expectedIntent": "CUSTOMER_LIST", "category": "customer"},
+    {"userInput": "活跃客户", "expectedIntent": "CUSTOMER_ACTIVE", "category": "customer"},
+    {"userInput": "客户统计", "expectedIntent": "CUSTOMER_STATS", "category": "customer"},
+    {"userInput": "客户购买历史", "expectedIntent": "CUSTOMER_PURCHASE_HISTORY", "category": "customer"},
+    {"userInput": "按类型客户", "expectedIntent": "CUSTOMER_BY_TYPE", "category": "customer"},
+
+    {"userInput": "供应商搜索", "expectedIntent": "SUPPLIER_SEARCH", "category": "supplier"},
+    {"userInput": "供应商列表", "expectedIntent": "SUPPLIER_LIST", "category": "supplier"},
+    {"userInput": "活跃供应商", "expectedIntent": "SUPPLIER_ACTIVE", "category": "supplier"},
+    {"userInput": "供应商排名", "expectedIntent": "SUPPLIER_RANKING", "category": "supplier"},
+    {"userInput": "供应商评估", "expectedIntent": "SUPPLIER_EVALUATE", "category": "supplier"},
+
+    {"userInput": "完整溯源", "expectedIntent": "TRACE_FULL", "category": "trace"},
+    {"userInput": "批次溯源", "expectedIntent": "TRACE_BATCH", "category": "trace"},
+    {"userInput": "公开溯源", "expectedIntent": "TRACE_PUBLIC", "category": "trace"},
+
+    {"userInput": "成本查询", "expectedIntent": "COST_QUERY", "category": "finance"},
+    {"userInput": "成本趋势分析", "expectedIntent": "COST_TREND_ANALYSIS", "category": "finance"},
+    {"userInput": "流动性查询", "expectedIntent": "QUERY_LIQUIDITY", "category": "finance"},
+    {"userInput": "偿债能力查询", "expectedIntent": "QUERY_SOLVENCY", "category": "finance"},
+    {"userInput": "杜邦分析", "expectedIntent": "QUERY_DUPONT_ANALYSIS", "category": "finance"},
+    {"userInput": "ROA查询", "expectedIntent": "QUERY_FINANCE_ROA", "category": "finance"},
+    {"userInput": "ROE查询", "expectedIntent": "QUERY_FINANCE_ROE", "category": "finance"},
+
+    {"userInput": "创建用户", "expectedIntent": "USER_CREATE", "category": "user"},
+    {"userInput": "禁用用户", "expectedIntent": "USER_DISABLE", "category": "user"},
+    {"userInput": "角色分配", "expectedIntent": "USER_ROLE_ASSIGN", "category": "user"},
+
+    {"userInput": "产品类型查询", "expectedIntent": "PRODUCT_TYPE_QUERY", "category": "product"},
+    {"userInput": "产品更新", "expectedIntent": "PRODUCT_UPDATE", "category": "product"},
+
+    {"userInput": "表单生成", "expectedIntent": "FORM_GENERATION", "category": "form"},
+    {"userInput": "规则配置", "expectedIntent": "RULE_CONFIG", "category": "config"},
+    {"userInput": "功能开关", "expectedIntent": "FACTORY_FEATURE_TOGGLE", "category": "config"}
+  ],
+  "smartbi_intents": [
+    {"query": "销售情况", "expectedIntent": "QUERY_SALES_OVERVIEW", "category": "sales"},
+    {"query": "销售排名", "expectedIntent": "QUERY_SALES_RANKING", "category": "sales"},
+    {"query": "卖得最好的产品", "expectedIntent": "QUERY_SALES_RANKING", "category": "sales"},
+    {"query": "销售趋势", "expectedIntent": "QUERY_SALES_TREND", "category": "sales"},
+    {"query": "最近销售走势", "expectedIntent": "QUERY_SALES_TREND", "category": "sales"},
+    {"query": "本月销售额", "expectedIntent": "QUERY_SALES_OVERVIEW", "category": "sales"},
+    {"query": "今天卖了多少", "expectedIntent": "QUERY_SALES_OVERVIEW", "category": "sales"},
+
+    {"query": "部门业绩", "expectedIntent": "QUERY_DEPARTMENT_PERFORMANCE", "category": "department"},
+    {"query": "各部门销售", "expectedIntent": "QUERY_DEPARTMENT_PERFORMANCE", "category": "department"},
+    {"query": "哪个部门业绩最好", "expectedIntent": "QUERY_DEPARTMENT_PERFORMANCE", "category": "department"},
+
+    {"query": "区域分析", "expectedIntent": "QUERY_REGION_ANALYSIS", "category": "region"},
+    {"query": "各地区销量", "expectedIntent": "QUERY_REGION_ANALYSIS", "category": "region"},
+    {"query": "华东区销售", "expectedIntent": "QUERY_REGION_ANALYSIS", "category": "region"},
+
+    {"query": "财务概览", "expectedIntent": "QUERY_FINANCE_OVERVIEW", "category": "finance"},
+    {"query": "财务情况怎么样", "expectedIntent": "QUERY_FINANCE_OVERVIEW", "category": "finance"},
+    {"query": "利润分析", "expectedIntent": "QUERY_PROFIT_ANALYSIS", "category": "finance"},
+    {"query": "赚了多少钱", "expectedIntent": "QUERY_PROFIT_ANALYSIS", "category": "finance"},
+    {"query": "成本分析", "expectedIntent": "QUERY_COST_ANALYSIS", "category": "finance"},
+    {"query": "花了多少钱", "expectedIntent": "QUERY_COST_ANALYSIS", "category": "finance"},
+    {"query": "应收账款", "expectedIntent": "QUERY_RECEIVABLE", "category": "finance"},
+    {"query": "现金流", "expectedIntent": "QUERY_CASH_FLOW", "category": "finance"},
+    {"query": "财务比率", "expectedIntent": "QUERY_FINANCIAL_RATIOS", "category": "finance"},
+
+    {"query": "产品分析", "expectedIntent": "QUERY_PRODUCT_ANALYSIS", "category": "product"},
+    {"query": "哪个产品卖得好", "expectedIntent": "QUERY_PRODUCT_ANALYSIS", "category": "product"},
+    {"query": "库存情况", "expectedIntent": "QUERY_INVENTORY", "category": "inventory"},
+    {"query": "还有多少货", "expectedIntent": "QUERY_INVENTORY", "category": "inventory"},
+
+    {"query": "OEE是多少", "expectedIntent": "QUERY_OEE_OVERVIEW", "category": "production"},
+    {"query": "设备效率", "expectedIntent": "QUERY_OEE_OVERVIEW", "category": "production"},
+    {"query": "生产效率", "expectedIntent": "QUERY_PRODUCTION_EFFICIENCY", "category": "production"},
+    {"query": "今天产了多少", "expectedIntent": "QUERY_PRODUCTION_EFFICIENCY", "category": "production"},
+    {"query": "设备利用率", "expectedIntent": "QUERY_EQUIPMENT_UTILIZATION", "category": "production"},
+
+    {"query": "质量情况", "expectedIntent": "QUERY_QUALITY_SUMMARY", "category": "quality"},
+    {"query": "合格率", "expectedIntent": "QUERY_QUALITY_SUMMARY", "category": "quality"},
+    {"query": "缺陷分析", "expectedIntent": "QUERY_DEFECT_ANALYSIS", "category": "quality"},
+    {"query": "返工成本", "expectedIntent": "QUERY_REWORK_COST", "category": "quality"},
+
+    {"query": "库存健康", "expectedIntent": "QUERY_INVENTORY_HEALTH", "category": "inventory"},
+    {"query": "周转率", "expectedIntent": "QUERY_INVENTORY_HEALTH", "category": "inventory"},
+    {"query": "即将过期", "expectedIntent": "QUERY_EXPIRY_RISK", "category": "inventory"},
+    {"query": "损耗分析", "expectedIntent": "QUERY_LOSS_ANALYSIS", "category": "inventory"},
+
+    {"query": "销售漏斗", "expectedIntent": "QUERY_SALES_FUNNEL", "category": "advanced"},
+    {"query": "转化率", "expectedIntent": "QUERY_SALES_FUNNEL", "category": "advanced"},
+    {"query": "客户RFM", "expectedIntent": "QUERY_CUSTOMER_RFM", "category": "advanced"},
+    {"query": "高价值客户", "expectedIntent": "QUERY_CUSTOMER_RFM", "category": "advanced"},
+    {"query": "产品ABC分析", "expectedIntent": "QUERY_PRODUCT_ABC", "category": "advanced"},
+
+    {"query": "采购情况", "expectedIntent": "QUERY_PROCUREMENT_OVERVIEW", "category": "procurement"},
+    {"query": "供应商评估", "expectedIntent": "QUERY_SUPPLIER_EVALUATION", "category": "procurement"},
+    {"query": "采购成本", "expectedIntent": "QUERY_PURCHASE_COST", "category": "procurement"},
+
+    {"query": "同比", "expectedIntent": "COMPARE_PERIOD", "category": "compare"},
+    {"query": "环比增长", "expectedIntent": "COMPARE_PERIOD", "category": "compare"},
+    {"query": "和去年对比", "expectedIntent": "COMPARE_PERIOD", "category": "compare"},
+    {"query": "部门对比", "expectedIntent": "COMPARE_DEPARTMENT", "category": "compare"},
+    {"query": "区域对比", "expectedIntent": "COMPARE_REGION", "category": "compare"},
+
+    {"query": "看详情", "expectedIntent": "DRILL_DOWN", "category": "drill"},
+    {"query": "具体数据", "expectedIntent": "DRILL_DOWN", "category": "drill"},
+
+    {"query": "预测下个月", "expectedIntent": "FORECAST", "category": "forecast"},
+    {"query": "未来趋势", "expectedIntent": "FORECAST", "category": "forecast"},
+
+    {"query": "汇总", "expectedIntent": "AGGREGATE_SUMMARY", "category": "aggregate"},
+    {"query": "一共多少", "expectedIntent": "AGGREGATE_SUMMARY", "category": "aggregate"}
+  ]
+}
