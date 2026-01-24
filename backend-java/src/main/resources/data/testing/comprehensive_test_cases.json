@@ -90,8 +90,8 @@
     {"userInput": "批次溯源", "expectedIntent": "TRACE_BATCH", "category": "trace"},
     {"userInput": "公开溯源", "expectedIntent": "TRACE_PUBLIC", "category": "trace"},
 
-    {"userInput": "成本查询", "expectedIntent": "COST_QUERY", "category": "finance"},
-    {"userInput": "成本趋势分析", "expectedIntent": "COST_TREND_ANALYSIS", "category": "finance"},
+    {"userInput": "成本查询", "expectedIntent": "REPORT_FINANCE", "category": "finance", "note": "v11.12: COST_QUERY意图不存在，使用REPORT_FINANCE"},
+    {"userInput": "成本趋势分析", "expectedIntent": "REPORT_TRENDS", "category": "finance", "note": "v11.12: COST_TREND_ANALYSIS意图不存在，使用REPORT_TRENDS"},
     {"userInput": "流动性查询", "expectedIntent": "QUERY_LIQUIDITY", "category": "finance"},
     {"userInput": "偿债能力查询", "expectedIntent": "QUERY_SOLVENCY", "category": "finance"},
     {"userInput": "杜邦分析", "expectedIntent": "QUERY_DUPONT_ANALYSIS", "category": "finance"},

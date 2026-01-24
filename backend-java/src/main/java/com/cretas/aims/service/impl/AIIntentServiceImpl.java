@@ -38,6 +38,8 @@ import com.cretas.aims.service.RAGRetrievalService;
 import com.cretas.aims.dto.intent.RouteDecision;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
+import com.cretas.aims.dto.clarification.ClarificationDecision;
+import com.cretas.aims.dto.clarification.ReferenceResult;
 import com.cretas.aims.dto.conversation.ConversationContext;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -135,6 +137,34 @@ public class AIIntentServiceImpl implements AIIntentService {
     public void setRagRetrievalService(RAGRetrievalService ragRetrievalService) {
         this.ragRetrievalService = ragRetrievalService;
         log.info("[RAG] RAGRetrievalService 注入: {}", ragRetrievalService != null ? "成功" : "未配置");
+    }
+
+    /**
+     * Phase 3: 智能澄清服务
+     * 基于业务实体检测决定是否需要澄清
+     */
+    private com.cretas.aims.service.SmartClarificationService smartClarificationService;
+
+    @Autowired(required = false)
+    public void setSmartClarificationService(
+            com.cretas.aims.service.SmartClarificationService smartClarificationService) {
+        this.smartClarificationService = smartClarificationService;
+        log.info("[Clarification] SmartClarificationService 注入: {}",
+                smartClarificationService != null ? "成功" : "未配置");
+    }
+
+    /**
+     * Phase 3: 指代消解服务
+     * 会话级指代消解
+     */
+    private com.cretas.aims.service.CoreferenceResolutionService coreferenceResolutionService;
+
+    @Autowired(required = false)
+    public void setCoreferenceResolutionService(
+            com.cretas.aims.service.CoreferenceResolutionService coreferenceResolutionService) {
+        this.coreferenceResolutionService = coreferenceResolutionService;
+        log.info("[Coreference] CoreferenceResolutionService 注入: {}",
+                coreferenceResolutionService != null ? "成功" : "未配置");
     }
 
     /**
@@ -355,6 +385,10 @@ public class AIIntentServiceImpl implements AIIntentService {
                 if (sessionId != null) {
                     ConversationContext context = conversationMemoryService
                         .getOrCreateContext(factoryId, userId, sessionId);
+
+                    // Phase 3: 增强指代消解（使用 CoreferenceResolutionService）
+                    processedInput = performCoreferenceResolution(processedInput, context);
+
                     preprocessedQuery = queryPreprocessorService.preprocess(processedInput, context);
                     if (preprocessedQuery != null && preprocessedQuery.getFinalQuery() != null) {
                         processedInput = preprocessedQuery.getFinalQuery();
@@ -389,23 +423,39 @@ public class AIIntentServiceImpl implements AIIntentService {
             skipPhraseShortcut = true;
         }
 
-        // 检测2: 不完整输入 - 需要触发 clarification
-        if (!skipPhraseShortcut && isIncompleteInput(userInput)) {
-            log.info("v11.7 检测到不完整输入，需要 clarification: input='{}'", userInput);
-            // 返回需要澄清的结果
-            IntentMatchResult clarificationResult = IntentMatchResult.builder()
-                    .bestMatch(null)
-                    .topCandidates(Collections.emptyList())
-                    .confidence(0.0)
-                    .matchMethod(MatchMethod.REJECTED)
-                    .matchedKeywords(Collections.emptyList())
-                    .isStrongSignal(false)
-                    .requiresConfirmation(true)
-                    .userInput(userInput)
-                    .actionType(ActionType.UNKNOWN)
-                    .clarificationQuestion("您的输入不够明确，请问您想查询什么信息？例如：销售数据、库存情况、生产进度等")
-                    .build();
-            return clarificationResult;
+        // 检测2: 不完整输入 - 需要触发 clarification (Phase 3 智能澄清)
+        if (!skipPhraseShortcut) {
+            // Phase 3: 获取会话上下文用于智能澄清决策
+            ConversationContext clarificationContext = null;
+            if (sessionId != null && conversationMemoryService != null) {
+                try {
+                    clarificationContext = conversationMemoryService.getOrCreateContext(factoryId, userId, sessionId);
+                } catch (Exception e) {
+                    log.debug("获取会话上下文失败，使用无上下文澄清: {}", e.getMessage());
+                }
+            }
+
+            // 使用智能澄清决策
+            ClarificationDecision clarificationDecision = makeSmartClarificationDecision(
+                    userInput, null, clarificationContext);
+
+            if (clarificationDecision.isNeedClarification()) {
+                log.info("Phase 3 智能澄清触发: input='{}', type={}, missingSlots={}",
+                        userInput, clarificationDecision.getClarificationType(),
+                        clarificationDecision.getMissingSlots());
+
+                // 构建澄清结果
+                IntentMatchResult clarificationResult = buildClarificationResult(
+                        userInput, clarificationDecision, null, clarificationContext);
+                clarificationResult.setMatchMethod(MatchMethod.REJECTED);
+
+                return clarificationResult;
+            } else if (clarificationDecision.isCanProceedWithInference()
+                    && clarificationDecision.hasInferredDefaults()) {
+                // 可以使用推断值继续执行，记录推断信息
+                log.info("Phase 3: 使用推断值继续: input='{}', inferred={}",
+                        userInput, clarificationDecision.getInferredDefaults());
+            }
         }
 
         // ========== v11.5: 短语匹配优先短路 + 实体-意图冲突检测 ==========
@@ -2365,6 +2415,142 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return false;
+    }
+
+    /**
+     * Phase 3: 智能澄清决策
+     *
+     * 使用 SmartClarificationService 进行智能判断：
+     * - 检查业务实体是否足够
+     * - 尝试从上下文推断缺失信息
+     * - 只在真正缺少必要信息时触发澄清
+     *
+     * @param userInput 用户输入
+     * @param matchResult 意图匹配结果（可能为 null）
+     * @param context 会话上下文（可能为 null）
+     * @return 澄清决策
+     */
+    private ClarificationDecision makeSmartClarificationDecision(
+            String userInput,
+            IntentMatchResult matchResult,
+            ConversationContext context) {
+
+        // 如果 SmartClarificationService 不可用，使用默认逻辑
+        if (smartClarificationService == null || !smartClarificationService.isAvailable()) {
+            // 回退到简单的不完整输入检测
+            if (isIncompleteInput(userInput)) {
+                return ClarificationDecision.need(
+                        ClarificationDecision.ClarificationType.INCOMPLETE_PARAMS,
+                        "输入不够明确",
+                        Collections.emptyList(),
+                        0.0);
+            }
+            return ClarificationDecision.noNeed(matchResult != null && matchResult.getConfidence() != null
+                    ? matchResult.getConfidence() : 0.5);
+        }
+
+        // 获取最佳匹配的意图配置
+        AIIntentConfig intent = matchResult != null ? matchResult.getBestMatch() : null;
+
+        // 调用智能澄清服务
+        ClarificationDecision decision = smartClarificationService.decideClarification(
+                userInput, intent, matchResult, context);
+
+        log.debug("Phase 3 智能澄清决策: needClarification={}, type={}, confidence={}",
+                decision.isNeedClarification(),
+                decision.getClarificationType(),
+                decision.getConfidenceWithoutClarification());
+
+        return decision;
+    }
+
+    /**
+     * Phase 3: 构建带智能澄清的意图匹配结果
+     *
+     * @param userInput 用户输入
+     * @param decision 澄清决策
+     * @param intent 意图配置（可能为 null）
+     * @param context 会话上下文
+     * @return 意图匹配结果
+     */
+    private IntentMatchResult buildClarificationResult(
+            String userInput,
+            ClarificationDecision decision,
+            AIIntentConfig intent,
+            ConversationContext context) {
+
+        // 生成澄清问题
+        List<String> questions = new ArrayList<>();
+        if (smartClarificationService != null && decision.hasMissingSlots()) {
+            questions = smartClarificationService.generateClarificationQuestions(decision, intent, context);
+        }
+
+        // 构建澄清消息
+        String clarificationMessage;
+        if (smartClarificationService != null && !questions.isEmpty()) {
+            clarificationMessage = smartClarificationService.buildClarificationMessage(decision, questions, intent);
+        } else {
+            clarificationMessage = "您的输入不够明确，请问您想查询什么信息？例如：销售数据、库存情况、生产进度等";
+        }
+
+        IntentMatchResult.IntentMatchResultBuilder builder = IntentMatchResult.builder()
+                .bestMatch(intent)
+                .topCandidates(Collections.emptyList())
+                .confidence(decision.getConfidenceWithoutClarification())
+                .matchMethod(MatchMethod.NONE)
+                .matchedKeywords(Collections.emptyList())
+                .isStrongSignal(false)
+                .requiresConfirmation(true)
+                .userInput(userInput)
+                .actionType(ActionType.UNKNOWN)
+                .clarificationQuestion(clarificationMessage);
+
+        // 如果有推断的默认值，可以在元数据中传递
+        if (decision.hasInferredDefaults() && decision.isCanProceedWithInference()) {
+            // 可以选择继续执行并附带推断说明
+            builder.confidence(decision.getConfidenceWithoutClarification());
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Phase 3: 执行指代消解
+     *
+     * 在意图识别前对用户输入进行指代消解，
+     * 将代词（如"它"、"这个"、"那批"）替换为具体实体
+     *
+     * @param userInput 用户输入
+     * @param context 会话上下文
+     * @return 消解后的输入（如果无指代或消解失败则返回原输入）
+     */
+    private String performCoreferenceResolution(String userInput, ConversationContext context) {
+        if (coreferenceResolutionService == null || !coreferenceResolutionService.isAvailable()) {
+            return userInput;
+        }
+
+        if (!coreferenceResolutionService.hasUnresolvedReferences(userInput)) {
+            log.debug("Phase 3: 输入无需指代消解: '{}'", userInput);
+            return userInput;
+        }
+
+        try {
+            ReferenceResult result = coreferenceResolutionService.resolve(userInput, context);
+
+            if (result.isResolved() && result.isModified()) {
+                log.info("Phase 3 指代消解成功: '{}' -> '{}', confidence={}, method={}",
+                        userInput, result.getResolvedText(),
+                        result.getConfidence(), result.getResolutionMethod());
+                return result.getResolvedText();
+            } else if (result.hasUnresolvedReferences()) {
+                log.debug("Phase 3: 部分指代未消解: unresolved={}",
+                        result.getUnresolvedReferences());
+            }
+        } catch (Exception e) {
+            log.warn("Phase 3 指代消解失败: {}", e.getMessage());
+        }
+
+        return userInput;
     }
 
     /**

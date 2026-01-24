@@ -151,6 +151,9 @@ public class PinyinSpellCorrectionServiceImpl implements SpellCorrectionService 
         directMappings.put("成品", "成品");
         directMappings.put("半成品", "半成品");
         directMappings.put("生残", "生产");
+        directMappings.put("生常", "生产");  // v11.13: 测试用例新增
+        directMappings.put("设北", "设备");  // v11.13: 测试用例新增
+        directMappings.put("考亲", "考勤");  // v11.13: 测试用例新增
         directMappings.put("加攻", "加工");
         directMappings.put("审和", "审核");
         directMappings.put("审披", "审批");

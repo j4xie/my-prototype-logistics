@@ -91,7 +91,15 @@ public class FieldMappingDictionary {
             "profit",
             "gross_margin",
             "net_profit",
-            "net_margin"
+            "net_margin",
+            // 利润表专用字段
+            "revenue",
+            "cost_of_sales",
+            "gross_profit",
+            "operating_expense",
+            "operating_profit",
+            "account_item",
+            "period"
     )));
 
     /**
@@ -114,7 +122,12 @@ public class FieldMappingDictionary {
             "budget_amount",
             "actual_amount",
             "variance",
-            "budget_category"
+            "budget_category",
+            // 利润表预算专用字段
+            "ytd_amount",
+            "yoy_amount",
+            "mom_amount",
+            "budget_achievement_rate"
     )));
 
     /**
@@ -313,12 +326,14 @@ public class FieldMappingDictionary {
         // ===== 预算相关字段 =====
         map.put("budget_amount", Arrays.asList(
                 "预算", "预算金额", "budget", "budget amount",
-                "预算额", "计划金额", "预算值"
+                "预算额", "计划金额", "预算值", "预算数",
+                "年度预算", "月度预算", "预算目标", "目标预算"
         ));
 
         map.put("actual_amount", Arrays.asList(
                 "实际", "实际金额", "actual", "actual amount",
-                "实际值", "实际额", "实际发生"
+                "实际值", "实际额", "实际发生", "本月实际",
+                "当月实际", "实际数", "本期实际", "当期实际"
         ));
 
         map.put("variance", Arrays.asList(
@@ -329,6 +344,75 @@ public class FieldMappingDictionary {
         map.put("budget_category", Arrays.asList(
                 "预算科目", "费用类别", "budget category",
                 "预算类别", "科目", "费用科目", "预算项目"
+        ));
+
+        // ===== 利润表/损益表专用字段 =====
+        map.put("revenue", Arrays.asList(
+                "营业收入", "营收", "主营业务收入", "收入", "销售收入", "经营收入",
+                "revenue", "operating revenue", "sales revenue", "income",
+                "总收入", "营业总收入", "主营收入"
+        ));
+
+        map.put("cost_of_sales", Arrays.asList(
+                "营业成本", "销售成本", "主营业务成本", "经营成本", "直接成本",
+                "cost of sales", "cost of goods sold", "COGS", "operating cost",
+                "产品成本", "服务成本"
+        ));
+
+        map.put("gross_profit", Arrays.asList(
+                "毛利", "毛利润", "毛利额", "销售毛利", "营业毛利",
+                "gross profit", "gross margin amount", "GP",
+                "主营毛利", "经营毛利"
+        ));
+
+        map.put("operating_expense", Arrays.asList(
+                "营业费用", "期间费用", "运营费用", "经营费用",
+                "operating expense", "opex", "period expense",
+                "销售费用", "管理费用合计"
+        ));
+
+        map.put("operating_profit", Arrays.asList(
+                "营业利润", "经营利润", "营业利润额",
+                "operating profit", "operating income", "EBIT",
+                "主营利润"
+        ));
+
+        // ===== 利润表预算对比字段 =====
+        map.put("ytd_amount", Arrays.asList(
+                "本年累计", "年累计", "年度累计", "累计金额", "累计数",
+                "YTD", "year to date", "ytd amount", "cumulative",
+                "截至目前累计", "本年度累计"
+        ));
+
+        map.put("yoy_amount", Arrays.asList(
+                "同比", "去年同期", "上年同期", "同期", "去年",
+                "YoY", "year over year", "yoy amount", "prior year",
+                "同比金额", "去年同期金额", "上年同期数"
+        ));
+
+        map.put("mom_amount", Arrays.asList(
+                "环比", "上月", "上期", "上月同期",
+                "MoM", "month over month", "mom amount", "prior month",
+                "环比金额", "上月金额"
+        ));
+
+        map.put("budget_achievement_rate", Arrays.asList(
+                "预算达成率", "达成率", "完成率", "预算完成率",
+                "budget achievement rate", "achievement rate", "completion rate",
+                "预算执行率", "达成比例"
+        ));
+
+        // ===== 利润表维度字段 =====
+        map.put("account_item", Arrays.asList(
+                "科目", "项目", "会计科目", "账目", "财务科目",
+                "account item", "account", "line item",
+                "费用项目", "收入项目", "利润表项目"
+        ));
+
+        map.put("period", Arrays.asList(
+                "期间", "会计期间", "报告期", "账期",
+                "period", "accounting period", "reporting period",
+                "财务期间", "月份", "季度"
         ));
 
         // ===== 组织架构字段 =====
@@ -411,6 +495,16 @@ public class FieldMappingDictionary {
         map.put("budget_amount", TYPE_AMOUNT);
         map.put("actual_amount", TYPE_AMOUNT);
         map.put("variance", TYPE_AMOUNT);
+        map.put("ytd_amount", TYPE_AMOUNT);
+        map.put("yoy_amount", TYPE_AMOUNT);
+        map.put("mom_amount", TYPE_AMOUNT);
+
+        // 利润表专用金额类型
+        map.put("revenue", TYPE_AMOUNT);
+        map.put("cost_of_sales", TYPE_AMOUNT);
+        map.put("gross_profit", TYPE_AMOUNT);
+        map.put("operating_expense", TYPE_AMOUNT);
+        map.put("operating_profit", TYPE_AMOUNT);
 
         // 数量类型
         map.put("quantity", TYPE_QUANTITY);
@@ -420,6 +514,7 @@ public class FieldMappingDictionary {
         // 百分比类型
         map.put("gross_margin", TYPE_PERCENTAGE);
         map.put("net_margin", TYPE_PERCENTAGE);
+        map.put("budget_achievement_rate", TYPE_PERCENTAGE);
 
         // 分类类型
         map.put("department", TYPE_CATEGORICAL);
@@ -431,6 +526,8 @@ public class FieldMappingDictionary {
         map.put("team", TYPE_CATEGORICAL);
         map.put("budget_category", TYPE_CATEGORICAL);
         map.put("cost_center", TYPE_CATEGORICAL);
+        map.put("account_item", TYPE_CATEGORICAL);
+        map.put("period", TYPE_CATEGORICAL);
 
         // ID类型
         map.put("salesperson_id", TYPE_ID);

@@ -3,18 +3,11 @@ package com.cretas.aims.service.smartbi;
 import com.cretas.aims.dto.smartbi.DepartmentEntity;
 import com.cretas.aims.entity.smartbi.SmartBiDictionary;
 import com.cretas.aims.entity.smartbi.enums.DepartmentType;
-import com.cretas.aims.repository.smartbi.SmartBiDictionaryRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -36,34 +29,43 @@ import java.util.regex.Pattern;
  * - Position tracking for matched entities
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-01-20
  */
 @Slf4j
 @Service
-public class DepartmentEntityRecognizer {
+public class DepartmentEntityRecognizer extends BaseEntityRecognizer<DepartmentEntity, DepartmentEntityRecognizer.DepartmentTrieNode> {
 
     // ==================== Configuration ====================
 
     @Value("${smartbi.department.dictionary-file:config/smartbi/department_dictionary.json}")
     private String dictionaryFile;
 
-    private final ObjectMapper objectMapper;
-
-    @Autowired
-    private SmartBiDictionaryRepository dictionaryRepository;
-
-    // ==================== Trie Data Structures ====================
+    // ==================== Trie Node ====================
 
     /**
-     * Root node of the Trie tree
+     * Department-specific Trie node
      */
-    private TrieNode root;
+    public static class DepartmentTrieNode extends BaseTrieNode {
+        /**
+         * Department type if this is an end node
+         */
+        public DepartmentType departmentType;
+
+        /**
+         * Parent department (for sub-departments)
+         */
+        public String parentDepartment;
+
+        public DepartmentTrieNode() {
+            super();
+        }
+    }
+
+    // ==================== Indexes ====================
 
     /**
      * Department information index for quick lookup
-     * Key: normalized department name
-     * Value: DepartmentInfo containing type, parent, and aliases
      */
     private final Map<String, DepartmentInfo> departmentIndex = new ConcurrentHashMap<>();
 
@@ -87,56 +89,7 @@ public class DepartmentEntityRecognizer {
      */
     private Pattern digitalPattern;
 
-    /**
-     * Statistics
-     */
-    private long totalRecognitions = 0;
-    private long entitiesFound = 0;
-
     // ==================== Inner Classes ====================
-
-    /**
-     * Trie node for efficient string matching
-     */
-    private static class TrieNode {
-        /**
-         * Child nodes mapped by character
-         */
-        Map<Character, TrieNode> children = new HashMap<>();
-
-        /**
-         * Whether this node marks the end of a valid department name
-         */
-        boolean isEnd = false;
-
-        /**
-         * Department type if this is an end node
-         */
-        DepartmentType departmentType;
-
-        /**
-         * Normalized name of the department
-         */
-        String normalizedName;
-
-        /**
-         * Parent department (for sub-departments)
-         */
-        String parentDepartment;
-
-        /**
-         * Whether this entry is an alias
-         */
-        boolean isAlias = false;
-
-        /**
-         * The alias text (if isAlias is true)
-         */
-        String aliasText;
-
-        TrieNode() {
-        }
-    }
 
     /**
      * Department information stored in the index
@@ -157,172 +110,114 @@ public class DepartmentEntityRecognizer {
     // ==================== Constructor ====================
 
     public DepartmentEntityRecognizer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        super(objectMapper);
     }
 
-    // ==================== Initialization ====================
+    // ==================== BaseEntityRecognizer Implementation ====================
 
-    /**
-     * Initialize the recognizer by loading dictionary and building Trie
-     */
-    @PostConstruct
-    public void init() {
-        log.info("Initializing DepartmentEntityRecognizer...");
-        root = new TrieNode();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("DepartmentEntityRecognizer initialized with {} departments in index", departmentIndex.size());
+    @Override
+    protected String getDictionaryFile() {
+        return dictionaryFile;
     }
 
-    /**
-     * Load department dictionary from JSON file
-     */
-    private void loadDictionary() {
-        try {
-            ClassPathResource resource = new ClassPathResource(dictionaryFile);
-            if (!resource.exists()) {
-                log.warn("Department dictionary file not found: {}, using defaults", dictionaryFile);
-                initDefaultDictionary();
-                return;
-            }
+    @Override
+    protected String getDictType() {
+        return "department";
+    }
 
-            try (InputStream is = resource.getInputStream()) {
-                Map<String, Object> dictionary = objectMapper.readValue(
-                        is, new TypeReference<Map<String, Object>>() {});
+    @Override
+    protected String getRecognizerName() {
+        return "DepartmentEntityRecognizer";
+    }
 
-                // Load suffixes
-                if (dictionary.containsKey("suffixes")) {
-                    @SuppressWarnings("unchecked")
-                    List<String> loadedSuffixes = (List<String>) dictionary.get("suffixes");
-                    this.suffixes = new ArrayList<>(loadedSuffixes);
-                }
+    @Override
+    protected DepartmentTrieNode createTrieNode() {
+        return new DepartmentTrieNode();
+    }
 
-                // Load patterns
-                if (dictionary.containsKey("patterns")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> patterns = (Map<String, String>) dictionary.get("patterns");
-                    if (patterns.containsKey("numbered")) {
-                        numberedPattern = Pattern.compile(patterns.get("numbered"));
-                    }
-                    if (patterns.containsKey("digital")) {
-                        digitalPattern = Pattern.compile(patterns.get("digital"));
-                    }
-                }
+    @Override
+    protected DepartmentEntity createEntity(String matchedText, DepartmentTrieNode node, int start, int end) {
+        DepartmentEntity.DepartmentEntityBuilder builder = DepartmentEntity.builder()
+                .text(matchedText)
+                .type(node.departmentType)
+                .normalizedName(node.normalizedName)
+                .parentDepartment(node.parentDepartment)
+                .startIndex(start)
+                .endIndex(end);
 
-                // Load departments
-                if (dictionary.containsKey("departments")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, Object>> departments =
-                            (Map<String, Map<String, Object>>) dictionary.get("departments");
-                    loadDepartments(departments);
-                }
-
-                log.info("Successfully loaded department dictionary from: {}", dictionaryFile);
-            }
-        } catch (IOException e) {
-            log.error("Failed to load department dictionary: {}", e.getMessage());
-            initDefaultDictionary();
+        if (node.isAlias) {
+            builder.matchedByAlias(true)
+                   .matchedAlias(node.aliasText)
+                   .confidence(0.9);
+        } else {
+            builder.confidence(1.0);
         }
+
+        return builder.build();
     }
 
-    /**
-     * Load department data and build Trie entries
-     */
-    private void loadDepartments(Map<String, Map<String, Object>> departments) {
-        for (Map.Entry<String, Map<String, Object>> entry : departments.entrySet()) {
-            String deptName = entry.getKey();
-            Map<String, Object> deptData = entry.getValue();
+    @Override
+    protected int getEntityStartIndex(DepartmentEntity entity) {
+        return entity.getStartIndex();
+    }
 
-            // Create department info
-            DepartmentInfo info = new DepartmentInfo(deptName, DepartmentType.DEPARTMENT);
+    @Override
+    protected void clearIndexes() {
+        departmentIndex.clear();
+        subDeptToDept.clear();
+    }
 
-            // Add to Trie - standard name
-            addToTrie(deptName, DepartmentType.DEPARTMENT, deptName, null, false, null);
+    @Override
+    protected void collectAdditionalStatistics(Map<String, Object> stats) {
+        stats.put("departmentCount", getAllDepartments(DepartmentType.DEPARTMENT).size());
+        stats.put("subDepartmentCount", getAllDepartments(DepartmentType.SUB_DEPARTMENT).size());
+        stats.put("totalIndexSize", departmentIndex.size());
+    }
 
-            // Add without "部" suffix (e.g., "销售" for "销售部")
-            String nameWithoutSuffix = removeSuffix(deptName);
-            if (!nameWithoutSuffix.equals(deptName)) {
-                addToTrie(nameWithoutSuffix, DepartmentType.DEPARTMENT, deptName, null, false, null);
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void processDictionaryData(Map<String, Object> dictionary) {
+        // Load suffixes
+        if (dictionary.containsKey("suffixes")) {
+            List<String> loadedSuffixes = (List<String>) dictionary.get("suffixes");
+            this.suffixes = new ArrayList<>(loadedSuffixes);
+        }
+
+        // Load patterns
+        if (dictionary.containsKey("patterns")) {
+            Map<String, String> patterns = (Map<String, String>) dictionary.get("patterns");
+            if (patterns.containsKey("numbered")) {
+                numberedPattern = Pattern.compile(patterns.get("numbered"));
             }
-
-            // Add aliases
-            if (deptData.containsKey("aliases")) {
-                @SuppressWarnings("unchecked")
-                List<String> aliases = (List<String>) deptData.get("aliases");
-                info.aliases.addAll(aliases);
-                for (String alias : aliases) {
-                    addToTrie(alias, DepartmentType.DEPARTMENT, deptName, null, true, alias);
-                }
+            if (patterns.containsKey("digital")) {
+                digitalPattern = Pattern.compile(patterns.get("digital"));
             }
+        }
 
-            // Load sub-departments
-            if (deptData.containsKey("subDepartments")) {
-                @SuppressWarnings("unchecked")
-                List<String> subDepts = (List<String>) deptData.get("subDepartments");
-                info.subDepartments.addAll(subDepts);
-                for (String subDept : subDepts) {
-                    // Add sub-department to Trie
-                    addToTrie(subDept, DepartmentType.SUB_DEPARTMENT, subDept, deptName, false, null);
-                    subDeptToDept.put(subDept, deptName);
-
-                    // Also add without suffix
-                    String subDeptWithoutSuffix = removeSuffix(subDept);
-                    if (!subDeptWithoutSuffix.equals(subDept)) {
-                        addToTrie(subDeptWithoutSuffix, DepartmentType.SUB_DEPARTMENT, subDept, deptName, false, null);
-                    }
-                }
-            }
-
-            departmentIndex.put(deptName, info);
+        // Load departments
+        if (dictionary.containsKey("departments")) {
+            Map<String, Map<String, Object>> departments =
+                    (Map<String, Map<String, Object>>) dictionary.get("departments");
+            loadDepartments(departments);
         }
     }
 
-    /**
-     * Add a term to the Trie tree
-     */
-    private void addToTrie(String term, DepartmentType type, String normalizedName,
-                           String parentDepartment, boolean isAlias, String aliasText) {
-        if (term == null || term.isEmpty()) {
-            return;
-        }
+    @Override
+    protected void processDbEntry(SmartBiDictionary entry) {
+        String name = entry.getName();
 
-        TrieNode current = root;
-        for (char c : term.toCharArray()) {
-            current.children.putIfAbsent(c, new TrieNode());
-            current = current.children.get(c);
-        }
+        // Add to Trie
+        addToTrieWithType(name, DepartmentType.DEPARTMENT, name, entry.getParentName(), false, null);
 
-        // Only update end node info if not already set (prefer non-alias over alias)
-        if (!current.isEnd || (!current.isAlias && isAlias)) {
-            current.isEnd = true;
-            current.departmentType = type;
-            current.normalizedName = normalizedName;
-            current.parentDepartment = parentDepartment;
-            current.isAlias = isAlias;
-            current.aliasText = aliasText;
+        // Process aliases
+        List<String> aliases = parseAliases(entry.getAliases());
+        for (String alias : aliases) {
+            addToTrieWithType(alias, DepartmentType.DEPARTMENT, name, entry.getParentName(), true, alias);
         }
     }
 
-    /**
-     * Remove suffix from department name
-     */
-    private String removeSuffix(String name) {
-        if (name == null || name.isEmpty()) {
-            return name;
-        }
-
-        for (String suffix : suffixes) {
-            if (name.endsWith(suffix) && name.length() > suffix.length()) {
-                return name.substring(0, name.length() - suffix.length());
-            }
-        }
-        return name;
-    }
-
-    /**
-     * Initialize default dictionary when file is not available
-     */
-    private void initDefaultDictionary() {
+    @Override
+    protected void initDefaultDictionary() {
         log.info("Initializing default department dictionary...");
 
         // Default suffixes
@@ -350,15 +245,14 @@ public class DepartmentEntityRecognizer {
             DepartmentInfo info = new DepartmentInfo(deptName, DepartmentType.DEPARTMENT);
             info.aliases.addAll(entry.getValue());
 
-            addToTrie(deptName, DepartmentType.DEPARTMENT, deptName, null, false, null);
-            // Add without suffix
+            addToTrieWithType(deptName, DepartmentType.DEPARTMENT, deptName, null, false, null);
             String nameWithoutSuffix = removeSuffix(deptName);
             if (!nameWithoutSuffix.equals(deptName)) {
-                addToTrie(nameWithoutSuffix, DepartmentType.DEPARTMENT, deptName, null, false, null);
+                addToTrieWithType(nameWithoutSuffix, DepartmentType.DEPARTMENT, deptName, null, false, null);
             }
 
             for (String alias : entry.getValue()) {
-                addToTrie(alias, DepartmentType.DEPARTMENT, deptName, null, true, alias);
+                addToTrieWithType(alias, DepartmentType.DEPARTMENT, deptName, null, true, alias);
             }
 
             departmentIndex.put(deptName, info);
@@ -378,7 +272,7 @@ public class DepartmentEntityRecognizer {
             }
 
             for (String subDept : entry.getValue()) {
-                addToTrie(subDept, DepartmentType.SUB_DEPARTMENT, subDept, parentDept, false, null);
+                addToTrieWithType(subDept, DepartmentType.SUB_DEPARTMENT, subDept, parentDept, false, null);
                 subDeptToDept.put(subDept, parentDept);
             }
         }
@@ -386,53 +280,9 @@ public class DepartmentEntityRecognizer {
         log.info("Default dictionary initialized with {} entries", departmentIndex.size());
     }
 
-    /**
-     * 从数据库加载动态配置的部门词条
-     */
-    private void loadFromDatabase() {
-        try {
-            List<SmartBiDictionary> entries = dictionaryRepository
-                    .findByDictTypeAndIsActiveTrueOrderByPriorityAsc("department");
+    // ==================== Override recognize() for pattern matching ====================
 
-            for (SmartBiDictionary entry : entries) {
-                String name = entry.getName();
-
-                // 添加到 Trie 树
-                addToTrie(name, DepartmentType.DEPARTMENT, name, entry.getParentName(), false, null);
-
-                // 处理别名
-                if (entry.getAliases() != null && !entry.getAliases().isEmpty()) {
-                    try {
-                        List<String> aliases = objectMapper.readValue(
-                                entry.getAliases(),
-                                new TypeReference<List<String>>() {});
-                        for (String alias : aliases) {
-                            addToTrie(alias, DepartmentType.DEPARTMENT, name, entry.getParentName(), true, alias);
-                        }
-                    } catch (Exception e) {
-                        log.warn("解析别名失败: {}", entry.getName(), e);
-                    }
-                }
-            }
-
-            log.info("从数据库加载了 {} 个部门词条", entries.size());
-        } catch (Exception e) {
-            log.warn("从数据库加载部门字典失败: {}", e.getMessage());
-        }
-    }
-
-    // ==================== Recognition Methods ====================
-
-    /**
-     * Recognize all department entities in the given text
-     *
-     * Uses Trie-based matching for O(n) complexity where n is text length.
-     * Also performs pattern matching for numbered departments.
-     * Returns all matched departments with their positions and types.
-     *
-     * @param text Input text to analyze
-     * @return List of recognized DepartmentEntity objects, sorted by position
-     */
+    @Override
     public List<DepartmentEntity> recognize(String text) {
         if (text == null || text.isEmpty()) {
             return Collections.emptyList();
@@ -440,17 +290,16 @@ public class DepartmentEntityRecognizer {
 
         totalRecognitions++;
         List<DepartmentEntity> entities = new ArrayList<>();
-        Set<String> matchedRanges = new HashSet<>(); // Track matched positions to avoid duplicates
+        Set<String> matchedRanges = new HashSet<>();
         int textLength = text.length();
 
-        // Scan through text using Trie matching
+        // Trie matching
         for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
+            BaseTrieNode current = root;
             int j = i;
-            TrieNode lastMatch = null;
+            BaseTrieNode lastMatch = null;
             int lastMatchEnd = i;
 
-            // Try to find the longest match starting at position i
             while (j < textLength && current.children.containsKey(text.charAt(j))) {
                 current = current.children.get(text.charAt(j));
                 j++;
@@ -461,23 +310,21 @@ public class DepartmentEntityRecognizer {
                 }
             }
 
-            // If we found a match, create DepartmentEntity
             if (lastMatch != null) {
                 String matchedText = text.substring(i, lastMatchEnd);
                 String rangeKey = i + "-" + lastMatchEnd;
                 if (!matchedRanges.contains(rangeKey)) {
-                    DepartmentEntity entity = createEntity(matchedText, lastMatch, i, lastMatchEnd);
+                    DepartmentTrieNode node = (DepartmentTrieNode) lastMatch;
+                    DepartmentEntity entity = createEntity(matchedText, node, i, lastMatchEnd);
                     entities.add(entity);
                     matchedRanges.add(rangeKey);
                     entitiesFound++;
                 }
-
-                // Skip to end of match to avoid overlapping matches
                 i = lastMatchEnd - 1;
             }
         }
 
-        // Pattern matching for numbered departments (e.g., "一部", "2部")
+        // Pattern matching for numbered departments
         recognizeByPattern(text, entities, matchedRanges);
 
         // Sort by position
@@ -486,24 +333,82 @@ public class DepartmentEntityRecognizer {
         return entities;
     }
 
-    /**
-     * Recognize departments using pattern matching
-     */
+    // ==================== Private Loading Methods ====================
+
+    @SuppressWarnings("unchecked")
+    private void loadDepartments(Map<String, Map<String, Object>> departments) {
+        for (Map.Entry<String, Map<String, Object>> entry : departments.entrySet()) {
+            String deptName = entry.getKey();
+            Map<String, Object> deptData = entry.getValue();
+
+            DepartmentInfo info = new DepartmentInfo(deptName, DepartmentType.DEPARTMENT);
+
+            addToTrieWithType(deptName, DepartmentType.DEPARTMENT, deptName, null, false, null);
+
+            String nameWithoutSuffix = removeSuffix(deptName);
+            if (!nameWithoutSuffix.equals(deptName)) {
+                addToTrieWithType(nameWithoutSuffix, DepartmentType.DEPARTMENT, deptName, null, false, null);
+            }
+
+            if (deptData.containsKey("aliases")) {
+                List<String> aliases = (List<String>) deptData.get("aliases");
+                info.aliases.addAll(aliases);
+                for (String alias : aliases) {
+                    addToTrieWithType(alias, DepartmentType.DEPARTMENT, deptName, null, true, alias);
+                }
+            }
+
+            if (deptData.containsKey("subDepartments")) {
+                List<String> subDepts = (List<String>) deptData.get("subDepartments");
+                info.subDepartments.addAll(subDepts);
+                for (String subDept : subDepts) {
+                    addToTrieWithType(subDept, DepartmentType.SUB_DEPARTMENT, subDept, deptName, false, null);
+                    subDeptToDept.put(subDept, deptName);
+
+                    String subDeptWithoutSuffix = removeSuffix(subDept);
+                    if (!subDeptWithoutSuffix.equals(subDept)) {
+                        addToTrieWithType(subDeptWithoutSuffix, DepartmentType.SUB_DEPARTMENT, subDept, deptName, false, null);
+                    }
+                }
+            }
+
+            departmentIndex.put(deptName, info);
+        }
+    }
+
+    private void addToTrieWithType(String term, DepartmentType type, String normalizedName,
+                                    String parentDepartment, boolean isAlias, String aliasText) {
+        addToTrie(term, node -> {
+            node.departmentType = type;
+            node.normalizedName = normalizedName;
+            node.parentDepartment = parentDepartment;
+            node.isAlias = isAlias;
+            node.aliasText = aliasText;
+        });
+    }
+
+    private String removeSuffix(String name) {
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+
+        for (String suffix : suffixes) {
+            if (name.endsWith(suffix) && name.length() > suffix.length()) {
+                return name.substring(0, name.length() - suffix.length());
+            }
+        }
+        return name;
+    }
+
     private void recognizeByPattern(String text, List<DepartmentEntity> entities, Set<String> matchedRanges) {
-        // Match Chinese numbered pattern (一部, 二部, etc.)
         if (numberedPattern != null) {
             matchPattern(text, numberedPattern, "numbered", entities, matchedRanges);
         }
-
-        // Match digital numbered pattern (1部, 2部, etc.)
         if (digitalPattern != null) {
             matchPattern(text, digitalPattern, "digital", entities, matchedRanges);
         }
     }
 
-    /**
-     * Match a specific pattern and add found entities
-     */
     private void matchPattern(String text, Pattern pattern, String patternType,
                               List<DepartmentEntity> entities, Set<String> matchedRanges) {
         Matcher matcher = pattern.matcher(text);
@@ -514,8 +419,6 @@ public class DepartmentEntityRecognizer {
 
             if (!matchedRanges.contains(rangeKey)) {
                 String matchedText = matcher.group();
-
-                // Try to find parent department by looking at text before the match
                 String parentDept = findPotentialParent(text, start);
 
                 DepartmentEntity entity = DepartmentEntity.builder()
@@ -537,11 +440,7 @@ public class DepartmentEntityRecognizer {
         }
     }
 
-    /**
-     * Try to find a potential parent department before a pattern match
-     */
     private String findPotentialParent(String text, int patternStart) {
-        // Look at up to 10 characters before the pattern match
         int lookback = Math.min(patternStart, 10);
         if (lookback <= 0) {
             return null;
@@ -549,7 +448,6 @@ public class DepartmentEntityRecognizer {
 
         String prefix = text.substring(patternStart - lookback, patternStart);
 
-        // Check if any known department name appears in the prefix
         for (String deptName : departmentIndex.keySet()) {
             String nameWithoutSuffix = removeSuffix(deptName);
             if (prefix.endsWith(nameWithoutSuffix) || prefix.endsWith(deptName)) {
@@ -560,51 +458,36 @@ public class DepartmentEntityRecognizer {
         return null;
     }
 
-    /**
-     * Create DepartmentEntity from Trie match
-     */
-    private DepartmentEntity createEntity(String matchedText, TrieNode node, int start, int end) {
-        DepartmentEntity.DepartmentEntityBuilder builder = DepartmentEntity.builder()
-                .text(matchedText)
-                .type(node.departmentType)
-                .normalizedName(node.normalizedName)
-                .parentDepartment(node.parentDepartment)
-                .startIndex(start)
-                .endIndex(end);
+    // ==================== Public API Methods ====================
 
-        if (node.isAlias) {
-            builder.matchedByAlias(true)
-                   .matchedAlias(node.aliasText)
-                   .confidence(0.9);
-        } else {
-            builder.confidence(1.0);
+    /**
+     * Quick check if text contains any department entity
+     */
+    public boolean containsDepartment(String text) {
+        if (containsEntity(text)) {
+            return true;
         }
 
-        return builder.build();
+        // Also check patterns
+        if (numberedPattern != null && numberedPattern.matcher(text).find()) {
+            return true;
+        }
+        return digitalPattern != null && digitalPattern.matcher(text).find();
     }
 
     /**
-     * Normalize a department name by removing common suffixes
-     *
-     * Examples:
-     * - "销售部门" -> "销售部"
-     * - "研发团队" -> "研发部"
-     * - "财务" -> "财务部"
-     *
-     * @param departmentName The department name to normalize
-     * @return Normalized department name
+     * Normalize a department name
      */
     public String normalize(String departmentName) {
         if (departmentName == null || departmentName.isEmpty()) {
             return departmentName;
         }
 
-        // First check if this is a known alias
+        // Check aliases
         for (Map.Entry<String, DepartmentInfo> entry : departmentIndex.entrySet()) {
             if (entry.getValue().aliases.contains(departmentName)) {
                 return entry.getKey();
             }
-            // Also check sub-departments
             for (String subDept : entry.getValue().subDepartments) {
                 if (subDept.equals(departmentName)) {
                     return subDept;
@@ -612,85 +495,34 @@ public class DepartmentEntityRecognizer {
             }
         }
 
-        // Check if it's already a standard name
         if (departmentIndex.containsKey(departmentName)) {
             return departmentName;
         }
 
-        // Check if it's a sub-department
         if (subDeptToDept.containsKey(departmentName)) {
             return departmentName;
         }
 
-        // Try to find by removing suffixes and adding standard suffix
         String withoutSuffix = removeSuffix(departmentName);
         String standardName = withoutSuffix + "部";
         if (departmentIndex.containsKey(standardName)) {
             return standardName;
         }
 
-        // Return original if no match found
         return departmentName;
     }
 
     /**
-     * Quick check if text contains any department entity
-     *
-     * More efficient than recognize() when you only need a boolean result.
-     *
-     * @param text Input text to check
-     * @return true if text contains at least one department entity
-     */
-    public boolean containsDepartment(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-
-        int textLength = text.length();
-
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    return true;
-                }
-            }
-        }
-
-        // Also check patterns
-        if (numberedPattern != null && numberedPattern.matcher(text).find()) {
-            return true;
-        }
-        if (digitalPattern != null && digitalPattern.matcher(text).find()) {
-            return true;
-        }
-
-        return false;
-    }
-
-    // ==================== Query Methods ====================
-
-    /**
      * Get the department type for a given department name
-     *
-     * @param departmentName Department name (normalized or with suffix)
-     * @return DepartmentType or null if not found
      */
     public DepartmentType getDepartmentType(String departmentName) {
         String normalized = normalize(departmentName);
 
-        // Check in main index
         DepartmentInfo info = departmentIndex.get(normalized);
         if (info != null) {
             return info.type;
         }
 
-        // Check if it's a sub-department
         if (subDeptToDept.containsKey(normalized)) {
             return DepartmentType.SUB_DEPARTMENT;
         }
@@ -700,9 +532,6 @@ public class DepartmentEntityRecognizer {
 
     /**
      * Get parent department for a sub-department
-     *
-     * @param subDepartmentName Sub-department name
-     * @return Parent department name or null if not found
      */
     public String getParentDepartment(String subDepartmentName) {
         String normalized = normalize(subDepartmentName);
@@ -711,9 +540,6 @@ public class DepartmentEntityRecognizer {
 
     /**
      * Get all sub-departments for a department
-     *
-     * @param departmentName Department name
-     * @return List of sub-department names or empty list if not found
      */
     public List<String> getSubDepartments(String departmentName) {
         String normalized = normalize(departmentName);
@@ -727,10 +553,7 @@ public class DepartmentEntityRecognizer {
     }
 
     /**
-     * Check if a department name is valid (exists in dictionary)
-     *
-     * @param departmentName Department name to check
-     * @return true if valid department name
+     * Check if a department name is valid
      */
     public boolean isValidDepartment(String departmentName) {
         if (departmentName == null || departmentName.isEmpty()) {
@@ -739,17 +562,14 @@ public class DepartmentEntityRecognizer {
 
         String normalized = normalize(departmentName);
 
-        // Check direct match
         if (departmentIndex.containsKey(normalized)) {
             return true;
         }
 
-        // Check if it's a sub-department
         if (subDeptToDept.containsKey(normalized)) {
             return true;
         }
 
-        // Check aliases
         for (DepartmentInfo info : departmentIndex.values()) {
             if (info.aliases.contains(departmentName)) {
                 return true;
@@ -761,9 +581,6 @@ public class DepartmentEntityRecognizer {
 
     /**
      * Get all known department names of a specific type
-     *
-     * @param type Department type to filter by
-     * @return List of department names
      */
     public List<String> getAllDepartments(DepartmentType type) {
         List<String> result = new ArrayList<>();
@@ -779,9 +596,6 @@ public class DepartmentEntityRecognizer {
 
     /**
      * Get all aliases for a department
-     *
-     * @param departmentName Department name
-     * @return List of aliases or empty list if not found
      */
     public List<String> getAliases(String departmentName) {
         String normalized = normalize(departmentName);
@@ -794,51 +608,8 @@ public class DepartmentEntityRecognizer {
         return Collections.emptyList();
     }
 
-    // ==================== Management Methods ====================
-
-    /**
-     * Reload the dictionary from file
-     */
-    public void reload() {
-        log.info("Reloading department dictionary...");
-        root = new TrieNode();
-        departmentIndex.clear();
-        subDeptToDept.clear();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("Department dictionary reloaded with {} entries", departmentIndex.size());
-    }
-
-    /**
-     * Get recognition statistics
-     *
-     * @return Map containing statistics
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalRecognitions", totalRecognitions);
-        stats.put("entitiesFound", entitiesFound);
-        stats.put("departmentCount", getAllDepartments(DepartmentType.DEPARTMENT).size());
-        stats.put("subDepartmentCount", getAllDepartments(DepartmentType.SUB_DEPARTMENT).size());
-        stats.put("totalIndexSize", departmentIndex.size());
-        return stats;
-    }
-
-    /**
-     * Reset statistics counters
-     */
-    public void resetStatistics() {
-        totalRecognitions = 0;
-        entitiesFound = 0;
-        log.info("DepartmentEntityRecognizer statistics reset");
-    }
-
     /**
      * Add a custom department at runtime
-     *
-     * @param departmentName Department name
-     * @param aliases List of aliases
-     * @param subDepartments List of sub-departments
      */
     public void addDepartment(String departmentName, List<String> aliases, List<String> subDepartments) {
         if (departmentName == null || departmentName.isEmpty()) {
@@ -847,26 +618,23 @@ public class DepartmentEntityRecognizer {
 
         DepartmentInfo info = new DepartmentInfo(departmentName, DepartmentType.DEPARTMENT);
 
-        // Add to Trie
-        addToTrie(departmentName, DepartmentType.DEPARTMENT, departmentName, null, false, null);
+        addToTrieWithType(departmentName, DepartmentType.DEPARTMENT, departmentName, null, false, null);
         String withoutSuffix = removeSuffix(departmentName);
         if (!withoutSuffix.equals(departmentName)) {
-            addToTrie(withoutSuffix, DepartmentType.DEPARTMENT, departmentName, null, false, null);
+            addToTrieWithType(withoutSuffix, DepartmentType.DEPARTMENT, departmentName, null, false, null);
         }
 
-        // Add aliases
         if (aliases != null) {
             info.aliases.addAll(aliases);
             for (String alias : aliases) {
-                addToTrie(alias, DepartmentType.DEPARTMENT, departmentName, null, true, alias);
+                addToTrieWithType(alias, DepartmentType.DEPARTMENT, departmentName, null, true, alias);
             }
         }
 
-        // Add sub-departments
         if (subDepartments != null) {
             info.subDepartments.addAll(subDepartments);
             for (String subDept : subDepartments) {
-                addToTrie(subDept, DepartmentType.SUB_DEPARTMENT, subDept, departmentName, false, null);
+                addToTrieWithType(subDept, DepartmentType.SUB_DEPARTMENT, subDept, departmentName, false, null);
                 subDeptToDept.put(subDept, departmentName);
             }
         }

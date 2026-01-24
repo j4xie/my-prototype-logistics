@@ -3,18 +3,11 @@ package com.cretas.aims.service.smartbi;
 import com.cretas.aims.dto.smartbi.RegionEntity;
 import com.cretas.aims.entity.smartbi.SmartBiDictionary;
 import com.cretas.aims.entity.smartbi.enums.RegionType;
-import com.cretas.aims.repository.smartbi.SmartBiDictionaryRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,34 +27,43 @@ import java.util.concurrent.ConcurrentHashMap;
  * - Position tracking for matched entities
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-01-20
  */
 @Slf4j
 @Service
-public class RegionEntityRecognizer {
+public class RegionEntityRecognizer extends BaseEntityRecognizer<RegionEntity, RegionEntityRecognizer.RegionTrieNode> {
 
     // ==================== Configuration ====================
 
     @Value("${smartbi.region.dictionary-file:config/smartbi/region_dictionary.json}")
     private String dictionaryFile;
 
-    private final ObjectMapper objectMapper;
-
-    @Autowired
-    private SmartBiDictionaryRepository dictionaryRepository;
-
-    // ==================== Trie Data Structures ====================
+    // ==================== Trie Node ====================
 
     /**
-     * Root node of the Trie tree
+     * Region-specific Trie node
      */
-    private TrieNode root;
+    public static class RegionTrieNode extends BaseTrieNode {
+        /**
+         * Region type if this is an end node
+         */
+        public RegionType regionType;
+
+        /**
+         * Parent region (for provinces: region name; for cities: province name)
+         */
+        public String parentRegion;
+
+        public RegionTrieNode() {
+            super();
+        }
+    }
+
+    // ==================== Indexes ====================
 
     /**
      * Region information index for quick lookup
-     * Key: normalized region name
-     * Value: RegionInfo containing type, parent, and aliases
      */
     private final Map<String, RegionInfo> regionIndex = new ConcurrentHashMap<>();
 
@@ -80,56 +82,7 @@ public class RegionEntityRecognizer {
      */
     private List<String> suffixes = new ArrayList<>();
 
-    /**
-     * Statistics
-     */
-    private long totalRecognitions = 0;
-    private long entitiesFound = 0;
-
     // ==================== Inner Classes ====================
-
-    /**
-     * Trie node for efficient string matching
-     */
-    private static class TrieNode {
-        /**
-         * Child nodes mapped by character
-         */
-        Map<Character, TrieNode> children = new HashMap<>();
-
-        /**
-         * Whether this node marks the end of a valid region name
-         */
-        boolean isEnd = false;
-
-        /**
-         * Region type if this is an end node
-         */
-        RegionType regionType;
-
-        /**
-         * Normalized name of the region
-         */
-        String normalizedName;
-
-        /**
-         * Parent region (for provinces: region name; for cities: province name)
-         */
-        String parentRegion;
-
-        /**
-         * Whether this entry is an alias
-         */
-        boolean isAlias = false;
-
-        /**
-         * The alias text (if isAlias is true)
-         */
-        String aliasText;
-
-        TrieNode() {
-        }
-    }
 
     /**
      * Region information stored in the index
@@ -150,240 +103,118 @@ public class RegionEntityRecognizer {
     // ==================== Constructor ====================
 
     public RegionEntityRecognizer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        super(objectMapper);
     }
 
-    // ==================== Initialization ====================
+    // ==================== BaseEntityRecognizer Implementation ====================
 
-    /**
-     * Initialize the recognizer by loading dictionary and building Trie
-     */
-    @PostConstruct
-    public void init() {
-        log.info("Initializing RegionEntityRecognizer...");
-        root = new TrieNode();
-        loadDictionary();  // 从 JSON 加载默认配置
-        loadFromDatabase(); // 从数据库加载动态配置
-        log.info("RegionEntityRecognizer initialized with {} regions in index", regionIndex.size());
+    @Override
+    protected String getDictionaryFile() {
+        return dictionaryFile;
     }
 
-    /**
-     * Load region dictionary from JSON file
-     */
-    private void loadDictionary() {
-        try {
-            ClassPathResource resource = new ClassPathResource(dictionaryFile);
-            if (!resource.exists()) {
-                log.warn("Region dictionary file not found: {}, using defaults", dictionaryFile);
-                initDefaultDictionary();
-                return;
-            }
+    @Override
+    protected String getDictType() {
+        return "region";
+    }
 
-            try (InputStream is = resource.getInputStream()) {
-                Map<String, Object> dictionary = objectMapper.readValue(
-                        is, new TypeReference<Map<String, Object>>() {});
+    @Override
+    protected String getRecognizerName() {
+        return "RegionEntityRecognizer";
+    }
 
-                // Load suffixes
-                if (dictionary.containsKey("suffixes")) {
-                    @SuppressWarnings("unchecked")
-                    List<String> loadedSuffixes = (List<String>) dictionary.get("suffixes");
-                    this.suffixes = new ArrayList<>(loadedSuffixes);
-                }
+    @Override
+    protected RegionTrieNode createTrieNode() {
+        return new RegionTrieNode();
+    }
 
-                // Load regions (大区)
-                if (dictionary.containsKey("regions")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, Object>> regions =
-                            (Map<String, Map<String, Object>>) dictionary.get("regions");
-                    loadRegions(regions);
-                }
+    @Override
+    protected RegionEntity createEntity(String matchedText, RegionTrieNode node, int start, int end) {
+        RegionEntity.RegionEntityBuilder builder = RegionEntity.builder()
+                .text(matchedText)
+                .type(node.regionType)
+                .normalizedName(node.normalizedName)
+                .parentRegion(node.parentRegion)
+                .startIndex(start)
+                .endIndex(end);
 
-                // Load provinces (省份)
-                if (dictionary.containsKey("provinces")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, Object>> provinces =
-                            (Map<String, Map<String, Object>>) dictionary.get("provinces");
-                    loadProvinces(provinces);
-                }
+        if (node.isAlias) {
+            builder.matchedByAlias(true)
+                   .matchedAlias(node.aliasText)
+                   .confidence(0.9);
+        } else {
+            builder.confidence(1.0);
+        }
 
-                // Load major cities (重点城市 - for quick lookup)
-                if (dictionary.containsKey("majorCities")) {
-                    @SuppressWarnings("unchecked")
-                    List<String> majorCities = (List<String>) dictionary.get("majorCities");
-                    // Major cities are already loaded via provinces, but we can use this for prioritization
-                    log.debug("Loaded {} major cities for priority matching", majorCities.size());
-                }
+        return builder.build();
+    }
 
-                log.info("Successfully loaded region dictionary from: {}", dictionaryFile);
-            }
-        } catch (IOException e) {
-            log.error("Failed to load region dictionary: {}", e.getMessage());
-            initDefaultDictionary();
+    @Override
+    protected int getEntityStartIndex(RegionEntity entity) {
+        return entity.getStartIndex();
+    }
+
+    @Override
+    protected void clearIndexes() {
+        regionIndex.clear();
+        provinceToRegion.clear();
+        cityToProvince.clear();
+    }
+
+    @Override
+    protected void collectAdditionalStatistics(Map<String, Object> stats) {
+        stats.put("regionCount", getAllRegions(RegionType.REGION).size());
+        stats.put("provinceCount", getAllRegions(RegionType.PROVINCE).size());
+        stats.put("cityCount", getAllRegions(RegionType.CITY).size());
+        stats.put("totalIndexSize", regionIndex.size());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void processDictionaryData(Map<String, Object> dictionary) {
+        // Load suffixes
+        if (dictionary.containsKey("suffixes")) {
+            List<String> loadedSuffixes = (List<String>) dictionary.get("suffixes");
+            this.suffixes = new ArrayList<>(loadedSuffixes);
+        }
+
+        // Load regions (大区)
+        if (dictionary.containsKey("regions")) {
+            Map<String, Map<String, Object>> regions =
+                    (Map<String, Map<String, Object>>) dictionary.get("regions");
+            loadRegions(regions);
+        }
+
+        // Load provinces (省份)
+        if (dictionary.containsKey("provinces")) {
+            Map<String, Map<String, Object>> provinces =
+                    (Map<String, Map<String, Object>>) dictionary.get("provinces");
+            loadProvinces(provinces);
+        }
+
+        // Load major cities (for logging only)
+        if (dictionary.containsKey("majorCities")) {
+            List<String> majorCities = (List<String>) dictionary.get("majorCities");
+            log.debug("Loaded {} major cities for priority matching", majorCities.size());
         }
     }
 
-    /**
-     * Load region data and build Trie entries
-     */
-    private void loadRegions(Map<String, Map<String, Object>> regions) {
-        for (Map.Entry<String, Map<String, Object>> entry : regions.entrySet()) {
-            String regionName = entry.getKey();
-            Map<String, Object> regionData = entry.getValue();
+    @Override
+    protected void processDbEntry(SmartBiDictionary entry) {
+        String name = entry.getName();
 
-            // Create region info
-            RegionInfo info = new RegionInfo(regionName, RegionType.REGION);
+        // Add to Trie
+        addToTrieWithType(name, RegionType.PROVINCE, name, entry.getParentName(), false, null);
 
-            // Add to Trie - standard name
-            addToTrie(regionName, RegionType.REGION, regionName, null, false, null);
-
-            // Add aliases
-            if (regionData.containsKey("aliases")) {
-                @SuppressWarnings("unchecked")
-                List<String> aliases = (List<String>) regionData.get("aliases");
-                info.aliases.addAll(aliases);
-                for (String alias : aliases) {
-                    addToTrie(alias, RegionType.REGION, regionName, null, true, alias);
-                }
-            }
-
-            // Track provinces belonging to this region
-            if (regionData.containsKey("provinces")) {
-                @SuppressWarnings("unchecked")
-                List<String> provinces = (List<String>) regionData.get("provinces");
-                info.childRegions.addAll(provinces);
-                for (String province : provinces) {
-                    provinceToRegion.put(province, regionName);
-                }
-            }
-
-            regionIndex.put(regionName, info);
+        // Process aliases
+        List<String> aliases = parseAliases(entry.getAliases());
+        for (String alias : aliases) {
+            addToTrieWithType(alias, RegionType.PROVINCE, name, entry.getParentName(), true, alias);
         }
     }
 
-    /**
-     * Load province data and build Trie entries
-     */
-    private void loadProvinces(Map<String, Map<String, Object>> provinces) {
-        for (Map.Entry<String, Map<String, Object>> entry : provinces.entrySet()) {
-            String provinceName = entry.getKey();
-            Map<String, Object> provinceData = entry.getValue();
-
-            // Get parent region
-            String parentRegion = null;
-            if (provinceData.containsKey("region")) {
-                parentRegion = (String) provinceData.get("region");
-                provinceToRegion.put(provinceName, parentRegion);
-            }
-
-            // Create province info
-            RegionInfo info = new RegionInfo(provinceName, RegionType.PROVINCE);
-            info.parentRegion = parentRegion;
-
-            // Add to Trie - standard name
-            addToTrie(provinceName, RegionType.PROVINCE, provinceName, parentRegion, false, null);
-
-            // Add with suffix (e.g., "江苏省")
-            for (String suffix : Arrays.asList("省", "市", "自治区", "特别行政区")) {
-                String withSuffix = provinceName + suffix;
-                if (!provinceName.endsWith(suffix)) {
-                    addToTrie(withSuffix, RegionType.PROVINCE, provinceName, parentRegion, false, null);
-                }
-            }
-
-            // Add aliases
-            if (provinceData.containsKey("aliases")) {
-                @SuppressWarnings("unchecked")
-                List<String> aliases = (List<String>) provinceData.get("aliases");
-                info.aliases.addAll(aliases);
-                for (String alias : aliases) {
-                    addToTrie(alias, RegionType.PROVINCE, provinceName, parentRegion, true, alias);
-                }
-            }
-
-            // Load cities
-            if (provinceData.containsKey("cities")) {
-                @SuppressWarnings("unchecked")
-                List<String> cities = (List<String>) provinceData.get("cities");
-                info.childRegions.addAll(cities);
-                for (String city : cities) {
-                    // Add city to Trie
-                    addToTrie(city, RegionType.CITY, city, provinceName, false, null);
-                    // Add with "市" suffix
-                    addToTrie(city + "市", RegionType.CITY, city, provinceName, false, null);
-                    cityToProvince.put(city, provinceName);
-                }
-            }
-
-            regionIndex.put(provinceName, info);
-        }
-    }
-
-    /**
-     * Add a term to the Trie tree
-     */
-    private void addToTrie(String term, RegionType type, String normalizedName,
-                           String parentRegion, boolean isAlias, String aliasText) {
-        if (term == null || term.isEmpty()) {
-            return;
-        }
-
-        TrieNode current = root;
-        for (char c : term.toCharArray()) {
-            current.children.putIfAbsent(c, new TrieNode());
-            current = current.children.get(c);
-        }
-
-        // Only update end node info if not already set (prefer non-alias over alias)
-        if (!current.isEnd || (!current.isAlias && isAlias)) {
-            current.isEnd = true;
-            current.regionType = type;
-            current.normalizedName = normalizedName;
-            current.parentRegion = parentRegion;
-            current.isAlias = isAlias;
-            current.aliasText = aliasText;
-        }
-    }
-
-    /**
-     * 从数据库加载动态配置的区域词条
-     * 数据库配置优先级高于 JSON 文件
-     */
-    private void loadFromDatabase() {
-        try {
-            List<SmartBiDictionary> entries = dictionaryRepository
-                    .findByDictTypeAndIsActiveTrueOrderByPriorityAsc("region");
-
-            for (SmartBiDictionary entry : entries) {
-                String name = entry.getName();
-
-                // 添加到 Trie 树
-                addToTrie(name, RegionType.PROVINCE, name, entry.getParentName(), false, null);
-
-                // 处理别名
-                if (entry.getAliases() != null && !entry.getAliases().isEmpty()) {
-                    try {
-                        List<String> aliases = objectMapper.readValue(
-                                entry.getAliases(),
-                                new TypeReference<List<String>>() {});
-                        for (String alias : aliases) {
-                            addToTrie(alias, RegionType.PROVINCE, name, entry.getParentName(), true, alias);
-                        }
-                    } catch (Exception e) {
-                        log.warn("解析别名失败: {}", entry.getName(), e);
-                    }
-                }
-            }
-
-            log.info("从数据库加载了 {} 个区域词条", entries.size());
-        } catch (Exception e) {
-            log.warn("从数据库加载区域字典失败，将仅使用 JSON 配置: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Initialize default dictionary when file is not available
-     */
-    private void initDefaultDictionary() {
+    @Override
+    protected void initDefaultDictionary() {
         log.info("Initializing default region dictionary...");
 
         // Default suffixes
@@ -404,9 +235,9 @@ public class RegionEntityRecognizer {
             RegionInfo info = new RegionInfo(regionName, RegionType.REGION);
             info.aliases.addAll(entry.getValue());
 
-            addToTrie(regionName, RegionType.REGION, regionName, null, false, null);
+            addToTrieWithType(regionName, RegionType.REGION, regionName, null, false, null);
             for (String alias : entry.getValue()) {
-                addToTrie(alias, RegionType.REGION, regionName, null, true, alias);
+                addToTrieWithType(alias, RegionType.REGION, regionName, null, true, alias);
             }
 
             regionIndex.put(regionName, info);
@@ -424,9 +255,9 @@ public class RegionEntityRecognizer {
 
         for (String province : defaultProvinces) {
             RegionInfo info = new RegionInfo(province, RegionType.PROVINCE);
-            addToTrie(province, RegionType.PROVINCE, province, null, false, null);
-            addToTrie(province + "省", RegionType.PROVINCE, province, null, false, null);
-            addToTrie(province + "市", RegionType.PROVINCE, province, null, false, null);
+            addToTrieWithType(province, RegionType.PROVINCE, province, null, false, null);
+            addToTrieWithType(province + "省", RegionType.PROVINCE, province, null, false, null);
+            addToTrieWithType(province + "市", RegionType.PROVINCE, province, null, false, null);
             regionIndex.put(province, info);
         }
 
@@ -438,102 +269,116 @@ public class RegionEntityRecognizer {
         };
 
         for (String city : defaultCities) {
-            addToTrie(city, RegionType.CITY, city, null, false, null);
-            addToTrie(city + "市", RegionType.CITY, city, null, false, null);
+            addToTrieWithType(city, RegionType.CITY, city, null, false, null);
+            addToTrieWithType(city + "市", RegionType.CITY, city, null, false, null);
         }
 
         log.info("Default dictionary initialized with {} entries", regionIndex.size());
     }
 
-    // ==================== Recognition Methods ====================
+    // ==================== Private Loading Methods ====================
 
-    /**
-     * Recognize all region entities in the given text
-     *
-     * Uses Trie-based matching for O(n) complexity where n is text length.
-     * Returns all matched regions with their positions and types.
-     *
-     * @param text Input text to analyze
-     * @return List of recognized RegionEntity objects, sorted by position
-     */
-    public List<RegionEntity> recognize(String text) {
-        if (text == null || text.isEmpty()) {
-            return Collections.emptyList();
-        }
+    @SuppressWarnings("unchecked")
+    private void loadRegions(Map<String, Map<String, Object>> regions) {
+        for (Map.Entry<String, Map<String, Object>> entry : regions.entrySet()) {
+            String regionName = entry.getKey();
+            Map<String, Object> regionData = entry.getValue();
 
-        totalRecognitions++;
-        List<RegionEntity> entities = new ArrayList<>();
-        int textLength = text.length();
+            RegionInfo info = new RegionInfo(regionName, RegionType.REGION);
 
-        // Scan through text using Trie matching
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-            TrieNode lastMatch = null;
-            int lastMatchEnd = i;
+            addToTrieWithType(regionName, RegionType.REGION, regionName, null, false, null);
 
-            // Try to find the longest match starting at position i
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    lastMatch = current;
-                    lastMatchEnd = j;
+            if (regionData.containsKey("aliases")) {
+                List<String> aliases = (List<String>) regionData.get("aliases");
+                info.aliases.addAll(aliases);
+                for (String alias : aliases) {
+                    addToTrieWithType(alias, RegionType.REGION, regionName, null, true, alias);
                 }
             }
 
-            // If we found a match, create RegionEntity
-            if (lastMatch != null) {
-                String matchedText = text.substring(i, lastMatchEnd);
-                RegionEntity entity = createEntity(matchedText, lastMatch, i, lastMatchEnd);
-                entities.add(entity);
-                entitiesFound++;
-
-                // Skip to end of match to avoid overlapping matches
-                i = lastMatchEnd - 1;
+            if (regionData.containsKey("provinces")) {
+                List<String> provinces = (List<String>) regionData.get("provinces");
+                info.childRegions.addAll(provinces);
+                for (String province : provinces) {
+                    provinceToRegion.put(province, regionName);
+                }
             }
+
+            regionIndex.put(regionName, info);
         }
+    }
 
-        // Sort by position
-        entities.sort(Comparator.comparingInt(RegionEntity::getStartIndex));
+    @SuppressWarnings("unchecked")
+    private void loadProvinces(Map<String, Map<String, Object>> provinces) {
+        for (Map.Entry<String, Map<String, Object>> entry : provinces.entrySet()) {
+            String provinceName = entry.getKey();
+            Map<String, Object> provinceData = entry.getValue();
 
-        return entities;
+            String parentRegion = null;
+            if (provinceData.containsKey("region")) {
+                parentRegion = (String) provinceData.get("region");
+                provinceToRegion.put(provinceName, parentRegion);
+            }
+
+            RegionInfo info = new RegionInfo(provinceName, RegionType.PROVINCE);
+            info.parentRegion = parentRegion;
+
+            addToTrieWithType(provinceName, RegionType.PROVINCE, provinceName, parentRegion, false, null);
+
+            for (String suffix : Arrays.asList("省", "市", "自治区", "特别行政区")) {
+                String withSuffix = provinceName + suffix;
+                if (!provinceName.endsWith(suffix)) {
+                    addToTrieWithType(withSuffix, RegionType.PROVINCE, provinceName, parentRegion, false, null);
+                }
+            }
+
+            if (provinceData.containsKey("aliases")) {
+                List<String> aliases = (List<String>) provinceData.get("aliases");
+                info.aliases.addAll(aliases);
+                for (String alias : aliases) {
+                    addToTrieWithType(alias, RegionType.PROVINCE, provinceName, parentRegion, true, alias);
+                }
+            }
+
+            if (provinceData.containsKey("cities")) {
+                List<String> cities = (List<String>) provinceData.get("cities");
+                info.childRegions.addAll(cities);
+                for (String city : cities) {
+                    addToTrieWithType(city, RegionType.CITY, city, provinceName, false, null);
+                    addToTrieWithType(city + "市", RegionType.CITY, city, provinceName, false, null);
+                    cityToProvince.put(city, provinceName);
+                }
+            }
+
+            regionIndex.put(provinceName, info);
+        }
     }
 
     /**
-     * Create RegionEntity from Trie match
+     * Add a term to Trie with region-specific fields
      */
-    private RegionEntity createEntity(String matchedText, TrieNode node, int start, int end) {
-        RegionEntity.RegionEntityBuilder builder = RegionEntity.builder()
-                .text(matchedText)
-                .type(node.regionType)
-                .normalizedName(node.normalizedName)
-                .parentRegion(node.parentRegion)
-                .startIndex(start)
-                .endIndex(end);
+    private void addToTrieWithType(String term, RegionType type, String normalizedName,
+                                    String parentRegion, boolean isAlias, String aliasText) {
+        addToTrie(term, node -> {
+            node.regionType = type;
+            node.normalizedName = normalizedName;
+            node.parentRegion = parentRegion;
+            node.isAlias = isAlias;
+            node.aliasText = aliasText;
+        });
+    }
 
-        if (node.isAlias) {
-            builder.matchedByAlias(true)
-                   .matchedAlias(node.aliasText)
-                   .confidence(0.9);
-        } else {
-            builder.confidence(1.0);
-        }
+    // ==================== Public API Methods ====================
 
-        return builder.build();
+    /**
+     * Quick check if text contains any region entity
+     */
+    public boolean containsRegion(String text) {
+        return containsEntity(text);
     }
 
     /**
      * Normalize a region name by removing common suffixes
-     *
-     * Examples:
-     * - "江苏省" -> "江苏"
-     * - "杭州市" -> "杭州"
-     * - "内蒙古自治区" -> "内蒙古"
-     *
-     * @param regionName The region name to normalize
-     * @return Normalized region name
      */
     public String normalize(String regionName) {
         if (regionName == null || regionName.isEmpty()) {
@@ -553,12 +398,10 @@ public class RegionEntityRecognizer {
             }
         }
 
-        // Also check if the normalized name exists in our index
         if (regionIndex.containsKey(result)) {
             return result;
         }
 
-        // Try to find by alias
         for (Map.Entry<String, RegionInfo> entry : regionIndex.entrySet()) {
             if (entry.getValue().aliases.contains(regionName)) {
                 return entry.getKey();
@@ -569,44 +412,7 @@ public class RegionEntityRecognizer {
     }
 
     /**
-     * Quick check if text contains any region entity
-     *
-     * More efficient than recognize() when you only need a boolean result.
-     *
-     * @param text Input text to check
-     * @return true if text contains at least one region entity
-     */
-    public boolean containsRegion(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-
-        int textLength = text.length();
-
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    // ==================== Query Methods ====================
-
-    /**
      * Get the region type for a given region name
-     *
-     * @param regionName Region name (normalized or with suffix)
-     * @return RegionType or null if not found
      */
     public RegionType getRegionType(String regionName) {
         String normalized = normalize(regionName);
@@ -616,19 +422,14 @@ public class RegionEntityRecognizer {
 
     /**
      * Get parent region for a province or city
-     *
-     * @param regionName Province or city name
-     * @return Parent region name or null if not found
      */
     public String getParentRegion(String regionName) {
         String normalized = normalize(regionName);
 
-        // Check if it's a city
         if (cityToProvince.containsKey(normalized)) {
             return cityToProvince.get(normalized);
         }
 
-        // Check if it's a province
         if (provinceToRegion.containsKey(normalized)) {
             return provinceToRegion.get(normalized);
         }
@@ -638,36 +439,25 @@ public class RegionEntityRecognizer {
 
     /**
      * Get the major region (大区) that contains the given region
-     *
-     * Works for provinces and cities.
-     *
-     * @param regionName Province or city name
-     * @return Major region name or null if not found
      */
     public String getMajorRegion(String regionName) {
         String normalized = normalize(regionName);
 
-        // Check if it's already a major region
         RegionInfo info = regionIndex.get(normalized);
         if (info != null && info.type == RegionType.REGION) {
             return normalized;
         }
 
-        // Check if it's a city, get province first
         if (cityToProvince.containsKey(normalized)) {
             String province = cityToProvince.get(normalized);
             return provinceToRegion.get(province);
         }
 
-        // Check if it's a province
         return provinceToRegion.get(normalized);
     }
 
     /**
      * Get all provinces in a major region
-     *
-     * @param regionName Major region name (e.g., "华东")
-     * @return List of province names or empty list if region not found
      */
     public List<String> getProvincesInRegion(String regionName) {
         String normalized = normalize(regionName);
@@ -682,9 +472,6 @@ public class RegionEntityRecognizer {
 
     /**
      * Get all cities in a province
-     *
-     * @param provinceName Province name
-     * @return List of city names or empty list if province not found
      */
     public List<String> getCitiesInProvince(String provinceName) {
         String normalized = normalize(provinceName);
@@ -698,10 +485,7 @@ public class RegionEntityRecognizer {
     }
 
     /**
-     * Check if a region name is valid (exists in dictionary)
-     *
-     * @param regionName Region name to check
-     * @return true if valid region name
+     * Check if a region name is valid
      */
     public boolean isValidRegion(String regionName) {
         if (regionName == null || regionName.isEmpty()) {
@@ -710,24 +494,15 @@ public class RegionEntityRecognizer {
 
         String normalized = normalize(regionName);
 
-        // Check direct match
         if (regionIndex.containsKey(normalized)) {
             return true;
         }
 
-        // Check if it's a city
-        if (cityToProvince.containsKey(normalized)) {
-            return true;
-        }
-
-        return false;
+        return cityToProvince.containsKey(normalized);
     }
 
     /**
      * Get all known region names of a specific type
-     *
-     * @param type Region type to filter by
-     * @return List of region names
      */
     public List<String> getAllRegions(RegionType type) {
         List<String> result = new ArrayList<>();
@@ -743,46 +518,5 @@ public class RegionEntityRecognizer {
         }
 
         return result;
-    }
-
-    // ==================== Management Methods ====================
-
-    /**
-     * 重新加载字典（热更新）
-     */
-    public void reload() {
-        log.info("Reloading RegionEntityRecognizer...");
-        root = new TrieNode();
-        regionIndex.clear();
-        provinceToRegion.clear();
-        cityToProvince.clear();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("RegionEntityRecognizer reloaded with {} entries", regionIndex.size());
-    }
-
-    /**
-     * Get recognition statistics
-     *
-     * @return Map containing statistics
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalRecognitions", totalRecognitions);
-        stats.put("entitiesFound", entitiesFound);
-        stats.put("regionCount", getAllRegions(RegionType.REGION).size());
-        stats.put("provinceCount", getAllRegions(RegionType.PROVINCE).size());
-        stats.put("cityCount", getAllRegions(RegionType.CITY).size());
-        stats.put("totalIndexSize", regionIndex.size());
-        return stats;
-    }
-
-    /**
-     * Reset statistics counters
-     */
-    public void resetStatistics() {
-        totalRecognitions = 0;
-        entitiesFound = 0;
-        log.info("RegionEntityRecognizer statistics reset");
     }
 }

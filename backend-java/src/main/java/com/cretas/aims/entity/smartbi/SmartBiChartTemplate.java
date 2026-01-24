@@ -215,6 +215,38 @@ public class SmartBiChartTemplate extends BaseEntity {
     /** 物流 */
     public static final String CATEGORY_LOGISTICS = "LOGISTICS";
 
+    // ==================== 利润表专用模板代码常量 ====================
+
+    /** 利润趋势分析图 - 收入、成本、毛利的月度趋势 */
+    public static final String TEMPLATE_PROFIT_TREND = "profit_trend";
+    /** 预实对比分析图 - 预算完成率、差异分析 */
+    public static final String TEMPLATE_BUDGET_VS_ACTUAL = "budget_vs_actual";
+    /** 成本结构详细分析图 - 成本构成双层饼图 */
+    public static final String TEMPLATE_COST_STRUCTURE_DETAIL = "cost_structure_detail";
+
+    // ==================== 其他财务模板代码常量 ====================
+
+    /** 财务健康度雷达图 */
+    public static final String TEMPLATE_FINANCE_HEALTH_RADAR = "finance_health_radar";
+    /** 杜邦分析图 */
+    public static final String TEMPLATE_DUPONT_ANALYSIS = "dupont_analysis";
+    /** 现金流量瀑布图 */
+    public static final String TEMPLATE_CASHFLOW_WATERFALL = "cashflow_waterfall";
+    /** 盈亏平衡分析图 */
+    public static final String TEMPLATE_BREAKEVEN_ANALYSIS = "breakeven_analysis";
+    /** 成本结构分析图 */
+    public static final String TEMPLATE_COST_STRUCTURE_PIE = "cost_structure_pie";
+    /** 财务比率趋势图 */
+    public static final String TEMPLATE_FINANCE_RATIO_TREND = "finance_ratio_trend";
+    /** 周转率对比分析 */
+    public static final String TEMPLATE_TURNOVER_COMPARISON = "turnover_comparison";
+    /** KPI 仪表盘 */
+    public static final String TEMPLATE_KPI_GAUGE = "kpi_gauge";
+    /** 预算达成分析图 */
+    public static final String TEMPLATE_BUDGET_ACHIEVEMENT = "budget_achievement";
+    /** 同比环比分析图 */
+    public static final String TEMPLATE_YOY_MOM_COMPARISON = "yoy_mom_comparison";
+
     // ==================== 便捷方法 ====================
 
     /**
@@ -257,5 +289,34 @@ public class SmartBiChartTemplate extends BaseEntity {
      */
     public boolean isFactoryTemplate() {
         return this.factoryId != null;
+    }
+
+    /**
+     * 判断是否为利润表专用模板
+     */
+    public boolean isProfitStatementTemplate() {
+        return TEMPLATE_PROFIT_TREND.equals(this.templateCode)
+                || TEMPLATE_BUDGET_VS_ACTUAL.equals(this.templateCode)
+                || TEMPLATE_COST_STRUCTURE_DETAIL.equals(this.templateCode);
+    }
+
+    /**
+     * 判断是否为财务分析模板
+     */
+    public boolean isFinanceTemplate() {
+        return CATEGORY_FINANCE.equals(this.category);
+    }
+
+    /**
+     * 获取所有利润表专用模板代码
+     *
+     * @return 利润表专用模板代码数组
+     */
+    public static String[] getProfitStatementTemplateCodes() {
+        return new String[]{
+                TEMPLATE_PROFIT_TREND,
+                TEMPLATE_BUDGET_VS_ACTUAL,
+                TEMPLATE_COST_STRUCTURE_DETAIL
+        };
     }
 }

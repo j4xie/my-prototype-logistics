@@ -11,10 +11,12 @@ import com.cretas.aims.entity.ProductionBatch;
 import com.cretas.aims.entity.ProductType;
 import com.cretas.aims.entity.ProductionPlan;
 import com.cretas.aims.entity.config.AIIntentConfig;
+import com.cretas.aims.entity.intent.IntentPreviewToken;
 import com.cretas.aims.repository.MaterialBatchRepository;
 import com.cretas.aims.repository.ProductionBatchRepository;
 import com.cretas.aims.repository.ProductTypeRepository;
 import com.cretas.aims.repository.ProductionPlanRepository;
+import com.cretas.aims.service.PreviewTokenService;
 import com.cretas.aims.service.RuleEngineService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -59,6 +61,7 @@ public class DataOperationIntentHandler implements IntentHandler {
     private final DashScopeClient dashScopeClient;
     private final DashScopeConfig dashScopeConfig;
     private final RuleEngineService ruleEngineService;
+    private final PreviewTokenService previewTokenService;
 
     @Value("${cretas.ai.service.url:http://localhost:8085}")
     private String aiServiceUrl;
@@ -72,7 +75,8 @@ public class DataOperationIntentHandler implements IntentHandler {
                                        ObjectMapper objectMapper,
                                        RuleEngineService ruleEngineService,
                                        @Autowired(required = false) DashScopeClient dashScopeClient,
-                                       @Autowired(required = false) DashScopeConfig dashScopeConfig) {
+                                       @Autowired(required = false) DashScopeConfig dashScopeConfig,
+                                       @Autowired(required = false) PreviewTokenService previewTokenService) {
         this.productTypeRepository = productTypeRepository;
         this.productionPlanRepository = productionPlanRepository;
         this.productionBatchRepository = productionBatchRepository;
@@ -82,6 +86,7 @@ public class DataOperationIntentHandler implements IntentHandler {
         this.ruleEngineService = ruleEngineService;
         this.dashScopeClient = dashScopeClient;
         this.dashScopeConfig = dashScopeConfig;
+        this.previewTokenService = previewTokenService;
     }
 
     // 支持的实体类型映射
@@ -253,12 +258,35 @@ public class DataOperationIntentHandler implements IntentHandler {
             String entityId = (String) parsedIntent.get("entityId");
             String entityIdentifier = (String) parsedIntent.get("entityIdentifier");
             Map<String, Object> updates = (Map<String, Object>) parsedIntent.get("updates");
+            String operation = (String) parsedIntent.getOrDefault("operation", "UPDATE");
 
             // 查找实体当前值
             Map<String, Object> currentValues = getCurrentValues(factoryId, entityType, entityId, entityIdentifier);
 
-            // 生成确认Token
-            String confirmToken = UUID.randomUUID().toString();
+            // 生成确认Token (TCC模式 - 持久化)
+            String confirmToken;
+            int expiresInSeconds = 300;
+
+            if (previewTokenService != null) {
+                // 使用持久化的预览令牌 (TCC模式)
+                String username = request.getContext() != null ?
+                        (String) request.getContext().get("username") : null;
+                String effectiveEntityId = entityId != null ? entityId : entityIdentifier;
+
+                IntentPreviewToken token = previewTokenService.createToken(
+                        factoryId, userId, username,
+                        intentConfig.getIntentCode(), intentConfig.getIntentName(),
+                        entityType, effectiveEntityId, operation,
+                        parsedIntent, currentValues, updates, expiresInSeconds);
+
+                confirmToken = token.getToken();
+                log.info("创建持久化预览令牌: token={}, intent={}, entity={}/{}",
+                        confirmToken, intentConfig.getIntentCode(), entityType, effectiveEntityId);
+            } else {
+                // 降级: 生成临时UUID (不持久化，仅用于兼容)
+                confirmToken = UUID.randomUUID().toString();
+                log.warn("PreviewTokenService 不可用，使用临时令牌: {}", confirmToken);
+            }
 
             return IntentExecuteResponse.builder()
                     .intentRecognized(true)
@@ -276,7 +304,7 @@ public class DataOperationIntentHandler implements IntentHandler {
                     .confirmableAction(IntentExecuteResponse.ConfirmableAction.builder()
                             .confirmToken(confirmToken)
                             .description("确认修改 " + entityType + " 的数据")
-                            .expiresInSeconds(300)
+                            .expiresInSeconds(expiresInSeconds)
                             .previewData(parsedIntent)
                             .build())
                     .executedAt(LocalDateTime.now())

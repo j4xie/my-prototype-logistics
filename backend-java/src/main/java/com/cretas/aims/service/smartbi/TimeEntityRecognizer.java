@@ -5,18 +5,11 @@ import com.cretas.aims.dto.smartbi.TimeEntity;
 import com.cretas.aims.dto.smartbi.TimeEntity.TimeGranularity;
 import com.cretas.aims.dto.smartbi.TimeEntity.TimeType;
 import com.cretas.aims.entity.smartbi.SmartBiDictionary;
-import com.cretas.aims.repository.smartbi.SmartBiDictionaryRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -44,41 +37,42 @@ import java.util.regex.Pattern;
  * - Position tracking for matched entities
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-01-20
  */
 @Slf4j
 @Service
-public class TimeEntityRecognizer {
+public class TimeEntityRecognizer extends BaseEntityRecognizer<TimeEntity, TimeEntityRecognizer.TimeTrieNode> {
 
     // ==================== Configuration ====================
 
     @Value("${smartbi.time.dictionary-file:config/smartbi/time_dictionary.json}")
     private String dictionaryFile;
 
-    private final ObjectMapper objectMapper;
-
-    @Autowired
-    private SmartBiDictionaryRepository dictionaryRepository;
-
-    // ==================== Trie Data Structures ====================
+    // ==================== Trie Node ====================
 
     /**
-     * Root node of the Trie tree for fixed pattern matching
+     * Time-specific Trie node
      */
-    private TrieNode root;
+    public static class TimeTrieNode extends BaseTrieNode {
+        public TimeType timeType;
+        public TimeGranularity granularity;
+        public String description;
+
+        public TimeTrieNode() {
+            super();
+        }
+    }
+
+    // ==================== Additional Data Structures ====================
 
     /**
      * Time type information index
-     * Key: pattern text
-     * Value: TimeTypeInfo containing type and description
      */
     private final Map<String, TimeTypeInfo> timeTypeIndex = new ConcurrentHashMap<>();
 
     /**
      * Quarter patterns mapping
-     * Key: quarter text (e.g., "Q1", "第一季度")
-     * Value: quarter number (1-4)
      */
     private final Map<String, Integer> quarterPatterns = new ConcurrentHashMap<>();
 
@@ -87,30 +81,8 @@ public class TimeEntityRecognizer {
      */
     private final Map<String, Pattern> dynamicPatterns = new ConcurrentHashMap<>();
 
-    /**
-     * Statistics
-     */
-    private long totalRecognitions = 0;
-    private long entitiesFound = 0;
-
     // ==================== Inner Classes ====================
 
-    /**
-     * Trie node for efficient string matching
-     */
-    private static class TrieNode {
-        Map<Character, TrieNode> children = new HashMap<>();
-        boolean isEnd = false;
-        TimeType timeType;
-        TimeGranularity granularity;
-        String description;
-
-        TrieNode() {}
-    }
-
-    /**
-     * Time type information stored in the index
-     */
     private static class TimeTypeInfo {
         TimeType type;
         TimeGranularity granularity;
@@ -126,154 +98,125 @@ public class TimeEntityRecognizer {
     // ==================== Constructor ====================
 
     public TimeEntityRecognizer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        super(objectMapper);
     }
 
-    // ==================== Initialization ====================
+    // ==================== BaseEntityRecognizer Implementation ====================
 
-    /**
-     * Initialize the recognizer by loading dictionary and building Trie
-     */
-    @PostConstruct
-    public void init() {
-        log.info("Initializing TimeEntityRecognizer...");
-        root = new TrieNode();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("TimeEntityRecognizer initialized with {} patterns in index", timeTypeIndex.size());
+    @Override
+    protected String getDictionaryFile() {
+        return dictionaryFile;
     }
 
-    /**
-     * Load time dictionary from JSON file
-     */
-    private void loadDictionary() {
-        try {
-            ClassPathResource resource = new ClassPathResource(dictionaryFile);
-            if (!resource.exists()) {
-                log.warn("Time dictionary file not found: {}, using defaults", dictionaryFile);
-                initDefaultDictionary();
-                return;
-            }
+    @Override
+    protected String getDictType() {
+        return "time";
+    }
 
-            try (InputStream is = resource.getInputStream()) {
-                Map<String, Object> dictionary = objectMapper.readValue(
-                        is, new TypeReference<Map<String, Object>>() {});
+    @Override
+    protected String getRecognizerName() {
+        return "TimeEntityRecognizer";
+    }
 
-                // Load relative time patterns
-                if (dictionary.containsKey("relativeTime")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, Object>> relativeTime =
-                            (Map<String, Map<String, Object>>) dictionary.get("relativeTime");
-                    loadRelativeTimePatterns(relativeTime);
-                }
+    @Override
+    protected TimeTrieNode createTrieNode() {
+        return new TimeTrieNode();
+    }
 
-                // Load quarter patterns
-                if (dictionary.containsKey("quarters")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, List<String>> quarters =
-                            (Map<String, List<String>>) dictionary.get("quarters");
-                    loadQuarterPatterns(quarters);
-                }
+    @Override
+    protected TimeEntity createEntity(String matchedText, TimeTrieNode node, int start, int end) {
+        TimeType timeType = node.timeType;
+        TimeGranularity granularity = node.granularity;
 
-                // Load dynamic patterns (regex)
-                if (dictionary.containsKey("dynamicPatterns")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> dynPatterns =
-                            (Map<String, String>) dictionary.get("dynamicPatterns");
-                    loadDynamicPatterns(dynPatterns);
-                }
+        DateRange range = calculateDateRange(timeType, matchedText);
+        if (range == null) {
+            return null;
+        }
 
-                log.info("Successfully loaded time dictionary from: {}", dictionaryFile);
-            }
-        } catch (IOException e) {
-            log.error("Failed to load time dictionary: {}", e.getMessage());
-            initDefaultDictionary();
+        // Handle quarter patterns specially
+        if (timeType == TimeType.ABSOLUTE_QUARTER && quarterPatterns.containsKey(matchedText)) {
+            int quarterNum = quarterPatterns.get(matchedText);
+            LocalDate today = LocalDate.now();
+            return TimeEntity.quarter(matchedText, timeType, today.getYear(), quarterNum,
+                    range.getStartDate(), range.getEndDate(), false, start, end);
+        }
+
+        return TimeEntity.relative(matchedText, timeType, granularity,
+                range.getStartDate(), range.getEndDate(), start, end);
+    }
+
+    @Override
+    protected int getEntityStartIndex(TimeEntity entity) {
+        return entity.getStartIndex();
+    }
+
+    @Override
+    protected void clearIndexes() {
+        timeTypeIndex.clear();
+        quarterPatterns.clear();
+        dynamicPatterns.clear();
+    }
+
+    @Override
+    protected void collectAdditionalStatistics(Map<String, Object> stats) {
+        stats.put("patternCount", timeTypeIndex.size());
+        stats.put("quarterPatternCount", quarterPatterns.size());
+        stats.put("dynamicPatternCount", dynamicPatterns.size());
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void processDictionaryData(Map<String, Object> dictionary) {
+        // Load relative time patterns
+        if (dictionary.containsKey("relativeTime")) {
+            Map<String, Map<String, Object>> relativeTime =
+                    (Map<String, Map<String, Object>>) dictionary.get("relativeTime");
+            loadRelativeTimePatterns(relativeTime);
+        }
+
+        // Load quarter patterns
+        if (dictionary.containsKey("quarters")) {
+            Map<String, List<String>> quarters =
+                    (Map<String, List<String>>) dictionary.get("quarters");
+            loadQuarterPatterns(quarters);
+        }
+
+        // Load dynamic patterns (regex)
+        if (dictionary.containsKey("dynamicPatterns")) {
+            Map<String, String> dynPatterns =
+                    (Map<String, String>) dictionary.get("dynamicPatterns");
+            loadDynamicPatterns(dynPatterns);
         }
     }
 
-    /**
-     * Load relative time patterns and build Trie entries
-     */
-    private void loadRelativeTimePatterns(Map<String, Map<String, Object>> relativeTime) {
-        for (Map.Entry<String, Map<String, Object>> entry : relativeTime.entrySet()) {
-            String typeStr = entry.getKey();
-            Map<String, Object> typeData = entry.getValue();
+    @Override
+    protected void processDbEntry(SmartBiDictionary entry) {
+        String pattern = entry.getName();
 
-            TimeType timeType = TimeType.valueOf(typeStr);
-            TimeGranularity granularity = inferGranularityFromType(timeType);
+        TimeType timeType = TimeType.TODAY;
+        TimeGranularity granularity = TimeGranularity.DAY;
 
-            String description = (String) typeData.getOrDefault("description", typeStr);
+        Map<String, Object> metadata = parseMetadata(entry.getMetadata());
+        if (metadata.containsKey("timeType")) {
+            timeType = TimeType.valueOf(metadata.get("timeType").toString());
+        }
+        if (metadata.containsKey("granularity")) {
+            granularity = TimeGranularity.valueOf(metadata.get("granularity").toString());
+        }
 
-            @SuppressWarnings("unchecked")
-            List<String> patterns = (List<String>) typeData.get("patterns");
+        addToTrieWithTime(pattern, timeType, granularity, entry.getName());
+        timeTypeIndex.put(pattern, new TimeTypeInfo(timeType, granularity, entry.getName()));
 
-            if (patterns != null) {
-                for (String pattern : patterns) {
-                    addToTrie(pattern, timeType, granularity, description);
-                    timeTypeIndex.put(pattern, new TimeTypeInfo(timeType, granularity, description));
-                }
-            }
+        // Process aliases
+        List<String> aliases = parseAliases(entry.getAliases());
+        for (String alias : aliases) {
+            addToTrieWithTime(alias, timeType, granularity, entry.getName());
+            timeTypeIndex.put(alias, new TimeTypeInfo(timeType, granularity, entry.getName()));
         }
     }
 
-    /**
-     * Load quarter patterns
-     */
-    private void loadQuarterPatterns(Map<String, List<String>> quarters) {
-        for (Map.Entry<String, List<String>> entry : quarters.entrySet()) {
-            String quarterKey = entry.getKey();
-            int quarterNum = Integer.parseInt(quarterKey.substring(1));
-            List<String> patterns = entry.getValue();
-
-            for (String pattern : patterns) {
-                quarterPatterns.put(pattern, quarterNum);
-                // Add to Trie for matching
-                addToTrie(pattern, TimeType.ABSOLUTE_QUARTER, TimeGranularity.QUARTER, quarterKey);
-            }
-        }
-    }
-
-    /**
-     * Load dynamic regex patterns
-     */
-    private void loadDynamicPatterns(Map<String, String> patterns) {
-        for (Map.Entry<String, String> entry : patterns.entrySet()) {
-            String patternName = entry.getKey();
-            String regexStr = entry.getValue();
-            try {
-                Pattern pattern = Pattern.compile(regexStr);
-                dynamicPatterns.put(patternName, pattern);
-                log.debug("Loaded dynamic pattern: {} -> {}", patternName, regexStr);
-            } catch (Exception e) {
-                log.warn("Invalid regex pattern {}: {}", patternName, e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * Add a term to the Trie tree
-     */
-    private void addToTrie(String term, TimeType type, TimeGranularity granularity, String description) {
-        if (term == null || term.isEmpty()) {
-            return;
-        }
-
-        TrieNode current = root;
-        for (char c : term.toCharArray()) {
-            current.children.putIfAbsent(c, new TrieNode());
-            current = current.children.get(c);
-        }
-
-        current.isEnd = true;
-        current.timeType = type;
-        current.granularity = granularity;
-        current.description = description;
-    }
-
-    /**
-     * Initialize default dictionary when file is not available
-     */
-    private void initDefaultDictionary() {
+    @Override
+    protected void initDefaultDictionary() {
         log.info("Initializing default time dictionary...");
 
         // Default relative time patterns
@@ -293,7 +236,7 @@ public class TimeEntityRecognizer {
             TimeType type = entry.getKey();
             TimeGranularity granularity = inferGranularityFromType(type);
             for (String pattern : entry.getValue()) {
-                addToTrie(pattern, type, granularity, pattern);
+                addToTrieWithTime(pattern, type, granularity, pattern);
                 timeTypeIndex.put(pattern, new TimeTypeInfo(type, granularity, pattern));
             }
         }
@@ -310,7 +253,7 @@ public class TimeEntityRecognizer {
             int quarterNum = i + 1;
             for (String pattern : defaultQuarters[i]) {
                 quarterPatterns.put(pattern, quarterNum);
-                addToTrie(pattern, TimeType.ABSOLUTE_QUARTER, TimeGranularity.QUARTER, "Q" + quarterNum);
+                addToTrieWithTime(pattern, TimeType.ABSOLUTE_QUARTER, TimeGranularity.QUARTER, "Q" + quarterNum);
             }
         }
 
@@ -326,107 +269,9 @@ public class TimeEntityRecognizer {
         log.info("Default dictionary initialized with {} patterns", timeTypeIndex.size());
     }
 
-    /**
-     * 从数据库加载动态配置的时间词条
-     */
-    private void loadFromDatabase() {
-        try {
-            List<SmartBiDictionary> entries = dictionaryRepository
-                    .findByDictTypeAndIsActiveTrueOrderByPriorityAsc("time");
+    // ==================== Override recognize() for regex patterns ====================
 
-            for (SmartBiDictionary entry : entries) {
-                String pattern = entry.getName();
-
-                // 从元数据获取时间类型和粒度（默认为 TODAY/DAY）
-                TimeType timeType = TimeType.TODAY;
-                TimeGranularity granularity = TimeGranularity.DAY;
-
-                if (entry.getMetadata() != null && !entry.getMetadata().isEmpty()) {
-                    try {
-                        Map<String, Object> metadata = objectMapper.readValue(
-                                entry.getMetadata(),
-                                new TypeReference<Map<String, Object>>() {});
-                        if (metadata.containsKey("timeType")) {
-                            timeType = TimeType.valueOf(metadata.get("timeType").toString());
-                        }
-                        if (metadata.containsKey("granularity")) {
-                            granularity = TimeGranularity.valueOf(metadata.get("granularity").toString());
-                        }
-                    } catch (Exception e) {
-                        log.warn("解析时间元数据失败: {}", entry.getName());
-                    }
-                }
-
-                // 添加到 Trie 树
-                addToTrie(pattern, timeType, granularity, entry.getName());
-                timeTypeIndex.put(pattern, new TimeTypeInfo(timeType, granularity, entry.getName()));
-
-                // 处理别名
-                if (entry.getAliases() != null && !entry.getAliases().isEmpty()) {
-                    try {
-                        List<String> aliases = objectMapper.readValue(
-                                entry.getAliases(),
-                                new TypeReference<List<String>>() {});
-                        for (String alias : aliases) {
-                            addToTrie(alias, timeType, granularity, entry.getName());
-                            timeTypeIndex.put(alias, new TimeTypeInfo(timeType, granularity, entry.getName()));
-                        }
-                    } catch (Exception e) {
-                        log.warn("解析时间别名失败: {}", entry.getName());
-                    }
-                }
-            }
-
-            log.info("从数据库加载了 {} 个时间词条", entries.size());
-        } catch (Exception e) {
-            log.warn("从数据库加载时间字典失败: {}", e.getMessage());
-        }
-    }
-
-    /**
-     * Infer granularity from time type
-     */
-    private TimeGranularity inferGranularityFromType(TimeType type) {
-        switch (type) {
-            case TODAY:
-            case YESTERDAY:
-            case LAST_N_DAYS:
-            case ABSOLUTE_DATE:
-            case ISO_DATE:
-                return TimeGranularity.DAY;
-            case THIS_WEEK:
-            case LAST_WEEK:
-            case LAST_N_WEEKS:
-                return TimeGranularity.WEEK;
-            case THIS_MONTH:
-            case LAST_MONTH:
-            case LAST_N_MONTHS:
-            case ABSOLUTE_MONTH:
-                return TimeGranularity.MONTH;
-            case THIS_QUARTER:
-            case LAST_QUARTER:
-            case ABSOLUTE_QUARTER:
-                return TimeGranularity.QUARTER;
-            case THIS_YEAR:
-            case LAST_YEAR:
-            case ABSOLUTE_YEAR:
-                return TimeGranularity.YEAR;
-            default:
-                return TimeGranularity.DAY;
-        }
-    }
-
-    // ==================== Recognition Methods ====================
-
-    /**
-     * Recognize all time entities in the given text
-     *
-     * Uses Trie-based matching for fixed patterns and regex for dynamic patterns.
-     * Returns all matched time entities with their positions and calculated date ranges.
-     *
-     * @param text Input text to analyze
-     * @return List of recognized TimeEntity objects, sorted by position
-     */
+    @Override
     public List<TimeEntity> recognize(String text) {
         if (text == null || text.isEmpty()) {
             return Collections.emptyList();
@@ -457,20 +302,76 @@ public class TimeEntityRecognizer {
         return entities;
     }
 
-    /**
-     * Recognize time entities using Trie matching
-     */
+    // ==================== Private Loading Methods ====================
+
+    @SuppressWarnings("unchecked")
+    private void loadRelativeTimePatterns(Map<String, Map<String, Object>> relativeTime) {
+        for (Map.Entry<String, Map<String, Object>> entry : relativeTime.entrySet()) {
+            String typeStr = entry.getKey();
+            Map<String, Object> typeData = entry.getValue();
+
+            TimeType timeType = TimeType.valueOf(typeStr);
+            TimeGranularity granularity = inferGranularityFromType(timeType);
+
+            String description = (String) typeData.getOrDefault("description", typeStr);
+
+            List<String> patterns = (List<String>) typeData.get("patterns");
+            if (patterns != null) {
+                for (String pattern : patterns) {
+                    addToTrieWithTime(pattern, timeType, granularity, description);
+                    timeTypeIndex.put(pattern, new TimeTypeInfo(timeType, granularity, description));
+                }
+            }
+        }
+    }
+
+    private void loadQuarterPatterns(Map<String, List<String>> quarters) {
+        for (Map.Entry<String, List<String>> entry : quarters.entrySet()) {
+            String quarterKey = entry.getKey();
+            int quarterNum = Integer.parseInt(quarterKey.substring(1));
+            List<String> patterns = entry.getValue();
+
+            for (String pattern : patterns) {
+                quarterPatterns.put(pattern, quarterNum);
+                addToTrieWithTime(pattern, TimeType.ABSOLUTE_QUARTER, TimeGranularity.QUARTER, quarterKey);
+            }
+        }
+    }
+
+    private void loadDynamicPatterns(Map<String, String> patterns) {
+        for (Map.Entry<String, String> entry : patterns.entrySet()) {
+            String patternName = entry.getKey();
+            String regexStr = entry.getValue();
+            try {
+                Pattern pattern = Pattern.compile(regexStr);
+                dynamicPatterns.put(patternName, pattern);
+                log.debug("Loaded dynamic pattern: {} -> {}", patternName, regexStr);
+            } catch (Exception e) {
+                log.warn("Invalid regex pattern {}: {}", patternName, e.getMessage());
+            }
+        }
+    }
+
+    private void addToTrieWithTime(String term, TimeType type, TimeGranularity granularity, String description) {
+        addToTrie(term, node -> {
+            node.timeType = type;
+            node.granularity = granularity;
+            node.description = description;
+        });
+    }
+
+    // ==================== Recognition Methods ====================
+
     private List<TimeEntity> recognizeByTrie(String text) {
         List<TimeEntity> entities = new ArrayList<>();
         int textLength = text.length();
 
         for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
+            BaseTrieNode current = root;
             int j = i;
-            TrieNode lastMatch = null;
+            BaseTrieNode lastMatch = null;
             int lastMatchEnd = i;
 
-            // Find longest match starting at position i
             while (j < textLength && current.children.containsKey(text.charAt(j))) {
                 current = current.children.get(text.charAt(j));
                 j++;
@@ -481,13 +382,12 @@ public class TimeEntityRecognizer {
                 }
             }
 
-            // If we found a match, create TimeEntity
             if (lastMatch != null) {
                 String matchedText = text.substring(i, lastMatchEnd);
-                TimeEntity entity = createEntityFromTrie(matchedText, lastMatch, i, lastMatchEnd);
+                TimeTrieNode node = (TimeTrieNode) lastMatch;
+                TimeEntity entity = createEntity(matchedText, node, i, lastMatchEnd);
                 if (entity != null) {
                     entities.add(entity);
-                    // Skip to end of match to avoid overlapping matches
                     i = lastMatchEnd - 1;
                 }
             }
@@ -496,9 +396,6 @@ public class TimeEntityRecognizer {
         return entities;
     }
 
-    /**
-     * Recognize time entities using regex matching
-     */
     private List<TimeEntity> recognizeByRegex(String text) {
         List<TimeEntity> entities = new ArrayList<>();
 
@@ -507,22 +404,15 @@ public class TimeEntityRecognizer {
         matchDynamicPattern(text, "LAST_N_WEEKS", TimeType.LAST_N_WEEKS, TimeGranularity.WEEK, entities);
         matchDynamicPattern(text, "LAST_N_MONTHS", TimeType.LAST_N_MONTHS, TimeGranularity.MONTH, entities);
 
-        // Match absolute dates (must be before absolute month to avoid partial match)
+        // Match absolute dates
         matchAbsoluteDate(text, entities);
         matchIsoDate(text, entities);
-
-        // Match absolute month
         matchAbsoluteMonth(text, entities);
-
-        // Match absolute year
         matchAbsoluteYear(text, entities);
 
         return entities;
     }
 
-    /**
-     * Match dynamic patterns like "最近N天"
-     */
     private void matchDynamicPattern(String text, String patternName, TimeType timeType,
                                       TimeGranularity granularity, List<TimeEntity> entities) {
         Pattern pattern = dynamicPatterns.get(patternName);
@@ -544,9 +434,6 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Match absolute date patterns like "2024年1月15日"
-     */
     private void matchAbsoluteDate(String text, List<TimeEntity> entities) {
         Pattern pattern = dynamicPatterns.get("ABSOLUTE_DATE");
         if (pattern == null) return;
@@ -570,9 +457,6 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Match ISO date patterns like "2024-01-15"
-     */
     private void matchIsoDate(String text, List<TimeEntity> entities) {
         Pattern pattern = dynamicPatterns.get("ISO_DATE");
         if (pattern == null) return;
@@ -608,14 +492,10 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Match absolute month patterns like "2024年1月"
-     */
     private void matchAbsoluteMonth(String text, List<TimeEntity> entities) {
         Pattern pattern = dynamicPatterns.get("ABSOLUTE_MONTH");
         if (pattern == null) return;
 
-        // First, collect all absolute date matches to exclude them
         Set<Integer> dateStarts = new HashSet<>();
         Pattern datePattern = dynamicPatterns.get("ABSOLUTE_DATE");
         if (datePattern != null) {
@@ -627,7 +507,6 @@ public class TimeEntityRecognizer {
 
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
-            // Skip if this is actually part of a full date
             if (dateStarts.contains(matcher.start())) {
                 continue;
             }
@@ -651,14 +530,10 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Match absolute year patterns like "2024年"
-     */
     private void matchAbsoluteYear(String text, List<TimeEntity> entities) {
         Pattern pattern = dynamicPatterns.get("ABSOLUTE_YEAR");
         if (pattern == null) return;
 
-        // Collect all month matches to exclude
         Set<Integer> monthStarts = new HashSet<>();
         Pattern monthPattern = dynamicPatterns.get("ABSOLUTE_MONTH");
         if (monthPattern != null) {
@@ -670,7 +545,6 @@ public class TimeEntityRecognizer {
 
         Matcher matcher = pattern.matcher(text);
         while (matcher.find()) {
-            // Skip if this is part of a month pattern
             if (monthStarts.contains(matcher.start())) {
                 continue;
             }
@@ -692,84 +566,72 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Create TimeEntity from Trie match
-     */
-    private TimeEntity createEntityFromTrie(String matchedText, TrieNode node, int start, int end) {
-        TimeType timeType = node.timeType;
-        TimeGranularity granularity = node.granularity;
+    // ==================== Date Calculation Methods ====================
 
-        // Calculate date range based on time type
-        DateRange range = calculateDateRange(timeType, matchedText);
-        if (range == null) {
-            return null;
+    private TimeGranularity inferGranularityFromType(TimeType type) {
+        switch (type) {
+            case TODAY:
+            case YESTERDAY:
+            case LAST_N_DAYS:
+            case ABSOLUTE_DATE:
+            case ISO_DATE:
+                return TimeGranularity.DAY;
+            case THIS_WEEK:
+            case LAST_WEEK:
+            case LAST_N_WEEKS:
+                return TimeGranularity.WEEK;
+            case THIS_MONTH:
+            case LAST_MONTH:
+            case LAST_N_MONTHS:
+            case ABSOLUTE_MONTH:
+                return TimeGranularity.MONTH;
+            case THIS_QUARTER:
+            case LAST_QUARTER:
+            case ABSOLUTE_QUARTER:
+                return TimeGranularity.QUARTER;
+            case THIS_YEAR:
+            case LAST_YEAR:
+            case ABSOLUTE_YEAR:
+                return TimeGranularity.YEAR;
+            default:
+                return TimeGranularity.DAY;
         }
-
-        // Handle quarter patterns specially
-        if (timeType == TimeType.ABSOLUTE_QUARTER && quarterPatterns.containsKey(matchedText)) {
-            int quarterNum = quarterPatterns.get(matchedText);
-            LocalDate today = LocalDate.now();
-            return TimeEntity.quarter(matchedText, timeType, today.getYear(), quarterNum,
-                    range.getStartDate(), range.getEndDate(), false, start, end);
-        }
-
-        return TimeEntity.relative(matchedText, timeType, granularity,
-                range.getStartDate(), range.getEndDate(), start, end);
     }
 
-    /**
-     * Calculate date range for a given time type
-     */
     private DateRange calculateDateRange(TimeType timeType, String matchedText) {
-        LocalDate today = LocalDate.now();
-
         switch (timeType) {
             case TODAY:
                 return DateRange.today();
-
             case YESTERDAY:
                 return DateRange.yesterday();
-
             case THIS_WEEK:
                 return DateRange.thisWeek();
-
             case LAST_WEEK:
                 return DateRange.lastWeek();
-
             case THIS_MONTH:
                 return DateRange.thisMonth();
-
             case LAST_MONTH:
                 return DateRange.lastMonth();
-
             case THIS_QUARTER:
                 return DateRange.thisQuarter();
-
             case LAST_QUARTER:
                 return calculateLastQuarter();
-
             case THIS_YEAR:
                 return DateRange.thisYear();
-
             case LAST_YEAR:
                 return DateRange.lastYear();
-
             case ABSOLUTE_QUARTER:
-                // Handle quarter patterns like "Q1", "第一季度"
                 if (quarterPatterns.containsKey(matchedText)) {
                     int quarterNum = quarterPatterns.get(matchedText);
+                    LocalDate today = LocalDate.now();
                     return DateRange.quarter(today.getYear(), quarterNum);
                 }
                 return null;
-
             default:
                 return null;
         }
     }
 
-    /**
-     * Calculate date range for dynamic patterns (last N days/weeks/months)
-     */
     private DateRange calculateDynamicRange(TimeType timeType, int number) {
         LocalDate today = LocalDate.now();
 
@@ -779,10 +641,9 @@ public class TimeEntityRecognizer {
 
             case LAST_N_WEEKS:
                 LocalDate weekStart = today.minusWeeks(number).with(DayOfWeek.MONDAY);
-                LocalDate weekEnd = today;
                 return DateRange.builder()
                         .startDate(weekStart)
-                        .endDate(weekEnd)
+                        .endDate(today)
                         .granularity("WEEK")
                         .originalExpression("最近" + number + "周")
                         .relative(true)
@@ -790,10 +651,9 @@ public class TimeEntityRecognizer {
 
             case LAST_N_MONTHS:
                 LocalDate monthStart = today.minusMonths(number).withDayOfMonth(1);
-                LocalDate monthEnd = today;
                 return DateRange.builder()
                         .startDate(monthStart)
-                        .endDate(monthEnd)
+                        .endDate(today)
                         .granularity("MONTH")
                         .originalExpression("最近" + number + "个月")
                         .relative(true)
@@ -804,9 +664,6 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Calculate last quarter date range
-     */
     private DateRange calculateLastQuarter() {
         LocalDate today = LocalDate.now();
         int currentQuarter = (today.getMonthValue() - 1) / 3 + 1;
@@ -821,9 +678,8 @@ public class TimeEntityRecognizer {
         return DateRange.quarter(year, lastQuarter);
     }
 
-    /**
-     * Extract number from regex matcher groups
-     */
+    // ==================== Utility Methods ====================
+
     private int extractNumber(Matcher matcher) {
         for (int i = 1; i <= matcher.groupCount(); i++) {
             String group = matcher.group(i);
@@ -837,9 +693,6 @@ public class TimeEntityRecognizer {
         return 0;
     }
 
-    /**
-     * Check if a time entity overlaps with any existing entities
-     */
     private boolean overlapsWithAny(TimeEntity newEntity, List<TimeEntity> existing) {
         for (TimeEntity entity : existing) {
             if (overlaps(newEntity, entity)) {
@@ -849,16 +702,10 @@ public class TimeEntityRecognizer {
         return false;
     }
 
-    /**
-     * Check if two time entities overlap
-     */
     private boolean overlaps(TimeEntity a, TimeEntity b) {
         return !(a.getEndIndex() <= b.getStartIndex() || a.getStartIndex() >= b.getEndIndex());
     }
 
-    /**
-     * Validate date components
-     */
     private boolean isValidDate(int year, int month, int day) {
         if (year < 1900 || year > 2100 || month < 1 || month > 12 || day < 1 || day > 31) {
             return false;
@@ -871,9 +718,6 @@ public class TimeEntityRecognizer {
         }
     }
 
-    /**
-     * Validate month
-     */
     private boolean isValidMonth(int month) {
         return month >= 1 && month <= 12;
     }
@@ -881,46 +725,14 @@ public class TimeEntityRecognizer {
     // ==================== Public API Methods ====================
 
     /**
-     * Parse time entity to DateRange
-     *
-     * @param entity TimeEntity to convert
-     * @return DateRange representation
-     */
-    public DateRange parseToDateRange(TimeEntity entity) {
-        if (entity == null) {
-            return null;
-        }
-        return entity.toDateRange();
-    }
-
-    /**
      * Quick check if text contains any time entity
-     *
-     * @param text Input text to check
-     * @return true if text contains at least one time entity
      */
     public boolean containsTimeEntity(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
+        if (containsEntity(text)) {
+            return true;
         }
 
-        // Check Trie matches
-        int textLength = text.length();
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    return true;
-                }
-            }
-        }
-
-        // Check regex patterns
+        // Also check regex patterns
         for (Pattern pattern : dynamicPatterns.values()) {
             if (pattern.matcher(text).find()) {
                 return true;
@@ -931,51 +743,12 @@ public class TimeEntityRecognizer {
     }
 
     /**
-     * Get the first time entity found in the text
-     *
-     * @param text Input text
-     * @return First TimeEntity or null if not found
+     * Parse time entity to DateRange
      */
-    public TimeEntity recognizeFirst(String text) {
-        List<TimeEntity> entities = recognize(text);
-        return entities.isEmpty() ? null : entities.get(0);
-    }
-
-    /**
-     * Reload the dictionary from file and database
-     */
-    public void reload() {
-        log.info("Reloading time dictionary...");
-        root = new TrieNode();
-        timeTypeIndex.clear();
-        quarterPatterns.clear();
-        dynamicPatterns.clear();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("Time dictionary reloaded with {} patterns", timeTypeIndex.size());
-    }
-
-    /**
-     * Get recognition statistics
-     *
-     * @return Map containing statistics
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalRecognitions", totalRecognitions);
-        stats.put("entitiesFound", entitiesFound);
-        stats.put("patternCount", timeTypeIndex.size());
-        stats.put("quarterPatternCount", quarterPatterns.size());
-        stats.put("dynamicPatternCount", dynamicPatterns.size());
-        return stats;
-    }
-
-    /**
-     * Reset statistics counters
-     */
-    public void resetStatistics() {
-        totalRecognitions = 0;
-        entitiesFound = 0;
-        log.info("TimeEntityRecognizer statistics reset");
+    public DateRange parseToDateRange(TimeEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return entity.toDateRange();
     }
 }

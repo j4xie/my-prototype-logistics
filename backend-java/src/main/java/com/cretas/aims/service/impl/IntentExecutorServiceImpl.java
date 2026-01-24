@@ -2408,10 +2408,18 @@ public class IntentExecutorServiceImpl implements IntentExecutorService {
         } catch (Exception e) {
             log.error("Drools规则验证异常: intentCode={}, error={}",
                     intent.getIntentCode(), e.getMessage(), e);
-            // 验证异常时返回通过，避免阻塞业务（可根据需求调整为验证失败）
-            return ValidationResult.builder()
-                    .valid(true)
+            // 安全修复: 验证异常时返回失败，防止规则绕过导致非法操作被允许
+            // 这是 fail-safe 策略 - 宁可阻止合法操作，也不允许非法操作通过
+            ValidationResult failedResult = ValidationResult.builder()
+                    .valid(false)
                     .build();
+            failedResult.addViolation(
+                    "规则验证异常",
+                    "Drools规则引擎执行异常: " + e.getMessage(),
+                    "HIGH"
+            );
+            failedResult.addRecommendation("请联系管理员检查规则配置，或稍后重试");
+            return failedResult;
         }
     }
 
