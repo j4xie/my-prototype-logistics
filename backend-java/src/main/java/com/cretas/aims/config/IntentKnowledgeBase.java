@@ -2586,6 +2586,84 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("周转天数", "REPORT_INVENTORY");
         phraseToIntentMapping.put("占比分析", "REPORT_TRENDS");
 
+        // === v11.11: 综合测试用例修复 ===
+        // 报表类修复
+        phraseToIntentMapping.put("生产报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产报表", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("生产数据报告", "REPORT_PRODUCTION");
+        phraseToIntentMapping.put("效率报告", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("效率报表", "REPORT_EFFICIENCY");
+        phraseToIntentMapping.put("异常报告", "REPORT_ANOMALY");
+        phraseToIntentMapping.put("异常报表", "REPORT_ANOMALY");
+        phraseToIntentMapping.put("异常分析", "REPORT_ANOMALY");
+
+        // 设备类修复
+        phraseToIntentMapping.put("设备详情", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("设备详细信息", "EQUIPMENT_DETAIL");
+        phraseToIntentMapping.put("设备统计", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("设备统计数据", "EQUIPMENT_STATS");
+        phraseToIntentMapping.put("设备警报统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("设备告警统计", "EQUIPMENT_ALERT_STATS");
+        phraseToIntentMapping.put("设备报警统计", "EQUIPMENT_ALERT_STATS");
+
+        // 生产批次修复
+        phraseToIntentMapping.put("创建生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("取消生产批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("作废生产批次", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("生产批次详情", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("批次详情", "PROCESSING_BATCH_DETAIL");
+        phraseToIntentMapping.put("生产状态查询", "PRODUCTION_STATUS_QUERY");
+        phraseToIntentMapping.put("查询生产状态", "PRODUCTION_STATUS_QUERY");
+
+        // 物料类修复
+        phraseToIntentMapping.put("原料批次查询", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("查询原料批次", "MATERIAL_BATCH_QUERY");
+        phraseToIntentMapping.put("使用原料", "MATERIAL_BATCH_USE");
+        phraseToIntentMapping.put("原料使用", "MATERIAL_BATCH_USE");
+        phraseToIntentMapping.put("调整库存数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("调整数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("过期物料查询", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("过期原料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("已过期物料", "MATERIAL_EXPIRED_QUERY");
+        phraseToIntentMapping.put("低库存预警", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("库存不足预警", "MATERIAL_LOW_STOCK_ALERT");
+        phraseToIntentMapping.put("临期预警", "MATERIAL_EXPIRING_ALERT");
+
+        // 发货类修复
+        phraseToIntentMapping.put("创建发货单", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("新建发货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("更新发货", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("修改发货", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("按客户发货", "SHIPMENT_BY_CUSTOMER");
+        phraseToIntentMapping.put("客户发货记录", "SHIPMENT_BY_CUSTOMER");
+
+        // 质检类修复
+        phraseToIntentMapping.put("质检统计", "QUALITY_STATS");
+        phraseToIntentMapping.put("质量统计", "QUALITY_STATS");
+        phraseToIntentMapping.put("关键质检项", "QUALITY_CRITICAL_ITEMS");
+        phraseToIntentMapping.put("重要质检项", "QUALITY_CRITICAL_ITEMS");
+
+        // 考勤类修复
+        phraseToIntentMapping.put("今日打卡记录", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("今天的打卡", "ATTENDANCE_TODAY");
+        phraseToIntentMapping.put("考勤统计", "ATTENDANCE_STATS");
+
+        // 警报类修复
+        phraseToIntentMapping.put("警报统计", "ALERT_STATS");
+        phraseToIntentMapping.put("告警统计", "ALERT_STATS");
+        phraseToIntentMapping.put("确认警报", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("解决警报", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("按级别警报", "ALERT_BY_LEVEL");
+        phraseToIntentMapping.put("警报级别", "ALERT_BY_LEVEL");
+        phraseToIntentMapping.put("按设备警报", "ALERT_BY_EQUIPMENT");
+
+        // 用户类修复
+        phraseToIntentMapping.put("创建用户", "USER_CREATE");
+        phraseToIntentMapping.put("新建用户", "USER_CREATE");
+        phraseToIntentMapping.put("禁用用户", "USER_DISABLE");
+        phraseToIntentMapping.put("停用用户", "USER_DISABLE");
+
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
 
