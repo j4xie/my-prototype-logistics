@@ -459,7 +459,8 @@ public class AIIntentServiceImpl implements AIIntentService {
         // - DIRECT_EXECUTE (score >= 0.92): 直接返回，跳过 LLM
         // - NEED_RERANKING (score >= 0.75): 只对 top candidates 调用 LLM 确认
         // - NEED_FULL_LLM (score < 0.75): 走完整 LLM 流程
-        if (semanticRouterEnabled && semanticRouterService.isAvailable()) {
+        // v12.1: 当检测到多意图触发词时，跳过语义路由器，走多意图检测流程
+        if (semanticRouterEnabled && semanticRouterService.isAvailable() && !skipPhraseShortcut) {
             try {
                 RouteDecision routeDecision = semanticRouterService.route(factoryId, processedInput, topN);
 
@@ -523,9 +524,10 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         // 使用处理后的输入进行意图识别
+        // v12.1: 传递 skipPhraseShortcut 标志，确保多意图检测能执行
         IntentMatchResult result = doRecognizeIntentWithConfidence(
                 processedInput, userInput, factoryId, topN, userId, userRole,
-                enhancedResult, verbNounResult);
+                enhancedResult, verbNounResult, skipPhraseShortcut);
 
         // 附加预处理结果到匹配结果（如果有）
         if (preprocessedQuery != null && result != null) {
@@ -579,15 +581,17 @@ public class AIIntentServiceImpl implements AIIntentService {
                                                               String factoryId, int topN,
                                                               Long userId, String userRole,
                                                               QueryPreprocessorService.EnhancedPreprocessResult enhancedResult,
-                                                              IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult) {
+                                                              IntentKnowledgeBase.VerbNounDisambiguationResult verbNounResult,
+                                                              boolean skipPhraseShortcut) {
         String userInput = processedInput; // 使用处理后的输入进行匹配
 
         // ========== v11.2修复: Layer 0 - 短语匹配优先短路 ==========
         // v4.5原逻辑：只有当原始/处理后短语匹配结果不同时才短路
         // v11.2修复：短语匹配成功即短路，确保高质量短语映射优先生效
         // 这修复了 "销售排名"、"质检结果" 等精确短语被语义匹配覆盖的问题
+        // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
         Optional<String> originalPhraseMatch = knowledgeBase.matchPhrase(originalInput);
-        if (originalPhraseMatch.isPresent()) {
+        if (originalPhraseMatch.isPresent() && !skipPhraseShortcut) {
             // 短语匹配成功，直接使用短语映射结果
             String matchedIntent = originalPhraseMatch.get();
             List<AIIntentConfig> allIntents = getAllIntents(factoryId);
@@ -619,9 +623,47 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        // ========== v11.13: 处理后输入短语匹配 ==========
+        // 拼写纠正后的输入可能匹配到短语，如 "考亲记录" -> "考勤记录" -> ATTENDANCE_HISTORY
+        // v12.1修复: 当检测到多意图触发词时，跳过短语短路，确保多意图检测能执行
+        if (!processedInput.equals(originalInput) && !skipPhraseShortcut) {
+            Optional<String> processedPhraseMatch = knowledgeBase.matchPhrase(processedInput);
+            if (processedPhraseMatch.isPresent()) {
+                String matchedIntent = processedPhraseMatch.get();
+                List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                        .filter(i -> i.getIntentCode().equals(matchedIntent))
+                        .findFirst();
+
+                if (intentOpt.isPresent()) {
+                    AIIntentConfig intent = intentOpt.get();
+                    ActionType detectedActionType = knowledgeBase.detectActionType(processedInput.toLowerCase().trim());
+                    log.info("v11.13处理后输入短语匹配: original='{}', processed='{}', intent={}",
+                            originalInput, processedInput, matchedIntent);
+
+                    IntentMatchResult result = IntentMatchResult.builder()
+                            .bestMatch(intent)
+                            .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                    intent, 0.93, 93, Collections.emptyList(), MatchMethod.SEMANTIC)))
+                            .confidence(0.93)
+                            .matchMethod(MatchMethod.SEMANTIC)
+                            .matchedKeywords(Collections.emptyList())
+                            .isStrongSignal(true)
+                            .requiresConfirmation(false)
+                            .userInput(originalInput)
+                            .actionType(detectedActionType)
+                            .build();
+
+                    saveIntentMatchRecord(result, factoryId, null, null, false);
+                    return result;
+                }
+            }
+        }
+
         // ========== Layer 0.5: 动词+名词消歧快速路径 ==========
         // 如果动词+名词消歧成功且置信度足够高，直接返回该意图
-        if (verbNounResult != null && verbNounResult.isDisambiguated()
+        // v12.1修复: 当检测到多意图触发词时，跳过此快速路径，确保多意图检测能执行
+        if (!skipPhraseShortcut && verbNounResult != null && verbNounResult.isDisambiguated()
                 && verbNounResult.getConfidence() >= 0.80) {
             String recommendedIntent = verbNounResult.getRecommendedIntent();
             List<AIIntentConfig> allIntents = getAllIntents(factoryId);
@@ -867,9 +909,11 @@ public class AIIntentServiceImpl implements AIIntentService {
                     // ========== Step 2.5: 多意图检测 (MultiLabelIntentClassifier) ==========
                     // 当用户输入包含多意图触发词时，调用多标签分类器
                     // 触发词: "和", "还有", "同时", "另外", "以及", "并且", "顺便"
-                    if (containsMultiIntentTrigger(userInput) && multiLabelIntentClassifier.isAvailable()) {
+                    // v12.1修复: 使用 originalInput 检测多意图，因为 userInput 可能已被预处理丢失触发词
+                    if (containsMultiIntentTrigger(originalInput) && multiLabelIntentClassifier.isAvailable()) {
                         try {
-                            MultiIntentResult multiResult = multiLabelIntentClassifier.classifyMultiLabel(userInput, factoryId);
+                            // v12.1: 使用原始输入进行多意图分类，保留完整语义
+                            MultiIntentResult multiResult = multiLabelIntentClassifier.classifyMultiLabel(originalInput, factoryId);
 
                             if (multiResult.isMultiIntent() && multiResult.getIntents() != null
                                     && multiResult.getIntents().size() > 1) {
@@ -1021,24 +1065,33 @@ public class AIIntentServiceImpl implements AIIntentService {
                             .actionType(opType)
                             .build();
 
-                    // v6.3: 对于模糊查询，如果置信度低于阈值，直接拒绝匹配
+                    // v6.3 + v11.13: 对于模糊查询，如果置信度低于阈值，直接拒绝匹配
                     // 避免 "天气怎么样" 这类非业务查询被错误匹配
+                    // v11.13修复: 业务分析请求(包含业务关键词+分析指示词)使用较低阈值0.65
                     if (isAmbiguousQuery && confidence < 0.88) {
-                        log.info("模糊查询置信度过低 ({:.3f} < 0.88)，拒绝匹配: input='{}'", confidence, userInput);
-                        IntentMatchResult noMatch = IntentMatchResult.builder()
-                                .bestMatch(null)
-                                .topCandidates(Collections.emptyList())
-                                .confidence(0.0)
-                                .matchMethod(MatchMethod.NONE)
-                                .matchedKeywords(Collections.emptyList())
-                                .isStrongSignal(false)
-                                .requiresConfirmation(false)
-                                .userInput(userInput)
-                                .actionType(opType)
-                                .questionType(questionType)
-                                .build();
-                        saveIntentMatchRecord(noMatch, factoryId, null, null, false);
-                        return noMatch;
+                        // v11.13: 检查是否为业务分析请求
+                        boolean isBusinessAnalysis = knowledgeBase.isAnalysisRequest(userInput, questionType);
+                        if (isBusinessAnalysis && confidence >= 0.65) {
+                            log.info("v11.13: 识别为业务分析请求，使用较低阈值: input='{}', confidence={:.3f}",
+                                    userInput, confidence);
+                            // 继续处理，不拒绝
+                        } else {
+                            log.info("模糊查询置信度过低 ({:.3f} < 0.88)，拒绝匹配: input='{}'", confidence, userInput);
+                            IntentMatchResult noMatch = IntentMatchResult.builder()
+                                    .bestMatch(null)
+                                    .topCandidates(Collections.emptyList())
+                                    .confidence(0.0)
+                                    .matchMethod(MatchMethod.NONE)
+                                    .matchedKeywords(Collections.emptyList())
+                                    .isStrongSignal(false)
+                                    .requiresConfirmation(false)
+                                    .userInput(userInput)
+                                    .actionType(opType)
+                                    .questionType(questionType)
+                                    .build();
+                            saveIntentMatchRecord(noMatch, factoryId, null, null, false);
+                            return noMatch;
+                        }
                     }
 
                     // ========== v11.4 RAG: 历史相似案例增强 ==========
@@ -2281,8 +2334,35 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
-        // 4. v11.10: 移除"过短且无业务关键词"规则，该规则太激进
-        // 保留其他规则即可
+        // v12.0: 增加极短模糊输入检测
+        // 这些输入太模糊，无法确定用户意图，需要澄清
+        String[] veryShortAmbiguous = {
+            "相关数据", "那个", "这个", "看看情况", "统计一下", "报表",
+            "查一下", "对比分析", "导出", "更新一下状态", "有问题",
+            "分析报告", "那个记录", "汇总表", "第三季度的数据"
+        };
+        for (String pattern : veryShortAmbiguous) {
+            if (normalized.equals(pattern)) {
+                log.info("v12.0 检测到模糊短输入需要澄清: {}", userInput);
+                return true;
+            }
+        }
+
+        // v12.0: 检测纯动词输入（无业务名词）
+        // 例如: "查询一下" 没有说查询什么
+        String[] pureActionPatterns = {
+            "我想查询一下", "帮我处理一下", "查一下上周的", "对比一下"
+        };
+        for (String pattern : pureActionPatterns) {
+            if (normalized.equals(pattern) || normalized.startsWith(pattern)) {
+                // 检查后面是否有业务关键词
+                String remaining = normalized.replace(pattern, "").trim();
+                if (remaining.isEmpty() || remaining.length() <= 2) {
+                    log.info("v12.0 检测到纯动词输入需要澄清: {}", userInput);
+                    return true;
+                }
+            }
+        }
 
         return false;
     }
