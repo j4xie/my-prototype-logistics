@@ -384,17 +384,19 @@ public class IntentKnowledgeBase {
             ));
         }
 
-        // 初始化意图代码查询标记
+        // 初始化意图代码查询标记 (v11.12: 添加更多查询标记)
         if (intentQueryMarkers.isEmpty()) {
             intentQueryMarkers.addAll(Set.of(
-                    "QUERY", "LIST", "STATS", "GET", "SEARCH", "VIEW", "STATUS", "OVERVIEW"
+                    "QUERY", "LIST", "STATS", "GET", "SEARCH", "VIEW", "STATUS", "OVERVIEW",
+                    "REPORT", "HISTORY", "DETAIL", "TIMELINE", "ALERT", "ANOMALY"
             ));
         }
 
-        // 初始化意图代码更新标记
+        // 初始化意图代码更新标记 (v11.12: 添加更多写操作标记)
         if (intentUpdateMarkers.isEmpty()) {
             intentUpdateMarkers.addAll(Set.of(
-                    "UPDATE", "CREATE", "DELETE", "MODIFY", "SET", "CHANGE", "EDIT"
+                    "UPDATE", "CREATE", "DELETE", "MODIFY", "SET", "CHANGE", "EDIT",
+                    "PAUSE", "RESUME", "CANCEL", "COMPLETE", "START", "ADJUST", "MAINTENANCE"
             ));
         }
 
@@ -2663,6 +2665,49 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("新建用户", "USER_CREATE");
         phraseToIntentMapping.put("禁用用户", "USER_DISABLE");
         phraseToIntentMapping.put("停用用户", "USER_DISABLE");
+        // v11.12新增：角色分配
+        phraseToIntentMapping.put("角色分配", "USER_ROLE_ASSIGN");
+        phraseToIntentMapping.put("分配角色", "USER_ROLE_ASSIGN");
+
+        // v11.12新增：供应商搜索
+        phraseToIntentMapping.put("供应商搜索", "SUPPLIER_SEARCH");
+        phraseToIntentMapping.put("搜索供应商", "SUPPLIER_SEARCH");
+        phraseToIntentMapping.put("找供应商", "SUPPLIER_SEARCH");
+
+        // v11.12新增：产品更新
+        phraseToIntentMapping.put("产品更新", "PRODUCT_UPDATE");
+        phraseToIntentMapping.put("更新产品", "PRODUCT_UPDATE");
+
+        // v11.12新增：写操作短语映射（支持 ActionType 过滤后的精确匹配）
+        // 生产批次操作
+        phraseToIntentMapping.put("新建生产计划", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("创建生产批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("新建批次", "PROCESSING_BATCH_CREATE");
+        phraseToIntentMapping.put("暂停生产", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("暂停批次", "PROCESSING_BATCH_PAUSE");
+        phraseToIntentMapping.put("停止生产", "PROCESSING_BATCH_CANCEL");
+        phraseToIntentMapping.put("取消生产", "PROCESSING_BATCH_CANCEL");
+
+        // 库存/物料操作
+        phraseToIntentMapping.put("调整库存", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("更新库存数量", "MATERIAL_ADJUST_QUANTITY");
+        phraseToIntentMapping.put("修改库存", "MATERIAL_ADJUST_QUANTITY");
+
+        // 发货操作
+        phraseToIntentMapping.put("创建发货单", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("新建发货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("更新发货", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("修改发货", "SHIPMENT_UPDATE");
+        phraseToIntentMapping.put("取消发货订单", "SHIPMENT_UPDATE");
+
+        // 设备操作
+        phraseToIntentMapping.put("添加设备", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("报废设备", "EQUIPMENT_MAINTENANCE");
+        phraseToIntentMapping.put("维护设备", "EQUIPMENT_MAINTENANCE");
+
+        // 删除操作
+        phraseToIntentMapping.put("删除发货记录", "BATCH_DELETE");
+        phraseToIntentMapping.put("批量删除", "BATCH_DELETE");
 
         log.debug("短语映射初始化完成，共 {} 条映射", phraseToIntentMapping.size());
     }
@@ -3307,6 +3352,21 @@ public class IntentKnowledgeBase {
             }
         }
 
+        // === v11.12新增：句中疑问词 + 上下文补充 ===
+        // "货寄出去了吗老板在问" - "吗"不在句末但前半部分是疑问
+        // "发货了没今天的" - "没"不在句末
+        if (lowerInput.contains("吗") || lowerInput.contains("呢")) {
+            // 检查是否是典型的查询上下文
+            if (lowerInput.contains("在问") || lowerInput.contains("问一下") ||
+                lowerInput.contains("问问") || lowerInput.contains("看看")) {
+                return true;
+            }
+        }
+        // "...了没..."（如 "发货了没今天"）
+        if (lowerInput.contains("了没") || lowerInput.contains("没没")) {
+            return true;
+        }
+
         // === 模式2：句首疑问词 ===
         // "谁...", "哪...", "什么...", "怎么...", "为什么..."
         if (lowerInput.startsWith("谁") || lowerInput.startsWith("哪") ||
@@ -3375,6 +3435,48 @@ public class IntentKnowledgeBase {
         if (intentCode == null) return false;
         String upperCode = intentCode.toUpperCase();
         return intentUpdateMarkers.stream().anyMatch(upperCode::contains);
+    }
+
+    /**
+     * v11.12: 判断意图是否与检测到的 ActionType 兼容
+     *
+     * 这是架构层面的修复：ActionType 应作为前置过滤器，而不仅是评分微调
+     *
+     * 匹配规则：
+     * - QUERY → 只匹配 Query 类意图 (QUERY, LIST, STATS, GET, SEARCH, VIEW, STATUS, OVERVIEW)
+     * - CREATE/UPDATE/DELETE → 只匹配 Update 类意图 (UPDATE, CREATE, DELETE, MODIFY, SET, CHANGE, EDIT)
+     * - UNKNOWN/AMBIGUOUS → 兼容所有意图（回退到语义匹配）
+     *
+     * @param intentCode 意图代码
+     * @param actionType 检测到的操作类型
+     * @return true 如果兼容
+     */
+    public boolean isIntentCompatibleWithActionType(String intentCode, ActionType actionType) {
+        if (intentCode == null) {
+            return false;
+        }
+
+        // UNKNOWN 或 AMBIGUOUS 时不过滤，让语义匹配决定
+        if (actionType == null || actionType == ActionType.UNKNOWN || actionType == ActionType.AMBIGUOUS) {
+            return true;
+        }
+
+        boolean isQuery = isQueryIntent(intentCode);
+        boolean isUpdate = isUpdateIntent(intentCode);
+
+        switch (actionType) {
+            case QUERY:
+                // QUERY 操作只匹配查询类意图
+                // 如果意图既不是 Query 也不是 Update（如 REPORT_），也允许（通用类）
+                return isQuery || (!isUpdate);
+            case CREATE:
+            case UPDATE:
+            case DELETE:
+                // 写操作只匹配更新类意图
+                return isUpdate;
+            default:
+                return true;
+        }
     }
 
     /**
