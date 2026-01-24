@@ -306,21 +306,23 @@ public class AIIntentServiceImpl implements AIIntentService {
             return IntentMatchResult.empty(userInput);
         }
 
-        // ========== v11.2: 写操作检测前置 - 必须在 SemanticRouter 之前执行 ==========
-        // 写操作（删除、修改、添加等）不应该被路由到任何意图，直接拒绝
-        if (isWriteOnlyInput(userInput)) {
-            log.info("v11.2 写操作检测前置: 检测到写操作，直接拒绝: input='{}'", userInput);
-            IntentMatchResult noMatchResult = IntentMatchResult.builder()
-                    .bestMatch(null)
-                    .topCandidates(Collections.emptyList())
-                    .confidence(0.0)
-                    .matchMethod(MatchMethod.NONE)
-                    .userInput(userInput)
-                    .requiresConfirmation(true)
-                    .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。如需执行写操作，请使用对应的管理功能。")
-                    .build();
-            return noMatchResult;
-        }
+        // ========== v11.12: 移除写操作前置拦截 ==========
+        // 写操作（删除、修改、添加等）应通过 requiredRoles 权限机制控制，而非在意图识别阶段拦截
+        // 这允许系统正确识别 PROCESSING_BATCH_CREATE, SHIPMENT_CREATE 等写操作意图
+        // 权限检查在执行阶段由 sensitivityLevel + requiredRoles 机制保障
+        // if (isWriteOnlyInput(userInput)) {
+        //     log.info("v11.2 写操作检测前置: 检测到写操作，直接拒绝: input='{}'", userInput);
+        //     IntentMatchResult noMatchResult = IntentMatchResult.builder()
+        //             .bestMatch(null)
+        //             .topCandidates(Collections.emptyList())
+        //             .confidence(0.0)
+        //             .matchMethod(MatchMethod.NONE)
+        //             .userInput(userInput)
+        //             .requiresConfirmation(true)
+        //             .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。如需执行写操作，请使用对应的管理功能。")
+        //             .build();
+        //     return noMatchResult;
+        // }
 
         // === 新增：查询预处理 ===
         String processedInput = userInput;
@@ -797,28 +799,27 @@ public class AIIntentServiceImpl implements AIIntentService {
             return noMatchResult;
         }
 
-        // ========== v11.1: 写操作检测 - 直接拒绝 ==========
-        // 对于纯写操作输入（删除、修改、添加等），直接返回 NONE
-        // 因为 AI 助手只支持查询操作，不支持数据修改
-        // 注意：必须使用 originalInput，因为预处理可能会删除写操作关键词
-        if (isWriteOnlyInput(originalInput)) {
-            log.info("检测到写操作，直接拒绝: input='{}'", originalInput);
-            IntentMatchResult noMatchResult = IntentMatchResult.builder()
-                    .bestMatch(null)
-                    .topCandidates(Collections.emptyList())
-                    .confidence(0.0)
-                    .matchMethod(MatchMethod.NONE)
-                    .matchedKeywords(Collections.emptyList())
-                    .isStrongSignal(false)
-                    .requiresConfirmation(false)
-                    .userInput(userInput)
-                    .actionType(ActionType.UNKNOWN)
-                    .questionType(questionType)
-                    .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。请通过管理后台进行数据操作。")
-                    .build();
-            saveIntentMatchRecord(noMatchResult, factoryId, null, null, false);
-            return noMatchResult;
-        }
+        // ========== v11.12: 移除写操作拦截 ==========
+        // 写操作意图（如 PROCESSING_BATCH_CREATE, USER_CREATE 等）应被正常识别
+        // 权限控制由 AIIntentConfig.requiredRoles 在执行阶段处理
+        // if (isWriteOnlyInput(originalInput)) {
+        //     log.info("检测到写操作，直接拒绝: input='{}'", originalInput);
+        //     IntentMatchResult noMatchResult = IntentMatchResult.builder()
+        //             .bestMatch(null)
+        //             .topCandidates(Collections.emptyList())
+        //             .confidence(0.0)
+        //             .matchMethod(MatchMethod.NONE)
+        //             .matchedKeywords(Collections.emptyList())
+        //             .isStrongSignal(false)
+        //             .requiresConfirmation(false)
+        //             .userInput(userInput)
+        //             .actionType(ActionType.UNKNOWN)
+        //             .questionType(questionType)
+        //             .clarificationQuestion("抱歉，AI 助手目前只支持数据查询，不支持删除、修改、添加等操作。请通过管理后台进行数据操作。")
+        //             .build();
+        //     saveIntentMatchRecord(noMatchResult, factoryId, null, null, false);
+        //     return noMatchResult;
+        // }
 
         boolean isAmbiguousQuery = (questionType == IntentKnowledgeBase.QuestionType.GENERAL_QUESTION);
         if (isAmbiguousQuery) {
@@ -3895,9 +3896,16 @@ public class AIIntentServiceImpl implements AIIntentService {
         IntentKnowledgeBase.Granularity inputGranularity = routingResult.getInputGranularity();
         IntentKnowledgeBase.Domain inputDomain = routingResult.getInputDomain();
 
+        // ========== v11.12.2: ActionType 软过滤 ==========
+        // 修正：硬过滤导致通过率下降，改为软过滤（评分调整）
+        // - 写操作（CREATE/UPDATE/DELETE）时，对查询类意图降分但不过滤
+        // - 查询操作时，不过滤
+        // - 这保留了 ActionType 的指导作用，同时避免过滤掉正确候选
+        List<SemanticCandidate> candidates = new ArrayList<>(routingResult.getCandidates());
+
         // v7.0优化: 如果短语匹配的意图不在语义候选中，注入该意图
         // 这确保短语匹配的意图有机会参与评分竞争
-        List<SemanticCandidate> candidates = new ArrayList<>(routingResult.getCandidates());
+        // v11.12.2: 移除 ActionType 兼容性检查，短语匹配是强信号应始终注入
         if (phraseMatch.isPresent()) {
             String phraseMatchedIntent = phraseMatch.get();
             boolean alreadyInCandidates = candidates.stream()
