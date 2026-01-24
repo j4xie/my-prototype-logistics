@@ -183,33 +183,19 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
 
         try {
             // 1. 加载模板基础配置
-            chartConfig.put("chartType", template.getChartType());
+            String chartType = template.getChartType() != null ? template.getChartType() : "LINE";
+            chartConfig.put("chartType", chartType);
             chartConfig.put("templateCode", templateCode);
             chartConfig.put("title", template.getTemplateName());
 
-            // 2. 合并模板选项
-            if (template.getChartOptions() != null && !template.getChartOptions().isEmpty()) {
-                Map<String, Object> options = objectMapper.readValue(
-                        template.getChartOptions(),
-                        new TypeReference<Map<String, Object>>() {});
-                chartConfig.put("options", options);
-            }
-
-            // 3. 应用数据映射
+            // 2. 处理数据
+            Map<String, Object> processedData = data;
             if (template.getDataMapping() != null && !template.getDataMapping().isEmpty()) {
-                // 支持两种格式：
-                // 1. 简单映射: {"xAxis": "date", "yAxis": "value"}
-                // 2. 复杂配置: {"categories": [...], "series": [...]}
                 Map<String, Object> dataMapping = objectMapper.readValue(
                         template.getDataMapping(),
                         new TypeReference<Map<String, Object>>() {});
 
-                // 检查是否为复杂配置格式
-                if (dataMapping.containsKey("categories") || dataMapping.containsKey("series")) {
-                    // 复杂配置：直接添加到图表配置中
-                    chartConfig.put("dataMapping", dataMapping);
-                    chartConfig.put("data", data);
-                } else {
+                if (!dataMapping.containsKey("categories") && !dataMapping.containsKey("series")) {
                     // 简单映射：执行字段映射
                     Map<String, Object> mappedData = new LinkedHashMap<>();
                     for (Map.Entry<String, Object> mapping : dataMapping.entrySet()) {
@@ -222,12 +208,25 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                             }
                         }
                     }
-                    chartConfig.put("data", mappedData.isEmpty() ? data : mappedData);
+                    if (!mappedData.isEmpty()) {
+                        processedData = mappedData;
+                    }
                 }
-            } else {
-                // 无映射配置时直接使用原始数据
-                chartConfig.put("data", data);
             }
+            chartConfig.put("data", processedData);
+
+            // 3. 构建 ECharts options
+            Map<String, Object> options;
+            if (template.getChartOptions() != null && !template.getChartOptions().isEmpty()) {
+                // 使用模板配置的 options
+                options = objectMapper.readValue(
+                        template.getChartOptions(),
+                        new TypeReference<Map<String, Object>>() {});
+            } else {
+                // 动态构建 ECharts options
+                options = buildDynamicEChartsOptions(chartType, processedData, template.getTemplateName());
+            }
+            chartConfig.put("options", options);
 
             // 4. 添加布局配置（如果有）
             if (template.getLayoutConfig() != null && !template.getLayoutConfig().isEmpty()) {
@@ -237,7 +236,7 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                 chartConfig.put("layout", layout);
             }
 
-            log.debug("成功构建图表配置: templateCode={}, chartType={}", templateCode, template.getChartType());
+            log.debug("成功构建图表配置: templateCode={}, chartType={}", templateCode, chartType);
 
         } catch (Exception e) {
             log.error("构建图表配置失败: templateCode={}, error={}", templateCode, e.getMessage(), e);
@@ -245,6 +244,125 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
         }
 
         return chartConfig;
+    }
+
+    /**
+     * 动态构建 ECharts options（当模板没有预定义 chart_options 时使用）
+     */
+    private Map<String, Object> buildDynamicEChartsOptions(String chartType, Map<String, Object> data, String title) {
+        Map<String, Object> options = new LinkedHashMap<>();
+
+        // 标题
+        Map<String, Object> titleConfig = new LinkedHashMap<>();
+        titleConfig.put("text", title != null ? title : "数据分析");
+        titleConfig.put("left", "center");
+        options.put("title", titleConfig);
+
+        // 提示框
+        Map<String, Object> tooltip = new LinkedHashMap<>();
+        tooltip.put("trigger", "axis");
+        options.put("tooltip", tooltip);
+
+        // 图例
+        Map<String, Object> legend = new LinkedHashMap<>();
+        legend.put("bottom", 10);
+        options.put("legend", legend);
+
+        // 从数据中提取 xAxis 和 series
+        List<String> categories = new ArrayList<>();
+        List<Map<String, Object>> seriesList = new ArrayList<>();
+
+        // 尝试识别数据结构
+        if (data.containsKey("categories") && data.containsKey("series")) {
+            // 标准格式
+            Object cats = data.get("categories");
+            if (cats instanceof List) {
+                categories = (List<String>) cats;
+            }
+            Object ser = data.get("series");
+            if (ser instanceof List) {
+                for (Object item : (List<?>) ser) {
+                    if (item instanceof Map) {
+                        seriesList.add((Map<String, Object>) item);
+                    }
+                }
+            }
+        } else {
+            // 尝试从 aggregatedData 格式解析
+            // 格式: {指标名: [{period: "2024-01", value: 100}, ...]}
+            for (Map.Entry<String, Object> entry : data.entrySet()) {
+                String metricName = entry.getKey();
+                Object value = entry.getValue();
+
+                if (value instanceof List) {
+                    List<?> dataList = (List<?>) value;
+                    List<Object> seriesData = new ArrayList<>();
+
+                    for (Object item : dataList) {
+                        if (item instanceof Map) {
+                            Map<?, ?> row = (Map<?, ?>) item;
+                            // 提取 x 轴类目
+                            Object period = row.get("period");
+                            if (period == null) period = row.get("date");
+                            if (period == null) period = row.get("time");
+                            if (period == null) period = row.get("name");
+                            if (period == null) period = row.get("category");
+
+                            if (period != null && categories.size() < dataList.size()) {
+                                String cat = String.valueOf(period);
+                                if (!categories.contains(cat)) {
+                                    categories.add(cat);
+                                }
+                            }
+
+                            // 提取 y 轴数值
+                            Object val = row.get("value");
+                            if (val == null) val = row.get("amount");
+                            if (val == null) val = row.get("total");
+                            seriesData.add(val != null ? val : 0);
+                        }
+                    }
+
+                    if (!seriesData.isEmpty()) {
+                        Map<String, Object> series = new LinkedHashMap<>();
+                        series.put("name", metricName);
+                        series.put("type", chartType.toLowerCase().replace("_", ""));
+                        series.put("data", seriesData);
+                        seriesList.add(series);
+                    }
+                }
+            }
+        }
+
+        // 如果没有解析到数据，创建空图表
+        if (categories.isEmpty()) {
+            categories = Arrays.asList("暂无数据");
+        }
+        if (seriesList.isEmpty()) {
+            Map<String, Object> emptySeries = new LinkedHashMap<>();
+            emptySeries.put("name", "数据");
+            emptySeries.put("type", "line");
+            emptySeries.put("data", Arrays.asList(0));
+            seriesList.add(emptySeries);
+        }
+
+        // X 轴
+        Map<String, Object> xAxis = new LinkedHashMap<>();
+        xAxis.put("type", "category");
+        xAxis.put("data", categories);
+        options.put("xAxis", xAxis);
+
+        // Y 轴
+        Map<String, Object> yAxis = new LinkedHashMap<>();
+        yAxis.put("type", "value");
+        options.put("yAxis", yAxis);
+
+        // 系列
+        options.put("series", seriesList);
+
+        log.debug("动态构建 ECharts options: categories={}, series={}", categories.size(), seriesList.size());
+
+        return options;
     }
 
     // ==================== 图表类型推荐 ====================
