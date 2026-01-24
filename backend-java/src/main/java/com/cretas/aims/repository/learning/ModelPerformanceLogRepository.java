@@ -59,33 +59,33 @@ public interface ModelPerformanceLogRepository extends JpaRepository<ModelPerfor
             @Param("startDate") LocalDateTime startDate);
 
     /**
-     * Get match rate trend
+     * Get match rate trend (using native query for division)
      */
-    @Query("SELECT l.periodStart, " +
-           "       CASE WHEN l.totalRequests > 0 THEN CAST(l.matchedRequests AS double) / l.totalRequests ELSE 0 END " +
-           "FROM ModelPerformanceLog l " +
-           "WHERE l.factoryId = :factoryId " +
-           "AND l.periodType = :periodType " +
-           "AND l.periodStart >= :startDate " +
-           "ORDER BY l.periodStart ASC")
+    @Query(value = "SELECT period_start, " +
+           "       CASE WHEN total_requests > 0 THEN CAST(matched_requests AS DOUBLE) / total_requests ELSE 0 END " +
+           "FROM model_performance_log " +
+           "WHERE factory_id = :factoryId " +
+           "AND period_type = :periodType " +
+           "AND period_start >= :startDate " +
+           "ORDER BY period_start ASC", nativeQuery = true)
     List<Object[]> getMatchRateTrend(
             @Param("factoryId") String factoryId,
-            @Param("periodType") PeriodType periodType,
+            @Param("periodType") String periodType,
             @Param("startDate") LocalDateTime startDate);
 
     /**
-     * Get LLM fallback rate trend
+     * Get LLM fallback rate trend (using native query for division)
      */
-    @Query("SELECT l.periodStart, " +
-           "       CASE WHEN l.totalRequests > 0 THEN CAST(l.llmFallbackCount AS double) / l.totalRequests ELSE 0 END " +
-           "FROM ModelPerformanceLog l " +
-           "WHERE l.factoryId = :factoryId " +
-           "AND l.periodType = :periodType " +
-           "AND l.periodStart >= :startDate " +
-           "ORDER BY l.periodStart ASC")
+    @Query(value = "SELECT period_start, " +
+           "       CASE WHEN total_requests > 0 THEN CAST(llm_fallback_count AS DOUBLE) / total_requests ELSE 0 END " +
+           "FROM model_performance_log " +
+           "WHERE factory_id = :factoryId " +
+           "AND period_type = :periodType " +
+           "AND period_start >= :startDate " +
+           "ORDER BY period_start ASC", nativeQuery = true)
     List<Object[]> getLlmFallbackTrend(
             @Param("factoryId") String factoryId,
-            @Param("periodType") PeriodType periodType,
+            @Param("periodType") String periodType,
             @Param("startDate") LocalDateTime startDate);
 
     // ==================== Aggregations ====================

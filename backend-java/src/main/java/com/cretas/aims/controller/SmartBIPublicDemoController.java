@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,13 +34,22 @@ public class SmartBIPublicDemoController {
     private final RecommendationService recommendationService;
     private final ForecastService forecastService;
 
+    @Autowired(required = false)
+    private SmartBIService smartBIService;
+
     private static final String DEMO_FACTORY_ID = "F001";
 
     @PostMapping("/query")
     @Operation(summary = "自然语言查询")
     public ResponseEntity<ApiResponse<NLQueryResponse>> query(@RequestBody NLQueryRequest request) {
-        log.info("SmartBI 查询: {}", request.getEffectiveQuery());
+        log.info("SmartBI 公开演示查询: {}", request.getEffectiveQuery());
         try {
+            if (smartBIService != null) {
+                // 使用门面服务（包含缓存、配额、使用记录）
+                NLQueryResponse response = smartBIService.processQuery(DEMO_FACTORY_ID, null, request);
+                return ResponseEntity.ok(ApiResponse.success(response));
+            }
+            // 降级到原有逻辑
             IntentResult intentResult = intentService.recognizeIntent(request.getEffectiveQuery(), request.getContext());
             DateRange dr = intentService.parseTimeRange(request.getEffectiveQuery());
             LocalDate start = dr != null ? dr.getStartDate() : LocalDate.now().minusDays(30);
@@ -114,10 +124,16 @@ public class SmartBIPublicDemoController {
 
     @GetMapping("/dashboard")
     @Operation(summary = "统一仪表盘", description = "聚合所有分析维度数据")
-    public ResponseEntity<ApiResponse<UnifiedDashboardResponse>> getUnifiedDashboard(
+    public ResponseEntity<ApiResponse<Object>> getUnifiedDashboard(
             @RequestParam(defaultValue = "month") String period) {
-        log.info("获取统一仪表盘: period={}", period);
+        log.info("获取公开演示仪表盘: period={}", period);
         try {
+            if (smartBIService != null) {
+                // 使用门面服务（包含缓存、配额、使用记录）
+                DashboardResponse dashboard = smartBIService.getExecutiveDashboard(DEMO_FACTORY_ID, period);
+                return ResponseEntity.ok(ApiResponse.success(Map.of("dashboard", dashboard)));
+            }
+            // 降级到原有逻辑
             LocalDate[] dateRange = DateRangeUtils.getDateRangeByPeriod(period);
             LocalDate startDate = dateRange[0];
             LocalDate endDate = dateRange[1];
@@ -142,7 +158,8 @@ public class SmartBIPublicDemoController {
             response.setGeneratedAt(java.time.LocalDateTime.now());
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
-            return ResponseEntity.ok(ApiResponse.error("获取失败: " + e.getMessage()));
+            log.error("获取仪表盘失败", e);
+            return ResponseEntity.ok(ApiResponse.error("获取仪表盘失败"));
         }
     }
 

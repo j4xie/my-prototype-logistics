@@ -2,18 +2,11 @@ package com.cretas.aims.service.smartbi;
 
 import com.cretas.aims.dto.smartbi.MetricEntity;
 import com.cretas.aims.entity.smartbi.SmartBiDictionary;
-import com.cretas.aims.repository.smartbi.SmartBiDictionaryRepository;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,34 +28,48 @@ import java.util.concurrent.ConcurrentHashMap;
  * - Metric metadata retrieval (category, unit, aggregation)
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2026-01-20
  */
 @Slf4j
 @Service
-public class MetricEntityRecognizer {
+public class MetricEntityRecognizer extends BaseEntityRecognizer<MetricEntity, MetricEntityRecognizer.MetricTrieNode> {
 
     // ==================== Configuration ====================
 
     @Value("${smartbi.metric.dictionary-file:config/smartbi/metric_dictionary.json}")
     private String dictionaryFile;
 
-    private final ObjectMapper objectMapper;
-
-    @Autowired
-    private SmartBiDictionaryRepository dictionaryRepository;
-
-    // ==================== Trie Data Structures ====================
+    // ==================== Trie Node ====================
 
     /**
-     * Root node of the Trie tree
+     * Metric-specific Trie node
      */
-    private TrieNode root;
+    public static class MetricTrieNode extends BaseTrieNode {
+        /**
+         * Metric category (sales, finance, comparison, analysis, customer)
+         */
+        public String category;
+
+        /**
+         * Unit of the metric
+         */
+        public String unit;
+
+        /**
+         * Aggregation type (SUM, AVG, COUNT, CALC)
+         */
+        public String aggregation;
+
+        public MetricTrieNode() {
+            super();
+        }
+    }
+
+    // ==================== Indexes ====================
 
     /**
      * Metric information index for quick lookup
-     * Key: normalized metric name
-     * Value: MetricInfo containing category, unit, aggregation, and aliases
      */
     private final Map<String, MetricInfo> metricIndex = new ConcurrentHashMap<>();
 
@@ -71,61 +78,7 @@ public class MetricEntityRecognizer {
      */
     private final Map<String, String> categoryDescriptions = new ConcurrentHashMap<>();
 
-    /**
-     * Statistics
-     */
-    private long totalRecognitions = 0;
-    private long entitiesFound = 0;
-
     // ==================== Inner Classes ====================
-
-    /**
-     * Trie node for efficient string matching
-     */
-    private static class TrieNode {
-        /**
-         * Child nodes mapped by character
-         */
-        Map<Character, TrieNode> children = new HashMap<>();
-
-        /**
-         * Whether this node marks the end of a valid metric name
-         */
-        boolean isEnd = false;
-
-        /**
-         * Normalized name of the metric
-         */
-        String normalizedName;
-
-        /**
-         * Metric category (sales, finance, comparison, analysis, customer)
-         */
-        String category;
-
-        /**
-         * Unit of the metric
-         */
-        String unit;
-
-        /**
-         * Aggregation type (SUM, AVG, COUNT, CALC)
-         */
-        String aggregation;
-
-        /**
-         * Whether this entry is an alias
-         */
-        boolean isAlias = false;
-
-        /**
-         * The alias text (if isAlias is true)
-         */
-        String aliasText;
-
-        TrieNode() {
-        }
-    }
 
     /**
      * Metric information stored in the index
@@ -144,150 +97,152 @@ public class MetricEntityRecognizer {
             this.aggregation = aggregation;
         }
 
-        public String getStandardName() {
-            return standardName;
-        }
-
-        public String getCategory() {
-            return category;
-        }
-
-        public String getUnit() {
-            return unit;
-        }
-
-        public String getAggregation() {
-            return aggregation;
-        }
-
-        public List<String> getAliases() {
-            return aliases;
-        }
+        public String getStandardName() { return standardName; }
+        public String getCategory() { return category; }
+        public String getUnit() { return unit; }
+        public String getAggregation() { return aggregation; }
+        public List<String> getAliases() { return aliases; }
     }
 
     // ==================== Constructor ====================
 
     public MetricEntityRecognizer(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+        super(objectMapper);
     }
 
-    // ==================== Initialization ====================
+    // ==================== BaseEntityRecognizer Implementation ====================
 
-    /**
-     * Initialize the recognizer by loading dictionary and building Trie
-     */
-    @PostConstruct
-    public void init() {
-        log.info("Initializing MetricEntityRecognizer...");
-        root = new TrieNode();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("MetricEntityRecognizer initialized with {} metrics in index", metricIndex.size());
+    @Override
+    protected String getDictionaryFile() {
+        return dictionaryFile;
     }
 
-    /**
-     * Load metric dictionary from JSON file
-     */
-    private void loadDictionary() {
-        try {
-            ClassPathResource resource = new ClassPathResource(dictionaryFile);
-            if (!resource.exists()) {
-                log.warn("Metric dictionary file not found: {}, using defaults", dictionaryFile);
-                initDefaultDictionary();
-                return;
+    @Override
+    protected String getDictType() {
+        return "metric";
+    }
+
+    @Override
+    protected String getRecognizerName() {
+        return "MetricEntityRecognizer";
+    }
+
+    @Override
+    protected MetricTrieNode createTrieNode() {
+        return new MetricTrieNode();
+    }
+
+    @Override
+    protected MetricEntity createEntity(String matchedText, MetricTrieNode node, int start, int end) {
+        MetricEntity.MetricEntityBuilder builder = MetricEntity.builder()
+                .text(matchedText)
+                .normalizedName(node.normalizedName)
+                .category(node.category)
+                .unit(node.unit)
+                .aggregation(node.aggregation)
+                .startIndex(start)
+                .endIndex(end);
+
+        if (node.isAlias) {
+            builder.matchedByAlias(true)
+                   .matchedAlias(node.aliasText)
+                   .confidence(0.9);
+        } else {
+            builder.confidence(1.0);
+        }
+
+        return builder.build();
+    }
+
+    @Override
+    protected int getEntityStartIndex(MetricEntity entity) {
+        return entity.getStartIndex();
+    }
+
+    @Override
+    protected void clearIndexes() {
+        metricIndex.clear();
+        categoryDescriptions.clear();
+    }
+
+    @Override
+    protected void collectAdditionalStatistics(Map<String, Object> stats) {
+        stats.put("metricCount", metricIndex.size());
+
+        // Count by category
+        Map<String, Integer> categoryCount = new LinkedHashMap<>();
+        for (String category : categoryDescriptions.keySet()) {
+            categoryCount.put(category, getMetricsByCategory(category).size());
+        }
+        stats.put("categoryBreakdown", categoryCount);
+
+        // Count total aliases
+        int totalAliases = 0;
+        for (MetricInfo info : metricIndex.values()) {
+            totalAliases += info.aliases.size();
+        }
+        stats.put("totalAliases", totalAliases);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    protected void processDictionaryData(Map<String, Object> dictionary) {
+        // Load metrics
+        if (dictionary.containsKey("metrics")) {
+            Map<String, Map<String, Object>> metrics =
+                    (Map<String, Map<String, Object>>) dictionary.get("metrics");
+            loadMetrics(metrics);
+        }
+
+        // Load category descriptions
+        if (dictionary.containsKey("categories")) {
+            Map<String, String> categories = (Map<String, String>) dictionary.get("categories");
+            categoryDescriptions.putAll(categories);
+        }
+    }
+
+    @Override
+    protected void processDbEntry(SmartBiDictionary entry) {
+        String name = entry.getName();
+
+        // Parse metadata to get category, unit, aggregation
+        String category = "通用";
+        String unit = "";
+        String aggregation = "SUM";
+
+        Map<String, Object> metadata = parseMetadata(entry.getMetadata());
+        if (metadata.containsKey("category")) {
+            category = metadata.get("category").toString();
+        }
+        if (metadata.containsKey("unit")) {
+            unit = metadata.get("unit").toString();
+        }
+        if (metadata.containsKey("aggregation")) {
+            aggregation = metadata.get("aggregation").toString();
+        }
+
+        // Create MetricInfo if not exists
+        MetricInfo info = metricIndex.get(name);
+        if (info == null) {
+            info = new MetricInfo(name, category, unit, aggregation);
+            metricIndex.put(name, info);
+        }
+
+        // Add to Trie
+        addToTrieWithMetric(name, name, category, unit, aggregation, false, null);
+
+        // Process aliases
+        List<String> aliases = parseAliases(entry.getAliases());
+        for (String alias : aliases) {
+            addToTrieWithMetric(alias, name, category, unit, aggregation, true, alias);
+            if (!info.aliases.contains(alias)) {
+                info.aliases.add(alias);
             }
-
-            try (InputStream is = resource.getInputStream()) {
-                Map<String, Object> dictionary = objectMapper.readValue(
-                        is, new TypeReference<Map<String, Object>>() {});
-
-                // Load metrics
-                if (dictionary.containsKey("metrics")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Map<String, Object>> metrics =
-                            (Map<String, Map<String, Object>>) dictionary.get("metrics");
-                    loadMetrics(metrics);
-                }
-
-                // Load category descriptions
-                if (dictionary.containsKey("categories")) {
-                    @SuppressWarnings("unchecked")
-                    Map<String, String> categories = (Map<String, String>) dictionary.get("categories");
-                    categoryDescriptions.putAll(categories);
-                }
-
-                log.info("Successfully loaded metric dictionary from: {}", dictionaryFile);
-            }
-        } catch (IOException e) {
-            log.error("Failed to load metric dictionary: {}", e.getMessage());
-            initDefaultDictionary();
         }
     }
 
-    /**
-     * Load metric data and build Trie entries
-     */
-    private void loadMetrics(Map<String, Map<String, Object>> metrics) {
-        for (Map.Entry<String, Map<String, Object>> entry : metrics.entrySet()) {
-            String metricName = entry.getKey();
-            Map<String, Object> metricData = entry.getValue();
-
-            // Extract metric properties
-            String category = (String) metricData.getOrDefault("category", "unknown");
-            String unit = (String) metricData.getOrDefault("unit", "");
-            String aggregation = (String) metricData.getOrDefault("aggregation", "SUM");
-
-            // Create metric info
-            MetricInfo info = new MetricInfo(metricName, category, unit, aggregation);
-
-            // Add to Trie - standard name
-            addToTrie(metricName, metricName, category, unit, aggregation, false, null);
-
-            // Add aliases
-            if (metricData.containsKey("aliases")) {
-                @SuppressWarnings("unchecked")
-                List<String> aliases = (List<String>) metricData.get("aliases");
-                info.aliases.addAll(aliases);
-                for (String alias : aliases) {
-                    addToTrie(alias, metricName, category, unit, aggregation, true, alias);
-                }
-            }
-
-            metricIndex.put(metricName, info);
-        }
-    }
-
-    /**
-     * Add a term to the Trie tree
-     */
-    private void addToTrie(String term, String normalizedName, String category,
-                           String unit, String aggregation, boolean isAlias, String aliasText) {
-        if (term == null || term.isEmpty()) {
-            return;
-        }
-
-        TrieNode current = root;
-        for (char c : term.toCharArray()) {
-            current.children.putIfAbsent(c, new TrieNode());
-            current = current.children.get(c);
-        }
-
-        // Only update end node info if not already set (prefer non-alias over alias)
-        if (!current.isEnd || (!current.isAlias && isAlias)) {
-            current.isEnd = true;
-            current.normalizedName = normalizedName;
-            current.category = category;
-            current.unit = unit;
-            current.aggregation = aggregation;
-            current.isAlias = isAlias;
-            current.aliasText = aliasText;
-        }
-    }
-
-    /**
-     * Initialize default dictionary when file is not available
-     */
-    private void initDefaultDictionary() {
+    @Override
+    protected void initDefaultDictionary() {
         log.info("Initializing default metric dictionary...");
 
         // Default category descriptions
@@ -342,218 +297,76 @@ public class MetricEntityRecognizer {
         log.info("Default dictionary initialized with {} entries", metricIndex.size());
     }
 
-    /**
-     * Helper method to add a default metric with its aliases
-     */
+    // ==================== Private Loading Methods ====================
+
+    @SuppressWarnings("unchecked")
+    private void loadMetrics(Map<String, Map<String, Object>> metrics) {
+        for (Map.Entry<String, Map<String, Object>> entry : metrics.entrySet()) {
+            String metricName = entry.getKey();
+            Map<String, Object> metricData = entry.getValue();
+
+            String category = (String) metricData.getOrDefault("category", "unknown");
+            String unit = (String) metricData.getOrDefault("unit", "");
+            String aggregation = (String) metricData.getOrDefault("aggregation", "SUM");
+
+            MetricInfo info = new MetricInfo(metricName, category, unit, aggregation);
+
+            addToTrieWithMetric(metricName, metricName, category, unit, aggregation, false, null);
+
+            if (metricData.containsKey("aliases")) {
+                List<String> aliases = (List<String>) metricData.get("aliases");
+                info.aliases.addAll(aliases);
+                for (String alias : aliases) {
+                    addToTrieWithMetric(alias, metricName, category, unit, aggregation, true, alias);
+                }
+            }
+
+            metricIndex.put(metricName, info);
+        }
+    }
+
     private void addDefaultMetric(String name, String category, String unit,
                                    String aggregation, List<String> aliases) {
         MetricInfo info = new MetricInfo(name, category, unit, aggregation);
         info.aliases.addAll(aliases);
 
-        addToTrie(name, name, category, unit, aggregation, false, null);
+        addToTrieWithMetric(name, name, category, unit, aggregation, false, null);
         for (String alias : aliases) {
-            addToTrie(alias, name, category, unit, aggregation, true, alias);
+            addToTrieWithMetric(alias, name, category, unit, aggregation, true, alias);
         }
 
         metricIndex.put(name, info);
     }
 
-    /**
-     * Load metric dictionary entries from database
-     * Supports dynamic configuration without service restart
-     */
-    private void loadFromDatabase() {
-        try {
-            List<SmartBiDictionary> entries = dictionaryRepository
-                    .findByDictTypeAndIsActiveTrueOrderByPriorityAsc("metric");
-
-            for (SmartBiDictionary entry : entries) {
-                String name = entry.getName();
-
-                // Parse metadata to get category, unit, aggregation
-                String category = "通用";
-                String unit = "";
-                String aggregation = "SUM";
-
-                if (entry.getMetadata() != null && !entry.getMetadata().isEmpty()) {
-                    try {
-                        Map<String, Object> metadata = objectMapper.readValue(
-                                entry.getMetadata(),
-                                new TypeReference<Map<String, Object>>() {});
-                        if (metadata.containsKey("category")) {
-                            category = metadata.get("category").toString();
-                        }
-                        if (metadata.containsKey("unit")) {
-                            unit = metadata.get("unit").toString();
-                        }
-                        if (metadata.containsKey("aggregation")) {
-                            aggregation = metadata.get("aggregation").toString();
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to parse metadata for metric: {}", entry.getName());
-                    }
-                }
-
-                // Create MetricInfo if not exists
-                MetricInfo info = metricIndex.get(name);
-                if (info == null) {
-                    info = new MetricInfo(name, category, unit, aggregation);
-                    metricIndex.put(name, info);
-                }
-
-                // Add to Trie - standard name
-                addToTrie(name, name, category, unit, aggregation, false, null);
-
-                // Process aliases
-                if (entry.getAliases() != null && !entry.getAliases().isEmpty()) {
-                    try {
-                        List<String> aliases = objectMapper.readValue(
-                                entry.getAliases(),
-                                new TypeReference<List<String>>() {});
-                        for (String alias : aliases) {
-                            addToTrie(alias, name, category, unit, aggregation, true, alias);
-                            if (!info.aliases.contains(alias)) {
-                                info.aliases.add(alias);
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to parse aliases for metric: {}", entry.getName());
-                    }
-                }
-            }
-
-            log.info("Loaded {} metric entries from database", entries.size());
-        } catch (Exception e) {
-            log.warn("Failed to load metric dictionary from database: {}", e.getMessage());
-        }
+    private void addToTrieWithMetric(String term, String normalizedName, String category,
+                                      String unit, String aggregation, boolean isAlias, String aliasText) {
+        addToTrie(term, node -> {
+            node.normalizedName = normalizedName;
+            node.category = category;
+            node.unit = unit;
+            node.aggregation = aggregation;
+            node.isAlias = isAlias;
+            node.aliasText = aliasText;
+        });
     }
 
-    // ==================== Recognition Methods ====================
-
-    /**
-     * Recognize all metric entities in the given text
-     *
-     * Uses Trie-based matching for O(n) complexity where n is text length.
-     * Returns all matched metrics with their positions and metadata.
-     *
-     * @param text Input text to analyze
-     * @return List of recognized MetricEntity objects, sorted by position
-     */
-    public List<MetricEntity> recognize(String text) {
-        if (text == null || text.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        totalRecognitions++;
-        List<MetricEntity> entities = new ArrayList<>();
-        int textLength = text.length();
-
-        // Scan through text using Trie matching
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-            TrieNode lastMatch = null;
-            int lastMatchEnd = i;
-
-            // Try to find the longest match starting at position i
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    lastMatch = current;
-                    lastMatchEnd = j;
-                }
-            }
-
-            // If we found a match, create MetricEntity
-            if (lastMatch != null) {
-                String matchedText = text.substring(i, lastMatchEnd);
-                MetricEntity entity = createEntity(matchedText, lastMatch, i, lastMatchEnd);
-                entities.add(entity);
-                entitiesFound++;
-
-                // Skip to end of match to avoid overlapping matches
-                i = lastMatchEnd - 1;
-            }
-        }
-
-        // Sort by position
-        entities.sort(Comparator.comparingInt(MetricEntity::getStartIndex));
-
-        return entities;
-    }
-
-    /**
-     * Create MetricEntity from Trie match
-     */
-    private MetricEntity createEntity(String matchedText, TrieNode node, int start, int end) {
-        MetricEntity.MetricEntityBuilder builder = MetricEntity.builder()
-                .text(matchedText)
-                .normalizedName(node.normalizedName)
-                .category(node.category)
-                .unit(node.unit)
-                .aggregation(node.aggregation)
-                .startIndex(start)
-                .endIndex(end);
-
-        if (node.isAlias) {
-            builder.matchedByAlias(true)
-                   .matchedAlias(node.aliasText)
-                   .confidence(0.9);
-        } else {
-            builder.confidence(1.0);
-        }
-
-        return builder.build();
-    }
+    // ==================== Public API Methods ====================
 
     /**
      * Quick check if text contains any metric entity
-     *
-     * More efficient than recognize() when you only need a boolean result.
-     *
-     * @param text Input text to check
-     * @return true if text contains at least one metric entity
      */
     public boolean containsMetric(String text) {
-        if (text == null || text.isEmpty()) {
-            return false;
-        }
-
-        int textLength = text.length();
-
-        for (int i = 0; i < textLength; i++) {
-            TrieNode current = root;
-            int j = i;
-
-            while (j < textLength && current.children.containsKey(text.charAt(j))) {
-                current = current.children.get(text.charAt(j));
-                j++;
-
-                if (current.isEnd) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
+        return containsEntity(text);
     }
-
-    // ==================== Query Methods ====================
 
     /**
      * Get metric information by name
-     *
-     * @param metricName Metric name (standard or alias)
-     * @return MetricInfo or null if not found
      */
     public MetricInfo getMetricInfo(String metricName) {
         if (metricName == null || metricName.isEmpty()) {
             return null;
         }
 
-        // Check direct match
         if (metricIndex.containsKey(metricName)) {
             return metricIndex.get(metricName);
         }
@@ -570,9 +383,6 @@ public class MetricEntityRecognizer {
 
     /**
      * Get all metrics in a specific category
-     *
-     * @param category Category name (sales, finance, comparison, analysis, customer)
-     * @return List of metric names in the category
      */
     public List<String> getMetricsByCategory(String category) {
         if (category == null || category.isEmpty()) {
@@ -590,8 +400,6 @@ public class MetricEntityRecognizer {
 
     /**
      * Get all known metric names
-     *
-     * @return List of all standard metric names
      */
     public List<String> getAllMetricNames() {
         return new ArrayList<>(metricIndex.keySet());
@@ -599,9 +407,6 @@ public class MetricEntityRecognizer {
 
     /**
      * Get all known aliases for a metric
-     *
-     * @param metricName Standard metric name
-     * @return List of aliases or empty list if metric not found
      */
     public List<String> getAliases(String metricName) {
         MetricInfo info = metricIndex.get(metricName);
@@ -612,10 +417,7 @@ public class MetricEntityRecognizer {
     }
 
     /**
-     * Check if a metric name is valid (exists in dictionary)
-     *
-     * @param metricName Metric name to check
-     * @return true if valid metric name or alias
+     * Check if a metric name is valid
      */
     public boolean isValidMetric(String metricName) {
         return getMetricInfo(metricName) != null;
@@ -623,9 +425,6 @@ public class MetricEntityRecognizer {
 
     /**
      * Normalize a metric name to its standard form
-     *
-     * @param metricName Metric name (may be alias)
-     * @return Normalized standard name or original if not found
      */
     public String normalize(String metricName) {
         if (metricName == null || metricName.isEmpty()) {
@@ -638,9 +437,6 @@ public class MetricEntityRecognizer {
 
     /**
      * Get category description
-     *
-     * @param category Category code
-     * @return Category description or the code itself if not found
      */
     public String getCategoryDescription(String category) {
         return categoryDescriptions.getOrDefault(category, category);
@@ -648,62 +444,8 @@ public class MetricEntityRecognizer {
 
     /**
      * Get all available categories
-     *
-     * @return Map of category codes to descriptions
      */
     public Map<String, String> getAllCategories() {
         return new LinkedHashMap<>(categoryDescriptions);
-    }
-
-    // ==================== Management Methods ====================
-
-    /**
-     * Reload the dictionary from file and database
-     */
-    public void reload() {
-        log.info("Reloading metric dictionary...");
-        root = new TrieNode();
-        metricIndex.clear();
-        categoryDescriptions.clear();
-        loadDictionary();
-        loadFromDatabase();
-        log.info("Metric dictionary reloaded with {} entries", metricIndex.size());
-    }
-
-    /**
-     * Get recognition statistics
-     *
-     * @return Map containing statistics
-     */
-    public Map<String, Object> getStatistics() {
-        Map<String, Object> stats = new LinkedHashMap<>();
-        stats.put("totalRecognitions", totalRecognitions);
-        stats.put("entitiesFound", entitiesFound);
-        stats.put("metricCount", metricIndex.size());
-
-        // Count by category
-        Map<String, Integer> categoryCount = new LinkedHashMap<>();
-        for (String category : categoryDescriptions.keySet()) {
-            categoryCount.put(category, getMetricsByCategory(category).size());
-        }
-        stats.put("categoryBreakdown", categoryCount);
-
-        // Count total aliases
-        int totalAliases = 0;
-        for (MetricInfo info : metricIndex.values()) {
-            totalAliases += info.aliases.size();
-        }
-        stats.put("totalAliases", totalAliases);
-
-        return stats;
-    }
-
-    /**
-     * Reset statistics counters
-     */
-    public void resetStatistics() {
-        totalRecognitions = 0;
-        entitiesFound = 0;
-        log.info("MetricEntityRecognizer statistics reset");
     }
 }

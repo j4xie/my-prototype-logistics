@@ -58,6 +58,12 @@ public class ConversationMessage {
     private Map<String, Object> metadata;
 
     /**
+     * 消息中识别到的实体
+     * key: 实体类型, value: 实体值
+     */
+    private Map<String, Object> entities;
+
+    /**
      * 创建用户消息
      */
     public static ConversationMessage user(String content) {

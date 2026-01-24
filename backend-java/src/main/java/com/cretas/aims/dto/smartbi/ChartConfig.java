@@ -9,13 +9,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 图表配置 DTO
+ * 图表配置 DTO (简化版)
  * 用于定义图表的类型、字段和数据
  *
  * @author Cretas Team
  * @version 1.0.0
  * @since 2026-01-18
+ * @deprecated 此类为简化版图表配置，功能有限。
+ *             请使用 {@link DynamicChartConfig}，它提供：
+ *             - 完整的 ECharts 配置结构（轴、图例、系列、提示框）
+ *             - 双 Y 轴支持
+ *             - 可切换维度（alternativeXAxis, alternativeSeries, alternativeMeasures）
+ *             - 静态工厂方法（simpleBar, simpleLine）
+ *             如需向后兼容，可使用 {@link DynamicChartConfig#toChartConfig()} 转换。
+ * @see DynamicChartConfig
  */
+@Deprecated
 @Data
 @Builder
 @NoArgsConstructor

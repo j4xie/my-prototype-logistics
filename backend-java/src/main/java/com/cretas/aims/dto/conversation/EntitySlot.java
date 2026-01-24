@@ -35,6 +35,8 @@ public class EntitySlot {
         CUSTOMER,
         /** 产品 */
         PRODUCT,
+        /** 物料类型 */
+        MATERIAL_TYPE,
         /** 时间范围 */
         TIME_RANGE,
         /** 仓库 */
@@ -86,6 +88,11 @@ public class EntitySlot {
      * 置信度 (0-1)
      */
     private double confidence;
+
+    /**
+     * 更新时间
+     */
+    private LocalDateTime updatedAt;
 
     /**
      * 创建批次槽位

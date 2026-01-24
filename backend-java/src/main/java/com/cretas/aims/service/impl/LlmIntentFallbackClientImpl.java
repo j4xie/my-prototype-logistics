@@ -48,6 +48,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+// v12.1 Phase 2 imports
+import com.cretas.aims.service.ConfidenceCalibrationService;
+
 /**
  * LLM 意图识别 Fallback 客户端实现
  *
@@ -482,13 +485,22 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         }
     }
 
+    // v12.1 Phase 2: 动态 Few-Shot 服务
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DynamicFewShotService dynamicFewShotService;
+
+    // v12.1 Phase 2: 置信度校准服务
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.cretas.aims.service.ConfidenceCalibrationService confidenceCalibrationService;
+
     /**
      * 构建意图分类系统提示词
      *
-     * 优化点：
-     * 1. 添加 Few-Shot 示例，覆盖口语化/同义词表达
-     * 2. 强调必须做出决策，避免返回 UNKNOWN
-     * 3. v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例
+     * v12.1 Phase 2 增强:
+     * 1. 使用 Chain-of-Thought 4 步分析框架
+     * 2. 使用 MMR 算法选择多样化的 Few-Shot 示例
+     * 3. 强调必须做出决策，避免返回 UNKNOWN
+     * 4. v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例
      *
      * @param availableIntents 可用意图列表
      * @param userInput        用户输入（用于 RAG 检索）
@@ -496,7 +508,34 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
      */
     private String buildIntentClassifyPrompt(List<AIIntentConfig> availableIntents, String userInput, String factoryId) {
         StringBuilder sb = new StringBuilder();
-        sb.append("你是一个意图识别助手。根据用户输入，从以下意图列表中选择最匹配的意图。\n\n");
+
+        // ===== Chain-of-Thought 4 步分析框架 =====
+        sb.append("你是一个意图识别助手。请按照以下 4 步思考链 (Chain-of-Thought) 分析用户输入，选择最匹配的意图。\n\n");
+
+        sb.append("## 思考步骤 (必须在 reasoning 字段中体现)\n\n");
+        sb.append("**Step 1 - 实体识别**: 识别用户输入中的关键实体\n");
+        sb.append("  - 时间实体: 今天、本周、上月、Q1 等\n");
+        sb.append("  - 地点实体: 仓库、车间、A区、华东 等\n");
+        sb.append("  - 物料实体: 原材料、批次号、产品名称 等\n");
+        sb.append("  - 数量实体: 100kg、50件、3个 等\n");
+        sb.append("  - 人员实体: 张三、操作员、供应商 等\n\n");
+
+        sb.append("**Step 2 - 意图分析**: 分析用户想要执行的操作类型\n");
+        sb.append("  - 查询类: 查看、查询、看看、有哪些、多少\n");
+        sb.append("  - 创建类: 创建、新建、添加、录入\n");
+        sb.append("  - 更新类: 修改、更新、变更、调整\n");
+        sb.append("  - 删除类: 删除、取消、作废\n");
+        sb.append("  - 执行类: 执行、启动、完成、确认\n\n");
+
+        sb.append("**Step 3 - 领域确定**: 确定属于哪个业务领域\n");
+        sb.append("  - 物料管理: 库存、批次、领用、过期\n");
+        sb.append("  - 出货物流: 发货、物流、运输、收货\n");
+        sb.append("  - 人事考勤: 打卡、签到、考勤、请假\n");
+        sb.append("  - 质量检测: 质检、合格率、不良品\n");
+        sb.append("  - 设备管理: 设备、机器、告警、维护\n");
+        sb.append("  - 报表统计: 报表、统计、分析、趋势\n\n");
+
+        sb.append("**Step 4 - 最终决策**: 基于以上分析，选择最匹配的意图代码和置信度\n\n");
 
         // Few-Shot 示例 (口语化表达映射) - 方案 B
         sb.append("## 口语化表达示例\n\n");
@@ -553,8 +592,35 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("| 老客户名单、买家列表 | CUSTOMER_LIST |\n");
         sb.append("\n");
 
-        // v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例
-        if (ragRetrievalService != null && userInput != null && !userInput.isEmpty()) {
+        // v12.1 Phase 2: 使用 MMR 算法选择多样化的 Few-Shot 示例
+        if (dynamicFewShotService != null && userInput != null && !userInput.isEmpty()) {
+            try {
+                List<DynamicFewShotService.FewShotExample> mmrExamples =
+                    dynamicFewShotService.selectFewShotExamples(factoryId, userInput, 6);
+                if (mmrExamples != null && !mmrExamples.isEmpty()) {
+                    sb.append("## 动态相似案例 (MMR 算法选择)\n\n");
+                    sb.append("以下是与当前输入相似且多样化的历史案例（相关性 + 多样性平衡）：\n\n");
+                    sb.append("| 用户输入 | 意图代码 | 意图名称 | 相关度 |\n");
+                    sb.append("|---------|---------|--------|-------|\n");
+                    for (DynamicFewShotService.FewShotExample example : mmrExamples) {
+                        sb.append(String.format("| %s | %s | %s | %.2f |\n",
+                            example.getUserInput(),
+                            example.getIntentCode(),
+                            example.getIntentName() != null ? example.getIntentName() : "",
+                            example.getRelevanceScore()));
+                    }
+                    sb.append("\n");
+                    log.debug("[MMR Few-Shot] Injected {} diverse examples for input: '{}'",
+                        mmrExamples.size(), truncate(userInput, 30));
+                }
+            } catch (Exception e) {
+                log.warn("[MMR Few-Shot] Failed to select examples: {}", e.getMessage());
+                // 降级到 RAG 服务
+            }
+        }
+
+        // v11.4 RAG: 动态注入相似历史案例作为 Few-Shot 示例 (降级方案)
+        if ((dynamicFewShotService == null) && ragRetrievalService != null && userInput != null && !userInput.isEmpty()) {
             try {
                 List<RAGRetrievalService.RAGExample> ragExamples =
                     ragRetrievalService.getFewShotExamples(factoryId, userInput, 3);
@@ -602,19 +668,28 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
         sb.append("8. **质检类意图优先级**：质检结果/合格率→QUALITY_CHECK_QUERY，不要用QUALITY_STATS\n");
         sb.append("9. **供应商排名 vs 销售排名**：供应商排名→SUPPLIER_RANKING，销售排名/业绩排名→REPORT_KPI\n\n");
 
-        sb.append("## 输出格式\n\n");
-        sb.append("请以 JSON 格式返回，包含以下字段：\n");
+        sb.append("## 输出格式 (必须遵循 CoT 格式)\n\n");
+        sb.append("请以 JSON 格式返回，reasoning 字段**必须**包含 4 步思考链分析：\n");
         sb.append("```json\n");
         sb.append("{\n");
         sb.append("  \"intent_code\": \"匹配的意图代码，尽量避免返回 UNKNOWN\",\n");
         sb.append("  \"confidence\": 0.0-1.0 之间的置信度,\n");
-        sb.append("  \"reasoning\": \"判断理由，说明为什么选择这个意图\",\n");
+        sb.append("  \"reasoning\": \"Step1-实体识别:... Step2-意图分析:... Step3-领域确定:... Step4-最终决策:...\",\n");
+        sb.append("  \"entities\": {\n");
+        sb.append("    \"time\": \"识别的时间实体，如'今天'、'本周'\",\n");
+        sb.append("    \"location\": \"识别的地点实体\",\n");
+        sb.append("    \"material\": \"识别的物料实体\",\n");
+        sb.append("    \"quantity\": \"识别的数量实体\",\n");
+        sb.append("    \"person\": \"识别的人员实体\"\n");
+        sb.append("  },\n");
+        sb.append("  \"action_type\": \"QUERY|CREATE|UPDATE|DELETE|EXECUTE\",\n");
+        sb.append("  \"domain\": \"MATERIAL|SHIPMENT|HR|QUALITY|EQUIPMENT|REPORT|OTHER\",\n");
         sb.append("  \"other_candidates\": [\n");
         sb.append("    {\"intent_code\": \"其他可能的意图\", \"confidence\": 0.0-1.0}\n");
         sb.append("  ]\n");
         sb.append("}\n");
         sb.append("```\n\n");
-        sb.append("仅返回 JSON，不要包含其他文字。");
+        sb.append("仅返回 JSON，不要包含其他文字。reasoning 必须体现完整的 4 步分析过程。");
 
         return sb.toString();
     }
@@ -1043,13 +1118,63 @@ public class LlmIntentFallbackClientImpl implements LlmIntentFallbackClient {
 
             JsonNode json = objectMapper.readTree(matcher.group());
 
-            // 提取字段
+            // 提取字段 (v12.1 Phase 2: 增强 CoT 解析)
             String intentCode = json.has("intent_code") ? json.get("intent_code").asText() : "UNKNOWN";
-            double confidence = json.has("confidence") ? json.get("confidence").asDouble() : 0.5;
+            double llmConfidence = json.has("confidence") ? json.get("confidence").asDouble() : 0.5;
             String reasoning = json.has("reasoning") ? json.get("reasoning").asText() : null;
+            String actionType = json.has("action_type") ? json.get("action_type").asText() : null;
+            String domain = json.has("domain") ? json.get("domain").asText() : null;
+
+            // 解析实体 (CoT Step 1 结果)
+            Map<String, String> entities = new HashMap<>();
+            if (json.has("entities") && json.get("entities").isObject()) {
+                JsonNode entitiesNode = json.get("entities");
+                if (entitiesNode.has("time")) entities.put("time", entitiesNode.get("time").asText());
+                if (entitiesNode.has("location")) entities.put("location", entitiesNode.get("location").asText());
+                if (entitiesNode.has("material")) entities.put("material", entitiesNode.get("material").asText());
+                if (entitiesNode.has("quantity")) entities.put("quantity", entitiesNode.get("quantity").asText());
+                if (entitiesNode.has("person")) entities.put("person", entitiesNode.get("person").asText());
+            }
+
+            // 验证 CoT reasoning 格式
+            boolean hasValidCoT = reasoning != null &&
+                    (reasoning.contains("Step") || reasoning.contains("step") ||
+                     (reasoning.contains("实体") && reasoning.contains("意图") && reasoning.contains("领域")));
+            if (!hasValidCoT && reasoning != null) {
+                log.debug("[CoT] LLM reasoning may not follow 4-step format: {}", truncate(reasoning, 100));
+            }
 
             // Clamp confidence
-            confidence = Math.max(0.0, Math.min(1.0, confidence));
+            llmConfidence = Math.max(0.0, Math.min(1.0, llmConfidence));
+
+            // v12.1 Phase 2: 多源置信度融合
+            double confidence = llmConfidence;
+            if (confidenceCalibrationService != null && !"UNKNOWN".equalsIgnoreCase(intentCode)) {
+                try {
+                    // 构建置信度输入
+                    com.cretas.aims.service.ConfidenceCalibrationService.ConfidenceInputs inputs =
+                        com.cretas.aims.service.ConfidenceCalibrationService.ConfidenceInputs.builder()
+                            .llmConfidence(llmConfidence)
+                            .llmReasoning(reasoning)
+                            .build();
+
+                    // 计算融合置信度
+                    com.cretas.aims.service.ConfidenceCalibrationService.CalibratedConfidence calibrated =
+                        confidenceCalibrationService.calibrate(factoryId, userId, intentCode, inputs);
+
+                    if (calibrated != null) {
+                        double oldConfidence = confidence;
+                        confidence = calibrated.getFinalConfidence();
+                        log.debug("[Confidence Calibration] intent={}, llm={}, calibrated={}, adjustment={}",
+                                intentCode,
+                                String.format("%.3f", llmConfidence),
+                                String.format("%.3f", confidence),
+                                String.format("%+.3f", confidence - oldConfidence));
+                    }
+                } catch (Exception e) {
+                    log.warn("[Confidence Calibration] Failed: {}, using LLM confidence", e.getMessage());
+                }
+            }
 
             // 查找匹配的意图配置
             AIIntentConfig matchedConfig = null;

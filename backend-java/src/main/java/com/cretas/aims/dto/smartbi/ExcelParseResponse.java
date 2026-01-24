@@ -108,5 +108,21 @@ public class ExcelParseResponse {
          * 解析耗时（毫秒）
          */
         private Long parseTimeMs;
+
+        /**
+         * 是否检测到多层表头
+         */
+        private Boolean hasMultiHeader;
+
+        /**
+         * 多层表头的行数
+         */
+        private Integer headerRowCount;
+
+        /**
+         * 原始表头（合并前）
+         * 当检测到多层表头时，记录原始的各层表头信息
+         */
+        private List<List<String>> originalHeaders;
     }
 }

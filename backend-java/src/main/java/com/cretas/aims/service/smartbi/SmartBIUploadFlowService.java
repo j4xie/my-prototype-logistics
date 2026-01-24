@@ -4,6 +4,7 @@ import com.cretas.aims.dto.smartbi.BatchUploadResult;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
 import com.cretas.aims.dto.smartbi.FieldMappingResult;
 import com.cretas.aims.dto.smartbi.SheetConfig;
+import com.cretas.aims.dto.smartbi.UploadProgressEvent;
 import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
 import lombok.Builder;
 import lombok.Data;
@@ -12,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 /**
  * SmartBI 上传流程服务接口
@@ -132,6 +134,20 @@ public interface SmartBIUploadFlowService {
     UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType);
 
     /**
+     * 执行完整的上传流程（支持指定 Sheet 和自动确认）
+     *
+     * @param factoryId   工厂ID
+     * @param file        上传的 Excel 文件
+     * @param dataType    数据类型（可选，null 则自动检测）
+     * @param sheetIndex  Sheet 索引（从 0 开始）
+     * @param headerRow   表头行索引（从 0 开始）
+     * @param autoConfirm 是否自动确认字段映射（跳过用户确认步骤）
+     * @return 上传流程结果
+     */
+    UploadFlowResult executeUploadFlow(String factoryId, MultipartFile file, String dataType,
+                                        Integer sheetIndex, Integer headerRow, boolean autoConfirm);
+
+    /**
      * 确认字段映射并持久化数据
      *
      * 当 executeUploadFlow 返回 requiresConfirmation=true 时，
@@ -190,4 +206,20 @@ public interface SmartBIUploadFlowService {
      */
     BatchUploadResult executeBatchUpload(String factoryId, InputStream inputStream,
                                           String fileName, List<SheetConfig> sheetConfigs);
+
+    /**
+     * 批量上传多个 Sheet（带进度回调）
+     *
+     * 并行处理多个 Sheet，通过回调实时推送处理进度。
+     *
+     * @param factoryId        工厂ID
+     * @param inputStream      Excel 文件输入流
+     * @param fileName         文件名
+     * @param sheetConfigs     各 Sheet 的处理配置
+     * @param progressCallback 进度回调（可用于 SSE 推送）
+     * @return 批量上传结果
+     */
+    BatchUploadResult executeBatchUploadWithProgress(String factoryId, InputStream inputStream,
+                                                      String fileName, List<SheetConfig> sheetConfigs,
+                                                      Consumer<UploadProgressEvent> progressCallback);
 }
