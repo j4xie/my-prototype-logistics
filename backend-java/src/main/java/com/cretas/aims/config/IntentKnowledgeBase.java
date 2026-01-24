@@ -384,19 +384,17 @@ public class IntentKnowledgeBase {
             ));
         }
 
-        // 初始化意图代码查询标记 (v11.12: 添加更多查询标记)
+        // 初始化意图代码查询标记
         if (intentQueryMarkers.isEmpty()) {
             intentQueryMarkers.addAll(Set.of(
-                    "QUERY", "LIST", "STATS", "GET", "SEARCH", "VIEW", "STATUS", "OVERVIEW",
-                    "REPORT", "HISTORY", "DETAIL", "TIMELINE", "ALERT", "ANOMALY"
+                    "QUERY", "LIST", "STATS", "GET", "SEARCH", "VIEW", "STATUS", "OVERVIEW"
             ));
         }
 
-        // 初始化意图代码更新标记 (v11.12: 添加更多写操作标记)
+        // 初始化意图代码更新标记
         if (intentUpdateMarkers.isEmpty()) {
             intentUpdateMarkers.addAll(Set.of(
-                    "UPDATE", "CREATE", "DELETE", "MODIFY", "SET", "CHANGE", "EDIT",
-                    "PAUSE", "RESUME", "CANCEL", "COMPLETE", "START", "ADJUST", "MAINTENANCE"
+                    "UPDATE", "CREATE", "DELETE", "MODIFY", "SET", "CHANGE", "EDIT"
             ));
         }
 
