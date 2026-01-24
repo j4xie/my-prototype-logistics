@@ -3,7 +3,7 @@
  * SmartBI 经营驾驶舱
  * 展示企业经营核心 KPI、排行榜、趋势图表和 AI 洞察
  */
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
@@ -26,59 +26,183 @@ const router = useRouter();
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
 
-// 加载状态
-const loading = ref(false);
-const kpiLoading = ref(false);
-const rankingLoading = ref(false);
-const chartLoading = ref(false);
-const insightLoading = ref(false);
+// ==================== 类型定义 ====================
 
-// KPI 数据
-interface KPIData {
-  totalRevenue: number;
-  revenueGrowth: number;
-  totalProfit: number;
-  profitGrowth: number;
-  orderCount: number;
-  orderGrowth: number;
-  customerCount: number;
-  customerGrowth: number;
+// 后端返回的 KPI 卡片
+interface KPICard {
+  key: string;
+  title: string;
+  value: string;
+  rawValue: number;
+  unit: string;
+  change: number;
+  changeRate: number;
+  trend: 'up' | 'down' | 'flat';
+  status: 'green' | 'yellow' | 'red';
+  compareText: string;
 }
 
-const kpiData = ref<KPIData>({
-  totalRevenue: 0,
-  revenueGrowth: 0,
-  totalProfit: 0,
-  profitGrowth: 0,
-  orderCount: 0,
-  orderGrowth: 0,
-  customerCount: 0,
-  customerGrowth: 0
-});
+// 后端返回的排行项
+interface RankingItem {
+  rank: number;
+  name: string;
+  value: number;
+  target: number;
+  completionRate: number;
+  alertLevel: 'RED' | 'YELLOW' | 'GREEN';
+}
 
-// 部门排行数据
+// 后端返回的 AI 洞察
+interface AIInsightResponse {
+  level: 'RED' | 'YELLOW' | 'GREEN' | 'INFO';
+  category: string;
+  message: string;
+  relatedEntity: string;
+  actionSuggestion: string;
+}
+
+// 后端返回的图表配置
+interface ChartConfig {
+  chartType: string;
+  title: string;
+  xAxis?: { data: string[] };
+  yAxis?: { name: string };
+  series: Array<{
+    name: string;
+    type: string;
+    data: number[];
+    yAxisIndex?: number;
+  }>;
+  legend?: { data: string[] };
+}
+
+// 后端返回的 Dashboard 响应
+interface DashboardResponse {
+  period: string;
+  startDate: string;
+  endDate: string;
+  kpiCards: KPICard[];
+  rankings: Record<string, RankingItem[]>;
+  charts: Record<string, ChartConfig>;
+  aiInsights: AIInsightResponse[];
+  alerts: Array<{ level: string; message: string }>;
+  generatedAt: string;
+}
+
+// 前端使用的部门排行数据
 interface DepartmentRank {
   name: string;
   sales: number;
   growth: number;
+  alertLevel: string;
 }
-const departmentRanking = ref<DepartmentRank[]>([]);
 
-// 区域排行数据
+// 前端使用的区域排行数据
 interface RegionRank {
   name: string;
   sales: number;
   percentage: number;
 }
-const regionRanking = ref<RegionRank[]>([]);
 
-// AI 洞察
+// 前端使用的 AI 洞察
 interface AIInsight {
   type: 'success' | 'warning' | 'danger' | 'info';
   title: string;
   content: string;
+  suggestion?: string;
 }
-const aiInsights = ref<AIInsight[]>([]);
+
+// ==================== 状态 ====================
+
+// 加载状态
+const loading = ref(false);
+const hasError = ref(false);
+const errorMessage = ref('');
+
+// Dashboard 数据
+const dashboardData = ref<DashboardResponse | null>(null);
+
+// KPI 数据 (从 kpiCards 提取)
+const kpiData = computed(() => {
+  if (!dashboardData.value?.kpiCards) {
+    return {
+      totalRevenue: 0,
+      revenueGrowth: 0,
+      totalProfit: 0,
+      profitGrowth: 0,
+      orderCount: 0,
+      orderGrowth: 0,
+      customerCount: 0,
+      customerGrowth: 0
+    };
+  }
+
+  const cards = dashboardData.value.kpiCards;
+  const findCard = (key: string) => cards.find(c => c.key === key);
+
+  const salesCard = findCard('SALES_AMOUNT') || findCard('REVENUE') || findCard('销售额');
+  const profitCard = findCard('PROFIT') || findCard('PROFIT_AMOUNT') || findCard('利润');
+  const orderCard = findCard('ORDER_COUNT') || findCard('ORDERS') || findCard('订单数');
+  const customerCard = findCard('CUSTOMER_COUNT') || findCard('ACTIVE_CUSTOMERS') || findCard('客户数');
+
+  return {
+    totalRevenue: salesCard?.rawValue || 0,
+    revenueGrowth: salesCard?.changeRate || 0,
+    totalProfit: profitCard?.rawValue || 0,
+    profitGrowth: profitCard?.changeRate || 0,
+    orderCount: orderCard?.rawValue || 0,
+    orderGrowth: orderCard?.changeRate || 0,
+    customerCount: customerCard?.rawValue || 0,
+    customerGrowth: customerCard?.changeRate || 0
+  };
+});
+
+// 部门排行数据 (从 rankings 提取)
+const departmentRanking = computed<DepartmentRank[]>(() => {
+  if (!dashboardData.value?.rankings) return [];
+
+  const deptRankings = dashboardData.value.rankings['department']
+    || dashboardData.value.rankings['sales_person']
+    || dashboardData.value.rankings['部门']
+    || [];
+
+  return deptRankings.map(item => ({
+    name: item.name,
+    sales: item.value,
+    growth: item.completionRate > 100 ? item.completionRate - 100 : item.completionRate - 100,
+    alertLevel: item.alertLevel
+  }));
+});
+
+// 区域排行数据 (从 rankings 提取)
+const regionRanking = computed<RegionRank[]>(() => {
+  if (!dashboardData.value?.rankings) return [];
+
+  const regionRankings = dashboardData.value.rankings['region']
+    || dashboardData.value.rankings['区域']
+    || [];
+
+  // 计算总值用于百分比
+  const total = regionRankings.reduce((sum, item) => sum + item.value, 0);
+
+  return regionRankings.map(item => ({
+    name: item.name,
+    sales: item.value,
+    percentage: total > 0 ? Math.round((item.value / total) * 100) : 0
+  }));
+});
+
+// AI 洞察 (从 aiInsights 提取)
+const aiInsights = computed<AIInsight[]>(() => {
+  if (!dashboardData.value?.aiInsights) return [];
+
+  return dashboardData.value.aiInsights.map(insight => ({
+    type: mapInsightLevel(insight.level),
+    title: insight.category || getCategoryTitle(insight.level),
+    content: insight.message,
+    suggestion: insight.actionSuggestion
+  }));
+});
 
 // 快捷问答
 const quickQuestions = [
@@ -92,112 +216,75 @@ const quickQuestions = [
 let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 
+// ==================== 生命周期 ====================
+
 onMounted(() => {
   loadDashboardData();
-  initCharts();
 });
 
+// 监听 dashboardData 变化，更新图表
+watch(dashboardData, (newData) => {
+  if (newData) {
+    initCharts(newData.charts);
+  }
+}, { deep: true });
+
+// ==================== API 调用 ====================
+
 async function loadDashboardData() {
+  if (!factoryId.value) {
+    ElMessage.warning('未获取到工厂ID，请重新登录');
+    return;
+  }
+
   loading.value = true;
+  hasError.value = false;
+  errorMessage.value = '';
+
   try {
-    await Promise.all([
-      loadKPIData(),
-      loadRankingData(),
-      loadAIInsights()
-    ]);
+    const response = await get(`/${factoryId.value}/smart-bi/dashboard/executive?period=month`);
+
+    if (response.success && response.data) {
+      dashboardData.value = response.data as DashboardResponse;
+    } else {
+      throw new Error(response.message || '获取驾驶舱数据失败');
+    }
+  } catch (error) {
+    console.error('加载驾驶舱数据失败:', error);
+    hasError.value = true;
+    errorMessage.value = error instanceof Error ? error.message : '加载数据失败，请稍后重试';
+    ElMessage.error(errorMessage.value);
+    dashboardData.value = null;
   } finally {
     loading.value = false;
   }
 }
 
-async function loadKPIData() {
-  if (!factoryId.value) return;
-  kpiLoading.value = true;
-  try {
-    const response = await get(`/${factoryId.value}/smart-bi/dashboard/kpi`);
-    if (response.success && response.data) {
-      kpiData.value = response.data as KPIData;
-    }
-  } catch (error) {
-    console.error('加载 KPI 数据失败:', error);
-    // 使用示例数据
-    kpiData.value = {
-      totalRevenue: 2856000,
-      revenueGrowth: 12.5,
-      totalProfit: 428400,
-      profitGrowth: 8.3,
-      orderCount: 1256,
-      orderGrowth: 15.2,
-      customerCount: 328,
-      customerGrowth: 6.8
-    };
-  } finally {
-    kpiLoading.value = false;
-  }
+// ==================== 图表初始化 ====================
+
+function initCharts(charts?: Record<string, ChartConfig>) {
+  initTrendChart(charts?.['sales_trend'] || charts?.['销售趋势']);
+  initPieChart(charts?.['category_distribution'] || charts?.['产品占比'] || charts?.['类别分布']);
 }
 
-async function loadRankingData() {
-  if (!factoryId.value) return;
-  rankingLoading.value = true;
-  try {
-    const response = await get(`/${factoryId.value}/smart-bi/dashboard/ranking`);
-    if (response.success && response.data) {
-      departmentRanking.value = response.data.departments || [];
-      regionRanking.value = response.data.regions || [];
-    }
-  } catch (error) {
-    console.error('加载排行数据失败:', error);
-    // 使用示例数据
-    departmentRanking.value = [
-      { name: '销售一部', sales: 856000, growth: 18.5 },
-      { name: '销售二部', sales: 725000, growth: 12.3 },
-      { name: '销售三部', sales: 680000, growth: 8.7 },
-      { name: '销售四部', sales: 595000, growth: 5.2 }
-    ];
-    regionRanking.value = [
-      { name: '华东区', sales: 1285000, percentage: 45 },
-      { name: '华南区', sales: 856000, percentage: 30 },
-      { name: '华北区', sales: 428500, percentage: 15 },
-      { name: '其他', sales: 286500, percentage: 10 }
-    ];
-  } finally {
-    rankingLoading.value = false;
-  }
-}
-
-async function loadAIInsights() {
-  if (!factoryId.value) return;
-  insightLoading.value = true;
-  try {
-    const response = await get(`/${factoryId.value}/smart-bi/dashboard/insights`);
-    if (response.success && response.data) {
-      aiInsights.value = response.data as AIInsight[];
-    }
-  } catch (error) {
-    console.error('加载 AI 洞察失败:', error);
-    // 使用示例数据
-    aiInsights.value = [
-      { type: 'success', title: '销售增长强劲', content: '本月销售额同比增长12.5%，主要得益于华东区的快速扩张。' },
-      { type: 'warning', title: '库存周转偏低', content: '部分产品库存周转天数超过30天，建议优化采购计划。' },
-      { type: 'info', title: '客户结构优化', content: '高价值客户占比提升至28%，客单价持续增长。' }
-    ];
-  } finally {
-    insightLoading.value = false;
-  }
-}
-
-function initCharts() {
-  // 初始化销售趋势图
+function initTrendChart(chartConfig?: ChartConfig) {
   const trendChartDom = document.getElementById('trend-chart');
-  if (trendChartDom) {
-    trendChart = echarts.init(trendChartDom);
-    const trendOption: echarts.EChartsOption = {
+  if (!trendChartDom) return;
+
+  if (trendChart) {
+    trendChart.dispose();
+  }
+  trendChart = echarts.init(trendChartDom);
+
+  // 如果有后端数据，使用后端数据
+  if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
+    const option: echarts.EChartsOption = {
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' }
       },
       legend: {
-        data: ['销售额', '利润'],
+        data: chartConfig.legend?.data || chartConfig.series.map(s => s.name),
         bottom: 0
       },
       grid: {
@@ -210,58 +297,86 @@ function initCharts() {
       xAxis: {
         type: 'category',
         boundaryGap: false,
-        data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+        data: chartConfig.xAxis?.data || []
       },
-      yAxis: [
+      yAxis: chartConfig.series.length > 1 ? [
         {
           type: 'value',
-          name: '销售额',
+          name: chartConfig.series[0]?.name || '销售额',
           axisLabel: {
             formatter: (value: number) => (value / 10000).toFixed(0) + '万'
           }
         },
         {
           type: 'value',
-          name: '利润',
+          name: chartConfig.series[1]?.name || '利润',
           axisLabel: {
             formatter: (value: number) => (value / 10000).toFixed(0) + '万'
           }
         }
-      ],
-      series: [
-        {
-          name: '销售额',
-          type: 'line',
-          smooth: true,
-          data: [180, 200, 220, 250, 280, 320, 350, 380, 400, 420, 450, 480].map(v => v * 10000),
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
-              { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
-            ])
-          },
-          lineStyle: { width: 3, color: '#409EFF' },
-          itemStyle: { color: '#409EFF' }
-        },
-        {
-          name: '利润',
-          type: 'line',
-          smooth: true,
-          yAxisIndex: 1,
-          data: [27, 30, 33, 38, 42, 48, 52, 57, 60, 63, 68, 72].map(v => v * 10000),
-          lineStyle: { width: 3, color: '#67C23A' },
-          itemStyle: { color: '#67C23A' }
+      ] : {
+        type: 'value',
+        axisLabel: {
+          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
         }
-      ]
+      },
+      series: chartConfig.series.map((s, index) => ({
+        name: s.name,
+        type: 'line',
+        smooth: true,
+        yAxisIndex: s.yAxisIndex || (index > 0 ? 1 : 0),
+        data: s.data,
+        areaStyle: index === 0 ? {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(64, 158, 255, 0.3)' },
+            { offset: 1, color: 'rgba(64, 158, 255, 0.05)' }
+          ])
+        } : undefined,
+        lineStyle: { width: 3, color: index === 0 ? '#409EFF' : '#67C23A' },
+        itemStyle: { color: index === 0 ? '#409EFF' : '#67C23A' }
+      }))
     };
-    trendChart.setOption(trendOption);
+    trendChart.setOption(option);
+  } else {
+    // 没有数据时显示空状态
+    const emptyOption: echarts.EChartsOption = {
+      title: {
+        text: '暂无趋势数据',
+        left: 'center',
+        top: 'center',
+        textStyle: {
+          color: '#909399',
+          fontSize: 14,
+          fontWeight: 'normal'
+        }
+      }
+    };
+    trendChart.setOption(emptyOption);
   }
+}
 
-  // 初始化产品占比饼图
+function initPieChart(chartConfig?: ChartConfig) {
   const pieChartDom = document.getElementById('pie-chart');
-  if (pieChartDom) {
-    pieChart = echarts.init(pieChartDom);
-    const pieOption: echarts.EChartsOption = {
+  if (!pieChartDom) return;
+
+  if (pieChart) {
+    pieChart.dispose();
+  }
+  pieChart = echarts.init(pieChartDom);
+
+  // 如果有后端数据，使用后端数据
+  if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
+    const seriesData = chartConfig.series[0];
+    // 假设后端返回的数据格式是 { name, data } 或 { data: [{name, value}] }
+    const pieData = Array.isArray(seriesData.data)
+      ? seriesData.data.map((value, index) => ({
+          value: typeof value === 'number' ? value : (value as { value: number }).value,
+          name: chartConfig.xAxis?.data?.[index] || `类别${index + 1}`,
+          itemStyle: { color: getPieColor(index) }
+        }))
+      : [];
+
+    const option: echarts.EChartsOption = {
       tooltip: {
         trigger: 'item',
         formatter: '{b}: {c}万 ({d}%)'
@@ -289,26 +404,59 @@ function initCharts() {
             }
           },
           labelLine: { show: false },
-          data: [
-            { value: 128, name: '冷冻肉类', itemStyle: { color: '#409EFF' } },
-            { value: 86, name: '海鲜产品', itemStyle: { color: '#67C23A' } },
-            { value: 52, name: '速冻食品', itemStyle: { color: '#E6A23C' } },
-            { value: 34, name: '乳制品', itemStyle: { color: '#F56C6C' } },
-            { value: 28, name: '其他', itemStyle: { color: '#909399' } }
-          ]
+          data: pieData
         }
       ]
     };
-    pieChart.setOption(pieOption);
+    pieChart.setOption(option);
+  } else {
+    // 没有数据时显示空状态
+    const emptyOption: echarts.EChartsOption = {
+      title: {
+        text: '暂无类别数据',
+        left: 'center',
+        top: 'center',
+        textStyle: {
+          color: '#909399',
+          fontSize: 14,
+          fontWeight: 'normal'
+        }
+      }
+    };
+    pieChart.setOption(emptyOption);
   }
+}
 
-  // 监听窗口大小变化
-  window.addEventListener('resize', handleResize);
+function getPieColor(index: number): string {
+  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00d4ff', '#ff6b6b', '#ffd93d'];
+  return colors[index % colors.length];
 }
 
 function handleResize() {
   trendChart?.resize();
   pieChart?.resize();
+}
+
+// ==================== 工具函数 ====================
+
+function mapInsightLevel(level: string): 'success' | 'warning' | 'danger' | 'info' {
+  switch (level) {
+    case 'GREEN': return 'success';
+    case 'YELLOW': return 'warning';
+    case 'RED': return 'danger';
+    case 'INFO':
+    default: return 'info';
+  }
+}
+
+function getCategoryTitle(level: string): string {
+  switch (level) {
+    case 'GREEN': return '正向趋势';
+    case 'YELLOW': return '需要关注';
+    case 'RED': return '风险预警';
+    case 'INFO':
+    default: return '数据洞察';
+  }
 }
 
 function formatMoney(value: number): string {
@@ -338,12 +486,18 @@ function getInsightTagType(type: string): 'success' | 'warning' | 'danger' | 'in
   return type as 'success' | 'warning' | 'danger' | 'info';
 }
 
-// 组件销毁时清理图表
+// ==================== 生命周期清理 ====================
+
 import { onUnmounted } from 'vue';
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
   trendChart?.dispose();
   pieChart?.dispose();
+});
+
+// 监听窗口大小变化
+onMounted(() => {
+  window.addEventListener('resize', handleResize);
 });
 </script>
 
@@ -355,13 +509,24 @@ onUnmounted(() => {
         <span class="subtitle">Smart BI - Business Intelligence Dashboard</span>
       </div>
       <div class="header-right">
-        <el-button type="primary" :icon="Refresh" @click="loadDashboardData">刷新数据</el-button>
+        <el-button type="primary" :icon="Refresh" @click="loadDashboardData" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
       </div>
     </div>
 
+    <!-- 错误状态 -->
+    <el-alert
+      v-if="hasError"
+      :title="errorMessage"
+      type="error"
+      show-icon
+      closable
+      class="error-alert"
+      @close="hasError = false"
+    />
+
     <!-- KPI 卡片区 -->
-    <el-row :gutter="16" class="kpi-section" v-loading="kpiLoading">
+    <el-row :gutter="16" class="kpi-section" v-loading="loading">
       <el-col :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
@@ -369,12 +534,15 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">本月销售额</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalRevenue) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth)">
+            <div class="kpi-value">{{ kpiData.totalRevenue > 0 ? formatMoney(kpiData.totalRevenue) : '--' }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth)" v-if="kpiData.totalRevenue > 0">
               <el-icon v-if="kpiData.revenueGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.revenueGrowth) }}</span>
               <span class="vs-label">vs 上月</span>
+            </div>
+            <div class="kpi-trend" v-else>
+              <span class="vs-label">暂无数据</span>
             </div>
           </div>
         </el-card>
@@ -386,12 +554,15 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">本月利润</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalProfit) }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth)">
+            <div class="kpi-value">{{ kpiData.totalProfit > 0 ? formatMoney(kpiData.totalProfit) : '--' }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth)" v-if="kpiData.totalProfit > 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.profitGrowth) }}</span>
               <span class="vs-label">vs 上月</span>
+            </div>
+            <div class="kpi-trend" v-else>
+              <span class="vs-label">暂无数据</span>
             </div>
           </div>
         </el-card>
@@ -403,12 +574,15 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">订单数量</div>
-            <div class="kpi-value">{{ kpiData.orderCount.toLocaleString() }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)">
+            <div class="kpi-value">{{ kpiData.orderCount > 0 ? kpiData.orderCount.toLocaleString() : '--' }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)" v-if="kpiData.orderCount > 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.orderGrowth) }}</span>
               <span class="vs-label">vs 上月</span>
+            </div>
+            <div class="kpi-trend" v-else>
+              <span class="vs-label">暂无数据</span>
             </div>
           </div>
         </el-card>
@@ -420,12 +594,15 @@ onUnmounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">活跃客户</div>
-            <div class="kpi-value">{{ kpiData.customerCount.toLocaleString() }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth)">
+            <div class="kpi-value">{{ kpiData.customerCount > 0 ? kpiData.customerCount.toLocaleString() : '--' }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth)" v-if="kpiData.customerCount > 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.customerGrowth) }}</span>
               <span class="vs-label">vs 上月</span>
+            </div>
+            <div class="kpi-trend" v-else>
+              <span class="vs-label">暂无数据</span>
             </div>
           </div>
         </el-card>
@@ -433,7 +610,7 @@ onUnmounted(() => {
     </el-row>
 
     <!-- 排行榜区 -->
-    <el-row :gutter="16" class="ranking-section" v-loading="rankingLoading">
+    <el-row :gutter="16" class="ranking-section" v-loading="loading">
       <el-col :xs="24" :md="12">
         <el-card class="ranking-card">
           <template #header>
@@ -442,7 +619,7 @@ onUnmounted(() => {
               <span>部门业绩排行</span>
             </div>
           </template>
-          <div class="ranking-list">
+          <div class="ranking-list" v-if="departmentRanking.length > 0">
             <div
               v-for="(item, index) in departmentRanking"
               :key="item.name"
@@ -460,6 +637,7 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
+          <el-empty v-else description="暂无部门排行数据" :image-size="80" />
         </el-card>
       </el-col>
       <el-col :xs="24" :md="12">
@@ -470,7 +648,7 @@ onUnmounted(() => {
               <span>区域销售分布</span>
             </div>
           </template>
-          <div class="ranking-list">
+          <div class="ranking-list" v-if="regionRanking.length > 0">
             <div
               v-for="item in regionRanking"
               :key="item.name"
@@ -486,6 +664,7 @@ onUnmounted(() => {
               </div>
             </div>
           </div>
+          <el-empty v-else description="暂无区域排行数据" :image-size="80" />
         </el-card>
       </el-col>
     </el-row>
@@ -519,14 +698,14 @@ onUnmounted(() => {
     <!-- AI 洞察区 -->
     <el-row :gutter="16" class="insight-section">
       <el-col :span="24">
-        <el-card class="insight-card" v-loading="insightLoading">
+        <el-card class="insight-card" v-loading="loading">
           <template #header>
             <div class="card-header">
               <el-icon><ChatDotRound /></el-icon>
               <span>AI 智能洞察</span>
             </div>
           </template>
-          <div class="insight-list">
+          <div class="insight-list" v-if="aiInsights.length > 0">
             <div
               v-for="(insight, index) in aiInsights"
               :key="index"
@@ -536,8 +715,12 @@ onUnmounted(() => {
                 {{ insight.title }}
               </el-tag>
               <span class="insight-content">{{ insight.content }}</span>
+              <span v-if="insight.suggestion" class="insight-suggestion">
+                建议: {{ insight.suggestion }}
+              </span>
             </div>
           </div>
+          <el-empty v-else description="暂无 AI 洞察数据" :image-size="80" />
         </el-card>
       </el-col>
     </el-row>
@@ -597,6 +780,10 @@ onUnmounted(() => {
     display: flex;
     gap: 12px;
   }
+}
+
+.error-alert {
+  margin-bottom: 16px;
 }
 
 // KPI 卡片区
@@ -878,6 +1065,7 @@ onUnmounted(() => {
     .insight-item {
       display: flex;
       align-items: flex-start;
+      flex-wrap: wrap;
       gap: 12px;
       padding: 12px 0;
       border-bottom: 1px solid #f0f2f5;
@@ -894,6 +1082,16 @@ onUnmounted(() => {
         font-size: 14px;
         color: #606266;
         line-height: 1.6;
+        flex: 1;
+        min-width: 200px;
+      }
+
+      .insight-suggestion {
+        font-size: 13px;
+        color: #909399;
+        font-style: italic;
+        width: 100%;
+        padding-left: 60px;
       }
     }
   }

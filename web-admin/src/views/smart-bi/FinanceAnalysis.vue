@@ -6,6 +6,7 @@
 import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import {
   Refresh,
   TrendCharts,
@@ -14,8 +15,7 @@ import {
   CreditCard,
   Document,
   Warning,
-  ArrowUp,
-  ArrowDown
+  Calendar
 } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
 
@@ -25,6 +25,56 @@ const factoryId = computed(() => authStore.factoryId);
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
 const analysisType = ref<AnalysisType>('profit');
+
+// 日期范围
+const dateRange = ref<[Date, Date] | null>(null);
+
+// 日期快捷选项
+const shortcuts = [
+  {
+    text: '最近7天',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
+      return [start, end];
+    }
+  },
+  {
+    text: '最近30天',
+    value: () => {
+      const end = new Date();
+      const start = new Date();
+      start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+      return [start, end];
+    }
+  },
+  {
+    text: '本月',
+    value: () => {
+      const end = new Date();
+      const start = new Date(end.getFullYear(), end.getMonth(), 1);
+      return [start, end];
+    }
+  },
+  {
+    text: '本季度',
+    value: () => {
+      const end = new Date();
+      const quarter = Math.floor(end.getMonth() / 3);
+      const start = new Date(end.getFullYear(), quarter * 3, 1);
+      return [start, end];
+    }
+  },
+  {
+    text: '本年',
+    value: () => {
+      const end = new Date();
+      const start = new Date(end.getFullYear(), 0, 1);
+      return [start, end];
+    }
+  }
+];
 
 // 加载状态
 const loading = ref(false);
@@ -84,13 +134,69 @@ const kpiData = ref<FinanceKPI>({
 });
 
 // 预警列表
-interface Warning {
+interface WarningItem {
   level: 'danger' | 'warning' | 'info';
   title: string;
   description: string;
   amount?: number;
 }
-const warnings = ref<Warning[]>([]);
+const warnings = ref<WarningItem[]>([]);
+
+// 图表配置 (从 API 获取)
+interface ChartConfig {
+  chartType: string;
+  title?: string;
+  xAxisField?: string;
+  yAxisField?: string;
+  seriesField?: string;
+  data?: Array<Record<string, unknown>>;
+  options?: Record<string, unknown>;
+}
+
+interface DynamicChartConfig {
+  chartType: string;
+  title?: string;
+  subTitle?: string;
+  xAxis?: {
+    type: string;
+    name?: string;
+    data?: string[];
+  };
+  yAxis?: Array<{
+    type: string;
+    name?: string;
+    position?: string;
+    min?: number;
+    max?: number;
+    axisLabel?: Record<string, unknown>;
+  }>;
+  legend?: {
+    show?: boolean;
+    data?: string[];
+    position?: string;
+    orient?: string;
+  };
+  series?: Array<{
+    name?: string;
+    type: string;
+    data?: unknown[];
+    yAxisIndex?: number;
+    stack?: string;
+    smooth?: boolean;
+    areaStyle?: boolean;
+    itemStyle?: Record<string, unknown>;
+    label?: Record<string, unknown>;
+  }>;
+  tooltip?: {
+    trigger?: string;
+    axisPointer?: Record<string, unknown>;
+    formatter?: string;
+  };
+  options?: Record<string, unknown>;
+}
+
+const chartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
+const secondaryChartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
 
 // 图表实例
 let mainChart: echarts.ECharts | null = null;
@@ -105,85 +211,201 @@ const analysisTypes = [
 ];
 
 onMounted(() => {
+  // 默认选择最近30天
+  const end = new Date();
+  const start = new Date();
+  start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
+  dateRange.value = [start, end];
+
   loadFinanceData();
   initChart();
 });
 
-watch(analysisType, () => {
+watch([analysisType, dateRange], () => {
   loadFinanceData();
-  updateChart();
 });
 
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
 async function loadFinanceData() {
-  if (!factoryId.value) return;
+  if (!factoryId.value || !dateRange.value) return;
+
   loading.value = true;
   try {
-    const response = await get(`/${factoryId.value}/smart-bi/finance/${analysisType.value}`);
+    const startDate = formatDate(dateRange.value[0]);
+    const endDate = formatDate(dateRange.value[1]);
+
+    const response = await get(
+      `/${factoryId.value}/smart-bi/analysis/finance`,
+      {
+        params: {
+          startDate,
+          endDate,
+          analysisType: analysisType.value
+        }
+      }
+    );
+
     if (response.success && response.data) {
-      kpiData.value = { ...kpiData.value, ...response.data };
-      warnings.value = (response.data as any).warnings || [];
+      const data = response.data as Record<string, unknown>;
+
+      // 提取 metrics 数据到 kpiData
+      if (data.metrics) {
+        const metrics = data.metrics as Record<string, unknown>;
+        updateKpiDataFromMetrics(metrics);
+      }
+
+      // 提取 overview 数据 (当没有 analysisType 时)
+      if (data.overview) {
+        const overview = data.overview as Record<string, unknown>;
+        if (overview.kpiCards) {
+          updateKpiDataFromKpiCards(overview.kpiCards as Array<Record<string, unknown>>);
+        }
+      }
+
+      // 提取图表配置
+      if (data.trendChart) {
+        chartConfig.value = data.trendChart as ChartConfig | DynamicChartConfig;
+        updateChart();
+      } else if (data.structureChart) {
+        chartConfig.value = data.structureChart as ChartConfig | DynamicChartConfig;
+        updateChart();
+      } else if (data.agingChart) {
+        chartConfig.value = data.agingChart as ChartConfig | DynamicChartConfig;
+        updateChart();
+      } else if (data.waterfall) {
+        chartConfig.value = data.waterfall as ChartConfig | DynamicChartConfig;
+        updateChart();
+      } else if (data.comparison) {
+        chartConfig.value = data.comparison as ChartConfig | DynamicChartConfig;
+        updateChart();
+      }
+
+      // 提取预警列表
+      if (data.warnings) {
+        warnings.value = data.warnings as WarningItem[];
+      } else if (data.overdueRanking) {
+        // 将逾期客户转换为预警
+        const ranking = data.overdueRanking as Array<Record<string, unknown>>;
+        warnings.value = ranking.slice(0, 5).map((item, index) => ({
+          level: index < 2 ? 'danger' : 'warning',
+          title: String(item.customerName || '未知客户'),
+          description: `逾期 ${item.overdueDays || 0} 天`,
+          amount: Number(item.overdueAmount || 0)
+        })) as WarningItem[];
+      } else {
+        warnings.value = [];
+      }
+    } else {
+      ElMessage.error(response.message || '加载财务数据失败');
+      resetData();
     }
   } catch (error) {
     console.error('加载财务数据失败:', error);
-    // 使用示例数据
-    loadMockData();
+    ElMessage.error('加载财务数据失败，请检查网络连接');
+    resetData();
   } finally {
     loading.value = false;
   }
 }
 
-function loadMockData() {
-  kpiData.value = {
-    grossProfit: 856000,
-    grossProfitMargin: 30,
-    netProfit: 428400,
-    netProfitMargin: 15,
-    totalCost: 1999600,
-    costGrowth: 8.5,
-    materialCost: 1199760,
-    laborCost: 399920,
-    overheadCost: 399920,
-    totalReceivable: 1285000,
-    receivableAge30: 856000,
-    receivableAge60: 285600,
-    receivableAge90Plus: 143400,
-    totalPayable: 985000,
-    payableAge30: 656000,
-    payableAge60: 214500,
-    payableAge90Plus: 114500,
-    budgetTotal: 3000000,
-    budgetUsed: 2285600,
-    budgetRemaining: 714400,
-    budgetUsageRate: 76.2
-  };
+function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
+  // 利润相关
+  if (metrics.grossProfit !== undefined) kpiData.value.grossProfit = Number(metrics.grossProfit);
+  if (metrics.grossProfitMargin !== undefined) kpiData.value.grossProfitMargin = Number(metrics.grossProfitMargin);
+  if (metrics.netProfit !== undefined) kpiData.value.netProfit = Number(metrics.netProfit);
+  if (metrics.netProfitMargin !== undefined) kpiData.value.netProfitMargin = Number(metrics.netProfitMargin);
 
-  // 根据分析类型设置不同的预警
-  if (analysisType.value === 'receivable') {
-    warnings.value = [
-      { level: 'danger', title: '逾期90天以上', description: '3笔应收款项逾期超过90天', amount: 143400 },
-      { level: 'warning', title: '逾期60天', description: '5笔应收款项逾期60天', amount: 285600 },
-      { level: 'info', title: '即将到期', description: '8笔应收款项将于7天内到期', amount: 425000 }
-    ];
-  } else if (analysisType.value === 'payable') {
-    warnings.value = [
-      { level: 'danger', title: '即将逾期', description: '2笔应付款项即将逾期', amount: 114500 },
-      { level: 'warning', title: '付款提醒', description: '4笔应付款项将于本周到期', amount: 285000 }
-    ];
-  } else if (analysisType.value === 'budget') {
-    warnings.value = [
-      { level: 'warning', title: '预算预警', description: '生产部门预算使用率达 92%', amount: 0 },
-      { level: 'info', title: '预算提醒', description: '销售费用已使用 85%', amount: 0 }
-    ];
-  } else if (analysisType.value === 'cost') {
-    warnings.value = [
-      { level: 'warning', title: '成本上涨', description: '原材料成本环比上涨 12%', amount: 0 },
-      { level: 'info', title: '成本优化', description: '人工成本下降 3%', amount: 0 }
-    ];
-  } else {
-    warnings.value = [
-      { level: 'info', title: '利润增长', description: '净利润率同比提升 2.3%', amount: 0 }
-    ];
+  // 成本相关
+  if (metrics.totalCost !== undefined) kpiData.value.totalCost = Number(metrics.totalCost);
+  if (metrics.costGrowth !== undefined) kpiData.value.costGrowth = Number(metrics.costGrowth);
+  if (metrics.materialCost !== undefined) kpiData.value.materialCost = Number(metrics.materialCost);
+  if (metrics.laborCost !== undefined) kpiData.value.laborCost = Number(metrics.laborCost);
+  if (metrics.overheadCost !== undefined) kpiData.value.overheadCost = Number(metrics.overheadCost);
+
+  // 应收相关
+  if (metrics.totalReceivable !== undefined) kpiData.value.totalReceivable = Number(metrics.totalReceivable);
+  if (metrics.receivableAge30 !== undefined) kpiData.value.receivableAge30 = Number(metrics.receivableAge30);
+  if (metrics.receivableAge60 !== undefined) kpiData.value.receivableAge60 = Number(metrics.receivableAge60);
+  if (metrics.receivableAge90Plus !== undefined) kpiData.value.receivableAge90Plus = Number(metrics.receivableAge90Plus);
+  // 支持不同的字段命名
+  if (metrics.within30Days !== undefined) kpiData.value.receivableAge30 = Number(metrics.within30Days);
+  if (metrics.days30To60 !== undefined) kpiData.value.receivableAge60 = Number(metrics.days30To60);
+  if (metrics.over90Days !== undefined) kpiData.value.receivableAge90Plus = Number(metrics.over90Days);
+
+  // 应付相关
+  if (metrics.totalPayable !== undefined) kpiData.value.totalPayable = Number(metrics.totalPayable);
+  if (metrics.payableAge30 !== undefined) kpiData.value.payableAge30 = Number(metrics.payableAge30);
+  if (metrics.payableAge60 !== undefined) kpiData.value.payableAge60 = Number(metrics.payableAge60);
+  if (metrics.payableAge90Plus !== undefined) kpiData.value.payableAge90Plus = Number(metrics.payableAge90Plus);
+
+  // 预算相关
+  if (metrics.budgetTotal !== undefined) kpiData.value.budgetTotal = Number(metrics.budgetTotal);
+  if (metrics.budgetUsed !== undefined) kpiData.value.budgetUsed = Number(metrics.budgetUsed);
+  if (metrics.budgetRemaining !== undefined) kpiData.value.budgetRemaining = Number(metrics.budgetRemaining);
+  if (metrics.budgetUsageRate !== undefined) kpiData.value.budgetUsageRate = Number(metrics.budgetUsageRate);
+  // 支持不同的字段命名
+  if (metrics.totalBudget !== undefined) kpiData.value.budgetTotal = Number(metrics.totalBudget);
+  if (metrics.usedBudget !== undefined) kpiData.value.budgetUsed = Number(metrics.usedBudget);
+  if (metrics.remainingBudget !== undefined) kpiData.value.budgetRemaining = Number(metrics.remainingBudget);
+  if (metrics.usageRate !== undefined) kpiData.value.budgetUsageRate = Number(metrics.usageRate);
+}
+
+function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
+  for (const card of kpiCards) {
+    const label = String(card.label || '');
+    const value = Number(card.value || 0);
+
+    if (label.includes('毛利') && label.includes('率')) {
+      kpiData.value.grossProfitMargin = value;
+    } else if (label.includes('毛利')) {
+      kpiData.value.grossProfit = value;
+    } else if (label.includes('净利') && label.includes('率')) {
+      kpiData.value.netProfitMargin = value;
+    } else if (label.includes('净利')) {
+      kpiData.value.netProfit = value;
+    } else if (label.includes('总成本')) {
+      kpiData.value.totalCost = value;
+    } else if (label.includes('应收')) {
+      kpiData.value.totalReceivable = value;
+    } else if (label.includes('应付')) {
+      kpiData.value.totalPayable = value;
+    } else if (label.includes('预算') && label.includes('使用')) {
+      kpiData.value.budgetUsageRate = value;
+    } else if (label.includes('预算')) {
+      kpiData.value.budgetTotal = value;
+    }
   }
+}
+
+function resetData() {
+  kpiData.value = {
+    grossProfit: 0,
+    grossProfitMargin: 0,
+    netProfit: 0,
+    netProfitMargin: 0,
+    totalCost: 0,
+    costGrowth: 0,
+    materialCost: 0,
+    laborCost: 0,
+    overheadCost: 0,
+    totalReceivable: 0,
+    receivableAge30: 0,
+    receivableAge60: 0,
+    receivableAge90Plus: 0,
+    totalPayable: 0,
+    payableAge30: 0,
+    payableAge60: 0,
+    payableAge90Plus: 0,
+    budgetTotal: 0,
+    budgetUsed: 0,
+    budgetRemaining: 0,
+    budgetUsageRate: 0
+  };
+  warnings.value = [];
+  chartConfig.value = null;
 }
 
 function initChart() {
@@ -191,47 +413,46 @@ function initChart() {
   if (!chartDom) return;
 
   mainChart = echarts.init(chartDom);
-  updateChart();
   window.addEventListener('resize', handleResize);
 }
 
 function updateChart() {
-  if (!mainChart) return;
+  if (!mainChart || !chartConfig.value) return;
 
-  let option: echarts.EChartsOption;
+  const config = chartConfig.value;
+  const option = buildEChartsOption(config);
 
-  switch (analysisType.value) {
-    case 'profit':
-      option = getProfitChartOption();
-      break;
-    case 'cost':
-      option = getCostChartOption();
-      break;
-    case 'receivable':
-      option = getReceivableChartOption();
-      break;
-    case 'payable':
-      option = getPayableChartOption();
-      break;
-    case 'budget':
-      option = getBudgetChartOption();
-      break;
-    default:
-      option = getProfitChartOption();
+  if (option) {
+    mainChart.setOption(option, true);
   }
-
-  mainChart.setOption(option, true);
 }
 
-function getProfitChartOption(): echarts.EChartsOption {
-  return {
+function buildEChartsOption(config: ChartConfig | DynamicChartConfig): echarts.EChartsOption | null {
+  // 检查是否是 DynamicChartConfig
+  if ('series' in config && Array.isArray(config.series)) {
+    return buildFromDynamicConfig(config as DynamicChartConfig);
+  }
+
+  // ChartConfig 格式
+  const chartConfig = config as ChartConfig;
+  if (!chartConfig.data || chartConfig.data.length === 0) {
+    return getEmptyChartOption();
+  }
+
+  const chartType = chartConfig.chartType?.toLowerCase() || 'bar';
+
+  if (chartType === 'pie') {
+    return buildPieChart(chartConfig);
+  } else {
+    return buildAxisChart(chartConfig);
+  }
+}
+
+function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOption {
+  const option: echarts.EChartsOption = {
     tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'cross' }
-    },
-    legend: {
-      data: ['收入', '成本', '利润'],
-      bottom: 0
+      trigger: config.tooltip?.trigger || 'axis',
+      axisPointer: config.tooltip?.axisPointer || { type: 'shadow' }
     },
     grid: {
       left: '3%',
@@ -239,46 +460,89 @@ function getProfitChartOption(): echarts.EChartsOption {
       bottom: '15%',
       top: '10%',
       containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: (value: number) => (value / 10000).toFixed(0) + '万'
-      }
-    },
-    series: [
-      {
-        name: '收入',
-        type: 'bar',
-        data: [2100000, 2350000, 2580000, 2450000, 2680000, 2856000],
-        itemStyle: { color: '#409EFF' }
-      },
-      {
-        name: '成本',
-        type: 'bar',
-        data: [1470000, 1645000, 1806000, 1715000, 1876000, 1999600],
-        itemStyle: { color: '#E6A23C' }
-      },
-      {
-        name: '利润',
-        type: 'line',
-        data: [630000, 705000, 774000, 735000, 804000, 856400],
-        lineStyle: { width: 3, color: '#67C23A' },
-        itemStyle: { color: '#67C23A' }
-      }
-    ]
+    }
   };
+
+  // 设置标题
+  if (config.title) {
+    option.title = { text: config.title, subtext: config.subTitle };
+  }
+
+  // 设置图例
+  if (config.legend) {
+    option.legend = {
+      show: config.legend.show !== false,
+      data: config.legend.data,
+      bottom: config.legend.position === 'bottom' ? 0 : undefined,
+      top: config.legend.position === 'top' ? 0 : undefined,
+      orient: config.legend.orient as 'horizontal' | 'vertical' || 'horizontal'
+    };
+  }
+
+  // 设置 X 轴
+  if (config.xAxis) {
+    option.xAxis = {
+      type: config.xAxis.type as 'category' | 'value' || 'category',
+      name: config.xAxis.name,
+      data: config.xAxis.data
+    };
+  }
+
+  // 设置 Y 轴
+  if (config.yAxis && config.yAxis.length > 0) {
+    option.yAxis = config.yAxis.map(axis => ({
+      type: axis.type as 'value' | 'category' || 'value',
+      name: axis.name,
+      position: axis.position as 'left' | 'right' || undefined,
+      min: axis.min,
+      max: axis.max,
+      axisLabel: axis.axisLabel || {
+        formatter: (value: number) => {
+          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
+          return String(value);
+        }
+      }
+    }));
+  }
+
+  // 设置系列
+  if (config.series && config.series.length > 0) {
+    option.series = config.series.map(s => {
+      const seriesItem: echarts.SeriesOption = {
+        name: s.name,
+        type: s.type as 'line' | 'bar' | 'pie' || 'bar',
+        data: s.data,
+        yAxisIndex: s.yAxisIndex || 0,
+        stack: s.stack,
+        smooth: s.smooth,
+        itemStyle: s.itemStyle,
+        label: s.label
+      };
+
+      if (s.areaStyle && s.type === 'line') {
+        (seriesItem as echarts.LineSeriesOption).areaStyle = {};
+      }
+
+      return seriesItem;
+    }) as echarts.SeriesOption[];
+  }
+
+  return option;
 }
 
-function getCostChartOption(): echarts.EChartsOption {
+function buildPieChart(config: ChartConfig): echarts.EChartsOption {
+  const xField = config.xAxisField || 'name';
+  const yField = config.yAxisField || 'value';
+
+  const pieData = config.data?.map(item => ({
+    name: String(item[xField] || ''),
+    value: Number(item[yField] || 0)
+  })) || [];
+
   return {
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c}万 ({d}%)'
+      formatter: '{b}: {c} ({d}%)'
     },
     legend: {
       orient: 'vertical',
@@ -290,13 +554,7 @@ function getCostChartOption(): echarts.EChartsOption {
         type: 'pie',
         radius: ['40%', '70%'],
         center: ['40%', '50%'],
-        data: [
-          { value: 119.98, name: '原材料', itemStyle: { color: '#409EFF' } },
-          { value: 39.99, name: '人工成本', itemStyle: { color: '#67C23A' } },
-          { value: 25.99, name: '制造费用', itemStyle: { color: '#E6A23C' } },
-          { value: 8.00, name: '管理费用', itemStyle: { color: '#F56C6C' } },
-          { value: 6.00, name: '销售费用', itemStyle: { color: '#909399' } }
-        ],
+        data: pieData,
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -309,14 +567,18 @@ function getCostChartOption(): echarts.EChartsOption {
   };
 }
 
-function getReceivableChartOption(): echarts.EChartsOption {
+function buildAxisChart(config: ChartConfig): echarts.EChartsOption {
+  const xField = config.xAxisField || 'name';
+  const yField = config.yAxisField || 'value';
+  const chartType = config.chartType?.toLowerCase() || 'bar';
+
+  const xData = config.data?.map(item => String(item[xField] || '')) || [];
+  const yData = config.data?.map(item => Number(item[yField] || 0)) || [];
+
   return {
     tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['30天内', '30-60天', '60-90天', '90天以上'],
-      bottom: 0
+      trigger: 'axis',
+      axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' }
     },
     grid: {
       left: '3%',
@@ -327,165 +589,41 @@ function getReceivableChartOption(): echarts.EChartsOption {
     },
     xAxis: {
       type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
+      data: xData
     },
     yAxis: {
       type: 'value',
       axisLabel: {
-        formatter: (value: number) => (value / 10000).toFixed(0) + '万'
-      }
-    },
-    series: [
-      {
-        name: '30天内',
-        type: 'bar',
-        stack: 'total',
-        data: [650000, 720000, 780000, 820000, 860000, 856000],
-        itemStyle: { color: '#67C23A' }
-      },
-      {
-        name: '30-60天',
-        type: 'bar',
-        stack: 'total',
-        data: [180000, 200000, 220000, 240000, 260000, 285600],
-        itemStyle: { color: '#E6A23C' }
-      },
-      {
-        name: '60-90天',
-        type: 'bar',
-        stack: 'total',
-        data: [80000, 90000, 100000, 110000, 120000, 100000],
-        itemStyle: { color: '#F56C6C' }
-      },
-      {
-        name: '90天以上',
-        type: 'bar',
-        stack: 'total',
-        data: [50000, 60000, 70000, 80000, 100000, 143400],
-        itemStyle: { color: '#909399' }
-      }
-    ]
-  };
-}
-
-function getPayableChartOption(): echarts.EChartsOption {
-  return {
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['30天内', '30-60天', '60-90天', '90天以上'],
-      bottom: 0
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '10%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: ['1月', '2月', '3月', '4月', '5月', '6月']
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: (value: number) => (value / 10000).toFixed(0) + '万'
-      }
-    },
-    series: [
-      {
-        name: '30天内',
-        type: 'bar',
-        stack: 'total',
-        data: [450000, 500000, 550000, 580000, 620000, 656000],
-        itemStyle: { color: '#67C23A' }
-      },
-      {
-        name: '30-60天',
-        type: 'bar',
-        stack: 'total',
-        data: [150000, 170000, 180000, 195000, 205000, 214500],
-        itemStyle: { color: '#E6A23C' }
-      },
-      {
-        name: '60-90天',
-        type: 'bar',
-        stack: 'total',
-        data: [60000, 70000, 75000, 80000, 90000, 0],
-        itemStyle: { color: '#F56C6C' }
-      },
-      {
-        name: '90天以上',
-        type: 'bar',
-        stack: 'total',
-        data: [40000, 50000, 60000, 80000, 100000, 114500],
-        itemStyle: { color: '#909399' }
-      }
-    ]
-  };
-}
-
-function getBudgetChartOption(): echarts.EChartsOption {
-  return {
-    tooltip: {
-      trigger: 'axis'
-    },
-    legend: {
-      data: ['预算', '实际', '使用率'],
-      bottom: 0
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '10%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: ['生产', '销售', '管理', '研发', '财务', '人事']
-    },
-    yAxis: [
-      {
-        type: 'value',
-        name: '金额',
-        axisLabel: {
-          formatter: (value: number) => (value / 10000).toFixed(0) + '万'
+        formatter: (value: number) => {
+          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
+          return String(value);
         }
-      },
-      {
-        type: 'value',
-        name: '使用率',
-        axisLabel: {
-          formatter: '{value}%'
-        },
-        max: 100
       }
-    ],
+    },
     series: [
       {
-        name: '预算',
-        type: 'bar',
-        data: [1200000, 800000, 400000, 300000, 200000, 100000],
-        itemStyle: { color: '#409EFF' }
-      },
-      {
-        name: '实际',
-        type: 'bar',
-        data: [1104000, 680000, 340000, 210000, 160000, 91600],
-        itemStyle: { color: '#67C23A' }
-      },
-      {
-        name: '使用率',
-        type: 'line',
-        yAxisIndex: 1,
-        data: [92, 85, 85, 70, 80, 92],
-        lineStyle: { width: 3, color: '#E6A23C' },
-        itemStyle: { color: '#E6A23C' }
+        type: chartType as 'bar' | 'line',
+        data: yData,
+        smooth: chartType === 'line',
+        itemStyle: {
+          color: '#409EFF'
+        }
       }
     ]
+  };
+}
+
+function getEmptyChartOption(): echarts.EChartsOption {
+  return {
+    title: {
+      text: '暂无数据',
+      left: 'center',
+      top: 'center',
+      textStyle: {
+        color: '#909399',
+        fontSize: 14
+      }
+    }
   };
 }
 
@@ -510,7 +648,6 @@ function getWarningTagType(level: string): 'danger' | 'warning' | 'info' {
 
 function handleRefresh() {
   loadFinanceData();
-  updateChart();
 }
 
 onUnmounted(() => {
@@ -533,6 +670,27 @@ onUnmounted(() => {
         <el-button type="primary" :icon="Refresh" @click="handleRefresh">刷新</el-button>
       </div>
     </div>
+
+    <!-- 筛选栏 -->
+    <el-card class="filter-card">
+      <div class="filter-bar">
+        <div class="filter-item">
+          <span class="filter-label">
+            <el-icon><Calendar /></el-icon>
+            日期范围
+          </span>
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            :shortcuts="shortcuts"
+            value-format="YYYY-MM-DD"
+          />
+        </div>
+      </div>
+    </el-card>
 
     <!-- 分析类型切换 -->
     <el-card class="type-switch-card">
@@ -576,28 +734,30 @@ onUnmounted(() => {
           <el-card class="kpi-card">
             <div class="kpi-label">总成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.totalCost) }}</div>
-            <div class="kpi-sub growth-down">环比 +{{ kpiData.costGrowth }}%</div>
+            <div class="kpi-sub" :class="kpiData.costGrowth >= 0 ? 'growth-down' : 'growth-up'">
+              环比 {{ kpiData.costGrowth >= 0 ? '+' : '' }}{{ kpiData.costGrowth }}%
+            </div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">原材料成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.materialCost) }}</div>
-            <div class="kpi-sub">占比 60%</div>
+            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.materialCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">人工成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.laborCost) }}</div>
-            <div class="kpi-sub">占比 20%</div>
+            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.laborCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
         <el-col :xs="24" :sm="12" :md="6">
           <el-card class="kpi-card">
             <div class="kpi-label">间接成本</div>
             <div class="kpi-value">{{ formatMoney(kpiData.overheadCost) }}</div>
-            <div class="kpi-sub">占比 20%</div>
+            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.overheadCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
           </el-card>
         </el-col>
       </template>
@@ -761,6 +921,38 @@ onUnmounted(() => {
       margin: 12px 0 0;
       font-size: 20px;
       font-weight: 600;
+    }
+  }
+}
+
+// 筛选栏
+.filter-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+
+  :deep(.el-card__body) {
+    padding: 16px;
+  }
+
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .filter-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #606266;
+      white-space: nowrap;
     }
   }
 }
@@ -949,6 +1141,15 @@ onUnmounted(() => {
     &::-webkit-scrollbar {
       height: 4px;
     }
+  }
+
+  .filter-bar {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .filter-item {
+    width: 100%;
   }
 }
 </style>
