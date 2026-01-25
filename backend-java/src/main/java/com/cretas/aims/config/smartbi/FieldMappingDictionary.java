@@ -893,22 +893,29 @@ public class FieldMappingDictionary {
 
         String normalizedName = columnName.trim().toLowerCase();
 
-        // 1. 精确匹配
+        // 0. 对于多层表头（包含下划线分隔符），优先使用叶子名称进行匹配
+        String leafName = extractLeafName(normalizedName);
+        String nameToMatch = leafName != null ? leafName : normalizedName;
+
+        // 1. 精确匹配（优先使用叶子名称）
+        if (leafName != null && synonymToFieldIndex.containsKey(leafName)) {
+            return Optional.of(synonymToFieldIndex.get(leafName));
+        }
         if (synonymToFieldIndex.containsKey(normalizedName)) {
             return Optional.of(synonymToFieldIndex.get(normalizedName));
         }
 
         // 2. 去除常见前后缀后匹配
-        String stripped = stripCommonAffixes(normalizedName);
-        if (!stripped.equals(normalizedName) && synonymToFieldIndex.containsKey(stripped)) {
+        String stripped = stripCommonAffixes(nameToMatch);
+        if (!stripped.equals(nameToMatch) && synonymToFieldIndex.containsKey(stripped)) {
             return Optional.of(synonymToFieldIndex.get(stripped));
         }
 
-        // 3. 部分匹配 - 列名包含同义词
+        // 3. 部分匹配 - 使用叶子名称进行包含匹配（避免父级表头干扰）
         for (Map.Entry<String, String> entry : synonymToFieldIndex.entrySet()) {
             String synonym = entry.getKey();
             // 只对长度>=2的同义词进行包含匹配，避免误匹配
-            if (synonym.length() >= 2 && normalizedName.contains(synonym)) {
+            if (synonym.length() >= 2 && nameToMatch.contains(synonym)) {
                 return Optional.of(entry.getValue());
             }
         }
@@ -916,12 +923,44 @@ public class FieldMappingDictionary {
         // 4. 部分匹配 - 同义词包含列名
         for (Map.Entry<String, String> entry : synonymToFieldIndex.entrySet()) {
             String synonym = entry.getKey();
-            if (normalizedName.length() >= 2 && synonym.contains(normalizedName)) {
+            if (nameToMatch.length() >= 2 && synonym.contains(nameToMatch)) {
                 return Optional.of(entry.getValue());
             }
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * 从多层合并表头中提取叶子名称
+     * 例如: "宁波味觉销售1中心利润表_2025-12-30_编制单位：xxx_2025-01-01_预算数" -> "预算数"
+     *
+     * @param columnName 列名（可能是合并表头）
+     * @return 叶子名称，如果不是多层表头则返回null
+     */
+    private String extractLeafName(String columnName) {
+        if (columnName == null || !columnName.contains("_")) {
+            return null;
+        }
+
+        // 分割并获取最后一个非空片段
+        String[] parts = columnName.split("_");
+        if (parts.length <= 1) {
+            return null;
+        }
+
+        // 从后往前找第一个有意义的片段
+        for (int i = parts.length - 1; i >= 0; i--) {
+            String part = parts[i].trim();
+            // 跳过日期时间格式的片段
+            if (part.isEmpty() || part.matches("\\d{4}-\\d{2}-\\d{2}.*") ||
+                part.matches("level_\\d+") || part.startsWith("Unnamed:")) {
+                continue;
+            }
+            return part;
+        }
+
+        return null;
     }
 
     /**
