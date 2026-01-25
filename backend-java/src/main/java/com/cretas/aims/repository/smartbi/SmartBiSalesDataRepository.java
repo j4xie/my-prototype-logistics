@@ -94,4 +94,24 @@ public interface SmartBiSalesDataRepository extends JpaRepository<SmartBiSalesDa
      */
     @Modifying
     void deleteByUploadId(Long uploadId);
+
+    /**
+     * 获取指定工厂销售数据的日期范围（最小和最大订单日期）
+     *
+     * @param factoryId 工厂ID
+     * @return Object[]{minDate, maxDate}，如果没有数据则返回 null
+     */
+    @Query("SELECT MIN(s.orderDate), MAX(s.orderDate) FROM SmartBiSalesData s WHERE s.factoryId = :factoryId")
+    Object[] findDateRangeByFactoryId(@Param("factoryId") String factoryId);
+
+    /**
+     * 检查指定日期范围内是否存在数据
+     *
+     * @param factoryId 工厂ID
+     * @param start 开始日期
+     * @param end 结束日期
+     * @return 数据记录数
+     */
+    @Query("SELECT COUNT(s) FROM SmartBiSalesData s WHERE s.factoryId = :factoryId AND s.orderDate BETWEEN :start AND :end")
+    Long countByFactoryIdAndDateRange(@Param("factoryId") String factoryId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 }

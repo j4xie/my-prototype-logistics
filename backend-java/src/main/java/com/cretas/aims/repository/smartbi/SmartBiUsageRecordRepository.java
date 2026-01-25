@@ -37,13 +37,14 @@ public interface SmartBiUsageRecordRepository extends JpaRepository<SmartBiUsage
 
     /**
      * 统计指定工厂今日的使用次数
+     * 使用 Native Query 解决 DATE() 函数在 JPQL 中不支持的问题
      *
      * @param factoryId 工厂ID
      * @param date 统计日期
      * @return 使用次数
      */
-    @Query("SELECT COUNT(u) FROM SmartBiUsageRecord u WHERE u.factoryId = :factoryId " +
-           "AND DATE(u.createdAt) = :date")
+    @Query(value = "SELECT COUNT(*) FROM smart_bi_usage_records u WHERE u.factory_id = :factoryId " +
+           "AND DATE(u.created_at) = :date", nativeQuery = true)
     Long countTodayUsage(@Param("factoryId") String factoryId, @Param("date") LocalDate date);
 
     /**
