@@ -1,5 +1,7 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.smartbi.BatchUploadResult;
 import com.cretas.aims.dto.smartbi.DynamicChartConfig;
 import com.cretas.aims.dto.smartbi.ExcelParseRequest;
@@ -24,6 +26,7 @@ import com.cretas.aims.service.smartbi.LLMFieldMappingService;
 import com.cretas.aims.service.smartbi.SmartBIUploadFlowService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -63,6 +66,12 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     private final ChartTemplateService chartTemplateService;
     private final SmartBiSalesDataRepository salesDataRepository;
     private final SmartBiFinanceDataRepository financeDataRepository;
+
+    @Autowired
+    private PythonSmartBIClient pythonClient;
+
+    @Autowired
+    private PythonSmartBIConfig pythonConfig;
 
     /**
      * Sheet 并行处理线程池
@@ -113,7 +122,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         try {
-            // 2. 解析 Excel 文件
+            // 2. 解析 Excel 文件（使用 Python 服务或 Java 降级）
             ExcelParseRequest parseRequest = ExcelParseRequest.builder()
                     .factoryId(factoryId)
                     .fileName(fileName)
@@ -124,8 +133,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                     .businessScene(dataType)
                     .build();
 
-            ExcelParseResponse parseResult = excelParserService.parseExcel(
-                    file.getInputStream(), parseRequest);
+            ExcelParseResponse parseResult = parseExcelWithFallback(file, factoryId, dataType, parseRequest);
 
             if (!parseResult.isSuccess()) {
                 log.warn("Excel 解析失败: {}", parseResult.getErrorMessage());
@@ -398,6 +406,59 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     }
 
     // ==================== 私有辅助方法 ====================
+
+    /**
+     * 使用 Python 服务解析 Excel，如果失败则降级到 Java 实现
+     *
+     * 优先使用 Python SmartBI 服务进行 Excel 解析，利用 Python 生态系统中
+     * 更成熟的数据处理库（如 pandas, openpyxl）。如果 Python 服务不可用
+     * 或处理失败，将自动降级到 Java 原生实现。
+     *
+     * @param file        Excel 文件
+     * @param factoryId   工厂ID
+     * @param dataType    数据类型提示
+     * @param parseRequest 解析请求参数
+     * @return Excel 解析结果
+     * @throws IOException 如果 Java 解析也失败
+     */
+    private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
+                                                       String dataType, ExcelParseRequest parseRequest) throws IOException {
+        // 检查 Python 服务是否启用
+        if (!pythonConfig.isEnabled()) {
+            log.debug("Python SmartBI 服务已禁用，使用 Java 解析器");
+            return excelParserService.parseExcel(file.getInputStream(), parseRequest);
+        }
+
+        // 尝试使用 Python 服务
+        try {
+            if (pythonClient.isAvailable()) {
+                log.info("使用 Python SmartBI 服务解析 Excel: fileName={}", file.getOriginalFilename());
+                ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType);
+
+                if (pythonResult != null && pythonResult.isSuccess()) {
+                    log.info("Python SmartBI 解析成功: headers={}, rows={}",
+                            pythonResult.getHeaders() != null ? pythonResult.getHeaders().size() : 0,
+                            pythonResult.getRowCount());
+                    return pythonResult;
+                } else {
+                    log.warn("Python SmartBI 解析返回失败结果，降级到 Java 解析器");
+                }
+            } else {
+                log.debug("Python SmartBI 服务不可用，使用 Java 解析器");
+            }
+        } catch (Exception e) {
+            log.warn("Python SmartBI 解析失败，降级到 Java 解析器: {}", e.getMessage());
+
+            // 如果配置不允许降级，则抛出异常
+            if (!pythonConfig.isFallbackOnError()) {
+                throw new RuntimeException("Python SmartBI 服务不可用且不允许降级", e);
+            }
+        }
+
+        // 降级到 Java 实现
+        log.info("使用 Java 解析器处理 Excel: fileName={}", file.getOriginalFilename());
+        return excelParserService.parseExcel(file.getInputStream(), parseRequest);
+    }
 
     /**
      * 保存用户手动确认的字段映射到数据库（自动学习功能）

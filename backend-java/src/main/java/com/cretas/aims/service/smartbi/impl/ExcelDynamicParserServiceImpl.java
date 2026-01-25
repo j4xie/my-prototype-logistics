@@ -285,12 +285,13 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
             // 4. 映射字段
             List<FieldMappingResult> fieldMappings = mapFields(headers, dataFeatures, request.getFactoryId());
 
-            // 5. 检查必填字段
+            // 5. 检查字段（推荐字段，非强制）
             Set<String> mappedStandardFields = fieldMappings.stream()
                     .filter(m -> m.getStandardField() != null)
                     .map(FieldMappingResult::getStandardField)
                     .collect(Collectors.toSet());
-            List<String> missingRequiredFields = fieldMappingDictionary.getMissingRequiredFields(mappedStandardFields);
+            // 获取缺失的推荐字段（仅用于提示，不阻止保存）
+            List<String> missingRecommendedFields = fieldMappingDictionary.getMissingRecommendedFields(mappedStandardFields);
 
             // 6. 构建响应
             long parseTimeMs = System.currentTimeMillis() - startTime;
@@ -313,6 +314,8 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
                 metadataBuilder.hasMultiHeader(false);
             }
 
+            // 系统动态适配任何 Excel 格式，状态始终为 COMPLETE
+            // missingRequiredFields 保留缺失的推荐字段信息（仅用于提示）
             ExcelParseResponse response = ExcelParseResponse.builder()
                     .success(true)
                     .headers(headers)
@@ -321,13 +324,13 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
                     .fieldMappings(fieldMappings)
                     .dataFeatures(dataFeatures)
                     .previewData(sampleData)
-                    .missingRequiredFields(missingRequiredFields)
-                    .status(missingRequiredFields.isEmpty() ? "COMPLETE" : "MISSING_FIELDS")
+                    .missingRequiredFields(missingRecommendedFields)  // 显示推荐字段缺失（仅提示）
+                    .status("COMPLETE")  // 动态适配，始终允许继续
                     .metadata(metadataBuilder.build())
                     .build();
 
-            log.info("Excel解析完成: parseTimeMs={}, mappedFields={}, missingFields={}",
-                    parseTimeMs, mappedStandardFields.size(), missingRequiredFields.size());
+            log.info("Excel解析完成: parseTimeMs={}, mappedFields={}, missingRecommendedFields={}",
+                    parseTimeMs, mappedStandardFields.size(), missingRecommendedFields.size());
 
             return response;
 

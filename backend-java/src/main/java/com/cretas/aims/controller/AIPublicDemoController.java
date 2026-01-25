@@ -262,6 +262,16 @@ public class AIPublicDemoController {
         response.setMatched(matchResult.hasMatch());
         response.setSessionId(sessionId);  // 返回会话ID供前端续接
 
+        // v12.2: 检查是否需要澄清
+        if (matchResult.getClarificationQuestion() != null && !matchResult.getClarificationQuestion().isEmpty()) {
+            response.setNeedsClarification(true);
+            response.setClarificationQuestion(matchResult.getClarificationQuestion());
+            response.setMatchMethod(matchResult.getMatchMethod() != null ?
+                    matchResult.getMatchMethod().name() : "REJECTED");
+            response.setConfidence(0.0);
+            return ResponseEntity.ok(ApiResponse.success(response));
+        }
+
         if (matchResult.hasMatch()) {
             AIIntentConfig intent = matchResult.getBestMatch();
             response.setIntentCode(intent.getIntentCode());
@@ -536,5 +546,16 @@ public class AIPublicDemoController {
          * 前端可以保存此ID用于后续的多轮对话
          */
         private String sessionId;
+
+        /**
+         * v12.2: 澄清问题
+         * 当输入模糊需要澄清时，返回此字段引导用户提供更多信息
+         */
+        private String clarificationQuestion;
+
+        /**
+         * v12.2: 是否需要澄清
+         */
+        private boolean needsClarification;
     }
 }

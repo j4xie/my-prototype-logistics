@@ -1,12 +1,14 @@
 package com.cretas.aims.service;
 
 import com.cretas.aims.config.IntentCompositionConfig;
+import com.cretas.aims.dto.SemanticMatchResult;
+import com.cretas.aims.dto.intent.ExtractedSlots;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -48,10 +50,24 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class TwoStageIntentClassifier {
 
     private final IntentCompositionConfig compositionConfig;
+    private final SlotExtractor slotExtractor;
+    private final ComparisonQueryHandler comparisonQueryHandler;
+    private final SemanticIntentMatcher semanticMatcher;
+
+    @Autowired
+    public TwoStageIntentClassifier(
+            IntentCompositionConfig compositionConfig,
+            @Lazy SlotExtractor slotExtractor,
+            @Lazy ComparisonQueryHandler comparisonQueryHandler,
+            @Lazy SemanticIntentMatcher semanticMatcher) {
+        this.compositionConfig = compositionConfig;
+        this.slotExtractor = slotExtractor;
+        this.comparisonQueryHandler = comparisonQueryHandler;
+        this.semanticMatcher = semanticMatcher;
+    }
 
     // ==================== Enums ====================
 
@@ -61,6 +77,7 @@ public class TwoStageIntentClassifier {
     public enum ClassifiedDomain {
         MATERIAL,    // 原料, 物料, 材料, 入库
         SHIPMENT,    // 发货, 出货, 配送, 物流
+        ORDER,       // 订单, 下单, 接单
         ATTENDANCE,  // 考勤, 打卡, 出勤, 签到
         EQUIPMENT,   // 设备, 机器, 机台
         QUALITY,     // 质检, 质量, 检测
@@ -87,6 +104,7 @@ public class TwoStageIntentClassifier {
     /**
      * Result of two-stage classification
      * v9.0: Extended with modifiers for multi-dimensional intent mapping
+     * v14.0: Extended with extracted slots for parameterized queries
      */
     @Data
     @Builder
@@ -104,6 +122,10 @@ public class TwoStageIntentClassifier {
         private Set<String> modifiers;      // e.g., ["STATS", "ANOMALY", "FUTURE"]
         private String timeScope;           // "PAST", "PRESENT", "FUTURE"
         private String targetScope;         // "PERSONAL", "DEPARTMENTAL", "ALL"
+
+        // v14.0: Slot extraction fields for parameterized queries
+        private ExtractedSlots extractedSlots;  // Extracted parameters from input
+        private Map<String, Object> parameters; // Flattened parameter map for API use
     }
 
     // ==================== Domain Keywords ====================
@@ -128,6 +150,9 @@ public class TwoStageIntentClassifier {
         DOMAIN_KEYWORDS.put(ClassifiedDomain.SHIPMENT, Arrays.asList(
                 "发货", "出货", "配送", "物流", "运输", "出库", "送货", "发运"
         ));
+        DOMAIN_KEYWORDS.put(ClassifiedDomain.ORDER, Arrays.asList(
+                "订单", "下单", "接单", "订货", "订购"
+        ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.ATTENDANCE, Arrays.asList(
                 "考勤", "打卡", "出勤", "签到", "签退", "上班", "下班", "请假",
                 "没来", "缺勤", "迟到", "早退", "来了", "打个卡"  // v9.0: 扩展考勤语义
@@ -149,7 +174,7 @@ public class TwoStageIntentClassifier {
                 "供应商", "供货商", "供方", "采购商", "进货", "采购"
         ));
         DOMAIN_KEYWORDS.put(ClassifiedDomain.CUSTOMER, Arrays.asList(
-                "客户", "买家", "顾客", "订单", "客户单", "销售"
+                "客户", "买家", "顾客", "客户单", "销售"
         ));
     }
 
@@ -205,6 +230,13 @@ public class TwoStageIntentClassifier {
     private static final List<String> ACTION_WORDS = Arrays.asList(
             "启动", "停止", "执行", "修改", "更新", "编辑", "变更", "调整",
             "启用", "禁用", "开始", "结束", "完成", "取消", "处理", "解决"  // v9.0: 扩展
+    );
+
+    /**
+     * Delete words that indicate DELETE action
+     */
+    private static final List<String> DELETE_WORDS = Arrays.asList(
+            "删除", "移除", "清除", "清空", "作废", "去掉", "销毁", "注销", "撤销"
     );
 
     /**
@@ -278,14 +310,77 @@ public class TwoStageIntentClassifier {
             "本月", "这个月", "上个月", "月度", "月报"
     );
 
+    // ==================== v13.0 新增 Modifier 词库 ====================
+
+    /**
+     * v13.0: Negation words that indicate NEGATION modifier
+     * 用于识别否定/排除类查询
+     */
+    private static final List<String> NEGATION_WORDS = Arrays.asList(
+            "不要", "别", "没有", "非", "除了", "排除", "不包括", "不含",
+            "不是", "除...外", "去掉", "不算", "剔除", "过滤掉", "屏蔽"
+    );
+
+    /**
+     * v13.0: Ranking words that indicate RANKING modifier
+     * 用于识别排名/排行类查询
+     */
+    private static final List<String> RANKING_WORDS = Arrays.asList(
+            "排名", "排行", "前几", "前10", "前十", "前五", "前三", "前N",
+            "TOP", "top", "最高", "最低", "最多", "最少", "最大", "最小",
+            "榜单", "排序", "倒数", "末位", "垫底"
+    );
+
+    /**
+     * v13.0: Comparison words that indicate COMPARISON modifier
+     * 用于识别对比/比较类查询
+     */
+    private static final List<String> COMPARISON_WORDS = Arrays.asList(
+            "对比", "比较", "vs", "VS", "相比", "比", "差异", "差距",
+            "增长", "下降", "变化", "波动", "趋势"
+    );
+
+    /**
+     * v13.0: Month-over-Month comparison words (环比)
+     */
+    private static final List<String> MOM_WORDS = Arrays.asList(
+            "环比", "比上月", "比上周", "上期对比", "MoM", "mom",
+            "与上月", "跟上月", "和上月", "较上月", "上月同期"
+    );
+
+    /**
+     * v13.0: Year-over-Year comparison words (同比)
+     */
+    private static final List<String> YOY_WORDS = Arrays.asList(
+            "同比", "比去年", "年同期", "YoY", "yoy", "去年同期",
+            "与去年", "跟去年", "较去年", "上年同期"
+    );
+
+    /**
+     * v13.0: Quarter-over-Quarter comparison words (季环比)
+     */
+    private static final List<String> QOQ_WORDS = Arrays.asList(
+            "季环比", "比上季", "上季度", "QoQ", "qoq", "季度对比"
+    );
+
+    /**
+     * v13.0: Aggregation/summary type words
+     * 用于识别聚合类型
+     */
+    private static final List<String> AGGREGATION_WORDS = Arrays.asList(
+            "总计", "合计", "累计", "汇总", "求和", "总和", "总额",
+            "平均", "均值", "占比", "百分比", "比例", "率"
+    );
+
     // ==================== Public Methods ====================
 
     /**
      * Main classification method - performs multi-stage classification
      * v9.0: Extended with Stage 3 Modifier classification
+     * v14.0: Extended with Stage 0 Slot Extraction for parameterized queries
      *
      * @param input User input text
-     * @return Classification result with domain, action, modifiers, and composed intent
+     * @return Classification result with domain, action, modifiers, slots, and composed intent
      */
     public TwoStageResult classify(String input) {
         if (input == null || input.trim().isEmpty()) {
@@ -301,11 +396,50 @@ public class TwoStageIntentClassifier {
                     .modifiers(Collections.emptySet())
                     .timeScope("PRESENT")
                     .targetScope("ALL")
+                    .extractedSlots(null)
+                    .parameters(Collections.emptyMap())
                     .build();
         }
 
         String normalizedInput = input.trim();
         log.debug("Starting multi-stage classification for input: {}", normalizedInput);
+
+        // Stage 0: Slot Extraction (v14.0)
+        ExtractedSlots extractedSlots = null;
+        Map<String, Object> parameters = new HashMap<>();
+        if (slotExtractor != null) {
+            extractedSlots = slotExtractor.extract(normalizedInput);
+            if (extractedSlots != null && extractedSlots.hasAnySlots()) {
+                parameters = extractedSlots.toParameterMap();
+                log.debug("Stage 0 - Extracted {} slots: {}", extractedSlots.getSlotCount(), extractedSlots.getSlots());
+            }
+        }
+
+        // Stage 0.5: Semantic Matching (v14.1)
+        // Try semantic similarity matching before rule-based classification
+        if (semanticMatcher != null && semanticMatcher.isSemanticMatchingAvailable()) {
+            SemanticMatchResult semanticResult = semanticMatcher.matchBySimilarity(normalizedInput, null);
+            if (semanticResult != null && semanticResult.isMatched() && semanticResult.getSimilarity() >= 0.80) {
+                log.info("Stage 0.5 - Semantic match found: '{}' -> {} (similarity: {:.3f})",
+                        normalizedInput, semanticResult.getIntentCode(), semanticResult.getSimilarity());
+
+                // Return early with semantic match result
+                return TwoStageResult.builder()
+                        .domain(inferDomainFromIntent(semanticResult.getIntentCode()))
+                        .action(ClassifiedAction.QUERY)
+                        .composedIntent(semanticResult.getIntentCode())
+                        .confidence(semanticResult.getSimilarity())
+                        .successful(true)
+                        .domainKeyword(semanticResult.getMatchedPhrase())
+                        .actionContext("SEMANTIC_MATCH")
+                        .modifiers(Collections.emptySet())
+                        .timeScope("PRESENT")
+                        .targetScope("ALL")
+                        .extractedSlots(extractedSlots)
+                        .parameters(parameters)
+                        .build();
+            }
+        }
 
         // Stage 1: Domain Classification
         DomainResult domainResult = classifyDomainWithKeyword(normalizedInput);
@@ -321,20 +455,47 @@ public class TwoStageIntentClassifier {
 
         // Stage 3: Modifier Classification (v9.0)
         Set<String> modifiers = classifyModifiers(normalizedInput);
+
+        // v14.0: Merge modifiers from slot extraction (comparison/ranking detection)
+        if (comparisonQueryHandler != null && extractedSlots != null) {
+            Set<String> slotModifiers = comparisonQueryHandler.generateModifiers(extractedSlots);
+            if (!slotModifiers.isEmpty()) {
+                modifiers = new HashSet<>(modifiers);
+                modifiers.addAll(slotModifiers);
+                log.debug("Stage 3 - Added slot-based modifiers: {}", slotModifiers);
+            }
+        }
+
         String timeScope = classifyTimeScope(normalizedInput);
         String targetScope = classifyTargetScope(normalizedInput);
         log.debug("Stage 3 - Modifiers: {}, TimeScope: {}, TargetScope: {}",
                 modifiers, timeScope, targetScope);
 
         // Stage 4: Intent Composition (v9.0: with multi-dimensional mapping)
-        String composedIntent = compositionConfig.getIntent(domain.name(), action.name(), modifiers);
+        // v14.0: Check if ComparisonQueryHandler suggests a specific intent
+        String composedIntent = null;
+        if (comparisonQueryHandler != null && extractedSlots != null) {
+            composedIntent = comparisonQueryHandler.determineIntent(domain, extractedSlots);
+            if (composedIntent != null) {
+                log.debug("Stage 4 - Intent from ComparisonQueryHandler: {}", composedIntent);
+            }
+        }
+
+        // Fall back to IntentCompositionConfig if no specific intent determined
+        if (composedIntent == null) {
+            composedIntent = compositionConfig.getIntent(domain.name(), action.name(), modifiers);
+        }
         if (composedIntent == null) {
             composedIntent = domain.name() + "_" + action.name(); // Fallback pattern
         }
         log.debug("Stage 4 - Composed Intent: {}", composedIntent);
 
-        // Calculate confidence
+        // Calculate confidence (v14.0: boost confidence if slots extracted)
         double confidence = calculateConfidence(domain, action, domainKeyword, actionContext);
+        if (extractedSlots != null && extractedSlots.hasAnySlots()) {
+            // Boost confidence slightly for parameterized queries
+            confidence = Math.min(1.0, confidence + 0.05);
+        }
         boolean successful = domain != ClassifiedDomain.UNKNOWN && action != ClassifiedAction.UNKNOWN;
 
         TwoStageResult result = TwoStageResult.builder()
@@ -348,11 +509,14 @@ public class TwoStageIntentClassifier {
                 .modifiers(modifiers)
                 .timeScope(timeScope)
                 .targetScope(targetScope)
+                .extractedSlots(extractedSlots)
+                .parameters(parameters)
                 .build();
 
         log.info("Multi-stage classification completed: domain={}, action={}, modifiers={}, " +
-                        "timeScope={}, targetScope={}, intent={}, confidence={}",
-                domain, action, modifiers, timeScope, targetScope, composedIntent, confidence);
+                        "timeScope={}, targetScope={}, intent={}, confidence={}, slotsExtracted={}",
+                domain, action, modifiers, timeScope, targetScope, composedIntent, confidence,
+                extractedSlots != null ? extractedSlots.getSlotCount() : 0);
 
         return result;
     }
@@ -400,6 +564,12 @@ public class TwoStageIntentClassifier {
      * v9.0: Reordered - CREATE/UPDATE checked before STATUS to avoid false QUERY classification
      */
     private ActionResult classifyActionWithContext(String input) {
+        // Rule 0: Delete words indicate DELETE (highest priority)
+        if (hasDeleteWords(input)) {
+            log.debug("Delete words detected, classifying as DELETE");
+            return new ActionResult(ClassifiedAction.DELETE, "delete_words");
+        }
+
         // Rule 1: Create words indicate CREATE (high priority - checked first)
         if (hasCreateWords(input)) {
             log.debug("Create words detected, classifying as CREATE");
@@ -504,6 +674,18 @@ public class TwoStageIntentClassifier {
     }
 
     /**
+     * Check if input contains delete-related words
+     */
+    private boolean hasDeleteWords(String input) {
+        for (String word : DELETE_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check if input contains action/update words
      */
     private boolean hasActionWords(String input) {
@@ -583,7 +765,7 @@ public class TwoStageIntentClassifier {
 
     /**
      * v9.0: Stage 3 - Classify modifiers based on semantic keywords
-     * Identifies STATS, ANOMALY, FUTURE, CRITICAL modifiers
+     * v13.0: Extended with NEGATION, RANKING, COMPARISON, MOM, YOY, QOQ modifiers
      *
      * @param input User input text
      * @return Set of modifier codes
@@ -625,6 +807,48 @@ public class TwoStageIntentClassifier {
         if (hasPersonalWords(input)) {
             modifiers.add("PERSONAL");
             log.debug("Modifier detected: PERSONAL");
+        }
+
+        // v13.0: Check for NEGATION modifier (否定/排除)
+        if (hasNegationWords(input)) {
+            modifiers.add("NEGATION");
+            log.debug("Modifier detected: NEGATION");
+        }
+
+        // v13.0: Check for RANKING modifier (排名/排行)
+        if (hasRankingWords(input)) {
+            modifiers.add("RANKING");
+            log.debug("Modifier detected: RANKING");
+        }
+
+        // v13.0: Check for COMPARISON modifier (对比/比较)
+        if (hasComparisonWords(input)) {
+            modifiers.add("COMPARISON");
+            log.debug("Modifier detected: COMPARISON");
+        }
+
+        // v13.0: Check for MOM modifier (环比)
+        if (hasMomWords(input)) {
+            modifiers.add("MOM");
+            log.debug("Modifier detected: MOM");
+        }
+
+        // v13.0: Check for YOY modifier (同比)
+        if (hasYoyWords(input)) {
+            modifiers.add("YOY");
+            log.debug("Modifier detected: YOY");
+        }
+
+        // v13.0: Check for QOQ modifier (季环比)
+        if (hasQoqWords(input)) {
+            modifiers.add("QOQ");
+            log.debug("Modifier detected: QOQ");
+        }
+
+        // v13.0: Check for AGGREGATION modifier (聚合统计)
+        if (hasAggregationWords(input)) {
+            modifiers.add("AGGREGATION");
+            log.debug("Modifier detected: AGGREGATION");
         }
 
         return modifiers;
@@ -760,6 +984,179 @@ public class TwoStageIntentClassifier {
             }
         }
         return false;
+    }
+
+    // ==================== v13.0 新增 Modifier 检测方法 ====================
+
+    /**
+     * v13.0: Check if input contains negation words (否定/排除)
+     */
+    private boolean hasNegationWords(String input) {
+        for (String word : NEGATION_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains ranking words (排名/排行)
+     */
+    private boolean hasRankingWords(String input) {
+        for (String word : RANKING_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains comparison words (对比/比较)
+     */
+    private boolean hasComparisonWords(String input) {
+        for (String word : COMPARISON_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains MOM words (环比)
+     */
+    private boolean hasMomWords(String input) {
+        for (String word : MOM_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains YOY words (同比)
+     */
+    private boolean hasYoyWords(String input) {
+        for (String word : YOY_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains QOQ words (季环比)
+     */
+    private boolean hasQoqWords(String input) {
+        for (String word : QOQ_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * v13.0: Check if input contains aggregation words (聚合统计)
+     */
+    private boolean hasAggregationWords(String input) {
+        for (String word : AGGREGATION_WORDS) {
+            if (input.contains(word)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // ==================== v14.1 Semantic Matching Helper Methods ====================
+
+    /**
+     * v14.1: Infer domain from intent code (for semantic matching results)
+     * Extracts domain from intent codes like "ORDER_LIST", "MATERIAL_BATCH_QUERY"
+     *
+     * @param intentCode Intent code from semantic matching
+     * @return Corresponding ClassifiedDomain
+     */
+    private ClassifiedDomain inferDomainFromIntent(String intentCode) {
+        if (intentCode == null || intentCode.isEmpty()) {
+            return ClassifiedDomain.UNKNOWN;
+        }
+
+        String upperIntent = intentCode.toUpperCase();
+
+        // Direct domain prefix matching
+        if (upperIntent.startsWith("MATERIAL") || upperIntent.startsWith("INVENTORY") ||
+                upperIntent.startsWith("STOCK") || upperIntent.startsWith("WAREHOUSE")) {
+            return ClassifiedDomain.MATERIAL;
+        }
+        if (upperIntent.startsWith("SHIPMENT") || upperIntent.startsWith("DELIVERY") ||
+                upperIntent.startsWith("LOGISTICS") || upperIntent.startsWith("DISPATCH")) {
+            return ClassifiedDomain.SHIPMENT;
+        }
+        if (upperIntent.startsWith("ORDER") || upperIntent.startsWith("PURCHASE")) {
+            return ClassifiedDomain.ORDER;
+        }
+        if (upperIntent.startsWith("ATTENDANCE") || upperIntent.startsWith("CLOCK") ||
+                upperIntent.startsWith("CHECKIN") || upperIntent.startsWith("SIGNIN")) {
+            return ClassifiedDomain.ATTENDANCE;
+        }
+        if (upperIntent.startsWith("EQUIPMENT") || upperIntent.startsWith("DEVICE") ||
+                upperIntent.startsWith("MACHINE")) {
+            return ClassifiedDomain.EQUIPMENT;
+        }
+        if (upperIntent.startsWith("QUALITY") || upperIntent.startsWith("QC") ||
+                upperIntent.startsWith("INSPECTION")) {
+            return ClassifiedDomain.QUALITY;
+        }
+        if (upperIntent.startsWith("PROCESSING") || upperIntent.startsWith("PRODUCTION") ||
+                upperIntent.startsWith("BATCH") || upperIntent.startsWith("MANUFACTURE")) {
+            return ClassifiedDomain.PROCESSING;
+        }
+        if (upperIntent.startsWith("ALERT") || upperIntent.startsWith("ALARM") ||
+                upperIntent.startsWith("WARNING") || upperIntent.startsWith("ANOMALY")) {
+            return ClassifiedDomain.ALERT;
+        }
+        if (upperIntent.startsWith("SUPPLIER") || upperIntent.startsWith("VENDOR")) {
+            return ClassifiedDomain.SUPPLIER;
+        }
+        if (upperIntent.startsWith("CUSTOMER") || upperIntent.startsWith("CLIENT") ||
+                upperIntent.startsWith("SALES")) {
+            return ClassifiedDomain.CUSTOMER;
+        }
+
+        // Keyword-based fallback for complex intent codes
+        if (upperIntent.contains("MATERIAL") || upperIntent.contains("INVENTORY") ||
+                upperIntent.contains("STOCK")) {
+            return ClassifiedDomain.MATERIAL;
+        }
+        if (upperIntent.contains("SHIPMENT") || upperIntent.contains("DELIVERY")) {
+            return ClassifiedDomain.SHIPMENT;
+        }
+        if (upperIntent.contains("ORDER")) {
+            return ClassifiedDomain.ORDER;
+        }
+        if (upperIntent.contains("ATTENDANCE") || upperIntent.contains("CLOCK")) {
+            return ClassifiedDomain.ATTENDANCE;
+        }
+        if (upperIntent.contains("EQUIPMENT") || upperIntent.contains("DEVICE")) {
+            return ClassifiedDomain.EQUIPMENT;
+        }
+        if (upperIntent.contains("QUALITY") || upperIntent.contains("INSPECTION")) {
+            return ClassifiedDomain.QUALITY;
+        }
+        if (upperIntent.contains("PROCESSING") || upperIntent.contains("PRODUCTION")) {
+            return ClassifiedDomain.PROCESSING;
+        }
+        if (upperIntent.contains("ALERT") || upperIntent.contains("ALARM")) {
+            return ClassifiedDomain.ALERT;
+        }
+
+        log.debug("Could not infer domain from intent code: {}", intentCode);
+        return ClassifiedDomain.UNKNOWN;
     }
 
     // ==================== Internal Result Classes ====================

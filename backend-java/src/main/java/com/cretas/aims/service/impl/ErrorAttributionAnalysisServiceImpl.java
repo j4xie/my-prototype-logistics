@@ -1,5 +1,7 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.client.PythonErrorAnalysisClient;
+import com.cretas.aims.dto.python.ErrorAnalysisResponse;
 import com.cretas.aims.entity.intent.ErrorAttributionStatistics;
 import com.cretas.aims.entity.intent.IntentMatchRecord;
 import com.cretas.aims.entity.intent.IntentMatchRecord.ErrorAttribution;
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +49,9 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
     private final IntentOptimizationSuggestionRepository suggestionRepository;
     private final EntityManager entityManager;
     private final ObjectMapper objectMapper;
+
+    @Autowired
+    private PythonErrorAnalysisClient pythonErrorAnalysisClient;
 
     @Value("${cretas.ai.intent.analysis.retention-days:90}")
     private int matchRecordRetentionDays;
@@ -83,6 +89,26 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
                         .statDate(date)
                         .build());
 
+        // Try Python service first
+        if (pythonErrorAnalysisClient.isAvailable()) {
+            try {
+                Optional<ErrorAnalysisResponse.AggregateResponse> pythonResult =
+                        pythonErrorAnalysisClient.aggregateDaily(records);
+
+                if (pythonResult.isPresent()) {
+                    log.info("Using Python service for daily aggregation");
+                    ErrorAttributionStatistics mappedStats = mapPythonResponseToEntity(pythonResult.get(), stats);
+                    ErrorAttributionStatistics saved = statisticsRepository.save(mappedStats);
+                    log.info("Saved daily statistics via Python service: id={}, totalRequests={}, matchedCount={}",
+                            saved.getId(), saved.getTotalRequests(), saved.getMatchedCount());
+                    return saved;
+                }
+            } catch (Exception e) {
+                log.warn("Python aggregation failed, falling back to Java: {}", e.getMessage());
+            }
+        }
+
+        // Fallback to Java aggregation logic
         // 聚合基础统计
         stats.setTotalRequests(records.size());
         stats.setMatchedCount((int) records.stream()
@@ -213,6 +239,55 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
                 saved.getId(), saved.getTotalRequests(), saved.getMatchedCount());
 
         return saved;
+    }
+
+    /**
+     * Map Python aggregation response to ErrorAttributionStatistics entity
+     *
+     * @param response Python service response
+     * @param stats    Target entity to populate
+     * @return The populated entity
+     */
+    private ErrorAttributionStatistics mapPythonResponseToEntity(
+            ErrorAnalysisResponse.AggregateResponse response,
+            ErrorAttributionStatistics stats) {
+        stats.setTotalRequests(response.getTotalRequests());
+        stats.setMatchedCount(response.getMatchedCount());
+        stats.setUnmatchedCount(response.getUnmatchedCount());
+        stats.setLlmFallbackCount(response.getLlmFallbackCount());
+        stats.setStrongSignalCount(response.getStrongSignalCount());
+        stats.setWeakSignalCount(response.getWeakSignalCount());
+        stats.setConfirmationRequested(response.getConfirmationRequested());
+        stats.setUserConfirmedCount(response.getUserConfirmedCount());
+        stats.setUserRejectedCount(response.getUserRejectedCount());
+        stats.setExecutedCount(response.getExecutedCount());
+        stats.setFailedCount(response.getFailedCount());
+        stats.setCancelledCount(response.getCancelledCount());
+        stats.setRuleMissCount(response.getRuleMissCount());
+        stats.setAmbiguousCount(response.getAmbiguousCount());
+        stats.setFalsePositiveCount(response.getFalsePositiveCount());
+        stats.setUserCancelCount(response.getUserCancelCount());
+        stats.setSystemErrorCount(response.getSystemErrorCount());
+        stats.setAvgConfidence(response.getAvgConfidence() != null
+                ? BigDecimal.valueOf(response.getAvgConfidence())
+                : null);
+
+        // Convert maps to JSON strings
+        try {
+            if (response.getIntentCategoryStats() != null) {
+                stats.setIntentCategoryStats(objectMapper.writeValueAsString(response.getIntentCategoryStats()));
+            }
+            if (response.getMatchMethodStats() != null) {
+                stats.setMatchMethodStats(objectMapper.writeValueAsString(response.getMatchMethodStats()));
+            }
+            if (response.getConfidenceDistribution() != null) {
+                stats.setConfidenceDistribution(objectMapper.writeValueAsString(response.getConfidenceDistribution()));
+            }
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize stats to JSON", e);
+        }
+
+        return stats;
     }
 
     @Override

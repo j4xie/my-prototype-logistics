@@ -1,8 +1,11 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.smartbi.MetricResult;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +32,12 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class MetricCalculatorServiceImpl implements MetricCalculatorService {
+
+    @Autowired
+    private PythonSmartBIClient pythonClient;
+
+    @Autowired
+    private PythonSmartBIConfig pythonConfig;
 
     // 计算精度配置
     private static final int SCALE = 4; // 中间计算精度
@@ -152,6 +161,13 @@ public class MetricCalculatorServiceImpl implements MetricCalculatorService {
             return createEmptyResult(metricCode);
         }
 
+        // 尝试使用 Python 服务计算指标
+        MetricResult pythonResult = calculateMetricWithPython(metricCode, data, fieldMappings);
+        if (pythonResult != null) {
+            return pythonResult;
+        }
+
+        // 降级到 Java 实现
         try {
             BigDecimal value = doCalculate(metricCode, data, fieldMappings);
             String alertLevel = determineAlertLevel(metricCode, value);
@@ -173,6 +189,48 @@ public class MetricCalculatorServiceImpl implements MetricCalculatorService {
             log.error("计算指标 {} 时发生错误: {}", metricCode, e.getMessage(), e);
             return createEmptyResult(metricCode);
         }
+    }
+
+    /**
+     * 使用 Python 服务计算指标（带降级逻辑）
+     *
+     * @param metricCode    指标代码
+     * @param data          数据列表
+     * @param fieldMappings 字段映射
+     * @return 计算结果，如果 Python 服务不可用或失败则返回 null
+     */
+    private MetricResult calculateMetricWithPython(String metricCode, List<Map<String, Object>> data,
+                                                    Map<String, String> fieldMappings) {
+        if (!pythonConfig.isEnabled()) {
+            log.debug("Python SmartBI 服务已禁用，使用 Java 计算指标");
+            return null;
+        }
+
+        try {
+            if (pythonClient.isAvailable()) {
+                log.info("使用 Python SmartBI 服务计算指标: metricCode={}", metricCode);
+                MetricResult result = pythonClient.calculateMetric(metricCode, data, fieldMappings);
+
+                if (result != null && result.getValue() != null) {
+                    log.info("Python SmartBI 指标计算成功: metricCode={}, value={}",
+                            metricCode, result.getValue());
+                    return result;
+                } else {
+                    log.warn("Python SmartBI 指标计算返回空结果，降级到 Java 计算");
+                }
+            } else {
+                log.debug("Python SmartBI 服务不可用，使用 Java 计算指标");
+            }
+        } catch (Exception e) {
+            log.warn("Python SmartBI 指标计算失败，降级到 Java 计算: {}", e.getMessage());
+
+            if (!pythonConfig.isFallbackOnError()) {
+                log.error("Python SmartBI 服务不可用且不允许降级");
+                return createEmptyResult(metricCode);
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -244,6 +302,13 @@ public class MetricCalculatorServiceImpl implements MetricCalculatorService {
     @Override
     public List<MetricResult> calculateAllMetrics(List<Map<String, Object>> data,
                                                    Map<String, String> fieldMappings) {
+        // 尝试使用 Python 服务批量计算指标
+        List<MetricResult> pythonResults = calculateAllMetricsWithPython(data, fieldMappings);
+        if (pythonResults != null && !pythonResults.isEmpty()) {
+            return pythonResults;
+        }
+
+        // 降级到 Java 实现
         List<MetricResult> results = new ArrayList<>();
 
         for (String metricCode : METRIC_REQUIRED_FIELDS.keySet()) {
@@ -256,6 +321,46 @@ public class MetricCalculatorServiceImpl implements MetricCalculatorService {
         }
 
         return results;
+    }
+
+    /**
+     * 使用 Python 服务批量计算指标（带降级逻辑）
+     *
+     * @param data          数据列表
+     * @param fieldMappings 字段映射
+     * @return 计算结果列表，如果 Python 服务不可用或失败则返回 null
+     */
+    private List<MetricResult> calculateAllMetricsWithPython(List<Map<String, Object>> data,
+                                                               Map<String, String> fieldMappings) {
+        if (!pythonConfig.isEnabled()) {
+            log.debug("Python SmartBI 服务已禁用，使用 Java 批量计算指标");
+            return null;
+        }
+
+        try {
+            if (pythonClient.isAvailable()) {
+                log.info("使用 Python SmartBI 服务批量计算指标: dataSize={}", data.size());
+                List<MetricResult> results = pythonClient.calculateAllMetrics(data, fieldMappings);
+
+                if (results != null && !results.isEmpty()) {
+                    log.info("Python SmartBI 批量指标计算成功: resultCount={}", results.size());
+                    return results;
+                } else {
+                    log.warn("Python SmartBI 批量指标计算返回空结果，降级到 Java 计算");
+                }
+            } else {
+                log.debug("Python SmartBI 服务不可用，使用 Java 批量计算指标");
+            }
+        } catch (Exception e) {
+            log.warn("Python SmartBI 批量指标计算失败，降级到 Java 计算: {}", e.getMessage());
+
+            if (!pythonConfig.isFallbackOnError()) {
+                log.error("Python SmartBI 服务不可用且不允许降级");
+                return Collections.emptyList();
+            }
+        }
+
+        return null;
     }
 
     @Override

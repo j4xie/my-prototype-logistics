@@ -208,4 +208,19 @@ public interface SmartBIService {
      * @return AI 洞察列表
      */
     List<AIInsight> generateAIInsights(String factoryId, DashboardResponse dashboard);
+
+    // ==================== 数据日期范围检测 ====================
+
+    /**
+     * 获取销售数据的日期范围
+     *
+     * 自动检测数据库中销售数据的时间跨度，用于：
+     * - Dashboard 默认查询范围智能调整
+     * - 当前期间无数据时自动切换到有数据的期间
+     * - 数据上传后的日期范围提示
+     *
+     * @param factoryId 工厂ID
+     * @return 日期范围 DateRange，如果没有数据返回 null
+     */
+    DateRange getDataDateRange(String factoryId);
 }

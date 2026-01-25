@@ -53,6 +53,7 @@ public class IntentCompositionConfig {
         // ==================== MATERIAL 领域 ====================
         compositionMapping.put("MATERIAL_QUERY", "MATERIAL_BATCH_QUERY");
         compositionMapping.put("MATERIAL_CREATE", "MATERIAL_BATCH_CREATE");
+        compositionMapping.put("MATERIAL_DELETE", "MATERIAL_BATCH_DELETE");
 
         // v9.0: MATERIAL 领域多维映射
         // 注：MATERIAL_INCOMING 暂未在数据库中注册，暂时使用 MATERIAL_BATCH_QUERY 处理未来时态查询
@@ -63,11 +64,13 @@ public class IntentCompositionConfig {
         // ==================== SHIPMENT 领域 ====================
         compositionMapping.put("SHIPMENT_QUERY", "SHIPMENT_QUERY");
         compositionMapping.put("SHIPMENT_CREATE", "SHIPMENT_CREATE");
+        compositionMapping.put("SHIPMENT_DELETE", "SHIPMENT_DELETE");
 
         // ==================== ATTENDANCE 领域 ====================
         compositionMapping.put("ATTENDANCE_QUERY", "ATTENDANCE_TODAY");
         compositionMapping.put("ATTENDANCE_UPDATE", "CLOCK_IN");
         compositionMapping.put("ATTENDANCE_CREATE", "CLOCK_IN");  // v9.0: 打卡也是CREATE操作
+        compositionMapping.put("ATTENDANCE_DELETE", "ATTENDANCE_DELETE");
 
         // v9.0: ATTENDANCE 领域多维映射 (支持9种意图细分)
         Map<String, String> attendanceQueryModifiers = new HashMap<>();
@@ -81,6 +84,7 @@ public class IntentCompositionConfig {
         compositionMapping.put("EQUIPMENT_QUERY", "EQUIPMENT_STATUS");
         compositionMapping.put("EQUIPMENT_UPDATE", "EQUIPMENT_STATUS_UPDATE");
         compositionMapping.put("EQUIPMENT_CREATE", "EQUIPMENT_CREATE");
+        compositionMapping.put("EQUIPMENT_DELETE", "EQUIPMENT_DELETE");
 
         // v9.0: EQUIPMENT 领域多维映射
         Map<String, String> equipmentQueryModifiers = new HashMap<>();
@@ -92,6 +96,7 @@ public class IntentCompositionConfig {
         compositionMapping.put("QUALITY_QUERY", "QUALITY_CHECK_QUERY");
         compositionMapping.put("QUALITY_CREATE", "QUALITY_CHECK_CREATE");
         compositionMapping.put("QUALITY_UPDATE", "QUALITY_CHECK_UPDATE");
+        compositionMapping.put("QUALITY_DELETE", "QUALITY_DELETE");
 
         // v9.0: QUALITY 领域多维映射
         Map<String, String> qualityQueryModifiers = new HashMap<>();
@@ -104,6 +109,7 @@ public class IntentCompositionConfig {
         compositionMapping.put("PROCESSING_QUERY", "PROCESSING_BATCH_LIST");
         compositionMapping.put("PROCESSING_CREATE", "PROCESSING_BATCH_CREATE");
         compositionMapping.put("PROCESSING_UPDATE", "PROCESSING_BATCH_UPDATE");
+        compositionMapping.put("PROCESSING_DELETE", "PROCESSING_BATCH_CANCEL");
 
         // v9.0: PROCESSING 领域多维映射
         Map<String, String> processingQueryModifiers = new HashMap<>();
@@ -114,6 +120,7 @@ public class IntentCompositionConfig {
         // ==================== ALERT 领域 ====================
         compositionMapping.put("ALERT_QUERY", "ALERT_LIST");
         compositionMapping.put("ALERT_UPDATE", "ALERT_RESOLVE");
+        compositionMapping.put("ALERT_DELETE", "ALERT_DELETE");
 
         // v9.0: ALERT 领域多维映射
         Map<String, String> alertQueryModifiers = new HashMap<>();
@@ -124,10 +131,102 @@ public class IntentCompositionConfig {
         // ==================== SUPPLIER 领域 ====================
         compositionMapping.put("SUPPLIER_QUERY", "SUPPLIER_QUERY");
         compositionMapping.put("SUPPLIER_CREATE", "SUPPLIER_CREATE");
+        compositionMapping.put("SUPPLIER_DELETE", "SUPPLIER_DELETE");
 
         // ==================== CUSTOMER 领域 ====================
         compositionMapping.put("CUSTOMER_QUERY", "CUSTOMER_QUERY");
         compositionMapping.put("CUSTOMER_CREATE", "CUSTOMER_CREATE");
+        compositionMapping.put("CUSTOMER_DELETE", "CUSTOMER_DELETE");
+
+        // ==================== ORDER 领域 ====================
+        compositionMapping.put("ORDER_QUERY", "ORDER_LIST");
+        compositionMapping.put("ORDER_CREATE", "ORDER_CREATE");
+        compositionMapping.put("ORDER_UPDATE", "ORDER_UPDATE");
+        compositionMapping.put("ORDER_DELETE", "ORDER_DELETE");
+
+        // ==================== v13.0: 新增 Modifier 映射 ====================
+
+        // ORDER 领域多维映射
+        Map<String, String> orderQueryModifiers = new HashMap<>();
+        orderQueryModifiers.put("STATS", "ORDER_STATS");                   // 订单统计
+        orderQueryModifiers.put("RANKING", "ORDER_RANKING");               // 订单排名
+        orderQueryModifiers.put("COMPARISON", "ORDER_COMPARISON");         // 订单对比
+        orderQueryModifiers.put("MOM", "ORDER_MOM_ANALYSIS");              // 订单环比
+        orderQueryModifiers.put("YOY", "ORDER_YOY_ANALYSIS");              // 订单同比
+        orderQueryModifiers.put("NEGATION", "ORDER_EXCLUDE_LIST");         // 排除某些订单
+        modifierMappings.put("ORDER_QUERY", orderQueryModifiers);
+
+        // SHIPMENT 领域多维映射
+        Map<String, String> shipmentQueryModifiers = new HashMap<>();
+        shipmentQueryModifiers.put("STATS", "SHIPMENT_STATS");             // 发货统计
+        shipmentQueryModifiers.put("RANKING", "SHIPMENT_RANKING");         // 发货排名
+        shipmentQueryModifiers.put("COMPARISON", "SHIPMENT_COMPARISON");   // 发货对比
+        shipmentQueryModifiers.put("ANOMALY", "SHIPMENT_ANOMALY");         // 发货异常
+        modifierMappings.put("SHIPMENT_QUERY", shipmentQueryModifiers);
+
+        // SUPPLIER 领域多维映射
+        Map<String, String> supplierQueryModifiers = new HashMap<>();
+        supplierQueryModifiers.put("STATS", "SUPPLIER_STATS");             // 供应商统计
+        supplierQueryModifiers.put("RANKING", "SUPPLIER_RANKING");         // 供应商排名
+        supplierQueryModifiers.put("COMPARISON", "SUPPLIER_COMPARISON");   // 供应商对比
+        modifierMappings.put("SUPPLIER_QUERY", supplierQueryModifiers);
+
+        // CUSTOMER 领域多维映射
+        Map<String, String> customerQueryModifiers = new HashMap<>();
+        customerQueryModifiers.put("STATS", "CUSTOMER_STATS");             // 客户统计
+        customerQueryModifiers.put("RANKING", "CUSTOMER_RANKING");         // 客户排名
+        customerQueryModifiers.put("COMPARISON", "CUSTOMER_COMPARISON");   // 客户对比
+        modifierMappings.put("CUSTOMER_QUERY", customerQueryModifiers);
+
+        // MATERIAL 领域扩展映射
+        materialQueryModifiers.put("STATS", "MATERIAL_STATS");             // 原料统计
+        materialQueryModifiers.put("RANKING", "MATERIAL_RANKING");         // 原料排名
+        materialQueryModifiers.put("ANOMALY", "MATERIAL_LOW_STOCK_ALERT"); // 库存异常
+        materialQueryModifiers.put("NEGATION", "MATERIAL_EXCLUDE_LIST");   // 排除某些原料
+        materialQueryModifiers.put("COMPARISON", "MATERIAL_COMPARISON");   // 原料对比
+        materialQueryModifiers.put("MOM", "MATERIAL_MOM_ANALYSIS");        // 原料环比
+        materialQueryModifiers.put("YOY", "MATERIAL_YOY_ANALYSIS");        // 原料同比
+
+        // PROCESSING 领域扩展映射
+        processingQueryModifiers.put("RANKING", "PROCESSING_RANKING");     // 生产排名
+        processingQueryModifiers.put("COMPARISON", "PROCESSING_COMPARISON"); // 生产对比
+        processingQueryModifiers.put("MOM", "PROCESSING_MOM_ANALYSIS");    // 生产环比
+        processingQueryModifiers.put("YOY", "PROCESSING_YOY_ANALYSIS");    // 生产同比
+
+        // QUALITY 领域扩展映射
+        qualityQueryModifiers.put("RANKING", "QUALITY_RANKING");           // 质检排名
+        qualityQueryModifiers.put("COMPARISON", "QUALITY_COMPARISON");     // 质检对比
+        qualityQueryModifiers.put("MOM", "QUALITY_MOM_ANALYSIS");          // 质检环比
+        qualityQueryModifiers.put("YOY", "QUALITY_YOY_ANALYSIS");          // 质检同比
+
+        // EQUIPMENT 领域扩展映射
+        equipmentQueryModifiers.put("RANKING", "EQUIPMENT_RANKING");       // 设备排名
+        equipmentQueryModifiers.put("COMPARISON", "EQUIPMENT_COMPARISON"); // 设备对比
+
+        // ATTENDANCE 领域扩展映射
+        attendanceQueryModifiers.put("RANKING", "ATTENDANCE_RANKING");     // 考勤排名
+        attendanceQueryModifiers.put("COMPARISON", "ATTENDANCE_COMPARISON"); // 考勤对比
+        attendanceQueryModifiers.put("MOM", "ATTENDANCE_MOM_ANALYSIS");    // 考勤环比
+        attendanceQueryModifiers.put("YOY", "ATTENDANCE_YOY_ANALYSIS");    // 考勤同比
+
+        // ==================== v12.2 Phase 2: HIGH-RISK 操作 ====================
+        // 库存清空操作
+        compositionMapping.put("INVENTORY_DELETE", "INVENTORY_CLEAR");
+        compositionMapping.put("INVENTORY_CLEAR", "INVENTORY_CLEAR");
+
+        // 批量数据删除
+        compositionMapping.put("DATA_DELETE", "DATA_BATCH_DELETE");
+        compositionMapping.put("DATA_BATCH_DELETE", "DATA_BATCH_DELETE");
+
+        // 系统配置重置
+        compositionMapping.put("SYSTEM_RESET", "CONFIG_RESET");
+        compositionMapping.put("CONFIG_RESET", "CONFIG_RESET");
+        compositionMapping.put("CONFIG_UPDATE", "CONFIG_RESET");
+
+        // ==================== v12.2 Phase 2: DOMAIN 领域 ====================
+        // 冷链温度监控
+        compositionMapping.put("COLD_CHAIN_QUERY", "COLD_CHAIN_TEMPERATURE");
+        compositionMapping.put("TEMPERATURE_QUERY", "COLD_CHAIN_TEMPERATURE");
 
         log.info("意图组合配置初始化完成，共加载 {} 条基础映射, {} 条修饰符映射",
                 compositionMapping.size(), modifierMappings.size());
@@ -160,16 +259,31 @@ public class IntentCompositionConfig {
 
         String key = domain + "_" + action;
 
-        // v9.0: 优先尝试修饰符映射
+        // v9.0/v13.0: 优先尝试修饰符映射
         if (modifiers != null && !modifiers.isEmpty()) {
             Map<String, String> modMap = modifierMappings.get(key);
             if (modMap != null) {
-                // 尝试按优先级匹配修饰符 (优先匹配更具体的修饰符)
-                String[] priorityOrder = {"ANOMALY", "STATS", "PERSONAL", "MONTHLY", "FUTURE", "CRITICAL"};
+                // v13.0: 扩展修饰符优先级顺序 (优先匹配更具体的修饰符)
+                // NEGATION > RANKING > COMPARISON > MOM/YOY/QOQ > ANOMALY > STATS > PERSONAL > MONTHLY > FUTURE > CRITICAL
+                String[] priorityOrder = {
+                    "NEGATION",    // 否定最高优先级
+                    "RANKING",     // 排名
+                    "COMPARISON",  // 对比
+                    "MOM",         // 环比
+                    "YOY",         // 同比
+                    "QOQ",         // 季环比
+                    "ANOMALY",     // 异常
+                    "STATS",       // 统计
+                    "AGGREGATION", // 聚合
+                    "PERSONAL",    // 个人
+                    "MONTHLY",     // 月度
+                    "FUTURE",      // 未来
+                    "CRITICAL"     // 关键
+                };
                 for (String mod : priorityOrder) {
                     if (modifiers.contains(mod) && modMap.containsKey(mod)) {
                         String intent = modMap.get(mod);
-                        log.debug("v9.0 修饰符映射命中: {} + {} -> {}", key, mod, intent);
+                        log.debug("v13.0 修饰符映射命中: {} + {} -> {}", key, mod, intent);
                         return intent;
                     }
                 }
