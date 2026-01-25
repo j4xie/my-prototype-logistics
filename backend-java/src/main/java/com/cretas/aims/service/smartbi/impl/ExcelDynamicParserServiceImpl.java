@@ -195,16 +195,38 @@ public class ExcelDynamicParserServiceImpl implements ExcelDynamicParserService 
             MultiHeaderInfo multiHeaderInfo = null;
             List<String> overrideHeaders = null;
             int effectiveHeaderRow = request.getHeaderRow();
+            int userProvidedHeaderRows = request.getHeaderRow() + 1; // 用户指定的表头行数
 
             if (Boolean.TRUE.equals(request.getAutoDetectMultiHeader())) {
                 log.info("开始多层表头检测...");
+                // 如果用户指定了较大的 headerRow，使用它作为 maxHeaderRows 的提示
+                int maxHeaderRowsHint = Math.max(request.getMaxHeaderRows(), userProvidedHeaderRows);
                 multiHeaderInfo = detectMultiHeader(
                         new ByteArrayInputStream(excelBytes),
                         request.getSheetIndex(),
-                        request.getMaxHeaderRows()
+                        maxHeaderRowsHint
                 );
 
                 if (multiHeaderInfo.isHasMultiHeader()) {
+                    // 如果用户指定的 headerRow 大于检测到的行数，使用用户的值
+                    int detectedRows = multiHeaderInfo.getHeaderRowCount();
+                    int finalHeaderRows = Math.max(detectedRows, userProvidedHeaderRows);
+
+                    log.info("多层表头检测: detected={}, userProvided={}, final={}",
+                            detectedRows, userProvidedHeaderRows, finalHeaderRows);
+
+                    // 如果需要使用更多行，重新合并表头
+                    if (finalHeaderRows > detectedRows) {
+                        log.info("使用用户指定的表头行数: {}", finalHeaderRows);
+                        multiHeaderInfo.setHeaderRowCount(finalHeaderRows);
+                        // 重新执行表头合并
+                        List<String> mergedHeaders = mergeMultiRowHeaders(
+                                WorkbookFactory.create(new ByteArrayInputStream(excelBytes)).getSheetAt(request.getSheetIndex()),
+                                finalHeaderRows,
+                                multiHeaderInfo.getMergedRegions());
+                        multiHeaderInfo.setMergedHeaders(mergedHeaders);
+                    }
+
                     log.info("检测到多层表头: rowCount={}, mergedHeaders={}",
                             multiHeaderInfo.getHeaderRowCount(),
                             multiHeaderInfo.getMergedHeaders());
