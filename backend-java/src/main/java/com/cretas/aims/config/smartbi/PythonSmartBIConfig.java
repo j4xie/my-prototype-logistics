@@ -129,6 +129,21 @@ public class PythonSmartBIConfig {
      */
     private String leastSquaresEndpoint = "/api/ml/least-squares";
 
+    /**
+     * LinUCB UCB 计算端点
+     */
+    private String linucbComputeEndpoint = "/api/linucb/compute-ucb";
+
+    /**
+     * LinUCB 模型更新端点
+     */
+    private String linucbUpdateEndpoint = "/api/linucb/update-model";
+
+    /**
+     * LinUCB 批量计算端点
+     */
+    private String linucbBatchEndpoint = "/api/linucb/batch-compute";
+
     // ==================== 分析服务端点 ====================
 
     /**
@@ -370,5 +385,26 @@ public class PythonSmartBIConfig {
      */
     public String getRegionDistributionUrl() {
         return getFullUrl(regionDistributionEndpoint);
+    }
+
+    /**
+     * 获取 LinUCB UCB 计算 URL
+     */
+    public String getLinucbComputeUrl() {
+        return getFullUrl(linucbComputeEndpoint);
+    }
+
+    /**
+     * 获取 LinUCB 模型更新 URL
+     */
+    public String getLinucbUpdateUrl() {
+        return getFullUrl(linucbUpdateEndpoint);
+    }
+
+    /**
+     * 获取 LinUCB 批量计算 URL
+     */
+    public String getLinucbBatchUrl() {
+        return getFullUrl(linucbBatchEndpoint);
     }
 }
