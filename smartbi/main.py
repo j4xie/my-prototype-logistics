@@ -1,0 +1,124 @@
+from __future__ import annotations
+"""
+SmartBI Service - FastAPI Entry Point
+
+A Python-based analytics service for Excel parsing, field detection,
+metrics calculation, forecasting, and AI-powered insights.
+"""
+import logging
+from contextlib import asynccontextmanager
+from datetime import datetime
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from config import get_settings
+from api import excel, field, metrics, forecast, insight, chart, analysis, ml
+
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG if get_settings().debug else logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler"""
+    logger.info("SmartBI Service starting up...")
+    logger.info(f"Debug mode: {get_settings().debug}")
+    logger.info(f"LLM Model: {get_settings().llm_model}")
+    yield
+    logger.info("SmartBI Service shutting down...")
+
+
+# Create FastAPI application
+app = FastAPI(
+    title="SmartBI Service",
+    description="AI-powered business intelligence analytics service",
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc"
+)
+
+# Configure CORS
+settings = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API routers
+app.include_router(excel.router, prefix="/api/excel", tags=["Excel"])
+app.include_router(field.router, prefix="/api/field", tags=["Field Detection"])
+app.include_router(metrics.router, prefix="/api/metrics", tags=["Metrics"])
+app.include_router(forecast.router, prefix="/api/forecast", tags=["Forecast"])
+app.include_router(insight.router, prefix="/api/insight", tags=["Insight"])
+app.include_router(chart.router, prefix="/api/chart", tags=["Chart"])
+app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
+app.include_router(ml.router, prefix="/api/ml", tags=["ML"])
+
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return JSONResponse(
+        content={
+            "status": "healthy",
+            "service": "smartbi",
+            "version": "1.0.0",
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
+
+@app.get("/")
+async def root():
+    """Root endpoint with service information"""
+    return {
+        "service": "SmartBI Service",
+        "version": "1.0.0",
+        "description": "AI-powered business intelligence analytics service",
+        "endpoints": {
+            "health": "/health",
+            "docs": "/docs",
+            "excel": "/api/excel",
+            "field": "/api/field",
+            "metrics": "/api/metrics",
+            "forecast": "/api/forecast",
+            "insight": "/api/insight",
+            "chart": "/api/chart",
+            "analysis": "/api/analysis",
+            "ml": "/api/ml"
+        }
+    }
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    """Global exception handler"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "message": str(exc) if settings.debug else "Internal server error",
+            "data": None
+        }
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host=settings.host,
+        port=settings.port,
+        reload=settings.debug
+    )

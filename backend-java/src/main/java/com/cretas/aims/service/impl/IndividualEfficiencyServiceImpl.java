@@ -1,5 +1,7 @@
 package com.cretas.aims.service.impl;
 
+import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.dto.python.PythonLeastSquaresResponse;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.ProcessingStageType;
 import com.cretas.aims.entity.ml.WorkerAllocationFeedback;
@@ -35,6 +37,7 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
     private final WorkerAllocationFeedbackRepository feedbackRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final PythonSmartBIClient pythonClient;
 
     // 默认效率值 (当数据不足时使用)
     private static final BigDecimal DEFAULT_EFFICIENCY = new BigDecimal("1.0");
@@ -351,9 +354,73 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
     /**
      * 最小二乘法求解: x = (A^T * A)^(-1) * A^T * b
      *
-     * 使用高斯-约旦消元法求解
+     * 优先使用 Python 服务求解（更高效的 scipy 实现），
+     * 如果 Python 服务不可用则回退到 Java 实现。
      */
     private double[] solveLeastSquares(double[][] A, double[] b, int n, int m) {
+        // 正则化参数
+        double lambda = 0.001;
+
+        // 1. 尝试使用 Python 服务
+        if (pythonClient.isAvailable()) {
+            double[] pythonResult = solveLeastSquaresPython(A, b, lambda);
+            if (pythonResult != null) {
+                log.info("最小二乘法求解成功 (Python): 变量数={}", pythonResult.length);
+                return pythonResult;
+            }
+            log.warn("Python 服务调用失败，回退到 Java 实现");
+        }
+
+        // 2. 回退到 Java 实现
+        return solveLeastSquaresJava(A, b, n, m, lambda);
+    }
+
+    /**
+     * 使用 Python 服务求解最小二乘法
+     *
+     * @return 解向量，失败时返回 null
+     */
+    private double[] solveLeastSquaresPython(double[][] A, double[] b, double lambda) {
+        try {
+            Optional<PythonLeastSquaresResponse> responseOpt =
+                    pythonClient.solveLeastSquares(A, b, lambda);
+
+            if (responseOpt.isEmpty()) {
+                return null;
+            }
+
+            PythonLeastSquaresResponse response = responseOpt.get();
+
+            if (!response.isValidSolution()) {
+                log.warn("Python 返回的解无效: success={}, error={}",
+                        response.isSuccess(), response.getError());
+                return null;
+            }
+
+            // 记录诊断信息
+            if (response.getMetrics() != null) {
+                log.debug("Python 最小二乘法诊断: RMSE={}, 条件数={}, 秩={}",
+                        response.getMetrics().getRmse(),
+                        response.getMetrics().getConditionNumber(),
+                        response.getMetrics().getRank());
+            }
+
+            return response.getSolutionAsArray();
+
+        } catch (Exception e) {
+            log.error("Python 最小二乘法调用异常: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Java 实现的最小二乘法求解 (原始实现，作为 Fallback)
+     *
+     * 使用高斯-约旦消元法求解 (A^T * A + λI)x = A^T * b
+     */
+    private double[] solveLeastSquaresJava(double[][] A, double[] b, int n, int m, double lambda) {
+        log.debug("使用 Java 实现求解最小二乘法: {}x{} 矩阵", m, n);
+
         // 1. 计算 A^T * A (n×n 矩阵)
         double[][] AtA = new double[n][n];
         for (int i = 0; i < n; i++) {
@@ -376,22 +443,19 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
             Atb[i] = sum;
         }
 
-        // 3. 使用高斯-约旦消元法求解 AtA * x = Atb
-
-        // 添加正则化项防止矩阵奇异 (岭回归)
-        double lambda = 0.001;
+        // 3. 添加正则化项防止矩阵奇异 (岭回归)
         for (int i = 0; i < n; i++) {
             AtA[i][i] += lambda;
         }
 
-        // 增广矩阵 [AtA | Atb]
+        // 4. 增广矩阵 [AtA | Atb]
         double[][] augmented = new double[n][n + 1];
         for (int i = 0; i < n; i++) {
             System.arraycopy(AtA[i], 0, augmented[i], 0, n);
             augmented[i][n] = Atb[i];
         }
 
-        // 高斯-约旦消元
+        // 5. 高斯-约旦消元
         for (int col = 0; col < n; col++) {
             // 选主元
             int maxRow = col;
@@ -431,7 +495,7 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
             }
         }
 
-        // 提取解向量
+        // 6. 提取解向量
         double[] x = new double[n];
         for (int i = 0; i < n; i++) {
             x[i] = augmented[i][n];
