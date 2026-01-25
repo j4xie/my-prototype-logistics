@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_settings
-from api import excel, field, metrics, forecast, insight, chart, analysis, ml
+from api import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb
 
 # Configure logging
 logging.basicConfig(
@@ -63,6 +63,7 @@ app.include_router(insight.router, prefix="/api/insight", tags=["Insight"])
 app.include_router(chart.router, prefix="/api/chart", tags=["Chart"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 app.include_router(ml.router, prefix="/api/ml", tags=["ML"])
+app.include_router(linucb.router, prefix="/api/linucb", tags=["LinUCB"])
 
 
 @app.get("/health")
@@ -95,7 +96,8 @@ async def root():
             "insight": "/api/insight",
             "chart": "/api/chart",
             "analysis": "/api/analysis",
-            "ml": "/api/ml"
+            "ml": "/api/ml",
+            "linucb": "/api/linucb"
         }
     }
 
