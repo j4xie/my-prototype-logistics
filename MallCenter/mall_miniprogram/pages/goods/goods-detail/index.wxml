@@ -157,7 +157,7 @@
 </view>
 
 <!-- AI 智能分析入口 -->
-<view class="ai-analysis-section">
+<view class="ai-analysis-section" wx:if="{{showAiAssistant}}">
   <view class="section-title">
     <text class="cuIcon-creativefill"></text>
     <text>AI 智能分析</text>
@@ -239,7 +239,7 @@
 </view>
 
 <!-- 浮动AI按钮 -->
-<view class="fab-ai" bindtap="goToAiChat">
+<view class="fab-ai" bindtap="goToAiChat" wx:if="{{showAiAssistant}}">
   <text class="cuIcon-creativefill"></text>
 </view>
 
