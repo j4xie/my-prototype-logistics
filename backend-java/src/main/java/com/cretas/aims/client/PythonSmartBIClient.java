@@ -159,8 +159,24 @@ public class PythonSmartBIClient {
      * @throws IOException 如果请求失败
      */
     public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType) throws IOException {
-        log.info("调用 Python SmartBI 解析 Excel: fileName={}, factoryId={}, dataType={}",
-                file.getOriginalFilename(), factoryId, dataType);
+        return parseExcel(file, factoryId, dataType, 0, 1);
+    }
+
+    /**
+     * 使用 Python 服务解析 Excel 文件（带 sheet 和 header 参数）
+     *
+     * @param file       Excel 文件
+     * @param factoryId  工厂ID
+     * @param dataType   数据类型提示
+     * @param sheetIndex Sheet 索引（0-based）
+     * @param headerRows 表头行数
+     * @return 解析结果
+     * @throws IOException 如果请求失败
+     */
+    public ExcelParseResponse parseExcel(MultipartFile file, String factoryId, String dataType,
+                                          int sheetIndex, int headerRows) throws IOException {
+        log.info("调用 Python SmartBI 解析 Excel: fileName={}, factoryId={}, dataType={}, sheetIndex={}, headerRows={}",
+                file.getOriginalFilename(), factoryId, dataType, sheetIndex, headerRows);
 
         RequestBody fileBody = RequestBody.create(
                 MediaType.parse("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
@@ -170,8 +186,8 @@ public class PythonSmartBIClient {
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
                 .addFormDataPart("file", file.getOriginalFilename(), fileBody)
-                .addFormDataPart("factoryId", factoryId)
-                .addFormDataPart("dataType", dataType != null ? dataType : "")
+                .addFormDataPart("sheetIndex", String.valueOf(sheetIndex))
+                .addFormDataPart("header_rows", String.valueOf(headerRows))
                 .build();
 
         Request request = new Request.Builder()
@@ -1016,5 +1032,173 @@ public class PythonSmartBIClient {
      */
     public String getServiceUrl() {
         return config.getUrl();
+    }
+
+    // ==================== LinUCB 计算 ====================
+
+    /**
+     * 调用 Python 计算 LinUCB UCB 值
+     *
+     * @param matrixA A 矩阵 (n x n)
+     * @param vectorB b 向量 (n)
+     * @param context 上下文特征向量 (n)
+     * @param alpha   探索参数
+     * @return UCB 计算结果
+     */
+    public Optional<LinUCBComputeResponse> computeLinUCB(
+            double[][] matrixA,
+            double[] vectorB,
+            double[] context,
+            double alpha) {
+
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过 LinUCB UCB 计算");
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("调用 Python LinUCB UCB 计算: contextDim={}", context.length);
+
+            LinUCBComputeRequest request = LinUCBComputeRequest.builder()
+                    .matrixA(toNestedList(matrixA))
+                    .vectorB(toList(vectorB))
+                    .context(toList(context))
+                    .alpha(alpha)
+                    .build();
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getLinucbComputeUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            LinUCBComputeResponse response = executeWithRetry(httpRequest, LinUCBComputeResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException e) {
+            log.error("LinUCB UCB 计算失败: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 调用 Python 更新 LinUCB 模型
+     *
+     * @param matrixA A 矩阵
+     * @param vectorB b 向量
+     * @param context 上下文特征
+     * @param reward  观察到的奖励
+     * @return 更新后的模型参数
+     */
+    public Optional<LinUCBUpdateResponse> updateLinUCBModel(
+            double[][] matrixA,
+            double[] vectorB,
+            double[] context,
+            double reward) {
+
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过 LinUCB 模型更新");
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("调用 Python LinUCB 模型更新: reward={}", reward);
+
+            LinUCBUpdateRequest request = LinUCBUpdateRequest.builder()
+                    .matrixA(toNestedList(matrixA))
+                    .vectorB(toList(vectorB))
+                    .context(toList(context))
+                    .reward(reward)
+                    .build();
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getLinucbUpdateUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            LinUCBUpdateResponse response = executeWithRetry(httpRequest, LinUCBUpdateResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException e) {
+            log.error("LinUCB 模型更新失败: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 批量计算多个工人的 LinUCB UCB 值
+     *
+     * @param matrixAList A 矩阵列表
+     * @param vectorBList b 向量列表
+     * @param context     共享上下文
+     * @param alpha       探索参数
+     * @return 批量计算结果
+     */
+    public Optional<LinUCBBatchResponse> batchComputeLinUCB(
+            List<double[][]> matrixAList,
+            List<double[]> vectorBList,
+            double[] context,
+            double alpha) {
+
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过 LinUCB 批量计算");
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("调用 Python LinUCB 批量计算: workerCount={}", matrixAList.size());
+
+            List<List<List<Double>>> matrixAListConverted = new java.util.ArrayList<>();
+            for (double[][] matrix : matrixAList) {
+                matrixAListConverted.add(toNestedList(matrix));
+            }
+
+            List<List<Double>> vectorBListConverted = new java.util.ArrayList<>();
+            for (double[] vector : vectorBList) {
+                vectorBListConverted.add(toList(vector));
+            }
+
+            LinUCBBatchRequest request = LinUCBBatchRequest.builder()
+                    .matrixAList(matrixAListConverted)
+                    .vectorBList(vectorBListConverted)
+                    .context(toList(context))
+                    .alpha(alpha)
+                    .build();
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getLinucbBatchUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            LinUCBBatchResponse response = executeWithRetry(httpRequest, LinUCBBatchResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException e) {
+            log.error("LinUCB 批量计算失败: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    // ==================== 辅助转换方法 ====================
+
+    /**
+     * 将 double[][] 转换为 List<List<Double>>
+     */
+    private List<List<Double>> toNestedList(double[][] matrix) {
+        List<List<Double>> result = new java.util.ArrayList<>();
+        for (double[] row : matrix) {
+            result.add(toList(row));
+        }
+        return result;
+    }
+
+    /**
+     * 将 double[] 转换为 List<Double>
+     */
+    private List<Double> toList(double[] array) {
+        List<Double> result = new java.util.ArrayList<>();
+        for (double val : array) {
+            result.add(val);
+        }
+        return result;
     }
 }
