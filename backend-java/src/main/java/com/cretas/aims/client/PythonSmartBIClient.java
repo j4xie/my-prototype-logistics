@@ -175,7 +175,7 @@ public class PythonSmartBIClient {
                 .build();
 
         Request request = new Request.Builder()
-                .url(config.getUrl() + "/api/smartbi/excel/parse")
+                .url(config.getParseExcelUrl())
                 .post(requestBody)
                 .build();
 
@@ -204,7 +204,7 @@ public class PythonSmartBIClient {
         );
 
         Request request = new Request.Builder()
-                .url(config.getUrl() + "/api/smartbi/metrics/calculate")
+                .url(config.getCalculateMetricsUrl())
                 .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
                 .build();
 
@@ -229,7 +229,7 @@ public class PythonSmartBIClient {
         );
 
         Request request = new Request.Builder()
-                .url(config.getUrl() + "/api/smartbi/metrics/calculate-all")
+                .url(config.getCalculateAllMetricsUrl())
                 .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
                 .build();
 
@@ -262,7 +262,7 @@ public class PythonSmartBIClient {
         );
 
         Request request = new Request.Builder()
-                .url(config.getUrl() + "/api/smartbi/forecast")
+                .url(config.getForecastUrl())
                 .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
                 .build();
 
@@ -297,7 +297,7 @@ public class PythonSmartBIClient {
         );
 
         Request request = new Request.Builder()
-                .url(config.getUrl() + "/api/smartbi/forecast")
+                .url(config.getForecastUrl())
                 .post(RequestBody.create(JSON, objectMapper.writeValueAsString(requestBody)))
                 .build();
 

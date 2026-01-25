@@ -543,13 +543,13 @@ public class FieldMappingDictionary {
         DATA_TYPE_MAP = Collections.unmodifiableMap(map);
     }
 
-    // ==================== 必填字段 ====================
+    // ==================== 推荐字段（非强制） ====================
 
     /**
-     * 必填字段集合
-     * 这些字段对于基本销售分析是必需的
+     * 推荐字段集合（用于提示，不强制要求）
+     * 这些字段对于完整的销售分析是有帮助的，但系统会动态适配任何 Excel 格式
      */
-    public static final Set<String> REQUIRED_FIELDS = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
+    public static final Set<String> RECOMMENDED_FIELDS = Collections.unmodifiableSet(new LinkedHashSet<>(Arrays.asList(
             "order_date",
             "salesperson_id",
             "salesperson_name",
@@ -558,6 +558,12 @@ public class FieldMappingDictionary {
             "quantity",
             "amount"
     )));
+
+    /**
+     * 必填字段集合（空集合 - 系统动态适配任何格式）
+     * 不再强制要求特定字段，系统会根据识别到的字段进行分析
+     */
+    public static final Set<String> REQUIRED_FIELDS = Collections.emptySet();
 
     // ==================== 反向索引（用于快速查找） ====================
 
@@ -963,7 +969,18 @@ public class FieldMappingDictionary {
      * @return true 如果是必填字段
      */
     public boolean isRequired(String standardField) {
-        return REQUIRED_FIELDS.contains(standardField);
+        // 没有强制必填字段，系统动态适配任何格式
+        return false;
+    }
+
+    /**
+     * 判断是否为推荐字段
+     *
+     * @param standardField 标准字段名
+     * @return true 如果是推荐字段
+     */
+    public boolean isRecommended(String standardField) {
+        return RECOMMENDED_FIELDS.contains(standardField);
     }
 
     /**
@@ -1044,13 +1061,24 @@ public class FieldMappingDictionary {
     }
 
     /**
-     * 验证是否包含所有必填字段
+     * 验证是否包含所有必填字段（现在返回空列表，因为没有强制必填字段）
      *
      * @param mappedFields 已映射的标准字段集合
-     * @return 缺失的必填字段列表
+     * @return 缺失的必填字段列表（始终为空，系统动态适配任何格式）
      */
     public List<String> getMissingRequiredFields(Set<String> mappedFields) {
-        return REQUIRED_FIELDS.stream()
+        // 返回空列表 - 系统动态适配任何 Excel 格式，没有强制必填字段
+        return Collections.emptyList();
+    }
+
+    /**
+     * 获取缺失的推荐字段（用于提示用户，非强制）
+     *
+     * @param mappedFields 已映射的标准字段集合
+     * @return 缺失的推荐字段列表
+     */
+    public List<String> getMissingRecommendedFields(Set<String> mappedFields) {
+        return RECOMMENDED_FIELDS.stream()
                 .filter(field -> !mappedFields.contains(field))
                 .collect(Collectors.toList());
     }

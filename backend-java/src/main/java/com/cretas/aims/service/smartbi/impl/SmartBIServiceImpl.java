@@ -73,6 +73,7 @@ public class SmartBIServiceImpl implements SmartBIService {
     private final SmartBiUsageRecordRepository usageRepository;
     private final SmartBiBillingConfigRepository billingRepository;
     private final SmartBiQueryHistoryRepository queryHistoryRepository;
+    private final SmartBiSalesDataRepository salesDataRepository;
 
     private final ObjectMapper objectMapper;
 
@@ -133,6 +134,7 @@ public class SmartBIServiceImpl implements SmartBIService {
             SmartBiUsageRecordRepository usageRepository,
             SmartBiBillingConfigRepository billingRepository,
             SmartBiQueryHistoryRepository queryHistoryRepository,
+            SmartBiSalesDataRepository salesDataRepository,
             ObjectMapper objectMapper) {
         this.salesService = salesService;
         this.deptService = deptService;
@@ -145,6 +147,7 @@ public class SmartBIServiceImpl implements SmartBIService {
         this.usageRepository = usageRepository;
         this.billingRepository = billingRepository;
         this.queryHistoryRepository = queryHistoryRepository;
+        this.salesDataRepository = salesDataRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -169,7 +172,7 @@ public class SmartBIServiceImpl implements SmartBIService {
     // ==================== 经营驾驶舱 ====================
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional  // 移除 readOnly=true，因为 saveToCache() 和 recordUsage() 需要写入数据库
     public DashboardResponse getExecutiveDashboard(String factoryId, String period) {
         log.info("获取经营驾驶舱: factoryId={}, period={}", factoryId, period);
         long startTime = System.currentTimeMillis();
@@ -185,6 +188,22 @@ public class SmartBIServiceImpl implements SmartBIService {
 
         // 2. 计算日期范围
         DateRange range = calculateDateRange(period);
+
+        // 2.1 检查当前日期范围内是否有数据，如果没有则自动切换到有数据的日期范围
+        Long dataCount = salesDataRepository.countByFactoryIdAndDateRange(
+                factoryId, range.getStartDate(), range.getEndDate());
+        if (dataCount == null || dataCount == 0) {
+            log.info("当前日期范围无数据: factoryId={}, period={}, 尝试自动检测数据日期范围", factoryId, period);
+            DateRange dataRange = getDataDateRange(factoryId);
+            if (dataRange != null && dataRange.isValid()) {
+                log.info("自动检测到数据日期范围: {} 至 {}", dataRange.getStartDate(), dataRange.getEndDate());
+                range = dataRange;
+                // 更新缓存键以反映实际使用的日期范围
+                cacheKey = buildCacheKey("dashboard", "auto_" + range.getStartDate() + "_" + range.getEndDate());
+            } else {
+                log.warn("未检测到任何销售数据: factoryId={}", factoryId);
+            }
+        }
 
         // 3. 获取各维度数据
         DashboardResponse salesDashboard = salesService.getSalesOverview(
@@ -525,7 +544,7 @@ public class SmartBIServiceImpl implements SmartBIService {
     // ==================== 数据下钻 ====================
 
     @Override
-    @Transactional(readOnly = true)
+    @Transactional  // 移除 readOnly=true，因为 recordUsage() 需要写入数据库
     public Map<String, Object> processDrillDown(String factoryId, DrillDownRequest request) {
         log.info("处理数据下钻: factoryId={}, dimension={}, filterValue={}",
                 factoryId, request.getDimension(), request.getFilterValue());
@@ -1474,5 +1493,91 @@ public class SmartBIServiceImpl implements SmartBIService {
         int orderA = levelOrder.getOrDefault(a.getLevel(), 4);
         int orderB = levelOrder.getOrDefault(b.getLevel(), 4);
         return Integer.compare(orderA, orderB);
+    }
+
+    // ==================== 数据日期范围检测 ====================
+
+    @Override
+    @Transactional(readOnly = true)
+    public DateRange getDataDateRange(String factoryId) {
+        log.debug("检测数据日期范围: factoryId={}", factoryId);
+
+        try {
+            Object result = salesDataRepository.findDateRangeByFactoryId(factoryId);
+            log.debug("查询结果类型: {}, 值: {}", result != null ? result.getClass().getName() : "null", result);
+
+            if (result == null) {
+                log.debug("未找到销售数据日期范围: factoryId={}", factoryId);
+                return null;
+            }
+
+            // 处理不同的返回格式
+            LocalDate minDate = null;
+            LocalDate maxDate = null;
+
+            if (result instanceof Object[]) {
+                Object[] dateRange = (Object[]) result;
+                log.debug("Object[] 长度: {}", dateRange.length);
+
+                // 检查是否为嵌套数组 [[minDate, maxDate]]
+                if (dateRange.length == 1 && dateRange[0] instanceof Object[]) {
+                    Object[] innerArray = (Object[]) dateRange[0];
+                    log.debug("嵌套 Object[] 长度: {}", innerArray.length);
+                    if (innerArray.length >= 2 && innerArray[0] != null && innerArray[1] != null) {
+                        minDate = convertToLocalDate(innerArray[0]);
+                        maxDate = convertToLocalDate(innerArray[1]);
+                    }
+                } else if (dateRange.length >= 2 && dateRange[0] != null && dateRange[1] != null) {
+                    // 直接 [minDate, maxDate] 格式
+                    minDate = convertToLocalDate(dateRange[0]);
+                    maxDate = convertToLocalDate(dateRange[1]);
+                }
+            } else if (result instanceof java.util.List) {
+                // JPA 可能返回 List<Object[]>
+                java.util.List<?> list = (java.util.List<?>) result;
+                if (!list.isEmpty()) {
+                    Object first = list.get(0);
+                    if (first instanceof Object[]) {
+                        Object[] dateRange = (Object[]) first;
+                        if (dateRange.length >= 2 && dateRange[0] != null && dateRange[1] != null) {
+                            minDate = convertToLocalDate(dateRange[0]);
+                            maxDate = convertToLocalDate(dateRange[1]);
+                        }
+                    }
+                }
+            }
+
+            if (minDate == null || maxDate == null) {
+                log.debug("未找到有效的日期范围: factoryId={}", factoryId);
+                return null;
+            }
+
+            log.info("检测到数据日期范围: factoryId={}, minDate={}, maxDate={}", factoryId, minDate, maxDate);
+
+            return DateRange.builder()
+                    .startDate(minDate)
+                    .endDate(maxDate)
+                    .granularity(DateRange.custom(minDate, maxDate).getGranularity())
+                    .originalExpression("数据范围 " + minDate + " 至 " + maxDate)
+                    .relative(false)
+                    .build();
+        } catch (Exception e) {
+            log.error("检测数据日期范围失败: factoryId={}, error={}", factoryId, e.getMessage(), e);
+            return null;
+        }
+    }
+
+    /**
+     * 将数据库返回的日期对象转换为 LocalDate
+     */
+    private LocalDate convertToLocalDate(Object dateObj) {
+        if (dateObj == null) return null;
+        if (dateObj instanceof LocalDate) return (LocalDate) dateObj;
+        if (dateObj instanceof java.sql.Date) return ((java.sql.Date) dateObj).toLocalDate();
+        if (dateObj instanceof java.util.Date) {
+            return ((java.util.Date) dateObj).toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+        }
+        log.warn("未知的日期类型: {}", dateObj.getClass().getName());
+        return null;
     }
 }

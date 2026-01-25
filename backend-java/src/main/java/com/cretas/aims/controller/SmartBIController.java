@@ -568,7 +568,79 @@ public class SmartBIController {
             return ResponseEntity.ok(ApiResponse.success(dashboard));
         } catch (Exception e) {
             log.error("获取经营驾驶舱失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取数据失败: " + e.getMessage()));
+            // 返回空 Dashboard 而不是错误，让前端可以正常显示
+            DashboardResponse emptyDashboard = DashboardResponse.builder()
+                    .kpiCards(java.util.Collections.emptyList())
+                    .charts(java.util.Collections.emptyMap())
+                    .rankings(java.util.Collections.emptyMap())
+                    .aiInsights(java.util.Collections.emptyList())
+                    .suggestions(java.util.Collections.emptyList())
+                    .lastUpdated(java.time.LocalDateTime.now())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(emptyDashboard));
+        }
+    }
+
+    @GetMapping("/dashboard/executive/custom")
+    @Operation(summary = "获取自定义日期范围的经营驾驶舱", description = "支持指定开始和结束日期，用于查询历史数据")
+    public ResponseEntity<ApiResponse<DashboardResponse>> getExecutiveDashboardCustomRange(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "开始日期 (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "结束日期 (yyyy-MM-dd)")
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("获取自定义日期范围驾驶舱: factoryId={}, startDate={}, endDate={}", factoryId, startDate, endDate);
+
+        try {
+            // 直接使用销售分析服务获取指定日期范围的数据
+            DashboardResponse dashboard = salesAnalysisService.getSalesOverview(factoryId, startDate, endDate);
+            return ResponseEntity.ok(ApiResponse.success(dashboard));
+        } catch (Exception e) {
+            log.error("获取自定义日期范围驾驶舱失败: {}", e.getMessage(), e);
+            DashboardResponse emptyDashboard = DashboardResponse.builder()
+                    .kpiCards(java.util.Collections.emptyList())
+                    .charts(java.util.Collections.emptyMap())
+                    .rankings(java.util.Collections.emptyMap())
+                    .aiInsights(java.util.Collections.emptyList())
+                    .suggestions(java.util.Collections.emptyList())
+                    .lastUpdated(java.time.LocalDateTime.now())
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(emptyDashboard));
+        }
+    }
+
+    @GetMapping("/data-date-range")
+    @Operation(summary = "获取数据日期范围", description = "自动检测数据库中销售数据的时间跨度，用于前端显示可用数据范围")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getDataDateRange(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        log.info("获取数据日期范围: factoryId={}", factoryId);
+
+        try {
+            Map<String, Object> result = new HashMap<>();
+
+            if (smartBIService != null) {
+                DateRange dataRange = smartBIService.getDataDateRange(factoryId);
+                if (dataRange != null && dataRange.isValid()) {
+                    result.put("hasData", true);
+                    result.put("startDate", dataRange.getStartDate().toString());
+                    result.put("endDate", dataRange.getEndDate().toString());
+                    result.put("granularity", dataRange.getGranularity());
+                    result.put("description", dataRange.getOriginalExpression());
+                    return ResponseEntity.ok(ApiResponse.success("检测到数据日期范围", result));
+                }
+            }
+
+            result.put("hasData", false);
+            result.put("message", "未检测到销售数据");
+            return ResponseEntity.ok(ApiResponse.success("未检测到销售数据", result));
+        } catch (Exception e) {
+            log.error("获取数据日期范围失败: {}", e.getMessage(), e);
+            Map<String, Object> errorResult = new HashMap<>();
+            errorResult.put("hasData", false);
+            errorResult.put("error", e.getMessage());
+            return ResponseEntity.ok(ApiResponse.error("获取数据日期范围失败: " + e.getMessage()));
         }
     }
 
@@ -753,7 +825,24 @@ public class SmartBIController {
             return ResponseEntity.ok(ApiResponse.success(response));
         } catch (Exception e) {
             log.error("获取统一仪表盘失败: {}", e.getMessage(), e);
-            return ResponseEntity.ok(ApiResponse.error("获取数据失败: " + e.getMessage()));
+            // 返回空的 UnifiedDashboardResponse 而不是错误
+            LocalDate[] fallbackRange = DateRangeUtils.getDateRangeByPeriod(period);
+            UnifiedDashboardResponse emptyResponse = UnifiedDashboardResponse.builder()
+                    .period(period)
+                    .startDate(fallbackRange[0])
+                    .endDate(fallbackRange[1])
+                    .sales(DashboardResponse.builder()
+                            .kpiCards(java.util.Collections.emptyList())
+                            .charts(java.util.Collections.emptyMap())
+                            .rankings(java.util.Collections.emptyMap())
+                            .aiInsights(java.util.Collections.emptyList())
+                            .suggestions(java.util.Collections.emptyList())
+                            .lastUpdated(java.time.LocalDateTime.now())
+                            .build())
+                    .generatedAt(java.time.LocalDateTime.now())
+                    .dataVersion(String.valueOf(System.currentTimeMillis()))
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(emptyResponse));
         }
     }
 

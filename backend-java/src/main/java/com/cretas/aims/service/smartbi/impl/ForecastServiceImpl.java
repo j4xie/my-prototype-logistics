@@ -1,5 +1,7 @@
 package com.cretas.aims.service.smartbi.impl;
 
+import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.smartbi.ForecastPoint;
 import com.cretas.aims.dto.smartbi.ForecastResult;
 import com.cretas.aims.entity.smartbi.SmartBiSalesData;
@@ -9,6 +11,7 @@ import com.cretas.aims.service.smartbi.ForecastService;
 import com.cretas.aims.service.smartbi.MetricCalculatorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,6 +43,12 @@ public class ForecastServiceImpl implements ForecastService {
 
     private final SmartBiSalesDataRepository salesDataRepository;
 
+    @Autowired
+    private PythonSmartBIClient pythonClient;
+
+    @Autowired
+    private PythonSmartBIConfig pythonConfig;
+
     // 计算精度配置
     private static final int SCALE = 6;
     private static final int DISPLAY_SCALE = 2;
@@ -64,7 +73,120 @@ public class ForecastServiceImpl implements ForecastService {
     public ForecastResult forecastSales(String factoryId, LocalDate startDate, LocalDate endDate, int forecastDays) {
         log.info("预测销售额: factoryId={}, startDate={}, endDate={}, forecastDays={}",
                 factoryId, startDate, endDate, forecastDays);
+
+        // 尝试使用 Python 服务进行预测
+        ForecastResult pythonResult = forecastSalesWithPython(factoryId, startDate, endDate, forecastDays);
+        if (pythonResult != null) {
+            return pythonResult;
+        }
+
+        // 降级到 Java 实现
         return forecastMetric(factoryId, MetricCalculatorService.SALES_AMOUNT, startDate, endDate, forecastDays);
+    }
+
+    /**
+     * 使用 Python 服务进行销售预测（带降级逻辑）
+     *
+     * Python 服务可以利用更先进的机器学习模型（如 Prophet, ARIMA）进行预测，
+     * 如果服务不可用则降级到 Java 的统计方法实现。
+     *
+     * @param factoryId    工厂ID
+     * @param startDate    开始日期
+     * @param endDate      结束日期
+     * @param forecastDays 预测天数
+     * @return 预测结果，如果 Python 服务不可用或失败则返回 null
+     */
+    private ForecastResult forecastSalesWithPython(String factoryId, LocalDate startDate,
+                                                    LocalDate endDate, int forecastDays) {
+        if (!pythonConfig.isEnabled()) {
+            log.debug("Python SmartBI 服务已禁用，使用 Java 预测");
+            return null;
+        }
+
+        try {
+            if (pythonClient.isAvailable()) {
+                log.info("使用 Python SmartBI 服务进行销售预测: factoryId={}", factoryId);
+                ForecastResult result = pythonClient.forecastSales(factoryId, startDate, endDate, forecastDays);
+
+                if (result != null && result.getForecastPoints() != null && !result.getForecastPoints().isEmpty()) {
+                    log.info("Python SmartBI 销售预测成功: algorithm={}, confidence={}",
+                            result.getAlgorithm(), result.getConfidence());
+                    return result;
+                } else {
+                    log.warn("Python SmartBI 销售预测返回空结果，降级到 Java 预测");
+                }
+            } else {
+                log.debug("Python SmartBI 服务不可用，使用 Java 预测");
+            }
+        } catch (Exception e) {
+            log.warn("Python SmartBI 销售预测失败，降级到 Java 预测: {}", e.getMessage());
+
+            if (!pythonConfig.isFallbackOnError()) {
+                log.error("Python SmartBI 服务不可用且不允许降级");
+                return buildEmptyForecastResult(MetricCalculatorService.SALES_AMOUNT,
+                        ForecastAlgorithm.AUTO, startDate, endDate);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 使用 Python 服务进行通用指标预测（带降级逻辑）
+     *
+     * Python 服务支持更多高级预测算法，如：
+     * - Prophet: Facebook 时间序列预测
+     * - ARIMA: 自回归积分滑动平均
+     * - LSTM: 长短期记忆网络
+     *
+     * @param factoryId    工厂ID
+     * @param metricType   指标类型
+     * @param startDate    开始日期
+     * @param endDate      结束日期
+     * @param forecastDays 预测天数
+     * @param algorithm    预测算法
+     * @return 预测结果，如果 Python 服务不可用或失败则返回 null
+     */
+    private ForecastResult forecastMetricWithPython(String factoryId, String metricType,
+                                                     LocalDate startDate, LocalDate endDate,
+                                                     int forecastDays, String algorithm) {
+        if (!pythonConfig.isEnabled()) {
+            log.debug("Python SmartBI 服务已禁用，使用 Java 预测");
+            return null;
+        }
+
+        try {
+            if (pythonClient.isAvailable()) {
+                log.info("使用 Python SmartBI 服务进行指标预测: factoryId={}, metricType={}, algorithm={}",
+                        factoryId, metricType, algorithm);
+                ForecastResult result = pythonClient.forecastMetric(factoryId, metricType, startDate, endDate,
+                        forecastDays, algorithm);
+
+                if (result != null && result.getForecastPoints() != null && !result.getForecastPoints().isEmpty()) {
+                    log.info("Python SmartBI 指标预测成功: metricType={}, algorithm={}, confidence={}",
+                            metricType, result.getAlgorithm(), result.getConfidence());
+                    return result;
+                } else {
+                    log.warn("Python SmartBI 指标预测返回空结果，降级到 Java 预测");
+                }
+            } else {
+                log.debug("Python SmartBI 服务不可用，使用 Java 预测");
+            }
+        } catch (Exception e) {
+            log.warn("Python SmartBI 指标预测失败，降级到 Java 预测: {}", e.getMessage());
+
+            if (!pythonConfig.isFallbackOnError()) {
+                log.error("Python SmartBI 服务不可用且不允许降级");
+                try {
+                    ForecastAlgorithm alg = ForecastAlgorithm.valueOf(algorithm);
+                    return buildEmptyForecastResult(metricType, alg, startDate, endDate);
+                } catch (IllegalArgumentException ex) {
+                    return buildEmptyForecastResult(metricType, ForecastAlgorithm.AUTO, startDate, endDate);
+                }
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -83,6 +205,16 @@ public class ForecastServiceImpl implements ForecastService {
                                                  int forecastDays, ForecastAlgorithm algorithm) {
         log.info("使用算法预测: factoryId={}, metricType={}, algorithm={}, forecastDays={}",
                 factoryId, metricType, algorithm, forecastDays);
+
+        // 尝试使用 Python 服务进行预测（支持更多高级算法）
+        ForecastResult pythonResult = forecastMetricWithPython(factoryId, metricType, startDate, endDate,
+                forecastDays, algorithm != null ? algorithm.name() : "AUTO");
+        if (pythonResult != null) {
+            return pythonResult;
+        }
+
+        // 降级到 Java 实现
+        log.info("使用 Java 统计方法进行预测: factoryId={}, metricType={}", factoryId, metricType);
 
         // 获取历史数据
         Map<LocalDate, BigDecimal> historicalData = getHistoricalData(factoryId, metricType, startDate, endDate);

@@ -35,6 +35,8 @@ import com.cretas.aims.service.TwoStageIntentClassifier;
 import com.cretas.aims.service.SemanticRouterService;
 import com.cretas.aims.service.LongTextHandler;
 import com.cretas.aims.service.RAGRetrievalService;
+import com.cretas.aims.service.SemanticIntentMatcher;
+import com.cretas.aims.dto.SemanticMatchResult;
 import com.cretas.aims.dto.intent.RouteDecision;
 import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.dto.ai.PreprocessedQuery;
@@ -98,6 +100,19 @@ public class AIIntentServiceImpl implements AIIntentService {
      * v8.0: 两阶段意图分类器
      */
     private final TwoStageIntentClassifier twoStageIntentClassifier;
+
+    /**
+     * v14.0: 语义意图匹配器
+     * 使用 Embedding 向量相似度替代精确匹配，提高泛化能力
+     */
+    private SemanticIntentMatcher semanticIntentMatcher;
+
+    @Autowired(required = false)
+    public void setSemanticIntentMatcher(SemanticIntentMatcher semanticIntentMatcher) {
+        this.semanticIntentMatcher = semanticIntentMatcher;
+        log.info("[SemanticMatcher] SemanticIntentMatcher 注入: {}",
+                semanticIntentMatcher != null ? "成功" : "未配置");
+    }
 
     /**
      * 意图匹配统一配置
@@ -184,6 +199,13 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Value("${cretas.ai.long-text.enabled:true}")
     private boolean longTextEnabled;
+
+    /**
+     * v14.0: 是否启用语义相似度匹配
+     * 在精确短语匹配失败后，使用向量相似度进行泛化匹配
+     */
+    @Value("${cretas.ai.semantic-similarity.enabled:true}")
+    private boolean semanticSimilarityEnabled;
 
     // ==================== 意图识别 ====================
 
@@ -411,6 +433,13 @@ public class AIIntentServiceImpl implements AIIntentService {
             } catch (Exception e) {
                 log.warn("Long text processing failed, using original input: {}", e.getMessage());
             }
+        }
+
+        // ========== v12.2 Phase 3: 模糊输入强制澄清 ==========
+        // 在任何匹配之前检测极度模糊的输入，直接触发澄清
+        IntentMatchResult vagueInputResult = checkAndHandleVagueInput(userInput, factoryId, userId, sessionId);
+        if (vagueInputResult != null) {
+            return vagueInputResult;
         }
 
         // ========== v11.7: 多意图和不完整输入前置检测 ==========
@@ -707,6 +736,59 @@ public class AIIntentServiceImpl implements AIIntentService {
                     saveIntentMatchRecord(result, factoryId, null, null, false);
                     return result;
                 }
+            }
+        }
+
+        // ========== v14.0 Layer 0.4: 语义相似度匹配 ==========
+        // 当精确短语匹配失败时，使用向量相似度进行泛化匹配
+        // 例如: "销量最高" 语义匹配到 "销售排名" -> REPORT_KPI
+        // v14.0修复: 当检测到多意图触发词时，跳过此快速路径
+        if (!skipPhraseShortcut && semanticSimilarityEnabled && semanticIntentMatcher != null
+                && semanticIntentMatcher.isSemanticMatchingAvailable()) {
+            try {
+                SemanticMatchResult semanticResult = semanticIntentMatcher.matchBySimilarity(userInput, null);
+
+                if (semanticResult.isMatched()) {
+                    String matchedIntentCode = semanticResult.getIntentCode();
+                    List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+
+                    Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                            .filter(i -> i.getIntentCode().equals(matchedIntentCode))
+                            .findFirst();
+
+                    if (intentOpt.isPresent()) {
+                        AIIntentConfig intent = intentOpt.get();
+                        ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+
+                        log.info("v14.0语义相似度匹配: input='{}', matchedPhrase='{}', intent={}, similarity={:.4f}, time={}ms",
+                                userInput, semanticResult.getMatchedPhrase(), matchedIntentCode,
+                                semanticResult.getSimilarity(), semanticResult.getMatchTimeMs());
+
+                        IntentMatchResult result = IntentMatchResult.builder()
+                                .bestMatch(intent)
+                                .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                        intent, semanticResult.getSimilarity(),
+                                        (int)(semanticResult.getSimilarity() * 100),
+                                        Collections.singletonList(semanticResult.getMatchedPhrase()),
+                                        MatchMethod.SEMANTIC)))
+                                .confidence(semanticResult.getSimilarity())
+                                .matchMethod(MatchMethod.SEMANTIC)
+                                .matchedKeywords(Collections.singletonList(semanticResult.getMatchedPhrase()))
+                                .isStrongSignal(semanticResult.getSimilarity() >= 0.85)
+                                .requiresConfirmation(semanticResult.getSimilarity() < 0.85)
+                                .userInput(originalInput)
+                                .actionType(detectedActionType)
+                                .build();
+
+                        saveIntentMatchRecord(result, factoryId, null, null, false);
+                        return result;
+                    } else {
+                        log.debug("v14.0语义匹配意图未找到配置: {}", matchedIntentCode);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("v14.0语义相似度匹配异常: {}", e.getMessage());
+                // 继续执行后续匹配逻辑
             }
         }
 
@@ -2322,6 +2404,156 @@ public class AIIntentServiceImpl implements AIIntentService {
         }
 
         return false;
+    }
+
+    /**
+     * v12.2 Phase 3: 模糊输入强制澄清
+     *
+     * 检测极度模糊的输入（如"查一下"、"看看"、"帮我处理"、"有问题"等），
+     * 这些输入缺乏足够的业务上下文，无法可靠地识别意图。
+     * 直接触发澄清，避免被错误的短语匹配或关键词匹配捕获。
+     *
+     * @param userInput 用户输入
+     * @param factoryId 工厂ID
+     * @param userId 用户ID
+     * @param sessionId 会话ID
+     * @return 澄清结果，如果输入不是模糊的则返回 null
+     */
+    private IntentMatchResult checkAndHandleVagueInput(String userInput, String factoryId, Long userId, String sessionId) {
+        if (userInput == null || userInput.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalized = userInput.trim().toLowerCase();
+
+        // v12.3: 业务关键词白名单 - 包含这些词的输入不触发澄清
+        // 即使输入很短，只要包含明确的业务意图词，就应该尝试识别
+        // v12.4: 扩展业务关键词白名单 - 200测试覆盖
+        String[] businessKeywords = {
+            // 操作动词
+            "删除", "移除", "取消", "作废", "清空", "重置", "注销",
+            "创建", "新建", "添加", "录入", "获取", "显示", "查询",
+            "修改", "更新", "编辑", "变更", "调整",
+            "撤销", "废弃", "清理", "批量",
+            // 业务名词 - 核心
+            "订单", "库存", "考勤", "设备", "质检", "生产", "发货", "客户", "供应商",
+            "物料", "原料", "批次", "追溯", "告警", "预警", "温度", "冷链",
+            "用户", "账号", "员工", "工时", "绩效", "排班", "班次",
+            "出库", "入库", "采购", "销售", "盘点", "成品",
+            "HACCP", "溯源", "产线", "工单", "维修", "维护",
+            // 业务名词 - 扩展
+            "产品", "仓库", "配置", "价格", "参数", "进度", "周期",
+            "报表", "季度", "年度", "月份",
+            // 口语化业务表达
+            "到齐", "正常", "合格", "靠谱", "跑起来", "完成",
+            "够不够", "发了没", "过了吗", "联系",
+            // 行业术语
+            "FIFO", "BOM", "SOP", "OEE", "WMS", "TMS", "ERP",
+            "先进先出", "物料清单", "标准作业", "设备效率", "仓储管理", "运输管理",
+            "断链", "合格率", "周转"
+        };
+
+        // 检查是否包含业务关键词
+        for (String keyword : businessKeywords) {
+            if (normalized.contains(keyword.toLowerCase())) {
+                log.debug("v12.3 输入包含业务关键词'{}', 跳过模糊检测: {}", keyword, userInput);
+                return null;  // 包含业务关键词，不触发澄清
+            }
+        }
+
+        // v12.2: 极度模糊输入黑名单 - 这些输入必须触发澄清
+        // 特点：纯动词/代词/确认词，缺乏业务名词
+        String[] vagueInputBlacklist = {
+            // 纯动作词（无业务对象）
+            "查一下", "看看", "看一下", "瞧瞧", "瞅瞅",
+            "帮我处理", "处理一下", "处理下",
+            "帮我查", "帮查", "查下", "看下",
+            // 模糊问题
+            "有问题", "有啥问题", "问题",
+            // 模糊指代
+            "这个", "那个", "哪个",
+            // 极短模糊（纯名词无动作）
+            "数据", "报表", "统计", "分析",
+            // 纯确认词
+            "好的", "可以", "行", "好", "嗯"
+        };
+
+        for (String vague : vagueInputBlacklist) {
+            if (normalized.equals(vague)) {
+                log.info("v12.3 模糊输入强制澄清: input='{}' 匹配黑名单'{}'", userInput, vague);
+
+                String clarificationMessage = generateVagueInputClarification(userInput);
+
+                IntentMatchResult result = IntentMatchResult.builder()
+                        .bestMatch(null)
+                        .confidence(0.0)
+                        .matchMethod(MatchMethod.REJECTED)
+                        .requiresConfirmation(true)
+                        .clarificationQuestion(clarificationMessage)
+                        .userInput(userInput)
+                        .build();
+
+                return result;
+            }
+        }
+
+        // 检测2: 极短输入（<=2字符）且不在白名单中
+        if (normalized.length() <= 2) {
+            log.info("v12.3 极短输入强制澄清: input='{}' 长度={}", userInput, normalized.length());
+
+            String clarificationMessage = "您的输入「" + userInput + "」太简短了，请详细描述您想要做什么。\n" +
+                    "例如：\n" +
+                    "• 查看今天的订单\n" +
+                    "• 查询库存情况\n" +
+                    "• 统计本月考勤";
+
+            IntentMatchResult result = IntentMatchResult.builder()
+                    .bestMatch(null)
+                    .confidence(0.0)
+                    .matchMethod(MatchMethod.REJECTED)
+                    .requiresConfirmation(true)
+                    .clarificationQuestion(clarificationMessage)
+                    .userInput(userInput)
+                    .build();
+
+            return result;
+        }
+
+        return null;
+    }
+
+    /**
+     * v12.2: 生成模糊输入的澄清问题
+     */
+    private String generateVagueInputClarification(String userInput) {
+        String normalized = userInput.trim().toLowerCase();
+
+        // 根据输入类型生成不同的澄清问题
+        if (normalized.contains("查") || normalized.contains("看")) {
+            return "您想查询什么信息？请告诉我具体内容，例如：\n" +
+                    "• 查看订单 - 订单列表\n" +
+                    "• 查看库存 - 库存情况\n" +
+                    "• 查看设备 - 设备状态\n" +
+                    "• 查看考勤 - 考勤记录";
+        } else if (normalized.contains("处理") || normalized.contains("操作")) {
+            return "您想处理什么？请告诉我具体操作，例如：\n" +
+                    "• 创建订单\n" +
+                    "• 更新库存\n" +
+                    "• 审批申请\n" +
+                    "• 处理告警";
+        } else if (normalized.contains("问题")) {
+            return "您提到了「问题」，请问是什么方面的问题？\n" +
+                    "• 设备问题 - 查看设备状态和告警\n" +
+                    "• 质量问题 - 查看质检记录\n" +
+                    "• 库存问题 - 查看库存预警\n" +
+                    "• 其他问题 - 请详细描述";
+        } else {
+            return "您的输入「" + userInput + "」不够明确，请详细描述您的需求。\n" +
+                    "例如：\n" +
+                    "• 查看今天的订单\n" +
+                    "• 统计本月销售额\n" +
+                    "• 查询设备状态";
+        }
     }
 
     /**
