@@ -30,6 +30,7 @@ Page({
     searchKeyword: '',
     keywordRecorded: false,
     showAiTip: false,
+    showAiAssistant: false, // AI 助手显示控制
     // 推荐追踪相关
     source: '',           // 来源标记 (recommend/category/search/hot/new)
     exposureTracked: false // 是否已追踪曝光
@@ -110,6 +111,7 @@ Page({
     app.initPage()
       .then(res => {
         this.goodsPage()
+        this.loadAiConfig()
       })
   },
   goodsPage() {
@@ -184,6 +186,21 @@ Page({
   goToAiChat() {
     wx.navigateTo({
       url: '/pages/ai-rag/chat/index?keyword=' + encodeURIComponent(this.data.searchKeyword)
+    })
+  },
+  // 加载 AI 配置
+  loadAiConfig() {
+    const config = app.globalData.config
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/ai/config',
+      method: 'GET',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.data) {
+          this.setData({
+            showAiAssistant: res.data.data.enabled === true
+          })
+        }
+      }
     })
   },
   viewTypeEdit(){

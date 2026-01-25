@@ -38,7 +38,9 @@ Page({
     similarLoading: false,         // 加载状态
     scrollDepth: 0,                // 页面滚动深度（用于行为分析）
     // ========== 来源追踪 ==========
-    entrySource: ''                // 进入详情页的来源 (recommend_home/similar_recommend/category/search等)
+    entrySource: '',               // 进入详情页的来源 (recommend_home/similar_recommend/category/search等)
+    // ========== AI 助手控制 ==========
+    showAiAssistant: false         // AI 助手显示控制
   },
 
   // 浏览开始时间（用于计算停留时长）
@@ -83,6 +85,8 @@ Page({
         this.loadPriceTiers(id)
         // 加载相似商品
         this.loadSimilarProducts(id)
+        // 加载 AI 配置
+        this.loadAiConfig()
       })
   },
 
@@ -594,6 +598,21 @@ Page({
       url += '?productId=' + goodsSpu.id + '&productName=' + encodeURIComponent(goodsSpu.name || '')
     }
     wx.navigateTo({ url })
+  },
+  // 加载 AI 配置
+  loadAiConfig() {
+    const config = app.globalData.config
+    wx.request({
+      url: config.basePath + '/weixin/api/ma/ai/config',
+      method: 'GET',
+      success: (res) => {
+        if (res.statusCode === 200 && res.data.data) {
+          this.setData({
+            showAiAssistant: res.data.data.enabled === true
+          })
+        }
+      }
+    })
   },
   // 跳转商家页面
   goToMerchant() {
