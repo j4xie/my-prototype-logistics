@@ -57,7 +57,7 @@
     <view class="no-result-desc">我们已记录您的需求，有新品上架会第一时间通知您</view>
 
     <!-- AI助手按钮 -->
-    <view class="ai-chat-btn" bindtap="goToAiChat">
+    <view class="ai-chat-btn" bindtap="goToAiChat" wx:if="{{showAiAssistant}}">
       <text class="cuIcon-message margin-right-xs"></text>
       问问AI助手
     </view>
