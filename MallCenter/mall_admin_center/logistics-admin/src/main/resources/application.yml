@@ -205,5 +205,9 @@ ai:
     api-key: sk-e02592efaa6246d2b113a0ef8edaca4a
     # DashScope OpenAI兼容模式接口地址 (代码会自动添加 /v1/chat/completions)
     base-url: https://dashscope.aliyuncs.com/compatible-mode
-    # 使用通义千问模型
-    model: qwen-plus
+    # 使用通义千问 turbo 模型 (响应更快: 0.7s vs 2.3s)
+    model: qwen-turbo-latest
+    # 限制回复长度以提高响应速度
+    max-tokens: 500
+    # 超时设置
+    timeout: 30
