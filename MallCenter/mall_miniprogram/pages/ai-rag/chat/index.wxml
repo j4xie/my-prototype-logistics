@@ -2,6 +2,15 @@
   AI智能问答页面
 -->
 <view class="container">
+  <!-- 产品上下文提示条 (从商品详情页跳转时显示) -->
+  <view class="product-context-bar" wx:if="{{currentProduct && currentProduct.name}}">
+    <text class="cuIcon-info"></text>
+    <text class="context-text">正在咨询：{{currentProduct.name}}</text>
+    <view class="context-close" bindtap="clearProductContext">
+      <text class="cuIcon-close"></text>
+    </view>
+  </view>
+
   <!-- 欢迎区域 -->
   <view class="welcome-section" wx:if="{{messages.length === 0}}">
     <view class="welcome-icon">

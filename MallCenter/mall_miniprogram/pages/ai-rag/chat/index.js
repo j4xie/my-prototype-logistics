@@ -13,11 +13,20 @@ Page({
     scrollToMessage: '',
     sessionId: '',  // AI会话ID
     historyLoaded: false, // 标记历史是否已加载
+    // 当前产品上下文 (从商品详情页跳转时传入)
+    currentProduct: null,  // { id, name }
     quickQuestions: [
       '推荐一些热门商品',
       '有什么新上架的产品？',
       '如何查看产品的溯源信息？',
       '阶梯价格是如何计算的？'
+    ],
+    // 产品相关的快捷问题模板
+    productQuickQuestions: [
+      '这个产品有什么特点？',
+      '价格是多少？有优惠吗？',
+      '有溯源信息吗？',
+      '库存充足吗？'
     ]
   },
 
@@ -41,8 +50,28 @@ Page({
       wx.setStorageSync('aiChatSessionId', sessionId)
     }
 
+    // 检查是否有产品上下文 (从商品详情页跳转)
+    if (options.productId) {
+      const productId = options.productId
+      const productName = options.productName ? decodeURIComponent(options.productName) : ''
+
+      this.setData({
+        currentProduct: { id: productId, name: productName },
+        // 使用产品相关的快捷问题
+        quickQuestions: this.data.productQuickQuestions
+      })
+
+      console.log('[AI Chat] 产品上下文:', productId, productName)
+
+      // 如果有产品名称，自动填充询问该产品的问题
+      if (productName) {
+        this.setData({
+          inputText: '请介绍一下「' + productName + '」这个产品'
+        })
+      }
+    }
     // 检查是否有预设问题或来自搜索的关键词
-    if (options.keyword) {
+    else if (options.keyword) {
       const keyword = decodeURIComponent(options.keyword)
       this.setData({
         inputText: '帮我找一下' + keyword + '相关的商品'
@@ -59,6 +88,21 @@ Page({
   // 生成会话ID
   generateSessionId() {
     return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+  },
+
+  // 清除产品上下文 (用户点击关闭按钮时)
+  clearProductContext() {
+    this.setData({
+      currentProduct: null,
+      inputText: '',
+      // 恢复默认快捷问题
+      quickQuestions: [
+        '推荐一些热门商品',
+        '有什么新上架的产品？',
+        '如何查看产品的溯源信息？',
+        '阶梯价格是如何计算的？'
+      ]
+    })
   },
 
   onShow() {
@@ -289,11 +333,22 @@ Page({
   // 调用AI服务
   async callAIService(question) {
     try {
-      // 使用统一的 api.js 调用AI接口
-      const res = await api.aiChat({
+      // 构建请求数据
+      const requestData = {
         message: question,
         sessionId: this.data.sessionId
-      })
+      }
+
+      // 如果有产品上下文，传递给后端 (从商品详情页跳转时)
+      const currentProduct = this.data.currentProduct
+      if (currentProduct && currentProduct.id) {
+        requestData.productId = currentProduct.id
+        requestData.productName = currentProduct.name || ''
+        console.log('[AI Chat] 发送产品上下文:', currentProduct)
+      }
+
+      // 使用统一的 api.js 调用AI接口
+      const res = await api.aiChat(requestData)
 
       if (res.code === 200 && res.data) {
         // 更新sessionId（如果后端返回了新的）
