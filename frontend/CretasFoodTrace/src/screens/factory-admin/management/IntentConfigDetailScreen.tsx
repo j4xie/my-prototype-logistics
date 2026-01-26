@@ -805,7 +805,7 @@ export function IntentConfigDetailScreen() {
                   <Divider style={styles.divider} />
                   <View style={styles.errorBox}>
                     <IconButton icon="alert-circle" size={16} iconColor="#f5222d" />
-                    <Text style={styles.errorText}>{testResult.errorMessage}</Text>
+                    <Text style={styles.errorBoxText}>{testResult.errorMessage}</Text>
                   </View>
                 </>
               )}
@@ -1441,7 +1441,7 @@ const styles = StyleSheet.create({
     padding: 8,
     marginTop: 8,
   },
-  errorText: {
+  errorBoxText: {
     flex: 1,
     fontSize: 13,
     color: '#f5222d',

@@ -45,7 +45,7 @@ import { ScaleTestScreen } from "../../screens/factory-admin/iot/ScaleTestScreen
 import { IsapiDeviceListScreen } from "../../screens/factory-admin/isapi/IsapiDeviceListScreen";
 import { IsapiDeviceDetailScreen } from "../../screens/factory-admin/isapi/IsapiDeviceDetailScreen";
 import { IsapiDeviceCreateScreen } from "../../screens/factory-admin/isapi/IsapiDeviceCreateScreen";
-import { IsapiDeviceDiscoveryScreen } from "../../screens/factory-admin/isapi/IsapiDeviceDiscoveryScreen";
+// IsapiDeviceDiscoveryScreen removed - now using UnifiedDeviceDiscoveryScreen
 import { IsapiSmartConfigScreen } from "../../screens/factory-admin/isapi/IsapiSmartConfigScreen";
 import { DeviceSetupWizardScreen } from "../../screens/factory-admin/isapi/DeviceSetupWizardScreen";
 
@@ -62,6 +62,9 @@ import { LabelRecognitionMonitorScreen } from "../../screens/production/LabelRec
 
 // 设备智能分析
 import { EquipmentAnalysisScreen } from "../../screens/factory-admin/equipment/EquipmentAnalysisScreen";
+
+// 统一多品牌设备发现
+import { UnifiedDeviceDiscoveryScreen } from "../../screens/factory-admin/camera/UnifiedDeviceDiscoveryScreen";
 
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
@@ -293,9 +296,10 @@ export function FAManagementStackNavigator() {
         component={IsapiDeviceCreateScreen}
         options={{ title: "添加摄像头" }}
       />
+      {/* 旧路由重定向到统一发现页面，保持兼容性 */}
       <Stack.Screen
         name="IsapiDeviceDiscovery"
-        component={IsapiDeviceDiscoveryScreen}
+        component={UnifiedDeviceDiscoveryScreen}
         options={{ title: "设备发现" }}
       />
       <Stack.Screen
@@ -331,6 +335,13 @@ export function FAManagementStackNavigator() {
         name="LabelRecognitionMonitor"
         component={LabelRecognitionMonitorScreen}
         options={{ title: "标签识别监控" }}
+      />
+
+      {/* 统一多品牌设备发现 */}
+      <Stack.Screen
+        name="UnifiedDeviceDiscovery"
+        component={UnifiedDeviceDiscoveryScreen}
+        options={{ title: "设备发现" }}
       />
     </Stack.Navigator>
   );

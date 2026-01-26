@@ -114,8 +114,9 @@ export default function AIRescheduleScreen() {
       if (response.success && response.data) {
         setPlans(response.data.content || []);
         // 默认选中第一个
-        if (response.data.content?.length > 0) {
-          setSelectedPlanId(response.data.content[0].id);
+        const firstPlan = response.data.content?.[0];
+        if (firstPlan) {
+          setSelectedPlanId(firstPlan.id);
         }
       }
     } catch (err) {

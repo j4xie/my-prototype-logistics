@@ -219,8 +219,11 @@ export function AlertDetailScreen() {
     const recommended = availableSolutions.find((s) => s.recommended);
     if (recommended) {
       setSelectedSolution(recommended.id);
-    } else if (availableSolutions.length > 0) {
-      setSelectedSolution(availableSolutions[0].id);
+    } else {
+      const firstSolution = availableSolutions[0];
+      if (firstSolution) {
+        setSelectedSolution(firstSolution.id);
+      }
     }
   }, [loadBatchData, alertType]);
 

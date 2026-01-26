@@ -19,6 +19,7 @@ export type SmartBIStackParamList = {
   SalesAnalysis: { department?: string; region?: string };
   FinanceAnalysis: { analysisType?: string };
   ExcelUpload: undefined;
+  SmartBIDataAnalysis: undefined;  // 智能数据分析
   NLQuery: { initialQuery?: string };
   DrillDown: { dimension: string; value: string; parentContext?: Record<string, unknown> };
 
@@ -398,6 +399,77 @@ export interface ExcelUploadError {
   row: number;
   column?: string;
   message: string;
+}
+
+/**
+ * Excel 上传并分析请求参数
+ */
+export interface ExcelUploadAndAnalyzeRequest {
+  file: {
+    uri: string;
+    name: string;
+    size?: number;
+    mimeType?: string;
+  };
+  dataType?: string;
+  sheetIndex?: number;
+  headerRow?: number;
+  autoConfirm?: boolean;
+  factoryId?: string;
+}
+
+/**
+ * 模板图表配置 (用于 Excel 分析结果)
+ */
+export interface TemplateChartConfig {
+  chartType: string;
+  templateCode: string;
+  title: string;
+  options: Record<string, unknown>;
+  dataMapping?: Record<string, unknown>;
+  data?: Record<string, unknown>;
+  layout?: Record<string, unknown>;
+  aiAnalysis?: string;
+  analysisType?: string;
+}
+
+/**
+ * 字段映射结果
+ */
+export interface FieldMappingResult {
+  originalColumn: string;
+  columnIndex: number;
+  standardField: string;
+  standardFieldLabel: string;
+  dataType: string;
+  confidence: number;
+  mappingSource: string;
+  requiresConfirmation: boolean;
+}
+
+/**
+ * Excel 上传并分析响应
+ */
+export interface ExcelUploadAndAnalyzeResponse {
+  success: boolean;
+  message: string;
+  requiresConfirmation: boolean;
+  detectedDataType: string;
+  recommendedChartType: string;
+  uploadId?: number;
+  chartConfig?: TemplateChartConfig;
+  aiAnalysis?: string;
+  recommendedTemplates?: Array<{
+    templateCode: string;
+    name: string;
+    description: string;
+  }>;
+  parseResult?: {
+    headers: string[];
+    rowCount: number;
+    columnCount: number;
+    fieldMappings: FieldMappingResult[];
+  };
 }
 
 // ==================== 销售分析 ====================
