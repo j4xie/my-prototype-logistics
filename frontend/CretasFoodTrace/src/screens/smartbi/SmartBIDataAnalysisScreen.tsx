@@ -1,0 +1,554 @@
+/**
+ * SmartBI - 智能数据分析屏幕
+ * 支持 Excel 批量上传、图表展示和 AI 分析
+ */
+
+import React, { useState } from 'react';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Dimensions,
+} from 'react-native';
+import {
+  Text,
+  Card,
+  Button,
+  Surface,
+  Chip,
+  SegmentedButtons,
+  Divider,
+  IconButton,
+} from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import * as DocumentPicker from 'expo-document-picker';
+import { useAuthStore } from '../../store/authStore';
+import { apiClient } from '../../services/api/apiClient';
+import { WebView } from 'react-native-webview';
+
+const { width } = Dimensions.get('window');
+
+interface SheetResult {
+  sheetIndex: number;
+  sheetName: string;
+  success: boolean;
+  message: string;
+  detectedDataType?: string;
+  savedRows?: number;
+  uploadId?: number;
+  flowResult?: {
+    recommendedChartType?: string;
+    chartConfig?: any;
+    aiAnalysis?: string;
+  };
+}
+
+interface BatchUploadResult {
+  totalSheets: number;
+  successCount: number;
+  failedCount: number;
+  totalSavedRows: number;
+  message: string;
+  results: SheetResult[];
+}
+
+export function SmartBIDataAnalysisScreen() {
+  const factoryId = useAuthStore((state) => state.user?.factoryId);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [uploadResult, setUploadResult] = useState<BatchUploadResult | null>(null);
+  const [selectedSheetIndex, setSelectedSheetIndex] = useState<number>(0);
+
+  // 选择文件
+  const pickDocument = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+        ],
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) {
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0) {
+        const file = result.assets[0];
+        await uploadFile(file);
+      }
+    } catch (error: any) {
+      Alert.alert('错误', `选择文件失败: ${error.message}`);
+    }
+  };
+
+  // 上传文件
+  const uploadFile = async (file: any) => {
+    setUploading(true);
+    setUploadProgress('正在预览 Sheet 列表...');
+
+    try {
+      // 1. 预览 Sheets
+      const previewFormData = new FormData();
+      previewFormData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      } as any);
+
+      const previewResponse = await apiClient.post<{ success: boolean; data: any[]; message?: string }>(
+        `/api/mobile/${factoryId}/smart-bi/sheets`,
+        previewFormData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+
+      if (!previewResponse.success || !previewResponse.data) {
+        throw new Error(previewResponse.message || '预览失败');
+      }
+
+      const sheets = previewResponse.data;
+      setUploadProgress('正在分析数据...');
+
+      // 2. 构建配置
+      const sheetConfigs = sheets
+        .filter(s => s.rowCount > 0)
+        .map(s => ({
+          sheetIndex: s.index,
+          headerRow: s.index === 0 ? 0 : s.name.includes('利润表') ? 3 : 2,
+          autoConfirm: true,
+        }));
+
+      // 3. 批量上传
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', {
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      } as any);
+      uploadFormData.append('sheetConfigs', JSON.stringify(sheetConfigs));
+
+      setUploadProgress('正在处理和生成图表...');
+
+      const uploadResponse = await apiClient.post<{ success: boolean; data: BatchUploadResult; message?: string }>(
+        `/api/mobile/${factoryId}/smart-bi/upload-batch`,
+        uploadFormData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 300000, // 5 分钟
+        }
+      );
+
+      if (uploadResponse.success && uploadResponse.data) {
+        setUploadResult(uploadResponse.data);
+        setSelectedSheetIndex(0);
+        Alert.alert('成功', uploadResponse.data.message || '数据分析完成');
+      } else {
+        throw new Error(uploadResponse.message || '上传失败');
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      Alert.alert('上传失败', error.message || '未知错误');
+    } finally {
+      setUploading(false);
+      setUploadProgress('');
+    }
+  };
+
+  // 重置
+  const resetUpload = () => {
+    setUploadResult(null);
+    setSelectedSheetIndex(0);
+  };
+
+  // 获取当前 Sheet
+  const currentSheet = uploadResult?.results?.[selectedSheetIndex];
+
+  // 生成图表 HTML
+  const generateChartHTML = (chartConfig: any) => {
+    if (!chartConfig || !chartConfig.options) {
+      return '<html><body><h3>暂无图表数据</h3></body></html>';
+    }
+
+    return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+        <style>
+          * { margin: 0; padding: 0; box-sizing: border-box; }
+          body { font-family: -apple-system, system-ui, sans-serif; }
+          #chart { width: 100vw; height: 400px; }
+        </style>
+      </head>
+      <body>
+        <div id="chart"></div>
+        <script>
+          const chart = echarts.init(document.getElementById('chart'));
+          const option = ${JSON.stringify(chartConfig.options)};
+          chart.setOption(option);
+
+          window.addEventListener('resize', () => {
+            chart.resize();
+          });
+        </script>
+      </body>
+    </html>
+    `;
+  };
+
+  // 渲染上传区域
+  if (!uploadResult) {
+    return (
+      <SafeAreaView style={styles.container} edges={['bottom']}>
+        <ScrollView style={styles.scrollView}>
+          <Card style={styles.uploadCard}>
+            <Card.Content>
+              <View style={styles.uploadContent}>
+                {uploading ? (
+                  <View style={styles.progressContainer}>
+                    <ActivityIndicator size="large" color="#2196F3" />
+                    <Text style={styles.progressText}>{uploadProgress}</Text>
+                  </View>
+                ) : (
+                  <>
+                    <Surface style={styles.uploadIcon} elevation={0}>
+                      <IconButton icon="file-excel" size={64} iconColor="#2196F3" />
+                    </Surface>
+                    <Text variant="headlineSmall" style={styles.uploadTitle}>
+                      上传 Excel 文件
+                    </Text>
+                    <Text variant="bodyMedium" style={styles.uploadDescription}>
+                      支持批量分析多个 Sheet，自动生成图表和 AI 分析
+                    </Text>
+                    <Button
+                      mode="contained"
+                      onPress={pickDocument}
+                      style={styles.uploadButton}
+                      icon="upload"
+                    >
+                      选择文件
+                    </Button>
+                  </>
+                )}
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* 功能说明 */}
+          <Card style={styles.infoCard}>
+            <Card.Content>
+              <Text variant="titleMedium" style={styles.infoTitle}>
+                功能特点
+              </Text>
+              <View style={styles.featureList}>
+                <FeatureItem icon="check-circle" text="自动识别数据类型（销售、财务、库存等）" />
+                <FeatureItem icon="check-circle" text="智能推荐最佳图表类型" />
+                <FeatureItem icon="check-circle" text="AI 深度分析数据洞察" />
+                <FeatureItem icon="check-circle" text="支持多 Sheet 批量处理" />
+              </View>
+            </Card.Content>
+          </Card>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // 渲染结果区域
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
+      <ScrollView style={styles.scrollView}>
+        {/* 总结卡片 */}
+        <Card style={styles.summaryCard}>
+          <Card.Content>
+            <View style={styles.summaryHeader}>
+              <Text variant="titleLarge">分析完成</Text>
+              <IconButton icon="refresh" onPress={resetUpload} />
+            </View>
+            <Text variant="bodyMedium" style={styles.summaryText}>
+              {uploadResult.message}
+            </Text>
+            <View style={styles.statsRow}>
+              <StatItem label="总 Sheet" value={uploadResult.totalSheets} color="#2196F3" />
+              <StatItem label="成功" value={uploadResult.successCount} color="#4CAF50" />
+              <StatItem label="总行数" value={uploadResult.totalSavedRows} color="#FF9800" />
+            </View>
+          </Card.Content>
+        </Card>
+
+        {/* Sheet 选择器 */}
+        <Card style={styles.sheetSelectorCard}>
+          <Card.Content>
+            <Text variant="titleMedium" style={styles.sectionTitle}>
+              选择 Sheet
+            </Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.sheetChipsContainer}>
+                {uploadResult.results.map((sheet, index) => (
+                  <Chip
+                    key={sheet.sheetIndex}
+                    selected={selectedSheetIndex === index}
+                    onPress={() => setSelectedSheetIndex(index)}
+                    style={styles.sheetChip}
+                  >
+                    {sheet.sheetName} ({sheet.savedRows}行)
+                  </Chip>
+                ))}
+              </View>
+            </ScrollView>
+          </Card.Content>
+        </Card>
+
+        {/* 当前 Sheet 详情 */}
+        {currentSheet && (
+          <>
+            {/* Sheet 信息 */}
+            <Card style={styles.sheetInfoCard}>
+              <Card.Content>
+                <View style={styles.infoRow}>
+                  <InfoItem label="数据类型" value={currentSheet.detectedDataType || 'UNKNOWN'} />
+                  <InfoItem
+                    label="推荐图表"
+                    value={currentSheet.flowResult?.recommendedChartType || 'N/A'}
+                  />
+                </View>
+              </Card.Content>
+            </Card>
+
+            {/* 图表展示 */}
+            {currentSheet.flowResult?.chartConfig && (
+              <Card style={styles.chartCard}>
+                <Card.Content>
+                  <Text variant="titleMedium" style={styles.sectionTitle}>
+                    📈 数据可视化
+                  </Text>
+                  <View style={styles.chartContainer}>
+                    <WebView
+                      source={{ html: generateChartHTML(currentSheet.flowResult.chartConfig) }}
+                      style={styles.webview}
+                      scrollEnabled={false}
+                      bounces={false}
+                    />
+                  </View>
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* AI 分析 */}
+            {(currentSheet.flowResult?.aiAnalysis ||
+              currentSheet.flowResult?.chartConfig?.aiAnalysis) && (
+              <Card style={styles.analysisCard}>
+                <Card.Content>
+                  <Text variant="titleMedium" style={styles.sectionTitle}>
+                    🤖 AI 智能分析
+                  </Text>
+                  <Text style={styles.analysisText}>
+                    {currentSheet.flowResult?.aiAnalysis ||
+                      currentSheet.flowResult?.chartConfig?.aiAnalysis}
+                  </Text>
+                </Card.Content>
+              </Card>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+// 特性项组件
+function FeatureItem({ icon, text }: { icon: string; text: string }) {
+  return (
+    <View style={styles.featureItem}>
+      <IconButton icon={icon} size={20} iconColor="#4CAF50" style={styles.featureIcon} />
+      <Text variant="bodyMedium" style={styles.featureText}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+// 统计项组件
+function StatItem({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <View style={styles.statItem}>
+      <Text variant="headlineMedium" style={[styles.statValue, { color }]}>
+        {value}
+      </Text>
+      <Text variant="bodySmall" style={styles.statLabel}>
+        {label}
+      </Text>
+    </View>
+  );
+}
+
+// 信息项组件
+function InfoItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoItem}>
+      <Text variant="bodySmall" style={styles.infoLabel}>
+        {label}
+      </Text>
+      <Chip mode="outlined" compact>
+        {value}
+      </Chip>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F5F5F5',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  uploadCard: {
+    margin: 16,
+  },
+  uploadContent: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  uploadIcon: {
+    marginBottom: 16,
+    borderRadius: 50,
+    backgroundColor: '#E3F2FD',
+  },
+  uploadTitle: {
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  uploadDescription: {
+    marginBottom: 24,
+    textAlign: 'center',
+    color: '#666',
+    paddingHorizontal: 20,
+  },
+  uploadButton: {
+    minWidth: 200,
+  },
+  progressContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  progressText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#666',
+  },
+  infoCard: {
+    margin: 16,
+    marginTop: 0,
+  },
+  infoTitle: {
+    marginBottom: 16,
+  },
+  featureList: {
+    gap: 8,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  featureIcon: {
+    margin: 0,
+  },
+  featureText: {
+    flex: 1,
+    color: '#666',
+  },
+  summaryCard: {
+    margin: 16,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  summaryText: {
+    color: '#666',
+    marginBottom: 16,
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    color: '#666',
+    marginTop: 4,
+  },
+  sheetSelectorCard: {
+    margin: 16,
+    marginTop: 0,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+  },
+  sheetChipsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  sheetChip: {
+    marginRight: 0,
+  },
+  sheetInfoCard: {
+    margin: 16,
+    marginTop: 0,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    gap: 16,
+  },
+  infoItem: {
+    flex: 1,
+    gap: 4,
+  },
+  infoLabel: {
+    color: '#666',
+  },
+  chartCard: {
+    margin: 16,
+    marginTop: 0,
+  },
+  chartContainer: {
+    height: 400,
+    marginTop: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#FFF',
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  analysisCard: {
+    margin: 16,
+    marginTop: 0,
+    marginBottom: 32,
+  },
+  analysisText: {
+    lineHeight: 24,
+    color: '#444',
+  },
+});
