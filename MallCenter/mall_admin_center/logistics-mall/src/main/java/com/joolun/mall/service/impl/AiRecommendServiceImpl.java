@@ -126,12 +126,46 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 return handleRequirementCollection(sessionId, userId, merchantId, message, sessionState);
             }
 
+            // 0.5 检查是否有产品上下文 (从商品详情页跳转时，消息中会包含 [用户正在查看商品...] 前缀)
+            GoodsSpu contextProduct = null;
+            if (message.contains("[用户正在查看商品") && message.contains("ID:")) {
+                try {
+                    // 提取产品ID
+                    int idStart = message.indexOf("ID:") + 3;
+                    int idEnd = message.indexOf("]", idStart);
+                    if (idEnd > idStart) {
+                        String productId = message.substring(idStart, idEnd).trim();
+                        contextProduct = goodsSpuMapper.selectById(productId);
+                        if (contextProduct != null) {
+                            log.info("从上下文加载产品信息: id={}, name={}", productId, contextProduct.getName());
+                        }
+                    }
+                } catch (Exception ex) {
+                    log.warn("解析产品上下文失败: {}", ex.getMessage());
+                }
+            }
+
             // 1. RAG: 先检索相关商品知识
             List<GoodsSpu> ragProducts = new ArrayList<>();
             String enhancedPrompt = null;
+
+            // 如果有产品上下文，优先使用该产品
+            if (contextProduct != null) {
+                ragProducts.add(contextProduct);
+                log.debug("使用产品上下文: {}", contextProduct.getName());
+            }
+
             if (ragEnabled && productKnowledgeService != null) {
                 try {
-                    ragProducts = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
+                    List<GoodsSpu> retrieved = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
+                    if (!retrieved.isEmpty()) {
+                        // 合并上下文产品和RAG检索结果，去重
+                        for (GoodsSpu p : retrieved) {
+                            if (ragProducts.stream().noneMatch(rp -> rp.getId().equals(p.getId()))) {
+                                ragProducts.add(p);
+                            }
+                        }
+                    }
                     if (!ragProducts.isEmpty()) {
                         enhancedPrompt = productKnowledgeService.enhancePromptWithKnowledge(message, ragProducts);
                         log.debug("RAG 检索到 {} 个相关商品，已增强提示", ragProducts.size());
