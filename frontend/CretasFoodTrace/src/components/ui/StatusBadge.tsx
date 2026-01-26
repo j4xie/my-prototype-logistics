@@ -10,34 +10,31 @@ interface StatusBadgeProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
+// P3 Fix: Extract color config outside component to avoid object recreation
+const VARIANT_COLORS = {
+  success: { bg: '#E6F9E9', text: theme.custom.colors.success },
+  warning: { bg: '#FFF9E6', text: theme.custom.colors.warning },
+  error: { bg: '#FEEBEB', text: theme.custom.colors.error },
+  info: { bg: '#E6F4FF', text: theme.custom.colors.info },
+  default: { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant },
+} as const;
+
+// P3 Fix: Wrap component with React.memo
+export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({
   status,
   variant = 'default',
   style,
 }) => {
-  const getColors = () => {
-    switch (variant) {
-      case 'success':
-        return { bg: '#E6F9E9', text: theme.custom.colors.success }; // Very light green bg
-      case 'warning':
-        return { bg: '#FFF9E6', text: theme.custom.colors.warning }; // Very light yellow bg
-      case 'error':
-        return { bg: '#FEEBEB', text: theme.custom.colors.error }; // Very light red bg
-      case 'info':
-        return { bg: '#E6F4FF', text: theme.custom.colors.info }; // Very light blue bg
-      default:
-        return { bg: theme.colors.surfaceVariant, text: theme.colors.onSurfaceVariant };
-    }
-  };
-
-  const colors = getColors();
+  const colors = VARIANT_COLORS[variant] || VARIANT_COLORS.default;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }, style]}>
       <Text style={[styles.text, { color: colors.text }]}>{status}</Text>
     </View>
   );
-};
+});
+
+StatusBadge.displayName = 'StatusBadge';
 
 const styles = StyleSheet.create({
   container: {
@@ -54,4 +51,3 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
-

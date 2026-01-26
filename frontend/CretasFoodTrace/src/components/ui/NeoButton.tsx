@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
 import { Button, ButtonProps } from 'react-native-paper';
 import { theme } from '../../theme';
@@ -10,7 +10,56 @@ interface NeoButtonProps extends Omit<ButtonProps, 'theme'> {
   labelStyle?: StyleProp<TextStyle>;
 }
 
-export const NeoButton: React.FC<NeoButtonProps> = ({
+// P3 Fix: Extract button config mapping outside component
+const BUTTON_CONFIG = {
+  primary: {
+    mode: 'contained' as const,
+    buttonColor: theme.colors.primary,
+    textColor: theme.colors.onPrimary,
+    style: undefined,
+  },
+  secondary: {
+    mode: 'contained-tonal' as const,
+    buttonColor: theme.colors.secondaryContainer,
+    textColor: theme.colors.onSecondaryContainer,
+    style: undefined,
+  },
+  outline: {
+    mode: 'outlined' as const,
+    buttonColor: 'transparent',
+    textColor: theme.colors.primary,
+    style: { borderColor: theme.colors.outline },
+  },
+  ghost: {
+    mode: 'text' as const,
+    buttonColor: 'transparent',
+    textColor: theme.colors.primary,
+    style: undefined,
+  },
+  danger: {
+    mode: 'contained' as const,
+    buttonColor: theme.colors.error,
+    textColor: theme.colors.onError,
+    style: undefined,
+  },
+} as const;
+
+// P3 Fix: Extract size styles outside component
+const SIZE_STYLES = {
+  small: { height: 32, paddingHorizontal: 12 },
+  medium: { height: 44, paddingHorizontal: 20 },
+  large: { height: 56, paddingHorizontal: 32 },
+} as const;
+
+// P3 Fix: Extract font sizes outside component
+const FONT_SIZES = {
+  small: 13,
+  medium: 15,
+  large: 17,
+} as const;
+
+// P3 Fix: Wrap component with React.memo
+export const NeoButton: React.FC<NeoButtonProps> = React.memo(({
   variant = 'primary',
   size = 'medium',
   style,
@@ -19,77 +68,16 @@ export const NeoButton: React.FC<NeoButtonProps> = ({
   mode, // ignore passed mode, use variant to determine
   ...props
 }) => {
-  const getButtonConfig = () => {
-    switch (variant) {
-      case 'primary':
-        return {
-          mode: 'contained' as const,
-          buttonColor: theme.colors.primary,
-          textColor: theme.colors.onPrimary,
-        };
-      case 'secondary':
-        return {
-          mode: 'contained-tonal' as const,
-          buttonColor: theme.colors.secondaryContainer,
-          textColor: theme.colors.onSecondaryContainer,
-        };
-      case 'outline':
-        return {
-          mode: 'outlined' as const,
-          buttonColor: 'transparent',
-          textColor: theme.colors.primary,
-          style: { borderColor: theme.colors.outline },
-        };
-      case 'ghost':
-        return {
-          mode: 'text' as const,
-          buttonColor: 'transparent',
-          textColor: theme.colors.primary,
-        };
-      case 'danger':
-        return {
-          mode: 'contained' as const,
-          buttonColor: theme.colors.error,
-          textColor: theme.colors.onError,
-        };
-      default:
-        return {
-          mode: 'contained' as const,
-          buttonColor: theme.colors.primary,
-          textColor: theme.colors.onPrimary,
-        };
-    }
-  };
+  const config = BUTTON_CONFIG[variant] || BUTTON_CONFIG.primary;
+  const sizeStyle = SIZE_STYLES[size] || SIZE_STYLES.medium;
+  const fontSize = FONT_SIZES[size] || FONT_SIZES.medium;
 
-  const getSizeStyle = () => {
-    switch (size) {
-      case 'small':
-        return {
-          height: 32,
-          paddingHorizontal: 12,
-        };
-      case 'large':
-        return {
-          height: 56,
-          paddingHorizontal: 32,
-        };
-      default: // medium
-        return {
-          height: 44,
-          paddingHorizontal: 20,
-        };
-    }
-  };
-
-  const getFontSize = () => {
-    switch (size) {
-      case 'small': return 13;
-      case 'large': return 17;
-      default: return 15;
-    }
-  };
-
-  const config = getButtonConfig();
+  // P3 Fix: Memoize label style to avoid object recreation
+  const computedLabelStyle = useMemo(() => [
+    styles.label,
+    { fontSize },
+    labelStyle,
+  ], [fontSize, labelStyle]);
 
   return (
     <Button
@@ -98,22 +86,20 @@ export const NeoButton: React.FC<NeoButtonProps> = ({
       textColor={config.textColor}
       style={[
         styles.button,
-        getSizeStyle(),
+        sizeStyle,
         config.style,
         style,
       ]}
-      labelStyle={[
-        styles.label,
-        { fontSize: getFontSize() },
-        labelStyle,
-      ]}
+      labelStyle={computedLabelStyle}
       contentStyle={styles.content}
       {...props}
     >
       {children}
     </Button>
   );
-};
+});
+
+NeoButton.displayName = 'NeoButton';
 
 const styles = StyleSheet.create({
   button: {
@@ -130,4 +116,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-

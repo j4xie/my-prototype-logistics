@@ -3,7 +3,7 @@
  * Voice Assistant Overlay UI
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -85,8 +85,8 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
     }
   }, [chatHistory.length]);
 
-  // 处理麦克风按钮
-  const handleMicPress = async () => {
+  // P0 Fix: Wrap handlers with useCallback to prevent re-renders
+  const handleMicPress = useCallback(async () => {
     try {
       if (status === 'listening') {
         await stopListening();
@@ -96,10 +96,9 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
     } catch (err) {
       Alert.alert('错误', err instanceof Error ? err.message : '操作失败');
     }
-  };
+  }, [status, stopListening, startListening]);
 
-  // 处理提交
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     try {
       const result = await confirmSubmit();
       onSubmit?.(result);
@@ -107,10 +106,9 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
     } catch (err) {
       Alert.alert('提交失败', err instanceof Error ? err.message : '请重试');
     }
-  };
+  }, [confirmSubmit, onSubmit, onClose]);
 
-  // 处理重置
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     Alert.alert('确认重置', '将清除当前所有检验数据，是否继续？', [
       { text: '取消', style: 'cancel' },
       {
@@ -119,10 +117,9 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
         onPress: () => resetSession(),
       },
     ]);
-  };
+  }, [resetSession]);
 
-  // 处理关闭
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (chatHistory.length > 0 && progress.percentage < 100) {
       Alert.alert('确认退出', '检验尚未完成，退出将丢失当前进度', [
         { text: '继续检验', style: 'cancel' },
@@ -139,10 +136,10 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
       endSession();
       onClose();
     }
-  };
+  }, [chatHistory.length, progress.percentage, endSession, onClose]);
 
-  // 获取状态文本
-  const getStatusText = () => {
+  // P0 Fix: Use useMemo for computed values
+  const statusText = useMemo(() => {
     switch (status) {
       case 'listening':
         return '正在聆听...';
@@ -157,10 +154,9 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
       default:
         return '点击麦克风开始说话';
     }
-  };
+  }, [status]);
 
-  // 获取麦克风按钮颜色
-  const getMicButtonColor = () => {
+  const micButtonColor = useMemo(() => {
     switch (status) {
       case 'listening':
         return '#EF4444';
@@ -171,7 +167,7 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
       default:
         return '#2563EB';
     }
-  };
+  }, [status]);
 
   if (!currentBatch) {
     return null;
@@ -311,7 +307,7 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
                     height={30}
                   />
                 ) : (
-                  <Text style={styles.statusText}>{getStatusText()}</Text>
+                  <Text style={styles.statusText}>{statusText}</Text>
                 )}
               </View>
 
@@ -321,7 +317,7 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
                   <CircularWaveform
                     isActive={true}
                     size={100}
-                    color={getMicButtonColor()}
+                    color={micButtonColor}
                   />
                 )}
                 <TouchableOpacity
@@ -329,7 +325,7 @@ export const VoiceAssistantOverlay: React.FC<VoiceAssistantOverlayProps> = ({
                   disabled={status === 'processing' || status === 'speaking'}
                   style={[
                     styles.micButton,
-                    { backgroundColor: getMicButtonColor() },
+                    { backgroundColor: micButtonColor },
                     (status === 'processing' || status === 'speaking') &&
                       styles.micButtonDisabled,
                   ]}

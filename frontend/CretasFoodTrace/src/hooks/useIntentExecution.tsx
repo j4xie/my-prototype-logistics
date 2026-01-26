@@ -91,7 +91,10 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
     setIsExecuting(true);
 
     try {
-      console.log('[useIntentExecution] 执行意图:', request);
+      // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+      if (__DEV__) {
+        console.log('[useIntentExecution] 执行意图:', request);
+      }
 
       // 调用 API - 提取字段传递给 executeIntent(intentCode, parameters)
       const { intentCode, userInput, deviceId, entityType, entityId, context, previewOnly, forceExecute, sessionId, enableThinking, thinkingBudget, parameters } = request;
@@ -113,14 +116,20 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
       );
       setLastResponse(response);
 
-      console.log('[useIntentExecution] 响应状态:', response.status);
+      // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+      if (__DEV__) {
+        console.log('[useIntentExecution] 响应状态:', response.status);
+      }
 
       // 检查是否需要更多信息
       if (response.status === 'NEED_MORE_INFO' && autoHandleClarification) {
         const { clarificationQuestions: questions, missingParameters: params } = response;
 
         if (questions && questions.length > 0) {
-          console.log('[useIntentExecution] 需要澄清问题:', questions);
+          // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+          if (__DEV__) {
+            console.log('[useIntentExecution] 需要澄清问题:', questions);
+          }
 
           // 通知外部 (可选)
           const shouldShow = onClarificationNeeded?.(questions, params) ?? true;
@@ -139,11 +148,17 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
 
       // 检查是否成功
       if (response.success) {
-        console.log('[useIntentExecution] 执行成功');
+        // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+        if (__DEV__) {
+          console.log('[useIntentExecution] 执行成功');
+        }
         setRetryCount(0);
         onSuccess?.(response);
       } else if (response.status === 'ERROR') {
-        console.error('[useIntentExecution] 执行失败:', response.message);
+        // P4 Fix: Wrap console.error with __DEV__ to avoid production logging
+        if (__DEV__) {
+          console.error('[useIntentExecution] 执行失败:', response.message);
+        }
         onError?.(response.message || '执行失败');
       }
 
@@ -151,7 +166,10 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
       return response;
 
     } catch (error) {
-      console.error('[useIntentExecution] API 调用失败:', error);
+      // P4 Fix: Wrap console.error with __DEV__ to avoid production logging
+      if (__DEV__) {
+        console.error('[useIntentExecution] API 调用失败:', error);
+      }
       const errorMessage = error instanceof Error ? error.message : '网络错误';
       onError?.(errorMessage);
       setIsExecuting(false);
@@ -163,10 +181,16 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
    * 处理澄清对话框提交
    */
   const handleClarificationSubmit = useCallback(async (answers: Record<string, any>) => {
-    console.log('[useIntentExecution] 用户补充答案:', answers);
+    // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+    if (__DEV__) {
+      console.log('[useIntentExecution] 用户补充答案:', answers);
+    }
 
     if (!pendingRequest) {
-      console.error('[useIntentExecution] 没有待重试的请求');
+      // P4 Fix: Wrap console.error with __DEV__ to avoid production logging
+      if (__DEV__) {
+        console.error('[useIntentExecution] 没有待重试的请求');
+      }
       return;
     }
 
@@ -190,7 +214,10 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
       },
     };
 
-    console.log('[useIntentExecution] 重试请求:', retryRequest);
+    // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+    if (__DEV__) {
+      console.log('[useIntentExecution] 重试请求:', retryRequest);
+    }
 
     // 重新执行
     await executeIntent(retryRequest);
@@ -200,7 +227,10 @@ export function useIntentExecution(options: UseIntentExecutionOptions = {}): Use
    * 处理澄清对话框取消
    */
   const handleClarificationCancel = useCallback(() => {
-    console.log('[useIntentExecution] 用户取消澄清');
+    // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+    if (__DEV__) {
+      console.log('[useIntentExecution] 用户取消澄清');
+    }
     setShowClarificationDialog(false);
     setPendingRequest(null);
     setRetryCount(0);

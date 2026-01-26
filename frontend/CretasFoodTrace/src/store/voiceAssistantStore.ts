@@ -5,6 +5,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   VoiceAssistantConfig,
@@ -57,34 +58,52 @@ interface VoiceAssistantState {
   clearError: () => void;
 }
 
+// P1 Fix: Track listener cleanup functions to prevent memory leaks
+let listenerCleanupFns: Array<() => void> = [];
+let listenersInitialized = false;
+
+// P1 Fix: Export cleanup function for memory leak prevention
+export const cleanupVoiceAssistantListeners = () => {
+  listenerCleanupFns.forEach((cleanup) => cleanup());
+  listenerCleanupFns = [];
+  listenersInitialized = false;
+};
+
 export const useVoiceAssistantStore = create<VoiceAssistantState>()(
   persist(
     (set, get) => {
-      // 初始化监听器
+      // P1 Fix: Initialize listeners only once and track cleanup functions
       const initializeListeners = () => {
-        // 状态监听
-        voiceAssistantService.addStatusListener((status) => {
+        if (listenersInitialized) return;
+        listenersInitialized = true;
+
+        // 状态监听 - addStatusListener returns cleanup function
+        const cleanupStatus = voiceAssistantService.addStatusListener((status) => {
           set({ status });
         });
+        listenerCleanupFns.push(cleanupStatus);
 
         // 消息监听
-        voiceAssistantService.addMessageListener((message) => {
+        const cleanupMessage = voiceAssistantService.addMessageListener((message) => {
           set((state) => ({
             chatHistory: [...state.chatHistory, message],
           }));
         });
+        listenerCleanupFns.push(cleanupMessage);
 
         // 数据监听
-        voiceAssistantService.addDataListener((data) => {
+        const cleanupData = voiceAssistantService.addDataListener((data) => {
           set((state) => ({
             inspectionData: { ...state.inspectionData, ...data },
           }));
         });
+        listenerCleanupFns.push(cleanupData);
 
         // 错误监听
-        voiceAssistantService.addErrorListener((error) => {
+        const cleanupError = voiceAssistantService.addErrorListener((error) => {
           set({ error, status: 'error' });
         });
+        listenerCleanupFns.push(cleanupError);
       };
 
       // 延迟初始化监听器
@@ -271,13 +290,16 @@ export const useVoiceAssistantStore = create<VoiceAssistantState>()(
 // 便捷 hooks
 export const useVoiceConfig = () => useVoiceAssistantStore((state) => state.config);
 export const useVoiceStatus = () => useVoiceAssistantStore((state) => state.status);
+// P1 Fix: Use useShallow to prevent unnecessary re-renders when object reference changes
 export const useVoiceSession = () =>
-  useVoiceAssistantStore((state) => ({
-    isActive: state.isSessionActive,
-    batch: state.currentBatch,
-    data: state.inspectionData,
-    history: state.chatHistory,
-  }));
+  useVoiceAssistantStore(
+    useShallow((state) => ({
+      isActive: state.isSessionActive,
+      batch: state.currentBatch,
+      data: state.inspectionData,
+      history: state.chatHistory,
+    }))
+  );
 export const useVoiceError = () => useVoiceAssistantStore((state) => state.error);
 
 // 计算属性 hooks

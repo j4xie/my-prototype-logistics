@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -26,6 +26,84 @@ import {
   ProcessingStageOption,
 } from '../../services/api/productTypeApiClient';
 import { handleError, getErrorMsg } from '../../utils/errorHandler';
+
+/**
+ * P0 Fix: Memoized Step Card Component
+ */
+interface StepCardProps {
+  step: ProcessingStep;
+  index: number;
+  totalCount: number;
+  disabled: boolean;
+  getStageLabel: (stageType: string) => string;
+  onMoveUp: (index: number) => void;
+  onMoveDown: (index: number) => void;
+  onEdit: (step: ProcessingStep, index: number) => void;
+  onDelete: (index: number) => void;
+}
+
+const StepCard = React.memo(function StepCard({
+  step,
+  index,
+  totalCount,
+  disabled,
+  getStageLabel,
+  onMoveUp,
+  onMoveDown,
+  onEdit,
+  onDelete,
+}: StepCardProps) {
+  const handleMoveUp = useCallback(() => onMoveUp(index), [onMoveUp, index]);
+  const handleMoveDown = useCallback(() => onMoveDown(index), [onMoveDown, index]);
+  const handleEdit = useCallback(() => onEdit(step, index), [onEdit, step, index]);
+  const handleDelete = useCallback(() => onDelete(index), [onDelete, index]);
+
+  return (
+    <Card style={styles.stepCard} mode="outlined">
+      <Card.Content style={styles.stepCardContent}>
+        <View style={styles.stepHeader}>
+          <View style={styles.stepOrderBadge}>
+            <Text style={styles.stepOrderText}>{step.orderIndex}</Text>
+          </View>
+          <View style={styles.stepInfo}>
+            <Text style={styles.stepTitle}>{getStageLabel(step.stageType)}</Text>
+            <Text style={styles.stepSubtitle}>
+              技能等级: {step.requiredSkillLevel} | 预估: {step.estimatedMinutes}分钟
+            </Text>
+          </View>
+          {!disabled && (
+            <View style={styles.stepActions}>
+              <IconButton
+                icon="arrow-up"
+                size={20}
+                onPress={handleMoveUp}
+                disabled={index === 0}
+              />
+              <IconButton
+                icon="arrow-down"
+                size={20}
+                onPress={handleMoveDown}
+                disabled={index === totalCount - 1}
+              />
+              <IconButton
+                icon="pencil"
+                size={20}
+                onPress={handleEdit}
+              />
+              <IconButton
+                icon="delete"
+                size={20}
+                iconColor="#ef4444"
+                onPress={handleDelete}
+              />
+            </View>
+          )}
+        </View>
+        {step.notes && <Text style={styles.stepNotes}>{step.notes}</Text>}
+      </Card.Content>
+    </Card>
+  );
+});
 
 interface ProcessingStepsEditorProps {
   /** 当前加工步骤列表 */
@@ -105,8 +183,8 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
     [stageOptions]
   );
 
-  // 添加新步骤
-  const handleAddStep = () => {
+  // P0 Fix: Wrap all handlers with useCallback
+  const handleAddStep = useCallback(() => {
     const newStep: ProcessingStep = {
       stageType: 'RECEIVING',
       orderIndex: value.length + 1,
@@ -117,17 +195,15 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
     setEditingStep(newStep);
     setEditingIndex(-1);
     setEditModalVisible(true);
-  };
+  }, [value.length]);
 
-  // 编辑步骤
-  const handleEditStep = (step: ProcessingStep, index: number) => {
+  const handleEditStep = useCallback((step: ProcessingStep, index: number) => {
     setEditingStep({ ...step });
     setEditingIndex(index);
     setEditModalVisible(true);
-  };
+  }, []);
 
-  // 删除步骤
-  const handleDeleteStep = (index: number) => {
+  const handleDeleteStep = useCallback((index: number) => {
     Alert.alert('确认删除', '确定要删除这个加工步骤吗？', [
       { text: '取消', style: 'cancel' },
       {
@@ -135,7 +211,6 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
         style: 'destructive',
         onPress: () => {
           const newSteps = value.filter((_, i) => i !== index);
-          // 重新编号
           const renumbered = newSteps.map((step, i) => ({
             ...step,
             orderIndex: i + 1,
@@ -144,10 +219,9 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
         },
       },
     ]);
-  };
+  }, [value, onChange]);
 
-  // 上移步骤
-  const handleMoveUp = (index: number) => {
+  const handleMoveUp = useCallback((index: number) => {
     if (index === 0) return;
     const newSteps = [...value];
     const temp = newSteps[index - 1];
@@ -156,16 +230,14 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
       newSteps[index - 1] = current;
       newSteps[index] = temp;
     }
-    // 更新 orderIndex
     const renumbered = newSteps.map((step, i) => ({
       ...step,
       orderIndex: i + 1,
     }));
     onChange(renumbered);
-  };
+  }, [value, onChange]);
 
-  // 下移步骤
-  const handleMoveDown = (index: number) => {
+  const handleMoveDown = useCallback((index: number) => {
     if (index === value.length - 1) return;
     const newSteps = [...value];
     const current = newSteps[index];
@@ -174,28 +246,23 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
       newSteps[index] = next;
       newSteps[index + 1] = current;
     }
-    // 更新 orderIndex
     const renumbered = newSteps.map((step, i) => ({
       ...step,
       orderIndex: i + 1,
     }));
     onChange(renumbered);
-  };
+  }, [value, onChange]);
 
-  // 保存编辑的步骤
-  const handleSaveStep = () => {
+  const handleSaveStep = useCallback(() => {
     if (!editingStep) return;
 
     const newSteps = [...value];
     if (editingIndex >= 0) {
-      // 编辑现有步骤
       newSteps[editingIndex] = editingStep;
     } else {
-      // 添加新步骤
       newSteps.push(editingStep);
     }
 
-    // 重新编号
     const renumbered = newSteps.map((step, i) => ({
       ...step,
       orderIndex: i + 1,
@@ -204,54 +271,8 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
     onChange(renumbered);
     setEditModalVisible(false);
     setEditingStep(null);
-  };
+  }, [editingStep, editingIndex, value, onChange]);
 
-  // 渲染步骤卡片
-  const renderStepCard = (step: ProcessingStep, index: number) => (
-    <Card key={index} style={styles.stepCard} mode="outlined">
-      <Card.Content style={styles.stepCardContent}>
-        <View style={styles.stepHeader}>
-          <View style={styles.stepOrderBadge}>
-            <Text style={styles.stepOrderText}>{step.orderIndex}</Text>
-          </View>
-          <View style={styles.stepInfo}>
-            <Text style={styles.stepTitle}>{getStageLabel(step.stageType)}</Text>
-            <Text style={styles.stepSubtitle}>
-              技能等级: {step.requiredSkillLevel} | 预估: {step.estimatedMinutes}分钟
-            </Text>
-          </View>
-          {!disabled && (
-            <View style={styles.stepActions}>
-              <IconButton
-                icon="arrow-up"
-                size={20}
-                onPress={() => handleMoveUp(index)}
-                disabled={index === 0}
-              />
-              <IconButton
-                icon="arrow-down"
-                size={20}
-                onPress={() => handleMoveDown(index)}
-                disabled={index === value.length - 1}
-              />
-              <IconButton
-                icon="pencil"
-                size={20}
-                onPress={() => handleEditStep(step, index)}
-              />
-              <IconButton
-                icon="delete"
-                size={20}
-                iconColor="#ef4444"
-                onPress={() => handleDeleteStep(index)}
-              />
-            </View>
-          )}
-        </View>
-        {step.notes && <Text style={styles.stepNotes}>{step.notes}</Text>}
-      </Card.Content>
-    </Card>
-  );
 
   // 渲染环节类型选择弹窗
   const renderStageSelectModal = () => (
@@ -434,7 +455,20 @@ export const ProcessingStepsEditor: React.FC<ProcessingStepsEditorProps> = ({
         </View>
       ) : (
         <View style={styles.stepsList}>
-          {value.map((step, index) => renderStepCard(step, index))}
+          {value.map((step, index) => (
+            <StepCard
+              key={step.orderIndex || index}
+              step={step}
+              index={index}
+              totalCount={value.length}
+              disabled={disabled}
+              getStageLabel={getStageLabel}
+              onMoveUp={handleMoveUp}
+              onMoveDown={handleMoveDown}
+              onEdit={handleEditStep}
+              onDelete={handleDeleteStep}
+            />
+          ))}
         </View>
       )}
 

@@ -7,6 +7,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { logger } from '../utils/logger';
 import { lowcodeApiClient } from '../services/api/lowcodeApiClient';
@@ -1379,14 +1380,17 @@ export const useVisiblePageModules = (pageId: string) =>
 
 /**
  * 获取编辑状态
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const usePageEditState = () =>
-  usePageConfigStore((state) => ({
-    isEditing: state.isEditing,
-    hasUnsavedChanges: state.hasUnsavedChanges,
-    isLoading: state.isLoading,
-    error: state.error,
-  }));
+  usePageConfigStore(
+    useShallow((state) => ({
+      isEditing: state.isEditing,
+      hasUnsavedChanges: state.hasUnsavedChanges,
+      isLoading: state.isLoading,
+      error: state.error,
+    }))
+  );
 
 /**
  * 获取主题配置
@@ -1398,55 +1402,67 @@ export const usePageTheme = () =>
 
 /**
  * 获取撤销/重做状态
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const usePageUndoRedo = () =>
-  usePageConfigStore((state) => ({
-    canUndo: state.canUndo(),
-    canRedo: state.canRedo(),
-    undo: state.undo,
-    redo: state.redo,
-  }));
+  usePageConfigStore(
+    useShallow((state) => ({
+      canUndo: state.canUndo(),
+      canRedo: state.canRedo(),
+      undo: state.undo,
+      redo: state.redo,
+    }))
+  );
 
 /**
  * 获取模块操作方法
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const usePageModuleActions = () =>
-  usePageConfigStore((state) => ({
-    addModule: state.addModule,
-    removeModule: state.removeModule,
-    updateModuleProps: state.updateModuleProps,
-    reorderModules: state.reorderModules,
-    resizeModule: state.resizeModule,
-    moveModule: state.moveModule,
-    toggleModuleVisibility: state.toggleModuleVisibility,
-  }));
+  usePageConfigStore(
+    useShallow((state) => ({
+      addModule: state.addModule,
+      removeModule: state.removeModule,
+      updateModuleProps: state.updateModuleProps,
+      reorderModules: state.reorderModules,
+      resizeModule: state.resizeModule,
+      moveModule: state.moveModule,
+      toggleModuleVisibility: state.toggleModuleVisibility,
+    }))
+  );
 
 /**
  * 获取页面配置操作方法
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const usePageConfigActions = () =>
-  usePageConfigStore((state) => ({
-    loadConfig: state.loadConfig,
-    saveConfig: state.saveConfig,
-    publishConfig: state.publishConfig,
-    startEditing: state.startEditing,
-    cancelEditing: state.cancelEditing,
-    resetToDefault: state.resetToDefault,
-    updateTheme: state.updateTheme,
-    updateLayout: state.updateLayout,
-  }));
+  usePageConfigStore(
+    useShallow((state) => ({
+      loadConfig: state.loadConfig,
+      saveConfig: state.saveConfig,
+      publishConfig: state.publishConfig,
+      startEditing: state.startEditing,
+      cancelEditing: state.cancelEditing,
+      resetToDefault: state.resetToDefault,
+      updateTheme: state.updateTheme,
+      updateLayout: state.updateLayout,
+    }))
+  );
 
 /**
  * 获取AI操作方法和状态
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const usePageAIActions = () =>
-  usePageConfigStore((state) => ({
-    aiGenerateLayout: state.aiGenerateLayout,
-    aiAddComponent: state.aiAddComponent,
-    aiUpdateStyle: state.aiUpdateStyle,
-    applyAIResult: state.applyAIResult,
-    isAIProcessing: state.isAIProcessing,
-    aiError: state.aiError,
-  }));
+  usePageConfigStore(
+    useShallow((state) => ({
+      aiGenerateLayout: state.aiGenerateLayout,
+      aiAddComponent: state.aiAddComponent,
+      aiUpdateStyle: state.aiUpdateStyle,
+      applyAIResult: state.applyAIResult,
+      isAIProcessing: state.isAIProcessing,
+      aiError: state.aiError,
+    }))
+  );
 
 export default usePageConfigStore;

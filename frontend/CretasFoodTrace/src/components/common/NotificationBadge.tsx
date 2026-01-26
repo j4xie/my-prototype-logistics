@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle, TextStyle } from 'react-native';
 import { Text } from 'react-native-paper';
 
 /**
@@ -33,44 +33,7 @@ interface NotificationBadgeProps {
   textColor?: string;
 }
 
-export const NotificationBadge: React.FC<NotificationBadgeProps> = ({
-  count,
-  size = 'medium',
-  backgroundColor = '#F44336',
-  textColor = '#FFFFFF',
-}) => {
-  // 无未读时隐藏
-  if (count <= 0) {
-    return null;
-  }
-
-  // 超过99显示99+
-  const displayText = count > 99 ? '99+' : count.toString();
-
-  const sizeStyles = {
-    small: {
-      container: styles.containerSmall,
-      text: styles.textSmall,
-    },
-    medium: {
-      container: styles.containerMedium,
-      text: styles.textMedium,
-    },
-    large: {
-      container: styles.containerLarge,
-      text: styles.textLarge,
-    },
-  };
-
-  const { container, text } = sizeStyles[size];
-
-  return (
-    <View style={[styles.container, container, { backgroundColor }]}>
-      <Text style={[styles.text, text, { color: textColor }]}>{displayText}</Text>
-    </View>
-  );
-};
-
+// P3 Fix: Define styles first so SIZE_STYLES can reference them
 const styles = StyleSheet.create({
   container: {
     justifyContent: 'center',
@@ -111,5 +74,47 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
+
+// P3 Fix: Extract size styles outside component to avoid object recreation
+const SIZE_STYLES: Record<'small' | 'medium' | 'large', { container: StyleProp<ViewStyle>; text: StyleProp<TextStyle> }> = {
+  small: {
+    container: styles.containerSmall,
+    text: styles.textSmall,
+  },
+  medium: {
+    container: styles.containerMedium,
+    text: styles.textMedium,
+  },
+  large: {
+    container: styles.containerLarge,
+    text: styles.textLarge,
+  },
+};
+
+// P3 Fix: Wrap component with React.memo
+export const NotificationBadge: React.FC<NotificationBadgeProps> = React.memo(({
+  count,
+  size = 'medium',
+  backgroundColor = '#F44336',
+  textColor = '#FFFFFF',
+}) => {
+  // 无未读时隐藏
+  if (count <= 0) {
+    return null;
+  }
+
+  // 超过99显示99+
+  const displayText = count > 99 ? '99+' : count.toString();
+
+  const { container, text } = SIZE_STYLES[size] || SIZE_STYLES.medium;
+
+  return (
+    <View style={[styles.container, container, { backgroundColor }]}>
+      <Text style={[styles.text, text, { color: textColor }]}>{displayText}</Text>
+    </View>
+  );
+});
+
+NotificationBadge.displayName = 'NotificationBadge';
 
 export default NotificationBadge;

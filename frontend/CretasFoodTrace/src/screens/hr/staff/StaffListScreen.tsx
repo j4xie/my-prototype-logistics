@@ -12,7 +12,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   FlatList,
@@ -150,13 +150,14 @@ export default function StaffListScreen() {
     );
   };
 
-  const statusOptions: { value: StaffStatus | 'all'; label: string }[] = [
+  // P2 Fix: Memoize statusOptions to avoid recreation on every render
+  const statusOptions = useMemo<{ value: StaffStatus | 'all'; label: string }[]>(() => [
     { value: 'all', label: t('staff.list.filter.all') },
     { value: 'active', label: t('staff.list.filter.active') },
     { value: 'on_leave', label: t('staff.list.filter.onLeave') },
     { value: 'resigned', label: t('staff.list.filter.resigned') },
     { value: 'suspended', label: t('staff.list.filter.suspended') },
-  ];
+  ], [t]);
 
   if (loading && staffList.length === 0) {
     return (

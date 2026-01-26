@@ -7,6 +7,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient } from '../services/api/apiClient';
 
@@ -388,31 +389,40 @@ export const usePrimaryColor = () =>
 
 /**
  * 获取加载状态
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const useRoleThemeLoading = () =>
-  useRoleThemeStore((state) => ({
-    isLoading: state.isLoading,
-    error: state.error,
-  }));
+  useRoleThemeStore(
+    useShallow((state) => ({
+      isLoading: state.isLoading,
+      error: state.error,
+    }))
+  );
 
 /**
  * 获取组件权限检查方法
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const useComponentPermissions = () =>
-  useRoleThemeStore((state) => ({
-    canUseComponent: state.canUseComponent,
-    canEditComponent: state.canEditComponent,
-  }));
+  useRoleThemeStore(
+    useShallow((state) => ({
+      canUseComponent: state.canUseComponent,
+      canEditComponent: state.canEditComponent,
+    }))
+  );
 
 /**
  * 获取欢迎信息
+ * P1 Fix: Use useShallow to prevent unnecessary re-renders
  */
 export const useWelcomeInfo = () =>
-  useRoleThemeStore((state) => ({
-    welcomeText: state.getWelcomeText(),
-    logoUrl: state.getLogoUrl(),
-    roleCode: state.getCurrentRoleCode(),
-  }));
+  useRoleThemeStore(
+    useShallow((state) => ({
+      welcomeText: state.getWelcomeText(),
+      logoUrl: state.getLogoUrl(),
+      roleCode: state.getCurrentRoleCode(),
+    }))
+  );
 
 /**
  * 获取特定颜色

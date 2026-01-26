@@ -44,7 +44,12 @@ export default function DSHomeScreen() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      const dashboardRes = await schedulingApiClient.getDashboard();
+      // P0 Fix: Parallel API requests to eliminate waterfall
+      const [dashboardRes, linesRes] = await Promise.all([
+        schedulingApiClient.getDashboard(),
+        schedulingApiClient.getProductionLines(),
+      ]);
+
       if (dashboardRes.success && dashboardRes.data) {
         setDashboard(dashboardRes.data);
       }
@@ -53,7 +58,6 @@ export default function DSHomeScreen() {
       // Currently using mock data. Backend needs to provide:
       // GET /api/mobile/{factoryId}/workshops/status
       // The production lines API doesn't include worker statistics
-      const linesRes = await schedulingApiClient.getProductionLines();
       if (linesRes.success && linesRes.data && linesRes.data.length > 0) {
         // Transform production lines to workshop status format
         const workshopMap = new Map<string, WorkshopStatus>();
