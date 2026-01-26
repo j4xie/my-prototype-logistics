@@ -276,6 +276,37 @@ public class AiChatApi {
     }
 
     /**
+     * 获取小程序功能配置
+     * 返回所有功能开关，用于前端控制功能显示/隐藏
+     * 配置项在系统配置表中维护，key格式: mall.feature.xxx
+     *
+     * @return 功能配置信息
+     */
+    @GetMapping("/feature-config")
+    public AjaxResult getFeatureConfig() {
+        Map<String, Object> config = new HashMap<>();
+
+        // AI助手开关
+        String aiEnabled = configService.selectConfigByKey("mall.ai.assistant.enabled");
+        config.put("showAI", "true".equalsIgnoreCase(aiEnabled));
+
+        // 首页分类网格开关
+        String categoriesEnabled = configService.selectConfigByKey("mall.home.categories.enabled");
+        config.put("showCategories", !"false".equalsIgnoreCase(categoriesEnabled)); // 默认显示
+
+        // 首页商品列表开关 (热销、推荐)
+        String productsEnabled = configService.selectConfigByKey("mall.home.products.enabled");
+        config.put("showProducts", !"false".equalsIgnoreCase(productsEnabled)); // 默认显示
+
+        // 底部分类Tab开关
+        String categoryTabEnabled = configService.selectConfigByKey("mall.tabbar.category.enabled");
+        config.put("showCategoryTab", !"false".equalsIgnoreCase(categoryTabEnabled)); // 默认显示
+
+        config.put("timestamp", System.currentTimeMillis());
+        return AjaxResult.success(config);
+    }
+
+    /**
      * 获取行业分析报告
      * 提供市场趋势、热门品类、需求分布等数据
      *

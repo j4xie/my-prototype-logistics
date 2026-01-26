@@ -215,6 +215,9 @@ module.exports = {
   getAiConfig: () => {//获取AI配置（是否启用等）
     return request('/weixin/api/ma/ai/config', 'get', null, false)
   },
+  getFeatureConfig: () => {//获取功能开关配置（AI、分类、商品等）
+    return request('/weixin/api/ma/ai/feature-config', 'get', null, false)
+  },
   aiChat: (data) => {//AI对话
     return request('/weixin/api/ma/ai/chat', 'post', data, true)
   },

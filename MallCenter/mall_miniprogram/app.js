@@ -17,7 +17,14 @@ App({
   globalData: {
     thirdSession: null,
     wxUser: null,
-    config: __config
+    config: __config,
+    // 功能开关 - 通过后端配置控制
+    featureFlags: {
+      showAI: false,           // AI助手功能
+      showCategories: false,   // 首页分类网格
+      showProducts: false,     // 首页商品列表(热销、推荐)
+      showCategoryTab: false   // 底部分类Tab
+    }
   },
   onLaunch: function () {
     // P0修复: 初始化行为追踪器
