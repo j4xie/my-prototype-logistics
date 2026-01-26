@@ -224,6 +224,9 @@ module.exports = {
   getAiSessionHistory: (sessionId) => {//获取AI会话历史
     return request('/weixin/api/ma/ai/session/' + sessionId + '/history', 'get', null, false)
   },
+  clearAiSessionHistory: (sessionId) => {//清空AI会话历史 (新对话时调用)
+    return request('/weixin/api/ma/ai/session/' + sessionId + '/history', 'delete', null, false)
+  },
   submitAiFeedback: (id, feedback) => {//提交AI反馈
     return request('/weixin/api/ma/ai/demand/' + id + '/feedback', 'put', { feedback }, false)
   },
