@@ -45,8 +45,11 @@ Page({
     // ========== 冷启动弹窗相关 ==========
     showColdStartPopup: false,   // 是否显示冷启动弹窗
     coldStartChecked: false,     // 是否已检查过冷启动状态
-    // ========== AI助手开关 ==========
-    showAiAssistant: false,      // 是否显示AI助手入口（通过接口控制）
+    // ========== 功能开关 (通过后端配置控制) ==========
+    showAiAssistant: false,      // 是否显示AI助手入口
+    showCategories: true,        // 是否显示首页分类网格
+    showProducts: true,          // 是否显示首页商品列表
+    showCategoryTab: true,       // 是否显示底部分类Tab
     // ========== 首页分类 ==========
     categoryList: []             // 动态分类列表（从后端获取）
   },
@@ -64,12 +67,12 @@ Page({
         // 加载数据
         this.loadData()
         this.loadBanners()
+        // 加载功能配置（控制AI、分类、商品显示）
+        this.loadFeatureConfig()
         // 加载首页分类
         this.loadCategories()
         // 加载个性化推荐
         this.loadRecommendations()
-        // 加载AI配置
-        this.loadAiConfig()
         // 延迟显示启动广告
         setTimeout(() => {
           this.loadSplashAd()
@@ -334,21 +337,41 @@ Page({
     return vars.join('; ')
   },
 
-  // 加载AI配置（静默请求，不弹窗）
-  loadAiConfig() {
+  // 加载功能配置（静默请求，不弹窗）
+  // 包括: AI助手、首页分类、商品列表、分类Tab
+  loadFeatureConfig() {
     const config = app.globalData.config
     wx.request({
-      url: config.basePath + '/weixin/api/ma/ai/config',
+      url: config.basePath + '/weixin/api/ma/ai/feature-config',
       method: 'GET',
       success: (res) => {
         if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
+          const featureConfig = res.data.data
           this.setData({
-            showAiAssistant: res.data.data.enabled === true
+            showAiAssistant: featureConfig.showAI === true,
+            showCategories: featureConfig.showCategories !== false,
+            showProducts: featureConfig.showProducts !== false,
+            showCategoryTab: featureConfig.showCategoryTab !== false
           })
+
+          // 更新全局配置
+          app.globalData.featureFlags = {
+            showAI: featureConfig.showAI === true,
+            showCategories: featureConfig.showCategories !== false,
+            showProducts: featureConfig.showProducts !== false,
+            showCategoryTab: featureConfig.showCategoryTab !== false
+          }
+
+          // 如果分类Tab被禁用，隐藏它
+          if (featureConfig.showCategoryTab === false) {
+            wx.hideTabBarItem({ index: 1 })
+          }
+
+          console.log('功能配置加载完成:', featureConfig)
         }
       },
       fail: (err) => {
-        console.log('加载AI配置失败:', err)
+        console.log('加载功能配置失败:', err)
       }
     })
   },

@@ -90,21 +90,21 @@ Page({
       }
     })
   },
-  // 加载AI配置（静默请求，不弹窗）
+  // 加载功能配置（静默请求，不弹窗）
   loadAiConfig() {
     const config = app.globalData.config
     wx.request({
-      url: config.basePath + '/weixin/api/ma/ai/config',
+      url: config.basePath + '/weixin/api/ma/ai/feature-config',
       method: 'GET',
       success: (res) => {
         if (res.statusCode === 200 && res.data.code === 200 && res.data.data) {
           this.setData({
-            showAiAssistant: res.data.data.enabled === true
+            showAiAssistant: res.data.data.showAI === true
           })
         }
       },
       fail: (err) => {
-        console.log('加载AI配置失败:', err)
+        console.log('加载功能配置失败:', err)
       }
     })
   },
