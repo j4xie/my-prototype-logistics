@@ -24,6 +24,9 @@ import com.cretas.aims.service.smartbi.ExcelDataPersistenceService.PersistenceRe
 import com.cretas.aims.service.smartbi.ExcelDynamicParserService;
 import com.cretas.aims.service.smartbi.LLMFieldMappingService;
 import com.cretas.aims.service.smartbi.SmartBIUploadFlowService;
+import com.cretas.aims.service.smartbi.DynamicAnalysisService;
+import com.cretas.aims.service.smartbi.DynamicDataPersistenceService;
+import com.cretas.aims.service.smartbi.DynamicDataPersistenceService.DynamicPersistenceResult;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +75,17 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
 
     @Autowired
     private PythonSmartBIConfig pythonConfig;
+
+    // PostgreSQL 动态数据持久化服务（可选）
+    @Autowired(required = false)
+    private DynamicDataPersistenceService dynamicPersistenceService;
+
+    // PostgreSQL 动态数据分析服务（可选）
+    @Autowired(required = false)
+    private DynamicAnalysisService dynamicAnalysisService;
+
+    @org.springframework.beans.factory.annotation.Value("${smartbi.postgres.enabled:false}")
+    private boolean postgresEnabled;
 
     /**
      * Sheet 并行处理线程池
@@ -167,17 +181,34 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 log.info("autoConfirm=true，跳过用户确认，直接持久化数据");
             }
 
-            // 5. 自动持久化数据
-            PersistenceResult persistResult = persistenceService.persistData(
-                    factoryId, parseResult, detectedType);
+            // 5. 自动持久化数据 - 优先使用 PostgreSQL 动态存储
+            PersistenceResult persistResult;
+            if (postgresEnabled && dynamicPersistenceService != null) {
+                log.info("使用 PostgreSQL 动态存储持久化数据");
+                DynamicPersistenceResult dynamicResult = dynamicPersistenceService.persistDynamic(
+                        factoryId, parseResult);
+                // 转换为标准 PersistenceResult
+                persistResult = new PersistenceResult();
+                persistResult.setSuccess(dynamicResult.isSuccess());
+                persistResult.setUploadId(dynamicResult.getUploadId());
+                persistResult.setSavedRows(dynamicResult.getSavedRows());
+                persistResult.setTotalRows(dynamicResult.getTotalRows());
+                persistResult.setFailedRows(dynamicResult.getFailedRows());
+                persistResult.setMessage(dynamicResult.getMessage());
+                persistResult.setDataType(DataType.valueOf(detectedTypeStr));
+            } else {
+                log.info("使用 MySQL 固定结构存储持久化数据");
+                persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+            }
 
             if (!persistResult.isSuccess()) {
                 log.warn("数据持久化失败: {}", persistResult.getMessage());
                 return UploadFlowResult.failure("持久化失败: " + persistResult.getMessage());
             }
 
-            log.info("数据持久化成功: uploadId={}, savedRows={}",
-                    persistResult.getUploadId(), persistResult.getSavedRows());
+            log.info("数据持久化成功: uploadId={}, savedRows={}, storage={}",
+                    persistResult.getUploadId(), persistResult.getSavedRows(),
+                    postgresEnabled ? "PostgreSQL" : "MySQL");
 
             // 6. 推荐图表类型
             String recommendedChartType = recommendChartType(parseResult, detectedTypeStr);
@@ -247,16 +278,32 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 return UploadFlowResult.failure("无效的数据类型: " + dataType);
             }
 
-            // 2. 使用确认的字段映射持久化数据
-            PersistenceResult persistResult = persistenceService.persistData(
-                    factoryId, parseResponse, confirmedMappings, detectedType);
+            // 2. 使用确认的字段映射持久化数据 - 优先使用 PostgreSQL
+            PersistenceResult persistResult;
+            if (postgresEnabled && dynamicPersistenceService != null) {
+                log.info("使用 PostgreSQL 动态存储持久化确认后的数据");
+                DynamicPersistenceResult dynamicResult = dynamicPersistenceService.persistDynamic(
+                        factoryId, parseResponse, confirmedMappings);
+                persistResult = new PersistenceResult();
+                persistResult.setSuccess(dynamicResult.isSuccess());
+                persistResult.setUploadId(dynamicResult.getUploadId());
+                persistResult.setSavedRows(dynamicResult.getSavedRows());
+                persistResult.setTotalRows(dynamicResult.getTotalRows());
+                persistResult.setFailedRows(dynamicResult.getFailedRows());
+                persistResult.setMessage(dynamicResult.getMessage());
+                persistResult.setDataType(detectedType);
+            } else {
+                persistResult = persistenceService.persistData(
+                        factoryId, parseResponse, confirmedMappings, detectedType);
+            }
 
             if (!persistResult.isSuccess()) {
                 return UploadFlowResult.failure("持久化失败: " + persistResult.getMessage());
             }
 
-            log.info("确认后数据持久化成功: uploadId={}, savedRows={}",
-                    persistResult.getUploadId(), persistResult.getSavedRows());
+            log.info("确认后数据持久化成功: uploadId={}, savedRows={}, storage={}",
+                    persistResult.getUploadId(), persistResult.getSavedRows(),
+                    postgresEnabled ? "PostgreSQL" : "MySQL");
 
             // 2.1 自动学习：将用户手动确认的映射保存到字典数据库
             saveManualMappingsToDatabase(factoryId, confirmedMappings);
@@ -432,8 +479,12 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         // 尝试使用 Python 服务
         try {
             if (pythonClient.isAvailable()) {
-                log.info("使用 Python SmartBI 服务解析 Excel: fileName={}", file.getOriginalFilename());
-                ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType);
+                int sheetIndex = parseRequest.getSheetIndex() != null ? parseRequest.getSheetIndex() : 0;
+                int headerRow = parseRequest.getHeaderRow() != null ? parseRequest.getHeaderRow() + 1 : 1;
+
+                log.info("使用 Python SmartBI 服务解析 Excel: fileName={}, sheetIndex={}, headerRow={}",
+                        file.getOriginalFilename(), sheetIndex, headerRow);
+                ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRow);
 
                 if (pythonResult != null && pythonResult.isSuccess()) {
                     log.info("Python SmartBI 解析成功: headers={}, rows={}",
@@ -643,8 +694,27 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
 
     /**
      * 构建图表数据
+     *
+     * 优先使用 PostgreSQL 动态数据（如果启用），否则使用 MySQL 静态表
      */
     private Map<String, Object> buildChartData(String factoryId, Long uploadId, DataType dataType) {
+        // 优先使用 PostgreSQL 动态分析服务
+        if (postgresEnabled && dynamicAnalysisService != null) {
+            try {
+                log.debug("使用 PostgreSQL 动态分析服务构建图表数据: uploadId={}", uploadId);
+                DynamicAnalysisService.DashboardResponse dashboard =
+                    dynamicAnalysisService.analyzeDynamic(factoryId, uploadId, dataType.name().toLowerCase());
+
+                if (dashboard != null && dashboard.getCharts() != null && !dashboard.getCharts().isEmpty()) {
+                    // 将 DynamicAnalysisService 的图表格式转换为 ChartTemplateService 期望的格式
+                    return convertDynamicChartsToChartData(dashboard);
+                }
+            } catch (Exception e) {
+                log.warn("PostgreSQL 动态分析失败，回退到 MySQL: {}", e.getMessage());
+            }
+        }
+
+        // 回退到 MySQL 静态表
         switch (dataType) {
             case SALES:
                 List<SmartBiSalesData> salesData = salesDataRepository.findByUploadId(uploadId);
@@ -655,6 +725,87 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             default:
                 return Collections.emptyMap();
         }
+    }
+
+    /**
+     * 将 DynamicAnalysisService 的图表数据转换为 ChartTemplateService 期望的格式
+     *
+     * DynamicAnalysisService 返回: {type, title, data: {labels, datasets}}
+     * ChartTemplateService 期望: {categories, series} 或 {metricName: {period: value, ...}}
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> convertDynamicChartsToChartData(DynamicAnalysisService.DashboardResponse dashboard) {
+        Map<String, Object> chartData = new LinkedHashMap<>();
+
+        List<Map<String, Object>> charts = dashboard.getCharts();
+        if (charts == null || charts.isEmpty()) {
+            log.debug("无图表数据可转换");
+            return chartData;
+        }
+
+        // 使用第一个图表的数据
+        Map<String, Object> primaryChart = charts.get(0);
+        Object dataObj = primaryChart.get("data");
+
+        if (dataObj instanceof Map) {
+            Map<String, Object> data = (Map<String, Object>) dataObj;
+            Object labelsObj = data.get("labels");
+            Object datasetsObj = data.get("datasets");
+
+            if (labelsObj instanceof List && datasetsObj instanceof List) {
+                List<String> labels = (List<String>) labelsObj;
+                List<Map<String, Object>> datasets = (List<Map<String, Object>>) datasetsObj;
+
+                // 转换为 ChartTemplateService 期望的 Map<metricName, Map<period, value>> 格式
+                for (Map<String, Object> dataset : datasets) {
+                    String seriesName = (String) dataset.getOrDefault("label", "数据");
+                    Object dataValues = dataset.get("data");
+
+                    if (dataValues instanceof List) {
+                        List<?> values = (List<?>) dataValues;
+                        Map<String, Object> seriesData = new LinkedHashMap<>();
+
+                        for (int i = 0; i < Math.min(labels.size(), values.size()); i++) {
+                            String label = labels.get(i);
+                            Object value = values.get(i);
+                            seriesData.put(label, value);
+                        }
+
+                        chartData.put(seriesName, seriesData);
+                    }
+                }
+
+                // 添加 categories（用于标准格式兼容）
+                chartData.put("categories", labels);
+
+                // 添加 series（用于标准格式兼容）
+                List<Map<String, Object>> seriesList = new ArrayList<>();
+                for (Map<String, Object> dataset : datasets) {
+                    Map<String, Object> series = new LinkedHashMap<>();
+                    series.put("name", dataset.getOrDefault("label", "数据"));
+                    series.put("type", primaryChart.getOrDefault("type", "line"));
+                    series.put("data", dataset.get("data"));
+                    seriesList.add(series);
+                }
+                chartData.put("series", seriesList);
+
+                log.debug("成功转换动态图表数据: categories={}, series={}",
+                        labels.size(), seriesList.size());
+            }
+        }
+
+        // 添加 KPI 数据
+        if (dashboard.getKpiCards() != null && !dashboard.getKpiCards().isEmpty()) {
+            for (Map<String, Object> kpi : dashboard.getKpiCards()) {
+                String title = (String) kpi.get("title");
+                Object rawValue = kpi.get("rawValue");
+                if (title != null && rawValue != null) {
+                    chartData.put("total" + title.replace(" ", ""), rawValue);
+                }
+            }
+        }
+
+        return chartData;
     }
 
     /**
@@ -1261,10 +1412,23 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             int rowCount = parseResult.getRowCount() != null ? parseResult.getRowCount() : 0;
             progressCallback.accept(UploadProgressEvent.persisting(sheetIndex, sheetName, rowCount));
 
-            // 持久化数据
+            // 持久化数据 - 优先使用 PostgreSQL
             PersistenceResult persistResult;
             synchronized (this) {
-                persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+                if (postgresEnabled && dynamicPersistenceService != null) {
+                    DynamicPersistenceResult dynamicResult = dynamicPersistenceService.persistDynamic(
+                            factoryId, parseResult);
+                    persistResult = new PersistenceResult();
+                    persistResult.setSuccess(dynamicResult.isSuccess());
+                    persistResult.setUploadId(dynamicResult.getUploadId());
+                    persistResult.setSavedRows(dynamicResult.getSavedRows());
+                    persistResult.setTotalRows(dynamicResult.getTotalRows());
+                    persistResult.setFailedRows(dynamicResult.getFailedRows());
+                    persistResult.setMessage(dynamicResult.getMessage());
+                    persistResult.setDataType(detectedType);
+                } else {
+                    persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+                }
             }
 
             if (!persistResult.isSuccess()) {
@@ -1412,10 +1576,23 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
                 log.debug("Sheet[{}] {} autoConfirm=true，跳过用户确认", sheetIndex, sheetName);
             }
 
-            // 持久化数据（同步执行，避免事务问题）
+            // 持久化数据（同步执行，避免事务问题）- 优先使用 PostgreSQL
             PersistenceResult persistResult;
             synchronized (this) {
-                persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+                if (postgresEnabled && dynamicPersistenceService != null) {
+                    DynamicPersistenceResult dynamicResult = dynamicPersistenceService.persistDynamic(
+                            factoryId, parseResult);
+                    persistResult = new PersistenceResult();
+                    persistResult.setSuccess(dynamicResult.isSuccess());
+                    persistResult.setUploadId(dynamicResult.getUploadId());
+                    persistResult.setSavedRows(dynamicResult.getSavedRows());
+                    persistResult.setTotalRows(dynamicResult.getTotalRows());
+                    persistResult.setFailedRows(dynamicResult.getFailedRows());
+                    persistResult.setMessage(dynamicResult.getMessage());
+                    persistResult.setDataType(detectedType);
+                } else {
+                    persistResult = persistenceService.persistData(factoryId, parseResult, detectedType);
+                }
             }
 
             if (!persistResult.isSuccess()) {
