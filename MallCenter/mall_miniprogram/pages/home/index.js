@@ -386,7 +386,7 @@ Page({
     let current = e.detail.current
     let bannerList = this.data.bannerList
     if (bannerList[current] && bannerList[current].id) {
-      app.api.recordAdView(bannerList[current].id)
+      //app.api.recordAdView(bannerList[current].id)
     }
   },
   // Banner点击
