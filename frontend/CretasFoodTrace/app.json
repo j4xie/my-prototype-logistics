@@ -90,9 +90,6 @@
       "eas": {
         "projectId": "com.cretas.foodtrace"
       }
-    },
-    "autolinking": {
-      "exclude": ["expo-barcode-scanner"]
     }
   }
 }
