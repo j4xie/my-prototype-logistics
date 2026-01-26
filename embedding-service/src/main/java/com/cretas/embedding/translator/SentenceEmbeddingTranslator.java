@@ -96,8 +96,17 @@ public class SentenceEmbeddingTranslator implements Translator<String, float[]> 
 
     @Override
     public float[] processOutput(TranslatorContext ctx, NDList list) throws Exception {
-        // Get the first output tensor
-        NDArray output = list.get(0);
+        // Find the sentence embedding output:
+        // - Fine-tuned ONNX models may have multiple outputs: token_embeddings (3D), sentence_embedding (2D)
+        // - Original models have one output: last_hidden_state (3D)
+        NDArray output;
+        if (list.size() > 1) {
+            // Fine-tuned model: use second output (sentence_embedding / last_hidden_state at index 1)
+            output = list.get(1);
+        } else {
+            // Original model: use first and only output
+            output = list.get(0);
+        }
         long[] shape = output.getShape().getShape();
 
         // Handle different output formats:
