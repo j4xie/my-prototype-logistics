@@ -45,17 +45,29 @@
             <text>{{item.text}}</text>
           </view>
 
-          <!-- 商品推荐卡片列表 -->
+          <!-- 商品推荐卡片列表 (增强版 - 借鉴白垩纪App suggestedActions设计) -->
           <scroll-view class="product-cards-scroll" scroll-x wx:if="{{item.sender === 'ai' && item.products && item.products.length > 0}}">
             <view class="product-cards">
-              <view class="product-card" wx:for="{{item.products}}" wx:for-item="product" wx:key="id" bindtap="goToProduct" data-id="{{product.id}}">
-                <image class="product-image" src="{{product.picUrl || product.coverImg}}" mode="aspectFill"></image>
-                <view class="product-info">
-                  <text class="product-name">{{product.name}}</text>
-                  <view class="product-price">
-                    <text class="price-symbol">¥</text>
-                    <text class="price-value">{{product.salesPrice || product.price}}</text>
+              <view class="product-card" wx:for="{{item.products}}" wx:for-item="product" wx:key="id">
+                <!-- 点击图片区域跳转详情 -->
+                <view class="product-main" bindtap="goToProduct" data-id="{{product.id}}">
+                  <image class="product-image" src="{{product.picUrl || product.coverImg}}" mode="aspectFill"></image>
+                  <view class="product-info">
+                    <text class="product-name">{{product.name}}</text>
+                    <view class="product-price">
+                      <text class="price-symbol">¥</text>
+                      <text class="price-value">{{product.salesPrice || product.price}}</text>
+                    </view>
                   </view>
+                </view>
+                <!-- 快捷操作按钮 (借鉴白垩纪suggestedActions设计) -->
+                <view class="product-actions">
+                  <button class="btn-action btn-cart" catchtap="addToCart" data-product="{{product}}">
+                    <text class="cuIcon-cart"></text> 加购
+                  </button>
+                  <button class="btn-action btn-buy" catchtap="buyNow" data-product="{{product}}">
+                    立即购买
+                  </button>
                 </view>
               </view>
             </view>
@@ -92,18 +104,21 @@
     <view style="height: 140rpx;" id="msg-bottom"></view>
   </scroll-view>
 
-  <!-- 输入区域 -->
+  <!-- 输入区域 (改用textarea支持点击光标定位 - 借鉴白垩纪App multiline设计) -->
   <view class="input-area">
     <view class="input-wrapper">
-      <input
+      <textarea
         class="input-field"
-        type="text"
         placeholder="输入您的问题..."
         value="{{inputText}}"
         bindinput="onInputChange"
         bindconfirm="sendMessage"
         confirm-type="send"
         disabled="{{isTyping}}"
+        auto-height
+        maxlength="500"
+        show-confirm-bar="{{false}}"
+        cursor-spacing="20"
       />
       <button class="send-btn {{!inputText ? 'disabled' : ''}}" bindtap="sendMessage" disabled="{{!inputText || isTyping}}">
         <text class="cuIcon-send"></text>

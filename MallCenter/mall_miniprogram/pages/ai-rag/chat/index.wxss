@@ -222,17 +222,22 @@
 
 .input-wrapper {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 16rpx;
 }
 
+/* textarea样式 (参考白垩纪App inputWrapper设计, 支持点击光标定位) */
 .input-field {
   flex: 1;
-  height: 80rpx;
+  min-height: 40rpx;
+  max-height: 160rpx;
   background: #f5f5f5;
   border-radius: 40rpx;
-  padding: 0 30rpx;
+  padding: 20rpx 30rpx;
   font-size: 28rpx;
+  line-height: 1.5;
+  color: #333;
+  box-sizing: border-box;
 }
 
 .send-btn {
@@ -351,4 +356,55 @@
   font-size: 32rpx;
   font-weight: bold;
   color: #e74c3c;
+}
+
+/* 商品主区域 (点击跳转详情) */
+.product-main {
+  cursor: pointer;
+}
+
+/* 商品卡片操作按钮 (借鉴白垩纪App suggestedActionButton样式) */
+.product-actions {
+  display: flex;
+  gap: 8rpx;
+  padding: 12rpx 8rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.btn-action {
+  flex: 1;
+  font-size: 22rpx;
+  padding: 10rpx 0;
+  border-radius: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin: 0;
+}
+
+.btn-action::after {
+  border: none;
+}
+
+.btn-cart {
+  background: #f0f5ff;
+  border: 1rpx solid #667eea;
+  color: #667eea;
+}
+
+.btn-cart .cuIcon-cart {
+  margin-right: 4rpx;
+  font-size: 24rpx;
+}
+
+.btn-buy {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  border: none;
+}
+
+.btn-action:active {
+  opacity: 0.8;
+  transform: scale(0.98);
 }
