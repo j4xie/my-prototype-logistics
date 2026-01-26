@@ -3,7 +3,7 @@
  * 从 IotDeviceListScreen 抽取的核心逻辑，可复用于多个页面
  * 支持搜索、状态筛选、设备卡片展示
  */
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,15 @@ export interface ScaleDeviceListProps {
   /** 点击创建按钮时的回调（FAB），不传则不显示 FAB */
   onCreatePress?: () => void;
 }
+
+// P2 Fix: Move status options outside component to avoid recreation
+const STATUS_OPTIONS = [
+  { key: 'all', label: '全部' },
+  { key: 'idle', label: '空闲' },
+  { key: 'active', label: '运行中' },
+  { key: 'offline', label: '离线' },
+  { key: 'error', label: '故障' },
+] as const;
 
 export function ScaleDeviceList({ onDevicePress, onCreatePress }: ScaleDeviceListProps) {
   const [loading, setLoading] = useState(true);
@@ -89,6 +98,11 @@ export function ScaleDeviceList({ onDevicePress, onCreatePress }: ScaleDeviceLis
     return labels[status] || status;
   };
 
+  // P2 Fix: Use useCallback for status change handler
+  const handleStatusChange = useCallback((status: string) => {
+    setSelectedStatus(status === 'all' ? null : status);
+  }, []);
+
   const renderDeviceItem = ({ item }: { item: ScaleDevice }) => (
     <TouchableOpacity
       style={styles.deviceCard}
@@ -146,29 +160,30 @@ export function ScaleDeviceList({ onDevicePress, onCreatePress }: ScaleDeviceLis
     </TouchableOpacity>
   );
 
-  const StatusFilterChips = () => (
+  // P2 Fix: Memoize filter chips to avoid recreation on every render
+  const statusFilterChips = useMemo(() => (
     <View style={styles.filterContainer}>
-      {['all', 'idle', 'active', 'offline', 'error'].map((status) => (
+      {STATUS_OPTIONS.map((option) => (
         <TouchableOpacity
-          key={status}
+          key={option.key}
           style={[
             styles.filterChip,
-            (selectedStatus === status || (status === 'all' && !selectedStatus)) && styles.filterChipActive,
+            (selectedStatus === option.key || (option.key === 'all' && !selectedStatus)) && styles.filterChipActive,
           ]}
-          onPress={() => setSelectedStatus(status === 'all' ? null : status)}
+          onPress={() => handleStatusChange(option.key)}
         >
           <Text
             style={[
               styles.filterChipText,
-              (selectedStatus === status || (status === 'all' && !selectedStatus)) && styles.filterChipTextActive,
+              (selectedStatus === option.key || (option.key === 'all' && !selectedStatus)) && styles.filterChipTextActive,
             ]}
           >
-            {status === 'all' ? '全部' : getStatusLabel(status)}
+            {option.label}
           </Text>
         </TouchableOpacity>
       ))}
     </View>
-  );
+  ), [selectedStatus, handleStatusChange]);
 
   if (loading) {
     return (
@@ -201,8 +216,8 @@ export function ScaleDeviceList({ onDevicePress, onCreatePress }: ScaleDeviceLis
         )}
       </View>
 
-      {/* 状态筛选 */}
-      <StatusFilterChips />
+      {/* 状态筛选 - P2 Fix: Use memoized chips */}
+      {statusFilterChips}
 
       {/* 设备列表 */}
       {error ? (

@@ -18,13 +18,19 @@ const getApiBaseUrl = () => {
   const envUrl = REACT_APP_API_URL;
 
   if (envUrl && envUrl.trim() !== '') {
-    console.log(`[API Config] Using API URL from environment: ${envUrl}`);
+    // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+    if (__DEV__) {
+      console.log(`[API Config] Using API URL from environment: ${envUrl}`);
+    }
     return envUrl;
   }
 
   // 默认值：生产服务器地址
   const defaultUrl = 'http://139.196.165.140:10010';
-  console.log(`[API Config] Using default API URL: ${defaultUrl}`);
+  // P4 Fix: Wrap console.log with __DEV__ to avoid production logging
+  if (__DEV__) {
+    console.log(`[API Config] Using default API URL: ${defaultUrl}`);
+  }
   return defaultUrl;
 };
 

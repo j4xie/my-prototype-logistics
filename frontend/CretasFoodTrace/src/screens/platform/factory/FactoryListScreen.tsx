@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   ScrollView,
@@ -77,12 +77,46 @@ export default function FactoryListScreen() {
 
   // State
   const [factories, setFactories] = useState<Factory[]>([]);
-  const [filteredFactories, setFilteredFactories] = useState<Factory[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [industryFilter, setIndustryFilter] = useState<IndustryFilter>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // P2 Fix: Use useMemo instead of useState + useEffect for filtered list
+  const filteredFactories = useMemo(() => {
+    let result = factories;
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(
+        (factory) =>
+          factory.name.toLowerCase().includes(query) ||
+          factory.code.toLowerCase().includes(query) ||
+          factory.address.toLowerCase().includes(query)
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      result = result.filter((factory) => factory.status === statusFilter);
+    }
+
+    // Industry filter
+    if (industryFilter) {
+      result = result.filter((factory) => factory.industry === industryFilter);
+    }
+
+    return result;
+  }, [factories, searchQuery, statusFilter, industryFilter]);
+
+  // P2 Fix: Memoize status counts to avoid recalculating on each render
+  const statusCounts = useMemo(() => ({
+    all: factories.length,
+    active: factories.filter((f) => f.status === 'active').length,
+    inactive: factories.filter((f) => f.status === 'inactive').length,
+  }), [factories]);
 
   // Load factories
   const loadFactories = useCallback(async () => {
@@ -142,34 +176,6 @@ export default function FactoryListScreen() {
     return '水产加工';
   };
 
-  // Filter factories based on search and filters
-  useEffect(() => {
-    let result = [...factories];
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(
-        (factory) =>
-          factory.name.toLowerCase().includes(query) ||
-          factory.code.toLowerCase().includes(query) ||
-          factory.address.toLowerCase().includes(query)
-      );
-    }
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      result = result.filter((factory) => factory.status === statusFilter);
-    }
-
-    // Industry filter
-    if (industryFilter) {
-      result = result.filter((factory) => factory.industry === industryFilter);
-    }
-
-    setFilteredFactories(result);
-  }, [factories, searchQuery, statusFilter, industryFilter]);
-
   // Initial load
   useEffect(() => {
     loadFactories();
@@ -197,11 +203,10 @@ export default function FactoryListScreen() {
     );
   };
 
-  // Get counts for filter chips
-  const getStatusCount = (status: StatusFilter): number => {
-    if (status === 'all') return factories.length;
-    return factories.filter((f) => f.status === status).length;
-  };
+  // P2 Fix: Use memoized statusCounts instead of filtering each time
+  const getStatusCount = useCallback((status: StatusFilter): number => {
+    return statusCounts[status];
+  }, [statusCounts]);
 
   // Render factory item
   const renderFactoryItem = (factory: Factory) => {

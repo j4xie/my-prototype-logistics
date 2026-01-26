@@ -11,18 +11,19 @@
  * @since 2025-12-28
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   RefreshControl,
   TextInput,
   Alert,
   Modal,
   ActivityIndicator,
+  ListRenderItem,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -78,6 +79,298 @@ const workshopOptions = ['全部车间', '切片车间', '包装车间', '冷冻
 const dateOptions = ['日期范围', '今天', '本周', '本月'];
 const sourceOptions = ['全部来源', '客户订单', 'AI预测', '安全库存', '混批'];
 const urgentOptions = ['全部', '仅紧急', '待审批'];
+
+// P0 Fix: Helper functions moved outside component
+const getStatusStyle = (status: string) => {
+  switch (status) {
+    case 'pending':
+      return { bg: '#fff7e6', text: '#fa8c16', label: '待开始' };
+    case 'in_progress':
+      return { bg: '#e6f7ff', text: '#1890ff', label: '进行中' };
+    case 'completed':
+      return { bg: '#f6ffed', text: '#52c41a', label: '已完成' };
+    default:
+      return { bg: '#f5f5f5', text: '#999', label: status };
+  }
+};
+
+const getCrLevelStyle = (level?: string) => {
+  switch (level) {
+    case 'urgent':
+      return { bg: '#fff1f0', text: '#ff4d4f', label: '紧急' };
+    case 'tight':
+      return { bg: '#fff7e6', text: '#fa8c16', label: '较紧' };
+    case 'sufficient':
+      return { bg: '#f6ffed', text: '#52c41a', label: '充裕' };
+    default:
+      return { bg: '#f5f5f5', text: '#999', label: '' };
+  }
+};
+
+/**
+ * P0 Fix: Memoized Plan Card Component for FlatList virtualization
+ */
+interface PlanCardProps {
+  plan: DisplayPlan;
+  urgentThreshold: number;
+  expandedMixedBatch: string | null;
+  onPress: (planId: string) => void;
+  onExpandMixedBatch: (planId: string | null) => void;
+  onApprove: (plan: DisplayPlan) => void;
+  onReject: (plan: DisplayPlan) => void;
+}
+
+const PlanCard = React.memo(function PlanCard({
+  plan,
+  urgentThreshold,
+  expandedMixedBatch,
+  onPress,
+  onExpandMixedBatch,
+  onApprove,
+  onReject,
+}: PlanCardProps) {
+  const statusStyle = getStatusStyle(plan.status);
+  const crStyle = getCrLevelStyle(plan.crLevel);
+  const isExpanded = expandedMixedBatch === plan.id;
+
+  const handlePress = useCallback(() => onPress(plan.id), [onPress, plan.id]);
+  const handleExpandToggle = useCallback(
+    () => onExpandMixedBatch(isExpanded ? null : plan.id),
+    [onExpandMixedBatch, isExpanded, plan.id]
+  );
+  const handleApprove = useCallback(
+    (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      onApprove(plan);
+    },
+    [onApprove, plan]
+  );
+  const handleReject = useCallback(
+    (e: { stopPropagation: () => void }) => {
+      e.stopPropagation();
+      onReject(plan);
+    },
+    [onReject, plan]
+  );
+
+  const getSourceBadge = () => {
+    switch (plan.sourceType) {
+      case 'customer_order':
+        return (
+          <View style={[styles.sourceBadge, { backgroundColor: '#e6f7ff' }]}>
+            <Text style={[styles.sourceBadgeText, { color: '#1890ff' }]}>客户订单</Text>
+          </View>
+        );
+      case 'mixed_batch':
+        return (
+          <View style={[styles.sourceBadge, { backgroundColor: '#f9f0ff' }]}>
+            <Text style={[styles.sourceBadgeText, { color: DISPATCHER_THEME.primary }]}>混批</Text>
+          </View>
+        );
+      case 'ai_forecast':
+        return (
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.sourceBadge}
+          >
+            <Text style={[styles.sourceBadgeText, { color: '#fff' }]}>AI预测</Text>
+          </LinearGradient>
+        );
+      case 'safety_stock':
+        return (
+          <View style={[styles.sourceBadge, { backgroundColor: '#f6ffed', borderWidth: 1, borderColor: '#b7eb8f' }]}>
+            <Text style={[styles.sourceBadgeText, { color: '#52c41a' }]}>安全库存</Text>
+          </View>
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <TouchableOpacity style={styles.planCard} onPress={handlePress}>
+      {/* Header */}
+      <View style={styles.planHeader}>
+        <View style={styles.planIdRow}>
+          <Text style={styles.planId}>{plan.planNumber}</Text>
+          {plan.isUrgent && (
+            <View style={styles.urgentBadge}>
+              <MaterialCommunityIcons name="alert" size={10} color="#fff" />
+              <Text style={styles.urgentBadgeText}>紧急</Text>
+            </View>
+          )}
+          {plan.isMixedBatch && (
+            <View style={styles.mixedBadge}>
+              <Text style={styles.mixedBadgeText}>混批</Text>
+            </View>
+          )}
+        </View>
+        <View style={styles.headerRight}>
+          {plan.currentProbability !== undefined && (
+            <View style={[
+              styles.probabilityBadge,
+              { backgroundColor: plan.currentProbability < urgentThreshold ? '#fff1f0' : '#f6ffed' }
+            ]}>
+              <Text style={[
+                styles.probabilityText,
+                { color: plan.currentProbability < urgentThreshold ? '#ff4d4f' : '#52c41a' }
+              ]}>
+                {Math.round(plan.currentProbability * 100)}%
+              </Text>
+            </View>
+          )}
+          <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
+            <Text style={[styles.statusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Info */}
+      <Text style={styles.planInfo}>
+        {plan.productName} · {plan.quantity}{plan.unit}
+        {plan.mergedOrderCount && (
+          <Text style={styles.mergedCount}> (合并{plan.mergedOrderCount}个订单)</Text>
+        )}
+      </Text>
+      <Text style={styles.planWorkshop}>{plan.workshopName} · {plan.supervisorName}</Text>
+
+      {/* Progress */}
+      <View style={styles.progressContainer}>
+        <View style={[styles.progressFill, { width: `${plan.progress}%` }]} />
+      </View>
+
+      {/* Source Info */}
+      <View style={styles.sourceSection}>
+        <View style={styles.sourceRow}>
+          <Text style={styles.sourceLabel}>来源:</Text>
+          {getSourceBadge()}
+          {plan.sourceType === 'customer_order' && (
+            <Text style={styles.customerName}>{plan.customerName}</Text>
+          )}
+          {plan.sourceType === 'mixed_batch' && (
+            <Text style={styles.relatedOrdersText}>
+              {plan.relatedOrders?.map(o => o.orderId).join(' + ')}
+            </Text>
+          )}
+          {plan.sourceType === 'ai_forecast' && (
+            <Text style={styles.forecastReason}>{plan.forecastReason}</Text>
+          )}
+          {plan.sourceType === 'safety_stock' && (
+            <Text style={styles.stockWarning}>库存低于30%触发</Text>
+          )}
+        </View>
+
+        <View style={styles.sourceMetaRow}>
+          {plan.crValue !== undefined && (
+            <View style={styles.crValueContainer}>
+              <Text style={styles.crLabel}>CR值: </Text>
+              <Text style={[styles.crValue, { color: crStyle.text }]}>{plan.crValue}</Text>
+              <View style={[styles.crBadge, { backgroundColor: crStyle.bg }]}>
+                <Text style={[styles.crBadgeText, { color: crStyle.text }]}>{crStyle.label}</Text>
+              </View>
+            </View>
+          )}
+          {plan.deadline && (
+            <Text style={styles.deadlineText}>
+              {plan.sourceType === 'mixed_batch' ? '最早交期' : '交期'}: {plan.deadline}
+            </Text>
+          )}
+          {plan.sourceType === 'ai_forecast' && plan.aiConfidence && (
+            <View style={styles.confidenceContainer}>
+              <Text style={styles.confidenceLabel}>预测置信度:</Text>
+              <Text style={styles.confidenceValue}>{plan.aiConfidence}%</Text>
+              <MaterialCommunityIcons name="check-circle" size={12} color="#52c41a" />
+            </View>
+          )}
+          {plan.sourceType === 'ai_forecast' && plan.season && (
+            <Text style={styles.seasonText}>季节性: <Text style={{ color: '#1890ff' }}>{plan.season}</Text></Text>
+          )}
+          {plan.sourceType === 'safety_stock' && plan.stockLevel !== undefined && (
+            <Text style={styles.stockLevel}>
+              当前库存: <Text style={{ color: '#ff4d4f' }}>{plan.stockLevel}%</Text>
+            </Text>
+          )}
+        </View>
+      </View>
+
+      {/* Mixed Batch Details */}
+      {plan.isMixedBatch && (
+        <TouchableOpacity style={styles.mixedDetails} onPress={handleExpandToggle}>
+          <View style={styles.mixedDetailsHeader}>
+            <MaterialCommunityIcons
+              name={isExpanded ? 'chevron-up' : 'chevron-down'}
+              size={16}
+              color={DISPATCHER_THEME.primary}
+            />
+            <Text style={styles.mixedDetailsTitle}>混批详情</Text>
+          </View>
+          {isExpanded && plan.relatedOrders && (
+            <View style={styles.mixedOrdersList}>
+              {plan.relatedOrders.map((order, index) => (
+                <Text key={order.orderId} style={styles.mixedOrderItem}>
+                  {index === plan.relatedOrders!.length - 1 ? '└─' : '├─'} {order.orderId}:{' '}
+                  <Text style={{ color: '#333' }}>{order.customerName}</Text> {order.quantity}袋
+                </Text>
+              ))}
+            </View>
+          )}
+        </TouchableOpacity>
+      )}
+
+      {/* Approval Section */}
+      {plan.requiresApproval && plan.approvalStatus === 'PENDING' && (
+        <View style={styles.approvalSection}>
+          <View style={styles.approvalHeader}>
+            <View style={styles.approvalBadge}>
+              <MaterialCommunityIcons name="alert-circle" size={12} color="#fff" />
+              <Text style={styles.approvalBadgeText}>需审批</Text>
+            </View>
+            {plan.isForceInserted && (
+              <Text style={styles.forceInsertLabel}>强制插单</Text>
+            )}
+          </View>
+          {plan.forceInsertReason && (
+            <Text style={styles.forceInsertReason}>原因: {plan.forceInsertReason}</Text>
+          )}
+          <View style={styles.approvalButtons}>
+            <TouchableOpacity style={styles.approveButton} onPress={handleApprove}>
+              <MaterialCommunityIcons name="check" size={16} color="#fff" />
+              <Text style={styles.approveButtonText}>批准</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.rejectButton} onPress={handleReject}>
+              <MaterialCommunityIcons name="close" size={16} color="#fff" />
+              <Text style={styles.rejectButtonText}>拒绝</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      {/* Tags */}
+      <View style={styles.tagsRow}>
+        {plan.tags?.map((tag, index) => (
+          <View
+            key={index}
+            style={[
+              styles.tag,
+              tag.includes('已') ? styles.tagMatched : styles.tagPending,
+              tag.includes('高') ? styles.tagHighPriority : {},
+            ]}
+          >
+            <Text style={[
+              styles.tagText,
+              tag.includes('已') ? styles.tagMatchedText : styles.tagPendingText,
+              tag.includes('高') ? styles.tagHighPriorityText : {},
+            ]}>
+              {tag}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 export default function PlanListScreen() {
   const navigation = useNavigation<any>();
@@ -329,276 +622,33 @@ export default function PlanListScreen() {
     });
   }, [plans, pendingApprovals, selectedUrgent, selectedStatus, searchText]);
 
-  const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return { bg: '#fff7e6', text: '#fa8c16', label: '待开始' };
-      case 'in_progress':
-        return { bg: '#e6f7ff', text: '#1890ff', label: '进行中' };
-      case 'completed':
-        return { bg: '#f6ffed', text: '#52c41a', label: '已完成' };
-      default:
-        return { bg: '#f5f5f5', text: '#999', label: status };
-    }
-  };
+  // P0 Fix: Callbacks for PlanCard
+  const handlePlanPress = useCallback((planId: string) => {
+    navigation.navigate('PlanDetail', { planId });
+  }, [navigation]);
 
-  const getCrLevelStyle = (level?: string) => {
-    switch (level) {
-      case 'urgent':
-        return { bg: '#fff1f0', text: '#ff4d4f', label: '紧急' };
-      case 'tight':
-        return { bg: '#fff7e6', text: '#fa8c16', label: '较紧' };
-      case 'sufficient':
-        return { bg: '#f6ffed', text: '#52c41a', label: '充裕' };
-      default:
-        return { bg: '#f5f5f5', text: '#999', label: '' };
-    }
-  };
+  const handleApprovePress = useCallback((plan: DisplayPlan) => {
+    openApprovalModal(plan, 'approve');
+  }, [openApprovalModal]);
 
-  const getSourceBadge = (plan: DisplayPlan) => {
-    switch (plan.sourceType) {
-      case 'customer_order':
-        return (
-          <View style={[styles.sourceBadge, { backgroundColor: '#e6f7ff' }]}>
-            <Text style={[styles.sourceBadgeText, { color: '#1890ff' }]}>客户订单</Text>
-          </View>
-        );
-      case 'mixed_batch':
-        return (
-          <View style={[styles.sourceBadge, { backgroundColor: '#f9f0ff' }]}>
-            <Text style={[styles.sourceBadgeText, { color: DISPATCHER_THEME.primary }]}>混批</Text>
-          </View>
-        );
-      case 'ai_forecast':
-        return (
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.sourceBadge}
-          >
-            <Text style={[styles.sourceBadgeText, { color: '#fff' }]}>AI预测</Text>
-          </LinearGradient>
-        );
-      case 'safety_stock':
-        return (
-          <View style={[styles.sourceBadge, { backgroundColor: '#f6ffed', borderWidth: 1, borderColor: '#b7eb8f' }]}>
-            <Text style={[styles.sourceBadgeText, { color: '#52c41a' }]}>安全库存</Text>
-          </View>
-        );
-      default:
-        return null;
-    }
-  };
+  const handleRejectPress = useCallback((plan: DisplayPlan) => {
+    openApprovalModal(plan, 'reject');
+  }, [openApprovalModal]);
 
-  const renderPlanCard = (plan: DisplayPlan) => {
-    const statusStyle = getStatusStyle(plan.status);
-    const crStyle = getCrLevelStyle(plan.crLevel);
-    const isExpanded = expandedMixedBatch === plan.id;
+  // P0 Fix: FlatList renderItem
+  const renderPlanItem: ListRenderItem<DisplayPlan> = useCallback(({ item }) => (
+    <PlanCard
+      plan={item}
+      urgentThreshold={urgentThreshold}
+      expandedMixedBatch={expandedMixedBatch}
+      onPress={handlePlanPress}
+      onExpandMixedBatch={setExpandedMixedBatch}
+      onApprove={handleApprovePress}
+      onReject={handleRejectPress}
+    />
+  ), [urgentThreshold, expandedMixedBatch, handlePlanPress, handleApprovePress, handleRejectPress]);
 
-    return (
-      <TouchableOpacity
-        key={plan.id}
-        style={styles.planCard}
-        onPress={() => navigation.navigate('PlanDetail', { planId: plan.id })}
-      >
-        {/* Header */}
-        <View style={styles.planHeader}>
-          <View style={styles.planIdRow}>
-            <Text style={styles.planId}>{plan.planNumber}</Text>
-            {plan.isUrgent && (
-              <View style={styles.urgentBadge}>
-                <MaterialCommunityIcons name="alert" size={10} color="#fff" />
-                <Text style={styles.urgentBadgeText}>紧急</Text>
-              </View>
-            )}
-            {plan.isMixedBatch && (
-              <View style={styles.mixedBadge}>
-                <Text style={styles.mixedBadgeText}>混批</Text>
-              </View>
-            )}
-          </View>
-          <View style={styles.headerRight}>
-            {plan.currentProbability !== undefined && (
-              <View style={[
-                styles.probabilityBadge,
-                { backgroundColor: plan.currentProbability < urgentThreshold ? '#fff1f0' : '#f6ffed' }
-              ]}>
-                <Text style={[
-                  styles.probabilityText,
-                  { color: plan.currentProbability < urgentThreshold ? '#ff4d4f' : '#52c41a' }
-                ]}>
-                  {Math.round(plan.currentProbability * 100)}%
-                </Text>
-              </View>
-            )}
-            <View style={[styles.statusBadge, { backgroundColor: statusStyle.bg }]}>
-              <Text style={[styles.statusText, { color: statusStyle.text }]}>{statusStyle.label}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Info */}
-        <Text style={styles.planInfo}>
-          {plan.productName} · {plan.quantity}{plan.unit}
-          {plan.mergedOrderCount && (
-            <Text style={styles.mergedCount}> (合并{plan.mergedOrderCount}个订单)</Text>
-          )}
-        </Text>
-        <Text style={styles.planWorkshop}>{plan.workshopName} · {plan.supervisorName}</Text>
-
-        {/* Progress */}
-        <View style={styles.progressContainer}>
-          <View style={[styles.progressFill, { width: `${plan.progress}%` }]} />
-        </View>
-
-        {/* Source Info */}
-        <View style={styles.sourceSection}>
-          <View style={styles.sourceRow}>
-            <Text style={styles.sourceLabel}>来源:</Text>
-            {getSourceBadge(plan)}
-            {plan.sourceType === 'customer_order' && (
-              <Text style={styles.customerName}>{plan.customerName}</Text>
-            )}
-            {plan.sourceType === 'mixed_batch' && (
-              <Text style={styles.relatedOrdersText}>
-                {plan.relatedOrders?.map(o => o.orderId).join(' + ')}
-              </Text>
-            )}
-            {plan.sourceType === 'ai_forecast' && (
-              <Text style={styles.forecastReason}>{plan.forecastReason}</Text>
-            )}
-            {plan.sourceType === 'safety_stock' && (
-              <Text style={styles.stockWarning}>库存低于30%触发</Text>
-            )}
-          </View>
-
-          <View style={styles.sourceMetaRow}>
-            {plan.crValue !== undefined && (
-              <View style={styles.crValueContainer}>
-                <Text style={styles.crLabel}>CR值: </Text>
-                <Text style={[styles.crValue, { color: crStyle.text }]}>{plan.crValue}</Text>
-                <View style={[styles.crBadge, { backgroundColor: crStyle.bg }]}>
-                  <Text style={[styles.crBadgeText, { color: crStyle.text }]}>{crStyle.label}</Text>
-                </View>
-              </View>
-            )}
-            {plan.deadline && (
-              <Text style={styles.deadlineText}>
-                {plan.sourceType === 'mixed_batch' ? '最早交期' : '交期'}: {plan.deadline}
-              </Text>
-            )}
-            {plan.sourceType === 'ai_forecast' && plan.aiConfidence && (
-              <View style={styles.confidenceContainer}>
-                <Text style={styles.confidenceLabel}>预测置信度:</Text>
-                <Text style={styles.confidenceValue}>{plan.aiConfidence}%</Text>
-                <MaterialCommunityIcons name="check-circle" size={12} color="#52c41a" />
-              </View>
-            )}
-            {plan.sourceType === 'ai_forecast' && plan.season && (
-              <Text style={styles.seasonText}>季节性: <Text style={{ color: '#1890ff' }}>{plan.season}</Text></Text>
-            )}
-            {plan.sourceType === 'safety_stock' && plan.stockLevel !== undefined && (
-              <Text style={styles.stockLevel}>
-                当前库存: <Text style={{ color: '#ff4d4f' }}>{plan.stockLevel}%</Text>
-              </Text>
-            )}
-          </View>
-        </View>
-
-        {/* Mixed Batch Details */}
-        {plan.isMixedBatch && (
-          <TouchableOpacity
-            style={styles.mixedDetails}
-            onPress={() => setExpandedMixedBatch(isExpanded ? null : plan.id)}
-          >
-            <View style={styles.mixedDetailsHeader}>
-              <MaterialCommunityIcons
-                name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={DISPATCHER_THEME.primary}
-              />
-              <Text style={styles.mixedDetailsTitle}>混批详情</Text>
-            </View>
-            {isExpanded && plan.relatedOrders && (
-              <View style={styles.mixedOrdersList}>
-                {plan.relatedOrders.map((order, index) => (
-                  <Text key={order.orderId} style={styles.mixedOrderItem}>
-                    {index === plan.relatedOrders!.length - 1 ? '└─' : '├─'} {order.orderId}:{' '}
-                    <Text style={{ color: '#333' }}>{order.customerName}</Text> {order.quantity}袋
-                  </Text>
-                ))}
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* 审批操作区域 - 仅对需要审批的计划显示 */}
-        {plan.requiresApproval && plan.approvalStatus === 'PENDING' && (
-          <View style={styles.approvalSection}>
-            <View style={styles.approvalHeader}>
-              <View style={styles.approvalBadge}>
-                <MaterialCommunityIcons name="alert-circle" size={12} color="#fff" />
-                <Text style={styles.approvalBadgeText}>需审批</Text>
-              </View>
-              {plan.isForceInserted && (
-                <Text style={styles.forceInsertLabel}>强制插单</Text>
-              )}
-            </View>
-            {plan.forceInsertReason && (
-              <Text style={styles.forceInsertReason}>
-                原因: {plan.forceInsertReason}
-              </Text>
-            )}
-            <View style={styles.approvalButtons}>
-              <TouchableOpacity
-                style={styles.approveButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  openApprovalModal(plan, 'approve');
-                }}
-              >
-                <MaterialCommunityIcons name="check" size={16} color="#fff" />
-                <Text style={styles.approveButtonText}>批准</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.rejectButton}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  openApprovalModal(plan, 'reject');
-                }}
-              >
-                <MaterialCommunityIcons name="close" size={16} color="#fff" />
-                <Text style={styles.rejectButtonText}>拒绝</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Tags */}
-        <View style={styles.tagsRow}>
-          {plan.tags?.map((tag, index) => (
-            <View
-              key={index}
-              style={[
-                styles.tag,
-                tag.includes('已') ? styles.tagMatched : styles.tagPending,
-                tag.includes('高') ? styles.tagHighPriority : {},
-              ]}
-            >
-              <Text style={[
-                styles.tagText,
-                tag.includes('已') ? styles.tagMatchedText : styles.tagPendingText,
-                tag.includes('高') ? styles.tagHighPriorityText : {},
-              ]}>
-                {tag}
-              </Text>
-            </View>
-          ))}
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  const keyExtractor = useCallback((item: DisplayPlan) => item.id, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -613,167 +663,179 @@ export default function PlanListScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      {/* P0 Fix: Use FlatList for virtualization */}
+      <FlatList
         style={styles.content}
+        data={filteredPlans}
+        renderItem={renderPlanItem}
+        keyExtractor={keyExtractor}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         showsVerticalScrollIndicator={false}
-      >
-        {/* Filters */}
-        <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedStatus}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedWorkshop}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedDate}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterSelect}>
-            <Text style={styles.filterSelectText}>{selectedSource}</Text>
-            <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Search Box */}
-        <View style={styles.searchBox}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#999" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="搜索计划编号/产品名称..."
-            placeholderTextColor="#999"
-            value={searchText}
-            onChangeText={setSearchText}
-          />
-        </View>
-
-        {/* Quick Entry */}
-        <View style={styles.quickEntryRow}>
-          <TouchableOpacity
-            style={styles.quickEntry}
-            onPress={() => navigation.navigate('PlanGantt' as never)}
-          >
-            <MaterialCommunityIcons name="chart-gantt" size={24} color={DISPATCHER_THEME.secondary} />
-            <Text style={styles.quickEntryText}>甘特图</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickEntry}
-            onPress={() => navigation.navigate('UrgentInsert' as never)}
-          >
-            <MaterialCommunityIcons name="lightning-bolt" size={24} color="#ff4d4f" />
-            <Text style={styles.quickEntryText}>紧急插单</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.quickEntry, styles.quickEntryWithBadge]}
-            onPress={() => navigation.navigate('MixedBatch' as never)}
-          >
-            <View style={styles.quickEntryBadge}>
-              <Text style={styles.quickEntryBadgeText}>3</Text>
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        ListHeaderComponent={
+          <>
+            {/* Filters */}
+            <View style={styles.filterRow}>
+              <TouchableOpacity style={styles.filterSelect}>
+                <Text style={styles.filterSelectText}>{selectedStatus}</Text>
+                <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.filterSelect}>
+                <Text style={styles.filterSelectText}>{selectedWorkshop}</Text>
+                <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.filterSelect}>
+                <Text style={styles.filterSelectText}>{selectedDate}</Text>
+                <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.filterSelect}>
+                <Text style={styles.filterSelectText}>{selectedSource}</Text>
+                <MaterialCommunityIcons name="chevron-down" size={16} color="#666" />
+              </TouchableOpacity>
             </View>
-            <MaterialCommunityIcons name="view-grid" size={24} color={DISPATCHER_THEME.primary} />
-            <Text style={styles.quickEntryText}>混批排产</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.quickEntry}
-            onPress={() => navigation.navigate('ResourceOverview' as never)}
-          >
-            <MaterialCommunityIcons name="monitor-dashboard" size={24} color="#52c41a" />
-            <Text style={styles.quickEntryText}>资源总览</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Urgent Filter Toggle */}
-        <View style={styles.urgentFilterRow}>
-          <TouchableOpacity
-            style={[
-              styles.urgentFilterChip,
-              selectedUrgent === '全部' && styles.urgentFilterChipActive,
-            ]}
-            onPress={() => setSelectedUrgent('全部')}
-          >
-            <Text style={[
-              styles.urgentFilterText,
-              selectedUrgent === '全部' && styles.urgentFilterTextActive,
-            ]}>全部</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.urgentFilterChip,
-              selectedUrgent === '仅紧急' && styles.urgentFilterChipUrgent,
-            ]}
-            onPress={() => setSelectedUrgent('仅紧急')}
-          >
-            <MaterialCommunityIcons
-              name="alert"
-              size={12}
-              color={selectedUrgent === '仅紧急' ? '#fff' : '#ff4d4f'}
-            />
-            <Text style={[
-              styles.urgentFilterText,
-              selectedUrgent === '仅紧急' && styles.urgentFilterTextActive,
-              selectedUrgent !== '仅紧急' && { color: '#ff4d4f' },
-            ]}>仅紧急</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.urgentFilterChip,
-              selectedUrgent === '待审批' && styles.urgentFilterChipApproval,
-            ]}
-            onPress={() => setSelectedUrgent('待审批')}
-          >
-            <MaterialCommunityIcons
-              name="clipboard-check-outline"
-              size={12}
-              color={selectedUrgent === '待审批' ? '#fff' : '#fa8c16'}
-            />
-            <Text style={[
-              styles.urgentFilterText,
-              selectedUrgent === '待审批' && styles.urgentFilterTextActive,
-              selectedUrgent !== '待审批' && { color: '#fa8c16' },
-            ]}>待审批</Text>
-            {pendingApprovalsCount > 0 && (
-              <View style={styles.approvalCountBadge}>
-                <Text style={styles.approvalCountText}>{pendingApprovalsCount}</Text>
+            {/* Search Box */}
+            <View style={styles.searchBox}>
+              <MaterialCommunityIcons name="magnify" size={18} color="#999" />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="搜索计划编号/产品名称..."
+                placeholderTextColor="#999"
+                value={searchText}
+                onChangeText={setSearchText}
+              />
+            </View>
+
+            {/* Quick Entry */}
+            <View style={styles.quickEntryRow}>
+              <TouchableOpacity
+                style={styles.quickEntry}
+                onPress={() => navigation.navigate('PlanGantt' as never)}
+              >
+                <MaterialCommunityIcons name="chart-gantt" size={24} color={DISPATCHER_THEME.secondary} />
+                <Text style={styles.quickEntryText}>甘特图</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickEntry}
+                onPress={() => navigation.navigate('UrgentInsert' as never)}
+              >
+                <MaterialCommunityIcons name="lightning-bolt" size={24} color="#ff4d4f" />
+                <Text style={styles.quickEntryText}>紧急插单</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.quickEntry, styles.quickEntryWithBadge]}
+                onPress={() => navigation.navigate('MixedBatch' as never)}
+              >
+                <View style={styles.quickEntryBadge}>
+                  <Text style={styles.quickEntryBadgeText}>3</Text>
+                </View>
+                <MaterialCommunityIcons name="view-grid" size={24} color={DISPATCHER_THEME.primary} />
+                <Text style={styles.quickEntryText}>混批排产</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.quickEntry}
+                onPress={() => navigation.navigate('ResourceOverview' as never)}
+              >
+                <MaterialCommunityIcons name="monitor-dashboard" size={24} color="#52c41a" />
+                <Text style={styles.quickEntryText}>资源总览</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Urgent Filter Toggle */}
+            <View style={styles.urgentFilterRow}>
+              <TouchableOpacity
+                style={[
+                  styles.urgentFilterChip,
+                  selectedUrgent === '全部' && styles.urgentFilterChipActive,
+                ]}
+                onPress={() => setSelectedUrgent('全部')}
+              >
+                <Text style={[
+                  styles.urgentFilterText,
+                  selectedUrgent === '全部' && styles.urgentFilterTextActive,
+                ]}>全部</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.urgentFilterChip,
+                  selectedUrgent === '仅紧急' && styles.urgentFilterChipUrgent,
+                ]}
+                onPress={() => setSelectedUrgent('仅紧急')}
+              >
+                <MaterialCommunityIcons
+                  name="alert"
+                  size={12}
+                  color={selectedUrgent === '仅紧急' ? '#fff' : '#ff4d4f'}
+                />
+                <Text style={[
+                  styles.urgentFilterText,
+                  selectedUrgent === '仅紧急' && styles.urgentFilterTextActive,
+                  selectedUrgent !== '仅紧急' && { color: '#ff4d4f' },
+                ]}>仅紧急</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.urgentFilterChip,
+                  selectedUrgent === '待审批' && styles.urgentFilterChipApproval,
+                ]}
+                onPress={() => setSelectedUrgent('待审批')}
+              >
+                <MaterialCommunityIcons
+                  name="clipboard-check-outline"
+                  size={12}
+                  color={selectedUrgent === '待审批' ? '#fff' : '#fa8c16'}
+                />
+                <Text style={[
+                  styles.urgentFilterText,
+                  selectedUrgent === '待审批' && styles.urgentFilterTextActive,
+                  selectedUrgent !== '待审批' && { color: '#fa8c16' },
+                ]}>待审批</Text>
+                {pendingApprovalsCount > 0 && (
+                  <View style={styles.approvalCountBadge}>
+                    <Text style={styles.approvalCountText}>{pendingApprovalsCount}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+              <View style={styles.urgentCountBadge}>
+                <Text style={styles.urgentCountText}>
+                  {plans.filter(p => p.isUrgent).length}个紧急
+                </Text>
               </View>
-            )}
-          </TouchableOpacity>
-          <View style={styles.urgentCountBadge}>
-            <Text style={styles.urgentCountText}>
-              {plans.filter(p => p.isUrgent).length}个紧急
-            </Text>
-          </View>
-        </View>
+            </View>
 
-        {/* Section Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
-            {selectedUrgent === '仅紧急' ? '紧急计划' :
-             selectedUrgent === '待审批' ? '待审批计划' : '今日计划'} ({filteredPlans.length}个)
-          </Text>
-        </View>
-
-        {/* Loading / Empty / Plan Cards */}
-        {loading ? (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>加载中...</Text>
-          </View>
-        ) : filteredPlans.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="clipboard-text-outline" size={48} color="#999" />
-            <Text style={styles.emptyText}>暂无计划</Text>
-          </View>
-        ) : (
-          filteredPlans.map(renderPlanCard)
-        )}
-
-        {/* Load More */}
-        <Text style={styles.loadMore}>加载更多...</Text>
-
-        <View style={{ height: 100 }} />
-      </ScrollView>
+            {/* Section Header */}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                {selectedUrgent === '仅紧急' ? '紧急计划' :
+                 selectedUrgent === '待审批' ? '待审批计划' : '今日计划'} ({filteredPlans.length}个)
+              </Text>
+            </View>
+          </>
+        }
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>加载中...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="clipboard-text-outline" size={48} color="#999" />
+              <Text style={styles.emptyText}>暂无计划</Text>
+            </View>
+          )
+        }
+        ListFooterComponent={
+          filteredPlans.length > 0 ? (
+            <>
+              <Text style={styles.loadMore}>加载更多...</Text>
+              <View style={{ height: 100 }} />
+            </>
+          ) : null
+        }
+      />
 
       {/* 审批模态框 */}
       <Modal
