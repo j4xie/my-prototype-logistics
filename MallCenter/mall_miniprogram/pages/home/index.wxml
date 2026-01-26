@@ -35,8 +35,8 @@
     </swiper>
   </view>
 
-  <!-- 食品分类网格 - 动态从后端获取 -->
-  <view class="category-section">
+  <!-- 食品分类网格 - 动态从后端获取 (可通过后端配置隐藏) -->
+  <view class="category-section" wx:if="{{showCategories}}">
     <view class="category-grid">
       <!-- 动态分类列表 -->
       <navigator class="category-item" hover-class="none"
@@ -90,6 +90,8 @@
     </navigator>
   </view>
 
+  <!-- 商品区域 (可通过后端配置隐藏) -->
+  <block wx:if="{{showProducts}}">
   <!-- 推荐商品 -->
   <view class="section-header">
     <view class="section-title">
@@ -184,6 +186,7 @@
     <view wx:elif="{{!hasMoreRecommend}}" class="over">— 已经到底了 —</view>
   </view>
   <view class="cu-load {{loadmore?'loading':'over'}}" wx:else></view>
+  </block>
 </view>
 
 <!-- 浮动AI客服按钮 -->
