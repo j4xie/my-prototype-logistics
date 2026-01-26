@@ -33,6 +33,7 @@ public class WebConfig implements WebMvcConfigurer {
 						"/weixin/api/ma/orderinfo/notify-refunds",
 						"/weixin/api/ma/ai/health",
 						"/weixin/api/ma/ai/config",
+						"/weixin/api/ma/ai/feature-config",
 						"/weixin/api/ma/decoration/**",
 						"/weixin/api/ma/goodscategory/**",   // 放行商品分类
 						"/weixin/api/ma/goodsspu/**");//放行接口 - 登录、回调通知、健康检查、AI配置、装修配置、商品分类、商品列表
