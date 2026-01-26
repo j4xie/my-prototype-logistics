@@ -3,7 +3,7 @@
  * Voice Assistant FAB Button
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   StyleSheet,
   TouchableOpacity,
@@ -25,15 +25,50 @@ const SIZE_MAP = {
   small: 48,
   medium: 56,
   large: 64,
-};
+} as const;
 
 const ICON_SIZE_MAP = {
   small: 24,
   medium: 28,
   large: 32,
-};
+} as const;
 
-export const VoiceAssistantButton: React.FC<VoiceAssistantButtonProps> = ({
+// P3 Fix: Extract status config mapping outside component
+const STATUS_CONFIG = {
+  listening: {
+    backgroundColor: '#EF4444',
+    icon: 'microphone' as const,
+    iconColor: '#FFFFFF',
+  },
+  processing: {
+    backgroundColor: '#F59E0B',
+    icon: 'loading' as const,
+    iconColor: '#FFFFFF',
+  },
+  speaking: {
+    backgroundColor: '#3B82F6',
+    icon: 'volume-high' as const,
+    iconColor: '#FFFFFF',
+  },
+  waiting_confirm: {
+    backgroundColor: '#10B981',
+    icon: 'check-circle' as const,
+    iconColor: '#FFFFFF',
+  },
+  error: {
+    backgroundColor: '#6B7280',
+    icon: 'alert-circle' as const,
+    iconColor: '#FFFFFF',
+  },
+  idle: {
+    backgroundColor: '#2563EB',
+    icon: 'microphone' as const,
+    iconColor: '#FFFFFF',
+  },
+} as const;
+
+// P3 Fix: Wrap component with React.memo
+export const VoiceAssistantButton: React.FC<VoiceAssistantButtonProps> = React.memo(({
   onPress,
   style,
   size = 'medium',
@@ -74,49 +109,11 @@ export const VoiceAssistantButton: React.FC<VoiceAssistantButtonProps> = ({
   const buttonSize = SIZE_MAP[size];
   const iconSize = ICON_SIZE_MAP[size];
 
-  // 根据状态确定颜色和图标
-  const getStatusConfig = () => {
-    switch (status) {
-      case 'listening':
-        return {
-          backgroundColor: '#EF4444',
-          icon: 'microphone' as const,
-          iconColor: '#FFFFFF',
-        };
-      case 'processing':
-        return {
-          backgroundColor: '#F59E0B',
-          icon: 'loading' as const,
-          iconColor: '#FFFFFF',
-        };
-      case 'speaking':
-        return {
-          backgroundColor: '#3B82F6',
-          icon: 'volume-high' as const,
-          iconColor: '#FFFFFF',
-        };
-      case 'waiting_confirm':
-        return {
-          backgroundColor: '#10B981',
-          icon: 'check-circle' as const,
-          iconColor: '#FFFFFF',
-        };
-      case 'error':
-        return {
-          backgroundColor: '#6B7280',
-          icon: 'alert-circle' as const,
-          iconColor: '#FFFFFF',
-        };
-      default:
-        return {
-          backgroundColor: '#2563EB',
-          icon: 'microphone' as const,
-          iconColor: '#FFFFFF',
-        };
-    }
-  };
-
-  const statusConfig = getStatusConfig();
+  // P3 Fix: Use memoized status config from constant mapping
+  const statusConfig = useMemo(() =>
+    STATUS_CONFIG[status] || STATUS_CONFIG.idle,
+    [status]
+  );
 
   return (
     <View style={[styles.container, style]}>
@@ -184,7 +181,9 @@ export const VoiceAssistantButton: React.FC<VoiceAssistantButtonProps> = ({
       )}
     </View>
   );
-};
+});
+
+VoiceAssistantButton.displayName = 'VoiceAssistantButton';
 
 const styles = StyleSheet.create({
   container: {

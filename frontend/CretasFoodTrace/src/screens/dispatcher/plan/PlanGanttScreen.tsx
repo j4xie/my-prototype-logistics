@@ -12,7 +12,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import {
   View,
   Text,
@@ -108,6 +108,28 @@ export default function PlanGanttScreen() {
   const [productionLines, setProductionLines] = useState<GanttProductionLine[]>(fallbackProductionLines);
   const [tasks, setTasks] = useState<GanttTask[]>(fallbackTasks);
   const [viewMode, setViewMode] = useState<'hour' | 'day'>('hour');
+
+  // P2 Fix: Memoize tasks grouped by line to avoid repeated filtering
+  const tasksByLine = useMemo(() => {
+    const byLine = new Map<string, GanttTask[]>();
+    for (const task of tasks) {
+      if (!byLine.has(task.lineId)) {
+        byLine.set(task.lineId, []);
+      }
+      byLine.get(task.lineId)!.push(task);
+    }
+    return byLine;
+  }, [tasks]);
+
+  // P2 Fix: Memoize task statistics for footer
+  const taskStats = useMemo(() => ({
+    total: tasks.length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    delayed: tasks.filter(t => t.status === 'delayed').length,
+    avgProgress: tasks.length > 0
+      ? Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)
+      : 0,
+  }), [tasks]);
 
   // 当前时间指示器
   const currentHour = new Date().getHours() + new Date().getMinutes() / 60;
@@ -290,7 +312,8 @@ export default function PlanGanttScreen() {
   };
 
   const renderProductionLine = (line: GanttProductionLine) => {
-    const lineTasks = tasks.filter(t => t.lineId === line.id);
+    // P2 Fix: Use memoized tasksByLine instead of filtering
+    const lineTasks = tasksByLine.get(line.id) || [];
 
     return (
       <View key={line.id} style={styles.ganttRow}>
@@ -426,7 +449,8 @@ export default function PlanGanttScreen() {
 
             {/* Task Rows */}
             {productionLines.map(line => {
-              const lineTasks = tasks.filter(t => t.lineId === line.id);
+              // P2 Fix: Use memoized tasksByLine instead of filtering
+              const lineTasks = tasksByLine.get(line.id) || [];
               return (
                 <View key={line.id} style={[styles.ganttRowContent, { height: ROW_HEIGHT }]}>
                   {/* Grid Lines */}
@@ -444,27 +468,27 @@ export default function PlanGanttScreen() {
         </ScrollView>
       </View>
 
-      {/* Summary Footer */}
+      {/* Summary Footer - P2 Fix: Use memoized taskStats */}
       <View style={styles.footer}>
         <View style={styles.footerItem}>
-          <Text style={styles.footerValue}>{tasks.length}</Text>
+          <Text style={styles.footerValue}>{taskStats.total}</Text>
           <Text style={styles.footerLabel}>计划任务</Text>
         </View>
         <View style={styles.footerItem}>
           <Text style={[styles.footerValue, { color: '#52c41a' }]}>
-            {tasks.filter(t => t.status === 'in_progress').length}
+            {taskStats.inProgress}
           </Text>
           <Text style={styles.footerLabel}>进行中</Text>
         </View>
         <View style={styles.footerItem}>
           <Text style={[styles.footerValue, { color: '#ff4d4f' }]}>
-            {tasks.filter(t => t.status === 'delayed').length}
+            {taskStats.delayed}
           </Text>
           <Text style={styles.footerLabel}>延迟</Text>
         </View>
         <View style={styles.footerItem}>
           <Text style={styles.footerValue}>
-            {Math.round(tasks.reduce((sum, t) => sum + t.progress, 0) / tasks.length)}%
+            {taskStats.avgProgress}%
           </Text>
           <Text style={styles.footerLabel}>整体进度</Text>
         </View>
