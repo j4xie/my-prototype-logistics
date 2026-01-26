@@ -52,17 +52,26 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     private static final String STATE_AWAITING_EXPRESS_MATCH_CONFIRM = "awaiting_express_match_confirm";
     private static final String STATE_COLLECTING_REQUIREMENTS = "collecting_requirements";
 
-    // LLM API Key (实际配置为 DashScope API Key)
-    @Value("${ai.llm.api-key:}")
+    // LLM API Key (DashScope API Key)
+    @Value("${ai.deepseek.api-key:}")
     private String llmApiKey;
 
-    // LLM API Base URL (实际配置为 https://dashscope.aliyuncs.com/compatible-mode)
-    @Value("${ai.llm.base-url:}")
+    // LLM API Base URL (https://dashscope.aliyuncs.com/compatible-mode)
+    @Value("${ai.deepseek.base-url:}")
     private String llmBaseUrl;
 
-    // LLM Model (实际配置为 qwen-plus)
-    @Value("${ai.llm.model:}")
+    // LLM Model (qwen-turbo-latest)
+    @Value("${ai.deepseek.model:qwen-turbo-latest}")
     private String llmModel;
+
+    // 最大输出 token 数 (控制响应长度和速度)
+    @Value("${ai.deepseek.max-tokens:500}")
+    private int maxTokens;
+
+    // AI响应缓存key前缀
+    private static final String AI_RESPONSE_CACHE_KEY = "mall:ai:response:cache:";
+    // 缓存有效期 (分钟)
+    private static final int AI_CACHE_TTL_MINUTES = 30;
 
     // RAG 功能开关
     @Value("${ai.rag.enabled:true}")
@@ -584,10 +593,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 Map.of("role", "user", "content", message)
             ));
             requestBody.put("temperature", 0.7);
-            // 注意: DashScope的qwen模型不支持 response_format 参数，已移除
+            requestBody.put("max_tokens", maxTokens);  // 使用配置的max_tokens
 
             String apiUrl = llmBaseUrl + "/v1/chat/completions";
-            log.debug("调用AI API: url={}, model={}", apiUrl, llmModel);
+            log.debug("调用AI API: url={}, model={}, maxTokens={}", apiUrl, llmModel, maxTokens);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
@@ -642,6 +651,16 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             return fallbackAnalysis(message);
         }
 
+        // 1. 检查缓存 (仅对无RAG增强的普通问题使用缓存)
+        if (ragEnhancedPrompt == null) {
+            Map<String, Object> cached = getCachedResponse(message);
+            if (cached != null) {
+                log.debug("AI响应命中缓存: {}", message.substring(0, Math.min(20, message.length())));
+                cached.put("fromCache", true);
+                return cached;
+            }
+        }
+
         // 如果没有RAG增强的提示，使用默认提示
         String systemPrompt = (ragEnhancedPrompt != null && !ragEnhancedPrompt.isEmpty())
                 ? ragEnhancedPrompt
@@ -659,6 +678,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 Map.of("role", "user", "content", message)
             ));
             requestBody.put("temperature", 0.7);
+            requestBody.put("max_tokens", maxTokens);  // 使用配置的max_tokens
 
             String apiUrl = llmBaseUrl + "/v1/chat/completions";
             log.debug("调用AI API (RAG模式={}): url={}, model={}",
@@ -683,6 +703,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                     if (ragEnhancedPrompt != null) {
                         result.putIfAbsent("sourcedFromKnowledge", true);
                     }
+                    // 缓存普通问题的响应 (非RAG)
+                    if (ragEnhancedPrompt == null) {
+                        cacheResponse(message, result);
+                    }
                     return result;
                 } catch (Exception jsonEx) {
                     log.warn("AI返回内容不是纯JSON，尝试提取: {}", content);
@@ -691,6 +715,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                         Map<String, Object> result = objectMapper.readValue(jsonContent, Map.class);
                         if (ragEnhancedPrompt != null) {
                             result.putIfAbsent("sourcedFromKnowledge", true);
+                        }
+                        // 缓存普通问题的响应 (非RAG)
+                        if (ragEnhancedPrompt == null) {
+                            cacheResponse(message, result);
                         }
                         return result;
                     }
@@ -713,6 +741,51 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         Map<String, Object> fallback = fallbackAnalysis(message);
         fallback.put("sourcedFromKnowledge", false);
         return fallback;
+    }
+
+    /**
+     * 获取缓存的AI响应
+     * 使用消息内容的哈希值作为缓存key
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getCachedResponse(String message) {
+        try {
+            String cacheKey = AI_RESPONSE_CACHE_KEY + generateCacheKey(message);
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof Map) {
+                return (Map<String, Object>) cached;
+            }
+        } catch (Exception e) {
+            log.warn("读取AI缓存失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 缓存AI响应
+     */
+    private void cacheResponse(String message, Map<String, Object> response) {
+        try {
+            String cacheKey = AI_RESPONSE_CACHE_KEY + generateCacheKey(message);
+            redisTemplate.opsForValue().set(
+                    cacheKey,
+                    response,
+                    AI_CACHE_TTL_MINUTES,
+                    java.util.concurrent.TimeUnit.MINUTES
+            );
+            log.debug("AI响应已缓存: {}", message.substring(0, Math.min(20, message.length())));
+        } catch (Exception e) {
+            log.warn("缓存AI响应失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 生成缓存key (对消息进行规范化处理后计算哈希)
+     */
+    private String generateCacheKey(String message) {
+        // 规范化: 去除空白、转小写，提高缓存命中率
+        String normalized = message.trim().toLowerCase().replaceAll("\\s+", " ");
+        return Integer.toHexString(normalized.hashCode());
     }
 
     /**
@@ -999,7 +1072,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             requestBody.put("messages", List.of(
                 Map.of("role", "user", "content", prompt)
             ));
-            requestBody.put("max_tokens", 150);
+            requestBody.put("max_tokens", Math.min(maxTokens, 200));  // 洞察报告限制更短
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(
