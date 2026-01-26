@@ -6,6 +6,38 @@
   flex-direction: column;
 }
 
+/* 产品上下文提示条 (从商品详情页跳转时显示) */
+.product-context-bar {
+  display: flex;
+  align-items: center;
+  padding: 16rpx 24rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+}
+
+.product-context-bar .cuIcon-info {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.product-context-bar .context-text {
+  flex: 1;
+  font-size: 26rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-context-bar .context-close {
+  padding: 8rpx;
+  margin-left: 12rpx;
+}
+
+.product-context-bar .context-close .cuIcon-close {
+  font-size: 28rpx;
+  opacity: 0.8;
+}
+
 /* 欢迎区域 */
 .welcome-section {
   flex: 1;

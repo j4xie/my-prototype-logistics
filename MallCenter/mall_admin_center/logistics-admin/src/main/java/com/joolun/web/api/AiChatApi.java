@@ -50,13 +50,16 @@ public class AiChatApi {
      * AI对话
      * 接收用户消息，返回AI回复和商品推荐
      *
-     * @param params 包含 message, sessionId(可选)
+     * @param params 包含 message, sessionId(可选), productId(可选), productName(可选)
      * @return AI回复和推荐商品
      */
     @PostMapping("/chat")
     public AjaxResult chat(@RequestBody Map<String, Object> params) {
         String message = (String) params.get("message");
         String sessionId = (String) params.get("sessionId");
+        // 产品上下文 (从商品详情页跳转时传入)
+        String productId = (String) params.get("productId");
+        String productName = (String) params.get("productName");
 
         if (message == null || message.trim().isEmpty()) {
             return AjaxResult.error("消息不能为空");
@@ -65,6 +68,18 @@ public class AiChatApi {
         // 如果没有sessionId，生成一个新的
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        }
+
+        // 如果有产品上下文，增强消息以便AI理解用户正在询问的产品
+        String enhancedMessage = message.trim();
+        if (productId != null && !productId.isEmpty()) {
+            log.info("AI对话带产品上下文: productId={}, productName={}", productId, productName);
+            // 在消息中注入产品上下文，帮助AI理解用户意图
+            if (productName != null && !productName.isEmpty()) {
+                enhancedMessage = String.format("[用户正在查看商品「%s」(ID:%s)] %s", productName, productId, message.trim());
+            } else {
+                enhancedMessage = String.format("[用户正在查看商品ID:%s] %s", productId, message.trim());
+            }
         }
 
         // 获取当前用户信息
@@ -79,12 +94,12 @@ public class AiChatApi {
         }
 
         try {
-            // 参数顺序: sessionId, userId, merchantId, message
+            // 参数顺序: sessionId, userId, merchantId, message (含产品上下文)
             Map<String, Object> chatResult = aiRecommendService.chat(
                 sessionId,
                 userId,
                 merchantId,
-                message.trim()
+                enhancedMessage
             );
 
             // 添加sessionId到结果
