@@ -148,6 +148,24 @@ public class AiChatApi {
     }
 
     /**
+     * 清空会话历史 - 开始新对话时调用
+     *
+     * @param sessionId 会话ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/session/{sessionId}/history")
+    public AjaxResult clearSessionHistory(@PathVariable("sessionId") String sessionId) {
+        try {
+            aiRecommendService.clearConversationHistory(sessionId);
+            log.info("清空会话历史: sessionId={}", sessionId);
+            return AjaxResult.success("会话历史已清空");
+        } catch (Exception e) {
+            log.error("清空会话历史失败: sessionId={}", sessionId, e);
+            return AjaxResult.error("清空会话历史失败");
+        }
+    }
+
+    /**
      * 获取用户所有会话列表
      *
      * @param page 分页参数

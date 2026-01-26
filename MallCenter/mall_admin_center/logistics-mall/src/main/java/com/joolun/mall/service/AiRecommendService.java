@@ -78,4 +78,10 @@ public interface AiRecommendService extends IService<AiDemandRecord> {
      * @return 工厂分析数据
      */
     Map<String, Object> getFactoryAnalysis(Long factoryId);
+
+    /**
+     * 清空会话历史 (新对话时调用)
+     * @param sessionId 会话ID
+     */
+    void clearConversationHistory(String sessionId);
 }

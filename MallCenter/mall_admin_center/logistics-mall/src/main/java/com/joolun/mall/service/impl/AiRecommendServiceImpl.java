@@ -73,6 +73,15 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     // 缓存有效期 (分钟)
     private static final int AI_CACHE_TTL_MINUTES = 30;
 
+    // 会话历史缓存key前缀 (参考白垩纪App的sessionId设计)
+    private static final String CONVERSATION_HISTORY_KEY = "mall:ai:conversation:history:";
+    // 会话历史缓存有效期 (小时)
+    private static final int CONVERSATION_HISTORY_TTL_HOURS = 24;
+
+    // 保留的历史对话轮数 (每轮 = 用户消息 + AI回复)
+    @Value("${ai.conversation.history-turns:20}")
+    private int historyTurns;
+
     // RAG 功能开关
     @Value("${ai.rag.enabled:true}")
     private boolean ragEnabled;
@@ -132,13 +141,18 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 }
             }
 
-            // 2. 调用LLM API分析用户意图（使用RAG增强的提示或普通提示）
-            Map<String, Object> analysis = analyzeMessageWithRag(message, enhancedPrompt);
+            // 2. 调用LLM API分析用户意图（使用RAG增强的提示或普通提示，传入sessionId获取历史上下文）
+            Map<String, Object> analysis = analyzeMessageWithRag(sessionId, message, enhancedPrompt);
             String intent = (String) analysis.getOrDefault("intent", "other");
             List<String> keywords = (List<String>) analysis.getOrDefault("keywords", new ArrayList<>());
             String aiResponse = (String) analysis.getOrDefault("response", "抱歉，我没有理解您的问题");
             double confidence = (double) analysis.getOrDefault("confidence", 0.5);
             boolean sourcedFromKnowledge = (boolean) analysis.getOrDefault("sourcedFromKnowledge", false);
+
+            // 2.1 保存会话历史 (新增 - 用于多轮对话上下文)
+            if (aiResponse != null && !aiResponse.isEmpty()) {
+                saveConversationHistory(sessionId, message, aiResponse);
+            }
 
             // 3. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
             List<GoodsSpu> matchedProducts = new ArrayList<>();
@@ -408,6 +422,102 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         redisTemplate.delete(SESSION_STATE_KEY + sessionId);
     }
 
+    // ========== 会话历史管理 (借鉴白垩纪App的sessionId多轮对话机制) ==========
+
+    /**
+     * 获取会话历史消息 (用于LLM上下文)
+     * @param sessionId 会话ID
+     * @return 历史消息列表
+     */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, String>> getConversationHistory(String sessionId) {
+        try {
+            String cacheKey = CONVERSATION_HISTORY_KEY + sessionId;
+            Object history = redisTemplate.opsForValue().get(cacheKey);
+            if (history instanceof List) {
+                List<Map<String, String>> historyList = new ArrayList<>((List<Map<String, String>>) history);
+                log.debug("获取会话历史: sessionId={}, 消息数={}", sessionId, historyList.size());
+                return historyList;
+            }
+        } catch (Exception e) {
+            log.warn("获取会话历史失败: {}", e.getMessage());
+        }
+        return new ArrayList<>();
+    }
+
+    /**
+     * 保存会话历史 (追加新的一轮对话)
+     * @param sessionId 会话ID
+     * @param userMessage 用户消息
+     * @param aiResponse AI回复
+     */
+    private void saveConversationHistory(String sessionId, String userMessage, String aiResponse) {
+        try {
+            String cacheKey = CONVERSATION_HISTORY_KEY + sessionId;
+            List<Map<String, String>> history = getConversationHistory(sessionId);
+
+            // 添加用户消息
+            Map<String, String> userMsg = new HashMap<>();
+            userMsg.put("role", "user");
+            userMsg.put("content", userMessage);
+            history.add(userMsg);
+
+            // 添加AI回复 (提取纯文本，去除JSON格式)
+            String cleanResponse = extractTextResponse(aiResponse);
+            Map<String, String> assistantMsg = new HashMap<>();
+            assistantMsg.put("role", "assistant");
+            assistantMsg.put("content", cleanResponse);
+            history.add(assistantMsg);
+
+            // 保留最近N轮对话 (每轮 = 2条消息)
+            int maxMessages = historyTurns * 2;
+            if (history.size() > maxMessages) {
+                history = new ArrayList<>(history.subList(history.size() - maxMessages, history.size()));
+            }
+
+            // 保存到Redis (24小时过期)
+            redisTemplate.opsForValue().set(cacheKey, history,
+                CONVERSATION_HISTORY_TTL_HOURS, java.util.concurrent.TimeUnit.HOURS);
+            log.debug("保存会话历史: sessionId={}, 当前消息数={}", sessionId, history.size());
+        } catch (Exception e) {
+            log.warn("保存会话历史失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 清空会话历史 (新对话时调用)
+     * @param sessionId 会话ID
+     */
+    @Override
+    public void clearConversationHistory(String sessionId) {
+        try {
+            String cacheKey = CONVERSATION_HISTORY_KEY + sessionId;
+            redisTemplate.delete(cacheKey);
+            log.info("已清空会话历史: sessionId={}", sessionId);
+        } catch (Exception e) {
+            log.warn("清空会话历史失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 从AI响应中提取纯文本
+     * @param aiResponse AI响应 (可能是JSON格式)
+     * @return 纯文本响应
+     */
+    private String extractTextResponse(String aiResponse) {
+        if (aiResponse == null) return "";
+        // 如果是JSON格式，提取response字段
+        if (aiResponse.startsWith("{")) {
+            try {
+                JsonNode node = objectMapper.readTree(aiResponse);
+                if (node.has("response")) {
+                    return node.get("response").asText();
+                }
+            } catch (Exception ignored) {}
+        }
+        return aiResponse;
+    }
+
     @Override
     public List<GoodsSpu> semanticSearch(String query, int limit) {
         if (query == null || query.trim().isEmpty()) {
@@ -641,18 +751,22 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
     /**
      * 使用RAG增强的提示分析用户消息
+     * @param sessionId 会话ID (用于获取历史上下文)
      * @param message 用户消息
      * @param ragEnhancedPrompt RAG增强的系统提示（可为null，null时使用默认提示）
      * @return 分析结果
      */
-    private Map<String, Object> analyzeMessageWithRag(String message, String ragEnhancedPrompt) {
+    private Map<String, Object> analyzeMessageWithRag(String sessionId, String message, String ragEnhancedPrompt) {
         if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(message);
         }
 
-        // 1. 检查缓存 (仅对无RAG增强的普通问题使用缓存)
-        if (ragEnhancedPrompt == null) {
+        // 1. 获取会话历史 (核心改动 - 借鉴白垩纪App的多轮对话机制)
+        List<Map<String, String>> history = getConversationHistory(sessionId);
+
+        // 2. 检查缓存 (仅对无RAG增强且无历史的简单问题使用缓存)
+        if (ragEnhancedPrompt == null && history.isEmpty()) {
             Map<String, Object> cached = getCachedResponse(message);
             if (cached != null) {
                 log.debug("AI响应命中缓存: {}", message.substring(0, Math.min(20, message.length())));
@@ -671,18 +785,30 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(llmApiKey);
 
+            // 构建消息列表 (包含历史) - 核心改动
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(Map.of("role", "system", "content", systemPrompt));
+
+            // 添加历史对话 (借鉴白垩纪的多轮对话机制)
+            for (Map<String, String> historyMsg : history) {
+                messages.add(Map.of(
+                    "role", historyMsg.get("role"),
+                    "content", historyMsg.get("content")
+                ));
+            }
+
+            // 添加当前用户消息
+            messages.add(Map.of("role", "user", "content", message));
+
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", llmModel);
-            requestBody.put("messages", List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", message)
-            ));
+            requestBody.put("messages", messages);  // 包含历史的完整消息列表
             requestBody.put("temperature", 0.7);
             requestBody.put("max_tokens", maxTokens);  // 使用配置的max_tokens
 
             String apiUrl = llmBaseUrl + "/v1/chat/completions";
-            log.debug("调用AI API (RAG模式={}): url={}, model={}",
-                    ragEnhancedPrompt != null, apiUrl, llmModel);
+            log.debug("调用AI API (包含{}条历史消息, RAG模式={}): url={}, model={}",
+                    history.size(), ragEnhancedPrompt != null, apiUrl, llmModel);
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
             ResponseEntity<String> response = restTemplate.exchange(

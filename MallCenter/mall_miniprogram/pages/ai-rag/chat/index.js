@@ -208,25 +208,29 @@ Page({
       // 调用AI API
       const res = await this.callAIService(question)
 
-      // 添加AI回复
+      const fullText = res.response || res.answer || '抱歉，我暂时无法回答这个问题。'
+
+      // 先添加空消息 (显示loading)
       const aiMessage = {
         id: Date.now(),
         sender: 'ai',
-        text: res.response || res.answer || '抱歉，我暂时无法回答这个问题。',
+        text: '',  // 初始为空，通过流式显示逐步填充
         sources: res.sources || [],
-        products: res.products || [],  // 商品推荐列表
+        products: res.products || [],
         keywords: res.keywords || [],
-        timeStr: this.formatTime(new Date())
+        timeStr: this.formatTime(new Date()),
+        isStreaming: true  // 标记正在流式显示
       }
 
       const newMessages = [...this.data.messages, aiMessage]
+      const messageIndex = newMessages.length - 1
       this.setData({
         messages: newMessages,
         isTyping: false
       })
 
-      this.scrollToBottom()
-      this.saveHistory()
+      // 模拟流式显示 (借鉴白垩纪App 3字符/20ms效果)
+      this.simulateStreamDisplay(messageIndex, fullText, res)
 
     } catch (error) {
       console.error('AI回复失败:', error)
@@ -249,6 +253,37 @@ Page({
 
       this.scrollToBottom()
     }
+  },
+
+  // 模拟流式显示AI回复 (借鉴白垩纪App 3字符/20ms效果)
+  simulateStreamDisplay(messageIndex, fullText, resData) {
+    let currentIndex = 0
+    const chunkSize = 3  // 每次显示3个字符
+    const interval = 20  // 20ms间隔
+
+    const timer = setInterval(() => {
+      if (currentIndex >= fullText.length) {
+        clearInterval(timer)
+        // 显示完成，更新状态
+        const messages = this.data.messages
+        if (messages[messageIndex]) {
+          messages[messageIndex].isStreaming = false
+          this.setData({ messages })
+          this.saveHistory()
+        }
+        return
+      }
+
+      currentIndex += chunkSize
+      const messages = this.data.messages
+      if (messages[messageIndex]) {
+        messages[messageIndex].text = fullText.substring(0, currentIndex)
+        this.setData({ messages })
+      }
+
+      // 滚动到底部
+      this.scrollToBottom()
+    }, interval)
   },
 
   // 调用AI服务
@@ -311,6 +346,50 @@ Page({
     })
   },
 
+  // 加入购物车 (新增 - 借鉴白垩纪App快捷操作设计)
+  addToCart(e) {
+    const product = e.currentTarget.dataset.product
+    // 如果商品有规格，跳转详情页选规格
+    if (product.hasSpec || product.specType === 1) {
+      wx.navigateTo({
+        url: '/pages/goods/goods-detail/index?id=' + product.id + '&action=addCart'
+      })
+    } else {
+      // 无规格直接加购物车
+      this.doAddToCart(product.id, product.skuId || product.id, 1)
+    }
+  },
+
+  // 立即购买 (新增)
+  buyNow(e) {
+    const product = e.currentTarget.dataset.product
+    wx.navigateTo({
+      url: '/pages/goods/goods-detail/index?id=' + product.id + '&action=buyNow'
+    })
+  },
+
+  // 直接加购物车API
+  doAddToCart(spuId, skuId, quantity) {
+    api.shoppingCartAdd({
+      spuId: spuId,
+      skuId: skuId,
+      quantity: quantity
+    }).then(res => {
+      if (res.code === 200) {
+        wx.showToast({
+          title: '已加入购物车',
+          icon: 'success'
+        })
+      }
+    }).catch(err => {
+      console.error('加入购物车失败:', err)
+      wx.showToast({
+        title: '加入购物车失败',
+        icon: 'none'
+      })
+    })
+  },
+
   // 滚动到底部
   scrollToBottom() {
     setTimeout(() => {
@@ -349,19 +428,27 @@ Page({
       content: '确认清空所有对话记录？',
       success: (res) => {
         if (res.confirm) {
-          // 生成新的会话ID
+          const oldSessionId = this.data.sessionId
+
+          // 1. 清空服务端历史 (新增 - 借鉴白垩纪App)
+          api.clearAiSessionHistory(oldSessionId).catch(err => {
+            console.log('清空服务端历史失败:', err)
+          })
+
+          // 2. 生成新的会话ID
           const newSessionId = this.generateSessionId()
-          
-          this.setData({ 
+
+          // 3. 清空本地消息和缓存
+          this.setData({
             messages: [],
             sessionId: newSessionId,
             historyLoaded: true
           })
-          
+
           // 清除本地缓存并保存新会话ID
           wx.removeStorageSync('aiChatHistory')
           wx.setStorageSync('aiChatSessionId', newSessionId)
-          
+
           wx.showToast({
             title: '已清空',
             icon: 'success'
