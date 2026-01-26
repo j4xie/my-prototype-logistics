@@ -73,7 +73,7 @@ class MaterialBatchApiClient {
   }
 
   // 4. 获取原材料批次详情
-  async getBatchById(batchId: string, factoryId?: string) {
+  async getBatchById(batchId: string, factoryId?: string): Promise<{ success: boolean; data: MaterialBatch; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/${batchId}`);
   }
 
@@ -147,12 +147,12 @@ class MaterialBatchApiClient {
   }
 
   // 15. 获取即将过期的批次
-  async getExpiringBatches(days?: number, factoryId?: string) {
+  async getExpiringBatches(days?: number, factoryId?: string): Promise<{ success: boolean; data: MaterialBatch[]; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/expiring`, { params: { days } });
   }
 
   // 16. 获取已过期的批次
-  async getExpiredBatches(factoryId?: string) {
+  async getExpiredBatches(factoryId?: string): Promise<{ success: boolean; data: MaterialBatch[]; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/expired`);
   }
 
@@ -167,7 +167,7 @@ class MaterialBatchApiClient {
   }
 
   // 19. 获取低库存警告
-  async getLowStockBatches(factoryId?: string) {
+  async getLowStockBatches(factoryId?: string): Promise<{ success: boolean; data: MaterialBatch[]; message?: string }> {
     return await apiClient.get(`${this.getPath(factoryId)}/low-stock`);
   }
 

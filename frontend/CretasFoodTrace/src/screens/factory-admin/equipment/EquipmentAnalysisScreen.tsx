@@ -139,7 +139,7 @@ type AnalysisTab = 'overview' | 'efficiency' | 'maintenance' | 'anomalies' | 'is
 
 export function EquipmentAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const { t } = useTranslation('equipment');
+  const { t } = useTranslation('processing');
   const { user } = useAuthStore();
   const factoryId = getCurrentFactoryId();
 
@@ -176,7 +176,7 @@ export function EquipmentAnalysisScreen() {
       const basePath = `/api/mobile/${factoryId}/equipment`;
 
       // Always fetch overview
-      const overviewResponse = await apiClient.get(`${basePath}/analysis/overview`);
+      const overviewResponse = await apiClient.get<{ success: boolean; data: EquipmentStatusOverview }>(`${basePath}/analysis/overview`);
       if (overviewResponse.success && overviewResponse.data) {
         setOverview(overviewResponse.data);
       }
@@ -184,21 +184,21 @@ export function EquipmentAnalysisScreen() {
       // Fetch tab-specific data
       switch (activeTab) {
         case 'efficiency':
-          const effResponse = await apiClient.get(`${basePath}/analysis/efficiency`);
+          const effResponse = await apiClient.get<{ success: boolean; data: EquipmentEfficiency }>(`${basePath}/analysis/efficiency`);
           if (effResponse.success && effResponse.data) {
             setEfficiency(effResponse.data);
           }
           break;
 
         case 'maintenance':
-          const maintResponse = await apiClient.get(`${basePath}/analysis/maintenance`);
+          const maintResponse = await apiClient.get<{ success: boolean; data: MaintenanceSuggestion[] }>(`${basePath}/analysis/maintenance`);
           if (maintResponse.success && maintResponse.data) {
             setMaintenanceSuggestions(maintResponse.data);
           }
           break;
 
         case 'anomalies':
-          const anomalyResponse = await apiClient.get(`${basePath}/analysis/anomalies`);
+          const anomalyResponse = await apiClient.get<{ success: boolean; data: AnomalyEvent[] }>(`${basePath}/analysis/anomalies`);
           if (anomalyResponse.success && anomalyResponse.data) {
             setAnomalies(anomalyResponse.data);
           }
@@ -206,8 +206,8 @@ export function EquipmentAnalysisScreen() {
 
         case 'isapi':
           const [isapiResponse, gatewayResponse] = await Promise.all([
-            apiClient.get(`${basePath}/isapi/events`),
-            apiClient.get(`/api/mobile/${factoryId}/edge-gateway/status`),
+            apiClient.get<{ success: boolean; data: IsapiEvent[] }>(`${basePath}/isapi/events`),
+            apiClient.get<{ success: boolean; data: EdgeGatewayStatus }>(`/api/mobile/${factoryId}/edge-gateway/status`),
           ]);
 
           if (isapiResponse.success && isapiResponse.data) {

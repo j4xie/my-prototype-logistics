@@ -176,7 +176,7 @@ export default function VoiceInspectionResultScreen() {
       const reader = new FileReader();
       const audioBase64 = await new Promise<string>((resolve, reject) => {
         reader.onloadend = () => {
-          const base64 = (reader.result as string).split(',')[1];
+          const base64 = (reader.result as string).split(',')[1] ?? '';
           resolve(base64);
         };
         reader.onerror = reject;

@@ -84,7 +84,7 @@ export default function AIProbabilityDetailScreen() {
         setPlans(planList);
 
         // 默认选中第一个
-        if (planList.length > 0 && !selectedPlanId) {
+        if (planList.length > 0 && !selectedPlanId && planList[0]) {
           setSelectedPlanId(planList[0].id);
         }
       }
@@ -111,7 +111,7 @@ export default function AIProbabilityDetailScreen() {
             setSelectedProbability(found);
             setSelectedScheduleId(initialScheduleId);
           }
-        } else if (response.data.length > 0) {
+        } else if (response.data.length > 0 && response.data[0]) {
           // 默认选中第一个
           setSelectedProbability(response.data[0]);
           setSelectedScheduleId(response.data[0].scheduleId);
