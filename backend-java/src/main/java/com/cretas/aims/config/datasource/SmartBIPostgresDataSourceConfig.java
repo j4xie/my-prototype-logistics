@@ -97,6 +97,8 @@ public class SmartBIPostgresDataSourceConfig {
     @Bean(name = "smartbiPostgresDataSource")
     @ConditionalOnProperty(name = "smartbi.postgres.enabled", havingValue = "true")
     public DataSource smartbiPostgresDataSource() {
+        System.out.println("======= Creating SmartBI PostgreSQL DataSource =======");
+        System.out.println("SmartBI JDBC URL: " + jdbcUrl);
         log.info("Creating SmartBI PostgreSQL DataSource: {}", jdbcUrl);
 
         HikariDataSource dataSource = new HikariDataSource();
@@ -129,6 +131,7 @@ public class SmartBIPostgresDataSourceConfig {
     public LocalContainerEntityManagerFactoryBean smartbiPostgresEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
             @Qualifier("smartbiPostgresDataSource") DataSource dataSource) {
+        System.out.println("======= Creating SmartBI PostgreSQL EntityManagerFactory =======");
 
         Map<String, Object> properties = new HashMap<>();
 
