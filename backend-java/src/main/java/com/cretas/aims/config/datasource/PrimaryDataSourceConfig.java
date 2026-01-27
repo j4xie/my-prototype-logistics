@@ -6,7 +6,9 @@ import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -63,6 +65,10 @@ import com.cretas.aims.entity.smartbi.SmartBiUsageRecord;
     basePackages = {
         "com.cretas.aims.repository"
     },
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.REGEX,
+        pattern = "com\\.cretas\\.aims\\.repository\\.smartbi\\.postgres\\..*"
+    ),
     entityManagerFactoryRef = "primaryEntityManagerFactory",
     transactionManagerRef = "primaryTransactionManager"
 )
@@ -162,9 +168,36 @@ public class PrimaryDataSourceConfig {
                 "com.cretas.aims.entity.rules",
                 "com.cretas.aims.entity.scale",
                 "com.cretas.aims.entity.tool",
-                "com.cretas.aims.entity.voice",
-                // SmartBI MySQL entities - explicitly list the package
-                "com.cretas.aims.entity.smartbi"
+                "com.cretas.aims.entity.voice"
+                // NOTE: We explicitly DO NOT include "com.cretas.aims.entity.smartbi" here
+                // because packages() scans subpackages, and smartbi.postgres entities
+                // require their own separate EntityManagerFactory (SmartBIPostgresDataSourceConfig).
+                // The SmartBI MySQL entities (AiAgentRule, etc.) are included via
+                // their Class<?> references below, which only scans that exact package.
+            )
+            .packages(
+                // SmartBI MySQL entities - use Class references to avoid scanning postgres subpackage
+                AiAgentRule.class,
+                AiIntentConfig.class,
+                SkuComplexity.class,
+                SmartBiAlertThreshold.class,
+                SmartBiAnalysisCache.class,
+                SmartBiAnalysisConfig.class,
+                SmartBiBillingConfig.class,
+                SmartBiChartTemplate.class,
+                SmartBiDatasource.class,
+                SmartBiDepartmentData.class,
+                SmartBiDictionary.class,
+                SmartBiExcelUpload.class,
+                SmartBiFieldDefinition.class,
+                SmartBiFinanceData.class,
+                SmartBiIncentiveRule.class,
+                SmartBiMetricFormula.class,
+                SmartBiQueryHistory.class,
+                SmartBiSalesData.class,
+                SmartBiSchemaHistory.class,
+                SmartBiSkill.class,
+                SmartBiUsageRecord.class
             )
             .persistenceUnit("primary")
             .properties(properties)
