@@ -80,16 +80,16 @@ public interface SmartBiChartTemplateRepository extends JpaRepository<SmartBiCha
     List<SmartBiChartTemplate> findAllWithFactoryOverride(@Param("factoryId") String factoryId);
 
     /**
-     * 按适用指标代码查找模板（使用 MySQL JSON_CONTAINS 函数）
-     * 查找 applicable_metrics JSON 数组中包含指定指标代码的模板
+     * 按适用指标代码查找模板（PostgreSQL 兼容）
+     * 使用 JSONB 包含操作符检查 applicable_metrics 数组是否包含指定指标代码
      *
      * @param metricCode 指标代码
      * @return 图表模板列表
      */
     @Query(value = "SELECT * FROM smart_bi_chart_templates t " +
-                   "WHERE t.is_active = 1 " +
+                   "WHERE t.is_active = true " +
                    "AND t.deleted_at IS NULL " +
-                   "AND JSON_CONTAINS(t.applicable_metrics, CONCAT('\"', :metricCode, '\"')) " +
+                   "AND t.applicable_metrics::jsonb @> to_jsonb(:metricCode::text) " +
                    "ORDER BY t.sort_order ASC",
            nativeQuery = true)
     List<SmartBiChartTemplate> findByApplicableMetricContaining(@Param("metricCode") String metricCode);

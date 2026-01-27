@@ -136,7 +136,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         try {
-            // 2. 解析 Excel 文件（使用 Python 服务或 Java 降级）
+            // 2. 解析 Excel 文件（完全使用 Python SmartBI 服务，无 Java 降级）
             ExcelParseRequest parseRequest = ExcelParseRequest.builder()
                     .factoryId(factoryId)
                     .fileName(fileName)
@@ -455,60 +455,50 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     // ==================== 私有辅助方法 ====================
 
     /**
-     * 使用 Python 服务解析 Excel，如果失败则降级到 Java 实现
+     * 使用 Python 服务解析 Excel
      *
-     * 优先使用 Python SmartBI 服务进行 Excel 解析，利用 Python 生态系统中
-     * 更成熟的数据处理库（如 pandas, openpyxl）。如果 Python 服务不可用
-     * 或处理失败，将自动降级到 Java 原生实现。
+     * 所有 SmartBI Excel 解析完全由 Python 服务处理，不再有 Java fallback。
+     * Python SmartBI 服务 (端口 8083) 使用 pandas/openpyxl 进行 Excel 解析，
+     * 使用 LLM 进行动态字段映射，支持复杂表头处理。
      *
      * @param file        Excel 文件
      * @param factoryId   工厂ID
      * @param dataType    数据类型提示
      * @param parseRequest 解析请求参数
      * @return Excel 解析结果
-     * @throws IOException 如果 Java 解析也失败
+     * @throws RuntimeException 如果 Python 服务不可用或解析失败
      */
     private ExcelParseResponse parseExcelWithFallback(MultipartFile file, String factoryId,
                                                        String dataType, ExcelParseRequest parseRequest) throws IOException {
-        // 检查 Python 服务是否启用
+        // Python SmartBI 服务必须启用
         if (!pythonConfig.isEnabled()) {
-            log.debug("Python SmartBI 服务已禁用，使用 Java 解析器");
-            return excelParserService.parseExcel(file.getInputStream(), parseRequest);
+            throw new RuntimeException("Python SmartBI 服务未启用。SmartBI 功能完全依赖 Python 服务 (端口 8083)，请确保服务已启动。");
         }
 
-        // 尝试使用 Python 服务
-        try {
-            if (pythonClient.isAvailable()) {
-                int sheetIndex = parseRequest.getSheetIndex() != null ? parseRequest.getSheetIndex() : 0;
-                int headerRow = parseRequest.getHeaderRow() != null ? parseRequest.getHeaderRow() + 1 : 1;
-
-                log.info("使用 Python SmartBI 服务解析 Excel: fileName={}, sheetIndex={}, headerRow={}",
-                        file.getOriginalFilename(), sheetIndex, headerRow);
-                ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRow);
-
-                if (pythonResult != null && pythonResult.isSuccess()) {
-                    log.info("Python SmartBI 解析成功: headers={}, rows={}",
-                            pythonResult.getHeaders() != null ? pythonResult.getHeaders().size() : 0,
-                            pythonResult.getRowCount());
-                    return pythonResult;
-                } else {
-                    log.warn("Python SmartBI 解析返回失败结果，降级到 Java 解析器");
-                }
-            } else {
-                log.debug("Python SmartBI 服务不可用，使用 Java 解析器");
-            }
-        } catch (Exception e) {
-            log.warn("Python SmartBI 解析失败，降级到 Java 解析器: {}", e.getMessage());
-
-            // 如果配置不允许降级，则抛出异常
-            if (!pythonConfig.isFallbackOnError()) {
-                throw new RuntimeException("Python SmartBI 服务不可用且不允许降级", e);
-            }
+        // 检查 Python 服务可用性
+        if (!pythonClient.isAvailable()) {
+            throw new RuntimeException("Python SmartBI 服务不可用。请检查服务是否在 " + pythonConfig.getUrl() + " 运行。");
         }
 
-        // 降级到 Java 实现
-        log.info("使用 Java 解析器处理 Excel: fileName={}", file.getOriginalFilename());
-        return excelParserService.parseExcel(file.getInputStream(), parseRequest);
+        // 使用 Python 服务解析 Excel
+        int sheetIndex = parseRequest.getSheetIndex() != null ? parseRequest.getSheetIndex() : 0;
+        int headerRow = parseRequest.getHeaderRow() != null ? parseRequest.getHeaderRow() + 1 : 1;
+
+        log.info("使用 Python SmartBI 服务解析 Excel: fileName={}, sheetIndex={}, headerRow={}",
+                file.getOriginalFilename(), sheetIndex, headerRow);
+
+        ExcelParseResponse pythonResult = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRow);
+
+        if (pythonResult != null && pythonResult.isSuccess()) {
+            log.info("Python SmartBI 解析成功: headers={}, rows={}",
+                    pythonResult.getHeaders() != null ? pythonResult.getHeaders().size() : 0,
+                    pythonResult.getRowCount());
+            return pythonResult;
+        }
+
+        // Python 解析失败，抛出异常
+        String errorMsg = pythonResult != null ? pythonResult.getErrorMessage() : "未知错误";
+        throw new RuntimeException("Python SmartBI Excel 解析失败: " + errorMsg);
     }
 
     /**
@@ -1348,23 +1338,30 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             // 发送解析中事件
             progressCallback.accept(UploadProgressEvent.parsing(sheetIndex, sheetName));
 
-            // 解析 Excel
-            ExcelParseRequest parseRequest = ExcelParseRequest.builder()
-                    .factoryId(factoryId)
-                    .fileName(fileName)
-                    .sheetIndex(sheetIndex)
-                    .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
-                    .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
-                    .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
-                    .businessScene(config.getDataType())
-                    .build();
-
-            ExcelParseResponse parseResult = excelParserService.parseExcel(
-                    new ByteArrayInputStream(fileBytes), parseRequest);
-
-            if (!parseResult.isSuccess()) {
+            // 使用 Python SmartBI 服务解析 Excel
+            if (!pythonConfig.isEnabled() || !pythonClient.isAvailable()) {
                 int completed = completedCount.incrementAndGet();
-                String error = "解析失败: " + parseResult.getErrorMessage();
+                String error = "Python SmartBI 服务不可用";
+                progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+                return SheetUploadResult.failed(sheetIndex, sheetName, error);
+            }
+
+            int headerRow = config.getHeaderRow() != null ? config.getHeaderRow() + 1 : 1;
+            ExcelParseResponse parseResult;
+            try {
+                // 创建临时 MultipartFile 用于 Python 调用
+                MultipartFile tempFile = createMultipartFile(fileName, fileBytes);
+                parseResult = pythonClient.parseExcel(tempFile, factoryId, config.getDataType(), sheetIndex, headerRow);
+            } catch (Exception e) {
+                int completed = completedCount.incrementAndGet();
+                String error = "Python 解析失败: " + e.getMessage();
+                progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
+                return SheetUploadResult.failed(sheetIndex, sheetName, error);
+            }
+
+            if (parseResult == null || !parseResult.isSuccess()) {
+                int completed = completedCount.incrementAndGet();
+                String error = "解析失败: " + (parseResult != null ? parseResult.getErrorMessage() : "Python 返回空结果");
                 progressCallback.accept(UploadProgressEvent.sheetFailed(sheetIndex, sheetName, error, completed, totalSheets));
                 return SheetUploadResult.failed(sheetIndex, sheetName, error);
             }
@@ -1509,6 +1506,57 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     }
 
     /**
+     * 创建 MultipartFile 实例（用于 Python 调用）
+     *
+     * @param fileName  文件名
+     * @param fileBytes 文件字节数组
+     * @return MultipartFile 实例
+     */
+    private MultipartFile createMultipartFile(String fileName, byte[] fileBytes) {
+        return new MultipartFile() {
+            @Override
+            public String getName() {
+                return "file";
+            }
+
+            @Override
+            public String getOriginalFilename() {
+                return fileName;
+            }
+
+            @Override
+            public String getContentType() {
+                return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return fileBytes == null || fileBytes.length == 0;
+            }
+
+            @Override
+            public long getSize() {
+                return fileBytes != null ? fileBytes.length : 0;
+            }
+
+            @Override
+            public byte[] getBytes() {
+                return fileBytes;
+            }
+
+            @Override
+            public java.io.InputStream getInputStream() {
+                return new java.io.ByteArrayInputStream(fileBytes);
+            }
+
+            @Override
+            public void transferTo(java.io.File dest) throws java.io.IOException {
+                java.nio.file.Files.write(dest.toPath(), fileBytes);
+            }
+        };
+    }
+
+    /**
      * 处理单个 Sheet（供并行调用）
      */
     private SheetUploadResult processSingleSheet(String factoryId, String fileName,
@@ -1534,23 +1582,26 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         }
 
         try {
-            // 解析 Excel
-            ExcelParseRequest parseRequest = ExcelParseRequest.builder()
-                    .factoryId(factoryId)
-                    .fileName(fileName)
-                    .sheetIndex(sheetIndex)
-                    .headerRow(config.getHeaderRow() != null ? config.getHeaderRow() : 0)
-                    .sampleSize(config.getSampleSize() != null ? config.getSampleSize() : 100)
-                    .skipEmptyRows(config.getSkipEmptyRows() != null ? config.getSkipEmptyRows() : true)
-                    .businessScene(config.getDataType())
-                    .build();
-
-            ExcelParseResponse parseResult = excelParserService.parseExcel(
-                    new ByteArrayInputStream(fileBytes), parseRequest);
-
-            if (!parseResult.isSuccess()) {
+            // 使用 Python SmartBI 服务解析 Excel（无 Java fallback）
+            if (!pythonConfig.isEnabled() || !pythonClient.isAvailable()) {
                 return SheetUploadResult.failed(sheetIndex, sheetName,
-                        "解析失败: " + parseResult.getErrorMessage());
+                        "Python SmartBI 服务不可用，请确保服务已启动");
+            }
+
+            int headerRow = config.getHeaderRow() != null ? config.getHeaderRow() + 1 : 1;
+            ExcelParseResponse parseResult;
+            try {
+                // 创建临时 MultipartFile 用于 Python 调用
+                MultipartFile tempFile = createMultipartFile(fileName, fileBytes);
+                parseResult = pythonClient.parseExcel(tempFile, factoryId, config.getDataType(), sheetIndex, headerRow);
+            } catch (Exception e) {
+                return SheetUploadResult.failed(sheetIndex, sheetName,
+                        "Python 解析失败: " + e.getMessage());
+            }
+
+            if (parseResult == null || !parseResult.isSuccess()) {
+                return SheetUploadResult.failed(sheetIndex, sheetName,
+                        "解析失败: " + (parseResult != null ? parseResult.getErrorMessage() : "Python 返回空结果"));
             }
 
             // 检测数据类型

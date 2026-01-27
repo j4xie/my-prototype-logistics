@@ -66,8 +66,9 @@ public interface IntentMatchRecordRepository extends JpaRepository<IntentMatchRe
     /**
      * 查询特定日期的记录（用于日统计）
      */
-    @Query("SELECT r FROM IntentMatchRecord r WHERE r.factoryId = :factoryId " +
-           "AND DATE(r.createdAt) = DATE(:date)")
+    @Query(value = "SELECT * FROM intent_match_records r WHERE r.factory_id = :factoryId " +
+           "AND CAST(r.created_at AS DATE) = CAST(:date AS DATE)",
+           nativeQuery = true)
     List<IntentMatchRecord> findByFactoryIdAndDate(
             @Param("factoryId") String factoryId,
             @Param("date") LocalDateTime date);

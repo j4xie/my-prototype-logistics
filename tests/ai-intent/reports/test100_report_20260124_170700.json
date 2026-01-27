@@ -1,0 +1,937 @@
+{
+  "total": 100,
+  "matched": 81,
+  "accuracy": 81.0,
+  "by_category": {
+    "simple": {
+      "matched": 19,
+      "total": 20
+    },
+    "high_risk": {
+      "matched": 12,
+      "total": 15
+    },
+    "ambiguous": {
+      "matched": 15,
+      "total": 15
+    },
+    "complex": {
+      "matched": 12,
+      "total": 15
+    },
+    "multi": {
+      "matched": 9,
+      "total": 10
+    },
+    "typo": {
+      "matched": 5,
+      "total": 10
+    },
+    "domain": {
+      "matched": 9,
+      "total": 15
+    }
+  },
+  "details": [
+    {
+      "query": "查看订单",
+      "expected": "ORDER",
+      "actual": "ORDER_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "今天的订单",
+      "expected": "ORDER",
+      "actual": "ORDER_TODAY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "订单列表",
+      "expected": "ORDER",
+      "actual": "ORDER_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "库存查询",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "查看库存",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "设备状态",
+      "expected": "EQUIPMENT",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "查看设备",
+      "expected": "EQUIPMENT",
+      "actual": "EQUIPMENT_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "考勤记录",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "员工出勤",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "质检报告",
+      "expected": "QUALITY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "质量检查",
+      "expected": "QUALITY",
+      "actual": "QUALITY_CHECK_EXECUTE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "生产批次",
+      "expected": "BATCH",
+      "actual": "PROCESSING_BATCH_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "批次列表",
+      "expected": "BATCH",
+      "actual": "PROCESSING_BATCH_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "客户信息",
+      "expected": "CUSTOMER",
+      "actual": "CUSTOMER_SEARCH",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "客户列表",
+      "expected": "CUSTOMER",
+      "actual": "CUSTOMER_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "供应商查询",
+      "expected": "SUPPLIER",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "simple",
+      "clarify": true
+    },
+    {
+      "query": "物料信息",
+      "expected": "MATERIAL",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "原料查询",
+      "expected": "MATERIAL",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "发货记录",
+      "expected": "SHIPMENT",
+      "actual": "SHIPMENT_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "告警列表",
+      "expected": "ALERT",
+      "actual": "ALERT_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "simple",
+      "clarify": false
+    },
+    {
+      "query": "删除订单",
+      "expected": "DELETE",
+      "actual": "ORDER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "删除用户",
+      "expected": "DELETE",
+      "actual": "USER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "删除客户",
+      "expected": "DELETE",
+      "actual": "CUSTOMER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "删除设备",
+      "expected": "DELETE",
+      "actual": "SCALE_DELETE_DEVICE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "删除供应商",
+      "expected": "DELETE",
+      "actual": "SUPPLIER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "清空库存",
+      "expected": "CLEAR",
+      "actual": "INVENTORY_CLEAR",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "批量删除数据",
+      "expected": "DELETE",
+      "actual": "DATA_BATCH_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "重置配置",
+      "expected": "RESET",
+      "actual": "CONFIG_RESET",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "取消订单",
+      "expected": "CANCEL",
+      "actual": "SCALE_DELETE_DEVICE",
+      "conf": 1.0,
+      "matched": false,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "取消生产批次",
+      "expected": "CANCEL",
+      "actual": "PROCESSING_BATCH_CANCEL",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "作废订单",
+      "expected": "DELETE",
+      "actual": "ORDER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "移除用户",
+      "expected": "DELETE",
+      "actual": "USER_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "注销账号",
+      "expected": "DELETE",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "high_risk",
+      "clarify": true
+    },
+    {
+      "query": "删除物料",
+      "expected": "DELETE",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "high_risk",
+      "clarify": true
+    },
+    {
+      "query": "清除数据",
+      "expected": "DELETE",
+      "actual": "DATA_BATCH_DELETE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "high_risk",
+      "clarify": false
+    },
+    {
+      "query": "查一下",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "看看",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "帮我处理",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "有问题",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "这个",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "那个",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "数据",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "报表",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "统计",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "分析",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "好的",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "可以",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "嗯",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "处理一下",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "看一下",
+      "expected": "LOW_CONF",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": true,
+      "category": "ambiguous",
+      "clarify": true
+    },
+    {
+      "query": "本月销售统计",
+      "expected": "REPORT",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "最近7天库存变动",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.93,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "按部门统计考勤",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "生产效率报告",
+      "expected": "REPORT",
+      "actual": "REPORT_EFFICIENCY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "质检不合格的批次",
+      "expected": "QUALITY",
+      "actual": "QUALITY_STATS",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "供应商评估分析",
+      "expected": "SUPPLIER",
+      "actual": "SUPPLIER_EVALUATE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "本周发货情况",
+      "expected": "SHIPMENT",
+      "actual": "SHIPMENT_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "设备维护记录",
+      "expected": "EQUIPMENT",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "客户订单统计",
+      "expected": "ORDER",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "conf": 0.98,
+      "matched": false,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "物料消耗报表",
+      "expected": "MATERIAL",
+      "actual": "MATERIAL_BATCH_CONSUME",
+      "conf": 0.93,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "今日生产进度",
+      "expected": "PROCESSING",
+      "actual": "REPORT_PRODUCTION",
+      "conf": 0.98,
+      "matched": false,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "异常告警统计",
+      "expected": "ALERT",
+      "actual": "ALERT_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "库存预警列表",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "员工绩效报表",
+      "expected": "ATTENDANCE",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "complex",
+      "clarify": true
+    },
+    {
+      "query": "质量趋势分析",
+      "expected": "QUALITY",
+      "actual": "QUALITY_STATS",
+      "conf": 0.98,
+      "matched": true,
+      "category": "complex",
+      "clarify": false
+    },
+    {
+      "query": "查看订单并导出",
+      "expected": "ORDER",
+      "actual": "ORDER_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "库存查询和预警",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "考勤统计和报表",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_STATS",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "设备状态和维护",
+      "expected": "EQUIPMENT",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "客户信息和订单",
+      "expected": "CUSTOMER",
+      "actual": "CUSTOMER_SEARCH",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "质检记录和统计",
+      "expected": "QUALITY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "发货记录和跟踪",
+      "expected": "SHIPMENT",
+      "actual": "SHIPMENT_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "物料库存和预警",
+      "expected": "MATERIAL",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "生产计划和进度",
+      "expected": "PROCESSING",
+      "actual": "PROCESSING_BATCH_LIST",
+      "conf": 0.92,
+      "matched": true,
+      "category": "multi",
+      "clarify": false
+    },
+    {
+      "query": "供应商信息和评估",
+      "expected": "SUPPLIER",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "multi",
+      "clarify": true
+    },
+    {
+      "query": "查旬订单",
+      "expected": "ORDER",
+      "actual": "ORDER_LIST",
+      "conf": 0.93,
+      "matched": true,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "库存插询",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "考琴记录",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "涉备状态",
+      "expected": "EQUIPMENT",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "typo",
+      "clarify": true
+    },
+    {
+      "query": "帮我看看订单",
+      "expected": "ORDER",
+      "actual": "SHIPMENT_QUERY",
+      "conf": 1.0,
+      "matched": false,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "库存咋样",
+      "expected": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "设备啥情况",
+      "expected": "EQUIPMENT",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "typo",
+      "clarify": true
+    },
+    {
+      "query": "有没有告警",
+      "expected": "ALERT",
+      "actual": "ALERT_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "typo",
+      "clarify": false
+    },
+    {
+      "query": "订单咋了",
+      "expected": "ORDER",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "typo",
+      "clarify": true
+    },
+    {
+      "query": "今天单子多不多",
+      "expected": "ORDER",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "typo",
+      "clarify": true
+    },
+    {
+      "query": "溯源码查询",
+      "expected": "TRACE",
+      "actual": "TRACE_BATCH",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "批次追溯",
+      "expected": "TRACE",
+      "actual": "TRACE_BATCH",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "HACCP检查",
+      "expected": "QUALITY",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "domain",
+      "clarify": true
+    },
+    {
+      "query": "冷链温度",
+      "expected": "COLD_CHAIN",
+      "actual": "COLD_CHAIN_TEMPERATURE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "温度监控",
+      "expected": "COLD_CHAIN",
+      "actual": "COLD_CHAIN_TEMPERATURE",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "生产批号",
+      "expected": "BATCH",
+      "actual": "PROCESSING_BATCH_LIST",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "出库单",
+      "expected": "SHIPMENT",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "domain",
+      "clarify": true
+    },
+    {
+      "query": "入库记录",
+      "expected": "MATERIAL",
+      "actual": "MATERIAL_BATCH_CREATE",
+      "conf": 1.0,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "打卡记录",
+      "expected": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "工时统计",
+      "expected": "ATTENDANCE",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "conf": 0.98,
+      "matched": false,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "产线状态",
+      "expected": "EQUIPMENT",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "domain",
+      "clarify": true
+    },
+    {
+      "query": "原料检验",
+      "expected": "QUALITY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "conf": 0.98,
+      "matched": false,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "成品检验",
+      "expected": "QUALITY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "conf": 0.98,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "物流跟踪",
+      "expected": "SHIPMENT",
+      "actual": "SHIPMENT_QUERY",
+      "conf": 1.0,
+      "matched": true,
+      "category": "domain",
+      "clarify": false
+    },
+    {
+      "query": "采购订单",
+      "expected": "ORDER",
+      "actual": "NONE",
+      "conf": 0,
+      "matched": false,
+      "category": "domain",
+      "clarify": true
+    }
+  ]
+}

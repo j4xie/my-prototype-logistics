@@ -63,8 +63,8 @@ class UpdateModelRequest(BaseModel):
     reward: float = Field(
         ...,
         ge=0,
-        le=1,
-        description="Observed reward r (0-1)"
+        le=2,
+        description="Observed reward r (0-2, can exceed 1.0 when exceeding targets)"
     )
 
 

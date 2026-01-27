@@ -150,6 +150,7 @@ public class IntentMatchResult {
         REGEX,      // 正则表达式匹配
         KEYWORD,    // 关键词匹配
         SEMANTIC,   // 语义向量匹配（高置信度直接采用）
+        CLASSIFIER, // v16.0: Python BERT 分类器直接分类
         FUSION,     // 融合匹配（语义+关键词加权）
         SIMILAR,    // 相似表达匹配 (编辑距离)
         LLM,        // LLM fallback 匹配

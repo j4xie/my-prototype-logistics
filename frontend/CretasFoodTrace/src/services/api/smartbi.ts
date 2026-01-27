@@ -22,6 +22,8 @@ import type {
   IncentivePlan,
   ExcelUploadRequest,
   ExcelUploadResponse,
+  ExcelUploadAndAnalyzeRequest,
+  ExcelUploadAndAnalyzeResponse,
   SalesAnalysisResponse,
   DepartmentAnalysisResponse,
   RegionAnalysisResponse,
@@ -66,6 +68,47 @@ export const smartBIApi = {
       formData,
       {
         headers: { 'Content-Type': 'multipart/form-data' },
+      }
+    );
+  },
+
+  /**
+   * 上传 Excel 文件并自动分析生成图表
+   * @param request - 上传请求参数
+   * @returns 包含图表配置和 AI 分析的响应
+   */
+  uploadAndAnalyze: async (
+    request: ExcelUploadAndAnalyzeRequest
+  ): Promise<ApiResponse<ExcelUploadAndAnalyzeResponse>> => {
+    const currentFactoryId = requireFactoryId(request.factoryId);
+
+    // 创建 FormData
+    const formData = new FormData();
+    formData.append('file', {
+      uri: request.file.uri,
+      name: request.file.name,
+      type: request.file.mimeType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    } as unknown as Blob);
+
+    // 添加可选参数
+    if (request.dataType) {
+      formData.append('dataType', request.dataType);
+    }
+    if (request.sheetIndex !== undefined) {
+      formData.append('sheetIndex', String(request.sheetIndex));
+    }
+    if (request.headerRow !== undefined) {
+      formData.append('headerRow', String(request.headerRow));
+    }
+    // 默认启用 autoConfirm
+    formData.append('autoConfirm', String(request.autoConfirm ?? true));
+
+    return apiClient.post<ApiResponse<ExcelUploadAndAnalyzeResponse>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/upload-and-analyze`,
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 180000, // 3 分钟超时（AI 分析可能需要较长时间）
       }
     );
   },

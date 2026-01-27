@@ -63,10 +63,6 @@ import com.cretas.aims.entity.smartbi.SmartBiUsageRecord;
     basePackages = {
         "com.cretas.aims.repository"
     },
-    excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
-        type = org.springframework.context.annotation.FilterType.REGEX,
-        pattern = "com\\.cretas\\.aims\\.repository\\.smartbi\\.postgres\\..*"
-    ),
     entityManagerFactoryRef = "primaryEntityManagerFactory",
     transactionManagerRef = "primaryTransactionManager"
 )

@@ -91,6 +91,43 @@ class FieldDetector:
         r'(日期|时间|月份|年份|季度|周期)'
     ]
 
+    # Enhanced date value patterns for date detection in cell values
+    ENHANCED_DATE_VALUE_PATTERNS = [
+        # Chinese formats
+        r'\d{4}年\d{1,2}月\d{1,2}日?',
+        r'\d{4}年第[一二三四]季度',
+        r'\d{4}年[上下]半年',
+        r'\d{4}年\d{1,2}月',
+        r'\d{1,2}月\d{1,2}日',
+
+        # Fiscal year formats
+        r'FY\d{4}',                    # FY2025
+        r'FY\s*\d{2,4}',               # FY 25, FY 2025
+        r'Q[1-4]\s*\d{4}',             # Q1 2025
+        r'Q[1-4][-/]\d{4}',            # Q1-2025, Q1/2025
+        r'\d{4}\s*Q[1-4]',             # 2025 Q1
+        r'H[12]\s*\d{4}',              # H1 2025 (Half year)
+        r'\d{4}\s*H[12]',              # 2025 H1
+
+        # Standard formats
+        r'\d{4}[-/年]\d{1,2}[-/月]\d{1,2}',
+        r'\d{4}[-/]\d{1,2}',
+        r'\d{1,2}[-/]\d{1,2}[-/]\d{4}',
+
+        # Month names (Chinese)
+        r'(一|二|三|四|五|六|七|八|九|十|十一|十二)月',
+
+        # Relative dates
+        r'本月|上月|去年|今年|本年|上年',
+        r'YTD|MTD|QTD',                # Year/Month/Quarter to date
+        r'本季度|上季度',
+
+        # Week patterns
+        r'第\d{1,2}周',
+        r'W\d{1,2}',
+        r'\d{4}-W\d{1,2}'
+    ]
+
     CATEGORY_PATTERNS = [
         r'(category|type|class|group|segment|channel)',
         r'(类别|类型|分类|分组|渠道|部门)'
@@ -202,6 +239,10 @@ class FieldDetector:
                 return DataType.INTEGER
             return DataType.FLOAT
 
+        # Check for enhanced date patterns first (handles Chinese/fiscal formats)
+        if self._check_enhanced_date_patterns(sample):
+            return DataType.DATE
+
         # Check for date/datetime (only for non-numeric values)
         try:
             parsed_dates = pd.to_datetime(sample, errors='coerce')
@@ -220,6 +261,88 @@ class FieldDetector:
             pass
 
         return DataType.STRING
+
+    def _check_enhanced_date_patterns(self, sample: pd.Series) -> bool:
+        """
+        Check if sample values match enhanced date patterns.
+
+        Handles formats not recognized by pd.to_datetime:
+        - Chinese dates (2025年1月)
+        - Fiscal years (FY2025, Q1 2025)
+        - Relative dates (本月, YTD)
+        """
+        if sample.empty:
+            return False
+
+        match_count = 0
+        total_non_null = 0
+
+        for value in sample.dropna():
+            str_val = str(value).strip()
+            if not str_val:
+                continue
+
+            total_non_null += 1
+
+            # Check against enhanced patterns
+            for pattern in self.ENHANCED_DATE_VALUE_PATTERNS:
+                if re.search(pattern, str_val, re.IGNORECASE):
+                    match_count += 1
+                    break
+
+            # Also check for Excel serial date numbers (5-digit integers)
+            if re.match(r'^\d{5}$', str_val):
+                try:
+                    num = int(str_val)
+                    # Excel serial dates are typically 1-50000 range (1900-2037)
+                    if 1 <= num <= 50000:
+                        match_count += 1
+                except ValueError:
+                    pass
+
+        # If >50% of values match date patterns, treat as date
+        if total_non_null > 0 and match_count / total_non_null > 0.5:
+            return True
+
+        return False
+
+    def _infer_date_column(self, df: pd.DataFrame) -> Optional[str]:
+        """
+        Infer which column is the date/time column based on content.
+
+        Useful for datasets where date column name is non-standard.
+
+        Returns:
+            Name of the inferred date column, or None
+        """
+        for col in df.columns:
+            col_lower = str(col).lower()
+
+            # Check column name first
+            for pattern in self.DATE_PATTERNS:
+                if re.search(pattern, col_lower, re.IGNORECASE):
+                    return col
+
+            # Check if values have sequential pattern (dates often increment)
+            values = df[col].dropna()
+            if len(values) >= 3:
+                # Check for enhanced date patterns in values
+                if self._check_enhanced_date_patterns(values):
+                    return col
+
+                # Check for sequential numeric pattern (could be year/month)
+                try:
+                    numeric = pd.to_numeric(values, errors='coerce')
+                    if numeric.notna().sum() == len(values):
+                        # Check if monotonically increasing
+                        if numeric.is_monotonic_increasing:
+                            # Check if in year range
+                            if numeric.min() >= 1990 and numeric.max() <= 2100:
+                                return col
+                except Exception:
+                    pass
+
+        return None
 
     def _detect_semantic_type(
         self,

@@ -1,0 +1,317 @@
+{
+  "timestamp": "20260124_230233",
+  "summary": {
+    "total": 100,
+    "passed": 78,
+    "rate": 78.0,
+    "avg_latency": 156.83274030685425
+  },
+  "failed_cases": [
+    {
+      "id": 27,
+      "input": "设备状态和今天的生产进度一起给我看看",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "multi_intent",
+      "description": "设备+生产双意图",
+      "error": null
+    },
+    {
+      "id": 28,
+      "input": "考勤异常的人和他们负责的设备故障有没有关联",
+      "expected": "REPORT_ANOMALY",
+      "actual": "EQUIPMENT_STOP",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "multi_intent",
+      "description": "考勤+设备双意图",
+      "error": null
+    },
+    {
+      "id": 30,
+      "input": "客户订单和发货进度都显示给我看看",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "multi_intent",
+      "description": "客户+发货双意图",
+      "error": null
+    },
+    {
+      "id": 34,
+      "input": "员工出勤率和生产效率的关系报告",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "REPORT_EFFICIENCY",
+      "method": "SEMANTIC",
+      "confidence": 0.95,
+      "category": "multi_intent",
+      "description": "考勤+效率双意图",
+      "error": null
+    },
+    {
+      "id": 36,
+      "input": "各部门考勤统计和各条产线效率对比",
+      "expected": "ATTENDANCE_STATS_BY_DEPT",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "SEMANTIC",
+      "confidence": 0.93,
+      "category": "multi_intent",
+      "description": "部门考勤+效率双意图",
+      "error": null
+    },
+    {
+      "id": 38,
+      "input": "生产批次状态和相关设备运行情况汇总",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "multi_intent",
+      "description": "生产+设备双意图",
+      "error": null
+    },
+    {
+      "id": 39,
+      "input": "KPI指标和异常事件的关联分析报告",
+      "expected": "ALERT_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "multi_intent",
+      "description": "KPI+异常双意图",
+      "error": null
+    },
+    {
+      "id": 63,
+      "input": "导出",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "clarification",
+      "description": "模糊导出：系统默认返回仪表盘",
+      "error": null
+    },
+    {
+      "id": 65,
+      "input": "有问题",
+      "expected": "ALERT_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "clarification",
+      "description": "模糊问题：系统返回告警列表",
+      "error": null
+    },
+    {
+      "id": 80,
+      "input": "暂停一下生产线，需要调整",
+      "expected": "PROCESSING_BATCH_PAUSE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "SEMANTIC",
+      "confidence": 0.93,
+      "category": "write_operation",
+      "description": "暂停生产",
+      "error": null
+    },
+    {
+      "id": 81,
+      "input": "上个月销售业绩和这个月对比情况",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "ATTENDANCE_MONTHLY",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "time_based",
+      "description": "月度对比",
+      "error": null
+    },
+    {
+      "id": 82,
+      "input": "最近一周设备故障率统计",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "time_based",
+      "description": "周度设备",
+      "error": null
+    },
+    {
+      "id": 88,
+      "input": "本周发货统计和上周对比",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_BY_DATE",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "time_based",
+      "description": "周度发货",
+      "error": null
+    },
+    {
+      "id": 90,
+      "input": "近半年供应商交货准时率排名",
+      "expected": "SUPPLIER_RANKING",
+      "actual": "SUPPLIER_EVALUATE",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "time_based",
+      "description": "半年供应商",
+      "error": null
+    },
+    {
+      "id": 91,
+      "input": "我们老板让我整理一份关于上个季度整体生产效率和各条产线设备利用率的综合报告材料",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "EQUIPMENT_STOP",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "long_complex",
+      "description": "长句效率报告",
+      "error": null
+    },
+    {
+      "id": 92,
+      "input": "麻烦帮我查一下最近有没有什么紧急的告警需要处理以及设备维护保养是否按计划执行的情况",
+      "expected": "ALERT_LIST",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "long_complex",
+      "description": "长句告警+维护",
+      "error": null
+    },
+    {
+      "id": 93,
+      "input": "为了准备下周的客户审核，需要把相关的质量检验记录和产品溯源文档都调出来备查",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "long_complex",
+      "description": "长句质检溯源",
+      "error": null
+    },
+    {
+      "id": 94,
+      "input": "根据上次会议讨论的结果，需要对比一下不同供应商的原料价格以及他们的历史交货表现",
+      "expected": "SUPPLIER_EVALUATE",
+      "actual": "COST_TREND_ANALYSIS",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "long_complex",
+      "description": "长句供应商评估",
+      "error": null
+    },
+    {
+      "id": 95,
+      "input": "财务部门需要统计一下本月截止到今天为止的所有发货订单金额以及相应的成本核算数据",
+      "expected": "SHIPMENT_STATS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "SEMANTIC",
+      "confidence": 0.93,
+      "category": "long_complex",
+      "description": "长句发货财务",
+      "error": null
+    },
+    {
+      "id": 96,
+      "input": "人事部要求提供上个月各部门的考勤统计明细包括迟到早退和加班情况的完整记录",
+      "expected": "ATTENDANCE_MONTHLY",
+      "actual": "ATTENDANCE_STATS",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "long_complex",
+      "description": "长句月度考勤",
+      "error": null
+    },
+    {
+      "id": 99,
+      "input": "总经理要看一份包含销售额、毛利率、库存周转率等核心经营指标的月度汇报材料",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_INVENTORY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "long_complex",
+      "description": "长句KPI报告",
+      "error": null
+    },
+    {
+      "id": 100,
+      "input": "安全管理部门需要统计分析近期所有设备告警事件的原因分类以及处理响应时间情况",
+      "expected": "ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "long_complex",
+      "description": "长句告警统计",
+      "error": null
+    }
+  ],
+  "by_category": {
+    "simple": {
+      "passed": 10,
+      "failed": 0,
+      "total": 10
+    },
+    "complex_semantic": {
+      "passed": 15,
+      "failed": 0,
+      "total": 15
+    },
+    "multi_intent": {
+      "passed": 8,
+      "failed": 7,
+      "total": 15
+    },
+    "ambiguous": {
+      "passed": 15,
+      "failed": 0,
+      "total": 15
+    },
+    "clarification": {
+      "passed": 13,
+      "failed": 2,
+      "total": 15
+    },
+    "write_operation": {
+      "passed": 9,
+      "failed": 1,
+      "total": 10
+    },
+    "time_based": {
+      "passed": 6,
+      "failed": 4,
+      "total": 10
+    },
+    "long_complex": {
+      "passed": 2,
+      "failed": 8,
+      "total": 10
+    }
+  },
+  "by_difficulty": {
+    "easy": {
+      "passed": 16,
+      "failed": 1,
+      "total": 17
+    },
+    "medium": {
+      "passed": 41,
+      "failed": 5,
+      "total": 46
+    },
+    "hard": {
+      "passed": 21,
+      "failed": 16,
+      "total": 37
+    }
+  },
+  "methods": {
+    "PHRASE_MATCH": 58,
+    "SEMANTIC": 14,
+    "EXACT": 21
+  }
+}

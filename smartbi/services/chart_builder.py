@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class ChartType(str, Enum):
     """Supported chart types"""
+    # Basic charts
     LINE = "line"
     BAR = "bar"
     PIE = "pie"
@@ -29,6 +30,17 @@ class ChartType(str, Enum):
     TREEMAP = "treemap"
     SANKEY = "sankey"
     COMBINATION = "combination"
+
+    # Advanced charts (Phase 5)
+    SUNBURST = "sunburst"           # Hierarchical data (旭日图)
+    PARETO = "pareto"               # 80/20 analysis (帕累托图)
+    BULLET = "bullet"               # Target vs actual (子弹图)
+    DUAL_AXIS = "dual_axis"         # Two Y-axes (双Y轴图)
+    MATRIX_HEATMAP = "matrix_heatmap"  # Cross-tabulation heatmap
+    BAR_HORIZONTAL = "bar_horizontal"  # Horizontal bar chart
+    SLOPE = "slope"                 # Slope chart for comparison
+    DONUT = "donut"                 # Donut chart (环形图)
+    NESTED_DONUT = "nested_donut"   # Nested donut chart (嵌套环形图)
 
 
 class ChartBuilder:
@@ -111,6 +123,20 @@ class ChartBuilder:
                 config = self._build_heatmap_chart(df, x_field, y_fields, series_field)
             elif chart_type_enum == ChartType.COMBINATION:
                 config = self._build_combination_chart(df, x_field, y_fields, series_field, options)
+            elif chart_type_enum == ChartType.SUNBURST:
+                config = self._build_sunburst_chart(df, x_field, y_fields, options)
+            elif chart_type_enum == ChartType.PARETO:
+                config = self._build_pareto_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.BULLET:
+                config = self._build_bullet_chart(df, x_field, y_fields, options)
+            elif chart_type_enum == ChartType.DUAL_AXIS:
+                config = self._build_dual_axis_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.BAR_HORIZONTAL:
+                config = self._build_horizontal_bar_chart(df, x_field, y_fields, series_field)
+            elif chart_type_enum == ChartType.DONUT:
+                config = self._build_donut_chart(df, x_field, y_fields)
+            elif chart_type_enum == ChartType.NESTED_DONUT:
+                config = self._build_nested_donut_chart(df, x_field, y_fields, series_field)
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
@@ -687,6 +713,353 @@ class ChartBuilder:
             "series": []
         }
 
+    def _build_sunburst_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        options: Optional[dict]
+    ) -> dict:
+        """Build sunburst chart for hierarchical data"""
+        # Extract hierarchy columns from options or use first 2-3 columns
+        hierarchy_cols = options.get("hierarchy", []) if options else []
+        if not hierarchy_cols:
+            hierarchy_cols = df.columns[:2].tolist()
+
+        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+
+        # Build hierarchical data
+        def build_tree(df, level_cols, value_col):
+            if not level_cols:
+                return []
+
+            current_col = level_cols[0]
+            remaining_cols = level_cols[1:]
+
+            children = []
+            for name, group in df.groupby(current_col):
+                node = {
+                    "name": str(name),
+                    "value": float(group[value_col].sum())
+                }
+                if remaining_cols:
+                    node["children"] = build_tree(group, remaining_cols, value_col)
+                children.append(node)
+            return children
+
+        data = build_tree(df, hierarchy_cols, value_field)
+
+        return {
+            "series": [{
+                "type": "sunburst",
+                "data": data,
+                "radius": ["15%", "80%"],
+                "label": {
+                    "rotate": "radial"
+                },
+                "emphasis": {
+                    "focus": "ancestor"
+                }
+            }],
+            "tooltip": {
+                "trigger": "item",
+                "formatter": "{b}: {c}"
+            }
+        }
+
+    def _build_pareto_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]]
+    ) -> dict:
+        """Build Pareto chart (80/20 analysis)"""
+        x_col = x_field or df.columns[0]
+        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+
+        # Sort by value descending
+        sorted_df = df.sort_values(y_col, ascending=False)
+        x_data = sorted_df[x_col].tolist()
+        y_data = sorted_df[y_col].tolist()
+
+        # Calculate cumulative percentage
+        total = sum(y_data)
+        cumulative = []
+        cum_sum = 0
+        for val in y_data:
+            cum_sum += val
+            cumulative.append(round(cum_sum / total * 100, 1))
+
+        return {
+            "xAxis": {
+                "type": "category",
+                "data": x_data
+            },
+            "yAxis": [
+                {"type": "value", "name": y_col, "position": "left"},
+                {"type": "value", "name": "累计百分比", "position": "right", "max": 100}
+            ],
+            "series": [
+                {
+                    "name": y_col,
+                    "type": "bar",
+                    "data": y_data,
+                    "yAxisIndex": 0,
+                    "itemStyle": {"color": "#5470c6"}
+                },
+                {
+                    "name": "累计百分比",
+                    "type": "line",
+                    "data": cumulative,
+                    "yAxisIndex": 1,
+                    "smooth": True,
+                    "itemStyle": {"color": "#ee6666"},
+                    "markLine": {
+                        "data": [{"yAxis": 80, "label": {"formatter": "80%"}}]
+                    }
+                }
+            ],
+            "tooltip": {
+                "trigger": "axis",
+                "axisPointer": {"type": "cross"}
+            },
+            "legend": {
+                "data": [y_col, "累计百分比"]
+            }
+        }
+
+    def _build_bullet_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        options: Optional[dict]
+    ) -> dict:
+        """Build bullet chart for target vs actual comparison"""
+        x_col = x_field or df.columns[0]
+        actual_col = y_fields[0] if y_fields else "actual"
+        target_col = y_fields[1] if y_fields and len(y_fields) > 1 else "target"
+
+        x_data = df[x_col].tolist()
+        actual_data = df[actual_col].tolist() if actual_col in df.columns else [0] * len(x_data)
+        target_data = df[target_col].tolist() if target_col in df.columns else [100] * len(x_data)
+
+        # Calculate max for background ranges
+        max_val = max(max(actual_data), max(target_data)) * 1.2
+
+        return {
+            "xAxis": {
+                "type": "value",
+                "max": max_val
+            },
+            "yAxis": {
+                "type": "category",
+                "data": x_data
+            },
+            "series": [
+                {
+                    "name": "背景",
+                    "type": "bar",
+                    "data": [max_val] * len(x_data),
+                    "barWidth": 30,
+                    "itemStyle": {"color": "#eee"},
+                    "z": 1
+                },
+                {
+                    "name": actual_col,
+                    "type": "bar",
+                    "data": actual_data,
+                    "barWidth": 15,
+                    "itemStyle": {"color": "#5470c6"},
+                    "z": 2
+                },
+                {
+                    "name": target_col,
+                    "type": "scatter",
+                    "data": [[t, i] for i, t in enumerate(target_data)],
+                    "symbol": "rect",
+                    "symbolSize": [4, 20],
+                    "itemStyle": {"color": "#ee6666"},
+                    "z": 3
+                }
+            ],
+            "tooltip": {
+                "trigger": "axis",
+                "axisPointer": {"type": "shadow"}
+            },
+            "legend": {
+                "data": [actual_col, target_col]
+            }
+        }
+
+    def _build_dual_axis_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]]
+    ) -> dict:
+        """Build dual Y-axis chart"""
+        x_data = df[x_field].tolist() if x_field else df.index.tolist()
+
+        series = []
+        y_axis_list = []
+
+        if y_fields and len(y_fields) >= 2:
+            # First field on left axis
+            if y_fields[0] in df.columns:
+                y_axis_list.append({
+                    "type": "value",
+                    "name": y_fields[0],
+                    "position": "left"
+                })
+                series.append({
+                    "name": y_fields[0],
+                    "type": "bar",
+                    "data": df[y_fields[0]].tolist(),
+                    "yAxisIndex": 0
+                })
+
+            # Second field on right axis
+            if y_fields[1] in df.columns:
+                y_axis_list.append({
+                    "type": "value",
+                    "name": y_fields[1],
+                    "position": "right"
+                })
+                series.append({
+                    "name": y_fields[1],
+                    "type": "line",
+                    "data": df[y_fields[1]].tolist(),
+                    "yAxisIndex": 1,
+                    "smooth": True
+                })
+
+        return {
+            "xAxis": {
+                "type": "category",
+                "data": x_data
+            },
+            "yAxis": y_axis_list,
+            "series": series,
+            "tooltip": {
+                "trigger": "axis",
+                "axisPointer": {"type": "cross"}
+            },
+            "legend": {
+                "data": [s["name"] for s in series]
+            }
+        }
+
+    def _build_horizontal_bar_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str]
+    ) -> dict:
+        """Build horizontal bar chart"""
+        y_data = df[x_field].tolist() if x_field else df.index.tolist()
+
+        series = []
+        for y_field in (y_fields or []):
+            if y_field in df.columns:
+                series.append({
+                    "name": y_field,
+                    "type": "bar",
+                    "data": df[y_field].tolist(),
+                    "emphasis": {"focus": "series"}
+                })
+
+        return {
+            "xAxis": {
+                "type": "value"
+            },
+            "yAxis": {
+                "type": "category",
+                "data": y_data
+            },
+            "series": series,
+            "tooltip": {
+                "trigger": "axis",
+                "axisPointer": {"type": "shadow"}
+            },
+            "legend": {
+                "data": [s["name"] for s in series]
+            },
+            "grid": {
+                "left": "15%",
+                "right": "4%",
+                "bottom": "3%",
+                "containLabel": True
+            }
+        }
+
+    def _build_donut_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]]
+    ) -> dict:
+        """Build donut chart"""
+        config = self._build_pie_chart(df, x_field, y_fields)
+        # Modify to donut style
+        if config.get("series"):
+            config["series"][0]["radius"] = ["50%", "70%"]
+        return config
+
+    def _build_nested_donut_chart(
+        self,
+        df: pd.DataFrame,
+        x_field: Optional[str],
+        y_fields: Optional[List[str]],
+        series_field: Optional[str]
+    ) -> dict:
+        """Build nested donut chart for hierarchical comparison"""
+        inner_field = x_field or df.columns[0]
+        outer_field = series_field or (df.columns[1] if len(df.columns) > 1 else inner_field)
+        value_field = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
+
+        # Inner ring data (aggregated by inner_field)
+        inner_data = df.groupby(inner_field)[value_field].sum().reset_index()
+        inner_series_data = [
+            {"name": str(row[inner_field]), "value": float(row[value_field])}
+            for _, row in inner_data.iterrows()
+        ]
+
+        # Outer ring data (by outer_field)
+        outer_data = df.groupby(outer_field)[value_field].sum().reset_index()
+        outer_series_data = [
+            {"name": str(row[outer_field]), "value": float(row[value_field])}
+            for _, row in outer_data.iterrows()
+        ]
+
+        return {
+            "series": [
+                {
+                    "name": inner_field,
+                    "type": "pie",
+                    "radius": ["0%", "35%"],
+                    "label": {"position": "inner", "fontSize": 10},
+                    "data": inner_series_data
+                },
+                {
+                    "name": outer_field,
+                    "type": "pie",
+                    "radius": ["50%", "70%"],
+                    "label": {"formatter": "{b}: {d}%"},
+                    "data": outer_series_data
+                }
+            ],
+            "tooltip": {
+                "trigger": "item",
+                "formatter": "{a} <br/>{b}: {c} ({d}%)"
+            },
+            "legend": {
+                "orient": "vertical",
+                "left": "left"
+            }
+        }
+
     def get_available_chart_types(self) -> List[dict]:
         """Get list of available chart types"""
         return [
@@ -700,5 +1073,13 @@ class ChartBuilder:
             {"id": "funnel", "name": "漏斗图", "description": "转化分析"},
             {"id": "gauge", "name": "仪表盘", "description": "KPI展示"},
             {"id": "heatmap", "name": "热力图", "description": "分布分析"},
-            {"id": "combination", "name": "组合图", "description": "多指标对比"}
+            {"id": "combination", "name": "组合图", "description": "多指标对比"},
+            # Advanced charts (Phase 5)
+            {"id": "sunburst", "name": "旭日图", "description": "层级结构展示"},
+            {"id": "pareto", "name": "帕累托图", "description": "80/20分析"},
+            {"id": "bullet", "name": "子弹图", "description": "目标对比"},
+            {"id": "dual_axis", "name": "双Y轴图", "description": "不同量纲对比"},
+            {"id": "bar_horizontal", "name": "水平柱图", "description": "长标签对比"},
+            {"id": "donut", "name": "环形图", "description": "占比分析"},
+            {"id": "nested_donut", "name": "嵌套环形图", "description": "多层级占比"}
         ]

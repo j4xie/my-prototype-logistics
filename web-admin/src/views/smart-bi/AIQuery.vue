@@ -2,11 +2,12 @@
 /**
  * SmartBI AI 问答页面
  * 支持自然语言查询、快捷问题、对话历史和图表展示
+ * 连接 Python SmartBI 服务获取真实分析结果
  */
 import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { post } from '@/api/request';
+import { chatAnalysis, type AnalysisResult, type AIInsightData, type ChartConfig } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
   ChatDotRound,
@@ -19,6 +20,7 @@ import {
   Loading
 } from '@element-plus/icons-vue';
 import * as echarts from 'echarts';
+import { AIInsightPanel } from '@/components/smartbi';
 
 const route = useRoute();
 const authStore = useAuthStore();
@@ -36,14 +38,21 @@ interface ChatMessage {
   timestamp: Date;
   chart?: {
     type: 'line' | 'bar' | 'pie';
-    data: any;
+    data: Record<string, unknown>;
   };
+  chartConfig?: ChartConfig;
+  insights?: AIInsightData;
   table?: {
     columns: string[];
-    data: Record<string, any>[];
+    data: Record<string, unknown>[];
   };
   loading?: boolean;
 }
+
+// 当前分析上下文 (用于连续对话)
+const currentData = ref<unknown[]>([]);
+const currentFields = ref<Array<{ original: string; standard: string }>>([]);
+const currentTableType = ref<string>('');
 
 const chatHistory = ref<ChatMessage[]>([]);
 const chatContainerRef = ref<HTMLDivElement | null>(null);
@@ -124,32 +133,54 @@ async function handleSendMessage() {
   isTyping.value = true;
 
   try {
-    // 调用 AI 接口
-    // const response = await post(`/${factoryId.value}/smart-bi/ai/query`, { query });
-
-    // 模拟 AI 响应
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    const aiResponse = generateMockResponse(query);
+    // 调用真实 Python SmartBI API
+    const response = await chatAnalysis({
+      query,
+      data: currentData.value,
+      fields: currentFields.value,
+      table_type: currentTableType.value
+    });
 
     // 更新助手消息
     const messageIndex = chatHistory.value.findIndex(m => m.id === assistantId);
     if (messageIndex !== -1) {
-      chatHistory.value[messageIndex] = {
-        id: assistantId,
-        role: 'assistant',
-        content: aiResponse.content,
-        timestamp: new Date(),
-        chart: aiResponse.chart,
-        table: aiResponse.table,
-        loading: false
-      };
+      if (response.success) {
+        // 构建图表数据 (兼容旧格式)
+        let chartData: ChatMessage['chart'] | undefined;
+        if (response.charts && response.charts.length > 0) {
+          const firstChart = response.charts[0];
+          chartData = {
+            type: firstChart.type as 'line' | 'bar' | 'pie',
+            data: firstChart.option as Record<string, unknown>
+          };
+        }
+
+        chatHistory.value[messageIndex] = {
+          id: assistantId,
+          role: 'assistant',
+          content: response.answer || '分析完成',
+          timestamp: new Date(),
+          chart: chartData,
+          chartConfig: response.charts?.[0],
+          insights: response.insights,
+          table: response.table as ChatMessage['table'],
+          loading: false
+        };
+      } else {
+        chatHistory.value[messageIndex] = {
+          id: assistantId,
+          role: 'assistant',
+          content: response.error || '分析请求失败，请稍后重试',
+          timestamp: new Date(),
+          loading: false
+        };
+      }
     }
 
     // 渲染图表
     await nextTick();
-    if (aiResponse.chart) {
-      renderChart(assistantId, aiResponse.chart);
+    if (response.charts && response.charts.length > 0) {
+      renderChartFromConfig(assistantId, response.charts[0]);
     }
   } catch (error) {
     console.error('AI 查询失败:', error);
@@ -171,129 +202,40 @@ async function handleSendMessage() {
   }
 }
 
-// 生成模拟响应
-function generateMockResponse(query: string): {
-  content: string;
-  chart?: ChatMessage['chart'];
-  table?: ChatMessage['table'];
-} {
-  if (query.includes('销售额')) {
-    return {
-      content: '根据数据分析，本月销售额为 285.6 万元，同比增长 12.5%，环比增长 8.3%。\n\n主要增长来自华东区，贡献了 45% 的销售额。冷冻肉类产品销售最为突出，占总销售额的 39%。',
-      chart: {
-        type: 'line',
-        data: {
-          xAxis: ['1月', '2月', '3月', '4月', '5月', '6月'],
-          series: [
-            { name: '销售额', data: [210, 235, 258, 245, 268, 285.6] }
-          ]
-        }
-      }
-    };
-  }
-
-  if (query.includes('产品') || query.includes('最高')) {
-    return {
-      content: '销售额最高的产品是「冷冻牛肉」，本月销售额达到 112.8 万元，占总销售额的 39.5%。\n\n前三名产品分别是：\n1. 冷冻牛肉 - 112.8 万元\n2. 冷冻猪肉 - 78.5 万元\n3. 海鲜产品 - 52.3 万元',
-      chart: {
-        type: 'pie',
-        data: {
-          series: [
-            { name: '冷冻牛肉', value: 112.8 },
-            { name: '冷冻猪肉', value: 78.5 },
-            { name: '海鲜产品', value: 52.3 },
-            { name: '速冻食品', value: 28.6 },
-            { name: '其他', value: 13.4 }
-          ]
-        }
-      }
-    };
-  }
-
-  if (query.includes('利润')) {
-    return {
-      content: '本月毛利润为 85.6 万元，毛利率为 30%；净利润为 42.8 万元，净利率为 15%。\n\n与上月相比，净利润增长了 8.3%，主要得益于原材料成本的下降和销售规模的扩大。',
-      chart: {
-        type: 'bar',
-        data: {
-          xAxis: ['1月', '2月', '3月', '4月', '5月', '6月'],
-          series: [
-            { name: '毛利润', data: [63, 70.5, 77.4, 73.5, 80.4, 85.6] },
-            { name: '净利润', data: [31.5, 35.3, 38.7, 36.8, 40.2, 42.8] }
-          ]
-        }
-      }
-    };
-  }
-
-  if (query.includes('部门')) {
-    return {
-      content: '业绩最好的是销售一部，本月完成销售额 85.6 万元，同比增长 18.5%，超额完成目标 115%。\n\n部门业绩排名：\n1. 销售一部 - 85.6 万元 (+18.5%)\n2. 销售二部 - 72.5 万元 (+12.3%)\n3. 销售三部 - 68.0 万元 (+8.7%)\n4. 销售四部 - 59.5 万元 (+5.2%)',
-      table: {
-        columns: ['排名', '部门', '销售额', '增长率', '完成率'],
-        data: [
-          { 排名: 1, 部门: '销售一部', 销售额: '85.6万', 增长率: '+18.5%', 完成率: '115%' },
-          { 排名: 2, 部门: '销售二部', 销售额: '72.5万', 增长率: '+12.3%', 完成率: '108%' },
-          { 排名: 3, 部门: '销售三部', 销售额: '68.0万', 增长率: '+8.7%', 完成率: '102%' },
-          { 排名: 4, 部门: '销售四部', 销售额: '59.5万', 增长率: '+5.2%', 完成率: '95%' }
-        ]
-      }
-    };
-  }
-
-  if (query.includes('库存')) {
-    return {
-      content: '当前库存总价值为 456.8 万元，库存周转天数为 25 天，处于正常水平。\n\n需要关注的是，部分产品库存周转较慢：\n- 冷冻羊肉：周转天数 42 天（建议优化）\n- 进口海鲜：周转天数 38 天（建议促销）',
-      chart: {
-        type: 'bar',
-        data: {
-          xAxis: ['冷冻牛肉', '冷冻猪肉', '海鲜产品', '冷冻羊肉', '进口海鲜'],
-          series: [
-            { name: '周转天数', data: [18, 22, 28, 42, 38] }
-          ]
-        }
-      }
-    };
-  }
-
-  if (query.includes('应收') || query.includes('账款')) {
-    return {
-      content: '当前应收账款总额为 128.5 万元：\n- 30天内：85.6 万元（66.6%，正常）\n- 30-60天：28.5 万元（22.2%，需关注）\n- 60天以上：14.4 万元（11.2%，需催收）\n\n建议对逾期超过60天的3笔账款加强催收。',
-      chart: {
-        type: 'pie',
-        data: {
-          series: [
-            { name: '30天内', value: 85.6 },
-            { name: '30-60天', value: 28.5 },
-            { name: '60天以上', value: 14.4 }
-          ]
-        }
-      }
-    };
-  }
-
-  if (query.includes('客户')) {
-    return {
-      content: '本月活跃客户数为 328 家，同比增长 6.8%。\n\n新增客户 28 家，流失客户 8 家，净增 20 家。客户留存率为 97.6%，处于良好水平。\n\n高价值客户占比提升至 28%，客单价持续增长。',
-      chart: {
-        type: 'line',
-        data: {
-          xAxis: ['1月', '2月', '3月', '4月', '5月', '6月'],
-          series: [
-            { name: '活跃客户数', data: [285, 296, 305, 312, 320, 328] }
-          ]
-        }
-      }
-    };
-  }
-
-  // 默认响应
-  return {
-    content: '我理解您想了解「' + query + '」相关的信息。\n\n目前系统支持以下类型的查询：\n- 销售数据分析（销售额、订单、客户等）\n- 财务数据分析（利润、成本、预算等）\n- 库存数据分析（周转、库龄、预警等）\n- 部门业绩分析（排名、对比、趋势等）\n\n请尝试使用更具体的问题，或点击下方的快捷问题。'
-  };
+/**
+ * 设置分析上下文 (用于连续对话)
+ * 可从 Excel 上传页面传入数据
+ */
+function setAnalysisContext(data: unknown[], fields: Array<{ original: string; standard: string }>, tableType?: string) {
+  currentData.value = data;
+  currentFields.value = fields;
+  currentTableType.value = tableType || '';
 }
 
-// 渲染图表
+// 暴露给父组件调用
+defineExpose({ setAnalysisContext });
+
+// 渲染图表 (从 ChartConfig)
+function renderChartFromConfig(messageId: string, chartConfig: ChartConfig) {
+  if (!chartConfig || !chartConfig.option) return;
+
+  const chartDom = document.getElementById(`chart-${messageId}`);
+  if (!chartDom) return;
+
+  // 销毁旧图表
+  const oldChart = chartInstances.get(messageId);
+  if (oldChart) {
+    oldChart.dispose();
+  }
+
+  const chart = echarts.init(chartDom);
+  chartInstances.set(messageId, chart);
+
+  // 直接使用 Python 返回的 ECharts option
+  chart.setOption(chartConfig.option as echarts.EChartsOption);
+}
+
+// 渲染图表 (兼容旧格式)
 function renderChart(messageId: string, chartConfig: ChatMessage['chart']) {
   if (!chartConfig) return;
 
@@ -463,8 +405,18 @@ function handleKeydown(event: KeyboardEvent) {
               <template v-else>
                 <div class="message-text">{{ message.content }}</div>
 
+                <!-- AI 洞察面板 -->
+                <div v-if="message.insights" class="message-insights">
+                  <AIInsightPanel
+                    :insight="message.insights"
+                    title="AI 分析洞察"
+                    :collapsible="true"
+                    :default-expanded="true"
+                  />
+                </div>
+
                 <!-- 图表展示 -->
-                <div v-if="message.chart" class="message-chart">
+                <div v-if="message.chart || message.chartConfig" class="message-chart">
                   <div :id="`chart-${message.id}`" class="chart-container"></div>
                 </div>
 
@@ -673,6 +625,11 @@ function handleKeydown(event: KeyboardEvent) {
     .el-icon {
       font-size: 16px;
     }
+  }
+
+  .message-insights {
+    margin-top: 16px;
+    max-width: 500px;
   }
 
   .message-chart {

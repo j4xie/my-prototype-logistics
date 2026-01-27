@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * SmartBI TrendChart - Trend Line/Area Chart Component
- * Features: Time granularity switch, multi-series comparison, target line
+ * Features: Time granularity switch, multi-series comparison, target line,
+ *           prediction line, anomaly detection, data table
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import * as echarts from 'echarts';
@@ -21,6 +22,21 @@ export interface TrendSeries {
   type?: 'line' | 'area';
 }
 
+export interface PredictionDataPoint {
+  date: string;
+  value: number;
+  confidence?: number;
+}
+
+interface TableRowData {
+  period: string;
+  value: number;
+  change: number;
+  changePercent: string;
+  yoyPercent: string;
+  isAnomaly: boolean;
+}
+
 interface Props {
   title?: string;
   series: TrendSeries[];
@@ -35,6 +51,12 @@ interface Props {
   yAxisUnit?: string;
   smooth?: boolean;
   showDataZoom?: boolean;
+  // New props for enhancements
+  showPrediction?: boolean;
+  predictionData?: PredictionDataPoint[];
+  showAnomalies?: boolean;
+  anomalyThreshold?: number;
+  showDataTable?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -49,17 +71,25 @@ const props = withDefaults(defineProps<Props>(), {
   yAxisLabel: '',
   yAxisUnit: '',
   smooth: true,
-  showDataZoom: false
+  showDataZoom: false,
+  // New props defaults
+  showPrediction: false,
+  predictionData: () => [],
+  showAnomalies: false,
+  anomalyThreshold: 2,
+  showDataTable: false
 });
 
 const emit = defineEmits<{
   (e: 'granularityChange', value: 'day' | 'week' | 'month'): void;
   (e: 'pointClick', data: { seriesName: string; dataPoint: TrendDataPoint }): void;
+  (e: 'tableRowClick', data: TableRowData): void;
 }>();
 
 const chartRef = ref<HTMLDivElement | null>(null);
 const chartInstance = ref<ECharts | null>(null);
 const granularity = ref<'day' | 'week' | 'month'>(props.defaultGranularity);
+const selectedRowIndex = ref<number | null>(null);
 
 // Default color palette
 const colorPalette = [
@@ -67,17 +97,124 @@ const colorPalette = [
   '#00d4ff', '#ff6b9d', '#c084fc', '#fbbf24', '#34d399'
 ];
 
+const predictionColor = '#9b59b6';
+
+// Compute anomaly points based on threshold (using z-score method)
+const anomalyPoints = computed(() => {
+  if (!props.showAnomalies || !props.series.length) return [];
+
+  const mainSeries = props.series[0];
+  const values = mainSeries.data.map(d => d.value);
+  const mean = values.reduce((a, b) => a + b, 0) / values.length;
+  const stdDev = Math.sqrt(values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length);
+
+  if (stdDev === 0) return [];
+
+  return mainSeries.data
+    .map((d, index) => {
+      const zScore = Math.abs((d.value - mean) / stdDev);
+      return { ...d, index, zScore, isAnomaly: zScore > props.anomalyThreshold };
+    })
+    .filter(d => d.isAnomaly);
+});
+
+// Compute table data from first series
+const tableData = computed<TableRowData[]>(() => {
+  if (!props.series.length) return [];
+
+  const mainSeries = props.series[0];
+  const data = mainSeries.data;
+
+  return data.map((point, index) => {
+    const prevValue = index > 0 ? data[index - 1].value : point.value;
+    const change = point.value - prevValue;
+    const changePercent = prevValue !== 0
+      ? ((change / prevValue) * 100).toFixed(1) + '%'
+      : '0%';
+
+    // YoY calculation (assuming 12 periods back for yearly comparison)
+    const yoyIndex = index - 12;
+    const yoyValue = yoyIndex >= 0 ? data[yoyIndex].value : null;
+    const yoyPercent = yoyValue && yoyValue !== 0
+      ? (((point.value - yoyValue) / yoyValue) * 100).toFixed(1) + '%'
+      : 'N/A';
+
+    const isAnomaly = anomalyPoints.value.some(a => a.index === index);
+
+    return {
+      period: point.date,
+      value: point.value,
+      change,
+      changePercent,
+      yoyPercent,
+      isAnomaly
+    };
+  });
+});
+
 const chartOptions = computed<EChartsOption>(() => {
-  // Extract all unique dates
-  const allDates = [...new Set(
-    props.series.flatMap(s => s.data.map(d => d.date))
-  )].sort();
+  // Extract all unique dates from series and prediction data
+  const seriesDates = props.series.flatMap(s => s.data.map(d => d.date));
+  const predictionDates = props.showPrediction && props.predictionData
+    ? props.predictionData.map(d => d.date)
+    : [];
+  const allDates = [...new Set([...seriesDates, ...predictionDates])].sort();
+
+  // Build anomaly markPoints for main series
+  const anomalyMarkPoints = props.showAnomalies && anomalyPoints.value.length > 0
+    ? anomalyPoints.value.map(a => ({
+        name: 'Anomaly',
+        coord: [a.date, a.value],
+        value: a.value,
+        symbol: 'pin',
+        symbolSize: 40,
+        itemStyle: {
+          color: '#f56c6c'
+        },
+        label: {
+          show: true,
+          formatter: '!',
+          color: '#fff',
+          fontWeight: 'bold'
+        }
+      }))
+    : [];
 
   // Build series data
   const seriesData = props.series.map((s, index) => {
     const seriesType = s.type || 'line';
     const dataMap = new Map(s.data.map(d => [d.date, d.value]));
     const values = allDates.map(date => dataMap.get(date) ?? null);
+
+    // Build markLine for target (only on first series)
+    const markLine = index === 0 && props.showTarget && props.targetValue
+      ? {
+          silent: true,
+          symbol: 'none',
+          lineStyle: {
+            color: '#f56c6c',
+            type: 'dashed' as const,
+            width: 2
+          },
+          data: [
+            {
+              yAxis: props.targetValue,
+              label: {
+                show: true,
+                formatter: props.targetLabel,
+                position: 'end' as const,
+                color: '#f56c6c',
+                fontWeight: 'bold' as const
+              }
+            }
+          ]
+        }
+      : undefined;
+
+    // Add markPoint for anomalies on first series
+    const markPoint = index === 0 && props.showAnomalies && anomalyMarkPoints.length > 0
+      ? { data: anomalyMarkPoints }
+      : undefined;
 
     const baseConfig: echarts.LineSeriesOption = {
       name: s.name,
@@ -97,7 +234,9 @@ const chartOptions = computed<EChartsOption>(() => {
         itemStyle: {
           borderWidth: 2
         }
-      }
+      },
+      markLine,
+      markPoint
     };
 
     if (seriesType === 'area') {
@@ -112,23 +251,31 @@ const chartOptions = computed<EChartsOption>(() => {
     return baseConfig;
   });
 
-  // Add target line if enabled
-  if (props.showTarget && props.targetValue) {
+  // Add prediction line if enabled
+  if (props.showPrediction && props.predictionData && props.predictionData.length > 0) {
+    const predictionMap = new Map(props.predictionData.map(d => [d.date, d.value]));
+    const predictionValues = allDates.map(date => predictionMap.get(date) ?? null);
+
     seriesData.push({
-      name: props.targetLabel,
+      name: 'Prediction',
       type: 'line',
-      data: allDates.map(() => props.targetValue),
+      data: predictionValues,
+      smooth: props.smooth,
       lineStyle: {
         type: 'dashed',
         width: 2,
-        color: '#f56c6c'
+        color: predictionColor
       },
       itemStyle: {
-        color: '#f56c6c'
+        color: predictionColor
       },
-      symbol: 'none',
+      symbol: 'diamond',
+      symbolSize: 6,
       emphasis: {
-        disabled: true
+        focus: 'series',
+        itemStyle: {
+          borderWidth: 2
+        }
       }
     } as echarts.LineSeriesOption);
   }
@@ -145,7 +292,8 @@ const chartOptions = computed<EChartsOption>(() => {
       formatter: (params) => {
         if (!Array.isArray(params)) return '';
         const date = params[0]?.axisValue || '';
-        let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}</div>`;
+        const isAnomaly = anomalyPoints.value.some(a => a.date === date);
+        let html = `<div style="font-weight: 600; margin-bottom: 8px;">${date}${isAnomaly ? ' <span style="color:#f56c6c;">(Anomaly)</span>' : ''}</div>`;
         params.forEach((param) => {
           if (param.value !== null && param.value !== undefined) {
             html += `
@@ -286,6 +434,47 @@ function onGranularityChange(value: 'day' | 'week' | 'month') {
   emit('granularityChange', value);
 }
 
+function onTableRowClick(row: TableRowData) {
+  const index = tableData.value.findIndex(d => d.period === row.period);
+  selectedRowIndex.value = index;
+
+  // Highlight the corresponding point on the chart
+  if (chartInstance.value && index >= 0) {
+    chartInstance.value.dispatchAction({
+      type: 'showTip',
+      seriesIndex: 0,
+      dataIndex: index
+    });
+    chartInstance.value.dispatchAction({
+      type: 'highlight',
+      seriesIndex: 0,
+      dataIndex: index
+    });
+  }
+
+  emit('tableRowClick', row);
+}
+
+function getTableRowClass({ row, rowIndex }: { row: TableRowData; rowIndex: number }) {
+  const classes: string[] = [];
+  if (rowIndex === selectedRowIndex.value) {
+    classes.push('selected-row');
+  }
+  if (row.isAnomaly) {
+    classes.push('anomaly-row');
+  }
+  return classes.join(' ');
+}
+
+function formatValue(value: number): string {
+  return value.toLocaleString() + props.yAxisUnit;
+}
+
+function formatChange(value: number): string {
+  const prefix = value > 0 ? '+' : '';
+  return prefix + value.toLocaleString() + props.yAxisUnit;
+}
+
 // Lifecycle
 onMounted(() => {
   initChart();
@@ -312,18 +501,71 @@ defineExpose({
   <div class="trend-chart">
     <div v-if="title || showGranularity" class="chart-header">
       <h3 v-if="title">{{ title }}</h3>
-      <el-radio-group
-        v-if="showGranularity"
-        v-model="granularity"
-        size="small"
-        @change="onGranularityChange"
-      >
-        <el-radio-button label="day">Day</el-radio-button>
-        <el-radio-button label="week">Week</el-radio-button>
-        <el-radio-button label="month">Month</el-radio-button>
-      </el-radio-group>
+      <div class="header-controls">
+        <el-tag v-if="showAnomalies && anomalyPoints.length > 0" type="warning" size="small">
+          {{ anomalyPoints.length }} Anomaly Detected
+        </el-tag>
+        <el-radio-group
+          v-if="showGranularity"
+          v-model="granularity"
+          size="small"
+          @change="onGranularityChange"
+        >
+          <el-radio-button label="day">Day</el-radio-button>
+          <el-radio-button label="week">Week</el-radio-button>
+          <el-radio-button label="month">Month</el-radio-button>
+        </el-radio-group>
+      </div>
     </div>
     <div ref="chartRef" :style="{ width: '100%', height: height + 'px' }"></div>
+
+    <!-- Data Table -->
+    <div v-if="showDataTable && tableData.length > 0" class="data-table-container">
+      <el-table
+        :data="tableData"
+        :row-class-name="getTableRowClass"
+        size="small"
+        max-height="250"
+        stripe
+        @row-click="onTableRowClick"
+      >
+        <el-table-column prop="period" label="Period" sortable width="120" />
+        <el-table-column prop="value" label="Value" sortable align="right">
+          <template #default="{ row }">
+            {{ formatValue(row.value) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="change" label="Change" sortable align="right">
+          <template #default="{ row }">
+            <span :class="{ 'positive': row.change > 0, 'negative': row.change < 0 }">
+              {{ formatChange(row.change) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="changePercent" label="Change %" sortable align="right">
+          <template #default="{ row }">
+            <span :class="{ 'positive': row.change > 0, 'negative': row.change < 0 }">
+              {{ row.changePercent }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="yoyPercent" label="YoY %" sortable align="right">
+          <template #default="{ row }">
+            <span v-if="row.yoyPercent !== 'N/A'"
+                  :class="{ 'positive': parseFloat(row.yoyPercent) > 0, 'negative': parseFloat(row.yoyPercent) < 0 }">
+              {{ row.yoyPercent }}
+            </span>
+            <span v-else class="na-value">{{ row.yoyPercent }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="Status" width="80" align="center">
+          <template #default="{ row }">
+            <el-tag v-if="row.isAnomaly" type="danger" size="small">Anomaly</el-tag>
+            <el-tag v-else type="success" size="small">Normal</el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
   </div>
 </template>
 
@@ -343,6 +585,54 @@ defineExpose({
       font-size: 16px;
       font-weight: 600;
       color: #303133;
+    }
+
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+  }
+
+  .data-table-container {
+    margin-top: 20px;
+    border-top: 1px solid #ebeef5;
+    padding-top: 16px;
+
+    :deep(.el-table) {
+      .selected-row {
+        background-color: rgba(64, 158, 255, 0.1) !important;
+
+        td {
+          background-color: rgba(64, 158, 255, 0.1) !important;
+        }
+      }
+
+      .anomaly-row {
+        td {
+          color: #f56c6c;
+        }
+      }
+
+      .el-table__row {
+        cursor: pointer;
+
+        &:hover > td {
+          background-color: rgba(64, 158, 255, 0.05) !important;
+        }
+      }
+    }
+
+    .positive {
+      color: #67c23a;
+    }
+
+    .negative {
+      color: #f56c6c;
+    }
+
+    .na-value {
+      color: #909399;
     }
   }
 }

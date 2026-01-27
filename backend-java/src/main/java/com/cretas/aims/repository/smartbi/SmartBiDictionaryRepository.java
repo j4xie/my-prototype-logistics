@@ -52,12 +52,13 @@ public interface SmartBiDictionaryRepository extends JpaRepository<SmartBiDictio
     boolean existsByDictTypeAndNameAndFactoryId(String dictType, String name, String factoryId);
 
     /**
-     * 按别名搜索 (JSON_SEARCH)
+     * 按别名搜索（PostgreSQL 兼容）
+     * 使用 JSONB 包含操作符检查 aliases 数组是否包含指定别名
      */
     @Query(value = "SELECT * FROM smart_bi_dictionary WHERE dict_type = :dictType " +
             "AND is_active = true " +
             "AND (factory_id IS NULL OR factory_id = :factoryId) " +
-            "AND JSON_SEARCH(aliases, 'one', :alias) IS NOT NULL " +
+            "AND aliases::jsonb @> to_jsonb(:alias::text) " +
             "AND deleted_at IS NULL " +
             "ORDER BY priority ASC", nativeQuery = true)
     List<SmartBiDictionary> findByAliasContaining(

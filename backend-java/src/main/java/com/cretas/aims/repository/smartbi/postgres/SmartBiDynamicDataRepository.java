@@ -1,6 +1,8 @@
 package com.cretas.aims.repository.smartbi.postgres;
 
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -29,6 +31,18 @@ public interface SmartBiDynamicDataRepository extends JpaRepository<SmartBiDynam
      * Find all data by factory and upload ID
      */
     List<SmartBiDynamicData> findByFactoryIdAndUploadId(String factoryId, Long uploadId);
+
+    /**
+     * Find data by factory and upload ID with pagination
+     * Orders by row index to maintain original Excel order
+     */
+    Page<SmartBiDynamicData> findByFactoryIdAndUploadIdOrderByRowIndex(
+            String factoryId, Long uploadId, Pageable pageable);
+
+    /**
+     * Find data by upload ID with pagination (no factory constraint)
+     */
+    Page<SmartBiDynamicData> findByUploadIdOrderByRowIndex(Long uploadId, Pageable pageable);
 
     /**
      * Find data by factory and period

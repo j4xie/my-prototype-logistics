@@ -20,6 +20,7 @@ import SalesAnalysisScreen from '../screens/smartbi/SalesAnalysisScreen';
 import FinanceAnalysisScreen from '../screens/smartbi/FinanceAnalysisScreen';
 import ExcelUploadScreen from '../screens/smartbi/ExcelUploadScreen';
 import NLQueryScreen from '../screens/smartbi/NLQueryScreen';
+import { SmartBIDataAnalysisScreen } from '../screens/smartbi/SmartBIDataAnalysisScreen';
 
 // 屏幕组件 - 生产与质量
 import ProductionDashboardScreen from '../screens/smartbi/ProductionDashboardScreen';
@@ -82,7 +83,14 @@ export function SmartBIStackNavigator() {
       <Stack.Screen
         name="ExcelUpload"
         component={ExcelUploadScreen}
-        options={{ title: 'Excel上传' }}
+        options={{ title: 'Excel上传(旧)' }}
+      />
+
+      {/* 智能数据分析 */}
+      <Stack.Screen
+        name="SmartBIDataAnalysis"
+        component={SmartBIDataAnalysisScreen}
+        options={{ title: '智能数据分析' }}
       />
 
       {/* AI 问答 */}

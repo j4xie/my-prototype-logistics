@@ -64,6 +64,13 @@ export function SmartBIHomeScreen() {
       onPress: () => navigation.navigate('FinanceAnalysis', {}),
     },
     {
+      icon: 'chart-timeline-variant',
+      title: '智能数据分析',
+      description: '批量上传 + AI 图表分析',
+      color: '#00BCD4',
+      onPress: () => navigation.navigate('SmartBIDataAnalysis'),
+    },
+    {
       icon: 'file-excel',
       title: 'Excel上传',
       description: '导入外部数据进行分析',

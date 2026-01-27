@@ -4,9 +4,11 @@ import com.cretas.aims.dto.intent.MultiIntentResult;
 import com.cretas.aims.entity.config.AIIntentConfig;
 import com.cretas.aims.repository.config.AIIntentConfigRepository;
 import com.cretas.aims.service.EmbeddingClient;
+import com.cretas.aims.service.LlmIntentFallbackClient;
 import com.cretas.aims.service.MultiLabelIntentClassifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -37,6 +39,12 @@ public class MultiLabelIntentClassifierImpl implements MultiLabelIntentClassifie
     private final AIIntentConfigRepository intentConfigRepository;
 
     /**
+     * LLM Fallback 客户端（用于 Phase 0 验证和 embedding 不可用时的降级）
+     */
+    @Autowired(required = false)
+    private LlmIntentFallbackClient llmFallbackClient;
+
+    /**
      * 默认阈值
      */
     @Value("${ai.multi-intent.threshold:0.55}")
@@ -53,6 +61,12 @@ public class MultiLabelIntentClassifierImpl implements MultiLabelIntentClassifie
      */
     @Value("${ai.multi-intent.max-intents:3}")
     private int maxIntents;
+
+    /**
+     * 是否启用 LLM Fallback（Phase 0 验证用）
+     */
+    @Value("${ai.multi-intent.llm-fallback-enabled:true}")
+    private boolean llmFallbackEnabled;
 
     /**
      * 意图向量缓存
@@ -87,12 +101,28 @@ public class MultiLabelIntentClassifierImpl implements MultiLabelIntentClassifie
         }
 
         if (!isAvailable()) {
-            log.warn("Embedding 服务不可用，无法进行多标签分类");
-            return buildEmptyResult("Embedding 服务不可用");
+            log.warn("Embedding 服务和 LLM Fallback 都不可用，无法进行多标签分类");
+            return buildEmptyResult("分类服务不可用");
+        }
+
+        // Phase 0 验证：使用 LLM Fallback
+        if (shouldUseLlmFallback()) {
+            log.info("[Phase0] 使用 LLM Fallback 进行多意图分类: '{}'", userInput);
+            try {
+                MultiIntentResult llmResult = llmFallbackClient.classifyMultiIntent(userInput, factoryId, null);
+                if (llmResult != null && !llmResult.getIntents().isEmpty()) {
+                    log.info("[Phase0] LLM Fallback 成功: isMulti={}, intents={}",
+                            llmResult.isMultiIntent(), llmResult.getIntents().size());
+                    return llmResult;
+                }
+            } catch (Exception e) {
+                log.error("[Phase0] LLM Fallback 失败: {}", e.getMessage());
+            }
+            return buildEmptyResult("LLM Fallback 分类失败");
         }
 
         try {
-            // 1. 获取所有意图评分
+            // 1. 获取所有意图评分（使用 Embedding）
             List<ScoredIntent> allScores = getAllIntentScores(userInput, factoryId);
 
             // 2. 筛选超过阈值的意图
@@ -228,7 +258,26 @@ public class MultiLabelIntentClassifierImpl implements MultiLabelIntentClassifie
 
     @Override
     public boolean isAvailable() {
-        return embeddingClient != null && embeddingClient.isAvailable();
+        // 优先检查 embedding 服务
+        if (embeddingClient != null && embeddingClient.isAvailable()) {
+            return true;
+        }
+        // Phase 0 验证：如果启用了 LLM fallback，也视为可用
+        if (llmFallbackEnabled && llmFallbackClient != null && llmFallbackClient.isHealthy()) {
+            log.debug("Embedding 不可用，使用 LLM Fallback 模式");
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 检查是否应该使用 LLM fallback
+     */
+    private boolean shouldUseLlmFallback() {
+        return llmFallbackEnabled
+                && (embeddingClient == null || !embeddingClient.isAvailable())
+                && llmFallbackClient != null
+                && llmFallbackClient.isHealthy();
     }
 
     // ==================== 私有方法 ====================

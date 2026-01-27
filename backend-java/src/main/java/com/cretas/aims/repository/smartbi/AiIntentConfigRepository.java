@@ -107,13 +107,14 @@ public interface AiIntentConfigRepository extends JpaRepository<AiIntentConfig, 
     boolean existsByIntentCodeAndIsActiveTrue(String intentCode);
 
     /**
-     * 按关键词搜索意图（使用 JSON_SEARCH）
+     * 按关键词搜索意图（PostgreSQL 兼容）
+     * 使用 JSONB 包含操作符检查 keywords 数组是否包含指定关键词
      *
      * @param keyword 关键词
      * @return 匹配的意图配置列表
      */
     @Query(value = "SELECT * FROM ai_intent_configs WHERE is_active = true " +
-            "AND JSON_SEARCH(keywords, 'one', :keyword) IS NOT NULL " +
+            "AND keywords::jsonb @> to_jsonb(:keyword::text) " +
             "AND deleted_at IS NULL ORDER BY priority ASC", nativeQuery = true)
     List<AiIntentConfig> findByKeyword(@Param("keyword") String keyword);
 }

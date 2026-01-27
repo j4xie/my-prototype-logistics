@@ -1,0 +1,405 @@
+{
+  "total": 38,
+  "matched": 34,
+  "accuracy": 89.47368421052632,
+  "by_category": {
+    "simple": {
+      "matched": 7,
+      "total": 8
+    },
+    "high_risk": {
+      "matched": 6,
+      "total": 6
+    },
+    "ambiguous": {
+      "matched": 6,
+      "total": 6
+    },
+    "complex": {
+      "matched": 5,
+      "total": 6
+    },
+    "multi": {
+      "matched": 4,
+      "total": 4
+    },
+    "typo": {
+      "matched": 3,
+      "total": 4
+    },
+    "domain": {
+      "matched": 3,
+      "total": 4
+    }
+  },
+  "details": [
+    {
+      "query": "查看今天的订单",
+      "expected_kw": "ORDER",
+      "actual": "ORDER_TODAY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'ORDER' in 'ORDER_TODAY'"
+    },
+    {
+      "query": "显示所有产品",
+      "matched": false,
+      "category": "simple",
+      "error": "'NoneType' object has no attribute 'upper'"
+    },
+    {
+      "query": "库存查询",
+      "expected_kw": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'INVENTORY' in 'REPORT_INVENTORY'"
+    },
+    {
+      "query": "员工考勤记录",
+      "expected_kw": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'ATTENDANCE' in 'ATTENDANCE_HISTORY'"
+    },
+    {
+      "query": "查看设备状态",
+      "expected_kw": "EQUIPMENT",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'EQUIPMENT' in 'EQUIPMENT_STATUS_QUERY'"
+    },
+    {
+      "query": "质检报告",
+      "expected_kw": "QUALITY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'QUALITY' in 'QUALITY_CHECK_QUERY'"
+    },
+    {
+      "query": "生产批次列表",
+      "expected_kw": "BATCH",
+      "actual": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'BATCH' in 'PROCESSING_BATCH_LIST'"
+    },
+    {
+      "query": "客户信息",
+      "expected_kw": "CUSTOMER",
+      "actual": "CUSTOMER_SEARCH",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "simple",
+      "matched": true,
+      "reason": "'CUSTOMER' in 'CUSTOMER_SEARCH'"
+    },
+    {
+      "query": "删除订单O001",
+      "expected_kw": "DELETE",
+      "actual": "ORDER_DELETE",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'DELETE' in 'ORDER_DELETE'"
+    },
+    {
+      "query": "取消生产批次",
+      "expected_kw": "CANCEL",
+      "actual": "PROCESSING_BATCH_CANCEL",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'CANCEL' in 'PROCESSING_BATCH_CANCEL'"
+    },
+    {
+      "query": "清空库存",
+      "expected_kw": "CLEAR",
+      "actual": "INVENTORY_CLEAR",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'CLEAR' in 'INVENTORY_CLEAR'"
+    },
+    {
+      "query": "删除用户",
+      "expected_kw": "DELETE",
+      "actual": "USER_DELETE",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'DELETE' in 'USER_DELETE'"
+    },
+    {
+      "query": "批量删除数据",
+      "expected_kw": "DELETE",
+      "actual": "DATA_BATCH_DELETE",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'DELETE' in 'DATA_BATCH_DELETE'"
+    },
+    {
+      "query": "重置配置",
+      "expected_kw": "RESET",
+      "actual": "CONFIG_RESET",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "high_risk",
+      "matched": true,
+      "reason": "'RESET' in 'CONFIG_RESET'"
+    },
+    {
+      "query": "查一下",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "REJECTED",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "那个订单",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "LLM",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "帮我处理",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "REJECTED",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "看看",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "REJECTED",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "有问题",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "REJECTED",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "这个",
+      "expected_kw": "LOW_CONF",
+      "actual": null,
+      "confidence": 0.0,
+      "method": "REJECTED",
+      "category": "ambiguous",
+      "matched": true,
+      "reason": "conf=0.00 <0.7 OK"
+    },
+    {
+      "query": "本月销售额超过1万的订单",
+      "expected_kw": "ORDER",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "complex",
+      "matched": false,
+      "reason": "'ORDER' NOT in 'REPORT_DASHBOARD_OVERVIEW'"
+    },
+    {
+      "query": "最近7天库存变动",
+      "expected_kw": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.93,
+      "method": "SEMANTIC",
+      "category": "complex",
+      "matched": true,
+      "reason": "'INVENTORY' in 'REPORT_INVENTORY'"
+    },
+    {
+      "query": "按部门统计考勤",
+      "expected_kw": "ATTENDANCE",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "complex",
+      "matched": true,
+      "reason": "'ATTENDANCE' in 'ATTENDANCE_STATS_BY_DEPT'"
+    },
+    {
+      "query": "生产效率报告",
+      "expected_kw": "REPORT",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "complex",
+      "matched": true,
+      "reason": "'REPORT' in 'REPORT_EFFICIENCY'"
+    },
+    {
+      "query": "质检不合格的批次",
+      "expected_kw": "QUALITY",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "complex",
+      "matched": true,
+      "reason": "'QUALITY' in 'QUALITY_STATS'"
+    },
+    {
+      "query": "供应商评估分析",
+      "expected_kw": "SUPPLIER",
+      "actual": "SUPPLIER_EVALUATE",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "complex",
+      "matched": true,
+      "reason": "'SUPPLIER' in 'SUPPLIER_EVALUATE'"
+    },
+    {
+      "query": "查看订单并导出",
+      "expected_kw": "ORDER",
+      "actual": "ORDER_LIST",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "multi",
+      "matched": true,
+      "reason": "'ORDER' in 'ORDER_LIST'"
+    },
+    {
+      "query": "库存查询和预警",
+      "expected_kw": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "multi",
+      "matched": true,
+      "reason": "'INVENTORY' in 'REPORT_INVENTORY'"
+    },
+    {
+      "query": "考勤统计和报表",
+      "expected_kw": "ATTENDANCE",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "multi",
+      "matched": true,
+      "reason": "'ATTENDANCE' in 'ATTENDANCE_STATS'"
+    },
+    {
+      "query": "设备状态和维护",
+      "expected_kw": "EQUIPMENT",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "multi",
+      "matched": true,
+      "reason": "'EQUIPMENT' in 'EQUIPMENT_STATUS_QUERY'"
+    },
+    {
+      "query": "查旬订单",
+      "expected_kw": "ORDER",
+      "actual": "ORDER_LIST",
+      "confidence": 0.93,
+      "method": "SEMANTIC",
+      "category": "typo",
+      "matched": true,
+      "reason": "'ORDER' in 'ORDER_LIST'"
+    },
+    {
+      "query": "库存插询",
+      "expected_kw": "INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "typo",
+      "matched": true,
+      "reason": "'INVENTORY' in 'REPORT_INVENTORY'"
+    },
+    {
+      "query": "蛇备状态",
+      "matched": false,
+      "category": "typo",
+      "error": "'NoneType' object has no attribute 'upper'"
+    },
+    {
+      "query": "考琴记录",
+      "expected_kw": "ATTENDANCE",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "typo",
+      "matched": true,
+      "reason": "'ATTENDANCE' in 'ATTENDANCE_HISTORY'"
+    },
+    {
+      "query": "溯源码查询",
+      "expected_kw": "TRACE",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "domain",
+      "matched": true,
+      "reason": "'TRACE' in 'TRACE_BATCH'"
+    },
+    {
+      "query": "HACCP检查",
+      "matched": false,
+      "category": "domain",
+      "error": "'NoneType' object has no attribute 'upper'"
+    },
+    {
+      "query": "冷链温度",
+      "expected_kw": "COLD_CHAIN",
+      "actual": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "domain",
+      "matched": true,
+      "reason": "'COLD_CHAIN' in 'COLD_CHAIN_TEMPERATURE'"
+    },
+    {
+      "query": "批次追溯",
+      "expected_kw": "TRACE",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.98,
+      "method": "PHRASE_MATCH",
+      "category": "domain",
+      "matched": true,
+      "reason": "'TRACE' in 'TRACE_BATCH'"
+    }
+  ]
+}

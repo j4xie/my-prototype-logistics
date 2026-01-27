@@ -1,0 +1,1289 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-01-23",
+  "templates": [
+    {
+      "id": "executive_overview",
+      "name": "经营驾驶舱",
+      "description": "高管视角的关键经营指标概览，包含收入、利润、部门排名等核心数据",
+      "category": "executive",
+      "thumbnail": "/images/templates/executive-overview.png",
+      "permissions": ["ROLE_ADMIN", "ROLE_EXECUTIVE", "ROLE_MANAGER"],
+      "layout": {
+        "columns": 12,
+        "rowHeight": 100,
+        "gap": 16,
+        "cards": [
+          {
+            "id": "kpi_revenue",
+            "chartType": "KPICard",
+            "title": "营业收入",
+            "x": 0,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/kpi/revenue",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage"
+              },
+              "thresholds": {
+                "warning": 80,
+                "danger": 60
+              },
+              "icon": "TrendingUp",
+              "color": "#1890ff"
+            }
+          },
+          {
+            "id": "kpi_profit",
+            "chartType": "KPICard",
+            "title": "净利润",
+            "x": 3,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/kpi/profit",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage"
+              },
+              "thresholds": {
+                "warning": 70,
+                "danger": 50
+              },
+              "icon": "DollarSign",
+              "color": "#52c41a"
+            }
+          },
+          {
+            "id": "kpi_orders",
+            "chartType": "KPICard",
+            "title": "订单总量",
+            "x": 6,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/kpi/orders",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "单",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "icon": "ShoppingCart",
+              "color": "#faad14"
+            }
+          },
+          {
+            "id": "kpi_customers",
+            "chartType": "KPICard",
+            "title": "活跃客户",
+            "x": 9,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/kpi/active-customers",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "家",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "icon": "Users",
+              "color": "#722ed1"
+            }
+          },
+          {
+            "id": "sales_trend",
+            "chartType": "LineChart",
+            "title": "销售趋势",
+            "x": 0,
+            "y": 1,
+            "w": 8,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/charts/sales-trend",
+              "refreshInterval": 600000,
+              "xAxis": {
+                "field": "date",
+                "type": "time",
+                "format": "MM-DD"
+              },
+              "yAxis": {
+                "field": "amount",
+                "label": "金额(万元)",
+                "min": 0
+              },
+              "series": [
+                {
+                  "name": "本期销售",
+                  "field": "currentAmount",
+                  "color": "#1890ff",
+                  "smooth": true
+                },
+                {
+                  "name": "同期销售",
+                  "field": "lastYearAmount",
+                  "color": "#8c8c8c",
+                  "lineStyle": "dashed",
+                  "smooth": true
+                }
+              ],
+              "tooltip": {
+                "enabled": true,
+                "format": "{name}: {value}万元"
+              },
+              "legend": {
+                "show": true,
+                "position": "top-right"
+              }
+            }
+          },
+          {
+            "id": "profit_structure",
+            "chartType": "PieChart",
+            "title": "利润结构",
+            "x": 8,
+            "y": 1,
+            "w": 4,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/charts/profit-structure",
+              "refreshInterval": 600000,
+              "nameField": "category",
+              "valueField": "amount",
+              "colorPalette": ["#1890ff", "#52c41a", "#faad14", "#f5222d", "#722ed1"],
+              "label": {
+                "show": true,
+                "format": "{name}: {percentage}%"
+              },
+              "legend": {
+                "show": true,
+                "position": "bottom"
+              },
+              "innerRadius": 50
+            }
+          },
+          {
+            "id": "department_ranking",
+            "chartType": "BarChart",
+            "title": "部门业绩排名",
+            "x": 0,
+            "y": 4,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/charts/department-ranking",
+              "refreshInterval": 600000,
+              "direction": "horizontal",
+              "xAxis": {
+                "field": "department",
+                "label": "部门"
+              },
+              "yAxis": {
+                "field": "achievement",
+                "label": "完成率(%)"
+              },
+              "barColor": {
+                "type": "gradient",
+                "colors": ["#1890ff", "#52c41a"]
+              },
+              "showValue": true,
+              "valueFormat": "{value}%",
+              "sortBy": "desc",
+              "limit": 10
+            }
+          },
+          {
+            "id": "region_ranking",
+            "chartType": "BarChart",
+            "title": "区域销售排名",
+            "x": 6,
+            "y": 4,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/charts/region-ranking",
+              "refreshInterval": 600000,
+              "direction": "horizontal",
+              "xAxis": {
+                "field": "region",
+                "label": "区域"
+              },
+              "yAxis": {
+                "field": "salesAmount",
+                "label": "销售额(万元)"
+              },
+              "barColor": "#722ed1",
+              "showValue": true,
+              "valueFormat": "{value}万",
+              "sortBy": "desc",
+              "limit": 10
+            }
+          },
+          {
+            "id": "ai_insights",
+            "chartType": "AIInsightPanel",
+            "title": "AI 智能洞察",
+            "x": 0,
+            "y": 7,
+            "w": 12,
+            "h": 2,
+            "config": {
+              "dataSource": "/api/smartbi/ai/insights",
+              "refreshInterval": 900000,
+              "maxInsights": 5,
+              "categories": ["revenue", "profit", "risk", "opportunity"],
+              "severity": ["critical", "warning", "info"],
+              "showTimestamp": true,
+              "allowDismiss": true,
+              "autoRefresh": true
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "finance_analysis",
+      "name": "财务分析",
+      "description": "全面的财务分析视图，包含预算执行、同环比对比、成本分析等",
+      "category": "finance",
+      "thumbnail": "/images/templates/finance-analysis.png",
+      "permissions": ["ROLE_ADMIN", "ROLE_FINANCE", "ROLE_MANAGER"],
+      "layout": {
+        "columns": 12,
+        "rowHeight": 100,
+        "gap": 16,
+        "cards": [
+          {
+            "id": "kpi_total_revenue",
+            "chartType": "KPICard",
+            "title": "总收入",
+            "x": 0,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/finance/kpi/total-revenue",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage"
+              },
+              "icon": "Wallet",
+              "color": "#1890ff"
+            }
+          },
+          {
+            "id": "kpi_gross_profit",
+            "chartType": "KPICard",
+            "title": "毛利润",
+            "x": 3,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/finance/kpi/gross-profit",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage"
+              },
+              "subValue": {
+                "field": "grossMargin",
+                "label": "毛利率",
+                "format": "percentage"
+              },
+              "icon": "TrendingUp",
+              "color": "#52c41a"
+            }
+          },
+          {
+            "id": "kpi_operating_cost",
+            "chartType": "KPICard",
+            "title": "运营成本",
+            "x": 6,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/finance/kpi/operating-cost",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage",
+                "inverseColor": true
+              },
+              "icon": "CreditCard",
+              "color": "#faad14"
+            }
+          },
+          {
+            "id": "kpi_cash_flow",
+            "chartType": "KPICard",
+            "title": "现金流",
+            "x": 9,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/finance/kpi/cash-flow",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "thresholds": {
+                "warning": 100,
+                "danger": 0
+              },
+              "icon": "Activity",
+              "color": "#13c2c2"
+            }
+          },
+          {
+            "id": "budget_achievement",
+            "chartType": "BudgetAchievementChart",
+            "title": "预算完成情况",
+            "x": 0,
+            "y": 1,
+            "w": 12,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/finance/budget-achievement",
+              "refreshInterval": 600000,
+              "dimensions": ["department", "category"],
+              "metrics": {
+                "budget": "budgetAmount",
+                "actual": "actualAmount",
+                "achievement": "achievementRate"
+              },
+              "displayMode": "grouped",
+              "showProgress": true,
+              "thresholds": {
+                "excellent": 100,
+                "good": 80,
+                "warning": 60
+              },
+              "colors": {
+                "budget": "#d9d9d9",
+                "actual": "#1890ff",
+                "overBudget": "#f5222d"
+              }
+            }
+          },
+          {
+            "id": "yoy_mom_comparison",
+            "chartType": "YoYMoMComparisonChart",
+            "title": "同比环比分析",
+            "x": 0,
+            "y": 4,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/finance/yoy-mom",
+              "refreshInterval": 600000,
+              "metrics": ["revenue", "profit", "cost"],
+              "metricLabels": {
+                "revenue": "收入",
+                "profit": "利润",
+                "cost": "成本"
+              },
+              "comparison": {
+                "yoy": {
+                  "enabled": true,
+                  "label": "同比"
+                },
+                "mom": {
+                  "enabled": true,
+                  "label": "环比"
+                }
+              },
+              "chartType": "bar",
+              "showPercentage": true,
+              "colors": {
+                "positive": "#52c41a",
+                "negative": "#f5222d"
+              }
+            }
+          },
+          {
+            "id": "category_structure",
+            "chartType": "TreemapChart",
+            "title": "费用类别结构",
+            "x": 6,
+            "y": 4,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/finance/category-structure",
+              "refreshInterval": 600000,
+              "nameField": "category",
+              "valueField": "amount",
+              "parentField": "parentCategory",
+              "colorPalette": ["#1890ff", "#52c41a", "#faad14", "#f5222d", "#722ed1", "#13c2c2"],
+              "label": {
+                "show": true,
+                "format": "{name}\n{value}万"
+              },
+              "tooltip": {
+                "format": "{name}: {value}万元 ({percentage}%)"
+              },
+              "drilldown": {
+                "enabled": true,
+                "levels": 2
+              }
+            }
+          },
+          {
+            "id": "cost_waterfall",
+            "chartType": "WaterfallChart",
+            "title": "成本构成瀑布图",
+            "x": 0,
+            "y": 7,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/finance/cost-waterfall",
+              "refreshInterval": 600000,
+              "categoryField": "item",
+              "valueField": "amount",
+              "typeField": "type",
+              "types": {
+                "increase": "增加",
+                "decrease": "减少",
+                "total": "合计"
+              },
+              "colors": {
+                "increase": "#f5222d",
+                "decrease": "#52c41a",
+                "total": "#1890ff"
+              },
+              "showConnector": true,
+              "showValue": true,
+              "valueFormat": "{value}万"
+            }
+          },
+          {
+            "id": "receivable_aging",
+            "chartType": "StackedBarChart",
+            "title": "应收账款账龄分析",
+            "x": 6,
+            "y": 7,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/finance/receivable-aging",
+              "refreshInterval": 600000,
+              "xAxis": {
+                "field": "customer",
+                "label": "客户"
+              },
+              "yAxis": {
+                "label": "金额(万元)"
+              },
+              "series": [
+                {
+                  "name": "0-30天",
+                  "field": "aging0_30",
+                  "color": "#52c41a"
+                },
+                {
+                  "name": "31-60天",
+                  "field": "aging31_60",
+                  "color": "#faad14"
+                },
+                {
+                  "name": "61-90天",
+                  "field": "aging61_90",
+                  "color": "#fa8c16"
+                },
+                {
+                  "name": "90天以上",
+                  "field": "aging90plus",
+                  "color": "#f5222d"
+                }
+              ],
+              "stackMode": "normal",
+              "showTotal": true,
+              "sortBy": "total",
+              "limit": 10
+            }
+          },
+          {
+            "id": "finance_ai_insights",
+            "chartType": "AIInsightPanel",
+            "title": "财务智能洞察",
+            "x": 0,
+            "y": 10,
+            "w": 12,
+            "h": 2,
+            "config": {
+              "dataSource": "/api/smartbi/ai/finance-insights",
+              "refreshInterval": 900000,
+              "maxInsights": 5,
+              "categories": ["budget", "cost", "cashflow", "risk"],
+              "severity": ["critical", "warning", "info"],
+              "showTimestamp": true,
+              "allowDismiss": true,
+              "context": "finance"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sales_analysis",
+      "name": "销售分析",
+      "description": "销售业绩全景分析，包含渠道分布、产品排名、客户分析等",
+      "category": "sales",
+      "thumbnail": "/images/templates/sales-analysis.png",
+      "permissions": ["ROLE_ADMIN", "ROLE_SALES", "ROLE_MANAGER"],
+      "layout": {
+        "columns": 12,
+        "rowHeight": 100,
+        "gap": 16,
+        "cards": [
+          {
+            "id": "kpi_sales_revenue",
+            "chartType": "KPICard",
+            "title": "销售收入",
+            "x": 0,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/sales/kpi/revenue",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "万元",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "yoyChange",
+                "format": "percentage"
+              },
+              "target": {
+                "enabled": true,
+                "field": "targetAmount",
+                "showProgress": true
+              },
+              "icon": "DollarSign",
+              "color": "#1890ff"
+            }
+          },
+          {
+            "id": "kpi_order_count",
+            "chartType": "KPICard",
+            "title": "订单数量",
+            "x": 3,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/sales/kpi/orders",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "单",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "icon": "ShoppingBag",
+              "color": "#52c41a"
+            }
+          },
+          {
+            "id": "kpi_avg_order_value",
+            "chartType": "KPICard",
+            "title": "客单价",
+            "x": 6,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/sales/kpi/avg-order-value",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "元",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "icon": "Tag",
+              "color": "#faad14"
+            }
+          },
+          {
+            "id": "kpi_conversion_rate",
+            "chartType": "KPICard",
+            "title": "转化率",
+            "x": 9,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/sales/kpi/conversion",
+              "refreshInterval": 300000,
+              "valueField": "value",
+              "unit": "%",
+              "precision": 2,
+              "trend": {
+                "enabled": true,
+                "compareField": "momChange",
+                "format": "percentage"
+              },
+              "thresholds": {
+                "excellent": 5,
+                "good": 3,
+                "warning": 1.5
+              },
+              "icon": "Target",
+              "color": "#722ed1"
+            }
+          },
+          {
+            "id": "sales_trend",
+            "chartType": "AreaChart",
+            "title": "销售趋势",
+            "x": 0,
+            "y": 1,
+            "w": 12,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/sales/trend",
+              "refreshInterval": 600000,
+              "xAxis": {
+                "field": "date",
+                "type": "time",
+                "format": "YYYY-MM-DD"
+              },
+              "yAxis": [
+                {
+                  "field": "amount",
+                  "label": "销售额(万元)",
+                  "position": "left"
+                },
+                {
+                  "field": "orderCount",
+                  "label": "订单数",
+                  "position": "right"
+                }
+              ],
+              "series": [
+                {
+                  "name": "销售额",
+                  "field": "amount",
+                  "type": "area",
+                  "color": "#1890ff",
+                  "areaStyle": {
+                    "opacity": 0.3
+                  }
+                },
+                {
+                  "name": "订单数",
+                  "field": "orderCount",
+                  "type": "line",
+                  "color": "#52c41a",
+                  "yAxisIndex": 1
+                }
+              ],
+              "tooltip": {
+                "enabled": true,
+                "trigger": "axis"
+              },
+              "zoom": {
+                "enabled": true,
+                "type": "slider"
+              },
+              "periodSelector": {
+                "enabled": true,
+                "options": ["7d", "30d", "90d", "1y"]
+              }
+            }
+          },
+          {
+            "id": "product_category_pie",
+            "chartType": "PieChart",
+            "title": "产品类别分布",
+            "x": 0,
+            "y": 4,
+            "w": 4,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/sales/product-category",
+              "refreshInterval": 600000,
+              "nameField": "category",
+              "valueField": "salesAmount",
+              "colorPalette": ["#1890ff", "#52c41a", "#faad14", "#f5222d", "#722ed1", "#13c2c2", "#eb2f96"],
+              "label": {
+                "show": true,
+                "position": "outside",
+                "format": "{name}"
+              },
+              "legend": {
+                "show": true,
+                "position": "right",
+                "orient": "vertical"
+              },
+              "roseType": "radius",
+              "tooltip": {
+                "format": "{name}: {value}万元 ({percentage}%)"
+              }
+            }
+          },
+          {
+            "id": "channel_distribution",
+            "chartType": "BarChart",
+            "title": "渠道销售分布",
+            "x": 4,
+            "y": 4,
+            "w": 8,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/sales/channel-distribution",
+              "refreshInterval": 600000,
+              "xAxis": {
+                "field": "channel",
+                "label": "销售渠道"
+              },
+              "yAxis": {
+                "field": "amount",
+                "label": "销售额(万元)"
+              },
+              "series": [
+                {
+                  "name": "本期",
+                  "field": "currentAmount",
+                  "color": "#1890ff"
+                },
+                {
+                  "name": "上期",
+                  "field": "lastPeriodAmount",
+                  "color": "#8c8c8c"
+                }
+              ],
+              "groupMode": "grouped",
+              "showValue": true,
+              "showGrowth": true,
+              "growthFormat": "{value}%"
+            }
+          },
+          {
+            "id": "top_customers",
+            "chartType": "RankingList",
+            "title": "Top 10 客户",
+            "x": 0,
+            "y": 7,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/sales/top-customers",
+              "refreshInterval": 600000,
+              "rankField": "rank",
+              "nameField": "customerName",
+              "valueField": "salesAmount",
+              "valueFormat": "{value}万元",
+              "limit": 10,
+              "showProgress": true,
+              "progressColor": "#1890ff",
+              "showTrend": true,
+              "trendField": "rankChange",
+              "onClick": {
+                "action": "drilldown",
+                "target": "customer-detail",
+                "paramField": "customerId"
+              }
+            }
+          },
+          {
+            "id": "top_products",
+            "chartType": "RankingList",
+            "title": "Top 10 产品",
+            "x": 6,
+            "y": 7,
+            "w": 6,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/sales/top-products",
+              "refreshInterval": 600000,
+              "rankField": "rank",
+              "nameField": "productName",
+              "valueField": "salesQuantity",
+              "subValueField": "salesAmount",
+              "valueFormat": "{value}件",
+              "subValueFormat": "{value}万元",
+              "limit": 10,
+              "showProgress": true,
+              "progressColor": "#52c41a",
+              "showTrend": true,
+              "trendField": "salesGrowth",
+              "showImage": true,
+              "imageField": "productImage"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "production_monitor",
+      "name": "生产监控",
+      "description": "实时生产监控看板，包含OEE、产量、质量、设备状态等关键指标",
+      "category": "production",
+      "thumbnail": "/images/templates/production-monitor.png",
+      "permissions": ["ROLE_ADMIN", "ROLE_PRODUCTION", "ROLE_MANAGER"],
+      "layout": {
+        "columns": 12,
+        "rowHeight": 100,
+        "gap": 16,
+        "cards": [
+          {
+            "id": "kpi_oee",
+            "chartType": "GaugeChart",
+            "title": "设备综合效率(OEE)",
+            "x": 0,
+            "y": 0,
+            "w": 3,
+            "h": 2,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/oee",
+              "refreshInterval": 60000,
+              "valueField": "value",
+              "unit": "%",
+              "precision": 1,
+              "min": 0,
+              "max": 100,
+              "thresholds": [
+                { "value": 60, "color": "#f5222d" },
+                { "value": 75, "color": "#faad14" },
+                { "value": 85, "color": "#52c41a" },
+                { "value": 100, "color": "#1890ff" }
+              ],
+              "subMetrics": [
+                { "label": "可用率", "field": "availability" },
+                { "label": "性能率", "field": "performance" },
+                { "label": "质量率", "field": "quality" }
+              ],
+              "animation": true
+            }
+          },
+          {
+            "id": "kpi_yield_rate",
+            "chartType": "GaugeChart",
+            "title": "良品率",
+            "x": 3,
+            "y": 0,
+            "w": 3,
+            "h": 2,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/yield-rate",
+              "refreshInterval": 60000,
+              "valueField": "value",
+              "unit": "%",
+              "precision": 2,
+              "min": 0,
+              "max": 100,
+              "thresholds": [
+                { "value": 90, "color": "#f5222d" },
+                { "value": 95, "color": "#faad14" },
+                { "value": 98, "color": "#52c41a" },
+                { "value": 100, "color": "#1890ff" }
+              ],
+              "target": {
+                "value": 98.5,
+                "label": "目标"
+              },
+              "animation": true
+            }
+          },
+          {
+            "id": "kpi_daily_output",
+            "chartType": "KPICard",
+            "title": "今日产量",
+            "x": 6,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/daily-output",
+              "refreshInterval": 60000,
+              "valueField": "value",
+              "unit": "件",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "vsTarget",
+                "format": "percentage",
+                "label": "vs目标"
+              },
+              "target": {
+                "enabled": true,
+                "field": "targetOutput",
+                "showProgress": true
+              },
+              "icon": "Package",
+              "color": "#1890ff"
+            }
+          },
+          {
+            "id": "kpi_defect_count",
+            "chartType": "KPICard",
+            "title": "今日不良品",
+            "x": 9,
+            "y": 0,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/defects",
+              "refreshInterval": 60000,
+              "valueField": "value",
+              "unit": "件",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "vsYesterday",
+                "format": "percentage",
+                "inverseColor": true
+              },
+              "thresholds": {
+                "warning": 50,
+                "danger": 100
+              },
+              "icon": "AlertTriangle",
+              "color": "#f5222d"
+            }
+          },
+          {
+            "id": "kpi_running_machines",
+            "chartType": "KPICard",
+            "title": "运行设备",
+            "x": 6,
+            "y": 1,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/running-machines",
+              "refreshInterval": 30000,
+              "valueField": "running",
+              "unit": "台",
+              "precision": 0,
+              "subValue": {
+                "field": "total",
+                "format": "/ {value}台"
+              },
+              "statusIndicator": {
+                "enabled": true,
+                "field": "status",
+                "colors": {
+                  "normal": "#52c41a",
+                  "warning": "#faad14",
+                  "error": "#f5222d"
+                }
+              },
+              "icon": "Cpu",
+              "color": "#52c41a"
+            }
+          },
+          {
+            "id": "kpi_downtime",
+            "chartType": "KPICard",
+            "title": "累计停机时长",
+            "x": 9,
+            "y": 1,
+            "w": 3,
+            "h": 1,
+            "config": {
+              "dataSource": "/api/smartbi/production/kpi/downtime",
+              "refreshInterval": 60000,
+              "valueField": "value",
+              "unit": "分钟",
+              "precision": 0,
+              "trend": {
+                "enabled": true,
+                "compareField": "vsYesterday",
+                "format": "percentage",
+                "inverseColor": true
+              },
+              "breakdown": {
+                "enabled": true,
+                "field": "reasons",
+                "limit": 3
+              },
+              "icon": "Clock",
+              "color": "#faad14"
+            }
+          },
+          {
+            "id": "production_trend",
+            "chartType": "LineChart",
+            "title": "产量趋势",
+            "x": 0,
+            "y": 2,
+            "w": 8,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/production/trend",
+              "refreshInterval": 300000,
+              "xAxis": {
+                "field": "hour",
+                "type": "category",
+                "label": "时间"
+              },
+              "yAxis": [
+                {
+                  "field": "output",
+                  "label": "产量(件)",
+                  "position": "left"
+                },
+                {
+                  "field": "defectRate",
+                  "label": "不良率(%)",
+                  "position": "right",
+                  "max": 10
+                }
+              ],
+              "series": [
+                {
+                  "name": "实际产量",
+                  "field": "actualOutput",
+                  "type": "bar",
+                  "color": "#1890ff"
+                },
+                {
+                  "name": "计划产量",
+                  "field": "plannedOutput",
+                  "type": "line",
+                  "color": "#8c8c8c",
+                  "lineStyle": "dashed"
+                },
+                {
+                  "name": "不良率",
+                  "field": "defectRate",
+                  "type": "line",
+                  "color": "#f5222d",
+                  "yAxisIndex": 1
+                }
+              ],
+              "markLine": {
+                "enabled": true,
+                "data": [
+                  { "type": "average", "name": "平均产量" }
+                ]
+              },
+              "realtime": {
+                "enabled": true,
+                "interval": 60000
+              }
+            }
+          },
+          {
+            "id": "quality_radar",
+            "chartType": "RadarChart",
+            "title": "质量指标雷达图",
+            "x": 8,
+            "y": 2,
+            "w": 4,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/production/quality-metrics",
+              "refreshInterval": 300000,
+              "indicators": [
+                { "name": "外观", "max": 100, "field": "appearance" },
+                { "name": "尺寸", "max": 100, "field": "dimension" },
+                { "name": "功能", "max": 100, "field": "function" },
+                { "name": "包装", "max": 100, "field": "packaging" },
+                { "name": "标识", "max": 100, "field": "labeling" },
+                { "name": "安全", "max": 100, "field": "safety" }
+              ],
+              "series": [
+                {
+                  "name": "实际值",
+                  "color": "#1890ff",
+                  "areaStyle": { "opacity": 0.3 }
+                },
+                {
+                  "name": "标准值",
+                  "color": "#52c41a",
+                  "lineStyle": "dashed"
+                }
+              ],
+              "legend": {
+                "show": true,
+                "position": "bottom"
+              }
+            }
+          },
+          {
+            "id": "equipment_utilization",
+            "chartType": "MultiGaugeChart",
+            "title": "设备利用率",
+            "x": 0,
+            "y": 5,
+            "w": 12,
+            "h": 3,
+            "config": {
+              "dataSource": "/api/smartbi/production/equipment-utilization",
+              "refreshInterval": 60000,
+              "layout": "horizontal",
+              "gauges": {
+                "nameField": "equipmentName",
+                "valueField": "utilization",
+                "statusField": "status"
+              },
+              "thresholds": [
+                { "value": 50, "color": "#f5222d", "label": "低效" },
+                { "value": 70, "color": "#faad14", "label": "一般" },
+                { "value": 85, "color": "#52c41a", "label": "良好" },
+                { "value": 100, "color": "#1890ff", "label": "优秀" }
+              ],
+              "showStatus": true,
+              "statusColors": {
+                "running": "#52c41a",
+                "idle": "#faad14",
+                "maintenance": "#1890ff",
+                "error": "#f5222d"
+              },
+              "onClick": {
+                "action": "modal",
+                "target": "equipment-detail",
+                "paramField": "equipmentId"
+              },
+              "maxDisplay": 8,
+              "scrollable": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "chartTypes": {
+    "KPICard": {
+      "component": "KPICard",
+      "minWidth": 2,
+      "minHeight": 1,
+      "maxHeight": 2
+    },
+    "LineChart": {
+      "component": "LineChart",
+      "minWidth": 4,
+      "minHeight": 2
+    },
+    "AreaChart": {
+      "component": "AreaChart",
+      "minWidth": 4,
+      "minHeight": 2
+    },
+    "BarChart": {
+      "component": "BarChart",
+      "minWidth": 4,
+      "minHeight": 2
+    },
+    "StackedBarChart": {
+      "component": "StackedBarChart",
+      "minWidth": 4,
+      "minHeight": 2
+    },
+    "PieChart": {
+      "component": "PieChart",
+      "minWidth": 3,
+      "minHeight": 2
+    },
+    "GaugeChart": {
+      "component": "GaugeChart",
+      "minWidth": 2,
+      "minHeight": 2
+    },
+    "MultiGaugeChart": {
+      "component": "MultiGaugeChart",
+      "minWidth": 6,
+      "minHeight": 2
+    },
+    "RadarChart": {
+      "component": "RadarChart",
+      "minWidth": 3,
+      "minHeight": 3
+    },
+    "TreemapChart": {
+      "component": "TreemapChart",
+      "minWidth": 4,
+      "minHeight": 3
+    },
+    "WaterfallChart": {
+      "component": "WaterfallChart",
+      "minWidth": 4,
+      "minHeight": 3
+    },
+    "RankingList": {
+      "component": "RankingList",
+      "minWidth": 3,
+      "minHeight": 2
+    },
+    "AIInsightPanel": {
+      "component": "AIInsightPanel",
+      "minWidth": 6,
+      "minHeight": 2
+    },
+    "BudgetAchievementChart": {
+      "component": "BudgetAchievementChart",
+      "minWidth": 6,
+      "minHeight": 3
+    },
+    "YoYMoMComparisonChart": {
+      "component": "YoYMoMComparisonChart",
+      "minWidth": 4,
+      "minHeight": 3
+    }
+  },
+  "defaultConfig": {
+    "refreshInterval": 300000,
+    "theme": "light",
+    "locale": "zh-CN",
+    "dateFormat": "YYYY-MM-DD",
+    "numberFormat": {
+      "thousandsSeparator": ",",
+      "decimalSeparator": ".",
+      "precision": 2
+    }
+  }
+}

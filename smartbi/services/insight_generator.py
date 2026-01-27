@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from config import get_settings
+from services.context_extractor import ContextInfo
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,8 @@ class InsightGenerator:
         metrics: Optional[List[dict]] = None,
         analysis_context: Optional[str] = None,
         insight_types: Optional[List[str]] = None,
-        max_insights: int = 5
+        max_insights: int = 5,
+        context_info: Optional[ContextInfo] = None
     ) -> Dict[str, Any]:
         """
         Generate business insights from data
@@ -66,6 +68,7 @@ class InsightGenerator:
             analysis_context: Business context description
             insight_types: Types of insights to generate
             max_insights: Maximum number of insights to return
+            context_info: Extracted context from Excel (notes, explanations, definitions)
 
         Returns:
             Generated insights
@@ -86,7 +89,7 @@ class InsightGenerator:
             # If LLM is available, enhance with AI insights
             if self.settings.llm_api_key:
                 ai_insights = await self._generate_llm_insights(
-                    df, metrics, stat_insights, analysis_context
+                    df, metrics, stat_insights, analysis_context, context_info
                 )
                 insights = ai_insights
             else:
@@ -343,7 +346,8 @@ class InsightGenerator:
         df: pd.DataFrame,
         metrics: Optional[List[dict]],
         stat_insights: List[dict],
-        context: Optional[str]
+        context: Optional[str],
+        context_info: Optional[ContextInfo] = None
     ) -> List[dict]:
         """Generate AI-powered insights using LLM"""
         try:
@@ -352,37 +356,91 @@ class InsightGenerator:
             metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
             existing_insights = "\n".join([i["text"] for i in stat_insights[:3]])
 
-            prompt = f"""作为商业数据分析师，请基于以下数据生成3-5条关键业务洞察。
+            # Prepare context from extracted Excel notes/explanations
+            excel_context = ""
+            if context_info and context_info.has_content():
+                excel_context = f"""
+## 报表上下文信息（来自原始Excel）
+{context_info.to_prompt_text()}
+"""
 
-数据概览：
+            prompt = f"""作为资深商业数据分析师，请对以下数据进行深度分析。
+
+## 分析框架 (MECE原则)
+
+### 1. 描述性分析 (What Happened)
+- 核心数据概览和关键指标表现
+- 时间维度的变化情况
+
+### 2. 诊断性分析 (Why)
+- 变化的驱动因素
+- 结构性分析（构成、占比）
+- 相关性分析
+
+### 3. 预测性分析 (What Next)
+- 趋势预测
+- 风险预警
+- 机会识别
+
+### 4. 规范性分析 (So What)
+- 可执行的建议
+- 优先级排序
+- 预期影响
+
+## 数据概览
 {data_summary}
 
-{f'指标计算结果：{metrics_summary}' if metrics_summary else ''}
+{f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
 
-{f'业务背景：{context}' if context else ''}
-
-已识别的统计发现：
+{f'## 业务背景{chr(10)}{context}' if context else ''}
+{excel_context}
+## 已识别的统计发现
 {existing_insights}
 
-请生成JSON格式的洞察列表：
+请输出JSON格式的深度分析结果：
 {{
+    "executive_summary": "一句话核心结论",
     "insights": [
         {{
-            "type": "trend/anomaly/comparison/recommendation",
-            "text": "洞察描述（简洁明了，包含具体数据）",
-            "metric": "相关指标",
+            "dimension": "what_happened|why_happened|forecast|recommendation",
+            "type": "trend|anomaly|comparison|kpi|recommendation",
+            "title": "洞察标题（简洁有力）",
+            "text": "详细描述（包含具体数据和百分比）",
+            "metric": "相关指标名称",
             "sentiment": "positive/negative/neutral",
             "importance": 1-10的重要性评分,
-            "recommendation": "可选的改进建议"
+            "confidence": 0.0-1.0的置信度,
+            "action_items": ["建议行动1", "建议行动2"],
+            "related_kpis": ["相关KPI1", "相关KPI2"],
+            "recommendation": "具体改进建议"
+        }}
+    ],
+    "risk_alerts": [
+        {{
+            "title": "风险标题",
+            "description": "风险描述",
+            "severity": "high|medium|low",
+            "mitigation": "建议措施"
+        }}
+    ],
+    "opportunities": [
+        {{
+            "title": "机会标题",
+            "description": "机会描述",
+            "potential_impact": "预期影响",
+            "action_required": "所需行动"
         }}
     ]
 }}
 
 要求：
-1. 洞察要具体、可操作
-2. 包含具体数字和百分比
-3. 识别问题并给出建议
-4. 使用中文"""
+1. 遵循MECE原则，洞察不重叠、不遗漏
+2. 每条洞察必须包含具体数字和百分比
+3. 洞察要可操作、可追踪
+4. 使用中文
+5. 如果有备注或编制说明，请在分析时充分考虑
+6. 识别至少1个风险和1个机会
+7. 建议按优先级排序"""
 
             response = await self._call_llm(prompt)
             return self._parse_llm_insights(response, stat_insights)

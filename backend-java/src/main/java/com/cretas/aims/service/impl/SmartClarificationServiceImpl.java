@@ -107,6 +107,40 @@ public class SmartClarificationServiceImpl implements SmartClarificationService 
             "删除", "移除", "清空", "作废", "撤销", "批量修改", "全部更新"
     ));
 
+    // ==================== v13.0: 混淆意图对澄清问题 ====================
+
+    /**
+     * 混淆意图对及其对应的澄清问题
+     */
+    private static final Map<Set<String>, List<String>> CONFUSING_PAIR_QUESTIONS = new HashMap<>();
+    static {
+        CONFUSING_PAIR_QUESTIONS.put(
+                new HashSet<>(Arrays.asList("MATERIAL_EXPIRING_ALERT", "MATERIAL_EXPIRED_QUERY")),
+                Collections.singletonList("您是想查询即将过期的原料（预防性告警）？还是查询已过期的原料记录？")
+        );
+        CONFUSING_PAIR_QUESTIONS.put(
+                new HashSet<>(Arrays.asList("PROCESSING_BATCH_TIMELINE", "PROCESSING_BATCH_LIST")),
+                Collections.singletonList("您想查看生产批次的时间进度？还是需要批次列表？")
+        );
+        CONFUSING_PAIR_QUESTIONS.put(
+                new HashSet<>(Arrays.asList("QUALITY_STATS", "REPORT_QUALITY")),
+                Collections.singletonList("您需要质量统计数据分析？还是质量报告文档？")
+        );
+        CONFUSING_PAIR_QUESTIONS.put(
+                new HashSet<>(Arrays.asList("PRODUCTION_STATUS_QUERY", "EQUIPMENT_STATUS_QUERY")),
+                Collections.singletonList("您想查询生产进度（产量完成度）？还是设备运行状态？")
+        );
+        CONFUSING_PAIR_QUESTIONS.put(
+                new HashSet<>(Arrays.asList("SUPPLIER_LIST", "SUPPLIER_QUERY")),
+                Collections.singletonList("您想查看所有供应商列表？还是搜索特定供应商？")
+        );
+    }
+
+    /**
+     * 混淆对置信度差距阈值
+     */
+    private static final double CONFUSING_PAIR_GAP_THRESHOLD = 0.20;
+
     // ==================== 澄清问题模板 ====================
 
     private static final Map<String, String> SLOT_QUESTION_TEMPLATES = new HashMap<>();
@@ -467,6 +501,114 @@ public class SmartClarificationServiceImpl implements SmartClarificationService 
         }
 
         return false;
+    }
+
+    /**
+     * v13.0: 检测混淆意图对并生成澄清问题
+     *
+     * @param top1Intent 置信度最高的意图
+     * @param top2Intent 置信度第二的意图
+     * @param confidenceGap 两者置信度差距
+     * @return 澄清决策，如果不需要澄清返回 null
+     */
+    public ClarificationDecision checkConfusingIntentPair(
+            String top1Intent,
+            String top2Intent,
+            double confidenceGap) {
+
+        if (top1Intent == null || top2Intent == null) {
+            return null;
+        }
+
+        Set<String> pair = new HashSet<>(Arrays.asList(top1Intent, top2Intent));
+
+        // 检查是否为混淆对
+        if (!CONFUSING_PAIR_QUESTIONS.containsKey(pair)) {
+            return null;
+        }
+
+        // 检查置信度差距是否小于阈值
+        if (confidenceGap >= CONFUSING_PAIR_GAP_THRESHOLD) {
+            log.debug("混淆对 {} 置信度差距 {} >= 阈值 {}，不需要澄清",
+                    pair, confidenceGap, CONFUSING_PAIR_GAP_THRESHOLD);
+            return null;
+        }
+
+        log.info("检测到混淆意图对: {} vs {}, 置信度差距: {}, 需要澄清",
+                top1Intent, top2Intent, confidenceGap);
+
+        List<String> questions = CONFUSING_PAIR_QUESTIONS.get(pair);
+
+        ClarificationDecision decision = ClarificationDecision.need(
+                ClarificationType.MULTI_INTENT_AMBIGUITY,
+                "检测到相似意图，需要澄清: " + top1Intent + " vs " + top2Intent,
+                Collections.emptyList(),
+                0.5 + confidenceGap
+        );
+        decision.setSuggestedQuestions(questions);
+        decision.setPriority(7);
+        return decision;
+    }
+
+    /**
+     * v13.0: 检测混淆意图对（从候选列表）
+     *
+     * @param candidates 候选意图列表（按置信度降序）
+     * @return 澄清决策，如果不需要澄清返回 null
+     */
+    public ClarificationDecision checkConfusingIntentPairFromCandidates(
+            List<? extends Object> candidates) {
+
+        if (candidates == null || candidates.size() < 2) {
+            return null;
+        }
+
+        // 获取 top1 和 top2 的意图代码和置信度
+        // 这里假设 candidates 是 CandidateIntent 类型或类似结构
+        try {
+            Object top1 = candidates.get(0);
+            Object top2 = candidates.get(1);
+
+            String top1Intent = getIntentCode(top1);
+            String top2Intent = getIntentCode(top2);
+            double top1Confidence = getConfidence(top1);
+            double top2Confidence = getConfidence(top2);
+
+            double gap = top1Confidence - top2Confidence;
+
+            return checkConfusingIntentPair(top1Intent, top2Intent, gap);
+        } catch (Exception e) {
+            log.warn("解析候选意图失败: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 从候选对象中获取意图代码（通过反射）
+     */
+    private String getIntentCode(Object candidate) {
+        try {
+            java.lang.reflect.Method method = candidate.getClass().getMethod("getIntentCode");
+            return (String) method.invoke(candidate);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 从候选对象中获取置信度（通过反射）
+     */
+    private double getConfidence(Object candidate) {
+        try {
+            java.lang.reflect.Method method = candidate.getClass().getMethod("getConfidence");
+            Object result = method.invoke(candidate);
+            if (result instanceof Number) {
+                return ((Number) result).doubleValue();
+            }
+            return 0.0;
+        } catch (Exception e) {
+            return 0.0;
+        }
     }
 
     @Override

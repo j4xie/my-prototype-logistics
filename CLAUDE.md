@@ -60,8 +60,11 @@ mvn spring-boot:run              # Run locally
 
 ### 部署到服务器
 ```bash
-# 一键部署（推荐）
-./deploy-backend.sh steven
+# 方式1: JAR 部署 (推荐，默认)
+./deploy-backend.sh              # 本地打包 → GitHub Release → 服务器拉取
+
+# 方式2: Git 部署 (旧方式)
+./deploy-backend.sh --git        # git push → 服务器编译
 
 # 或使用 skill
 /deploy-backend
@@ -75,11 +78,10 @@ mvn spring-boot:run              # Run locally
 ```
 /www/wwwroot/
 ├── cretas/              # Cretas 食品溯源系统
-│   ├── cretas-backend-system-1.0.0.jar
-│   ├── application.properties
-│   ├── restart.sh
-│   ├── ai-service/      # AI 服务 (Python)
-│   ├── backend-java/    # 后端源码
+│   ├── aims-0.0.1-SNAPSHOT.jar  # 主 JAR
+│   ├── pull-jar.sh      # 从 Release 拉取 JAR
+│   ├── deploy.sh        # Git 部署脚本
+│   ├── restart.sh       # 重启服务
 │   ├── code/            # 完整代码仓库
 │   └── logs/            # 日志目录
 ├── mall/                # 商城系统

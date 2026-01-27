@@ -2,6 +2,7 @@
 /**
  * SmartBI CombinedChart - Bar + Line Combination Chart
  * Features: Dual Y-axis, multiple series types, mixed visualization
+ * Enhanced: markArea (background regions), markPoint (data annotations), grouped bar mode
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
 import * as echarts from 'echarts';
@@ -20,6 +21,38 @@ export interface CombinedSeries {
   yAxisIndex?: 0 | 1;
   color?: string;
   stack?: string;
+  /** Apply markArea to this series (default: first bar series) */
+  hasMarkArea?: boolean;
+  /** Apply markPoints to this series (default: first series) */
+  hasMarkPoint?: boolean;
+}
+
+/** Background region for markArea */
+export interface MarkAreaItem {
+  /** Start x-axis value */
+  startX: string;
+  /** End x-axis value */
+  endX: string;
+  /** Background color (default: rgba(144,238,144,0.1)) */
+  color?: string;
+  /** Optional label for the area */
+  label?: string;
+}
+
+/** Data annotation point for markPoint */
+export interface MarkPointItem {
+  /** Display value (e.g., '+12%', 'Max') */
+  value: string;
+  /** Coordinate [xAxisValue, yAxisValue] */
+  coord: [string, number];
+  /** Symbol type (default: 'pin') */
+  symbol?: 'circle' | 'rect' | 'roundRect' | 'triangle' | 'diamond' | 'pin' | 'arrow' | 'none';
+  /** Symbol size (default: 50) */
+  symbolSize?: number;
+  /** Custom color */
+  color?: string;
+  /** Label position (default: 'top') */
+  labelPosition?: 'top' | 'bottom' | 'left' | 'right' | 'inside';
 }
 
 interface Props {
@@ -34,6 +67,12 @@ interface Props {
   yAxisRightUnit?: string;
   showDataZoom?: boolean;
   barWidth?: string;
+  /** Background regions for highlighting (e.g., quarters) */
+  markAreas?: MarkAreaItem[];
+  /** Data annotation points (e.g., YoY changes) */
+  markPoints?: MarkPointItem[];
+  /** Use grouped bar mode (barGap: 0) for target vs actual comparison */
+  grouped?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -45,7 +84,10 @@ const props = withDefaults(defineProps<Props>(), {
   yAxisLeftUnit: '',
   yAxisRightUnit: '',
   showDataZoom: false,
-  barWidth: '40%'
+  barWidth: '40%',
+  markAreas: () => [],
+  markPoints: () => [],
+  grouped: false
 });
 
 const emit = defineEmits<{
@@ -66,13 +108,78 @@ const hasDualYAxis = computed(() => {
   return props.series.some(s => s.yAxisIndex === 1);
 });
 
+// Build markArea data from props
+const buildMarkAreaData = () => {
+  if (!props.markAreas || props.markAreas.length === 0) return undefined;
+
+  return {
+    silent: true,
+    data: props.markAreas.map(area => [
+      {
+        xAxis: area.startX,
+        itemStyle: { color: area.color || 'rgba(144,238,144,0.1)' },
+        ...(area.label ? { label: { show: true, position: 'insideTop', formatter: area.label } } : {})
+      },
+      { xAxis: area.endX }
+    ])
+  };
+};
+
+// Build markPoint data from props
+const buildMarkPointData = () => {
+  if (!props.markPoints || props.markPoints.length === 0) return undefined;
+
+  return {
+    symbol: 'pin',
+    symbolSize: 50,
+    label: {
+      show: true,
+      position: 'top',
+      formatter: (params: { data: { value: string } }) => params.data.value,
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: '#fff'
+    },
+    data: props.markPoints.map(point => ({
+      value: point.value,
+      coord: point.coord,
+      symbol: point.symbol || 'pin',
+      symbolSize: point.symbolSize || 50,
+      itemStyle: point.color ? { color: point.color } : undefined,
+      label: {
+        position: point.labelPosition || 'top'
+      }
+    }))
+  };
+};
+
 const chartOptions = computed<EChartsOption>(() => {
   const categories = props.data.map(d => d.category);
+  const markAreaConfig = buildMarkAreaData();
+  const markPointConfig = buildMarkPointData();
+
+  // Find first bar series index for default markArea assignment
+  const firstBarSeriesIndex = props.series.findIndex(s => s.type === 'bar');
+  // Find series with explicit markArea/markPoint flags
+  const markAreaSeriesIndex = props.series.findIndex(s => s.hasMarkArea);
+  const markPointSeriesIndex = props.series.findIndex(s => s.hasMarkPoint);
 
   // Build series
   const seriesData = props.series.map((s, index) => {
     const values = props.data.map(d => d[s.field] as number);
     const color = s.color || colorPalette[index % colorPalette.length];
+
+    // Determine if this series should have markArea
+    const shouldHaveMarkArea = markAreaConfig && (
+      s.hasMarkArea ||
+      (markAreaSeriesIndex === -1 && index === (firstBarSeriesIndex >= 0 ? firstBarSeriesIndex : 0))
+    );
+
+    // Determine if this series should have markPoint
+    const shouldHaveMarkPoint = markPointConfig && (
+      s.hasMarkPoint ||
+      (markPointSeriesIndex === -1 && index === 0)
+    );
 
     const baseSeries: echarts.BarSeriesOption | echarts.LineSeriesOption = {
       name: s.name,
@@ -87,7 +194,8 @@ const chartOptions = computed<EChartsOption>(() => {
     if (s.type === 'bar') {
       return {
         ...baseSeries,
-        barWidth: props.barWidth,
+        barWidth: props.grouped ? undefined : props.barWidth,
+        barGap: props.grouped ? '0%' : undefined,
         stack: s.stack,
         itemStyle: {
           color: color,
@@ -98,7 +206,9 @@ const chartOptions = computed<EChartsOption>(() => {
             shadowBlur: 10,
             shadowColor: 'rgba(0, 0, 0, 0.2)'
           }
-        }
+        },
+        ...(shouldHaveMarkArea ? { markArea: markAreaConfig } : {}),
+        ...(shouldHaveMarkPoint ? { markPoint: markPointConfig } : {})
       } as echarts.BarSeriesOption;
     }
 
@@ -112,7 +222,9 @@ const chartOptions = computed<EChartsOption>(() => {
       },
       emphasis: {
         focus: 'series'
-      }
+      },
+      ...(shouldHaveMarkArea ? { markArea: markAreaConfig } : {}),
+      ...(shouldHaveMarkPoint ? { markPoint: markPointConfig } : {})
     } as echarts.LineSeriesOption;
   });
 

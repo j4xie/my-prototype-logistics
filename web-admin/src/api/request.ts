@@ -37,6 +37,11 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
 
+    // FormData 时删除 Content-Type，让浏览器自动设置 multipart/form-data
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
     return config;
   },
   (error: AxiosError) => {
@@ -174,8 +179,8 @@ export const get = <T>(url: string, config?: object): Promise<ApiResponse<T>> =>
   return request.get(url, config);
 };
 
-export const post = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {
-  return request.post(url, data);
+export const post = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> => {
+  return request.post(url, data, config);
 };
 
 export const put = <T>(url: string, data?: object): Promise<ApiResponse<T>> => {

@@ -33,6 +33,7 @@ type IsapiStackParamList = {
   IsapiDeviceCreate: undefined;
   IsapiDeviceDiscovery: undefined;
   DeviceSetupWizard: undefined;
+  UnifiedDeviceDiscovery: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<IsapiStackParamList, 'IsapiDeviceList'>;
@@ -301,19 +302,10 @@ export function IsapiDeviceListScreen() {
         }
       />
 
-      {/* 配置向导 FAB */}
-      <TouchableOpacity
-        style={styles.fabSecondary}
-        onPress={() => navigation.navigate('DeviceSetupWizard')}
-        activeOpacity={0.8}
-      >
-        <Icon source="wizard-hat" size={22} color="#ffffff" />
-      </TouchableOpacity>
-
-      {/* 添加设备 FAB */}
+      {/* 添加设备 FAB - 跳转到统一设备发现页面 */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => navigation.navigate('IsapiDeviceCreate')}
+        onPress={() => navigation.navigate('UnifiedDeviceDiscovery')}
         activeOpacity={0.8}
       >
         <Icon source="plus" size={28} color="#ffffff" />

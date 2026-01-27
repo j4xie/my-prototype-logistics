@@ -43,6 +43,66 @@ public class ArenaRLConfig {
      */
     private boolean enabled = true;
 
+    // ==================== v13.0: 混淆对配置 ====================
+
+    /**
+     * 混淆意图对及其最小置信度差距要求
+     * 当检测到这些意图对时，需要更严格的置信度差距才能确定意图
+     */
+    private static final java.util.Map<java.util.Set<String>, Double> CONFUSING_PAIRS_MIN_GAP;
+    static {
+        CONFUSING_PAIRS_MIN_GAP = new java.util.HashMap<>();
+        CONFUSING_PAIRS_MIN_GAP.put(java.util.Set.of("PROCESSING_BATCH_LIST", "PROCESSING_BATCH_TIMELINE"), 0.20);
+        CONFUSING_PAIRS_MIN_GAP.put(java.util.Set.of("MATERIAL_EXPIRING_ALERT", "MATERIAL_EXPIRED_QUERY"), 0.25);
+        CONFUSING_PAIRS_MIN_GAP.put(java.util.Set.of("QUALITY_STATS", "REPORT_QUALITY"), 0.15);
+        CONFUSING_PAIRS_MIN_GAP.put(java.util.Set.of("PRODUCTION_STATUS_QUERY", "EQUIPMENT_STATUS_QUERY"), 0.18);
+        CONFUSING_PAIRS_MIN_GAP.put(java.util.Set.of("SUPPLIER_LIST", "SUPPLIER_QUERY"), 0.15);
+    }
+
+    /**
+     * 检查是否为混淆意图对
+     *
+     * @param intent1 意图1
+     * @param intent2 意图2
+     * @return true 如果是混淆对
+     */
+    public boolean isConfusingPair(String intent1, String intent2) {
+        if (intent1 == null || intent2 == null) return false;
+        java.util.Set<String> pair = java.util.Set.of(intent1, intent2);
+        return CONFUSING_PAIRS_MIN_GAP.containsKey(pair);
+    }
+
+    /**
+     * 获取混淆对的最小置信度差距要求
+     *
+     * @param intent1 意图1
+     * @param intent2 意图2
+     * @return 最小差距要求，如果不是混淆对返回默认阈值
+     */
+    public double getConfusingPairMinGap(String intent1, String intent2) {
+        if (intent1 == null || intent2 == null) {
+            return intentDisambiguation.getAmbiguityThreshold();
+        }
+        java.util.Set<String> pair = java.util.Set.of(intent1, intent2);
+        return CONFUSING_PAIRS_MIN_GAP.getOrDefault(pair, intentDisambiguation.getAmbiguityThreshold());
+    }
+
+    /**
+     * 判断混淆对是否需要强制 ArenaRL 裁决
+     *
+     * @param intent1 意图1
+     * @param intent2 意图2
+     * @param confidenceGap 当前置信度差距
+     * @return true 如果需要强制 ArenaRL
+     */
+    public boolean shouldForceArenaRL(String intent1, String intent2, double confidenceGap) {
+        if (!isConfusingPair(intent1, intent2)) {
+            return false;
+        }
+        double minGap = getConfusingPairMinGap(intent1, intent2);
+        return confidenceGap < minGap;
+    }
+
     /**
      * 意图识别锦标赛配置
      */

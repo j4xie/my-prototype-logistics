@@ -64,6 +64,186 @@ class LLMMapper:
         self.settings = get_settings()
         self.client = httpx.AsyncClient(timeout=60.0)
 
+    async def analyze_sheets(
+        self,
+        sheets_info: List[dict]
+    ) -> Dict[str, Any]:
+        """
+        Use LLM to analyze which sheets contain valid analyzable data
+
+        Args:
+            sheets_info: List of sheet information with name, rowCount, columnCount, previewHeaders
+
+        Returns:
+            Analysis results with recommended sheets and data types
+        """
+        if not self.settings.llm_api_key:
+            return self._rule_based_sheet_analysis(sheets_info)
+
+        prompt = self._build_sheet_analysis_prompt(sheets_info)
+
+        try:
+            response = await self._call_llm(prompt)
+            return self._parse_sheet_analysis_response(response, sheets_info)
+        except Exception as e:
+            logger.error(f"LLM sheet analysis failed, using rule-based: {e}")
+            return self._rule_based_sheet_analysis(sheets_info)
+
+    def _build_sheet_analysis_prompt(self, sheets_info: List[dict]) -> str:
+        """Build prompt for sheet analysis"""
+        sheets_desc = "\n".join([
+            f"Sheet {s.get('index')}: {s.get('name')}\n"
+            f"  - 行数: {s.get('rowCount')}, 列数: {s.get('columnCount')}\n"
+            f"  - 表头预览: {s.get('previewHeaders', [])[:5]}"
+            for s in sheets_info
+        ])
+
+        prompt = f"""请分析以下Excel工作表，理解每个Sheet的作用和数据内容。
+
+重要原则：
+1. **所有有数据的表都应该分析** - 只要有数据，就值得分析
+2. **文字说明表同样重要** - 如果某个Sheet主要是文字说明（如"索引"、"说明"等），它通常是帮助理解其他数据表的重要上下文，应该提取其中的业务规则和计算说明
+3. **数据表需要识别类型** - 对于包含数值数据的表，识别其数据类型（财务/销售/部门等）
+
+工作表列表：
+{sheets_desc}
+
+请分析每个Sheet的用途：
+1. **说明类** (documentation): 包含业务规则、计算方法、数据来源说明的文字表格 - 虽然不直接分析，但其内容对理解其他表格至关重要
+2. **汇总类** (summary): 包含汇总数据、KPI、关键指标的表格 - 需要分析
+3. **明细类** (detail): 包含详细业务数据的表格 - 需要分析
+4. **配置类** (config): 包含配置信息、映射关系的表格 - 用于数据转换
+
+请返回JSON格式：
+{{
+    "sheets": [
+        {{
+            "index": 0,
+            "name": "Sheet名称",
+            "category": "documentation/summary/detail/config",
+            "dataType": "sales/finance/department/inventory/rebate/unknown",
+            "analyzable": true,
+            "hasNumericData": true/false,
+            "isDocumentation": true/false,
+            "priority": 1-5,
+            "reason": "该Sheet的作用说明",
+            "businessContext": "从该Sheet可以获得的业务上下文（如果是说明类）"
+        }}
+    ],
+    "documentationSheets": [0],
+    "dataSheets": [1, 2, 3],
+    "summary": "整个Excel的结构说明和各Sheet关系"
+}}"""
+        return prompt
+
+    def _parse_sheet_analysis_response(
+        self,
+        response: str,
+        sheets_info: List[dict]
+    ) -> Dict[str, Any]:
+        """Parse LLM response for sheet analysis"""
+        try:
+            # Extract JSON from response
+            json_start = response.find('{')
+            json_end = response.rfind('}') + 1
+            if json_start >= 0 and json_end > json_start:
+                json_str = response[json_start:json_end]
+                result = json.loads(json_str)
+                result["success"] = True
+                result["method"] = "llm"
+                return result
+        except Exception as e:
+            logger.error(f"Failed to parse LLM sheet analysis response: {e}")
+
+        return self._rule_based_sheet_analysis(sheets_info)
+
+    def _rule_based_sheet_analysis(self, sheets_info: List[dict]) -> Dict[str, Any]:
+        """Rule-based sheet analysis fallback - all sheets with data are analyzable"""
+        results = []
+        data_sheets = []
+        documentation_sheets = []
+
+        # Keywords for classification
+        doc_keywords = ["索引", "目录", "说明", "index", "toc", "readme", "guide"]
+        summary_keywords = ["汇总", "简表", "总表", "概览", "summary", "overview"]
+        finance_keywords = ["利润", "成本", "费用", "预算", "财务", "应收", "应付", "税"]
+        sales_keywords = ["销售", "订单", "客户", "产品", "收入", "revenue", "sales"]
+        department_keywords = ["部门", "分部", "区域", "省区", "团队", "中心"]
+        rebate_keywords = ["返利", "返点", "折扣", "rebate", "discount"]
+        detail_keywords = ["明细", "详细", "detail", "list"]
+
+        for sheet in sheets_info:
+            name = sheet.get("name", "")
+            name_lower = name.lower()
+            row_count = sheet.get("rowCount", 0)
+            col_count = sheet.get("columnCount", 0)
+            headers = sheet.get("previewHeaders", [])
+            all_text = name + " " + " ".join(str(h) for h in headers)
+
+            # All sheets with data are analyzable
+            has_data = row_count > 0 and col_count > 0
+            has_numeric_data = row_count > 5 and col_count >= 3  # Likely has numeric data
+            is_documentation = any(kw in name_lower for kw in doc_keywords) or (col_count <= 3 and row_count < 50)
+
+            # Determine category
+            if is_documentation and not has_numeric_data:
+                category = "documentation"
+                priority = 3
+                business_context = "包含业务规则说明，帮助理解其他数据表"
+            elif any(kw in name_lower for kw in summary_keywords):
+                category = "summary"
+                priority = 2
+                business_context = "汇总数据表"
+            elif any(kw in name_lower for kw in detail_keywords) or has_numeric_data:
+                category = "detail"
+                priority = 1
+                business_context = "详细业务数据"
+            else:
+                category = "detail" if has_data else "other"
+                priority = 2 if has_data else 5
+                business_context = "业务数据表" if has_data else "空表或无效数据"
+
+            # Detect data type
+            if any(kw in all_text for kw in rebate_keywords):
+                data_type = "rebate"
+            elif any(kw in all_text for kw in finance_keywords):
+                data_type = "finance"
+            elif any(kw in all_text for kw in sales_keywords):
+                data_type = "sales"
+            elif any(kw in all_text for kw in department_keywords):
+                data_type = "department"
+            else:
+                data_type = "unknown"
+
+            result = {
+                "index": sheet.get("index"),
+                "name": name,
+                "category": category,
+                "dataType": data_type,
+                "analyzable": has_data,  # All sheets with data are analyzable
+                "hasNumericData": has_numeric_data,
+                "isDocumentation": is_documentation,
+                "priority": priority,
+                "reason": f"行数={row_count}, 列数={col_count}",
+                "businessContext": business_context
+            }
+            results.append(result)
+
+            if is_documentation:
+                documentation_sheets.append(sheet.get("index"))
+            if has_numeric_data:
+                data_sheets.append(sheet.get("index"))
+
+        return {
+            "success": True,
+            "sheets": results,
+            "documentationSheets": documentation_sheets,
+            "dataSheets": data_sheets,
+            "recommended": data_sheets,  # All data sheets are recommended
+            "summary": f"共{len(sheets_info)}个Sheet: {len(documentation_sheets)}个说明表, {len(data_sheets)}个数据表",
+            "method": "rule_based"
+        }
+
     async def map_fields(
         self,
         detected_fields: List[dict],
@@ -161,6 +341,36 @@ class LLMMapper:
 
         standard_fields_desc = json.dumps(self.STANDARD_FIELDS, ensure_ascii=False, indent=2)
 
+        # Detect if this is wide-format data with time columns
+        field_names = [f['fieldName'] for f in detected_fields]
+        is_wide_format = self._detect_wide_format(field_names)
+
+        wide_format_instruction = ""
+        if is_wide_format:
+            wide_format_instruction = """
+【重要】这是宽格式数据（多个时间列），请遵循以下规则：
+
+1. **保留时间维度**: 当列名包含月份信息（如"1月_预算收入"、"2月_实际金额"）时，必须在targetField中保留时间信息
+   - 格式: {metric_type}_{YYYYMM}
+   - 例如: "1月_预算收入" → "budget_202501"
+   - 例如: "2月_实际收入" → "actual_202502"
+   - 例如: "12月_利润" → "profit_202512"
+
+2. **识别年份**:
+   - 如果列名中有年份（如"2025年"、"25年"），使用该年份
+   - 如果没有明确年份，默认使用2025年
+
+3. **metric_type映射**:
+   - 预算、计划、目标 → budget
+   - 实际、完成、执行 → actual
+   - 同期、去年、24年 → yoy_prior
+   - 利润、净利 → profit
+   - 收入、营收 → revenue
+   - 成本 → cost
+
+4. **年度汇总列**: 如果列名是"年度汇总"、"全年"、"累计"，映射为 annual_total_2025
+"""
+
         prompt = f"""请分析以下数据字段，并将它们映射到标准业务字段。
 
 检测到的字段：
@@ -170,13 +380,14 @@ class LLMMapper:
 {standard_fields_desc}
 
 {f'业务背景：{context}' if context else ''}
+{wide_format_instruction}
 
 请返回JSON格式的映射结果：
 {{
     "mappings": [
         {{
             "sourceField": "原始字段名",
-            "targetField": "标准字段id",
+            "targetField": "标准字段id（宽格式数据请带时间后缀如budget_202501）",
             "targetCategory": "time_dimensions/category_dimensions/measures",
             "confidence": 0.9,
             "reason": "映射原因"
@@ -185,6 +396,33 @@ class LLMMapper:
     "unmapped": ["无法映射的字段列表"]
 }}"""
         return prompt
+
+    def _detect_wide_format(self, field_names: List[str]) -> bool:
+        """
+        Detect if the data is wide-format (multiple time-period columns).
+
+        Wide-format indicators:
+        - Multiple columns containing month patterns (1月, 2月, ..., 12月)
+        - Multiple columns containing value_YYYYMM patterns
+        - Multiple columns containing year-month patterns
+        """
+        import re
+
+        # Pattern 1: Chinese month format (1月, 2月, ... 12月)
+        chinese_month_pattern = re.compile(r'[_]?(1[0-2]|[1-9])月[_]?')
+
+        # Pattern 2: English/numeric month format (value_202501, amount_202502)
+        numeric_month_pattern = re.compile(r'(value|amount|profit|budget|actual|revenue|cost)_\d{6}')
+
+        # Pattern 3: Year-month pattern (2025-01, 2025/01)
+        year_month_pattern = re.compile(r'\d{4}[-/]\d{2}')
+
+        chinese_month_count = sum(1 for name in field_names if chinese_month_pattern.search(name))
+        numeric_month_count = sum(1 for name in field_names if numeric_month_pattern.search(name))
+        year_month_count = sum(1 for name in field_names if year_month_pattern.search(name))
+
+        # If 3+ columns match any pattern, it's wide-format
+        return chinese_month_count >= 3 or numeric_month_count >= 3 or year_month_count >= 3
 
     def _build_chart_prompt(self, detected_fields: List[dict], analysis_goal: Optional[str]) -> str:
         """Build prompt for chart recommendation"""

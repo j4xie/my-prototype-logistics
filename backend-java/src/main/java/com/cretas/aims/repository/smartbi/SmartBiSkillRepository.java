@@ -47,13 +47,13 @@ public interface SmartBiSkillRepository extends JpaRepository<SmartBiSkill, Long
 
     /**
      * Find skills whose triggers contain the given keyword (JSON array contains)
-     * Uses MySQL JSON_CONTAINS function
+     * Uses PostgreSQL JSONB containment operator
      *
      * @param keyword the trigger keyword to search for
      * @return list of matching skills
      */
     @Query(value = "SELECT * FROM smart_bi_skill WHERE enabled = true " +
-            "AND JSON_SEARCH(triggers, 'one', :keyword) IS NOT NULL " +
+            "AND triggers::jsonb @> to_jsonb(:keyword::text) " +
             "AND deleted_at IS NULL " +
             "ORDER BY priority ASC", nativeQuery = true)
     List<SmartBiSkill> findByTriggersContaining(@Param("keyword") String keyword);

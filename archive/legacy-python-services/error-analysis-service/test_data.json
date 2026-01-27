@@ -1,0 +1,65 @@
+{
+  "records": [
+    {
+      "id": "test-1",
+      "userInput": "查询今日订单",
+      "matchedIntentCode": "QUERY_ORDER",
+      "matchedIntentCategory": "查询类",
+      "confidenceScore": 0.85,
+      "matchMethod": "KEYWORD",
+      "executionStatus": "EXECUTED",
+      "isStrongSignal": true,
+      "llmCalled": false
+    },
+    {
+      "id": "test-2",
+      "userInput": "查看库存",
+      "matchedIntentCode": "QUERY_INVENTORY",
+      "matchedIntentCategory": "查询类",
+      "confidenceScore": 0.72,
+      "matchMethod": "SEMANTIC",
+      "executionStatus": "EXECUTED",
+      "isStrongSignal": false,
+      "llmCalled": true
+    },
+    {
+      "id": "test-3",
+      "userInput": "删除产品",
+      "matchedIntentCode": null,
+      "matchedIntentCategory": null,
+      "confidenceScore": 0.3,
+      "matchMethod": "NONE",
+      "executionStatus": "FAILED",
+      "errorAttribution": "RULE_MISS",
+      "isStrongSignal": false,
+      "llmCalled": false
+    },
+    {
+      "id": "test-4",
+      "userInput": "添加新订单",
+      "matchedIntentCode": "CREATE_ORDER",
+      "matchedIntentCategory": "操作类",
+      "confidenceScore": 0.92,
+      "matchMethod": "EXACT",
+      "executionStatus": "EXECUTED",
+      "isStrongSignal": true,
+      "llmCalled": false,
+      "requiresConfirmation": true,
+      "userConfirmed": true
+    },
+    {
+      "id": "test-5",
+      "userInput": "取消订单",
+      "matchedIntentCode": "CANCEL_ORDER",
+      "matchedIntentCategory": "操作类",
+      "confidenceScore": 0.65,
+      "matchMethod": "KEYWORD",
+      "executionStatus": "CANCELLED",
+      "isStrongSignal": false,
+      "llmCalled": false,
+      "requiresConfirmation": true,
+      "userConfirmed": false,
+      "errorAttribution": "USER_CANCEL"
+    }
+  ]
+}

@@ -495,14 +495,16 @@ function handleResize() {
   pieChart?.resize();
 }
 
-function formatMoney(value: number): string {
+function formatMoney(value: number | null | undefined): string {
+  if (value == null) return '0';
   if (value >= 10000) {
     return (value / 10000).toFixed(1) + '万';
   }
   return value.toLocaleString();
 }
 
-function formatPercent(value: number): string {
+function formatPercent(value: number | null | undefined): string {
+  if (value == null) return '-';
   return (value >= 0 ? '+' : '') + value.toFixed(1) + '%';
 }
 
@@ -603,8 +605,8 @@ onUnmounted(() => {
             class="kpi-trend"
             :class="card.trend === 'up' ? 'growth-up' : card.trend === 'down' ? 'growth-down' : ''"
           >
-            <span v-if="card.changeRate !== null && card.changeRate !== undefined">
-              {{ card.changeRate >= 0 ? '+' : '' }}{{ card.changeRate.toFixed(1) }}%
+            <span v-if="card.changeRate != null">
+              {{ card.changeRate >= 0 ? '+' : '' }}{{ (card.changeRate ?? 0).toFixed(1) }}%
             </span>
             <span v-if="card.compareText" class="compare-text">{{ card.compareText }}</span>
           </div>

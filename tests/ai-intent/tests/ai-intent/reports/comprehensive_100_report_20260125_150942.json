@@ -1,0 +1,361 @@
+{
+  "timestamp": "20260125_150942",
+  "summary": {
+    "total": 100,
+    "passed": 74,
+    "rate": 74.0,
+    "avg_latency": 86.33070468902588
+  },
+  "failed_cases": [
+    {
+      "id": 26,
+      "input": "帮我查一下今天的销售情况，顺便看看库存够不够",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "REPORT_INVENTORY",
+      "method": "SEMANTIC",
+      "confidence": 0.9999999999999998,
+      "category": "multi_intent",
+      "description": "销售+库存双意图",
+      "error": null
+    },
+    {
+      "id": 27,
+      "input": "设备状态和今天的生产进度一起给我看看",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "method": "SEMANTIC",
+      "confidence": 0.8370151455292584,
+      "category": "multi_intent",
+      "description": "设备+生产双意图",
+      "error": null
+    },
+    {
+      "id": 28,
+      "input": "考勤异常的人和他们负责的设备故障有没有关联",
+      "expected": "ATTENDANCE_ANOMALY",
+      "actual": "REPORT_ANOMALY",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "multi_intent",
+      "description": "考勤+设备关联查询（单意图）",
+      "error": null
+    },
+    {
+      "id": 30,
+      "input": "客户订单和发货进度都显示给我看看",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.842941310500493,
+      "category": "multi_intent",
+      "description": "客户+发货双意图",
+      "error": null
+    },
+    {
+      "id": 31,
+      "input": "这个月的财务报表和销售趋势图放到一起分析",
+      "expected": "REPORT_FINANCE",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "SEMANTIC",
+      "confidence": 0.9302990230304787,
+      "category": "multi_intent",
+      "description": "财务+趋势双意图",
+      "error": null
+    },
+    {
+      "id": 32,
+      "input": "低库存预警和临期原料一起处理掉",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "method": "SEMANTIC",
+      "confidence": 0.8751047414289891,
+      "category": "multi_intent",
+      "description": "低库存+临期双意图",
+      "error": null
+    },
+    {
+      "id": 33,
+      "input": "把告警列表清理一下，顺便看看设备维护计划",
+      "expected": "ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.901899020571032,
+      "category": "multi_intent",
+      "description": "告警+维护双意图",
+      "error": null
+    },
+    {
+      "id": 36,
+      "input": "各部门考勤统计和各条产线效率对比",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "multi_intent",
+      "description": "部门考勤+效率双意图",
+      "error": null
+    },
+    {
+      "id": 38,
+      "input": "生产批次状态和相关设备运行情况汇总",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "SEMANTIC",
+      "confidence": 0.9014796110541343,
+      "category": "multi_intent",
+      "description": "生产+设备双意图",
+      "error": null
+    },
+    {
+      "id": 39,
+      "input": "KPI指标和异常事件的关联分析报告",
+      "expected": "REPORT_KPI",
+      "actual": "ALERT_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.7372070820824926,
+      "category": "multi_intent",
+      "description": "KPI+异常关联报告（单意图）",
+      "error": null
+    },
+    {
+      "id": 40,
+      "input": "发货统计和客户满意度反馈一起给我",
+      "expected": "SHIPMENT_STATS",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "SEMANTIC",
+      "confidence": 0.9698416072020414,
+      "category": "multi_intent",
+      "description": "发货+客户双意图",
+      "error": null
+    },
+    {
+      "id": 42,
+      "input": "设备的问题处理得怎么样了",
+      "expected": "EQUIPMENT_STATUS_UPDATE",
+      "actual": "ATTENDANCE_STATUS",
+      "method": "SEMANTIC",
+      "confidence": 0.8146126961135551,
+      "category": "ambiguous",
+      "description": "设备状态 vs 维护歧义",
+      "error": null
+    },
+    {
+      "id": 43,
+      "input": "质量这块有什么需要注意的",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.8128029404404091,
+      "category": "ambiguous",
+      "description": "质检 vs 质量报告歧义",
+      "error": null
+    },
+    {
+      "id": 56,
+      "input": "我想查询一下相关数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "ALERT_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.7982633391068337,
+      "category": "clarification",
+      "description": "模糊查询：系统默认返回仪表盘",
+      "error": null
+    },
+    {
+      "id": 58,
+      "input": "看看情况",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "method": "SEMANTIC",
+      "confidence": 0.8172341958045372,
+      "category": "clarification",
+      "description": "模糊查询：系统默认返回仪表盘",
+      "error": null
+    },
+    {
+      "id": 63,
+      "input": "导出",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "clarification",
+      "description": "模糊导出：系统默认返回仪表盘",
+      "error": null
+    },
+    {
+      "id": 64,
+      "input": "更新一下状态",
+      "expected": "SHIPMENT_STATUS_UPDATE",
+      "actual": "EQUIPMENT_STATUS_UPDATE",
+      "method": "SEMANTIC",
+      "confidence": 0.8174341233443194,
+      "category": "clarification",
+      "description": "模糊更新：系统猜测发货状态更新",
+      "error": null
+    },
+    {
+      "id": 68,
+      "input": "那个记录",
+      "expected": "PRODUCT_UPDATE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "SEMANTIC",
+      "confidence": 0.7699414597015799,
+      "category": "clarification",
+      "description": "模糊记录：系统猜测产品更新",
+      "error": null
+    },
+    {
+      "id": 72,
+      "input": "把刚才那批原料登记入库",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_UPDATE",
+      "method": "SEMANTIC",
+      "confidence": 0.7218207702095919,
+      "category": "write_operation",
+      "description": "原料入库",
+      "error": null
+    },
+    {
+      "id": 77,
+      "input": "启动3号生产线的搅拌设备",
+      "expected": "EQUIPMENT_START",
+      "actual": "PROCESSING_BATCH_START",
+      "method": "SEMANTIC",
+      "confidence": 0.8016055842175573,
+      "category": "write_operation",
+      "description": "启动设备",
+      "error": null
+    },
+    {
+      "id": 92,
+      "input": "麻烦帮我查一下最近有没有什么紧急的告警需要处理以及设备维护保养是否按计划执行的情况",
+      "expected": "ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "SEMANTIC",
+      "confidence": 0.8892471999347312,
+      "category": "long_complex",
+      "description": "长句告警+维护",
+      "error": null
+    },
+    {
+      "id": 93,
+      "input": "为了准备下周的客户审核，需要把相关的质量检验记录和产品溯源文档都调出来备查",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CRITICAL_ITEMS",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "long_complex",
+      "description": "长句质检溯源",
+      "error": null
+    },
+    {
+      "id": 95,
+      "input": "财务部门需要统计一下本月截止到今天为止的所有发货订单金额以及相应的成本核算数据",
+      "expected": "SHIPMENT_STATS",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "SEMANTIC",
+      "confidence": 0.9698416072020414,
+      "category": "long_complex",
+      "description": "长句发货财务",
+      "error": null
+    },
+    {
+      "id": 96,
+      "input": "人事部要求提供上个月各部门的考勤统计明细包括迟到早退和加班情况的完整记录",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "PRODUCT_UPDATE",
+      "method": "EXACT",
+      "confidence": 1.0,
+      "category": "long_complex",
+      "description": "长句月度考勤",
+      "error": null
+    },
+    {
+      "id": 98,
+      "input": "仓库主管反映最近入库的几批原料可能存在质量问题需要调取相关的检验报告核实一下",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "TRACE_FULL",
+      "method": "SEMANTIC",
+      "confidence": 0.7438108940672098,
+      "category": "long_complex",
+      "description": "长句原料质检",
+      "error": null
+    },
+    {
+      "id": 100,
+      "input": "安全管理部门需要统计分析近期所有设备告警事件的原因分类以及处理响应时间情况",
+      "expected": "ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_STATS",
+      "method": "SEMANTIC",
+      "confidence": 0.9004678695324625,
+      "category": "long_complex",
+      "description": "长句告警统计",
+      "error": null
+    }
+  ],
+  "by_category": {
+    "simple": {
+      "passed": 10,
+      "failed": 0,
+      "total": 10
+    },
+    "complex_semantic": {
+      "passed": 15,
+      "failed": 0,
+      "total": 15
+    },
+    "multi_intent": {
+      "passed": 4,
+      "failed": 11,
+      "total": 15
+    },
+    "ambiguous": {
+      "passed": 13,
+      "failed": 2,
+      "total": 15
+    },
+    "clarification": {
+      "passed": 10,
+      "failed": 5,
+      "total": 15
+    },
+    "write_operation": {
+      "passed": 8,
+      "failed": 2,
+      "total": 10
+    },
+    "time_based": {
+      "passed": 10,
+      "failed": 0,
+      "total": 10
+    },
+    "long_complex": {
+      "passed": 4,
+      "failed": 6,
+      "total": 10
+    }
+  },
+  "by_difficulty": {
+    "easy": {
+      "passed": 17,
+      "failed": 0,
+      "total": 17
+    },
+    "medium": {
+      "passed": 38,
+      "failed": 8,
+      "total": 46
+    },
+    "hard": {
+      "passed": 19,
+      "failed": 18,
+      "total": 37
+    }
+  },
+  "methods": {
+    "PHRASE_MATCH": 56,
+    "SEMANTIC": 39,
+    "EXACT": 4
+  }
+}

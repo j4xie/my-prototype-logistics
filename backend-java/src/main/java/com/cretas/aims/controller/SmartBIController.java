@@ -9,13 +9,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.cretas.aims.entity.smartbi.SmartBiDatasource;
 import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
 import com.cretas.aims.entity.smartbi.SmartBiSchemaHistory;
+import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.service.smartbi.*;
 import com.cretas.aims.service.smartbi.chart.AdaptiveChartGenerator;
+import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
+import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
+import com.cretas.aims.repository.smartbi.postgres.SmartBiPgExcelUploadRepository;
 import com.cretas.aims.util.DateRangeUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -81,7 +89,15 @@ public class SmartBIController {
     // Adaptive chart generation service
     private final AdaptiveChartGenerator adaptiveChartGenerator;
 
+    // Python SmartBI client for direct Python service calls
+    private final PythonSmartBIClient pythonClient;
+    private final PythonSmartBIConfig pythonConfig;
+
     private final ObjectMapper objectMapper;
+
+    // PostgreSQL-based services for dynamic data analysis (optional - requires smartbi.postgres.enabled=true)
+    private final DynamicAnalysisService dynamicAnalysisService;
+    private final SmartBiPgExcelUploadRepository pgUploadRepository;
 
     @Autowired
     public SmartBIController(
@@ -100,7 +116,11 @@ public class SmartBIController {
             @Autowired(required = false) SmartBIUploadFlowService uploadFlowService,
             @Autowired(required = false) AdaptiveChartGenerator adaptiveChartGenerator,
             @Autowired(required = false) SmartBIService smartBIService,
-            ObjectMapper objectMapper) {
+            PythonSmartBIClient pythonClient,
+            PythonSmartBIConfig pythonConfig,
+            ObjectMapper objectMapper,
+            @Autowired(required = false) DynamicAnalysisService dynamicAnalysisService,
+            @Autowired(required = false) SmartBiPgExcelUploadRepository pgUploadRepository) {
         this.salesAnalysisService = salesAnalysisService;
         this.departmentAnalysisService = departmentAnalysisService;
         this.regionAnalysisService = regionAnalysisService;
@@ -116,13 +136,17 @@ public class SmartBIController {
         this.uploadFlowService = uploadFlowService;
         this.adaptiveChartGenerator = adaptiveChartGenerator;
         this.smartBIService = smartBIService;
+        this.pythonClient = pythonClient;
+        this.pythonConfig = pythonConfig;
         this.objectMapper = objectMapper;
+        this.dynamicAnalysisService = dynamicAnalysisService;
+        this.pgUploadRepository = pgUploadRepository;
     }
 
     // ==================== Excel 上传 ====================
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "上传 Excel 文件", description = "上传并解析 Excel 文件，返回解析结果和字段映射")
+    @Operation(summary = "上传 Excel 文件", description = "上传并解析 Excel 文件，返回解析结果和字段映射（使用 Python SmartBI 服务）")
     public ResponseEntity<ApiResponse<ExcelParseResponse>> uploadExcel(
             @Parameter(description = "工厂ID") @PathVariable String factoryId,
             @Parameter(description = "Excel 文件") @RequestParam("file") MultipartFile file,
@@ -136,21 +160,22 @@ public class SmartBIController {
         log.info("上传 Excel 文件: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, transpose={}",
                 factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, transpose);
 
+        // 检查 Python SmartBI 服务是否可用
+        if (!pythonConfig.isEnabled()) {
+            return ResponseEntity.ok(ApiResponse.error("Python SmartBI 服务未启用"));
+        }
+        if (!pythonClient.isAvailable()) {
+            return ResponseEntity.ok(ApiResponse.error("Python SmartBI 服务不可用，请检查服务是否在 " + pythonConfig.getUrl() + " 运行"));
+        }
+
         try {
-            ExcelParseRequest request = ExcelParseRequest.builder()
-                    .factoryId(factoryId)
-                    .businessScene(dataType)
-                    .sheetIndex(sheetIndex)
-                    .headerRow(headerRow)
-                    .transpose(transpose)
-                    .rowLabelColumn(rowLabelColumn)
-                    .headerRowCount(headerRowCount)
-                    .build();
+            // 使用 Python SmartBI 服务解析 Excel
+            int headerRows = headerRow != null ? headerRow + 1 : 1;
+            ExcelParseResponse response = pythonClient.parseExcel(file, factoryId, dataType, sheetIndex, headerRows);
 
-            ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
-
-            if (!response.isSuccess()) {
-                return ResponseEntity.ok(ApiResponse.error(response.getErrorMessage()));
+            if (response == null || !response.isSuccess()) {
+                String errorMsg = response != null ? response.getErrorMessage() : "Python 服务返回空结果";
+                return ResponseEntity.ok(ApiResponse.error("Excel 解析失败: " + errorMsg));
             }
 
             return ResponseEntity.ok(ApiResponse.success("Excel 解析成功", response));
@@ -176,7 +201,7 @@ public class SmartBIController {
             @RequestParam(required = false) String dataType,
             @Parameter(description = "Sheet 索引，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer sheetIndex,
             @Parameter(description = "表头行号，从 0 开始") @RequestParam(required = false, defaultValue = "0") Integer headerRow,
-            @Parameter(description = "是否自动确认字段映射（跳过用户确认步骤）") @RequestParam(required = false, defaultValue = "false") Boolean autoConfirm,
+            @Parameter(description = "是否自动确认字段映射（跳过用户确认步骤）") @RequestParam(name = "auto_confirm", required = false, defaultValue = "false") Boolean autoConfirm,
             @Parameter(description = "是否转置数据（将列方向数据转为行方向，用于利润表等）") @RequestParam(required = false, defaultValue = "false") Boolean transpose,
             @Parameter(description = "转置时的行标签列索引（默认0）") @RequestParam(required = false, defaultValue = "0") Integer rowLabelColumn,
             @Parameter(description = "转置时的表头行数（默认1）") @RequestParam(required = false, defaultValue = "1") Integer headerRowCount) {
@@ -184,41 +209,16 @@ public class SmartBIController {
         log.info("上传并分析: factoryId={}, fileName={}, dataType={}, sheetIndex={}, headerRow={}, autoConfirm={}, transpose={}",
                 factoryId, file.getOriginalFilename(), dataType, sheetIndex, headerRow, autoConfirm, transpose);
 
-        // Check if uploadFlowService is available
+        // Check if uploadFlowService is available (required for full flow)
         if (uploadFlowService == null) {
-            log.warn("SmartBIUploadFlowService 尚未实现，使用基础解析流程");
-            // Fallback to basic parsing
-            try {
-                ExcelParseRequest request = ExcelParseRequest.builder()
-                        .factoryId(factoryId)
-                        .businessScene(dataType)
-                        .sheetIndex(sheetIndex)
-                        .headerRow(headerRow)
-                        .transpose(transpose)
-                        .rowLabelColumn(rowLabelColumn)
-                        .headerRowCount(headerRowCount)
-                        .build();
+            log.error("SmartBIUploadFlowService 未注入，无法执行完整流程");
+            return ResponseEntity.ok(ApiResponse.error("SmartBI 上传流程服务未配置，请联系管理员"));
+        }
 
-                ExcelParseResponse response = excelParserService.parseExcel(file.getInputStream(), request);
-
-                if (!response.isSuccess()) {
-                    return ResponseEntity.ok(ApiResponse.error(response.getErrorMessage()));
-                }
-
-                // Return parse result with hint that full flow is not yet available
-                Map<String, Object> result = new HashMap<>();
-                result.put("parseResult", response);
-                result.put("message", "Excel 解析成功，完整分析流程服务尚未实现");
-                result.put("needsConfirmation", true);
-
-                return ResponseEntity.ok(ApiResponse.success("Excel 解析成功，请确认字段映射", result));
-            } catch (IOException e) {
-                log.error("Excel 文件读取失败: {}", e.getMessage(), e);
-                return ResponseEntity.ok(ApiResponse.error("文件读取失败: " + e.getMessage()));
-            } catch (Exception e) {
-                log.error("Excel 解析异常: {}", e.getMessage(), e);
-                return ResponseEntity.ok(ApiResponse.error("解析失败: " + e.getMessage()));
-            }
+        // Check Python SmartBI service availability
+        if (!pythonConfig.isEnabled() || !pythonClient.isAvailable()) {
+            log.error("Python SmartBI 服务不可用");
+            return ResponseEntity.ok(ApiResponse.error("Python SmartBI 服务不可用，请检查服务是否在 " + pythonConfig.getUrl() + " 运行"));
         }
 
         try {
@@ -1901,7 +1901,344 @@ public class SmartBIController {
         }
     }
 
+    // ==================== 动态数据分析 (PostgreSQL) ====================
+
+    /**
+     * 获取上传历史列表
+     * 返回已上传的 Excel 文件列表，用于前端数据源选择器
+     */
+    @GetMapping("/uploads")
+    @Operation(summary = "获取上传历史", description = "获取工厂下所有已上传的 Excel 文件列表")
+    public ResponseEntity<ApiResponse<List<UploadHistoryDTO>>> getUploadHistory(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "状态筛选") @RequestParam(required = false) String status) {
+
+        log.info("获取上传历史: factoryId={}, status={}", factoryId, status);
+
+        if (pgUploadRepository == null) {
+            log.warn("PostgreSQL 上传功能未启用 (smartbi.postgres.enabled=false)");
+            return ResponseEntity.ok(ApiResponse.success(java.util.Collections.emptyList()));
+        }
+
+        try {
+            List<SmartBiPgExcelUpload> uploads = pgUploadRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
+            List<UploadHistoryDTO> dtos = uploads.stream()
+                    .map(UploadHistoryDTO::fromEntity)
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.ok(ApiResponse.success(dtos));
+        } catch (Exception e) {
+            log.error("获取上传历史失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取上传历史失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 动态数据分析
+     * 对已上传的 Excel 数据进行分析，返回 KPI、图表和洞察
+     */
+    @GetMapping("/analysis/dynamic")
+    @Operation(summary = "动态数据分析", description = "分析已上传的 Excel 数据，返回 KPI 卡片、图表配置和 AI 洞察")
+    public ResponseEntity<ApiResponse<DynamicAnalysisService.DashboardResponse>> analyzeDynamicData(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "上传ID") @RequestParam Long uploadId,
+            @Parameter(description = "分析类型: auto/finance/sales/inventory") @RequestParam(defaultValue = "auto") String analysisType) {
+
+        log.info("动态数据分析: factoryId={}, uploadId={}, type={}", factoryId, uploadId, analysisType);
+
+        if (dynamicAnalysisService == null) {
+            log.warn("动态分析服务未启用 (smartbi.postgres.enabled=false)");
+            return ResponseEntity.ok(ApiResponse.error("动态分析服务未启用，请在配置中开启 smartbi.postgres.enabled=true"));
+        }
+
+        try {
+            DynamicAnalysisService.DashboardResponse result =
+                    dynamicAnalysisService.analyzeDynamic(factoryId, uploadId, analysisType);
+
+            if (result == null) {
+                return ResponseEntity.ok(ApiResponse.error("分析结果为空，请确认数据已上传"));
+            }
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("动态数据分析失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("分析失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取上传数据的字段定义
+     * 用于前端了解数据结构和可用的分析维度
+     */
+    @GetMapping("/uploads/{uploadId}/fields")
+    @Operation(summary = "获取上传数据字段", description = "获取已上传数据的字段定义，包含语义类型和图表角色")
+    public ResponseEntity<ApiResponse<List<DynamicAnalysisService.FieldDefinitionDTO>>> getUploadFields(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "上传ID") @PathVariable Long uploadId) {
+
+        log.info("获取上传字段: factoryId={}, uploadId={}", factoryId, uploadId);
+
+        if (dynamicAnalysisService == null) {
+            log.warn("动态分析服务未启用");
+            return ResponseEntity.ok(ApiResponse.error("动态分析服务未启用"));
+        }
+
+        try {
+            List<DynamicAnalysisService.FieldDefinitionDTO> fields =
+                    dynamicAnalysisService.getFieldDefinitions(uploadId);
+            return ResponseEntity.ok(ApiResponse.success(fields));
+        } catch (Exception e) {
+            log.error("获取上传字段失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取字段失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== Phase 5: Data Preview ====================
+
+    /**
+     * 获取上传数据的表格预览（分页）
+     * 用于查看已持久化的原始 Excel 数据
+     */
+    @GetMapping("/uploads/{uploadId}/data")
+    @Operation(summary = "获取上传数据", description = "分页获取已持久化的 Excel 数据行")
+    public ResponseEntity<ApiResponse<TableDataResponse>> getUploadData(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "上传ID") @PathVariable Long uploadId,
+            @Parameter(description = "页码 (从0开始)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "每页大小") @RequestParam(defaultValue = "50") int size) {
+
+        log.info("获取上传数据: factoryId={}, uploadId={}, page={}, size={}", factoryId, uploadId, page, size);
+
+        if (dynamicAnalysisService == null) {
+            log.warn("动态分析服务未启用");
+            return ResponseEntity.ok(ApiResponse.error("动态分析服务未启用，无法查看原始数据"));
+        }
+
+        try {
+            // 1. 获取字段定义作为表头
+            List<DynamicAnalysisService.FieldDefinitionDTO> fields =
+                    dynamicAnalysisService.getFieldDefinitions(uploadId);
+            List<String> headers = fields.stream()
+                    .map(DynamicAnalysisService.FieldDefinitionDTO::getOriginalName)
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 2. 获取数据行（分页）
+            org.springframework.data.domain.Page<SmartBiDynamicData> dataPage =
+                    dynamicAnalysisService.getDataPage(factoryId, uploadId, page, size);
+
+            List<Map<String, Object>> rows = dataPage.getContent().stream()
+                    .map(SmartBiDynamicData::getRowData)
+                    .collect(java.util.stream.Collectors.toList());
+
+            // 3. 构建响应
+            TableDataResponse response = TableDataResponse.builder()
+                    .headers(headers)
+                    .data(rows)
+                    .total(dataPage.getTotalElements())
+                    .page(page)
+                    .size(size)
+                    .totalPages(dataPage.getTotalPages())
+                    .build();
+
+            return ResponseEntity.ok(ApiResponse.success(response));
+        } catch (Exception e) {
+            log.error("获取上传数据失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取数据失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== Phase 5: Field Definition Backfill ====================
+
+    /**
+     * 获取缺少字段定义的上传记录数量
+     * 用于诊断历史数据问题
+     */
+    @GetMapping("/uploads-missing-fields")
+    @Operation(summary = "诊断缺少字段定义的上传", description = "返回缺少字段定义的上传记录数量")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUploadsMissingFields(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId) {
+
+        log.info("诊断缺少字段定义的上传: factoryId={}", factoryId);
+
+        if (pgUploadRepository == null) {
+            return ResponseEntity.ok(ApiResponse.error("PostgreSQL 功能未启用"));
+        }
+
+        try {
+            List<SmartBiPgExcelUpload> allUploads = pgUploadRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
+            int totalCount = allUploads.size();
+            int missingCount = 0;
+
+            for (SmartBiPgExcelUpload upload : allUploads) {
+                if (dynamicAnalysisService != null) {
+                    long fieldCount = dynamicAnalysisService.getFieldCount(upload.getId());
+                    if (fieldCount == 0) {
+                        missingCount++;
+                    }
+                }
+            }
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("totalUploads", totalCount);
+            result.put("missingFieldsCount", missingCount);
+            result.put("hasIssues", missingCount > 0);
+
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("诊断失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("诊断失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 回填单个上传的字段定义
+     * 从 field_mappings JSON 重建字段定义
+     */
+    @PostMapping("/backfill/fields/{uploadId}")
+    @Operation(summary = "回填字段定义", description = "从 field_mappings 重建缺失的字段定义")
+    public ResponseEntity<ApiResponse<BackfillResult>> backfillFieldDefinitions(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "上传ID") @PathVariable Long uploadId) {
+
+        log.info("回填字段定义: factoryId={}, uploadId={}", factoryId, uploadId);
+
+        if (dynamicAnalysisService == null || pgUploadRepository == null) {
+            return ResponseEntity.ok(ApiResponse.error("动态分析服务未启用"));
+        }
+
+        try {
+            BackfillResult result = dynamicAnalysisService.backfillFieldDefinitions(factoryId, uploadId);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("回填失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("回填失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 批量回填字段定义
+     */
+    @PostMapping("/backfill/batch")
+    @Operation(summary = "批量回填字段定义", description = "为所有缺少字段定义的上传执行回填")
+    public ResponseEntity<ApiResponse<BatchBackfillResult>> batchBackfill(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "最大处理数量") @RequestParam(defaultValue = "100") int limit) {
+
+        log.info("批量回填字段定义: factoryId={}, limit={}", factoryId, limit);
+
+        if (dynamicAnalysisService == null || pgUploadRepository == null) {
+            return ResponseEntity.ok(ApiResponse.error("动态分析服务未启用"));
+        }
+
+        try {
+            BatchBackfillResult result = dynamicAnalysisService.batchBackfillFieldDefinitions(factoryId, limit);
+            return ResponseEntity.ok(ApiResponse.success(result));
+        } catch (Exception e) {
+            log.error("批量回填失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("批量回填失败: " + e.getMessage()));
+        }
+    }
+
     // ==================== DTO Classes ====================
+
+    /**
+     * 表格数据响应 DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TableDataResponse {
+        private List<String> headers;
+        private List<Map<String, Object>> data;
+        private long total;
+        private int page;
+        private int size;
+        private int totalPages;
+    }
+
+    /**
+     * 回填结果 DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BackfillResult {
+        private Long uploadId;
+        private String status;  // "success", "skipped", "failed"
+        private int fieldsCreated;
+        private String message;
+
+        public static BackfillResult success(Long uploadId, int fieldsCreated) {
+            return BackfillResult.builder()
+                    .uploadId(uploadId)
+                    .status("success")
+                    .fieldsCreated(fieldsCreated)
+                    .message("成功创建 " + fieldsCreated + " 个字段定义")
+                    .build();
+        }
+
+        public static BackfillResult skipped(Long uploadId, String reason) {
+            return BackfillResult.builder()
+                    .uploadId(uploadId)
+                    .status("skipped")
+                    .fieldsCreated(0)
+                    .message(reason)
+                    .build();
+        }
+
+        public static BackfillResult failed(Long uploadId, String error) {
+            return BackfillResult.builder()
+                    .uploadId(uploadId)
+                    .status("failed")
+                    .fieldsCreated(0)
+                    .message(error)
+                    .build();
+        }
+    }
+
+    /**
+     * 批量回填结果 DTO
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BatchBackfillResult {
+        private int totalProcessed;
+        private int successCount;
+        private int skippedCount;
+        private int failedCount;
+        private List<BackfillResult> details;
+    }
+
+    /**
+     * 上传历史 DTO
+     */
+    @Data
+    public static class UploadHistoryDTO {
+        private Long id;
+        private String fileName;
+        private String sheetName;
+        private String tableType;
+        private Integer rowCount;
+        private Integer columnCount;
+        private String status;
+        private String createdAt;
+
+        public static UploadHistoryDTO fromEntity(SmartBiPgExcelUpload upload) {
+            UploadHistoryDTO dto = new UploadHistoryDTO();
+            dto.setId(upload.getId());
+            dto.setFileName(upload.getFileName());
+            dto.setSheetName(upload.getSheetName());
+            dto.setTableType(upload.getDetectedTableType());
+            dto.setRowCount(upload.getRowCount());
+            dto.setColumnCount(upload.getColumnCount());
+            dto.setStatus(upload.getUploadStatus() != null ? upload.getUploadStatus().name() : "UNKNOWN");
+            dto.setCreatedAt(upload.getCreatedAt() != null ? upload.getCreatedAt().toString() : null);
+            return dto;
+        }
+    }
 
     /**
      * 下钻请求 DTO

@@ -3,6 +3,8 @@ package com.cretas.aims.config;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.OSSClientBuilder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
  * @version 1.0.0
  * @since 2025-12-31
  */
+@Slf4j
 @Data
 @Configuration
 @ConfigurationProperties(prefix = "aliyun.oss")
@@ -24,9 +27,12 @@ public class OssConfig {
     private String accessKeySecret;
     private String audioBucket = "cretas-audio";
     private String mediaBucket = "cretas-media";
+    private boolean enabled = false;
 
     @Bean
+    @ConditionalOnProperty(prefix = "aliyun.oss", name = "enabled", havingValue = "true", matchIfMissing = false)
     public OSS ossClient() {
+        log.info("Creating Aliyun OSS client: endpoint={}", endpoint);
         return new OSSClientBuilder().build(
                 "https://" + endpoint,
                 accessKeyId,
