@@ -141,7 +141,9 @@ public class PrimaryDataSourceConfig {
         // containing that class, NOT its subpackages.
         //
         // All other packages have no PostgreSQL subpackages, so we can use string names.
-        return builder
+        System.out.println("======= Building EntityManagerFactory with builder =======");
+        try {
+            LocalContainerEntityManagerFactoryBean result = builder
             .dataSource(dataSource)
             .packages(
                 // Root entity package (entities not in subfolders)
@@ -176,6 +178,15 @@ public class PrimaryDataSourceConfig {
             .persistenceUnit("primary")
             .properties(properties)
             .build();
+            System.out.println("======= EntityManagerFactory built successfully =======");
+            return result;
+        } catch (Exception e) {
+            System.out.println("======= EntityManagerFactory build FAILED =======");
+            System.out.println("Exception: " + e.getClass().getName());
+            System.out.println("Message: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     /**
