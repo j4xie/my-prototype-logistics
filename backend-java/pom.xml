@@ -323,6 +323,20 @@
             <version>2.5.1</version>
         </dependency>
 
+        <!-- PostgreSQL Driver (for SmartBI dynamic data storage) -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Hibernate Types for JSONB support (PostgreSQL) -->
+        <dependency>
+            <groupId>com.vladmihalcea</groupId>
+            <artifactId>hibernate-types-55</artifactId>
+            <version>2.21.1</version>
+        </dependency>
+
         <!-- JAVE2 for Audio Format Conversion (外置到服务器，仅保留 linux64) -->
         <dependency>
             <groupId>ws.schild</groupId>
