@@ -4,9 +4,112 @@
 
 ---
 
+## 🎉 迁移进度
+
+> **最后更新**: 2026-01-27
+
+### 当前状态: Phase 5 灰度切换准备完成 ✅
+
+| 阶段 | 状态 | 说明 |
+|------|------|------|
+| Phase 0 评估准备 | ✅ 完成 | pgloader 安装，数据库创建 |
+| Phase 1 代码兼容层 | ✅ 完成 | PostgreSQL 驱动、Dialect、配置 |
+| Phase 2 迁移脚本转换 | ✅ 完成 | 153 个脚本自动转换 |
+| Phase 3 数据迁移 | ✅ 完成 | 180 张表迁移，应用启动成功 |
+| Phase 4 验证测试 | ✅ 完成 | 核心 API 全部通过 |
+| Phase 5 灰度切换 | ✅ 准备完成 | 回滚文档已准备，可随时切换 |
+
+### 关键成果
+
+- **Spring Boot 成功启动** - 使用 PostgreSQL 数据库
+- **180 张表迁移完成** - 通过 pgloader
+- **服务运行中** - 端口 10010
+
+### Phase 4 API 验证结果 (2026-01-27)
+
+| API | 状态 | 数据量 |
+|-----|------|--------|
+| `/api/mobile/auth/unified-login` | ✅ 通过 | - |
+| `/api/mobile/F001/users/current` | ✅ 通过 | 返回当前用户 |
+| `/api/mobile/F001/users` | ✅ 通过 | 31 条记录 |
+| `/api/mobile/F001/processing/batches` | ✅ 通过 | 31 条记录 |
+| `/api/mobile/F001/production-plans` | ✅ 通过 | 51 条记录 |
+| `/api/mobile/F001/product-types` | ✅ 通过 | 6 条记录 |
+| `/api/mobile/F001/quality-check-items` | ✅ 通过 | 0 条 (空表) |
+| `/api/mobile/F001/ai/health` | ✅ 通过 | LLM 服务未启动 (预期) |
+| `/api/mobile/F001/ai-intents` | ✅ 通过 | 0 条 (空表) |
+
+**结论**: 核心 API 全部通过 PostgreSQL 数据库测试。
+
+### 解决的阻塞问题
+
+| 问题 | 原因 | 解决方案 |
+|------|------|----------|
+| 应用静默退出 | SLF4J 多绑定吞掉错误日志 | 排除 dashscope-sdk-java 中的 slf4j-simple |
+| SmartBI 配置加载失败 | @Value 在 @ConditionalOnProperty 之前解析 | 给 SmartBIPostgresDataSourceConfig 类级别添加 @ConditionalOnProperty |
+| 环境变量缺失 | IFLYTEK_APPID 等未设置 | 在 restart.sh 中设置所有必需环境变量 |
+| Logback pg-prod profile 无输出 | springProfile 只匹配 `prod` 不匹配 `pg-prod` | 修改为 `<springProfile name="prod,pg-prod">` |
+| PostgreSQL autoCommit 事务失败 | HikariCP properties 未应用到 DataSource | 在 PrimaryDataSourceConfig 中显式调用 `ds.setAutoCommit(false)` |
+
+### 代码修改清单
+
+| 文件 | 修改内容 |
+|------|----------|
+| `pom.xml` | 排除 slf4j-simple 依赖 |
+| `PrimaryDataSourceConfig.java` | 添加 excludeFilters 排除 smartbi.postgres 包；显式设置 `ds.setAutoCommit(false)` |
+| `SmartBIPostgresDataSourceConfig.java` | 添加类级别 @ConditionalOnProperty |
+| `CretasBackendApplication.java` | 添加异常捕获便于调试 |
+| `logback-spring.xml` | springProfile 添加 pg-prod 支持 |
+| `application-pg-prod.properties` | 添加 `spring.datasource.hikari.auto-commit=false` |
+| `restart.sh` (服务器) | 设置所有必需环境变量，更新 JAR 文件名 |
+
+### 服务器启动命令
+
+```bash
+# /www/wwwroot/cretas/restart.sh (更新于 2026-01-27)
+# 停止旧进程
+pkill -f 'cretas-backend-system' 2>/dev/null
+sleep 2
+
+# 使用 pg-prod profile 启动
+nohup java -Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC \
+    -jar cretas-backend-system-1.0.0.jar \
+    --spring.profiles.active=pg-prod \
+    --smartbi.postgres.enabled=false \
+    > cretas-backend.log 2>&1 &
+```
+
+### 紧急回滚到 MySQL (Phase 5)
+
+如需回滚到 MySQL，执行以下步骤：
+
+```bash
+# 1. 停止当前 PostgreSQL 服务
+ssh root@139.196.165.140 "pkill -f 'cretas-backend-system'"
+
+# 2. 修改启动 profile 为 MySQL
+ssh root@139.196.165.140 "cd /www/wwwroot/cretas && \
+    nohup java -Xms256m -Xmx768m -XX:MaxMetaspaceSize=256m -XX:+UseG1GC \
+    -jar cretas-backend-system-1.0.0.jar \
+    --spring.profiles.active=default \
+    > cretas-backend.log 2>&1 &"
+
+# 3. 验证服务
+curl http://139.196.165.140:10010/api/mobile/auth/unified-login \
+    -X POST -H "Content-Type: application/json" \
+    -d '{"username":"factory_admin1","password":"123456"}'
+```
+
+**回滚条件**:
+- API 错误率 > 1%
+- 数据库连接超时
+- 关键业务功能异常
+
+---
+
 ## 项目现状
 
-> **最后更新**: 2026-01-26
+> **最后更新**: 2026-01-27
 
 | 维度 | 数据 | 说明 |
 |------|------|------|
