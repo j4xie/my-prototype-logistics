@@ -40,15 +40,8 @@ import java.util.Map;
 @Slf4j
 @Configuration
 @EnableTransactionManagement
+@ConditionalOnProperty(name = "smartbi.postgres.enabled", havingValue = "true", matchIfMissing = false)
 public class SmartBIPostgresDataSourceConfig {
-
-    static {
-        System.out.println("======= SmartBIPostgresDataSourceConfig CLASS LOADED =======");
-    }
-
-    public SmartBIPostgresDataSourceConfig() {
-        log.info("======= SmartBI PostgreSQL Config CONSTRUCTOR =======");
-    }
 
     @Value("${smartbi.postgres.enabled:false}")
     private boolean postgresEnabled;
@@ -83,22 +76,12 @@ public class SmartBIPostgresDataSourceConfig {
     @Value("${smartbi.postgres.hikari.connection-timeout:30000}")
     private long connectionTimeout;
 
-    @javax.annotation.PostConstruct
-    public void logInit() {
-        log.info("========== SmartBI PostgreSQL Config INITIALIZED ==========");
-        log.info("PostgreSQL enabled: {}", postgresEnabled);
-        log.info("PostgreSQL JDBC URL: {}", jdbcUrl);
-        log.info("PostgreSQL Username: {}", username);
-    }
-
     /**
      * SmartBI PostgreSQL DataSource with HikariCP
      */
     @Bean(name = "smartbiPostgresDataSource")
     @ConditionalOnProperty(name = "smartbi.postgres.enabled", havingValue = "true")
     public DataSource smartbiPostgresDataSource() {
-        System.out.println("======= Creating SmartBI PostgreSQL DataSource =======");
-        System.out.println("SmartBI JDBC URL: " + jdbcUrl);
         log.info("Creating SmartBI PostgreSQL DataSource: {}", jdbcUrl);
 
         HikariDataSource dataSource = new HikariDataSource();
@@ -131,8 +114,6 @@ public class SmartBIPostgresDataSourceConfig {
     public LocalContainerEntityManagerFactoryBean smartbiPostgresEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
             @Qualifier("smartbiPostgresDataSource") DataSource dataSource) {
-        System.out.println("======= Creating SmartBI PostgreSQL EntityManagerFactory =======");
-
         Map<String, Object> properties = new HashMap<>();
 
         // PostgreSQL dialect
@@ -147,8 +128,6 @@ public class SmartBIPostgresDataSourceConfig {
 
         // JSONB type registration (via hibernate-types)
         properties.put("hibernate.types.print.banner", "false");
-
-        log.info("Creating SmartBI PostgreSQL EntityManagerFactory");
 
         return builder
             .dataSource(dataSource)
@@ -165,8 +144,6 @@ public class SmartBIPostgresDataSourceConfig {
     @ConditionalOnProperty(name = "smartbi.postgres.enabled", havingValue = "true")
     public PlatformTransactionManager smartbiPostgresTransactionManager(
             @Qualifier("smartbiPostgresEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-
-        log.info("Creating SmartBI PostgreSQL TransactionManager");
         return new JpaTransactionManager(entityManagerFactory);
     }
 
@@ -181,8 +158,5 @@ public class SmartBIPostgresDataSourceConfig {
         transactionManagerRef = "smartbiPostgresTransactionManager"
     )
     static class SmartBIPostgresRepositoryConfig {
-        static {
-            System.out.println("======= SmartBIPostgresRepositoryConfig ENABLED =======");
-        }
     }
 }
