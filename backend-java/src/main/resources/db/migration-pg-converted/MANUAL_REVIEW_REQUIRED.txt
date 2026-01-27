@@ -1,0 +1,235 @@
+Files Requiring Manual Review
+==============================
+Generated: 2026-01-26 18:49:45
+
+File: V2025_12_25__add_conversion_change_history_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_27_4__add_scheduling_module_tables.sql
+  Reasons: Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2025_12_27__add_role_hierarchy_fields.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2025_12_28_2__dispatcher_enhancement.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains INSERT IGNORE - needs manual conversion to ON CONFLICT DO NOTHING
+
+File: V2025_12_28__ml_training_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_29_2__form_template_versions.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_29_3__drools_rules_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_29_5__quality_check_items.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_29_7__decision_audit_logs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_29__industry_template_packages.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_30_10__config_change_sets.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_30_1__create_notifications_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_30_4__factory_capacity_config.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_30_5__approval_chain_configs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_1__ai_quota_configs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_1__create_device_registrations_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_2__factory_type_blueprints.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_2__system_enums.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_3__create_sop_config_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_4__ai_audit_logs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_5__blueprint_version_management.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_5__unit_of_measurements.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_6__ai_intent_configs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_7__ai_quota_rules.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2025_12_31_8__voice_recognition_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V20260121__aps_adaptive_scheduling.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains INSERT IGNORE - needs manual conversion to ON CONFLICT DO NOTHING
+
+File: V2026_01_02_2__intent_match_records.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_02_3__error_attribution_statistics.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_03_1__add_vehicles_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_03_3__keyword_effectiveness.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_03_4__keyword_factory_adoption.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_03_5__factory_ai_learning_config.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_04_10__scale_protocol_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_04_20__iot_infrastructure_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_04_50__intent_version_snapshot.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_05_02__semantic_cache_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_05_20__isapi_devices_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_05_30__expression_learning_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_06_10__conversation_sessions_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_08_01__ai_report_prompt_configs.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_13_01__label_recognition_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_14_02__add_lowcode_page_config_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_14_03__add_role_theme_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_14_10__piece_rate_wage_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_14_3__bom_sample_data.sql
+  Reasons: Contains INSERT IGNORE - needs manual conversion to ON CONFLICT DO NOTHING
+
+File: V2026_01_14__add_home_layout_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_15_02__conversation_memory_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_15_03__add_line_supervisor_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_15_03__tool_embeddings_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_17_01__parameter_extraction_rules.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_18_01__smart_bi_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains INSERT IGNORE - needs manual conversion to ON CONFLICT DO NOTHING Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_18_10__smartbi_schema_metadata.sql
+  Reasons: Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_18_20__behavior_calibration_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_19_01__agentic_rag_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_19_10__smart_bi_purchase_data.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_19_11__smart_bi_production_sample_data.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains ENUM type - consider creating custom TYPE or using CHECK constraint
+
+File: V2026_01_19_12__smart_bi_new_skills.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains GROUP_CONCAT - needs conversion to STRING_AGG
+
+File: V2026_01_19_20__reflection_memory_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_19_40__factory_scheduling_config.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_19_50__scheduling_optimization_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_21_001__aps_adaptive_scheduling.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON) Contains INSERT IGNORE - needs manual conversion to ON CONFLICT DO NOTHING
+
+File: V2026_01_21_02__alert_thresholds.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_21_03__incentive_rules.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_21_05__metric_formulas.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_21_06__chart_templates.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_22_001__sop_ai_agent_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_22_01__dialect_mappings_table.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_23_01__dahua_devices.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_24_10__active_learning_tables.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+File: V2026_01_24_10__intent_preview_tokens.sql
+  Reasons: Contains COMMENT= syntax (needs conversion to PostgreSQL COMMENT ON)
+
+
+Common Manual Conversions:
+-------------------------
+
+1. INSERT IGNORE INTO -> INSERT INTO ... ON CONFLICT (column) DO NOTHING
+
+2. REPLACE INTO -> INSERT INTO ... ON CONFLICT (column) DO UPDATE SET ...
+
+3. GROUP_CONCAT(col) -> STRING_AGG(col, ',')
+
+4. LIMIT offset, count -> LIMIT count OFFSET offset
+
+5. ENUM('a','b','c') -> Create TYPE or use CHECK constraint:
+   CREATE TYPE status_enum AS ENUM ('a', 'b', 'c');
+   -- or --
+   column VARCHAR(20) CHECK (column IN ('a', 'b', 'c'))
+
+6. FULLTEXT INDEX -> PostgreSQL full-text search:
+   CREATE INDEX idx_name ON table USING GIN(to_tsvector('english', column));
+
+7. COMMENT='...' -> COMMENT ON COLUMN table.column IS '...';

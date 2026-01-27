@@ -35,7 +35,10 @@ import com.cretas.aims.service.TwoStageIntentClassifier;
 import com.cretas.aims.service.SemanticRouterService;
 import com.cretas.aims.service.LongTextHandler;
 import com.cretas.aims.service.RAGRetrievalService;
+import com.cretas.aims.service.intent.IntentPreprocessor;
 import com.cretas.aims.service.SemanticIntentMatcher;
+import com.cretas.aims.service.ClassifierIntentMatcher;
+import com.cretas.aims.dto.ClassifierResult;
 import com.cretas.aims.dto.SemanticMatchResult;
 import com.cretas.aims.dto.intent.RouteDecision;
 import com.cretas.aims.dto.intent.MultiIntentResult;
@@ -183,6 +186,33 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
+     * v15.0: 长句子预处理器
+     * 对超过阈值的长句子提取关键词，提高意图识别准确率
+     */
+    private IntentPreprocessor intentPreprocessor;
+
+    @Autowired(required = false)
+    public void setIntentPreprocessor(IntentPreprocessor intentPreprocessor) {
+        this.intentPreprocessor = intentPreprocessor;
+        log.info("[IntentPreprocessor] IntentPreprocessor 注入: {}",
+                intentPreprocessor != null ? "成功" : "未配置");
+    }
+
+    /**
+     * v16.0: Python 分类器意图匹配器
+     * 使用 BERT 模型直接分类，185 个意图类别的 softmax 概率
+     * 准确率: 97.45% Top-1, 99.68% Top-3
+     */
+    private ClassifierIntentMatcher classifierIntentMatcher;
+
+    @Autowired(required = false)
+    public void setClassifierIntentMatcher(ClassifierIntentMatcher classifierIntentMatcher) {
+        this.classifierIntentMatcher = classifierIntentMatcher;
+        log.info("[Classifier] ClassifierIntentMatcher 注入: {}",
+                classifierIntentMatcher != null ? "成功" : "未配置");
+    }
+
+    /**
      * 是否启用查询预处理
      */
     @Value("${cretas.ai.preprocess.enabled:true}")
@@ -206,6 +236,20 @@ public class AIIntentServiceImpl implements AIIntentService {
      */
     @Value("${cretas.ai.semantic-similarity.enabled:true}")
     private boolean semanticSimilarityEnabled;
+
+    /**
+     * v16.0: 是否启用 Python 分类器
+     * 在短语匹配失败后，使用 BERT 模型进行直接分类
+     */
+    @Value("${python-classifier.enabled:false}")
+    private boolean classifierEnabled;
+
+    /**
+     * v16.0: 分类器高置信度阈值
+     * 超过此阈值时直接返回结果，跳过后续匹配
+     */
+    @Value("${python-classifier.high-confidence-threshold:0.85}")
+    private double classifierHighConfidenceThreshold;
 
     // ==================== 意图识别 ====================
 
@@ -435,6 +479,34 @@ public class AIIntentServiceImpl implements AIIntentService {
             }
         }
 
+        // ========== v15.0: 长句子关键词提取 ==========
+        // 对超过阈值的长句子提取关键词，提高意图分类准确率
+        // IntentPreprocessor 专注于关键词提取，与 LongTextHandler 的摘要功能互补
+        List<String> multiIntentSegments = null;
+        if (intentPreprocessor != null && intentPreprocessor.needsPreprocessing(processedInput)) {
+            try {
+                String originalInput = processedInput;
+
+                // Step 1: 检测并拆分多意图句子
+                multiIntentSegments = intentPreprocessor.splitMultiIntent(processedInput);
+                if (multiIntentSegments != null && multiIntentSegments.size() > 1) {
+                    log.info("v15.0 IntentPreprocessor 检测到多意图: input='{}', segments={}",
+                            originalInput, multiIntentSegments);
+                    // 多意图场景：后续会通过 multiIntentSegments 分别处理每个意图
+                } else {
+                    // 单意图场景：提取关键词用于分类
+                    String keywords = intentPreprocessor.extractKeywords(processedInput);
+                    if (keywords != null && !keywords.trim().isEmpty()) {
+                        processedInput = keywords;
+                        log.info("v15.0 IntentPreprocessor 关键词提取: '{}' -> '{}'",
+                                originalInput, processedInput);
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("IntentPreprocessor processing failed, using original input: {}", e.getMessage());
+            }
+        }
+
         // ========== v12.2 Phase 3: 模糊输入强制澄清 ==========
         // 在任何匹配之前检测极度模糊的输入，直接触发澄清
         IntentMatchResult vagueInputResult = checkAndHandleVagueInput(userInput, factoryId, userId, sessionId);
@@ -530,6 +602,66 @@ public class AIIntentServiceImpl implements AIIntentService {
                         return applyNegationConversion(phraseResult, enhancedResult, factoryId);
                     }
                 }
+            }
+        }
+
+        // ========== v16.0: Python 分类器快速决策 ==========
+        // 使用 BERT 模型直接分类，准确率 97.45% Top-1
+        // 高置信度直接返回，低置信度继续走语义路由器
+        if (classifierEnabled && classifierIntentMatcher != null && classifierIntentMatcher.isAvailable()
+                && !skipPhraseShortcut) {
+            try {
+                Optional<ClassifierResult> classifierResult = classifierIntentMatcher.classify(processedInput);
+
+                if (classifierResult.isPresent()) {
+                    ClassifierResult result = classifierResult.get();
+                    log.info("v16.0 Classifier: intent={}, confidence={}, latency={}ms",
+                            result.getIntentCode(), String.format("%.4f", result.getConfidence()), result.getLatencyMs());
+
+                    // 高置信度直接返回
+                    if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                        List<AIIntentConfig> allIntents = getAllIntents(factoryId);
+                        Optional<AIIntentConfig> intentOpt = allIntents.stream()
+                                .filter(i -> i.getIntentCode().equals(result.getIntentCode()))
+                                .findFirst();
+
+                        if (intentOpt.isPresent()) {
+                            AIIntentConfig intent = intentOpt.get();
+                            ActionType detectedActionType = knowledgeBase.detectActionType(userInput.toLowerCase().trim());
+
+                            IntentMatchResult classifierMatchResult = IntentMatchResult.builder()
+                                    .bestMatch(intent)
+                                    .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                            intent, result.getConfidence(),
+                                            (int) (result.getConfidence() * 100),
+                                            Collections.emptyList(), MatchMethod.CLASSIFIER)))
+                                    .confidence(result.getConfidence())
+                                    .matchMethod(MatchMethod.CLASSIFIER)
+                                    .matchedKeywords(Collections.emptyList())
+                                    .isStrongSignal(result.getConfidence() >= 0.9)
+                                    .requiresConfirmation(false)
+                                    .userInput(userInput)
+                                    .actionType(detectedActionType)
+                                    .build();
+
+                            if (preprocessedQuery != null) {
+                                classifierMatchResult.setPreprocessedQuery(preprocessedQuery);
+                            }
+
+                            saveIntentMatchRecord(classifierMatchResult, factoryId, userId, sessionId, false);
+
+                            log.info("v16.0 CLASSIFIER_DIRECT: intent={}, confidence={}, saved LLM call",
+                                    result.getIntentCode(), String.format("%.4f", result.getConfidence()));
+
+                            return applyNegationConversion(classifierMatchResult, enhancedResult, factoryId);
+                        }
+                    }
+                    // 低置信度记录日志，继续走语义路由器
+                    log.debug("v16.0 Classifier confidence too low ({} < {}), proceeding to semantic router",
+                            String.format("%.4f", result.getConfidence()), classifierHighConfidenceThreshold);
+                }
+            } catch (Exception e) {
+                log.warn("v16.0 Classifier failed, falling back to semantic router: {}", e.getMessage());
             }
         }
 
@@ -1007,6 +1139,71 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 核心改革: 语义匹配优先 → 精确验证 → 置信度决策
         if (matchingConfig.isSemanticFirstEnabled()) {
             log.debug("使用v6.0语义优先架构");
+
+            // ========== v12.9: 多意图前置检测 ==========
+            // 当检测到多意图触发词时，直接调用多标签分类器，不依赖语义路由结果
+            // 这修复了多意图查询被语义路由阻塞的问题
+            if (containsMultiIntentTrigger(originalInput) && multiLabelIntentClassifier.isAvailable()) {
+                log.info("v12.9 多意图前置检测: input='{}'", originalInput);
+                try {
+                    MultiIntentResult multiResult = multiLabelIntentClassifier.classifyMultiLabel(originalInput, factoryId);
+
+                    if (multiResult.isMultiIntent() && multiResult.getIntents() != null
+                            && multiResult.getIntents().size() > 1) {
+                        log.info("v12.9 多意图检测成功: input='{}', intentCount={}, strategy={}",
+                                originalInput, multiResult.getIntents().size(), multiResult.getExecutionStrategy());
+
+                        // 获取第一个意图作为 bestMatch
+                        MultiIntentResult.SingleIntentMatch firstIntent = multiResult.getIntents().get(0);
+                        AIIntentConfig firstConfig = getAllIntents(factoryId).stream()
+                                .filter(c -> c.getIntentCode().equals(firstIntent.getIntentCode()))
+                                .findFirst()
+                                .orElse(null);
+
+                        if (firstConfig != null) {
+                            // 构建附加意图列表 (除第一个外的其他意图)
+                            List<IntentMatchResult.IntentMatch> additionalIntents = new ArrayList<>();
+                            for (int i = 1; i < multiResult.getIntents().size(); i++) {
+                                MultiIntentResult.SingleIntentMatch intent = multiResult.getIntents().get(i);
+                                additionalIntents.add(IntentMatchResult.IntentMatch.builder()
+                                        .intentCode(intent.getIntentCode())
+                                        .intentName(intent.getIntentName())
+                                        .confidence(intent.getConfidence())
+                                        .extractedParams(intent.getExtractedParams())
+                                        .executionOrder(intent.getExecutionOrder())
+                                        .reasoning(intent.getReasoning())
+                                        .build());
+                            }
+
+                            IntentMatchResult multiIntentResult = IntentMatchResult.builder()
+                                    .bestMatch(firstConfig)
+                                    .topCandidates(Collections.singletonList(CandidateIntent.fromConfig(
+                                            firstConfig, firstIntent.getConfidence(),
+                                            (int)(firstIntent.getConfidence() * 100),
+                                            Collections.emptyList(), MatchMethod.SEMANTIC)))
+                                    .confidence(firstIntent.getConfidence())
+                                    .matchMethod(MatchMethod.SEMANTIC)
+                                    .matchedKeywords(Collections.emptyList())
+                                    .isStrongSignal(multiResult.getOverallConfidence() >= 0.75)
+                                    .requiresConfirmation(multiResult.requiresUserConfirmation())
+                                    .userInput(originalInput)
+                                    .actionType(opType)
+                                    .isMultiIntent(true)
+                                    .additionalIntents(additionalIntents)
+                                    .executionStrategy(multiResult.getExecutionStrategy())
+                                    .build();
+
+                            saveIntentMatchRecord(multiIntentResult, factoryId, null, null, false);
+                            return multiIntentResult;
+                        }
+                    } else {
+                        log.debug("v12.9 多标签分类器未检测到多意图: {}",
+                                multiResult.getReasoning() != null ? multiResult.getReasoning() : "单意图");
+                    }
+                } catch (Exception e) {
+                    log.warn("v12.9 多意图前置检测异常，继续单意图流程: {}", e.getMessage());
+                }
+            }
 
             // Step 1: 语义路由 - 向量相似度匹配 Top-5 候选
             SemanticRoutingResult routingResult = semanticFirstRouting(userInput, factoryId);
@@ -2343,21 +2540,51 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 只有明确表达多个独立意图的情况才返回 true
 
         // 1. 强多意图触发词（明确表示要做多件事）
-        String[] strongMultiIntentTriggers = {"顺便", "另外", "还要", "再查", "再看", "同时还"};
+        // v12.7: 扩展触发词列表
+        String[] strongMultiIntentTriggers = {
+            "顺便", "另外", "还要", "再查", "再看", "同时还",
+            // v12.7新增: 更多表示并列意图的词
+            "一起", "都", "同时", "并且", "还得", "还需要", "一并", "连同", "加上"
+        };
         for (String trigger : strongMultiIntentTriggers) {
             if (normalized.contains(trigger)) {
-                log.info("v11.9 检测到强多意图触发词'{}': {}", trigger, userInput);
+                log.info("v12.7 检测到强多意图触发词'{}': {}", trigger, userInput);
                 return true;
             }
         }
 
-        // 2. 排除对比模式（不是多意图）
-        // "比较A和B"、"对比A和B"、"A vs B" 都是单意图（对比查询）
+        // v12.8: 关联查询检测细化 - 只有单领域关联才不是多意图
+        // "考勤异常的人和他们负责的设备故障有没有关联" 这种跨领域关联查询仍是多意图
+        String[] correlationPatterns = {"的关系", "的关联", "有没有关联", "有关系吗", "相关性", "关联分析"};
+        for (String pattern : correlationPatterns) {
+            if (normalized.contains(pattern)) {
+                // v12.8: 检查是否涉及多个领域
+                int domainCount = countDomainsInInput(normalized);
+                if (domainCount < 2) {
+                    log.debug("v12.8 单领域关联查询，不是多意图: {}", userInput);
+                    return false;
+                }
+                // v12.8: 多领域关联查询，可能是多意图或需要特殊处理
+                log.info("v12.8 多领域关联查询: domains={}, input={}", domainCount, userInput);
+                // 不返回，继续检查是否有其他多意图特征
+            }
+        }
+
+        // 2. 排除对比模式（需要检查是否多领域）
+        // v12.7修复: "比较A和B" 如果A和B是同一领域则不是多意图，如果是不同领域则是多意图
         String[] comparisonPrefixes = {"比较", "对比", "对照", "比对"};
         for (String prefix : comparisonPrefixes) {
             if (normalized.contains(prefix)) {
-                log.debug("v11.9 检测到对比模式，不是多意图: {}", userInput);
-                return false;
+                // v12.7: 先检查领域数量，再决定是否排除
+                // 如果只有一个领域（如"比较上月和本月销售"），则不是多意图
+                // 如果有多个领域（如"考勤和效率对比"），则仍是多意图
+                int domainCount = countDomainsInInput(normalized);
+                if (domainCount < 2) {
+                    log.debug("v12.7 单领域对比模式，不是多意图: {}", userInput);
+                    return false;
+                }
+                log.info("v12.7 多领域对比查询，仍为多意图: domains={}, input={}", domainCount, userInput);
+                // 不返回，继续检查
             }
         }
 
@@ -2382,28 +2609,42 @@ public class AIIntentServiceImpl implements AIIntentService {
         // 4. "和"连接的是两个不同领域的名词时才是多意图
         // 例如："销售和库存" 可能是多意图，"趋势和排名" 不是
         // 这里简化处理：只有当"和"两边都是独立的业务领域词时才是多意图
-        String[] domainKeywords = {"销售", "库存", "生产", "设备", "考勤", "质检", "发货", "订单", "物料", "财务"};
         if (normalized.contains("和") || normalized.contains("还有") || normalized.contains("以及")) {
             String[] parts = normalized.split("和|还有|以及");
             if (parts.length >= 2) {
-                int domainCount = 0;
-                for (String part : parts) {
-                    for (String domain : domainKeywords) {
-                        if (part.contains(domain)) {
-                            domainCount++;
-                            break;
-                        }
-                    }
-                }
+                int domainCount = countDomainsInInput(normalized);
                 // 两个部分都包含不同的领域关键词才是多意图
                 if (domainCount >= 2) {
-                    log.info("v11.9 检测到多领域关键词，可能是多意图: {}", userInput);
+                    log.info("v12.7 检测到多领域关键词，可能是多意图: domains={}, input={}", domainCount, userInput);
                     return true;
                 }
             }
         }
 
         return false;
+    }
+
+    /**
+     * v12.7: 计算输入中包含的不同领域数量
+     * 用于判断是否为多意图查询
+     */
+    private int countDomainsInInput(String input) {
+        // v12.7: 扩展领域关键词列表
+        String[] domainKeywords = {
+            // 原有领域
+            "销售", "库存", "生产", "设备", "考勤", "质检", "发货", "订单", "物料", "财务",
+            // v12.7新增: 更多业务领域词
+            "出勤", "KPI", "异常", "效率", "批次", "告警", "进度", "客户", "供应商",
+            "报表", "统计", "预警", "维护", "员工", "人员", "成本", "利润", "产量"
+        };
+
+        Set<String> foundDomains = new HashSet<>();
+        for (String domain : domainKeywords) {
+            if (input.contains(domain)) {
+                foundDomains.add(domain);
+            }
+        }
+        return foundDomains.size();
     }
 
     /**
@@ -2463,13 +2704,14 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         // v12.2: 极度模糊输入黑名单 - 这些输入必须触发澄清
         // 特点：纯动词/代词/确认词，缺乏业务名词
+        // v12.9: 移除 "有问题"，它应该映射到 ALERT_LIST
         String[] vagueInputBlacklist = {
             // 纯动作词（无业务对象）
             "查一下", "看看", "看一下", "瞧瞧", "瞅瞅",
             "帮我处理", "处理一下", "处理下",
             "帮我查", "帮查", "查下", "看下",
-            // 模糊问题
-            "有问题", "有啥问题", "问题",
+            // 模糊问题 - v12.9: 移除 "有问题" (应映射到 ALERT_LIST)
+            "有啥问题", "问题",
             // 模糊指代
             "这个", "那个", "哪个",
             // 极短模糊（纯名词无动作）
@@ -2618,9 +2860,10 @@ public class AIIntentServiceImpl implements AIIntentService {
 
         // v12.0: 增加极短模糊输入检测
         // 这些输入太模糊，无法确定用户意图，需要澄清
+        // v12.9: 移除 "导出"、"有问题"，它们应该有默认意图映射
         String[] veryShortAmbiguous = {
             "相关数据", "那个", "这个", "看看情况", "统计一下", "报表",
-            "查一下", "对比分析", "导出", "更新一下状态", "有问题",
+            "查一下", "对比分析", "更新一下状态",
             "分析报告", "那个记录", "汇总表", "第三季度的数据"
         };
         for (String pattern : veryShortAmbiguous) {

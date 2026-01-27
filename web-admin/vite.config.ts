@@ -14,9 +14,16 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://139.196.165.140:10010',
+        target: 'http://139.196.165.140:10010', // 远程服务器
+        // target: 'http://localhost:10010', // 本地后端
         changeOrigin: true,
       },
+      // Python SmartBI 服务代理 (可选，前端直连时不需要)
+      // '/smartbi': {
+      //   target: 'http://139.196.165.140:8083',
+      //   changeOrigin: true,
+      //   rewrite: (path) => path.replace(/^\/smartbi/, '/api'),
+      // },
     },
   },
   build: {

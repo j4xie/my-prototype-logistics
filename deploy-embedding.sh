@@ -87,9 +87,10 @@ if [ -f "$JAR_NAME" ]; then
     ls -t $JAR_NAME.bak.* 2>/dev/null | tail -n +4 | xargs -r rm -f
 fi
 
-# 下载新 JAR
-echo "   Downloading JAR from GitHub Release..."
-gh release download "$VERSION" --repo "$REPO" --pattern "$JAR_NAME" --clobber
+# 下载新 JAR (使用 GitHub 镜像加速)
+echo "   Downloading JAR via ghproxy.cc mirror..."
+DOWNLOAD_URL="https://ghproxy.cc/https://github.com/$REPO/releases/download/$VERSION/$JAR_NAME"
+wget -q --show-progress -O "$JAR_NAME" "\$DOWNLOAD_URL"
 
 # 停止旧服务
 PID=\$(pgrep -f "embedding-service.*jar" || true)

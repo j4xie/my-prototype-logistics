@@ -1,0 +1,26 @@
+{
+  "totalLoops": 3,
+  "totalTests": 15,
+  "passed": 15,
+  "failed": 0,
+  "deployments": 0,
+  "errors": [],
+  "startTime": "2026-01-26T12:47:27.065Z",
+  "lastLoopTime": "2026-01-26T13:00:51.460Z",
+  "config": {
+    "baseUrl": "http://139.196.165.140:8086",
+    "backendUrl": "http://139.196.165.140:10010",
+    "healthEndpoint": "/api/mobile/health",
+    "headed": false,
+    "slowMo": 0,
+    "maxLoops": 3,
+    "pauseOnError": false,
+    "testDataDir": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-smartbi\\test-data",
+    "reportDir": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-smartbi\\reports",
+    "projectRoot": "C:\\Users\\Steve\\my-prototype-logistics",
+    "deployScript": "deploy-backend.sh",
+    "healthCheckRetries": 5,
+    "healthCheckInterval": 10000
+  },
+  "successRate": "100.00%"
+}

@@ -1,11 +1,20 @@
 <script setup lang="ts">
 /**
  * SmartBI Excel 上传页面
- * 支持 Excel 文件上传、数据类型选择、字段映射和导入确认
+ * 支持 Excel 文件上传、自动解析、AI分析和结果展示
+ * 连接 Python SmartBI 服务获取真实分析结果
  */
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, nextTick, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
-import { post } from '@/api/request';
+import {
+  uploadAndAnalyze,
+  confirmUploadAndPersist,
+  type AnalysisResult,
+  type AIInsightData,
+  type KPIData,
+  type ChartConfig
+} from '@/api/smartbi';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { UploadFile, UploadUserFile } from 'element-plus';
 import {
@@ -15,8 +24,15 @@ import {
   Close,
   Refresh,
   Download,
-  ArrowRight
+  ArrowRight,
+  ChatDotRound,
+  DataAnalysis,
+  TrendCharts
 } from '@element-plus/icons-vue';
+import { KPICard, AIInsightPanel } from '@/components/smartbi';
+import * as echarts from 'echarts';
+
+const router = useRouter();
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -25,10 +41,21 @@ const factoryId = computed(() => authStore.factoryId);
 const currentStep = ref(0);
 const steps = [
   { title: '上传文件', description: '选择 Excel 文件' },
-  { title: '选择类型', description: '选择数据类型' },
-  { title: '字段映射', description: '确认字段对应关系' },
-  { title: '导入确认', description: '预览并确认导入' }
+  { title: '解析结果', description: '预览解析数据' },
+  { title: '分析结果', description: 'AI 分析洞察' },
+  { title: '保存确认', description: '保存并继续' }
 ];
+
+// 分析结果
+const analysisResult = ref<AnalysisResult | null>(null);
+const kpiData = ref<KPIData[]>([]);
+const chartConfigs = ref<ChartConfig[]>([]);
+const chartInstances = new Map<string, echarts.ECharts>();
+
+// 解析后的原始数据 (用于传递给 Chat)
+const parsedData = ref<unknown[]>([]);
+const parsedFields = ref<Array<{ original: string; standard: string }>>([]);
+const parsedTableType = ref<string>('');
 
 // 上传状态
 const uploading = ref(false);
@@ -118,6 +145,9 @@ interface ImportResult {
 const importResult = ref<ImportResult | null>(null);
 const importing = ref(false);
 
+// 删除不再需要的变量和函数占位
+// (dataTypes, selectedDataType, fieldMappings 等将在简化版中移除)
+
 // 目标字段选项
 const targetFieldOptions = computed(() => {
   const selectedType = dataTypes.find(t => t.value === selectedDataType.value);
@@ -159,47 +189,141 @@ async function handleUpload(file: UploadFile) {
       }
     }, 100);
 
-    // 解析 Excel 文件
-    const formData = new FormData();
-    formData.append('file', file.raw);
+    // 调用真实 Python SmartBI API
+    const result = await uploadAndAnalyze(file.raw);
 
-    // 这里应该调用后端 API 解析文件
-    // const response = await post(`/${factoryId.value}/smart-bi/excel/parse`, formData);
-
-    // 模拟解析结果
-    await new Promise(resolve => setTimeout(resolve, 1500));
     clearInterval(progressInterval);
     uploadProgress.value = 100;
 
+    if (!result.success) {
+      ElMessage.error(result.error || '解析失败');
+      uploading.value = false;
+      return false;
+    }
+
+    // 保存解析结果
+    const pr = result.parseResult;
     parseResult.value = {
-      totalRows: 156,
-      validRows: 152,
-      errorRows: 4,
-      headers: ['日期', '客户名称', '产品名称', '数量', '单价', '金额', '备注'],
-      sampleData: [
-        { '日期': '2026-01-15', '客户名称': '上海食品公司', '产品名称': '冷冻牛肉', '数量': '100', '单价': '85', '金额': '8500', '备注': '' },
-        { '日期': '2026-01-15', '客户名称': '北京餐饮集团', '产品名称': '冷冻猪肉', '数量': '200', '单价': '45', '金额': '9000', '备注': '加急' },
-        { '日期': '2026-01-16', '客户名称': '广州生鲜超市', '产品名称': '冷冻鸡肉', '数量': '150', '单价': '32', '金额': '4800', '备注': '' }
-      ],
-      errors: [
-        '第 45 行: 金额格式错误',
-        '第 78 行: 客户名称为空',
-        '第 102 行: 日期格式错误',
-        '第 134 行: 数量为负数'
-      ]
+      totalRows: pr.row_count || 0,
+      validRows: pr.row_count || 0,
+      errorRows: 0,
+      headers: pr.headers || [],
+      sampleData: (pr.preview_data || []).slice(0, 5) as Record<string, string>[],
+      errors: []
     };
+
+    // 保存原始数据用于 Chat
+    parsedData.value = pr.preview_data || [];
+    parsedFields.value = pr.field_mappings || pr.headers?.map((h: string) => ({ original: h, standard: h })) || [];
+    parsedTableType.value = pr.table_type || '';
+
+    // 保存分析结果
+    if (result.analysis) {
+      analysisResult.value = result.analysis;
+      kpiData.value = result.analysis.kpis || [];
+    }
+
+    // 保存图表配置
+    chartConfigs.value = result.chartRecommendations || [];
 
     currentStep.value = 1;
     ElMessage.success('文件解析成功');
+
+    // 如果有分析结果，直接跳到分析页面
+    if (result.analysis && result.analysis.success) {
+      currentStep.value = 2;
+      await nextTick();
+      renderCharts();
+    }
   } catch (error) {
     console.error('文件上传失败:', error);
-    ElMessage.error('文件上传失败');
+    ElMessage.error('文件上传失败: ' + (error instanceof Error ? error.message : '未知错误'));
   } finally {
     uploading.value = false;
   }
 
   return false;
 }
+
+// 渲染所有图表
+function renderCharts() {
+  chartConfigs.value.forEach((config, index) => {
+    const chartId = `analysis-chart-${index}`;
+    const chartDom = document.getElementById(chartId);
+    if (!chartDom || !config.option) return;
+
+    // 销毁旧图表
+    const oldChart = chartInstances.get(chartId);
+    if (oldChart) {
+      oldChart.dispose();
+    }
+
+    const chart = echarts.init(chartDom);
+    chartInstances.set(chartId, chart);
+    chart.setOption(config.option as echarts.EChartsOption);
+  });
+}
+
+// 跳转到 Chat 页面继续提问
+function goToChat() {
+  // 通过 query 参数传递上下文标识
+  router.push({
+    path: '/smart-bi/query',
+    query: {
+      hasContext: 'true',
+      tableType: parsedTableType.value
+    }
+  });
+}
+
+// 保存分析结果 (使用现有 Java 端点)
+async function handleSaveAnalysis() {
+  if (!fileList.value[0]) return;
+
+  try {
+    // 使用现有的 /upload/confirm 端点持久化
+    await confirmUploadAndPersist({
+      parseResponse: {
+        fileName: fileList.value[0].name || 'unknown.xlsx',
+        sheetName: 'Sheet1',
+        headers: parseResult.value.headers,
+        rowCount: parseResult.value.totalRows,
+        columnCount: parseResult.value.headers.length,
+        previewData: parsedData.value,
+        tableType: parsedTableType.value
+      },
+      confirmedMappings: Object.fromEntries(
+        parsedFields.value.map(f => [f.original, f.standard])
+      ),
+      dataType: parsedTableType.value || 'general',
+      saveRawData: true,
+      generateChart: chartConfigs.value.length > 0
+    });
+
+    ElMessage.success('分析结果已保存');
+    importResult.value = {
+      success: true,
+      imported: parseResult.value.validRows,
+      failed: parseResult.value.errorRows,
+      errors: parseResult.value.errors
+    };
+    currentStep.value = 3;
+  } catch (error) {
+    console.error('保存失败:', error);
+    ElMessage.error('保存分析结果失败');
+  }
+}
+
+// 清理图表实例
+onUnmounted(() => {
+  chartInstances.forEach(chart => chart.dispose());
+  chartInstances.clear();
+});
+
+// 窗口大小变化时调整图表
+window.addEventListener('resize', () => {
+  chartInstances.forEach(chart => chart.resize());
+});
 
 // 选择数据类型
 function handleSelectDataType(type: string) {
@@ -387,131 +511,36 @@ function handleDownloadTemplate() {
         </div>
       </div>
 
-      <!-- 步骤 2: 选择数据类型 -->
+      <!-- 步骤 2: 解析结果预览 -->
       <div v-show="currentStep === 1" class="step-content">
-        <div class="data-type-grid">
-          <div
-            v-for="type in dataTypes"
-            :key="type.value"
-            class="data-type-card"
-            :class="{ selected: selectedDataType === type.value }"
-            @click="handleSelectDataType(type.value)"
-          >
-            <el-icon><Document /></el-icon>
-            <div class="type-info">
-              <div class="type-label">{{ type.label }}</div>
-              <div class="type-desc">{{ type.description }}</div>
-            </div>
-            <el-icon v-if="selectedDataType === type.value" class="check-icon"><Check /></el-icon>
-          </div>
-        </div>
-
-        <div v-if="selectedDataType" class="required-fields">
-          <h4>必需字段</h4>
-          <div class="field-tags">
-            <el-tag
-              v-for="field in dataTypes.find(t => t.value === selectedDataType)?.requiredFields"
-              :key="field"
-              type="info"
-            >
-              {{ field }}
-            </el-tag>
-          </div>
-        </div>
-
-        <div class="step-actions">
-          <el-button @click="prevStep">上一步</el-button>
-          <el-button type="primary" @click="nextStep" :disabled="!selectedDataType">
-            下一步
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
-        </div>
-      </div>
-
-      <!-- 步骤 3: 字段映射 -->
-      <div v-show="currentStep === 2" class="step-content">
-        <div class="mapping-header">
-          <div class="mapping-info">
-            <span>共识别到 {{ parseResult.headers.length }} 个字段</span>
-            <span class="matched">
-              已匹配 {{ fieldMappings.filter(m => m.matched).length }} 个
-            </span>
-          </div>
-        </div>
-
-        <el-table :data="fieldMappings" stripe border>
-          <el-table-column label="Excel 列名" prop="sourceField" width="150" />
-          <el-table-column label="示例数据" prop="sample" min-width="150">
-            <template #default="{ row }">
-              <span class="sample-data">{{ row.sample || '-' }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="映射到" width="180">
-            <template #default="{ row }">
-              <el-select
-                v-model="row.targetField"
-                placeholder="选择目标字段"
-                clearable
-                @change="row.matched = !!row.targetField"
-              >
-                <el-option
-                  v-for="opt in targetFieldOptions"
-                  :key="opt.value"
-                  :label="opt.label"
-                  :value="opt.value"
-                  :disabled="fieldMappings.some(m => m.targetField === opt.value && m.sourceField !== row.sourceField)"
-                />
-              </el-select>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
-            <template #default="{ row }">
-              <el-tag v-if="row.matched" type="success" size="small">已匹配</el-tag>
-              <el-tag v-else type="info" size="small">未匹配</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
-
-        <div class="step-actions">
-          <el-button @click="prevStep">上一步</el-button>
-          <el-button type="primary" @click="nextStep">
-            下一步
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
-        </div>
-      </div>
-
-      <!-- 步骤 4: 导入确认 -->
-      <div v-show="currentStep === 3" class="step-content">
-        <div v-if="!importResult" class="import-preview">
-          <div class="preview-stats">
+        <div class="parse-summary">
+          <div class="summary-stats">
             <div class="stat-item">
               <div class="stat-value">{{ parseResult.totalRows }}</div>
               <div class="stat-label">总行数</div>
             </div>
-            <div class="stat-item success">
-              <div class="stat-value">{{ parseResult.validRows }}</div>
-              <div class="stat-label">有效数据</div>
+            <div class="stat-item">
+              <div class="stat-value">{{ parseResult.headers.length }}</div>
+              <div class="stat-label">列数</div>
             </div>
-            <div class="stat-item error">
-              <div class="stat-value">{{ parseResult.errorRows }}</div>
-              <div class="stat-label">错误数据</div>
+            <div class="stat-item" v-if="parsedTableType">
+              <div class="stat-value type-badge">{{ parsedTableType }}</div>
+              <div class="stat-label">识别类型</div>
             </div>
           </div>
 
-          <div v-if="parseResult.errors.length > 0" class="error-list">
-            <h4>
-              <el-icon><Warning /></el-icon>
-              数据错误 ({{ parseResult.errors.length }} 条)
-            </h4>
-            <ul>
-              <li v-for="(error, index) in parseResult.errors" :key="index">{{ error }}</li>
-            </ul>
+          <div class="field-list">
+            <h4>识别到的字段</h4>
+            <div class="field-tags">
+              <el-tag v-for="field in parseResult.headers" :key="field" type="info">
+                {{ field }}
+              </el-tag>
+            </div>
           </div>
 
           <div class="preview-table">
-            <h4>数据预览 (前 3 条)</h4>
-            <el-table :data="parseResult.sampleData" stripe border size="small">
+            <h4>数据预览 (前 5 条)</h4>
+            <el-table :data="parseResult.sampleData" stripe border size="small" max-height="250">
               <el-table-column
                 v-for="header in parseResult.headers"
                 :key="header"
@@ -521,33 +550,111 @@ function handleDownloadTemplate() {
               />
             </el-table>
           </div>
+        </div>
 
-          <div class="step-actions">
-            <el-button @click="prevStep">上一步</el-button>
-            <el-button
-              type="primary"
-              :loading="importing"
-              @click="handleImport"
+        <div class="step-actions">
+          <el-button @click="handleReset">重新上传</el-button>
+          <el-button type="primary" @click="currentStep = 2">
+            查看分析结果
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 步骤 3: AI 分析结果 -->
+      <div v-show="currentStep === 2" class="step-content analysis-result">
+        <!-- KPI 卡片 -->
+        <div v-if="kpiData.length > 0" class="kpi-grid">
+          <KPICard
+            v-for="kpi in kpiData"
+            :key="kpi.key"
+            :title="kpi.title"
+            :value="kpi.value"
+            :unit="kpi.unit"
+            :trend="kpi.trend"
+            :trend-value="kpi.trendValue"
+            :status="kpi.status"
+          />
+        </div>
+
+        <!-- AI 洞察面板 -->
+        <div v-if="analysisResult?.insights" class="insight-section">
+          <AIInsightPanel
+            :insight="analysisResult.insights"
+            title="AI 分析洞察"
+            :collapsible="true"
+            :default-expanded="true"
+          />
+        </div>
+
+        <!-- 文本分析结果 -->
+        <div v-if="analysisResult?.answer" class="answer-section">
+          <h4>
+            <el-icon><DataAnalysis /></el-icon>
+            分析结论
+          </h4>
+          <div class="answer-content">{{ analysisResult.answer }}</div>
+        </div>
+
+        <!-- 推荐图表 -->
+        <div v-if="chartConfigs.length > 0" class="charts-section">
+          <h4>
+            <el-icon><TrendCharts /></el-icon>
+            数据可视化
+          </h4>
+          <div class="charts-grid">
+            <div
+              v-for="(chart, index) in chartConfigs"
+              :key="index"
+              class="chart-item"
             >
-              确认导入 {{ parseResult.validRows }} 条数据
-            </el-button>
+              <div class="chart-title">{{ chart.title || `图表 ${index + 1}` }}</div>
+              <div :id="`analysis-chart-${index}`" class="chart-container"></div>
+            </div>
           </div>
         </div>
 
-        <div v-else class="import-result">
+        <!-- 无分析结果时的提示 -->
+        <div v-if="!analysisResult?.success && !kpiData.length" class="no-analysis">
+          <el-icon :size="48" color="#909399"><DataAnalysis /></el-icon>
+          <p>暂无 AI 分析结果</p>
+          <p class="sub-text">您可以继续提问获取更多洞察</p>
+        </div>
+
+        <div class="step-actions">
+          <el-button @click="currentStep = 1">返回预览</el-button>
+          <el-button @click="goToChat">
+            <el-icon><ChatDotRound /></el-icon>
+            继续提问
+          </el-button>
+          <el-button type="primary" @click="handleSaveAnalysis">
+            保存分析结果
+          </el-button>
+        </div>
+      </div>
+
+      <!-- 步骤 4: 保存确认 -->
+      <div v-show="currentStep === 3" class="step-content">
+        <div class="save-result">
           <el-result
-            :icon="importResult.success ? 'success' : 'error'"
-            :title="importResult.success ? '导入成功' : '导入失败'"
+            icon="success"
+            title="分析结果已保存"
           >
             <template #sub-title>
-              <p v-if="importResult.success">
-                成功导入 {{ importResult.imported }} 条数据，
-                失败 {{ importResult.failed }} 条
+              <p>
+                已解析 {{ parseResult.totalRows }} 行数据，
+                识别到 {{ parseResult.headers.length }} 个字段
               </p>
-              <p v-else>导入过程中发生错误</p>
+              <p v-if="parsedTableType" class="table-type-info">
+                数据类型: {{ parsedTableType }}
+              </p>
             </template>
             <template #extra>
-              <el-button type="primary" @click="handleReset">继续导入</el-button>
+              <el-button type="primary" @click="goToChat">
+                <el-icon><ChatDotRound /></el-icon>
+                继续提问分析
+              </el-button>
+              <el-button @click="handleReset">上传新文件</el-button>
               <el-button @click="$router.push('/smart-bi')">返回驾驶舱</el-button>
             </template>
           </el-result>
@@ -753,6 +860,167 @@ function handleDownloadTemplate() {
 .sample-data {
   color: #909399;
   font-size: 13px;
+}
+
+// 解析结果摘要
+.parse-summary {
+  .summary-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 20px;
+      background: #f5f7fa;
+      border-radius: 8px;
+
+      .stat-value {
+        font-size: 28px;
+        font-weight: 600;
+        color: #409EFF;
+
+        &.type-badge {
+          font-size: 16px;
+          padding: 4px 12px;
+          background: #ecf5ff;
+          border-radius: 4px;
+        }
+      }
+
+      .stat-label {
+        font-size: 14px;
+        color: #909399;
+        margin-top: 8px;
+      }
+    }
+  }
+
+  .field-list {
+    margin-bottom: 24px;
+
+    h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #303133;
+    }
+  }
+
+  .field-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .preview-table {
+    h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #303133;
+    }
+  }
+}
+
+// 分析结果页面
+.analysis-result {
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .insight-section {
+    margin-bottom: 24px;
+  }
+
+  .answer-section {
+    margin-bottom: 24px;
+    padding: 16px;
+    background: #f5f7fa;
+    border-radius: 8px;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: #303133;
+    }
+
+    .answer-content {
+      font-size: 14px;
+      line-height: 1.8;
+      color: #606266;
+      white-space: pre-wrap;
+    }
+  }
+
+  .charts-section {
+    margin-bottom: 24px;
+
+    h4 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px;
+      font-size: 14px;
+      color: #303133;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 16px;
+    }
+
+    .chart-item {
+      background: #fff;
+      border: 1px solid #ebeef5;
+      border-radius: 8px;
+      padding: 16px;
+
+      .chart-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #303133;
+        margin-bottom: 12px;
+      }
+
+      .chart-container {
+        height: 280px;
+      }
+    }
+  }
+
+  .no-analysis {
+    text-align: center;
+    padding: 60px 20px;
+    color: #909399;
+
+    p {
+      margin: 16px 0 0;
+      font-size: 16px;
+    }
+
+    .sub-text {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+  }
+}
+
+// 保存结果
+.save-result {
+  padding: 40px 0;
+
+  .table-type-info {
+    margin-top: 8px;
+    color: #409EFF;
+    font-weight: 500;
+  }
 }
 
 // 导入预览

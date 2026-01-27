@@ -126,11 +126,12 @@ public interface IsapiEventLogRepository extends JpaRepository<IsapiEventLog, Lo
 
     /**
      * 按小时统计事件数量 (用于趋势图)
+     * PostgreSQL 兼容：使用 to_char 替代 DATE_FORMAT
      */
-    @Query(value = "SELECT DATE_FORMAT(event_time, '%Y-%m-%d %H:00:00') as hour, COUNT(*) as count " +
+    @Query(value = "SELECT to_char(event_time, 'YYYY-MM-DD HH24:00:00') as hour, COUNT(*) as count " +
             "FROM isapi_event_logs " +
             "WHERE factory_id = :factoryId AND event_time >= :since " +
-            "GROUP BY DATE_FORMAT(event_time, '%Y-%m-%d %H:00:00') " +
+            "GROUP BY to_char(event_time, 'YYYY-MM-DD HH24:00:00') " +
             "ORDER BY hour", nativeQuery = true)
     List<Object[]> countByHour(
             @Param("factoryId") String factoryId,

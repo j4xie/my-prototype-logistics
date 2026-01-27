@@ -1,0 +1,1318 @@
+{
+  "timestamp": "20260125_213005",
+  "summary": {
+    "total": 2000,
+    "passed": 1415,
+    "failed": 585,
+    "accuracy": 70.75
+  },
+  "by_category": {
+    "shipment": {
+      "passed": 133,
+      "failed": 49,
+      "total": 182
+    },
+    "supplier": {
+      "passed": 61,
+      "failed": 30,
+      "total": 91
+    },
+    "equipment": {
+      "passed": 145,
+      "failed": 35,
+      "total": 180
+    },
+    "report": {
+      "passed": 193,
+      "failed": 129,
+      "total": 322
+    },
+    "production": {
+      "passed": 122,
+      "failed": 58,
+      "total": 180
+    },
+    "attendance": {
+      "passed": 147,
+      "failed": 83,
+      "total": 230
+    },
+    "customer": {
+      "passed": 114,
+      "failed": 23,
+      "total": 137
+    },
+    "trace": {
+      "passed": 73,
+      "failed": 17,
+      "total": 90
+    },
+    "cost": {
+      "passed": 39,
+      "failed": 7,
+      "total": 46
+    },
+    "alert": {
+      "passed": 153,
+      "failed": 27,
+      "total": 180
+    },
+    "quality": {
+      "passed": 96,
+      "failed": 39,
+      "total": 135
+    },
+    "material": {
+      "passed": 139,
+      "failed": 88,
+      "total": 227
+    }
+  },
+  "by_difficulty": {
+    "medium": {
+      "passed": 1318,
+      "failed": 538,
+      "total": 1856
+    },
+    "easy": {
+      "passed": 97,
+      "failed": 47,
+      "total": 144
+    }
+  },
+  "by_intent": {
+    "SHIPMENT_CREATE": {
+      "passed": 25,
+      "failed": 20,
+      "total": 45
+    },
+    "SUPPLIER_EVALUATE": {
+      "passed": 43,
+      "failed": 3,
+      "total": 46
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "passed": 37,
+      "failed": 8,
+      "total": 45
+    },
+    "REPORT_FINANCE": {
+      "passed": 30,
+      "failed": 17,
+      "total": 47
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "passed": 34,
+      "failed": 11,
+      "total": 45
+    },
+    "REPORT_INVENTORY": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "EQUIPMENT_ALERT_LIST": {
+      "passed": 40,
+      "failed": 5,
+      "total": 45
+    },
+    "CLOCK_IN": {
+      "passed": 10,
+      "failed": 37,
+      "total": 47
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "passed": 35,
+      "failed": 10,
+      "total": 45
+    },
+    "CUSTOMER_STATS": {
+      "passed": 34,
+      "failed": 12,
+      "total": 46
+    },
+    "ATTENDANCE_TODAY": {
+      "passed": 32,
+      "failed": 13,
+      "total": 45
+    },
+    "CUSTOMER_ACTIVE": {
+      "passed": 36,
+      "failed": 9,
+      "total": 45
+    },
+    "SHIPMENT_STATS": {
+      "passed": 30,
+      "failed": 17,
+      "total": 47
+    },
+    "TRACE_BATCH": {
+      "passed": 44,
+      "failed": 1,
+      "total": 45
+    },
+    "COST_QUERY": {
+      "passed": 39,
+      "failed": 7,
+      "total": 46
+    },
+    "ALERT_DIAGNOSE": {
+      "passed": 39,
+      "failed": 6,
+      "total": 45
+    },
+    "SHIPMENT_QUERY": {
+      "passed": 43,
+      "failed": 2,
+      "total": 45
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "ALERT_RESOLVE": {
+      "passed": 32,
+      "failed": 13,
+      "total": 45
+    },
+    "SHIPMENT_STATUS_UPDATE": {
+      "passed": 35,
+      "failed": 10,
+      "total": 45
+    },
+    "EQUIPMENT_ALERT_STATS": {
+      "passed": 33,
+      "failed": 12,
+      "total": 45
+    },
+    "REPORT_TRENDS": {
+      "passed": 9,
+      "failed": 37,
+      "total": 46
+    },
+    "QUALITY_STATS": {
+      "passed": 21,
+      "failed": 24,
+      "total": 45
+    },
+    "PROCESSING_BATCH_START": {
+      "passed": 32,
+      "failed": 13,
+      "total": 45
+    },
+    "TRACE_FULL": {
+      "passed": 29,
+      "failed": 16,
+      "total": 45
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "passed": 34,
+      "failed": 11,
+      "total": 45
+    },
+    "ATTENDANCE_STATS": {
+      "passed": 29,
+      "failed": 16,
+      "total": 45
+    },
+    "REPORT_EFFICIENCY": {
+      "passed": 31,
+      "failed": 15,
+      "total": 46
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "passed": 44,
+      "failed": 1,
+      "total": 45
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "passed": 21,
+      "failed": 25,
+      "total": 46
+    },
+    "ATTENDANCE_ANOMALY": {
+      "passed": 45,
+      "failed": 1,
+      "total": 46
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "passed": 22,
+      "failed": 23,
+      "total": 45
+    },
+    "SUPPLIER_LIST": {
+      "passed": 18,
+      "failed": 27,
+      "total": 45
+    },
+    "QUALITY_CHECK_QUERY": {
+      "passed": 33,
+      "failed": 12,
+      "total": 45
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "passed": 21,
+      "failed": 25,
+      "total": 46
+    },
+    "QUALITY_CRITICAL_ITEMS": {
+      "passed": 42,
+      "failed": 3,
+      "total": 45
+    },
+    "CLOCK_OUT": {
+      "passed": 31,
+      "failed": 16,
+      "total": 47
+    },
+    "ALERT_STATS": {
+      "passed": 40,
+      "failed": 5,
+      "total": 45
+    },
+    "ALERT_LIST": {
+      "passed": 42,
+      "failed": 3,
+      "total": 45
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "passed": 44,
+      "failed": 2,
+      "total": 46
+    },
+    "MATERIAL_UPDATE": {
+      "passed": 18,
+      "failed": 27,
+      "total": 45
+    },
+    "REPORT_ANOMALY": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "passed": 35,
+      "failed": 10,
+      "total": 45
+    },
+    "REPORT_KPI": {
+      "passed": 24,
+      "failed": 21,
+      "total": 45
+    }
+  },
+  "methods": {
+    "PHRASE_MATCH": 1149,
+    "LLM": 634,
+    "SEMANTIC": 54,
+    "EXACT": 31
+  },
+  "failed_cases": [
+    {
+      "id": 1,
+      "input": "我想查录入发货信息吧",
+      "expected": "SHIPMENT_CREATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))"
+    },
+    {
+      "id": 9,
+      "input": "帮我查一下打卡上班吧",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.95,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 12,
+      "input": "客户情况汇总",
+      "expected": "CUSTOMER_STATS",
+      "actual": "CUSTOMER_BY_TYPE",
+      "method": "LLM",
+      "confidence": 0.862468606668103,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 16,
+      "input": "帮我查一下发货订单统计",
+      "expected": "SHIPMENT_STATS",
+      "actual": "ORDER_LIST",
+      "method": "SEMANTIC",
+      "confidence": 0.8568675727858445,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 24,
+      "input": "帮我查一下标记已处理呢",
+      "expected": "ALERT_RESOLVE",
+      "actual": "ALERT_ACTIVE",
+      "method": "LLM",
+      "confidence": 0.8692750981626224,
+      "category": "alert",
+      "error": null
+    },
+    {
+      "id": 27,
+      "input": "这个月趋势分析吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 29,
+      "input": "我想查变化趋势分析吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 31,
+      "input": "我想查质量数据分析呢",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 35,
+      "input": "查一下溯源记录",
+      "expected": "TRACE_FULL",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8664710377538792,
+      "category": "trace",
+      "error": null
+    },
+    {
+      "id": 37,
+      "input": "我想查仓库里还有什么呢",
+      "expected": "REPORT_INVENTORY",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "method": "LLM",
+      "confidence": 0.9206575428868385,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 40,
+      "input": "查一下各部门考勤昨天",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 41,
+      "input": "查一下开始新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8935214435173882,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 42,
+      "input": "帮我看看生产效率统计呢",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.9245733518261913,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 51,
+      "input": "查一下生产任务进度吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.9245733518261913,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 53,
+      "input": "帮我查一下本月质量报表呢",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 55,
+      "input": "变化趋势分析",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 56,
+      "input": "我想查检验报告查询吧",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8750038590486446,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 58,
+      "input": "我要看这周生产状况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8569452306026941,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 61,
+      "input": "我要看收支情况昨天呢",
+      "expected": "REPORT_FINANCE",
+      "actual": "ORDER_TODAY",
+      "method": "LLM",
+      "confidence": 0.8470084385027228,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 64,
+      "input": "我想查快过期原料吧",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRED_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 85,
+      "input": "查一下今天质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 89,
+      "input": "帮我看看原料信息变更",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 90,
+      "input": "我要看数据趋势上个月吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "CUSTOMER_STATS",
+      "method": "LLM",
+      "confidence": 0.8954245980129248,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 91,
+      "input": "查一下批次原料查询呢",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8935214435173882,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 94,
+      "input": "看看原料信息变更呢",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 97,
+      "input": "我要看上班打卡吧",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_STATUS",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 98,
+      "input": "帮我看看供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_ACTIVE",
+      "method": "SEMANTIC",
+      "confidence": 0.8504835276205441,
+      "category": "supplier",
+      "error": null
+    },
+    {
+      "id": 99,
+      "input": "帮我看看标记已处理吧",
+      "expected": "ALERT_RESOLVE",
+      "actual": "ALERT_ACTIVE",
+      "method": "LLM",
+      "confidence": 0.8663807451475339,
+      "category": "alert",
+      "error": null
+    },
+    {
+      "id": 101,
+      "input": "我想查修改原料数据呢",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "SCALE_UPDATE_DEVICE",
+      "method": "LLM",
+      "confidence": 0.8980826578046364,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 106,
+      "input": "设备运转怎么样吧",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 107,
+      "input": "看看批次原料查询呢",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8935214435173882,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 108,
+      "input": "看看记录下班吧",
+      "expected": "CLOCK_OUT",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8824495207098643,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 109,
+      "input": "查一下变化趋势分析呢",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 112,
+      "input": "异常数据分析呢",
+      "expected": "REPORT_ANOMALY",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 114,
+      "input": "看看记录下班吧",
+      "expected": "CLOCK_OUT",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8824495207098643,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 117,
+      "input": "帮我看看修改原料数据呢",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.876766310965648,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 118,
+      "input": "看看质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 119,
+      "input": "查一下保质期提醒吧",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRED_QUERY",
+      "method": "LLM",
+      "confidence": 0.8593901030192546,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 125,
+      "input": "我要看异常数据分析呢",
+      "expected": "REPORT_ANOMALY",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 130,
+      "input": "查一下生产批次记录吧",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 131,
+      "input": "帮我查一下开始新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8935214435173882,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 132,
+      "input": "帮我看看本月趋势分析吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 147,
+      "input": "帮我查一下本周质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 154,
+      "input": "我想查溯源记录",
+      "expected": "TRACE_FULL",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8812042086062221,
+      "category": "trace",
+      "error": null
+    },
+    {
+      "id": 156,
+      "input": "查一下各部门考勤今日呢",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 172,
+      "input": "帮我看一下最近业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "CUSTOMER_ACTIVE",
+      "method": "LLM",
+      "confidence": 0.855880635250126,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 175,
+      "input": "帮我查一下生产效率统计呢",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.9245733518261913,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 176,
+      "input": "帮我查一下数据趋势上周",
+      "expected": "REPORT_TRENDS",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.876766310965648,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 184,
+      "input": "查一下今天谁在吧",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ORDER_TODAY",
+      "method": "LLM",
+      "confidence": 0.8332776028063316,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 186,
+      "input": "帮我看看设备故障呢",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 187,
+      "input": "我要看生产任务进度呢",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8569452306026941,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 189,
+      "input": "优质客户名单呢",
+      "expected": "CUSTOMER_ACTIVE",
+      "actual": "CUSTOMER_LIST",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 190,
+      "input": "帮我看看核心指标汇总",
+      "expected": "REPORT_KPI",
+      "actual": "QUERY_SOLVENCY",
+      "method": "LLM",
+      "confidence": 0.8734918821565634,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 191,
+      "input": "问题数据汇总",
+      "expected": "REPORT_ANOMALY",
+      "actual": "REPORT_INVENTORY",
+      "method": "LLM",
+      "confidence": 0.8667485320896504,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 194,
+      "input": "查一下记录上班",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8664710377538792,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 195,
+      "input": "我要看记录下班呢",
+      "expected": "CLOCK_OUT",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8824495207098643,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 196,
+      "input": "查一下财务分析报告吧",
+      "expected": "REPORT_FINANCE",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8750038590486446,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 198,
+      "input": "帮我查一下发货订单统计",
+      "expected": "SHIPMENT_STATS",
+      "actual": "ORDER_LIST",
+      "method": "SEMANTIC",
+      "confidence": 0.8568675727858445,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 202,
+      "input": "看看记录下班呢",
+      "expected": "CLOCK_OUT",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8824495207098643,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 205,
+      "input": "生产效率统计呢",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_INVENTORY",
+      "method": "LLM",
+      "confidence": 0.8605612203024995,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 211,
+      "input": "我要看上班打卡",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_STATUS",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 219,
+      "input": "我想查原料情况吧",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "SUPPLIER_SEARCH",
+      "method": "LLM",
+      "confidence": 0.891915087806842,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 220,
+      "input": "我想查核心指标汇总吧",
+      "expected": "REPORT_KPI",
+      "actual": "QUERY_SOLVENCY",
+      "method": "LLM",
+      "confidence": 0.8740935930639032,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 224,
+      "input": "我想查数据趋势今天",
+      "expected": "REPORT_TRENDS",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8982631482704827,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 233,
+      "input": "我想查发货订单统计吧",
+      "expected": "SHIPMENT_STATS",
+      "actual": "ORDER_TODAY",
+      "method": "LLM",
+      "confidence": 0.923660981969799,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 237,
+      "input": "查一下今天原料情况吧",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "SUPPLIER_SEARCH",
+      "method": "LLM",
+      "confidence": 0.8878885077848075,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 243,
+      "input": "帮我看看登记生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": "HTTPConnectionPool(host='139.196.165.140', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by ConnectTimeoutError(<HTTPConnection(host='139.196.165.140', port=10010) at 0x1c0b4200810>, 'Connection to 139.196.165.140 timed out. (connect timeout=60)'))"
+    },
+    {
+      "id": 244,
+      "input": "我要看供应商列表呢",
+      "expected": "SUPPLIER_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "supplier",
+      "error": "HTTPConnectionPool(host='139.196.165.140', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by ConnectTimeoutError(<HTTPConnection(host='139.196.165.140', port=10010) at 0x1c0b4210e90>, 'Connection to 139.196.165.140 timed out. (connect timeout=60)'))"
+    },
+    {
+      "id": 254,
+      "input": "我想查批次开工",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 259,
+      "input": "帮我看一下上个月业绩吧",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "ATTENDANCE_MONTHLY",
+      "method": "LLM",
+      "confidence": 0.9050478347377527,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 261,
+      "input": "帮我看看收支情况今日吧",
+      "expected": "REPORT_FINANCE",
+      "actual": "ORDER_TODAY",
+      "method": "LLM",
+      "confidence": 0.9050609039079056,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 263,
+      "input": "客户情况汇总",
+      "expected": "CUSTOMER_STATS",
+      "actual": "CUSTOMER_BY_TYPE",
+      "method": "LLM",
+      "confidence": 0.862468606668103,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 264,
+      "input": "我想查今天生产状况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.9130253305754491,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 267,
+      "input": "我想查调出本周销售报告",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "EQUIPMENT_ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8780619126648277,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 271,
+      "input": "我想查异常数据分析",
+      "expected": "REPORT_ANOMALY",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 276,
+      "input": "帮我查一下缺货预警吧",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 277,
+      "input": "我要看客户数据分析呢",
+      "expected": "CUSTOMER_STATS",
+      "actual": "CUSTOMER_BY_TYPE",
+      "method": "LLM",
+      "confidence": 0.862639539660958,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 278,
+      "input": "帮我查一下各部门考勤今日",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 280,
+      "input": "帮我看看今日打卡统计呢",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 282,
+      "input": "查一下批次开工呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "method": "LLM",
+      "confidence": 0.8935214435173882,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 283,
+      "input": "看看质量数据分析呢",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 301,
+      "input": "质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 306,
+      "input": "帮我查一下标记已处理",
+      "expected": "ALERT_RESOLVE",
+      "actual": "ALERT_ACTIVE",
+      "method": "LLM",
+      "confidence": 0.8692750981626224,
+      "category": "alert",
+      "error": null
+    },
+    {
+      "id": 323,
+      "input": "我要看原料信息变更呢",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 329,
+      "input": "我想查设备故障上周呢",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 330,
+      "input": "看看检验报告查询吧",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8750038590486446,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 336,
+      "input": "帮我查一下打卡上班吧",
+      "expected": "CLOCK_IN",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 337,
+      "input": "我想查产线运行情况吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 342,
+      "input": "我想查变化趋势分析吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 343,
+      "input": "我要看检验报告查询吧",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8750038590486446,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 349,
+      "input": "查看供应商",
+      "expected": "SUPPLIER_LIST",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "supplier",
+      "error": null
+    },
+    {
+      "id": 352,
+      "input": "我要看最近趋势分析吧",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 354,
+      "input": "客户情况汇总吧",
+      "expected": "CUSTOMER_STATS",
+      "actual": "CUSTOMER_BY_TYPE",
+      "method": "LLM",
+      "confidence": 0.862468606668103,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 356,
+      "input": "我想查原料信息变更吧",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 364,
+      "input": "帮我查一下溯源记录呢",
+      "expected": "TRACE_FULL",
+      "actual": "ATTENDANCE_HISTORY",
+      "method": "LLM",
+      "confidence": 0.8664710377538792,
+      "category": "trace",
+      "error": null
+    },
+    {
+      "id": 365,
+      "input": "帮我看看保质期提醒吧",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRED_QUERY",
+      "method": "LLM",
+      "confidence": 0.8593901030192546,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 372,
+      "input": "我要看异常数据分析",
+      "expected": "REPORT_ANOMALY",
+      "actual": "REPORT_FINANCE",
+      "method": "LLM",
+      "confidence": 0.9171703490544508,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 373,
+      "input": "我想查收支情况本月呢",
+      "expected": "REPORT_FINANCE",
+      "actual": "ATTENDANCE_MONTHLY",
+      "method": "LLM",
+      "confidence": 0.9396110100707444,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 377,
+      "input": "查看供应商吧",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_SEARCH",
+      "method": "LLM",
+      "confidence": 0.92,
+      "category": "supplier",
+      "error": null
+    },
+    {
+      "id": 391,
+      "input": "我想查检验报告查询吧",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "ALERT_STATS",
+      "method": "LLM",
+      "confidence": 0.8750038590486446,
+      "category": "quality",
+      "error": null
+    }
+  ],
+  "latency_stats": {
+    "avg": 2371.8572392964006,
+    "min": 447.3881721496582,
+    "max": 27166.014432907104
+  }
+}

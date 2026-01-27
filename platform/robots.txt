@@ -1,0 +1,12 @@
+# 白垩纪AI展示网站 robots.txt
+# https://cretaceousfuture.com
+
+User-agent: *
+Allow: /
+
+# 禁止爬取非公开资源
+Disallow: /product-brochure/output/
+Disallow: /*.pdf$
+
+# Sitemap
+Sitemap: https://cretaceousfuture.com/sitemap.xml

@@ -12,6 +12,17 @@ export { default as HeatmapChart } from './HeatmapChart.vue';
 export { default as CombinedChart } from './CombinedChart.vue';
 export { default as MapChart } from './MapChart.vue';
 export { default as KPICard } from './KPICard.vue';
+export { default as WaterfallChart } from './WaterfallChart.vue';
+export { default as PeriodSelector } from './PeriodSelector.vue';
+export { default as AIInsightPanel } from './AIInsightPanel.vue';
+export { default as BudgetAchievementChart } from './BudgetAchievementChart.vue';
+export { default as YoYMoMComparisonChart } from './YoYMoMComparisonChart.vue';
+export { default as CategoryStructureComparisonChart } from './CategoryStructureComparisonChart.vue';
+export { default as RadarChart } from './RadarChart.vue';
+export { default as NestedDonutChart } from './NestedDonutChart.vue';
+
+// Layout Components
+export { default as DashboardBuilder } from './DashboardBuilder.vue';
 
 // Type exports
 export type { TrendDataPoint, TrendSeries } from './TrendChart.vue';
@@ -21,6 +32,15 @@ export type { HeatmapDataPoint } from './HeatmapChart.vue';
 export type { CombinedDataPoint, CombinedSeries } from './CombinedChart.vue';
 export type { MapDataItem } from './MapChart.vue';
 export type { TrendDirection, StatusType } from './KPICard.vue';
+export type { WaterfallDataPoint, WaterfallColors } from './WaterfallChart.vue';
+export type { PeriodType, PeriodSelection } from './PeriodSelector.vue';
+export type { AIInsight, InsightSection } from './AIInsightPanel.vue';
+export type { BudgetData } from './BudgetAchievementChart.vue';
+export type { ComparisonData, ViewMode } from './YoYMoMComparisonChart.vue';
+export type { CategoryComparisonData, CategorySummary, ChartViewMode } from './CategoryStructureComparisonChart.vue';
+export type { RadarIndicator, RadarSeries } from './RadarChart.vue';
+export type { NestedDonutDataItem } from './NestedDonutChart.vue';
+export type { DashboardLayout, DashboardCard, ChartDefinition } from './DashboardBuilder.vue';
 
 // Utility types for common chart configurations
 export interface ChartTheme {

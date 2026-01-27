@@ -76,14 +76,16 @@ async function loadFinanceData() {
 
   loading.value = true;
   try {
-    // 尝试获取财务数据
-    const response = await get<any>(`/${factoryId.value}/reports/finance`);
+    // 使用 SmartBI 财务分析端点
+    const response = await get<any>(`/${factoryId.value}/smart-bi/analysis/finance`);
     if (response.success && response.data) {
+      // 从 SmartBI 响应中提取财务数据
+      const data = response.data;
       financeStats.value = {
-        totalRevenue: (response.data.totalRevenue ?? 0) / 10000,
-        totalCost: (response.data.totalCost ?? 0) / 10000,
-        grossProfit: (response.data.grossProfit ?? 0) / 10000,
-        profitMargin: response.data.profitMargin ?? 0
+        totalRevenue: (data.totalRevenue ?? data.revenue ?? 0) / 10000,
+        totalCost: (data.totalCost ?? data.cost ?? 0) / 10000,
+        grossProfit: (data.grossProfit ?? data.profit ?? 0) / 10000,
+        profitMargin: data.profitMargin ?? data.profitRate ?? 0
       };
     } else {
       // 使用模拟数据
@@ -95,8 +97,7 @@ async function loadFinanceData() {
       };
     }
   } catch (error) {
-    console.error('Failed to load finance data:', error);
-    // 使用模拟数据
+    // 静默处理 - 使用模拟数据 (端点需要认证或暂无数据时)
     financeStats.value = {
       totalRevenue: 125,
       totalCost: 87.5,

@@ -1,0 +1,20 @@
+{
+  "totalLoops": 0,
+  "totalTests": 0,
+  "passed": 0,
+  "failed": 0,
+  "errors": [],
+  "startTime": "2026-01-26T07:38:24.622Z",
+  "lastLoopTime": "2026-01-26T07:38:24.622Z",
+  "config": {
+    "baseUrl": "http://139.196.165.140:8086",
+    "headed": false,
+    "slowMo": 0,
+    "maxLoops": null,
+    "pauseOnError": false,
+    "testDataDir": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-smartbi\\test-data",
+    "reportDir": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-smartbi\\reports",
+    "authStateFile": "C:\\Users\\Steve\\my-prototype-logistics\\tests\\e2e-smartbi\\auth-state.json"
+  },
+  "successRate": "NaN%"
+}

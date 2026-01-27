@@ -1,0 +1,18 @@
+{
+  "shard_id": 3,
+  "total_shards": 4,
+  "start_idx": 1413,
+  "end_idx": 1884,
+  "total_samples": 471,
+  "tested_samples": 471,
+  "errors": 0,
+  "correct": 452,
+  "top3_correct": 466,
+  "top5_correct": 469,
+  "accuracy_top1": 95.96602972399151,
+  "accuracy_top3": 98.93842887473461,
+  "accuracy_top5": 99.57537154989384,
+  "avg_confidence": 0.9111292823484749,
+  "elapsed_seconds": 983.9962530136108,
+  "timestamp": "2026-01-26T11:42:18.139578"
+}
