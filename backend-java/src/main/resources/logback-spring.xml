@@ -159,8 +159,8 @@
         </root>
     </springProfile>
 
-    <!-- 生产环境 -->
-    <springProfile name="prod">
+    <!-- 生产环境 (包括 pg-prod) -->
+    <springProfile name="prod,pg-prod">
         <root level="WARN">
             <appender-ref ref="ASYNC_INFO"/>
             <appender-ref ref="ASYNC_ERROR"/>
