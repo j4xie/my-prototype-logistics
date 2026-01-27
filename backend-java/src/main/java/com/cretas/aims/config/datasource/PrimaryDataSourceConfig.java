@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.persistence.EntityManagerFactory;
 import javax.sql.DataSource;
+import com.zaxxer.hikari.HikariDataSource;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -80,7 +81,8 @@ public class PrimaryDataSourceConfig {
     }
 
     /**
-     * Primary DataSource (MySQL)
+     * Primary DataSource
+     * Note: auto-commit must be disabled for proper transaction management with PostgreSQL
      */
     @Primary
     @Bean(name = "primaryDataSource")
@@ -89,8 +91,13 @@ public class PrimaryDataSourceConfig {
         System.out.println("======= Creating primaryDataSource =======");
         System.out.println("URL: " + properties.getUrl());
         System.out.println("Username: " + properties.getUsername());
-        DataSource ds = properties.initializeDataSourceBuilder().build();
+        HikariDataSource ds = properties.initializeDataSourceBuilder()
+                .type(HikariDataSource.class)
+                .build();
+        // Disable auto-commit for proper transaction management with PostgreSQL
+        ds.setAutoCommit(false);
         System.out.println("======= primaryDataSource created: " + ds.getClass().getName() + " =======");
+        System.out.println("======= autoCommit: " + ds.isAutoCommit() + " =======");
         return ds;
     }
 
