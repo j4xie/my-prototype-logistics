@@ -21,29 +21,6 @@ import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
-// SmartBI MySQL entity imports (NOT postgres!)
-import com.cretas.aims.entity.smartbi.AiAgentRule;
-import com.cretas.aims.entity.smartbi.AiIntentConfig;
-import com.cretas.aims.entity.smartbi.SkuComplexity;
-import com.cretas.aims.entity.smartbi.SmartBiAlertThreshold;
-import com.cretas.aims.entity.smartbi.SmartBiAnalysisCache;
-import com.cretas.aims.entity.smartbi.SmartBiAnalysisConfig;
-import com.cretas.aims.entity.smartbi.SmartBiBillingConfig;
-import com.cretas.aims.entity.smartbi.SmartBiChartTemplate;
-import com.cretas.aims.entity.smartbi.SmartBiDatasource;
-import com.cretas.aims.entity.smartbi.SmartBiDepartmentData;
-import com.cretas.aims.entity.smartbi.SmartBiDictionary;
-import com.cretas.aims.entity.smartbi.SmartBiExcelUpload;
-import com.cretas.aims.entity.smartbi.SmartBiFieldDefinition;
-import com.cretas.aims.entity.smartbi.SmartBiFinanceData;
-import com.cretas.aims.entity.smartbi.SmartBiIncentiveRule;
-import com.cretas.aims.entity.smartbi.SmartBiMetricFormula;
-import com.cretas.aims.entity.smartbi.SmartBiQueryHistory;
-import com.cretas.aims.entity.smartbi.SmartBiSalesData;
-import com.cretas.aims.entity.smartbi.SmartBiSchemaHistory;
-import com.cretas.aims.entity.smartbi.SmartBiSkill;
-import com.cretas.aims.entity.smartbi.SmartBiUsageRecord;
-
 /**
  * Primary DataSource Configuration (MySQL)
  *
@@ -168,36 +145,11 @@ public class PrimaryDataSourceConfig {
                 "com.cretas.aims.entity.rules",
                 "com.cretas.aims.entity.scale",
                 "com.cretas.aims.entity.tool",
-                "com.cretas.aims.entity.voice"
-                // NOTE: We explicitly DO NOT include "com.cretas.aims.entity.smartbi" here
-                // because packages() scans subpackages, and smartbi.postgres entities
-                // require their own separate EntityManagerFactory (SmartBIPostgresDataSourceConfig).
-                // The SmartBI MySQL entities (AiAgentRule, etc.) are included via
-                // their Class<?> references below, which only scans that exact package.
-            )
-            .packages(
-                // SmartBI MySQL entities - use Class references to avoid scanning postgres subpackage
-                AiAgentRule.class,
-                AiIntentConfig.class,
-                SkuComplexity.class,
-                SmartBiAlertThreshold.class,
-                SmartBiAnalysisCache.class,
-                SmartBiAnalysisConfig.class,
-                SmartBiBillingConfig.class,
-                SmartBiChartTemplate.class,
-                SmartBiDatasource.class,
-                SmartBiDepartmentData.class,
-                SmartBiDictionary.class,
-                SmartBiExcelUpload.class,
-                SmartBiFieldDefinition.class,
-                SmartBiFinanceData.class,
-                SmartBiIncentiveRule.class,
-                SmartBiMetricFormula.class,
-                SmartBiQueryHistory.class,
-                SmartBiSalesData.class,
-                SmartBiSchemaHistory.class,
-                SmartBiSkill.class,
-                SmartBiUsageRecord.class
+                "com.cretas.aims.entity.voice",
+                // SmartBI entities - include the whole package including postgres subpackage
+                // Since DDL-auto=none, Hibernate won't try to create missing tables.
+                // The postgres entities will be scanned but not used (their repository is excluded)
+                "com.cretas.aims.entity.smartbi"
             )
             .persistenceUnit("primary")
             .properties(properties)
