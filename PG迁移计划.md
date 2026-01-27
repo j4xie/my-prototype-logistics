@@ -62,6 +62,7 @@
 | `logback-spring.xml` | springProfile 添加 pg-prod 支持 |
 | `application-pg-prod.properties` | 添加 `spring.datasource.hikari.auto-commit=false` |
 | `restart.sh` (服务器) | 设置所有必需环境变量，更新 JAR 文件名 |
+| `deploy.sh` (服务器) | 添加 pg-prod profile 和环境变量配置 |
 
 ### 服务器启动命令
 
