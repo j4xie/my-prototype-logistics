@@ -72,6 +72,14 @@ import com.cretas.aims.entity.smartbi.SmartBiUsageRecord;
 )
 public class PrimaryDataSourceConfig {
 
+    static {
+        System.out.println("======= PrimaryDataSourceConfig CLASS LOADED =======");
+    }
+
+    public PrimaryDataSourceConfig() {
+        System.out.println("======= PrimaryDataSourceConfig CONSTRUCTOR =======");
+    }
+
     @Value("${spring.jpa.properties.hibernate.dialect:org.hibernate.dialect.PostgreSQL10Dialect}")
     private String hibernateDialect;
 
@@ -88,6 +96,7 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryDataSourceProperties")
     @ConfigurationProperties(prefix = "spring.datasource")
     public DataSourceProperties primaryDataSourceProperties() {
+        System.out.println("======= Creating primaryDataSourceProperties =======");
         return new DataSourceProperties();
     }
 
@@ -98,7 +107,12 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryDataSource")
     public DataSource primaryDataSource(
             @Qualifier("primaryDataSourceProperties") DataSourceProperties properties) {
-        return properties.initializeDataSourceBuilder().build();
+        System.out.println("======= Creating primaryDataSource =======");
+        System.out.println("URL: " + properties.getUrl());
+        System.out.println("Username: " + properties.getUsername());
+        DataSource ds = properties.initializeDataSourceBuilder().build();
+        System.out.println("======= primaryDataSource created: " + ds.getClass().getName() + " =======");
+        return ds;
     }
 
     /**
@@ -109,6 +123,9 @@ public class PrimaryDataSourceConfig {
     public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
             @Qualifier("primaryDataSource") DataSource dataSource) {
+        System.out.println("======= Creating primaryEntityManagerFactory =======");
+        System.out.println("Hibernate dialect: " + hibernateDialect);
+        System.out.println("DDL auto: " + ddlAuto);
 
         Map<String, Object> properties = new HashMap<>();
         properties.put("hibernate.dialect", hibernateDialect);
