@@ -52,14 +52,6 @@ import java.util.Map;
 )
 public class PrimaryDataSourceConfig {
 
-    static {
-        System.out.println("======= PrimaryDataSourceConfig CLASS LOADED =======");
-    }
-
-    public PrimaryDataSourceConfig() {
-        System.out.println("======= PrimaryDataSourceConfig CONSTRUCTOR =======");
-    }
-
     @Value("${spring.jpa.properties.hibernate.dialect:org.hibernate.dialect.PostgreSQL10Dialect}")
     private String hibernateDialect;
 
@@ -76,7 +68,6 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryDataSourceProperties")
     @ConfigurationProperties(prefix = "spring.datasource")
     public DataSourceProperties primaryDataSourceProperties() {
-        System.out.println("======= Creating primaryDataSourceProperties =======");
         return new DataSourceProperties();
     }
 
@@ -88,16 +79,11 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryDataSource")
     public DataSource primaryDataSource(
             @Qualifier("primaryDataSourceProperties") DataSourceProperties properties) {
-        System.out.println("======= Creating primaryDataSource =======");
-        System.out.println("URL: " + properties.getUrl());
-        System.out.println("Username: " + properties.getUsername());
         HikariDataSource ds = properties.initializeDataSourceBuilder()
                 .type(HikariDataSource.class)
                 .build();
         // Disable auto-commit for proper transaction management with PostgreSQL
         ds.setAutoCommit(false);
-        System.out.println("======= primaryDataSource created: " + ds.getClass().getName() + " =======");
-        System.out.println("======= autoCommit: " + ds.isAutoCommit() + " =======");
         return ds;
     }
 
@@ -109,10 +95,6 @@ public class PrimaryDataSourceConfig {
     public LocalContainerEntityManagerFactoryBean primaryEntityManagerFactory(
             EntityManagerFactoryBuilder builder,
             @Qualifier("primaryDataSource") DataSource dataSource) {
-        System.out.println("======= Creating primaryEntityManagerFactory =======");
-        System.out.println("Hibernate dialect: " + hibernateDialect);
-        System.out.println("DDL auto: " + ddlAuto);
-
         Map<String, Object> properties = new HashMap<>();
         properties.put("hibernate.dialect", hibernateDialect);
         properties.put("hibernate.hbm2ddl.auto", ddlAuto);
@@ -127,8 +109,7 @@ public class PrimaryDataSourceConfig {
         // containing that class, NOT its subpackages.
         //
         // All other packages have no PostgreSQL subpackages, so we can use string names.
-        System.out.println("======= Building EntityManagerFactory with builder =======");
-        LocalContainerEntityManagerFactoryBean result = builder
+        return builder
             .dataSource(dataSource)
             .packages(
                 // Root entity package (entities not in subfolders)
@@ -161,20 +142,15 @@ public class PrimaryDataSourceConfig {
             .persistenceUnit("primary")
             .properties(properties)
             .build();
-        System.out.println("======= EntityManagerFactory build() returned =======");
-        return result;
     }
 
     /**
-     * Primary TransactionManager (MySQL)
+     * Primary TransactionManager
      */
     @Primary
     @Bean(name = "primaryTransactionManager")
     public PlatformTransactionManager primaryTransactionManager(
             @Qualifier("primaryEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        System.out.println("======= Creating primaryTransactionManager =======");
-        JpaTransactionManager txManager = new JpaTransactionManager(entityManagerFactory);
-        System.out.println("======= primaryTransactionManager created =======");
-        return txManager;
+        return new JpaTransactionManager(entityManagerFactory);
     }
 }
