@@ -142,8 +142,7 @@ public class PrimaryDataSourceConfig {
         //
         // All other packages have no PostgreSQL subpackages, so we can use string names.
         System.out.println("======= Building EntityManagerFactory with builder =======");
-        try {
-            LocalContainerEntityManagerFactoryBean result = builder
+        LocalContainerEntityManagerFactoryBean result = builder
             .dataSource(dataSource)
             .packages(
                 // Root entity package (entities not in subfolders)
@@ -169,35 +168,13 @@ public class PrimaryDataSourceConfig {
                 "com.cretas.aims.entity.tool",
                 "com.cretas.aims.entity.voice",
                 // SmartBI MySQL entities - explicitly list the package
-                // NOTE: postgres subpackage will be excluded by SmartBIPostgresDataSourceConfig
-                // which has its own EntityManagerFactory. The entities in postgres subpackage
-                // use @Table annotations that reference PostgreSQL tables, so even if they
-                // are scanned by MySQL EMF, they won't conflict at runtime.
                 "com.cretas.aims.entity.smartbi"
             )
             .persistenceUnit("primary")
             .properties(properties)
             .build();
-            System.out.println("======= EntityManagerFactory built successfully =======");
-            System.out.println("======= Calling afterPropertiesSet() =======");
-            try {
-                result.afterPropertiesSet();
-                System.out.println("======= afterPropertiesSet() completed =======");
-            } catch (Exception e) {
-                System.out.println("======= afterPropertiesSet() FAILED =======");
-                System.out.println("Exception: " + e.getClass().getName());
-                System.out.println("Message: " + e.getMessage());
-                e.printStackTrace();
-                throw e;
-            }
-            return result;
-        } catch (Exception e) {
-            System.out.println("======= EntityManagerFactory build FAILED =======");
-            System.out.println("Exception: " + e.getClass().getName());
-            System.out.println("Message: " + e.getMessage());
-            e.printStackTrace();
-            throw e;
-        }
+        System.out.println("======= EntityManagerFactory build() returned =======");
+        return result;
     }
 
     /**
