@@ -1,0 +1,11 @@
+{
+  "records": [
+    {"id": "f1", "userInput": "删除这个产品", "normalizedInput": "删除产品", "executionStatus": "FAILED", "errorAttribution": "RULE_MISS", "matchedIntentCode": null},
+    {"id": "f2", "userInput": "把产品删了", "normalizedInput": "删除产品", "executionStatus": "FAILED", "errorAttribution": "RULE_MISS", "matchedIntentCode": null},
+    {"id": "f3", "userInput": "删除产品信息", "normalizedInput": "删除产品", "executionStatus": "FAILED", "errorAttribution": "RULE_MISS", "matchedIntentCode": null},
+    {"id": "f4", "userInput": "修改价格", "normalizedInput": "修改价格", "executionStatus": "FAILED", "errorAttribution": "AMBIGUOUS", "matchedIntentCode": "UPDATE_PRICE"},
+    {"id": "f5", "userInput": "改一下价格", "normalizedInput": "修改价格", "executionStatus": "FAILED", "errorAttribution": "AMBIGUOUS", "matchedIntentCode": "UPDATE_PRICE"},
+    {"id": "f6", "userInput": "正常查询", "executionStatus": "EXECUTED", "matchedIntentCode": "QUERY"}
+  ],
+  "minFrequency": 2
+}

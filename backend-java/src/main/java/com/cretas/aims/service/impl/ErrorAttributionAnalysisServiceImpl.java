@@ -1,6 +1,7 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.client.PythonErrorAnalysisClient;
+import com.cretas.aims.config.PythonErrorAnalysisConfig;
 import com.cretas.aims.dto.python.ErrorAnalysisResponse;
 import com.cretas.aims.entity.intent.ErrorAttributionStatistics;
 import com.cretas.aims.entity.intent.IntentMatchRecord;
@@ -53,6 +54,9 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
     @Autowired
     private PythonErrorAnalysisClient pythonErrorAnalysisClient;
 
+    @Autowired
+    private PythonErrorAnalysisConfig pythonConfig;
+
     @Value("${cretas.ai.intent.analysis.retention-days:90}")
     private int matchRecordRetentionDays;
 
@@ -89,26 +93,36 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
                         .statDate(date)
                         .build());
 
-        // Try Python service first
-        if (pythonErrorAnalysisClient.isAvailable()) {
-            try {
-                Optional<ErrorAnalysisResponse.AggregateResponse> pythonResult =
-                        pythonErrorAnalysisClient.aggregateDaily(records);
-
-                if (pythonResult.isPresent()) {
-                    log.info("Using Python service for daily aggregation");
-                    ErrorAttributionStatistics mappedStats = mapPythonResponseToEntity(pythonResult.get(), stats);
-                    ErrorAttributionStatistics saved = statisticsRepository.save(mappedStats);
-                    log.info("Saved daily statistics via Python service: id={}, totalRequests={}, matchedCount={}",
-                            saved.getId(), saved.getTotalRequests(), saved.getMatchedCount());
-                    return saved;
-                }
-            } catch (Exception e) {
-                log.warn("Python aggregation failed, falling back to Java: {}", e.getMessage());
-            }
+        // 使用 Python 服务聚合统计（无 Java fallback）
+        if (!pythonConfig.isEnabled()) {
+            throw new RuntimeException("Python Error Analysis 服务未启用，请检查配置");
+        }
+        if (!pythonErrorAnalysisClient.isAvailable()) {
+            throw new RuntimeException("Python Error Analysis 服务不可用，请确保服务已启动: " + pythonConfig.getUrl());
         }
 
-        // Fallback to Java aggregation logic
+        try {
+            Optional<ErrorAnalysisResponse.AggregateResponse> pythonResult =
+                    pythonErrorAnalysisClient.aggregateDaily(records);
+
+            if (pythonResult.isPresent()) {
+                log.info("Using Python service for daily aggregation");
+                ErrorAttributionStatistics mappedStats = mapPythonResponseToEntity(pythonResult.get(), stats);
+                ErrorAttributionStatistics saved = statisticsRepository.save(mappedStats);
+                log.info("Saved daily statistics via Python service: id={}, totalRequests={}, matchedCount={}",
+                        saved.getId(), saved.getTotalRequests(), saved.getMatchedCount());
+                return saved;
+            }
+            throw new RuntimeException("Python 服务返回空结果");
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Python 聚合分析失败: " + e.getMessage(), e);
+        }
+
+        // 以下 Java 实现代码已废弃，保留作为参考
+        // ===== DEPRECATED - 以下代码不再执行 =====
+        /*
         // 聚合基础统计
         stats.setTotalRequests(records.size());
         stats.setMatchedCount((int) records.stream()
@@ -239,6 +253,8 @@ public class ErrorAttributionAnalysisServiceImpl implements ErrorAttributionAnal
                 saved.getId(), saved.getTotalRequests(), saved.getMatchedCount());
 
         return saved;
+        */
+        // ===== END DEPRECATED =====
     }
 
     /**

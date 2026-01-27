@@ -2,6 +2,9 @@ package com.cretas.aims.client;
 
 import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.python.*;
+import com.cretas.aims.dto.python.ClassifierRequest;
+import com.cretas.aims.dto.python.ClassifierResponse;
+import com.cretas.aims.dto.python.ClassifierBatchResponse;
 import com.cretas.aims.dto.python.PythonAnalysisRequest;
 import com.cretas.aims.dto.python.PythonAnalysisResponse;
 import com.cretas.aims.dto.smartbi.ExcelParseResponse;
@@ -1032,6 +1035,121 @@ public class PythonSmartBIClient {
      */
     public String getServiceUrl() {
         return config.getUrl();
+    }
+
+    // ==================== 意图分类器 ====================
+
+    /**
+     * 调用 Python 意图分类服务
+     *
+     * @param text 待分类文本
+     * @return 分类结果
+     */
+    public Optional<ClassifierResponse> classifyIntent(String text) {
+        return classifyIntent(text, 3);
+    }
+
+    /**
+     * 调用 Python 意图分类服务（指定 top-k）
+     *
+     * @param text 待分类文本
+     * @param topK 返回 top-k 个结果
+     * @return 分类结果
+     */
+    public Optional<ClassifierResponse> classifyIntent(String text, int topK) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过意图分类");
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("调用 Python 意图分类: text='{}'", text);
+
+            ClassifierRequest request = ClassifierRequest.of(text, topK);
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getClassifyUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            ClassifierResponse response = executeWithRetry(httpRequest, ClassifierResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException e) {
+            log.error("意图分类失败: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 批量意图分类
+     *
+     * @param texts 文本列表
+     * @return 批量分类结果
+     */
+    public Optional<ClassifierBatchResponse> classifyIntentBatch(List<String> texts) {
+        return classifyIntentBatch(texts, 1);
+    }
+
+    /**
+     * 批量意图分类（指定 top-k）
+     *
+     * @param texts 文本列表
+     * @param topK  每个文本返回 top-k 个结果
+     * @return 批量分类结果
+     */
+    public Optional<ClassifierBatchResponse> classifyIntentBatch(List<String> texts, int topK) {
+        if (!config.isEnabled()) {
+            log.debug("Python SmartBI 服务未启用，跳过批量意图分类");
+            return Optional.empty();
+        }
+
+        try {
+            log.debug("调用 Python 批量意图分类: count={}", texts.size());
+
+            ClassifierRequest request = ClassifierRequest.ofBatch(texts, topK);
+
+            Request httpRequest = new Request.Builder()
+                    .url(config.getClassifyBatchUrl())
+                    .post(RequestBody.create(JSON, objectMapper.writeValueAsString(request)))
+                    .build();
+
+            ClassifierBatchResponse response = executeWithRetry(httpRequest, ClassifierBatchResponse.class);
+            return Optional.ofNullable(response);
+
+        } catch (IOException e) {
+            log.error("批量意图分类失败: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 检查分类器是否可用
+     *
+     * @return 分类器健康状态
+     */
+    public boolean isClassifierAvailable() {
+        if (!config.isEnabled()) {
+            return false;
+        }
+
+        try {
+            Request request = new Request.Builder()
+                    .url(config.getClassifierHealthUrl())
+                    .get()
+                    .build();
+
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (response.isSuccessful() && response.body() != null) {
+                    String body = response.body().string();
+                    // 检查 model_loaded 字段
+                    return body.contains("\"model_loaded\":true") || body.contains("\"model_loaded\": true");
+                }
+            }
+        } catch (IOException e) {
+            log.warn("分类器健康检查失败: {}", e.getMessage());
+        }
+        return false;
     }
 
     // ==================== LinUCB 计算 ====================

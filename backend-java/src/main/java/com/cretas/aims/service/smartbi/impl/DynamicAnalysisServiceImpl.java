@@ -1,6 +1,8 @@
 package com.cretas.aims.service.smartbi.impl;
 
 import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.controller.SmartBIController.BackfillResult;
+import com.cretas.aims.controller.SmartBIController.BatchBackfillResult;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
@@ -11,6 +13,8 @@ import com.cretas.aims.service.smartbi.DynamicAnalysisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -83,7 +87,7 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
         // Generate charts
         response.setCharts(generateCharts(factoryId, uploadId, measures, dimensions));
 
-        // Generate insights (try Python, fallback to Java)
+        // Generate insights from PostgreSQL data
         response.setInsights(generateInsights(factoryId, uploadId, upload.getDetectedTableType(),
                 dataRows, measures, dimensions));
 
@@ -348,5 +352,229 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
         } else {
             return String.format("%.2f", value);
         }
+    }
+
+    // ==================== Phase 5: Data Preview & Backfill ====================
+
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager", readOnly = true)
+    public Page<SmartBiDynamicData> getDataPage(String factoryId, Long uploadId, int page, int size) {
+        log.info("Getting data page: factoryId={}, uploadId={}, page={}, size={}",
+                factoryId, uploadId, page, size);
+        return dynamicDataRepository.findByFactoryIdAndUploadIdOrderByRowIndex(
+                factoryId, uploadId, PageRequest.of(page, size));
+    }
+
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager", readOnly = true)
+    public long getFieldCount(Long uploadId) {
+        return fieldDefRepository.countByUploadId(uploadId);
+    }
+
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager")
+    public BackfillResult backfillFieldDefinitions(String factoryId, Long uploadId) {
+        log.info("Backfilling field definitions: factoryId={}, uploadId={}", factoryId, uploadId);
+
+        // 1. Check if upload exists
+        Optional<SmartBiPgExcelUpload> uploadOpt = uploadRepository.findById(uploadId);
+        if (uploadOpt.isEmpty()) {
+            return BackfillResult.failed(uploadId, "Upload record not found");
+        }
+        SmartBiPgExcelUpload upload = uploadOpt.get();
+
+        // 2. Check if factory matches
+        if (!factoryId.equals(upload.getFactoryId())) {
+            return BackfillResult.failed(uploadId, "Factory ID mismatch");
+        }
+
+        // 3. Check if already has field definitions
+        long existingCount = fieldDefRepository.countByUploadId(uploadId);
+        if (existingCount > 0) {
+            return BackfillResult.skipped(uploadId, "Already has " + existingCount + " field definitions");
+        }
+
+        // 4. Try to rebuild from field_mappings
+        Map<String, String> fieldMappings = upload.getFieldMappings();
+        if (fieldMappings == null || fieldMappings.isEmpty()) {
+            // Try to infer from data if no mappings
+            return backfillFromData(factoryId, uploadId);
+        }
+
+        // 5. Create field definitions from mappings
+        List<SmartBiPgFieldDefinition> fields = new ArrayList<>();
+        int order = 0;
+        for (Map.Entry<String, String> entry : fieldMappings.entrySet()) {
+            SmartBiPgFieldDefinition field = SmartBiPgFieldDefinition.builder()
+                    .uploadId(uploadId)
+                    .originalName(entry.getKey())
+                    .standardName(entry.getValue())
+                    .fieldType(inferFieldType(entry.getValue()))
+                    .semanticType(entry.getValue())
+                    .isDimension(isDimension(entry.getValue()))
+                    .isMeasure(isMeasure(entry.getValue()))
+                    .isTime(isTimeField(entry.getValue()))
+                    .displayOrder(order++)
+                    .build();
+            fields.add(field);
+        }
+
+        fieldDefRepository.saveAll(fields);
+        log.info("Created {} field definitions for upload {}", fields.size(), uploadId);
+
+        return BackfillResult.success(uploadId, fields.size());
+    }
+
+    private BackfillResult backfillFromData(String factoryId, Long uploadId) {
+        // Get sample data to infer field types
+        List<SmartBiDynamicData> sampleData = dynamicDataRepository.findByFactoryIdAndUploadId(factoryId, uploadId);
+        if (sampleData.isEmpty()) {
+            return BackfillResult.failed(uploadId, "No data rows found to infer schema");
+        }
+
+        // Get all field names from first row
+        Map<String, Object> firstRow = sampleData.get(0).getRowData();
+        if (firstRow == null || firstRow.isEmpty()) {
+            return BackfillResult.failed(uploadId, "First row has no data");
+        }
+
+        List<SmartBiPgFieldDefinition> fields = new ArrayList<>();
+        int order = 0;
+        for (String fieldName : firstRow.keySet()) {
+            // Infer type from value
+            Object value = firstRow.get(fieldName);
+            String fieldType = inferFieldTypeFromValue(value);
+            boolean isMeasure = "NUMBER".equals(fieldType) || "CURRENCY".equals(fieldType);
+            boolean isDimension = "STRING".equals(fieldType);
+
+            SmartBiPgFieldDefinition field = SmartBiPgFieldDefinition.builder()
+                    .uploadId(uploadId)
+                    .originalName(fieldName)
+                    .standardName(fieldName)
+                    .fieldType(fieldType)
+                    .isDimension(isDimension)
+                    .isMeasure(isMeasure)
+                    .isTime(isTimeField(fieldName))
+                    .displayOrder(order++)
+                    .build();
+            fields.add(field);
+        }
+
+        fieldDefRepository.saveAll(fields);
+        log.info("Inferred and created {} field definitions for upload {}", fields.size(), uploadId);
+
+        return BackfillResult.success(uploadId, fields.size());
+    }
+
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager")
+    public BatchBackfillResult batchBackfillFieldDefinitions(String factoryId, int limit) {
+        log.info("Batch backfilling field definitions: factoryId={}, limit={}", factoryId, limit);
+
+        // Find uploads without field definitions
+        List<SmartBiPgExcelUpload> uploads = uploadRepository.findByFactoryIdOrderByCreatedAtDesc(factoryId);
+
+        List<BackfillResult> details = new ArrayList<>();
+        int processed = 0, success = 0, skipped = 0, failed = 0;
+
+        for (SmartBiPgExcelUpload upload : uploads) {
+            if (processed >= limit) break;
+
+            // Check if needs backfill
+            long fieldCount = fieldDefRepository.countByUploadId(upload.getId());
+            if (fieldCount > 0) {
+                continue; // Already has fields, skip
+            }
+
+            processed++;
+            BackfillResult result = backfillFieldDefinitions(factoryId, upload.getId());
+            details.add(result);
+
+            switch (result.getStatus()) {
+                case "success":
+                    success++;
+                    break;
+                case "skipped":
+                    skipped++;
+                    break;
+                case "failed":
+                    failed++;
+                    break;
+            }
+        }
+
+        return BatchBackfillResult.builder()
+                .totalProcessed(processed)
+                .successCount(success)
+                .skippedCount(skipped)
+                .failedCount(failed)
+                .details(details)
+                .build();
+    }
+
+    // Helper methods for type inference
+    private String inferFieldType(String standardName) {
+        if (standardName == null) return "STRING";
+        String lower = standardName.toLowerCase();
+
+        if (lower.contains("date") || lower.contains("time") || lower.contains("日期") || lower.contains("时间")) {
+            return "DATE";
+        }
+        if (lower.contains("rate") || lower.contains("率") || lower.contains("percentage") || lower.contains("%")) {
+            return "PERCENTAGE";
+        }
+        if (lower.contains("revenue") || lower.contains("cost") || lower.contains("profit") ||
+            lower.contains("price") || lower.contains("amount") || lower.contains("金额") ||
+            lower.contains("收入") || lower.contains("成本") || lower.contains("利润")) {
+            return "CURRENCY";
+        }
+        if (lower.contains("count") || lower.contains("quantity") || lower.contains("数量") ||
+            lower.contains("num") || lower.contains("total")) {
+            return "NUMBER";
+        }
+        return "STRING";
+    }
+
+    private String inferFieldTypeFromValue(Object value) {
+        if (value == null) return "STRING";
+        if (value instanceof Number) {
+            return "NUMBER";
+        }
+        String strValue = value.toString();
+        try {
+            Double.parseDouble(strValue.replace(",", "").replace("¥", "").replace("$", ""));
+            return "NUMBER";
+        } catch (NumberFormatException e) {
+            // Not a number
+        }
+        return "STRING";
+    }
+
+    private boolean isDimension(String standardName) {
+        if (standardName == null) return false;
+        String lower = standardName.toLowerCase();
+        return lower.contains("department") || lower.contains("region") || lower.contains("product") ||
+               lower.contains("customer") || lower.contains("category") || lower.contains("部门") ||
+               lower.contains("区域") || lower.contains("产品") || lower.contains("客户") ||
+               lower.contains("分类") || lower.contains("类别");
+    }
+
+    private boolean isMeasure(String standardName) {
+        if (standardName == null) return false;
+        String lower = standardName.toLowerCase();
+        return lower.contains("revenue") || lower.contains("cost") || lower.contains("profit") ||
+               lower.contains("amount") || lower.contains("price") || lower.contains("quantity") ||
+               lower.contains("total") || lower.contains("sum") || lower.contains("收入") ||
+               lower.contains("成本") || lower.contains("利润") || lower.contains("金额") ||
+               lower.contains("数量") || lower.contains("合计");
+    }
+
+    private boolean isTimeField(String fieldName) {
+        if (fieldName == null) return false;
+        String lower = fieldName.toLowerCase();
+        return lower.contains("date") || lower.contains("time") || lower.contains("year") ||
+               lower.contains("month") || lower.contains("日期") || lower.contains("时间") ||
+               lower.contains("年") || lower.contains("月") || lower.contains("期间") ||
+               lower.contains("period");
     }
 }

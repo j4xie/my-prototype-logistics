@@ -136,7 +136,8 @@ public interface WhitelistRepository extends JpaRepository<Whitelist, Integer> {
     /**
      * 获取今日新增数量
      */
-    @Query("SELECT COUNT(w) FROM Whitelist w WHERE w.factoryId = :factoryId " +
-           "AND DATE(w.createdAt) = CURRENT_DATE")
+    @Query(value = "SELECT COUNT(*) FROM whitelists w WHERE w.factory_id = :factoryId " +
+           "AND CAST(w.created_at AS DATE) = CURRENT_DATE",
+           nativeQuery = true)
     long countTodayAdded(@Param("factoryId") String factoryId);
 }

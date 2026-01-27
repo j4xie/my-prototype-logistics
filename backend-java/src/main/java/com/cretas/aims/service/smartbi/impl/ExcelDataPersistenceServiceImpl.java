@@ -246,40 +246,24 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
             return 0;
         }
 
+        // 检测是否为宽格式数据
+        boolean isWideFormat = isWideFormatData(fieldMap);
+        log.debug("销售数据格式检测: isWideFormat={}", isWideFormat);
+
         List<SmartBiSalesData> entities = new ArrayList<>();
 
         for (Map<String, Object> row : rows) {
             try {
-                SmartBiSalesData entity = SmartBiSalesData.builder()
-                        .factoryId(factoryId)
-                        .uploadId(uploadId)
-                        .orderDate(parseDateValue(getFieldValue(row, fieldMap, "order_date")))
-                        .salespersonId(getStringValue(row, fieldMap, "salesperson_id"))
-                        .salespersonName(getStringValue(row, fieldMap, "salesperson_name"))
-                        .department(getStringValue(row, fieldMap, "department"))
-                        .region(getStringValue(row, fieldMap, "region"))
-                        .province(getStringValue(row, fieldMap, "province"))
-                        .city(getStringValue(row, fieldMap, "city"))
-                        .customerName(getStringValue(row, fieldMap, "customer_name"))
-                        .customerType(getStringValue(row, fieldMap, "customer_type"))
-                        .productId(getStringValue(row, fieldMap, "product_id"))
-                        .productName(getStringValue(row, fieldMap, "product_name"))
-                        .productCategory(getStringValue(row, fieldMap, "product_category"))
-                        .quantity(getDecimalValue(row, fieldMap, "quantity"))
-                        .amount(getDecimalValue(row, fieldMap, "amount"))
-                        .unitPrice(getDecimalValue(row, fieldMap, "unit_price"))
-                        .cost(getDecimalValue(row, fieldMap, "cost"))
-                        .profit(getDecimalValue(row, fieldMap, "profit"))
-                        .grossMargin(getDecimalValue(row, fieldMap, "gross_margin"))
-                        .monthlyTarget(getDecimalValue(row, fieldMap, "monthly_target"))
-                        .build();
-
-                // 设置默认日期（如果没有订单日期）
-                if (entity.getOrderDate() == null) {
-                    entity.setOrderDate(LocalDate.now());
+                if (isWideFormat) {
+                    // 宽格式：每个月份列创建一条记录
+                    entities.addAll(persistWideFormatSalesRow(factoryId, uploadId, row, fieldMap));
+                } else {
+                    // 标准格式：直接映射
+                    SmartBiSalesData entity = persistStandardSalesRow(factoryId, uploadId, row, fieldMap);
+                    if (entity != null) {
+                        entities.add(entity);
+                    }
                 }
-
-                entities.add(entity);
             } catch (Exception e) {
                 log.warn("解析销售数据行失败: {}", e.getMessage());
             }
@@ -292,49 +276,155 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
         return entities.size();
     }
 
+    /**
+     * 标准格式销售数据处理
+     */
+    private SmartBiSalesData persistStandardSalesRow(String factoryId, Long uploadId,
+                                                      Map<String, Object> row, Map<String, String> fieldMap) {
+        // 如果标准字段都是0，尝试聚合所有数值列
+        BigDecimal amount = getDecimalValue(row, fieldMap, "amount");
+        if (amount.compareTo(BigDecimal.ZERO) == 0) {
+            amount = aggregateNumericValues(row, fieldMap);
+        }
+
+        SmartBiSalesData entity = SmartBiSalesData.builder()
+                .factoryId(factoryId)
+                .uploadId(uploadId)
+                .orderDate(parseDateValue(getFieldValue(row, fieldMap, "order_date")))
+                .salespersonId(getStringValue(row, fieldMap, "salesperson_id"))
+                .salespersonName(getStringValue(row, fieldMap, "salesperson_name"))
+                .department(getStringValue(row, fieldMap, "department"))
+                .region(getStringValue(row, fieldMap, "region"))
+                .province(getStringValue(row, fieldMap, "province"))
+                .city(getStringValue(row, fieldMap, "city"))
+                .customerName(getStringValue(row, fieldMap, "customer_name"))
+                .customerType(getStringValue(row, fieldMap, "customer_type"))
+                .productId(getStringValue(row, fieldMap, "product_id"))
+                .productName(getStringValue(row, fieldMap, "product_name"))
+                .productCategory(getStringValue(row, fieldMap, "product_category"))
+                .quantity(getDecimalValue(row, fieldMap, "quantity"))
+                .amount(amount)
+                .unitPrice(getDecimalValue(row, fieldMap, "unit_price"))
+                .cost(getDecimalValue(row, fieldMap, "cost"))
+                .profit(getDecimalValue(row, fieldMap, "profit"))
+                .grossMargin(getDecimalValue(row, fieldMap, "gross_margin"))
+                .monthlyTarget(getDecimalValue(row, fieldMap, "monthly_target"))
+                .build();
+
+        // 设置默认日期
+        if (entity.getOrderDate() == null) {
+            entity.setOrderDate(LocalDate.now());
+        }
+
+        return entity;
+    }
+
+    /**
+     * 宽格式销售数据处理
+     */
+    private List<SmartBiSalesData> persistWideFormatSalesRow(String factoryId, Long uploadId,
+                                                              Map<String, Object> row, Map<String, String> fieldMap) {
+        List<SmartBiSalesData> results = new ArrayList<>();
+
+        // 提取维度字段
+        String region = getStringValue(row, fieldMap, "region");
+        String department = getStringValue(row, fieldMap, "department");
+        String productName = getStringValue(row, fieldMap, "product_name");
+        String customerName = getStringValue(row, fieldMap, "customer_name");
+
+        // 如果没有找到，尝试从行数据获取
+        if ((region == null || region.isEmpty()) && (department == null || department.isEmpty())) {
+            String dimension = findDimensionValue(row, fieldMap);
+            if (dimension != null) {
+                region = dimension;
+            }
+        }
+
+        int currentYear = LocalDate.now().getYear();
+
+        // 遍历所有列
+        for (Map.Entry<String, Object> rowEntry : row.entrySet()) {
+            String columnName = rowEntry.getKey();
+            Object valueObj = rowEntry.getValue();
+
+            if (!isNumericValue(valueObj)) {
+                continue;
+            }
+
+            BigDecimal amount = parseDecimal(valueObj);
+            if (amount.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
+
+            // 尝试从列名解析月份
+            LocalDate orderDate = null;
+            String productCategory = null;
+
+            // 中文月份格式
+            java.util.regex.Pattern monthPattern = java.util.regex.Pattern.compile(".*[_]?(1[0-2]|[1-9])月[_]?(.*)");
+            java.util.regex.Matcher matcher = monthPattern.matcher(columnName);
+            if (matcher.find()) {
+                int month = Integer.parseInt(matcher.group(1));
+                orderDate = LocalDate.of(currentYear, month, 1);
+                String typeStr = matcher.group(2);
+                if (typeStr != null && !typeStr.isEmpty()) {
+                    productCategory = typeStr.replaceAll("^[_]", "").trim();
+                }
+            }
+
+            // 检查 fieldMap 格式
+            String standardField = fieldMap.get(columnName);
+            if (standardField != null && standardField.matches("(value|amount)_\\d{6}")) {
+                String yearMonth = standardField.substring(standardField.length() - 6);
+                orderDate = parseYearMonth(yearMonth);
+            }
+
+            if (orderDate == null) {
+                continue;
+            }
+
+            SmartBiSalesData entity = SmartBiSalesData.builder()
+                    .factoryId(factoryId)
+                    .uploadId(uploadId)
+                    .orderDate(orderDate)
+                    .region(region)
+                    .department(department)
+                    .productName(productName)
+                    .productCategory(productCategory)
+                    .customerName(customerName)
+                    .amount(amount)
+                    .build();
+
+            results.add(entity);
+        }
+
+        return results;
+    }
+
     private int persistFinanceData(String factoryId, Long uploadId,
                                     List<Map<String, Object>> rows, Map<String, String> fieldMap) {
         if (rows == null || rows.isEmpty()) {
             return 0;
         }
 
+        // 检测是否为宽格式数据（多个 value_YYYYMM 列）
+        boolean isWideFormat = isWideFormatData(fieldMap);
+        log.debug("财务数据格式检测: isWideFormat={}, fieldMap={}", isWideFormat, fieldMap);
+
         List<SmartBiFinanceData> entities = new ArrayList<>();
 
         for (Map<String, Object> row : rows) {
             try {
-                SmartBiFinanceData entity = SmartBiFinanceData.builder()
-                        .factoryId(factoryId)
-                        .uploadId(uploadId)
-                        .recordDate(parseDateValue(getFieldValue(row, fieldMap, "record_date")))
-                        .recordType(parseRecordType(getStringValue(row, fieldMap, "record_type")))
-                        .department(getStringValue(row, fieldMap, "department"))
-                        .category(getStringValue(row, fieldMap, "category"))
-                        .customerName(getStringValue(row, fieldMap, "customer_name"))
-                        .supplierName(getStringValue(row, fieldMap, "supplier_name"))
-                        .materialCost(getDecimalValue(row, fieldMap, "material_cost"))
-                        .laborCost(getDecimalValue(row, fieldMap, "labor_cost"))
-                        .overheadCost(getDecimalValue(row, fieldMap, "overhead_cost"))
-                        .totalCost(getDecimalValue(row, fieldMap, "total_cost"))
-                        .receivableAmount(getDecimalValue(row, fieldMap, "receivable_amount"))
-                        .collectionAmount(getDecimalValue(row, fieldMap, "collection_amount"))
-                        .agingDays(getIntValue(row, fieldMap, "aging_days"))
-                        .payableAmount(getDecimalValue(row, fieldMap, "payable_amount"))
-                        .paymentAmount(getDecimalValue(row, fieldMap, "payment_amount"))
-                        .budgetAmount(getDecimalValue(row, fieldMap, "budget_amount"))
-                        .actualAmount(getDecimalValue(row, fieldMap, "actual_amount"))
-                        .varianceAmount(getDecimalValue(row, fieldMap, "variance_amount"))
-                        .dueDate(parseDateValue(getFieldValue(row, fieldMap, "due_date")))
-                        .build();
-
-                // 设置默认值
-                if (entity.getRecordDate() == null) {
-                    entity.setRecordDate(LocalDate.now());
+                if (isWideFormat) {
+                    // 宽格式：每个月份列创建一条记录
+                    entities.addAll(persistWideFormatRow(factoryId, uploadId, row, fieldMap));
+                } else {
+                    // 标准格式：直接映射
+                    SmartBiFinanceData entity = persistStandardFormatRow(factoryId, uploadId, row, fieldMap);
+                    if (entity != null) {
+                        entities.add(entity);
+                    }
                 }
-                if (entity.getRecordType() == null) {
-                    entity.setRecordType(RecordType.COST);
-                }
-
-                entities.add(entity);
             } catch (Exception e) {
                 log.warn("解析财务数据行失败: {}", e.getMessage());
             }
@@ -345,6 +435,280 @@ public class ExcelDataPersistenceServiceImpl implements ExcelDataPersistenceServ
         }
 
         return entities.size();
+    }
+
+    /**
+     * 检测是否为宽格式数据（如利润表，每列是一个月份）
+     * 支持两种格式：
+     * 1. standardField 格式: value_YYYYMM, profit_YYYYMM
+     * 2. 原始列名格式: 1月_预算收入, 2月_实际收入 等中文月份
+     */
+    private boolean isWideFormatData(Map<String, String> fieldMap) {
+        if (fieldMap == null || fieldMap.isEmpty()) {
+            return false;
+        }
+
+        // 模式1: 检测 standardField 格式 (支持多种时间索引字段)
+        // 格式: {metric_type}_YYYYMM 或 {metric_type}_YYYY
+        long valueFieldCount = fieldMap.values().stream()
+                .filter(v -> v != null && (
+                        v.matches("(value|profit|amount|budget|actual|revenue|cost|yoy_prior|budget_amount|actual_amount|last_year_actual|net_profit)_\\d{6}") ||
+                        v.matches("(annual_total|ytd_actual|ytd_budget)_\\d{4}")
+                ))
+                .count();
+
+        if (valueFieldCount >= 3) {
+            return true;
+        }
+
+        // 模式2: 检测原始列名中的中文月份格式 (1月_, 2月_, ... 12月_)
+        long monthColumnCount = fieldMap.keySet().stream()
+                .filter(k -> k != null && k.matches(".*[_]?(1[0-2]|[1-9])月[_]?.*"))
+                .count();
+
+        // 如果有3个以上的月份列，认为是宽格式
+        return monthColumnCount >= 3;
+    }
+
+    /**
+     * 处理宽格式行数据（如利润表的一行）
+     * 每个月份值创建一条财务记录
+     * 支持：
+     * 1. standardField 格式: value_YYYYMM
+     * 2. 原始列名中文月份: 1月_预算收入, 2月_实际收入
+     */
+    private List<SmartBiFinanceData> persistWideFormatRow(String factoryId, Long uploadId,
+                                                          Map<String, Object> row, Map<String, String> fieldMap) {
+        List<SmartBiFinanceData> results = new ArrayList<>();
+
+        // 提取维度字段（部门、区域等）
+        String department = getStringValue(row, fieldMap, "department");
+        String region = getStringValue(row, fieldMap, "region");
+        String category = getStringValue(row, fieldMap, "category");
+
+        // 如果没有找到 department，尝试从第一列获取
+        if ((department == null || department.isEmpty()) && (region == null || region.isEmpty())) {
+            department = findDimensionValue(row, fieldMap);
+        }
+        // 如果有 region 但没有 department，用 region 作为 department
+        if (department == null || department.isEmpty()) {
+            department = region;
+        }
+
+        // 当前年份（用于中文月份解析）
+        int currentYear = LocalDate.now().getYear();
+
+        // 遍历所有列（包括原始列名和 fieldMap）
+        for (Map.Entry<String, Object> rowEntry : row.entrySet()) {
+            String columnName = rowEntry.getKey();
+            Object valueObj = rowEntry.getValue();
+
+            // 跳过非数值列
+            if (!isNumericValue(valueObj)) {
+                continue;
+            }
+
+            BigDecimal amount = parseDecimal(valueObj);
+            if (amount.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
+
+            // 尝试从列名解析月份信息
+            LocalDate recordDate = null;
+            String columnCategory = null;
+
+            // 模式1: 中文月份格式 (如 "1月_预算收入", "12月_实际收入")
+            java.util.regex.Pattern monthPattern = java.util.regex.Pattern.compile(".*[_]?(1[0-2]|[1-9])月[_]?(.*)");
+            java.util.regex.Matcher matcher = monthPattern.matcher(columnName);
+            if (matcher.find()) {
+                int month = Integer.parseInt(matcher.group(1));
+                recordDate = LocalDate.of(currentYear, month, 1);
+                // 提取类型（预算收入、实际收入等）
+                String typeStr = matcher.group(2);
+                if (typeStr != null && !typeStr.isEmpty()) {
+                    columnCategory = typeStr.replaceAll("^[_]", "").trim();
+                }
+            }
+
+            // 模式2: 检查 fieldMap 中的 standardField
+            String standardField = fieldMap.get(columnName);
+            if (standardField != null) {
+                // value_YYYYMM / budget_YYYYMM / actual_YYYYMM 等格式
+                // 支持: budget, actual, revenue, cost, profit, amount, value, yoy_prior
+                if (standardField.matches("(value|profit|amount|budget|actual|revenue|cost|yoy_prior|budget_amount|actual_amount|last_year_actual|net_profit)_\\d{6}")) {
+                    String yearMonth = standardField.substring(standardField.length() - 6);
+                    recordDate = parseYearMonth(yearMonth);
+                    // 提取指标类型作为类别
+                    columnCategory = standardField.substring(0, standardField.length() - 7);
+                }
+                // annual_total_YYYY / ytd_actual / ytd_budget 格式
+                else if (standardField.matches("(annual_total|ytd_actual|ytd_budget)_\\d{4}")) {
+                    String year = standardField.substring(standardField.length() - 4);
+                    recordDate = LocalDate.of(Integer.parseInt(year), 12, 31);
+                    columnCategory = "年度合计";
+                }
+            }
+
+            // 如果无法解析月份，跳过
+            if (recordDate == null) {
+                continue;
+            }
+
+            // 构建实体
+            SmartBiFinanceData entity = SmartBiFinanceData.builder()
+                    .factoryId(factoryId)
+                    .uploadId(uploadId)
+                    .recordDate(recordDate)
+                    .recordType(RecordType.COST)
+                    .department(department)
+                    .category(columnCategory != null ? columnCategory : category)
+                    .totalCost(amount)
+                    .actualAmount(amount)
+                    .build();
+
+            results.add(entity);
+        }
+
+        return results;
+    }
+
+    /**
+     * 处理标准格式行数据
+     */
+    private SmartBiFinanceData persistStandardFormatRow(String factoryId, Long uploadId,
+                                                         Map<String, Object> row, Map<String, String> fieldMap) {
+        // 如果没有标准字段映射，尝试聚合所有数值
+        BigDecimal totalCost = getDecimalValue(row, fieldMap, "total_cost");
+        BigDecimal actualAmount = getDecimalValue(row, fieldMap, "actual_amount");
+
+        // 如果标准字段都是0，尝试聚合所有数值列
+        if (totalCost.compareTo(BigDecimal.ZERO) == 0 && actualAmount.compareTo(BigDecimal.ZERO) == 0) {
+            BigDecimal aggregatedValue = aggregateNumericValues(row, fieldMap);
+            if (aggregatedValue.compareTo(BigDecimal.ZERO) > 0) {
+                totalCost = aggregatedValue;
+                actualAmount = aggregatedValue;
+            }
+        }
+
+        SmartBiFinanceData entity = SmartBiFinanceData.builder()
+                .factoryId(factoryId)
+                .uploadId(uploadId)
+                .recordDate(parseDateValue(getFieldValue(row, fieldMap, "record_date")))
+                .recordType(parseRecordType(getStringValue(row, fieldMap, "record_type")))
+                .department(getStringValue(row, fieldMap, "department"))
+                .category(getStringValue(row, fieldMap, "category"))
+                .customerName(getStringValue(row, fieldMap, "customer_name"))
+                .supplierName(getStringValue(row, fieldMap, "supplier_name"))
+                .materialCost(getDecimalValue(row, fieldMap, "material_cost"))
+                .laborCost(getDecimalValue(row, fieldMap, "labor_cost"))
+                .overheadCost(getDecimalValue(row, fieldMap, "overhead_cost"))
+                .totalCost(totalCost)
+                .receivableAmount(getDecimalValue(row, fieldMap, "receivable_amount"))
+                .collectionAmount(getDecimalValue(row, fieldMap, "collection_amount"))
+                .agingDays(getIntValue(row, fieldMap, "aging_days"))
+                .payableAmount(getDecimalValue(row, fieldMap, "payable_amount"))
+                .paymentAmount(getDecimalValue(row, fieldMap, "payment_amount"))
+                .budgetAmount(getDecimalValue(row, fieldMap, "budget_amount"))
+                .actualAmount(actualAmount)
+                .varianceAmount(getDecimalValue(row, fieldMap, "variance_amount"))
+                .dueDate(parseDateValue(getFieldValue(row, fieldMap, "due_date")))
+                .build();
+
+        // 设置默认值
+        if (entity.getRecordDate() == null) {
+            entity.setRecordDate(LocalDate.now());
+        }
+        if (entity.getRecordType() == null) {
+            entity.setRecordType(RecordType.COST);
+        }
+
+        return entity;
+    }
+
+    /**
+     * 从行数据中找到维度值（第一个非数值列）
+     */
+    private String findDimensionValue(Map<String, Object> row, Map<String, String> fieldMap) {
+        // 尝试常见的维度字段名
+        for (String dimName : Arrays.asList("分部", "部门", "区域", "类别", "项目", "name", "department", "region")) {
+            Object value = row.get(dimName);
+            if (value != null && !value.toString().isEmpty()) {
+                return value.toString().trim();
+            }
+        }
+
+        // 取第一个非数值字段
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            Object value = entry.getValue();
+            if (value != null && !isNumericValue(value)) {
+                return value.toString().trim();
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 判断值是否为数值
+     */
+    private boolean isNumericValue(Object value) {
+        if (value == null) return false;
+        if (value instanceof Number) return true;
+
+        String str = value.toString().replaceAll("[¥$€£,\\s%]", "").trim();
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 解析 YYYYMM 格式为 LocalDate (月初)
+     */
+    private LocalDate parseYearMonth(String yearMonth) {
+        try {
+            int year = Integer.parseInt(yearMonth.substring(0, 4));
+            int month = Integer.parseInt(yearMonth.substring(4, 6));
+            return LocalDate.of(year, month, 1);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * 解析数值
+     */
+    private BigDecimal parseDecimal(Object value) {
+        if (value == null) return BigDecimal.ZERO;
+
+        try {
+            String strValue = value.toString()
+                    .replaceAll("[¥$€£,\\s%]", "")
+                    .trim();
+
+            if (strValue.isEmpty()) return BigDecimal.ZERO;
+            return new BigDecimal(strValue);
+        } catch (NumberFormatException e) {
+            return BigDecimal.ZERO;
+        }
+    }
+
+    /**
+     * 聚合所有数值列的值
+     */
+    private BigDecimal aggregateNumericValues(Map<String, Object> row, Map<String, String> fieldMap) {
+        BigDecimal total = BigDecimal.ZERO;
+
+        for (Map.Entry<String, Object> entry : row.entrySet()) {
+            Object value = entry.getValue();
+            if (isNumericValue(value)) {
+                total = total.add(parseDecimal(value));
+            }
+        }
+
+        return total;
     }
 
     // ==================== 值提取辅助方法 ====================

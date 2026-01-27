@@ -289,12 +289,15 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
             }
         } else {
             // 尝试从 aggregatedData 格式解析
-            // 格式: {指标名: [{period: "2024-01", value: 100}, ...]}
+            // 支持两种格式:
+            // 格式1: {指标名: [{period: "2024-01", value: 100}, ...]}  (List<Map>)
+            // 格式2: {byDate: {"2024-01": 100, "2024-02": 200}, ...}  (Map<String, Number>)
             for (Map.Entry<String, Object> entry : data.entrySet()) {
                 String metricName = entry.getKey();
                 Object value = entry.getValue();
 
                 if (value instanceof List) {
+                    // 格式1: List<Map>
                     List<?> dataList = (List<?>) value;
                     List<Object> seriesData = new ArrayList<>();
 
@@ -330,6 +333,41 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
                         series.put("data", seriesData);
                         seriesList.add(series);
                     }
+                } else if (value instanceof Map) {
+                    // 格式2: Map<String, Number> (如 byDate, byDepartment 等)
+                    // 跳过非数据字段
+                    if (metricName.equals("recordCount") || metricName.startsWith("total")) {
+                        continue;
+                    }
+                    Map<?, ?> mapData = (Map<?, ?>) value;
+                    if (!mapData.isEmpty()) {
+                        List<Object> seriesData = new ArrayList<>();
+                        List<String> tempCategories = new ArrayList<>();
+
+                        for (Map.Entry<?, ?> mapEntry : mapData.entrySet()) {
+                            Object key = mapEntry.getKey();
+                            Object val = mapEntry.getValue();
+                            if (key != null) {
+                                tempCategories.add(String.valueOf(key));
+                            }
+                            seriesData.add(val != null ? val : 0);
+                        }
+
+                        // 使用第一个 Map 的 keys 作为 categories（如果还没有）
+                        if (categories.isEmpty() && !tempCategories.isEmpty()) {
+                            categories.addAll(tempCategories);
+                        }
+
+                        if (!seriesData.isEmpty()) {
+                            // 格式化指标名称
+                            String displayName = formatMetricName(metricName);
+                            Map<String, Object> series = new LinkedHashMap<>();
+                            series.put("name", displayName);
+                            series.put("type", chartType.toLowerCase().replace("_", ""));
+                            series.put("data", seriesData);
+                            seriesList.add(series);
+                        }
+                    }
                 }
             }
         }
@@ -363,6 +401,34 @@ public class ChartTemplateServiceImpl implements ChartTemplateService {
         log.debug("动态构建 ECharts options: categories={}, series={}", categories.size(), seriesList.size());
 
         return options;
+    }
+
+    /**
+     * 格式化指标名称（将 camelCase/snake_case 转为中文显示名）
+     */
+    private String formatMetricName(String metricName) {
+        if (metricName == null) return "数据";
+
+        // 常见指标名称映射
+        switch (metricName) {
+            case "byDate": return "按日期";
+            case "byDepartment": return "按部门";
+            case "byCategory": return "按类别";
+            case "byProduct": return "按产品";
+            case "byRegion": return "按区域";
+            case "byCustomer": return "按客户";
+            case "bySalesperson": return "按销售员";
+            case "byMonth": return "按月份";
+            case "totalCost": return "总成本";
+            case "totalBudget": return "总预算";
+            case "totalActual": return "实际金额";
+            case "totalRevenue": return "总收入";
+            case "totalProfit": return "总利润";
+            default:
+                // 将 camelCase 转为空格分隔
+                return metricName.replaceAll("([a-z])([A-Z])", "$1 $2")
+                                 .replaceAll("_", " ");
+        }
     }
 
     // ==================== 图表类型推荐 ====================

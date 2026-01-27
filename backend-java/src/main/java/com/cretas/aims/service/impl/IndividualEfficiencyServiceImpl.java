@@ -1,6 +1,7 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.python.PythonLeastSquaresResponse;
 import com.cretas.aims.entity.User;
 import com.cretas.aims.entity.enums.ProcessingStageType;
@@ -38,6 +39,7 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final PythonSmartBIClient pythonClient;
+    private final PythonSmartBIConfig pythonConfig;
 
     // 默认效率值 (当数据不足时使用)
     private static final BigDecimal DEFAULT_EFFICIENCY = new BigDecimal("1.0");
@@ -354,25 +356,28 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
     /**
      * 最小二乘法求解: x = (A^T * A)^(-1) * A^T * b
      *
-     * 优先使用 Python 服务求解（更高效的 scipy 实现），
-     * 如果 Python 服务不可用则回退到 Java 实现。
+     * 完全使用 Python 服务求解（更高效的 scipy 实现），
+     * 不再有 Java fallback。
      */
     private double[] solveLeastSquares(double[][] A, double[] b, int n, int m) {
         // 正则化参数
         double lambda = 0.001;
 
-        // 1. 尝试使用 Python 服务
-        if (pythonClient.isAvailable()) {
-            double[] pythonResult = solveLeastSquaresPython(A, b, lambda);
-            if (pythonResult != null) {
-                log.info("最小二乘法求解成功 (Python): 变量数={}", pythonResult.length);
-                return pythonResult;
-            }
-            log.warn("Python 服务调用失败，回退到 Java 实现");
+        // 使用 Python 服务求解（无 Java fallback）
+        if (!pythonConfig.isEnabled()) {
+            throw new RuntimeException("Python SmartBI 服务未启用，无法进行最小二乘法计算");
+        }
+        if (!pythonClient.isAvailable()) {
+            throw new RuntimeException("Python SmartBI 服务不可用，请确保服务已启动: " + pythonConfig.getUrl());
         }
 
-        // 2. 回退到 Java 实现
-        return solveLeastSquaresJava(A, b, n, m, lambda);
+        double[] pythonResult = solveLeastSquaresPython(A, b, lambda);
+        if (pythonResult != null) {
+            log.info("最小二乘法求解成功 (Python): 变量数={}", pythonResult.length);
+            return pythonResult;
+        }
+
+        throw new RuntimeException("Python 最小二乘法求解失败");
     }
 
     /**
@@ -414,10 +419,12 @@ public class IndividualEfficiencyServiceImpl implements IndividualEfficiencyServ
     }
 
     /**
-     * Java 实现的最小二乘法求解 (原始实现，作为 Fallback)
+     * Java 实现的最小二乘法求解
+     * DEPRECATED: 已不再使用，保留作为参考。所有计算由 Python 服务处理。
      *
      * 使用高斯-约旦消元法求解 (A^T * A + λI)x = A^T * b
      */
+    @Deprecated
     private double[] solveLeastSquaresJava(double[][] A, double[] b, int n, int m, double lambda) {
         log.debug("使用 Java 实现求解最小二乘法: {}x{} 矩阵", m, n);
 

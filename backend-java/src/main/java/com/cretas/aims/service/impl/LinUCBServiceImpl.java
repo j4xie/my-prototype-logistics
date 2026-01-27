@@ -1,6 +1,7 @@
 package com.cretas.aims.service.impl;
 
 import com.cretas.aims.client.PythonSmartBIClient;
+import com.cretas.aims.config.smartbi.PythonSmartBIConfig;
 import com.cretas.aims.dto.python.LinUCBComputeResponse;
 import com.cretas.aims.dto.python.LinUCBUpdateResponse;
 import com.cretas.aims.entity.User;
@@ -58,6 +59,7 @@ public class LinUCBServiceImpl implements LinUCBService {
     private final DispatcherStrategyService dispatcherStrategyService;
     private final TaskDiversityService taskDiversityService;
     private final PythonSmartBIClient pythonClient;
+    private final PythonSmartBIConfig pythonConfig;
 
     // LinUCB 超参数
     private static final double ALPHA = 0.5;           // 探索参数
@@ -115,7 +117,7 @@ public class LinUCBServiceImpl implements LinUCBService {
             // 合并特征
             double[] context = featureEngineeringService.combineFeatures(taskFeatures, workerFeatures);
 
-            // 计算UCB (使用 Python 优先 + Java Fallback)
+            // 计算UCB (使用 Python 服务，无 Java Fallback)
             LinUCBModel model = modelMap.get(workerId);
             if (model == null) {
                 model = createInitialModel(factoryId, workerId);
@@ -282,59 +284,34 @@ public class LinUCBServiceImpl implements LinUCBService {
             double[][] A = parseMatrix(model.getMatrixA());
             double[] b = parseVector(model.getVectorB());
 
-            // 1. 尝试使用 Python 更新
-            if (pythonClient != null && pythonClient.isAvailable()) {
-                try {
-                    Optional<LinUCBUpdateResponse> resp = pythonClient.updateLinUCBModel(A, b, context, reward);
-
-                    if (resp.isPresent() && resp.get().isSuccess()) {
-                        LinUCBUpdateResponse r = resp.get();
-                        log.debug("使用 Python 更新模型: workerId={}", workerId);
-
-                        // 从 Python 响应中提取更新后的矩阵
-                        model.setMatrixA(objectMapper.writeValueAsString(r.getMatrixA()));
-                        model.setMatrixAInverse(objectMapper.writeValueAsString(r.getMatrixAInverse()));
-                        model.setVectorB(objectMapper.writeValueAsString(r.getVectorB()));
-                        model.incrementUpdateCount();
-                        model.updateAvgReward(BigDecimal.valueOf(reward));
-                        model.setLastUpdatedAt(LocalDateTime.now());
-
-                        modelRepository.save(model);
-
-                        log.debug("Updated LinUCB model (Python) for worker {} in factory {}, reward: {}",
-                                workerId, factoryId, reward);
-                        return;
-                    }
-                } catch (Exception e) {
-                    log.warn("Python 模型更新失败，降级到 Java: {}", e.getMessage());
-                }
+            // 使用 Python 更新模型（无 Java fallback）
+            if (!pythonConfig.isEnabled()) {
+                throw new RuntimeException("Python SmartBI 服务未启用，无法更新 LinUCB 模型");
+            }
+            if (pythonClient == null || !pythonClient.isAvailable()) {
+                throw new RuntimeException("Python SmartBI 服务不可用，请确保服务已启动");
             }
 
-            // 2. Fallback: Java 实现
-            log.debug("使用 Java 更新模型 (Fallback): workerId={}", workerId);
+            Optional<LinUCBUpdateResponse> resp = pythonClient.updateLinUCBModel(A, b, context, reward);
 
-            // 更新 A = A + x * x^T
-            double[][] outerProduct = outerProduct(context, context);
-            A = matrixAdd(A, outerProduct);
+            if (resp.isEmpty() || !resp.get().isSuccess()) {
+                throw new RuntimeException("Python LinUCB 模型更新失败");
+            }
 
-            // 更新 b = b + reward * x
-            double[] rewardWeighted = vectorScale(context, reward);
-            b = vectorAdd(b, rewardWeighted);
+            LinUCBUpdateResponse r = resp.get();
+            log.debug("使用 Python 更新模型: workerId={}", workerId);
 
-            // 计算 A^(-1) 使用高斯-约旦消元
-            double[][] AInverse = invertMatrix(A);
-
-            // 更新模型
-            model.setMatrixA(serializeMatrix(A));
-            model.setMatrixAInverse(serializeMatrix(AInverse));
-            model.setVectorB(serializeVector(b));
+            // 从 Python 响应中提取更新后的矩阵
+            model.setMatrixA(objectMapper.writeValueAsString(r.getMatrixA()));
+            model.setMatrixAInverse(objectMapper.writeValueAsString(r.getMatrixAInverse()));
+            model.setVectorB(objectMapper.writeValueAsString(r.getVectorB()));
             model.incrementUpdateCount();
             model.updateAvgReward(BigDecimal.valueOf(reward));
             model.setLastUpdatedAt(LocalDateTime.now());
 
             modelRepository.save(model);
 
-            log.debug("Updated LinUCB model (Java) for worker {} in factory {}, reward: {}",
+            log.debug("Updated LinUCB model (Python) for worker {} in factory {}, reward: {}",
                     workerId, factoryId, reward);
 
         } catch (Exception e) {
@@ -671,43 +648,36 @@ public class LinUCBServiceImpl implements LinUCBService {
     }
 
     /**
-     * 统一的 UCB 计算方法 (Python 优先 + Java Fallback)
+     * 统一的 UCB 计算方法（完全使用 Python，无 Java Fallback）
      *
-     * 尝试使用 Python 服务计算 UCB，如果失败则使用 Java 实现。
      * Python 使用 NumPy/SciPy，矩阵求逆速度更快 (5-20x)。
      */
     private UCBResult computeUCBWithFallback(LinUCBModel model, double[] context) {
-        // 1. 尝试 Python
-        if (pythonClient != null && pythonClient.isAvailable()) {
-            try {
-                double[][] A = parseMatrix(model.getMatrixA());
-                double[] b = parseVector(model.getVectorB());
-
-                Optional<LinUCBComputeResponse> resp = pythonClient.computeLinUCB(A, b, context, ALPHA);
-
-                if (resp.isPresent() && resp.get().isSuccess()) {
-                    LinUCBComputeResponse r = resp.get();
-                    log.debug("使用 Python 计算 UCB: ucb={}", r.getUcb());
-                    return new UCBResult(
-                            r.getUcb(),
-                            r.getExpectedReward(),
-                            r.getConfidenceWidth(),
-                            true
-                    );
-                }
-            } catch (Exception e) {
-                log.warn("Python UCB 计算失败，降级到 Java: {}", e.getMessage());
-            }
+        // 使用 Python 计算 UCB（无 Java fallback）
+        if (!pythonConfig.isEnabled()) {
+            throw new RuntimeException("Python SmartBI 服务未启用，无法计算 LinUCB UCB");
+        }
+        if (pythonClient == null || !pythonClient.isAvailable()) {
+            throw new RuntimeException("Python SmartBI 服务不可用，请确保服务已启动");
         }
 
-        // 2. Fallback to Java
-        log.debug("使用 Java 计算 UCB (Fallback)");
-        double[] theta = computeTheta(model);
-        double expectedReward = dotProduct(theta, context);
-        double confidenceWidth = computeConfidenceWidth(model, context);
-        double ucb = expectedReward + ALPHA * confidenceWidth;
+        double[][] A = parseMatrix(model.getMatrixA());
+        double[] b = parseVector(model.getVectorB());
 
-        return new UCBResult(ucb, expectedReward, confidenceWidth, false);
+        Optional<LinUCBComputeResponse> resp = pythonClient.computeLinUCB(A, b, context, ALPHA);
+
+        if (resp.isEmpty() || !resp.get().isSuccess()) {
+            throw new RuntimeException("Python LinUCB UCB 计算失败");
+        }
+
+        LinUCBComputeResponse r = resp.get();
+        log.debug("使用 Python 计算 UCB: ucb={}", r.getUcb());
+        return new UCBResult(
+                r.getUcb(),
+                r.getExpectedReward(),
+                r.getConfidenceWidth(),
+                true
+        );
     }
 
     private String generateRecommendationText(double ucb, double expected, double confidence, LinUCBModel model) {

@@ -1,6 +1,10 @@
 package com.cretas.aims.service.smartbi;
 
+import com.cretas.aims.controller.SmartBIController.BackfillResult;
+import com.cretas.aims.controller.SmartBIController.BatchBackfillResult;
+import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.Map;
@@ -202,4 +206,44 @@ public interface DynamicAnalysisService {
      * @return Time series data
      */
     List<Map<String, Object>> getTimeSeries(String factoryId, Long uploadId, String measureField);
+
+    // ==================== Phase 5: Data Preview & Backfill ====================
+
+    /**
+     * Get paginated data rows for table preview
+     *
+     * @param factoryId Factory ID
+     * @param uploadId Upload record ID
+     * @param page Page number (0-based)
+     * @param size Page size
+     * @return Page of dynamic data rows
+     */
+    Page<SmartBiDynamicData> getDataPage(String factoryId, Long uploadId, int page, int size);
+
+    /**
+     * Get field definition count for an upload
+     *
+     * @param uploadId Upload record ID
+     * @return Number of field definitions
+     */
+    long getFieldCount(Long uploadId);
+
+    /**
+     * Backfill field definitions for a single upload
+     * Rebuilds from field_mappings JSON if available
+     *
+     * @param factoryId Factory ID
+     * @param uploadId Upload record ID
+     * @return Backfill result
+     */
+    BackfillResult backfillFieldDefinitions(String factoryId, Long uploadId);
+
+    /**
+     * Batch backfill field definitions for all uploads missing them
+     *
+     * @param factoryId Factory ID
+     * @param limit Maximum number of uploads to process
+     * @return Batch backfill result
+     */
+    BatchBackfillResult batchBackfillFieldDefinitions(String factoryId, int limit);
 }

@@ -23,6 +23,48 @@
     <meta name="twitter:description" content="用AI重新定义工厂生产力">
     <meta name="twitter:image" content="https://cretaceousfuture.com/share-image.png">
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href="https://cretaceousfuture.com/">
+
+    <!-- Structured Data - Organization -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "白垩纪AI",
+      "alternateName": "Cretaceous AI",
+      "url": "https://cretaceousfuture.com",
+      "logo": "https://cretaceousfuture.com/share-image.png",
+      "description": "新一代工厂操作系统，用AI重新定义工厂生产力",
+      "sameAs": []
+    }
+    </script>
+
+    <!-- Structured Data - Product -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "白垩纪AI智能体",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "description": "新一代工厂操作系统，集成AI意图识别、智能调度、视觉检测、数据分析于一体",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "CNY",
+        "description": "按效果付费，风险共担"
+      },
+      "featureList": [
+        "AI意图引擎",
+        "智能调度系统",
+        "SmartBI数据分析",
+        "视觉AI检测",
+        "IoT设备集成"
+      ]
+    }
+    </script>
+
     <!-- Using system fonts to avoid external CDN dependencies -->
     <style>
         :root {
@@ -33,8 +75,10 @@
 
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/redesign.css">
+    <link rel="stylesheet" href="css/premium-animations.css">
     <!-- All icons are now inline SVG, no external dependency needed -->
     <script src="js/redesign.js" defer></script>
+    <script src="js/premium-animations.js" defer></script>
 
     <style>
         /* Single Page Navigation Active State */
@@ -1500,6 +1544,17 @@
 </head>
 
 <body class="glow-cursor">
+    <!-- Premium Page Loader -->
+    <div class="page-loader">
+        <div class="loader-logo">
+            <svg viewBox="0 0 60 60" width="60" height="60" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M30 6 L54 18 L30 30 L6 18 Z" fill="#C45C26" opacity="0.3"/>
+                <path d="M30 15 L54 27 L30 39 L6 27 Z" fill="#C45C26" opacity="0.6"/>
+                <path d="M30 24 L54 36 L30 48 L6 36 Z" fill="#C45C26"/>
+            </svg>
+        </div>
+    </div>
+
     <div class="neural-bg">
         <div class="neural-grid"></div>
         <div class="neural-glow"></div>
@@ -1555,36 +1610,45 @@
     </nav>
 
     <section id="home" class="hero redesign-hero">
+        <!-- Animated background lines -->
+        <div class="hero-lines" aria-hidden="true">
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+            <div class="hero-line"></div>
+        </div>
+
         <div class="container hero-container-inner">
             <div class="grid-asymmetric">
                 <div class="hero-content">
-                    <div class="hero-eyebrow">
+                    <div class="hero-eyebrow anim-fade-up" data-delay="1">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
                         新一代工厂操作系统
                     </div>
 
-                    <h1 class="display hero-title" style="color: var(--tech-text-primary, #1A1A1A); line-height: 1.1;">
-                        <span class="ai-agent-highlight">AI Agent</span> 驱动<br>
+                    <h1 class="display hero-title anim-fade-up" data-delay="2" style="color: var(--tech-text-primary, #1A1A1A); line-height: 1.1;">
+                        <span class="ai-agent-highlight hero-title-gradient">AI Agent</span> 驱动<br>
                         重塑工业决策大脑
                     </h1>
 
-                    <p class="hero-desc" style="color: var(--tech-text-secondary, #4B5563); max-width: 540px;">
+                    <p class="hero-desc anim-fade-up" data-delay="3" style="color: var(--tech-text-secondary, #4B5563); max-width: 540px;">
                         白垩纪不仅仅是管理软件——它是一个基于分布式智能体（AI Agents）的工业编排系统。通过实时调度专业智能体，自动适配多模态业务场景，让生产现场具备主动思考与动态进化的能力。
                     </p>
 
-                    <div class="hero-actions">
-                        <button class="btn btn-accent btn-lg btn-tech" onclick="scrollTo('#contact')">预约演示</button>
-                        <a href="dashboard.html" class="btn btn-secondary btn-lg btn-tech">
+                    <div class="hero-actions anim-fade-up" data-delay="4">
+                        <button class="btn btn-accent btn-lg btn-tech btn-magnetic" onclick="scrollTo('#contact')"><span class="btn-text">预约演示</span></button>
+                        <a href="dashboard.html" class="btn btn-secondary btn-lg btn-tech btn-magnetic">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"></rect><rect width="7" height="5" x="14" y="3" rx="1"></rect><rect width="7" height="9" x="14" y="12" rx="1"></rect><rect width="7" height="5" x="3" y="16" rx="1"></rect></svg>
-                            进入驾驶舱
+                            <span class="btn-text">进入驾驶舱</span>
                         </a>
-                        <a href="ai-bi.html" class="btn btn-secondary btn-lg btn-tech">
+                        <a href="ai-bi.html" class="btn btn-secondary btn-lg btn-tech btn-magnetic">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
-                            智能数据分析
+                            <span class="btn-text">智能数据分析</span>
                         </a>
                     </div>
 
-                    <div class="hero-stats">
+                    <div class="hero-stats anim-fade-up" data-delay="5">
                         <div class="stat">
                             <div class="stat-value"><span class="counter" data-target="27">0</span>+</div>
                             <div class="stat-label">功能模块</div>
@@ -1606,26 +1670,38 @@
                     </div>
                 </div>
 
-                <div class="hero-visual bento-item border-beam">
-                    <div class="visual-card">
+                <div class="hero-visual bento-item border-beam anim-scale-in float-subtle" data-delay="3">
+                    <div class="visual-card card-premium card-glow">
                         <div class="visual-card-header">
                             <div class="window-dot" style="background:#FF5F56;"></div>
                             <div class="window-dot" style="background:#FFBD2E;"></div>
                             <div class="window-dot" style="background:#27C93F;"></div>
                         </div>
                         <div class="visual-card-body">
-                            <img src="assets/images/ai_command_hub_centerpiece_1767807695583.png" alt="AI Command Hub">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_command_hub_centerpiece_1767807695583.webp" type="image/webp">
+                                <img src="assets/images/ai_command_hub_centerpiece_1767807695583.png" alt="白垩纪AI智能指挥中心控制面板" loading="lazy" width="800" height="600">
+                            </picture>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Scroll indicator -->
+        <div class="scroll-indicator anim-fade-in" data-delay="6">
+            <span>向下滚动</span>
+            <div class="scroll-indicator-line"></div>
+        </div>
     </section>
+
+    <!-- Section Divider -->
+    <div class="section-divider"></div>
 
     <!-- ==================== FEATURES SECTION ==================== -->
     <section id="features" class="section bg-warm">
         <div class="container">
-            <div style="text-align:center; margin-bottom:var(--space-8);">
+            <div class="reveal" style="text-align:center; margin-bottom:var(--space-8);">
                 <div class="eyebrow">核心能力</div>
                 <h2 class="h1" style="margin-top:var(--space-3);">一个平台，解决所有生产管理痛点</h2>
                 <p class="body-lg text-secondary" style="max-width:600px; margin:var(--space-4) auto 0;">
@@ -1633,32 +1709,32 @@
             </div>
 
             <div class="grid-3 mobile-scroll reveal-stagger">
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="3" rx="1"></rect><rect width="7" height="7" x="14" y="14" rx="1"></rect><rect width="7" height="7" x="3" y="14" rx="1"></rect></svg></div>
                     <h3 class="feature-title">分布式 Agent 编排</h3>
                     <p class="feature-desc">系统内置多角色智能体集群，可根据任务负载自动调度语音理解、视觉识别与逻辑决策智能体，实现复杂生产链条的无缝衔接。</p>
                 </div>
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg></div>
                     <h3 class="feature-title">敏捷业务适配</h3>
                     <p class="feature-desc">拒绝僵化的硬编码规则。核心引擎能够根据生产实况动态调整作业逻辑，完美支持非标指令与即时业务变更。</p>
                 </div>
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg></div>
                     <h3 class="feature-title">多模态全时感知</h3>
                     <p class="feature-desc">深度融合语音(ASR)、视觉(Vision)与物联网(IoT)数据流。操作员可通过语音控制、手势识别等自然交互方式直达业务核心。</p>
                 </div>
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg></div>
                     <h3 class="feature-title">自学习进化架构</h3>
                     <p class="feature-desc">系统在执行过程中不断捕获新的业务表达，通过闭环反馈机制持续优化决策权重，让系统越用越聪明，实现"经验数字化"。</p>
                 </div>
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg></div>
                     <h3 class="feature-title">秒级透明追溯</h3>
                     <p class="feature-desc">通过数字孪生技术记录每一个智能体的决策路径与物理现场数据，实现全链路透明，满足最严苛的行业合规要求。</p>
                 </div>
-                <div class="feature-card card-glare glow-border">
+                <div class="feature-card card-premium card-glare glow-border">
                     <div class="feature-icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg></div>
                     <h3 class="feature-title">万物智联关口</h3>
                     <p class="feature-desc">工业级边缘智能网关，预集成数百种协议，实现从机械称重到视觉传感器的一站式智联网联。</p>
@@ -1684,7 +1760,10 @@
                         <p class="body-sm" style="margin-bottom:var(--space-6); color: var(--text-secondary);">
                             作为系统的"逻辑大脑"，自动调度全栈解析引擎，确保指令的最精准映射与全局最优决策。</p>
                         <div class="pillar-image-container">
-                            <img src="assets/images/ai_arch_analysis.png" alt="Analysis Architecture">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_analysis.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_analysis.png" alt="AI数据分析架构图 - 多维度数据聚合与智能洞察" loading="lazy" width="600" height="400">
+                            </picture>
                         </div>
                     </div>
 
@@ -1699,7 +1778,10 @@
                         <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">内置级联 Policy
                             Engine，将模糊指令强制对齐核心 SOP 逻辑。</p>
                         <div class="pillar-image-container pillar-image-tall">
-                            <img src="assets/images/ai_arch_intent.png" alt="Intent Engine Flow">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_intent.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_intent.png" alt="AI意图识别引擎流程图 - 自然语言理解与业务意图解析" loading="lazy" width="600" height="400">
+                            </picture>
                         </div>
                     </div>
 
@@ -1713,7 +1795,10 @@
                         </div>
                         <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">多模态反馈闭环，持续推演全局最优解。</p>
                         <div class="pillar-image-container">
-                            <img src="assets/images/ai_arch_learning.png" alt="Self Learning">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_learning.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_learning.png" alt="AI自学习系统架构 - 持续优化与模型迭代" loading="lazy" width="600" height="400">
+                            </picture>
                         </div>
                     </div>
 
@@ -1727,7 +1812,10 @@
                         </div>
                         <p class="body-sm" style="margin-bottom:var(--space-4); color: var(--text-secondary);">多智能体分布式协同，灵活应对弹性负载。</p>
                         <div class="pillar-image-container">
-                            <img src="assets/images/ai_arch_orchestration.png" alt="Orchestration">
+                            <picture>
+                                <source srcset="assets/images/webp/ai_arch_orchestration.webp" type="image/webp">
+                                <img src="assets/images/ai_arch_orchestration.png" alt="AI智能编排系统 - 多模块协同调度" loading="lazy" width="600" height="400">
+                            </picture>
                         </div>
                     </div>
                 </div>
@@ -2886,8 +2974,11 @@
     <section id="about" class="section">
         <div class="container">
             <div class="grid-asymmetric" style="gap:var(--space-9);">
-                <div><img src="assets/images/about_innovation_lab.png" alt="Team"
-                        style="width:100%; border-radius:16px; box-shadow:var(--shadow-lg);"></div>
+                <div><picture>
+                        <source srcset="assets/images/webp/about_innovation_lab.webp" type="image/webp">
+                        <img src="assets/images/about_innovation_lab.png" alt="白垩纪AI创新实验室 - 研发团队工作场景"
+                            style="width:100%; border-radius:16px; box-shadow:var(--shadow-lg);" loading="lazy" width="800" height="500">
+                    </picture></div>
                 <div>
                     <div class="eyebrow">关于白垩纪</div>
                     <h2 class="h1" style="margin-top:var(--space-3);">用AI重新定义工厂管理</h2>

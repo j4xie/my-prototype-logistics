@@ -2,12 +2,19 @@
 /**
  * SmartBI KPICard - Key Performance Indicator Card Component
  * Features: Title, value, unit, trend arrow, status color
+ * Display Modes: default, sparkline, progressBar, waterWave
  */
-import { computed } from 'vue';
+import { computed, ref, onMounted } from 'vue';
 
 // Types
 export type TrendDirection = 'up' | 'down' | 'flat';
 export type StatusType = 'success' | 'warning' | 'danger' | 'info' | 'default';
+export type DisplayMode = 'default' | 'sparkline' | 'progressBar' | 'waterWave';
+
+export interface SubMetric {
+  label: string;
+  value: string | number;
+}
 
 interface Props {
   title: string;
@@ -27,6 +34,12 @@ interface Props {
   suffix?: string;
   targetValue?: number;
   showProgress?: boolean;
+  // New props for enhanced display modes
+  displayMode?: DisplayMode;
+  sparklineData?: number[];
+  progressValue?: number;
+  progressColor?: string;
+  subMetrics?: SubMetric[];
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -44,7 +57,13 @@ const props = withDefaults(defineProps<Props>(), {
   prefix: '',
   suffix: '',
   targetValue: undefined,
-  showProgress: false
+  showProgress: false,
+  // New defaults
+  displayMode: 'default',
+  sparklineData: () => [],
+  progressValue: 0,
+  progressColor: '',
+  subMetrics: () => []
 });
 
 const emit = defineEmits<{
@@ -117,6 +136,61 @@ const progressColor = computed(() => {
 
 const currentStatusColor = computed(() => statusColors[props.status]);
 
+// Sparkline SVG path computation
+const sparklinePath = computed(() => {
+  const data = props.sparklineData;
+  if (!data || data.length < 2) return '';
+
+  const width = 50;
+  const height = 20;
+  const padding = 2;
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((val, i) => {
+    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((val - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  });
+
+  return `M ${points.join(' L ')}`;
+});
+
+// Sparkline color based on trend
+const sparklineColor = computed(() => {
+  const data = props.sparklineData;
+  if (!data || data.length < 2) return '#909399';
+  return data[data.length - 1] >= data[0] ? '#67c23a' : '#f56c6c';
+});
+
+// Progress bar display mode color
+const displayProgressColor = computed(() => {
+  if (props.progressColor) return props.progressColor;
+  const val = props.progressValue;
+  if (val >= 80) return '#67c23a';
+  if (val >= 50) return '#e6a23c';
+  return '#f56c6c';
+});
+
+// Water wave animation offset
+const waveOffset = ref(0);
+onMounted(() => {
+  if (props.displayMode === 'waterWave') {
+    const animate = () => {
+      waveOffset.value = (waveOffset.value + 1) % 100;
+      requestAnimationFrame(animate);
+    };
+    animate();
+  }
+});
+
+// Water level based on progress value
+const waterLevel = computed(() => {
+  return Math.max(0, Math.min(100, props.progressValue));
+});
+
 function handleClick() {
   if (props.clickable) {
     emit('click');
@@ -164,10 +238,69 @@ function handleClick() {
       </div>
     </div>
 
-    <!-- Value -->
-    <div class="kpi-value" :style="{ color: currentStatusColor.text }">
-      {{ formattedValue }}
-      <span v-if="unit" class="kpi-unit">{{ unit }}</span>
+    <!-- Value Section with Display Modes -->
+    <div class="kpi-value-section" :class="`mode-${displayMode}`">
+      <!-- Water Wave Mode -->
+      <div v-if="displayMode === 'waterWave'" class="water-wave-container">
+        <div class="water-wave-circle">
+          <div
+            class="water-fill"
+            :style="{
+              height: waterLevel + '%',
+              backgroundColor: displayProgressColor
+            }"
+          >
+            <div class="wave wave-1" :style="{ animationDelay: '0s' }"></div>
+            <div class="wave wave-2" :style="{ animationDelay: '-0.5s' }"></div>
+          </div>
+          <div class="water-value">
+            <span class="water-number">{{ formattedValue }}</span>
+            <span v-if="unit" class="water-unit">{{ unit }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Default/Sparkline/ProgressBar Value Display -->
+      <template v-else>
+        <div class="kpi-value-row">
+          <div class="kpi-value" :style="{ color: currentStatusColor.text }">
+            {{ formattedValue }}
+            <span v-if="unit" class="kpi-unit">{{ unit }}</span>
+          </div>
+
+          <!-- Sparkline Mode: Mini Chart -->
+          <svg
+            v-if="displayMode === 'sparkline' && sparklineData && sparklineData.length >= 2"
+            class="sparkline-chart"
+            width="50"
+            height="20"
+            viewBox="0 0 50 20"
+          >
+            <path
+              :d="sparklinePath"
+              fill="none"
+              :stroke="sparklineColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <!-- ProgressBar Mode: Progress indicator -->
+        <div v-if="displayMode === 'progressBar'" class="display-progress">
+          <div class="display-progress-bar">
+            <div
+              class="display-progress-fill"
+              :style="{
+                width: Math.min(progressValue, 100) + '%',
+                backgroundColor: displayProgressColor
+              }"
+            ></div>
+          </div>
+          <span class="display-progress-value">{{ progressValue }}%</span>
+        </div>
+      </template>
     </div>
 
     <!-- Subtitle -->
@@ -175,7 +308,19 @@ function handleClick() {
       {{ subtitle }}
     </div>
 
-    <!-- Progress bar -->
+    <!-- Sub-metrics Section -->
+    <div v-if="subMetrics && subMetrics.length > 0" class="kpi-sub-metrics">
+      <div
+        v-for="(metric, index) in subMetrics.slice(0, 3)"
+        :key="index"
+        class="sub-metric-item"
+      >
+        <span class="sub-metric-label">{{ metric.label }}:</span>
+        <span class="sub-metric-value">{{ metric.value }}</span>
+      </div>
+    </div>
+
+    <!-- Legacy Progress bar (backward compatibility) -->
     <div v-if="showProgress && targetValue !== undefined" class="kpi-progress">
       <div class="progress-bar">
         <div
@@ -326,6 +471,170 @@ function handleClick() {
     margin-top: 6px;
     font-size: 11px;
     color: #909399;
+  }
+}
+
+// Value section with display modes
+.kpi-value-section {
+  &.mode-waterWave {
+    display: flex;
+    justify-content: center;
+    margin: 8px 0;
+  }
+}
+
+.kpi-value-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+// Sparkline chart styles
+.sparkline-chart {
+  flex-shrink: 0;
+}
+
+// ProgressBar display mode styles
+.display-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+
+  .display-progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(0, 0, 0, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+
+    .display-progress-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s ease, background-color 0.3s ease;
+    }
+  }
+
+  .display-progress-value {
+    font-size: 12px;
+    font-weight: 600;
+    color: #606266;
+    min-width: 36px;
+    text-align: right;
+  }
+}
+
+// Water wave styles
+.water-wave-container {
+  display: flex;
+  justify-content: center;
+}
+
+.water-wave-circle {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #f5f7fa;
+  border: 3px solid #dcdfe6;
+  overflow: hidden;
+
+  .water-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    transition: height 0.5s ease;
+    opacity: 0.8;
+
+    .wave {
+      position: absolute;
+      top: -8px;
+      left: -50%;
+      width: 200%;
+      height: 16px;
+      background: inherit;
+      opacity: 0.6;
+
+      &::before {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(ellipse at center, transparent 50%, currentColor 50%);
+        background-size: 20px 16px;
+        background-repeat: repeat-x;
+      }
+    }
+
+    .wave-1 {
+      animation: wave-move 3s linear infinite;
+    }
+
+    .wave-2 {
+      top: -4px;
+      opacity: 0.4;
+      animation: wave-move 4s linear infinite reverse;
+    }
+  }
+
+  .water-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    z-index: 10;
+
+    .water-number {
+      display: block;
+      font-size: 20px;
+      font-weight: 700;
+      color: #303133;
+      line-height: 1.2;
+    }
+
+    .water-unit {
+      display: block;
+      font-size: 11px;
+      color: #909399;
+      margin-top: 2px;
+    }
+  }
+}
+
+@keyframes wave-move {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(50%);
+  }
+}
+
+// Sub-metrics section
+.kpi-sub-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.1);
+
+  .sub-metric-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+
+    .sub-metric-label {
+      color: #909399;
+    }
+
+    .sub-metric-value {
+      color: #606266;
+      font-weight: 500;
+    }
   }
 }
 </style>

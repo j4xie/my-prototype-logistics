@@ -53,9 +53,10 @@ public class PythonErrorAnalysisConfig {
     private int connectTimeout = 5000;
 
     /**
-     * 错误时是否降级
+     * 错误时是否降级到 Java 实现
+     * 注意：已禁用 Java fallback，所有错误分析功能完全由 Python 服务处理
      */
-    private boolean fallbackOnError = true;
+    private boolean fallbackOnError = false;
 
     /**
      * 最大重试次数

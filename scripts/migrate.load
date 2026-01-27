@@ -1,0 +1,156 @@
+-- ============================================
+-- pgloader MySQL to PostgreSQL Migration
+-- Cretas Food Traceability System
+-- ============================================
+--
+-- 使用方法:
+--   pgloader scripts/migrate.load
+--
+-- 环境变量 (生产环境需设置):
+--   MYSQL_PASSWORD     - MySQL 密码
+--   POSTGRES_PASSWORD  - PostgreSQL 密码
+--
+-- 数据库信息 (来自 application-prod.properties):
+--   MySQL:      creats-test@localhost:3306/creats-test
+--   PostgreSQL: smartbi_user@localhost:5432/cretas_db
+--
+-- 注意事项:
+--   1. 执行前确保 PostgreSQL 数据库已创建
+--   2. 生产环境使用环境变量传递密码
+--   3. 建议先在测试环境验证
+-- ============================================
+
+LOAD DATABASE
+    -- ========== 开发环境配置 ==========
+    -- FROM mysql://root@localhost:3306/cretas_db
+
+    -- ========== 生产环境配置 ==========
+    -- MySQL 源数据库 (creats-test)
+    FROM mysql://creats-test:${MYSQL_PASSWORD}@localhost:3306/creats-test
+
+    -- PostgreSQL 目标数据库
+    INTO postgresql://smartbi_user:${POSTGRES_PASSWORD}@localhost:5432/cretas_db
+
+-- ============================================
+-- 迁移选项
+-- ============================================
+WITH
+    -- 包含删除现有表 (谨慎使用)
+    include drop,
+
+    -- 创建表结构
+    create tables,
+
+    -- 创建索引
+    create indexes,
+
+    -- 重置序列 (auto_increment -> sequence)
+    reset sequences,
+
+    -- 处理外键约束
+    foreign keys,
+
+    -- 索引名称去重 (PostgreSQL 要求全局唯一)
+    uniquify index names,
+
+    -- 仅迁移数据 (如果表已存在)
+    -- data only,
+
+    -- 批量提交大小
+    batch rows = 1000,
+    batch size = 20MB,
+
+    -- 并发工作线程数
+    workers = 4,
+    concurrency = 2
+
+-- ============================================
+-- PostgreSQL 性能参数
+-- ============================================
+SET
+    maintenance_work_mem to '512MB',
+    work_mem to '64MB',
+    search_path to 'public'
+
+-- ============================================
+-- 数据类型转换规则
+-- ============================================
+CAST
+    -- 日期时间类型
+    type datetime to timestamp with time zone
+        drop default drop not null,
+    type date to date,
+    type time to time,
+    type timestamp to timestamp with time zone,
+
+    -- 布尔类型 (MySQL tinyint(1) -> PostgreSQL boolean)
+    type tinyint when (= precision 1)
+        to boolean
+        using tinyint-to-boolean,
+
+    -- 整数类型
+    type tinyint to smallint,
+    type smallint to smallint,
+    type mediumint to integer,
+    type int to integer,
+    type bigint to bigint,
+
+    -- 自增主键
+    type int with extra auto_increment to serial,
+    type bigint with extra auto_increment to bigserial,
+
+    -- 浮点类型
+    type float to real,
+    type double to double precision,
+    type decimal to numeric,
+
+    -- 文本类型
+    type char to char,
+    type varchar to varchar,
+    type tinytext to text,
+    type text to text,
+    type mediumtext to text,
+    type longtext to text,
+
+    -- 二进制类型
+    type binary to bytea,
+    type varbinary to bytea,
+    type tinyblob to bytea,
+    type blob to bytea,
+    type mediumblob to bytea,
+    type longblob to bytea,
+
+    -- JSON 类型 (MySQL JSON -> PostgreSQL JSONB)
+    type json to jsonb,
+
+    -- 枚举类型 (转为 varchar)
+    type enum to varchar,
+    type set to varchar
+
+-- ============================================
+-- 迁移前执行 - 创建必要的扩展
+-- ============================================
+BEFORE LOAD DO
+    $$ CREATE EXTENSION IF NOT EXISTS "uuid-ossp"; $$,
+    $$ CREATE EXTENSION IF NOT EXISTS "pg_trgm"; $$,
+    $$ CREATE EXTENSION IF NOT EXISTS "btree_gin"; $$;
+
+-- ============================================
+-- 迁移后执行 - 验证和清理
+-- ============================================
+AFTER LOAD DO
+    $$ ANALYZE; $$;
+
+-- ============================================
+-- 表排除规则 (可选)
+-- ============================================
+-- EXCLUDING TABLE NAMES MATCHING
+--     'flyway_schema_history',
+--     'DATABASECHANGELOG',
+--     'DATABASECHANGELOGLOCK'
+
+-- ============================================
+-- 表重命名规则 (可选)
+-- ============================================
+-- ALTER TABLE NAMES MATCHING 'tbl_' IN SCHEMA 'public'
+--     RENAME TO REMOVE PREFIX 'tbl_'

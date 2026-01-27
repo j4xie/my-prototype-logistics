@@ -4,6 +4,8 @@
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 JAR_FILE="$SCRIPT_DIR/embedding-service-1.0.0.jar"
 LOG_FILE="$SCRIPT_DIR/embedding-service.log"
+# v13.0: Use original ONNX model (fine-tuned model requires conversion to ONNX)
+# Fine-tuned model: /www/wwwroot/cretas/models/gte-base-zh-finetuned-contrastive (safetensors, not ONNX compatible)
 MODEL_PATH="/www/wwwroot/cretas/models/gte-base-zh"
 
 # Check if already running

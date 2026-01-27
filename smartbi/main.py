@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from config import get_settings
-from api import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb
+from api import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, classifier
 
 # Configure logging
 logging.basicConfig(
@@ -30,6 +30,20 @@ async def lifespan(app: FastAPI):
     logger.info("SmartBI Service starting up...")
     logger.info(f"Debug mode: {get_settings().debug}")
     logger.info(f"LLM Model: {get_settings().llm_model}")
+
+    # Check PostgreSQL connection if enabled
+    if get_settings().postgres_enabled:
+        try:
+            from database.connection import test_connection, is_postgres_enabled
+            if is_postgres_enabled() and test_connection():
+                logger.info("PostgreSQL connection established")
+            else:
+                logger.warning("PostgreSQL enabled but connection failed")
+        except Exception as e:
+            logger.warning(f"PostgreSQL initialization error: {e}")
+    else:
+        logger.info("PostgreSQL is disabled")
+
     yield
     logger.info("SmartBI Service shutting down...")
 
@@ -64,17 +78,36 @@ app.include_router(chart.router, prefix="/api/chart", tags=["Chart"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 app.include_router(ml.router, prefix="/api/ml", tags=["ML"])
 app.include_router(linucb.router, prefix="/api/linucb", tags=["LinUCB"])
+app.include_router(chat.router, prefix="/api/chat", tags=["Chat"])
+app.include_router(classifier.router, prefix="/api/classifier", tags=["Intent Classifier"])
+
+# Database analysis endpoints (PostgreSQL)
+# Note: db_analysis.router already has /api/smartbi/analysis/db prefix
+app.include_router(db_analysis.router, tags=["Database Analysis"])
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
+    postgres_status = "disabled"
+
+    if get_settings().postgres_enabled:
+        try:
+            from database.connection import test_connection, is_postgres_enabled
+            if is_postgres_enabled() and test_connection():
+                postgres_status = "connected"
+            else:
+                postgres_status = "disconnected"
+        except Exception:
+            postgres_status = "error"
+
     return JSONResponse(
         content={
             "status": "healthy",
             "service": "smartbi",
             "version": "1.0.0",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            "postgres": postgres_status
         }
     )
 
@@ -97,8 +130,12 @@ async def root():
             "chart": "/api/chart",
             "analysis": "/api/analysis",
             "ml": "/api/ml",
-            "linucb": "/api/linucb"
-        }
+            "linucb": "/api/linucb",
+            "chat": "/api/chat",
+            "classifier": "/api/classifier",
+            "db_analysis": "/api/smartbi/analysis/db"
+        },
+        "postgres_enabled": get_settings().postgres_enabled
     }
 
 

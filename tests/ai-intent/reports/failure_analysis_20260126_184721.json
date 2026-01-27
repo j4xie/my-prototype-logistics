@@ -1,0 +1,3660 @@
+{
+  "timestamp": "2026-01-26T18:47:21.859412",
+  "total": 300,
+  "passed": 214,
+  "accuracy": 71.33333333333334,
+  "analysis": {
+    "total_failures": 86,
+    "expected_fails": {
+      "PROCESSING_BATCH_TIMELINE": 5,
+      "COST_QUERY": 12,
+      "ATTENDANCE_STATS": 15,
+      "PRODUCTION_STATUS_QUERY": 4,
+      "ATTENDANCE_TODAY": 13,
+      "REPORT_KPI": 1,
+      "ALERT_LIST": 5,
+      "QUALITY_CHECK_QUERY": 1,
+      "EQUIPMENT_STATUS_QUERY": 6,
+      "MATERIAL_LOW_STOCK_ALERT": 3,
+      "SHIPMENT_STATS": 3,
+      "TRACE_FULL": 11,
+      "MATERIAL_BATCH_QUERY": 3,
+      "EQUIPMENT_MAINTENANCE": 1,
+      "REPORT_FINANCE": 3
+    },
+    "actual_returns": {
+      "PRODUCTION_STATUS_QUERY": 5,
+      "REPORT_FINANCE": 12,
+      "ATTENDANCE_HISTORY": 12,
+      "EQUIPMENT_STATUS_QUERY": 4,
+      "REPORT_DASHBOARD_OVERVIEW": 6,
+      "PLATFORM_SHARED_1767519160": 1,
+      "ATTENDANCE_STATS": 7,
+      "ALERT_ACTIVE": 5,
+      "QUALITY_STATS": 1,
+      "EQUIPMENT_LIST": 2,
+      "ATTENDANCE_MONTHLY": 3,
+      "REPORT_INVENTORY": 3,
+      "SHIPMENT_BY_DATE": 1,
+      "ATTENDANCE_TODAY": 1,
+      "TRACE_BATCH": 11,
+      "E2E_PLAT_1767519593": 6,
+      "MATERIAL_BATCH_CREATE": 3,
+      "SHIPMENT_QUERY": 2,
+      "null": 1
+    },
+    "method_fails": {
+      "PHRASE_MATCH": 59,
+      "SEMANTIC": 7,
+      "CLASSIFIER": 18,
+      "LLM": 1,
+      "ERROR": 1
+    },
+    "confusion_pairs": [
+      {
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "count": 12
+      },
+      {
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "count": 12
+      },
+      {
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "count": 11
+      },
+      {
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "count": 7
+      },
+      {
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "count": 6
+      },
+      {
+        "expected": "PROCESSING_BATCH_TIMELINE",
+        "actual": "PRODUCTION_STATUS_QUERY",
+        "count": 5
+      },
+      {
+        "expected": "ALERT_LIST",
+        "actual": "ALERT_ACTIVE",
+        "count": 5
+      },
+      {
+        "expected": "PRODUCTION_STATUS_QUERY",
+        "actual": "EQUIPMENT_STATUS_QUERY",
+        "count": 4
+      },
+      {
+        "expected": "EQUIPMENT_STATUS_QUERY",
+        "actual": "E2E_PLAT_1767519593",
+        "count": 4
+      },
+      {
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "REPORT_INVENTORY",
+        "count": 3
+      },
+      {
+        "expected": "MATERIAL_BATCH_QUERY",
+        "actual": "MATERIAL_BATCH_CREATE",
+        "count": 3
+      },
+      {
+        "expected": "EQUIPMENT_STATUS_QUERY",
+        "actual": "EQUIPMENT_LIST",
+        "count": 2
+      },
+      {
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_MONTHLY",
+        "count": 2
+      },
+      {
+        "expected": "SHIPMENT_STATS",
+        "actual": "SHIPMENT_QUERY",
+        "count": 2
+      },
+      {
+        "expected": "REPORT_FINANCE",
+        "actual": "E2E_PLAT_1767519593",
+        "count": 2
+      },
+      {
+        "expected": "REPORT_KPI",
+        "actual": "PLATFORM_SHARED_1767519160",
+        "count": 1
+      },
+      {
+        "expected": "QUALITY_CHECK_QUERY",
+        "actual": "QUALITY_STATS",
+        "count": 1
+      },
+      {
+        "expected": "SHIPMENT_STATS",
+        "actual": "SHIPMENT_BY_DATE",
+        "count": 1
+      },
+      {
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_TODAY",
+        "count": 1
+      },
+      {
+        "expected": "EQUIPMENT_MAINTENANCE",
+        "actual": "ATTENDANCE_MONTHLY",
+        "count": 1
+      }
+    ],
+    "sample_failures": [
+      {
+        "id": 3,
+        "query": "批次生产进度",
+        "expected": "PROCESSING_BATCH_TIMELINE",
+        "actual": "PRODUCTION_STATUS_QUERY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "批次生产进度"
+      },
+      {
+        "id": 9,
+        "query": "本月成本数据",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}成本数据"
+      },
+      {
+        "id": 17,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 13,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 21,
+        "query": "产线运行情况",
+        "expected": "PRODUCTION_STATUS_QUERY",
+        "actual": "EQUIPMENT_STATUS_QUERY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "产线运行情况"
+      },
+      {
+        "id": 24,
+        "query": "今天谁在",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "今天谁在"
+      },
+      {
+        "id": 25,
+        "query": "今天谁在",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "今天谁在"
+      },
+      {
+        "id": 19,
+        "query": "核心指标汇总",
+        "expected": "REPORT_KPI",
+        "actual": "PLATFORM_SHARED_1767519160",
+        "confidence": 0.9998998009213181,
+        "matchMethod": "SEMANTIC",
+        "correct": false,
+        "template": "核心指标汇总"
+      },
+      {
+        "id": 26,
+        "query": "今日打卡统计",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "confidence": 0.9502246379852295,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "今日打卡统计"
+      },
+      {
+        "id": 34,
+        "query": "当前告警",
+        "expected": "ALERT_LIST",
+        "actual": "ALERT_ACTIVE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "当前告警"
+      },
+      {
+        "id": 35,
+        "query": "质量检验数据",
+        "expected": "QUALITY_CHECK_QUERY",
+        "actual": "QUALITY_STATS",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "质量检验数据"
+      },
+      {
+        "id": 41,
+        "query": "查看设备情况",
+        "expected": "EQUIPMENT_STATUS_QUERY",
+        "actual": "EQUIPMENT_LIST",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "查看设备情况"
+      },
+      {
+        "id": 48,
+        "query": "上个月考勤统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_MONTHLY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}考勤统计"
+      },
+      {
+        "id": 50,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 43,
+        "query": "今日打卡统计",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "confidence": 0.9502246379852295,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "今日打卡统计"
+      },
+      {
+        "id": 53,
+        "query": "缺货预警",
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "REPORT_INVENTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "缺货预警"
+      },
+      {
+        "id": 66,
+        "query": "成本查询本周",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "成本查询{time}"
+      },
+      {
+        "id": 80,
+        "query": "本周出货量",
+        "expected": "SHIPMENT_STATS",
+        "actual": "SHIPMENT_BY_DATE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}出货量"
+      },
+      {
+        "id": 69,
+        "query": "今日打卡统计",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "confidence": 0.9502246379852295,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "今日打卡统计"
+      },
+      {
+        "id": 79,
+        "query": "缺货预警",
+        "expected": "MATERIAL_LOW_STOCK_ALERT",
+        "actual": "REPORT_INVENTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "缺货预警"
+      },
+      {
+        "id": 89,
+        "query": "今天考勤统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_TODAY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}考勤统计"
+      },
+      {
+        "id": 71,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 97,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 100,
+        "query": "上周成本数据",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}成本数据"
+      },
+      {
+        "id": 106,
+        "query": "考勤数据昨天",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "考勤数据{time}"
+      },
+      {
+        "id": 109,
+        "query": "今天谁在",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "今天谁在"
+      },
+      {
+        "id": 101,
+        "query": "设备本周状态",
+        "expected": "EQUIPMENT_STATUS_QUERY",
+        "actual": "E2E_PLAT_1767519593",
+        "confidence": 0.9999283514269697,
+        "matchMethod": "SEMANTIC",
+        "correct": false,
+        "template": "设备{time}状态"
+      },
+      {
+        "id": 120,
+        "query": "上周成本数据",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}成本数据"
+      },
+      {
+        "id": 121,
+        "query": "上个月考勤统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_MONTHLY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}考勤统计"
+      },
+      {
+        "id": 124,
+        "query": "产线运行情况",
+        "expected": "PRODUCTION_STATUS_QUERY",
+        "actual": "EQUIPMENT_STATUS_QUERY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "产线运行情况"
+      },
+      {
+        "id": 123,
+        "query": "成本查询本月",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "成本查询{time}"
+      },
+      {
+        "id": 127,
+        "query": "当前告警",
+        "expected": "ALERT_LIST",
+        "actual": "ALERT_ACTIVE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "当前告警"
+      },
+      {
+        "id": 128,
+        "query": "原料入库记录",
+        "expected": "MATERIAL_BATCH_QUERY",
+        "actual": "MATERIAL_BATCH_CREATE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "原料入库记录"
+      },
+      {
+        "id": 136,
+        "query": "今天谁在",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "今天谁在"
+      },
+      {
+        "id": 147,
+        "query": "考勤数据本月",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "考勤数据{time}"
+      },
+      {
+        "id": 138,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 152,
+        "query": "最近成本数据",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}成本数据"
+      },
+      {
+        "id": 153,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 155,
+        "query": "今天出货量",
+        "expected": "SHIPMENT_STATS",
+        "actual": "SHIPMENT_QUERY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "{time}出货量"
+      },
+      {
+        "id": 156,
+        "query": "批次生产进度",
+        "expected": "PROCESSING_BATCH_TIMELINE",
+        "actual": "PRODUCTION_STATUS_QUERY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "批次生产进度"
+      },
+      {
+        "id": 148,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 167,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 165,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 177,
+        "query": "出勤率统计",
+        "expected": "ATTENDANCE_STATS",
+        "actual": "ATTENDANCE_HISTORY",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "出勤率统计"
+      },
+      {
+        "id": 181,
+        "query": "成本查询本周",
+        "expected": "COST_QUERY",
+        "actual": "REPORT_FINANCE",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "成本查询{time}"
+      },
+      {
+        "id": 166,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 192,
+        "query": "今天谁在",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "REPORT_DASHBOARD_OVERVIEW",
+        "confidence": 0.98,
+        "matchMethod": "PHRASE_MATCH",
+        "correct": false,
+        "template": "今天谁在"
+      },
+      {
+        "id": 170,
+        "query": "今日打卡统计",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "confidence": 0.9502246379852295,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "今日打卡统计"
+      },
+      {
+        "id": 184,
+        "query": "产品溯源查询",
+        "expected": "TRACE_FULL",
+        "actual": "TRACE_BATCH",
+        "confidence": 0.8790729641914368,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "产品溯源查询"
+      },
+      {
+        "id": 185,
+        "query": "今日打卡统计",
+        "expected": "ATTENDANCE_TODAY",
+        "actual": "ATTENDANCE_STATS",
+        "confidence": 0.9502246379852295,
+        "matchMethod": "CLASSIFIER",
+        "correct": false,
+        "template": "今日打卡统计"
+      }
+    ]
+  },
+  "all_results": [
+    {
+      "id": 3,
+      "query": "批次生产进度",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "批次生产进度"
+    },
+    {
+      "id": 9,
+      "query": "本月成本数据",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}成本数据"
+    },
+    {
+      "id": 7,
+      "query": "KPI指标昨天",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "KPI指标{time}"
+    },
+    {
+      "id": 10,
+      "query": "发货记录昨天",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货记录{time}"
+    },
+    {
+      "id": 8,
+      "query": "设备状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备{time}状态"
+    },
+    {
+      "id": 1,
+      "query": "快过期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "快过期原料"
+    },
+    {
+      "id": 5,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 2,
+      "query": "查看原料信息",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看原料信息"
+    },
+    {
+      "id": 4,
+      "query": "供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商名单"
+    },
+    {
+      "id": 6,
+      "query": "告警分析报告",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警分析报告"
+    },
+    {
+      "id": 11,
+      "query": "客户采购记录",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户采购记录"
+    },
+    {
+      "id": 12,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 17,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 20,
+      "query": "原料批次昨天",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 18,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 13,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 14,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 15,
+      "query": "设备运行状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备运行状态"
+    },
+    {
+      "id": 16,
+      "query": "发货统计本周",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货统计{time}"
+    },
+    {
+      "id": 21,
+      "query": "产线运行情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "产线运行情况"
+    },
+    {
+      "id": 22,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 23,
+      "query": "质检记录本周",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 24,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 29,
+      "query": "原料批次上个月",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 27,
+      "query": "客户采购记录",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户采购记录"
+    },
+    {
+      "id": 25,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 19,
+      "query": "核心指标汇总",
+      "expected": "REPORT_KPI",
+      "actual": "PLATFORM_SHARED_1767519160",
+      "confidence": 0.9998998009213181,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "核心指标汇总"
+    },
+    {
+      "id": 28,
+      "query": "昨天销售报表",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}销售报表"
+    },
+    {
+      "id": 31,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 33,
+      "query": "质量统计本月",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量统计{time}"
+    },
+    {
+      "id": 26,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 32,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 34,
+      "query": "当前告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "当前告警"
+    },
+    {
+      "id": 35,
+      "query": "质量检验数据",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "质量检验数据"
+    },
+    {
+      "id": 38,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 37,
+      "query": "今天财务报表",
+      "expected": "REPORT_FINANCE",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}财务报表"
+    },
+    {
+      "id": 36,
+      "query": "生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产批次时间线"
+    },
+    {
+      "id": 39,
+      "query": "原料批次上个月",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 30,
+      "query": "查看上周库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.8460170030593872,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "查看{time}库存"
+    },
+    {
+      "id": 40,
+      "query": "告警分析报告",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警分析报告"
+    },
+    {
+      "id": 41,
+      "query": "查看设备情况",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "查看设备情况"
+    },
+    {
+      "id": 42,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 44,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 45,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 48,
+      "query": "上个月考勤统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_MONTHLY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}考勤统计"
+    },
+    {
+      "id": 46,
+      "query": "查看质检报告",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看质检报告"
+    },
+    {
+      "id": 49,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 47,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 50,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 51,
+      "query": "今天出勤情况",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "今天出勤情况"
+    },
+    {
+      "id": 43,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 53,
+      "query": "缺货预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "缺货预警"
+    },
+    {
+      "id": 54,
+      "query": "发货统计上周",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货统计{time}"
+    },
+    {
+      "id": 56,
+      "query": "临期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期原料"
+    },
+    {
+      "id": 55,
+      "query": "设备运行状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备运行状态"
+    },
+    {
+      "id": 61,
+      "query": "查看的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 60,
+      "query": "今天生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 52,
+      "query": "库存不足提醒",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9747306704521179,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "库存不足提醒"
+    },
+    {
+      "id": 62,
+      "query": "设备维护记录",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备维护记录"
+    },
+    {
+      "id": 63,
+      "query": "原料批次今天",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 65,
+      "query": "KPI指标",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "KPI指标{time}"
+    },
+    {
+      "id": 64,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 68,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 66,
+      "query": "成本查询本周",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 67,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 70,
+      "query": "质检记录",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 57,
+      "query": "维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7275517582893372,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 75,
+      "query": "KPI指标昨天",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "KPI指标{time}"
+    },
+    {
+      "id": 74,
+      "query": "供应商列表",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商列表"
+    },
+    {
+      "id": 73,
+      "query": "质量统计昨天",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量统计{time}"
+    },
+    {
+      "id": 76,
+      "query": "客户采购记录",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户采购记录"
+    },
+    {
+      "id": 77,
+      "query": "库存有多少",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "库存有多少"
+    },
+    {
+      "id": 78,
+      "query": "供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商名单"
+    },
+    {
+      "id": 80,
+      "query": "本周出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_BY_DATE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}出货量"
+    },
+    {
+      "id": 69,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 79,
+      "query": "缺货预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "缺货预警"
+    },
+    {
+      "id": 59,
+      "query": "库存不足提醒",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9747306704521179,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "库存不足提醒"
+    },
+    {
+      "id": 82,
+      "query": "发货记录上个月",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货记录{time}"
+    },
+    {
+      "id": 58,
+      "query": "昨天客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.9114778637886047,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 85,
+      "query": "质量统计昨天",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量统计{time}"
+    },
+    {
+      "id": 83,
+      "query": "昨天生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 84,
+      "query": "供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商名单"
+    },
+    {
+      "id": 86,
+      "query": "告警列表",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警列表"
+    },
+    {
+      "id": 87,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 88,
+      "query": "KPI指标",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "KPI指标{time}"
+    },
+    {
+      "id": 89,
+      "query": "今天考勤统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}考勤统计"
+    },
+    {
+      "id": 71,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 90,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 92,
+      "query": "发货统计本月",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货统计{time}"
+    },
+    {
+      "id": 91,
+      "query": "临期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期原料"
+    },
+    {
+      "id": 93,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 94,
+      "query": "临期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期原料"
+    },
+    {
+      "id": 95,
+      "query": "质检记录最近",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 81,
+      "query": "帮我看一下本月业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9441805481910706,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "帮我看一下{time}业绩"
+    },
+    {
+      "id": 97,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 96,
+      "query": "发货进度",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货进度"
+    },
+    {
+      "id": 99,
+      "query": "发货记录最近",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货记录{time}"
+    },
+    {
+      "id": 98,
+      "query": "发货进度",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货进度"
+    },
+    {
+      "id": 100,
+      "query": "上周成本数据",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}成本数据"
+    },
+    {
+      "id": 103,
+      "query": "查看原料信息",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看原料信息"
+    },
+    {
+      "id": 72,
+      "query": "本月客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.9618279933929443,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 105,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 104,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 106,
+      "query": "考勤数据昨天",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "考勤数据{time}"
+    },
+    {
+      "id": 108,
+      "query": "原料批次今天",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 109,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 107,
+      "query": "临期预警",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期预警"
+    },
+    {
+      "id": 110,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 111,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 113,
+      "query": "上周经营指标",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}经营指标"
+    },
+    {
+      "id": 117,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 115,
+      "query": "原料批次本周",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 116,
+      "query": "客户订单历史",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户订单历史"
+    },
+    {
+      "id": 114,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 118,
+      "query": "供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商名单"
+    },
+    {
+      "id": 119,
+      "query": "质检记录上周",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 101,
+      "query": "设备本周状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.9999283514269697,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "设备{time}状态"
+    },
+    {
+      "id": 120,
+      "query": "上周成本数据",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}成本数据"
+    },
+    {
+      "id": 102,
+      "query": "本周维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7106976509094238,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 121,
+      "query": "上个月考勤统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_MONTHLY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}考勤统计"
+    },
+    {
+      "id": 124,
+      "query": "产线运行情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "产线运行情况"
+    },
+    {
+      "id": 126,
+      "query": "本月生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 122,
+      "query": "供应商名单",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商名单"
+    },
+    {
+      "id": 125,
+      "query": "发货统计上周",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货统计{time}"
+    },
+    {
+      "id": 123,
+      "query": "成本查询本月",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 127,
+      "query": "当前告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "当前告警"
+    },
+    {
+      "id": 128,
+      "query": "原料入库记录",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "原料入库记录"
+    },
+    {
+      "id": 112,
+      "query": "帮我看一下上周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9463943839073181,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "帮我看一下{time}业绩"
+    },
+    {
+      "id": 132,
+      "query": "设备维护记录",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备维护记录"
+    },
+    {
+      "id": 129,
+      "query": "维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7275517582893372,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 133,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 131,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 135,
+      "query": "供应商列表",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商列表"
+    },
+    {
+      "id": 134,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 137,
+      "query": "查看上周的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 136,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 139,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 130,
+      "query": "本月客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.9618279933929443,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 141,
+      "query": "发货进度",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货进度"
+    },
+    {
+      "id": 142,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 143,
+      "query": "生产进度本月",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产进度{time}"
+    },
+    {
+      "id": 140,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 144,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 146,
+      "query": "原料批次本月",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 145,
+      "query": "告警统计本月",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警统计{time}"
+    },
+    {
+      "id": 147,
+      "query": "考勤数据本月",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "考勤数据{time}"
+    },
+    {
+      "id": 138,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 150,
+      "query": "经营指标",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}经营指标"
+    },
+    {
+      "id": 151,
+      "query": "原料批次昨天",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 152,
+      "query": "最近成本数据",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}成本数据"
+    },
+    {
+      "id": 153,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 155,
+      "query": "今天出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}出货量"
+    },
+    {
+      "id": 157,
+      "query": "财务数据本周",
+      "expected": "REPORT_FINANCE",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "财务数据{time}"
+    },
+    {
+      "id": 156,
+      "query": "批次生产进度",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "批次生产进度"
+    },
+    {
+      "id": 148,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 159,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 160,
+      "query": "效率报告昨天",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 162,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 161,
+      "query": "临期预警",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期预警"
+    },
+    {
+      "id": 164,
+      "query": "快过期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "快过期原料"
+    },
+    {
+      "id": 149,
+      "query": "最近维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7270439863204956,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 163,
+      "query": "完整溯源信息",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_FULL",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "完整溯源信息"
+    },
+    {
+      "id": 154,
+      "query": "最近维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7270439863204956,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 167,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 168,
+      "query": "考勤统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}考勤统计"
+    },
+    {
+      "id": 169,
+      "query": "发货进度",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货进度"
+    },
+    {
+      "id": 172,
+      "query": "供应商列表",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商列表"
+    },
+    {
+      "id": 165,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 171,
+      "query": "生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 173,
+      "query": "临期原料",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期原料"
+    },
+    {
+      "id": 174,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 175,
+      "query": "效率报告",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 176,
+      "query": "临期预警",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期预警"
+    },
+    {
+      "id": 179,
+      "query": "查看供应商",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看供应商"
+    },
+    {
+      "id": 177,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 181,
+      "query": "成本查询本周",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 180,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 178,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 183,
+      "query": "生产进度上周",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产进度{time}"
+    },
+    {
+      "id": 182,
+      "query": "质检记录",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 188,
+      "query": "本月库存情况",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}库存情况"
+    },
+    {
+      "id": 187,
+      "query": "有什么告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "有什么告警"
+    },
+    {
+      "id": 186,
+      "query": "效率报告最近",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 166,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 190,
+      "query": "查看质检报告",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看质检报告"
+    },
+    {
+      "id": 189,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 191,
+      "query": "设备维护记录",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备维护记录"
+    },
+    {
+      "id": 193,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 192,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 196,
+      "query": "上个月经营指标",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}经营指标"
+    },
+    {
+      "id": 197,
+      "query": "原料批次今天",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 170,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 199,
+      "query": "客户采购记录",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户采购记录"
+    },
+    {
+      "id": 184,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 185,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 202,
+      "query": "查看最近的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 201,
+      "query": "本周考勤统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}考勤统计"
+    },
+    {
+      "id": 204,
+      "query": "低库存预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "低库存预警"
+    },
+    {
+      "id": 198,
+      "query": "最近客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.7856991291046143,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 203,
+      "query": "批次状态跟踪",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "批次状态跟踪"
+    },
+    {
+      "id": 205,
+      "query": "成本查询上个月",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 195,
+      "query": "设备上周状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.9999732609845822,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "设备{time}状态"
+    },
+    {
+      "id": 206,
+      "query": "成本查询昨天",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 207,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 200,
+      "query": "帮我看一下今天业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9477997422218323,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "帮我看一下{time}业绩"
+    },
+    {
+      "id": 208,
+      "query": "完整溯源信息",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_FULL",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "完整溯源信息"
+    },
+    {
+      "id": 209,
+      "query": "昨天成本数据",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}成本数据"
+    },
+    {
+      "id": 194,
+      "query": "库存不足提醒",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9747306704521179,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "库存不足提醒"
+    },
+    {
+      "id": 211,
+      "query": "产线效率怎么样",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "产线效率怎么样"
+    },
+    {
+      "id": 210,
+      "query": "临期预警",
+      "expected": "MATERIAL_EXPIRING_ALERT",
+      "actual": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "临期预警"
+    },
+    {
+      "id": 213,
+      "query": "今天出勤情况",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "今天出勤情况"
+    },
+    {
+      "id": 212,
+      "query": "成本查询本周",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 214,
+      "query": "查看上个月的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 215,
+      "query": "出勤率统计",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "出勤率统计"
+    },
+    {
+      "id": 219,
+      "query": "供应商列表",
+      "expected": "SUPPLIER_LIST",
+      "actual": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "供应商列表"
+    },
+    {
+      "id": 217,
+      "query": "原料批次最近",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 216,
+      "query": "最近客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.7856991291046143,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 220,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 222,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 221,
+      "query": "当前告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "当前告警"
+    },
+    {
+      "id": 223,
+      "query": "上周出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "{time}出货量"
+    },
+    {
+      "id": 218,
+      "query": "上周维护保养",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.7071599364280701,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}维护保养"
+    },
+    {
+      "id": 225,
+      "query": "当前告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "当前告警"
+    },
+    {
+      "id": 226,
+      "query": "库存有多少",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "库存有多少"
+    },
+    {
+      "id": 227,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 228,
+      "query": "上个月生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 229,
+      "query": "缺货预警",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "缺货预警"
+    },
+    {
+      "id": 232,
+      "query": "考勤数据最近",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "考勤数据{time}"
+    },
+    {
+      "id": 231,
+      "query": "效率报告上个月",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 230,
+      "query": "告警列表",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警列表"
+    },
+    {
+      "id": 233,
+      "query": "设备运行状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备运行状态"
+    },
+    {
+      "id": 234,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 237,
+      "query": "效率报告本月",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 238,
+      "query": "上周库存情况",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}库存情况"
+    },
+    {
+      "id": 239,
+      "query": "发货统计今天",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货统计{time}"
+    },
+    {
+      "id": 236,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 241,
+      "query": "考勤数据最近",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "考勤数据{time}"
+    },
+    {
+      "id": 243,
+      "query": "批次生产进度",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "批次生产进度"
+    },
+    {
+      "id": 158,
+      "query": "设备检修情况",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": "ATTENDANCE_MONTHLY",
+      "confidence": 1.0,
+      "matchMethod": "LLM",
+      "correct": false,
+      "template": "设备检修情况"
+    },
+    {
+      "id": 244,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 245,
+      "query": "原料入库记录",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "原料入库记录"
+    },
+    {
+      "id": 246,
+      "query": "昨天生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 247,
+      "query": "质检合格率",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检合格率"
+    },
+    {
+      "id": 235,
+      "query": "设备上个月状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.99996465115602,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "设备{time}状态"
+    },
+    {
+      "id": 249,
+      "query": "原料入库记录",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "原料入库记录"
+    },
+    {
+      "id": 251,
+      "query": "当前告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_ACTIVE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "当前告警"
+    },
+    {
+      "id": 240,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 252,
+      "query": "客户订单历史",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户订单历史"
+    },
+    {
+      "id": 253,
+      "query": "客户采购记录",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户采购记录"
+    },
+    {
+      "id": 254,
+      "query": "质检记录今天",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质检记录{time}"
+    },
+    {
+      "id": 255,
+      "query": "原料批次本月",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "原料批次{time}"
+    },
+    {
+      "id": 242,
+      "query": "收支情况本月",
+      "expected": "REPORT_FINANCE",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.9999756327266829,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "收支情况{time}"
+    },
+    {
+      "id": 256,
+      "query": "最近生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 260,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 259,
+      "query": "批次生产进度",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "批次生产进度"
+    },
+    {
+      "id": 258,
+      "query": "查看昨天的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 262,
+      "query": "有什么告警",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "有什么告警"
+    },
+    {
+      "id": 248,
+      "query": "收支情况今天",
+      "expected": "REPORT_FINANCE",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.9999777914961067,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "收支情况{time}"
+    },
+    {
+      "id": 250,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 266,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 265,
+      "query": "客户订单历史",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "客户订单历史"
+    },
+    {
+      "id": 268,
+      "query": "查看原料信息",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看原料信息"
+    },
+    {
+      "id": 269,
+      "query": "产线运行情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "产线运行情况"
+    },
+    {
+      "id": 271,
+      "query": "今天谁在",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "今天谁在"
+    },
+    {
+      "id": 270,
+      "query": "KPI指标本周",
+      "expected": "REPORT_KPI",
+      "actual": "REPORT_KPI",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "KPI指标{time}"
+    },
+    {
+      "id": 273,
+      "query": "查看设备情况",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "查看设备情况"
+    },
+    {
+      "id": 257,
+      "query": "设备今天状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "E2E_PLAT_1767519593",
+      "confidence": 0.9999766816379482,
+      "matchMethod": "SEMANTIC",
+      "correct": false,
+      "template": "设备{time}状态"
+    },
+    {
+      "id": 274,
+      "query": "查看发货情况",
+      "expected": "SHIPMENT_QUERY",
+      "actual": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看发货情况"
+    },
+    {
+      "id": 275,
+      "query": "告警分析报告",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警分析报告"
+    },
+    {
+      "id": 261,
+      "query": "查看最近库存",
+      "expected": "REPORT_INVENTORY",
+      "actual": "REPORT_INVENTORY",
+      "confidence": 0.8460170030593872,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "查看{time}库存"
+    },
+    {
+      "id": 277,
+      "query": "查看原料信息",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看原料信息"
+    },
+    {
+      "id": 263,
+      "query": "本周客户采购",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": "CUSTOMER_PURCHASE_HISTORY",
+      "confidence": 0.9623348116874695,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "{time}客户采购"
+    },
+    {
+      "id": 278,
+      "query": "批次生产进度",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "批次生产进度"
+    },
+    {
+      "id": 279,
+      "query": "成本查询上个月",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "成本查询{time}"
+    },
+    {
+      "id": 280,
+      "query": "效率报告今天",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "效率报告{time}"
+    },
+    {
+      "id": 281,
+      "query": "告警分析报告",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警分析报告"
+    },
+    {
+      "id": 283,
+      "query": "告警统计本月",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警统计{time}"
+    },
+    {
+      "id": 282,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 284,
+      "query": "质量统计上周",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量统计{time}"
+    },
+    {
+      "id": 286,
+      "query": "生产批次时间线",
+      "expected": "PROCESSING_BATCH_TIMELINE",
+      "actual": "PROCESSING_BATCH_TIMELINE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产批次时间线"
+    },
+    {
+      "id": 264,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 272,
+      "query": "帮我看一下本周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9464189410209656,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "帮我看一下{time}业绩"
+    },
+    {
+      "id": 287,
+      "query": "财务数据本周",
+      "expected": "REPORT_FINANCE",
+      "actual": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "财务数据{time}"
+    },
+    {
+      "id": 288,
+      "query": "生产状态查询",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "生产状态查询"
+    },
+    {
+      "id": 291,
+      "query": "上周生产效率",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "{time}生产效率"
+    },
+    {
+      "id": 290,
+      "query": "查看原料信息",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看原料信息"
+    },
+    {
+      "id": 289,
+      "query": "设备运行状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "设备运行状态"
+    },
+    {
+      "id": 292,
+      "query": "质量数据分析",
+      "expected": "QUALITY_STATS",
+      "actual": "QUALITY_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "质量数据分析"
+    },
+    {
+      "id": 276,
+      "query": "帮我看一下上周业绩",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.9463943839073181,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "帮我看一下{time}业绩"
+    },
+    {
+      "id": 285,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 295,
+      "query": "告警统计本周",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警统计{time}"
+    },
+    {
+      "id": 296,
+      "query": "发货数据分析",
+      "expected": "SHIPMENT_STATS",
+      "actual": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "发货数据分析"
+    },
+    {
+      "id": 267,
+      "query": "库存不足提醒",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9747306704521179,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "库存不足提醒"
+    },
+    {
+      "id": 298,
+      "query": "查看本月的销售数据",
+      "expected": "REPORT_DASHBOARD_OVERVIEW",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "查看{time}的销售数据"
+    },
+    {
+      "id": 300,
+      "query": "产线运行情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": false,
+      "template": "产线运行情况"
+    },
+    {
+      "id": 299,
+      "query": "告警列表",
+      "expected": "ALERT_LIST",
+      "actual": "ALERT_LIST",
+      "confidence": 0.98,
+      "matchMethod": "PHRASE_MATCH",
+      "correct": true,
+      "template": "告警列表"
+    },
+    {
+      "id": 293,
+      "query": "今日打卡统计",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": "ATTENDANCE_STATS",
+      "confidence": 0.9502246379852295,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "今日打卡统计"
+    },
+    {
+      "id": 294,
+      "query": "库存不足提醒",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.9747306704521179,
+      "matchMethod": "CLASSIFIER",
+      "correct": true,
+      "template": "库存不足提醒"
+    },
+    {
+      "id": 297,
+      "query": "产品溯源查询",
+      "expected": "TRACE_FULL",
+      "actual": "TRACE_BATCH",
+      "confidence": 0.8790729641914368,
+      "matchMethod": "CLASSIFIER",
+      "correct": false,
+      "template": "产品溯源查询"
+    },
+    {
+      "id": 224,
+      "query": "收支情况",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "confidence": 0,
+      "matchMethod": "ERROR",
+      "correct": false,
+      "template": "收支情况{time}"
+    }
+  ]
+}

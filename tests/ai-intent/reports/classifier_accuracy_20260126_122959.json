@@ -1,0 +1,711 @@
+{
+  "timestamp": "2026-01-26T12:29:59.347165",
+  "total_samples": 7,
+  "tested_samples": 1884,
+  "errors": 0,
+  "accuracy": {
+    "top1": 97.45222929936305,
+    "top3": 99.68152866242038,
+    "top5": 99.89384288747345
+  },
+  "avg_confidence": 0.9352228946888902,
+  "elapsed_seconds": 3962.398453474045,
+  "label_stats": {
+    "CUSTOMER_SEARCH": {
+      "total": 11,
+      "correct": 11
+    },
+    "PAGE_GENERATE": {
+      "total": 9,
+      "correct": 9
+    },
+    "SUPPLIER_SEARCH": {
+      "total": 6,
+      "correct": 6
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 15,
+      "correct": 15
+    },
+    "SUPPLIER_COMPARISON": {
+      "total": 6,
+      "correct": 6
+    },
+    "EQUIPMENT_STATUS_UPDATE": {
+      "total": 14,
+      "correct": 14
+    },
+    "SUPPLIER_EVALUATE": {
+      "total": 19,
+      "correct": 18
+    },
+    "EQUIPMENT_STOP": {
+      "total": 15,
+      "correct": 15
+    },
+    "ORDER_YOY_ANALYSIS": {
+      "total": 10,
+      "correct": 10
+    },
+    "ALERT_DIAGNOSE": {
+      "total": 12,
+      "correct": 12
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 9,
+      "correct": 9
+    },
+    "ISAPI_CONFIG_LINE_DETECTION": {
+      "total": 22,
+      "correct": 22
+    },
+    "TRACE_GENERATE": {
+      "total": 11,
+      "correct": 11
+    },
+    "ATTENDANCE_STATS_BY_DEPT": {
+      "total": 10,
+      "correct": 10
+    },
+    "SCALE_DELETE_DEVICE": {
+      "total": 9,
+      "correct": 9
+    },
+    "QUALITY_CRITICAL_ITEMS": {
+      "total": 18,
+      "correct": 18
+    },
+    "ISAPI_CONFIG_FIELD_DETECTION": {
+      "total": 12,
+      "correct": 12
+    },
+    "CUSTOMER_QUERY": {
+      "total": 7,
+      "correct": 7
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 38,
+      "correct": 38
+    },
+    "TRACE_FULL": {
+      "total": 15,
+      "correct": 15
+    },
+    "SCALE_ADD_DEVICE": {
+      "total": 14,
+      "correct": 14
+    },
+    "SCALE_LIST_DEVICES": {
+      "total": 18,
+      "correct": 18
+    },
+    "SHIPMENT_CREATE": {
+      "total": 29,
+      "correct": 29
+    },
+    "REPORT_QUALITY": {
+      "total": 31,
+      "correct": 31
+    },
+    "ATTENDANCE_ANOMALY": {
+      "total": 19,
+      "correct": 19
+    },
+    "EQUIPMENT_STATS": {
+      "total": 13,
+      "correct": 13
+    },
+    "ALERT_RESOLVE": {
+      "total": 17,
+      "correct": 14
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 24,
+      "correct": 24
+    },
+    "CLOCK_OUT": {
+      "total": 20,
+      "correct": 20
+    },
+    "CUSTOMER_LIST": {
+      "total": 5,
+      "correct": 5
+    },
+    "SUPPLIER_DELETE": {
+      "total": 7,
+      "correct": 7
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 12,
+      "correct": 12
+    },
+    "PROCESSING_BATCH_LIST": {
+      "total": 12,
+      "correct": 7
+    },
+    "PROCESSING_WORKER_ASSIGN": {
+      "total": 10,
+      "correct": 10
+    },
+    "PROCESSING_RANKING": {
+      "total": 4,
+      "correct": 4
+    },
+    "EQUIPMENT_LIST": {
+      "total": 7,
+      "correct": 7
+    },
+    "ORDER_EXCLUDE_LIST": {
+      "total": 10,
+      "correct": 10
+    },
+    "TRACE_PUBLIC": {
+      "total": 14,
+      "correct": 14
+    },
+    "MATERIAL_ADJUST_QUANTITY": {
+      "total": 23,
+      "correct": 23
+    },
+    "SHIPMENT_STATS": {
+      "total": 14,
+      "correct": 13
+    },
+    "ATTENDANCE_RANKING": {
+      "total": 5,
+      "correct": 5
+    },
+    "MATERIAL_YOY_ANALYSIS": {
+      "total": 6,
+      "correct": 6
+    },
+    "ORDER_STATS": {
+      "total": 11,
+      "correct": 11
+    },
+    "PROCESSING_BATCH_DETAIL": {
+      "total": 9,
+      "correct": 9
+    },
+    "EQUIPMENT_DETAIL": {
+      "total": 12,
+      "correct": 12
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 12,
+      "correct": 11
+    },
+    "INVENTORY_CLEAR": {
+      "total": 8,
+      "correct": 8
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 12,
+      "correct": 12
+    },
+    "RULE_CONFIG": {
+      "total": 7,
+      "correct": 7
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 12,
+      "correct": 11
+    },
+    "QUALITY_DISPOSITION_EXECUTE": {
+      "total": 10,
+      "correct": 10
+    },
+    "HOME_LAYOUT_GENERATE": {
+      "total": 15,
+      "correct": 15
+    },
+    "SUPPLIER_QUERY": {
+      "total": 24,
+      "correct": 24
+    },
+    "CUSTOMER_RANKING": {
+      "total": 10,
+      "correct": 10
+    },
+    "SHIPMENT_BY_DATE": {
+      "total": 14,
+      "correct": 14
+    },
+    "DATA_BATCH_DELETE": {
+      "total": 10,
+      "correct": 9
+    },
+    "HOME_LAYOUT_UPDATE": {
+      "total": 22,
+      "correct": 22
+    },
+    "SUPPLIER_RANKING": {
+      "total": 20,
+      "correct": 19
+    },
+    "ORDER_TODAY": {
+      "total": 5,
+      "correct": 5
+    },
+    "ORDER_COMPARISON": {
+      "total": 7,
+      "correct": 7
+    },
+    "SUPPLIER_BY_CATEGORY": {
+      "total": 8,
+      "correct": 8
+    },
+    "ALERT_STATS": {
+      "total": 23,
+      "correct": 22
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 29,
+      "correct": 29
+    },
+    "ATTENDANCE_MONTHLY": {
+      "total": 6,
+      "correct": 6
+    },
+    "SHIPMENT_UPDATE": {
+      "total": 20,
+      "correct": 20
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 20,
+      "correct": 18
+    },
+    "SHIPMENT_QUERY": {
+      "total": 26,
+      "correct": 26
+    },
+    "EQUIPMENT_ALERT_LIST": {
+      "total": 29,
+      "correct": 28
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 21,
+      "correct": 20
+    },
+    "HOME_LAYOUT_SUGGEST": {
+      "total": 13,
+      "correct": 13
+    },
+    "CORRELATION_ANALYSIS": {
+      "total": 8,
+      "correct": 8
+    },
+    "SCALE_UPDATE_DEVICE": {
+      "total": 19,
+      "correct": 19
+    },
+    "ORDER_CREATE": {
+      "total": 17,
+      "correct": 16
+    },
+    "ORDER_LIST": {
+      "total": 5,
+      "correct": 5
+    },
+    "CUSTOMER_STATS": {
+      "total": 7,
+      "correct": 7
+    },
+    "COLD_CHAIN_TEMPERATURE": {
+      "total": 21,
+      "correct": 21
+    },
+    "ORDER_RANKING": {
+      "total": 10,
+      "correct": 10
+    },
+    "MATERIAL_MOM_ANALYSIS": {
+      "total": 8,
+      "correct": 8
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 6,
+      "correct": 2
+    },
+    "MATERIAL_EXPIRED_QUERY": {
+      "total": 6,
+      "correct": 6
+    },
+    "ATTENDANCE_STATS": {
+      "total": 17,
+      "correct": 15
+    },
+    "SHIPMENT_COMPARISON": {
+      "total": 14,
+      "correct": 14
+    },
+    "ALERT_BY_LEVEL": {
+      "total": 11,
+      "correct": 11
+    },
+    "PROCESSING_BATCH_CANCEL": {
+      "total": 17,
+      "correct": 17
+    },
+    "MATERIAL_FIFO_RECOMMEND": {
+      "total": 7,
+      "correct": 7
+    },
+    "ALERT_ACKNOWLEDGE": {
+      "total": 19,
+      "correct": 18
+    },
+    "PROCESSING_BATCH_START": {
+      "total": 9,
+      "correct": 8
+    },
+    "ALERT_ACTIVE": {
+      "total": 6,
+      "correct": 6
+    },
+    "ORDER_RECENT": {
+      "total": 10,
+      "correct": 10
+    },
+    "REPORT_KPI": {
+      "total": 7,
+      "correct": 6
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 10,
+      "correct": 9
+    },
+    "ORDER_MOM_ANALYSIS": {
+      "total": 7,
+      "correct": 7
+    },
+    "PAGE_STYLE_UPDATE": {
+      "total": 4,
+      "correct": 4
+    },
+    "PROCESSING_MOM_ANALYSIS": {
+      "total": 13,
+      "correct": 13
+    },
+    "EQUIPMENT_START": {
+      "total": 14,
+      "correct": 14
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 10,
+      "correct": 8
+    },
+    "PROCESSING_YOY_ANALYSIS": {
+      "total": 13,
+      "correct": 13
+    },
+    "TRACE_BATCH": {
+      "total": 26,
+      "correct": 26
+    },
+    "USER_ROLE_ASSIGN": {
+      "total": 5,
+      "correct": 5
+    },
+    "ORDER_FILTER": {
+      "total": 12,
+      "correct": 12
+    },
+    "ISAPI_QUERY_DETECTION_EVENTS": {
+      "total": 16,
+      "correct": 16
+    },
+    "EQUIPMENT_ALERT_STATS": {
+      "total": 5,
+      "correct": 5
+    },
+    "SHIPMENT_BY_CUSTOMER": {
+      "total": 11,
+      "correct": 11
+    },
+    "USER_DISABLE": {
+      "total": 10,
+      "correct": 10
+    },
+    "QUALITY_COMPARISON": {
+      "total": 10,
+      "correct": 10
+    },
+    "REPORT_FINANCE": {
+      "total": 11,
+      "correct": 11
+    },
+    "SHIPMENT_RANKING": {
+      "total": 10,
+      "correct": 10
+    },
+    "PROCESSING_BATCH_PAUSE": {
+      "total": 13,
+      "correct": 12
+    },
+    "CLOCK_IN": {
+      "total": 17,
+      "correct": 17
+    },
+    "COST_QUERY": {
+      "total": 22,
+      "correct": 22
+    },
+    "REPORT_PRODUCTION": {
+      "total": 7,
+      "correct": 6
+    },
+    "MATERIAL_BATCH_USE": {
+      "total": 7,
+      "correct": 7
+    },
+    "CONFIG_RESET": {
+      "total": 10,
+      "correct": 10
+    },
+    "PAGE_COMPONENT_ADD": {
+      "total": 5,
+      "correct": 5
+    },
+    "MATERIAL_BATCH_DELETE": {
+      "total": 15,
+      "correct": 15
+    },
+    "MATERIAL_RANKING": {
+      "total": 8,
+      "correct": 8
+    },
+    "SCHEDULING_SET_AUTO": {
+      "total": 15,
+      "correct": 15
+    },
+    "MATERIAL_COMPARISON": {
+      "total": 5,
+      "correct": 5
+    },
+    "ORDER_STATUS": {
+      "total": 10,
+      "correct": 10
+    },
+    "ALERT_LIST": {
+      "total": 24,
+      "correct": 20
+    },
+    "MATERIAL_EXCLUDE_LIST": {
+      "total": 10,
+      "correct": 10
+    },
+    "USER_CREATE": {
+      "total": 4,
+      "correct": 4
+    },
+    "FACTORY_FEATURE_TOGGLE": {
+      "total": 15,
+      "correct": 15
+    },
+    "ORDER_DELETE": {
+      "total": 7,
+      "correct": 6
+    },
+    "EQUIPMENT_RANKING": {
+      "total": 8,
+      "correct": 8
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 5,
+      "correct": 5
+    },
+    "QUALITY_STATS": {
+      "total": 5,
+      "correct": 5
+    },
+    "REPORT_INVENTORY": {
+      "total": 10,
+      "correct": 9
+    },
+    "ORDER_CANCEL": {
+      "total": 6,
+      "correct": 6
+    },
+    "QUALITY_MOM_ANALYSIS": {
+      "total": 7,
+      "correct": 7
+    },
+    "CUSTOMER_ACTIVE": {
+      "total": 9,
+      "correct": 9
+    },
+    "PAGE_DATA_BIND": {
+      "total": 6,
+      "correct": 6
+    },
+    "USER_DELETE": {
+      "total": 12,
+      "correct": 12
+    },
+    "BATCH_DELETE": {
+      "total": 12,
+      "correct": 12
+    },
+    "EQUIPMENT_STATUS": {
+      "total": 12,
+      "correct": 10
+    },
+    "PROCESSING_BATCH_RESUME": {
+      "total": 11,
+      "correct": 11
+    },
+    "QUALITY_RANKING": {
+      "total": 9,
+      "correct": 9
+    },
+    "CUSTOMER_DELETE": {
+      "total": 11,
+      "correct": 11
+    },
+    "PROCESSING_COMPARISON": {
+      "total": 8,
+      "correct": 8
+    },
+    "PRODUCT_UPDATE": {
+      "total": 5,
+      "correct": 5
+    },
+    "REPORT_TRENDS": {
+      "total": 4,
+      "correct": 4
+    },
+    "CUSTOMER_FEEDBACK": {
+      "total": 7,
+      "correct": 7
+    },
+    "CUSTOMER_COMPARISON": {
+      "total": 3,
+      "correct": 3
+    },
+    "ORDER_DETAIL": {
+      "total": 9,
+      "correct": 9
+    },
+    "PROCESSING_BATCH_COMPLETE": {
+      "total": 6,
+      "correct": 6
+    },
+    "MATERIAL_BATCH_CONSUME": {
+      "total": 7,
+      "correct": 7
+    },
+    "SCALE_DEVICE_DETAIL": {
+      "total": 7,
+      "correct": 6
+    },
+    "REPORT_ANOMALY": {
+      "total": 7,
+      "correct": 7
+    },
+    "MATERIAL_BATCH_RELEASE": {
+      "total": 12,
+      "correct": 12
+    },
+    "SCHEDULING_SET_MANUAL": {
+      "total": 8,
+      "correct": 8
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 5,
+      "correct": 5
+    },
+    "ATTENDANCE_YOY_ANALYSIS": {
+      "total": 5,
+      "correct": 5
+    },
+    "ATTENDANCE_RECORD": {
+      "total": 3,
+      "correct": 3
+    },
+    "QUALITY_YOY_ANALYSIS": {
+      "total": 5,
+      "correct": 5
+    },
+    "EQUIPMENT_COMPARISON": {
+      "total": 9,
+      "correct": 9
+    },
+    "SUPPLIER_LIST": {
+      "total": 5,
+      "correct": 5
+    },
+    "ATTENDANCE_COMPARISON": {
+      "total": 6,
+      "correct": 6
+    },
+    "ALERT_BY_EQUIPMENT": {
+      "total": 5,
+      "correct": 5
+    },
+    "ATTENDANCE_DEPARTMENT": {
+      "total": 1,
+      "correct": 1
+    },
+    "MATERIAL_APPROVE": {
+      "total": 4,
+      "correct": 4
+    },
+    "QUALITY_CHECK_UPDATE": {
+      "total": 2,
+      "correct": 2
+    },
+    "EQUIPMENT_DELETE": {
+      "total": 1,
+      "correct": 0
+    },
+    "MATERIAL_BATCH_UPDATE": {
+      "total": 3,
+      "correct": 3
+    },
+    "MATERIAL_STATS": {
+      "total": 2,
+      "correct": 0
+    },
+    "ORDER_PROCESS": {
+      "total": 2,
+      "correct": 2
+    },
+    "PROCESSING_BATCH_UPDATE": {
+      "total": 2,
+      "correct": 2
+    },
+    "EQUIPMENT_CREATE": {
+      "total": 2,
+      "correct": 2
+    },
+    "ORDER_APPROVE": {
+      "total": 4,
+      "correct": 4
+    },
+    "ORDER_UPDATE": {
+      "total": 2,
+      "correct": 2
+    },
+    "SHIPMENT_APPROVE": {
+      "total": 4,
+      "correct": 4
+    },
+    "ALERT_DELETE": {
+      "total": 1,
+      "correct": 0
+    },
+    "QUALITY_CHECK_APPROVE": {
+      "total": 1,
+      "correct": 1
+    },
+    "REPORT_ATTENDANCE": {
+      "total": 1,
+      "correct": 0
+    },
+    "SUPPLIER_CREATE": {
+      "total": 1,
+      "correct": 1
+    }
+  }
+}

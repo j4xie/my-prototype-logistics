@@ -59,8 +59,9 @@ public class PythonSmartBIConfig {
 
     /**
      * 错误时是否降级到 Java 实现
+     * 注意：已禁用 Java fallback，所有 SmartBI 功能完全由 Python 服务处理
      */
-    private boolean fallbackOnError = true;
+    private boolean fallbackOnError = false;
 
     /**
      * 健康检查间隔（毫秒）
@@ -80,9 +81,11 @@ public class PythonSmartBIConfig {
     private String healthEndpoint = "/health";
 
     /**
-     * Excel 解析端点
+     * Excel 解析端点 (使用 auto-parse 智能检测表头结构)
+     * auto-parse 会自动检测并跳过标题行，识别真正的数据表头
+     * 响应格式已与 Java ExcelParseResponse 兼容
      */
-    private String parseExcelEndpoint = "/api/excel/parse";
+    private String parseExcelEndpoint = "/api/excel/auto-parse";
 
     /**
      * 字段检测端点
@@ -143,6 +146,28 @@ public class PythonSmartBIConfig {
      * LinUCB 批量计算端点
      */
     private String linucbBatchEndpoint = "/api/linucb/batch-compute";
+
+    // ==================== 意图分类器端点 ====================
+
+    /**
+     * 意图分类端点
+     */
+    private String classifyEndpoint = "/api/classifier/classify";
+
+    /**
+     * 批量意图分类端点
+     */
+    private String classifyBatchEndpoint = "/api/classifier/classify/batch";
+
+    /**
+     * 分类器信息端点
+     */
+    private String classifierInfoEndpoint = "/api/classifier/info";
+
+    /**
+     * 分类器健康检查端点
+     */
+    private String classifierHealthEndpoint = "/api/classifier/health";
 
     // ==================== 分析服务端点 ====================
 
@@ -406,5 +431,35 @@ public class PythonSmartBIConfig {
      */
     public String getLinucbBatchUrl() {
         return getFullUrl(linucbBatchEndpoint);
+    }
+
+    // ==================== 意图分类器 URL ====================
+
+    /**
+     * 获取意图分类 URL
+     */
+    public String getClassifyUrl() {
+        return getFullUrl(classifyEndpoint);
+    }
+
+    /**
+     * 获取批量意图分类 URL
+     */
+    public String getClassifyBatchUrl() {
+        return getFullUrl(classifyBatchEndpoint);
+    }
+
+    /**
+     * 获取分类器信息 URL
+     */
+    public String getClassifierInfoUrl() {
+        return getFullUrl(classifierInfoEndpoint);
+    }
+
+    /**
+     * 获取分类器健康检查 URL
+     */
+    public String getClassifierHealthUrl() {
+        return getFullUrl(classifierHealthEndpoint);
     }
 }

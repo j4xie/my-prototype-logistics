@@ -1,0 +1,189 @@
+================================================================================
+Ralph Loop - AI意图识别系统 2000 测试用例
+================================================================================
+
+[1/4] 登录中...
+登录成功: eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFjdG9...
+
+[2/4] 生成测试用例...
+已生成 2000 个测试用例
+覆盖 44 种意图
+
+[3/4] 开始测试...
+
+--------------------------------------------------------------------------------
+[ 100/2000] 通过:   77 ( 77.0%) | 延迟:     41ms
+[ 200/2000] 通过:  161 ( 80.5%) | 延迟:     41ms
+[ 300/2000] 通过:  243 ( 81.0%) | 延迟:     43ms
+[ 400/2000] 通过:  326 ( 81.5%) | 延迟:     38ms
+[ 500/2000] 通过:  409 ( 81.8%) | 延迟:     40ms
+[ 600/2000] 通过:  485 ( 80.8%) | 延迟:     40ms
+[ 700/2000] 通过:  563 ( 80.4%) | 延迟:     40ms
+[ 800/2000] 通过:  650 ( 81.2%) | 延迟:     41ms
+[ 900/2000] 通过:  739 ( 82.1%) | 延迟:     39ms
+[1000/2000] 通过:  825 ( 82.5%) | 延迟:     41ms
+[1100/2000] 通过:  900 ( 81.8%) | 延迟:     39ms
+[1200/2000] 通过:  981 ( 81.8%) | 延迟:     39ms
+[1300/2000] 通过: 1059 ( 81.5%) | 延迟:     41ms
+[1400/2000] 通过: 1141 ( 81.5%) | 延迟:     40ms
+[1500/2000] 通过: 1211 ( 80.7%) | 延迟:     43ms
+[1600/2000] 通过: 1287 ( 80.4%) | 延迟:     39ms
+[1700/2000] 通过: 1362 ( 80.1%) | 延迟:     40ms
+[1800/2000] 通过: 1452 ( 80.7%) | 延迟:     42ms
+[1900/2000] 通过: 1532 ( 80.6%) | 延迟:     38ms
+[2000/2000] 通过: 1616 ( 80.8%) | 延迟:     43ms
+--------------------------------------------------------------------------------
+
+[4/4] 测试完成! 总耗时: 81.1秒
+
+================================================================================
+Ralph Loop 2000 测试报告
+================================================================================
+
+========================================总体结果========================================
+  总用例: 2000
+  通过: 1616 (80.8%)
+  失败: 384
+  延迟: 平均 40ms | 最小 8ms | 最大 90ms
+
+===================================按场景类别统计===================================
+  类别                   通过       总数       通过率        状态
+  ------------------------------------------------------------
+  alert                175      182        96.2%     ✓ PASS
+  attendance           200      226        88.5%     ✓ PASS
+  cost                 39       45         86.7%     ✓ PASS
+  customer             129      136        94.9%     ✓ PASS
+  equipment            154      181        85.1%     ✓ PASS
+  material             169      227        74.4%     ⚠ WARN
+  production           106      183        57.9%     ✗ FAIL
+  quality              106      137        77.4%     ⚠ WARN
+  report               248      318        78.0%     ⚠ WARN
+  shipment             146      183        79.8%     ⚠ WARN
+  supplier             68       90         75.6%     ⚠ WARN
+  trace                76       92         82.6%     ✓ PASS
+
+=====================================按难度统计=====================================
+  难度           通过       总数       通过率        状态
+  --------------------------------------------------
+  easy         140      179        78.2%     ⚠ WARN
+  medium       1476     1821       81.1%     ✓ PASS
+
+===================================匹配方法分布===================================
+  PHRASE_MATCH             : 1296 ( 64.9%)
+  SEMANTIC                 :  702 ( 35.1%)
+
+================================失败率最高的意图 (Top 10)================================
+  QUALITY_STATS                      :  25/ 45 失败 ( 55.6%)
+  PROCESSING_BATCH_TIMELINE          :  24/ 46 失败 ( 52.2%)
+  PROCESSING_BATCH_START             :  23/ 45 失败 ( 51.1%)
+  SUPPLIER_LIST                      :  22/ 45 失败 ( 48.9%)
+  MATERIAL_UPDATE                    :  21/ 45 失败 ( 46.7%)
+  PRODUCTION_STATUS_QUERY            :  20/ 46 失败 ( 43.5%)
+  MATERIAL_EXPIRING_ALERT            :  19/ 45 失败 ( 42.2%)
+  REPORT_FINANCE                     :  19/ 45 失败 ( 42.2%)
+  SHIPMENT_STATS                     :  18/ 46 失败 ( 39.1%)
+  TRACE_FULL                         :  16/ 46 失败 ( 34.8%)
+
+==============================失败案例详情 (前20个)==============================
+
+  [#2] report
+    输入: 给我今天的经营数据吧...
+    期望: REPORT_DASHBOARD_OVERVIEW
+    实际: REPORT_INVENTORY (方法: SEMANTIC, 置信度: 0.76)
+
+  [#6] shipment
+    输入: 我想查登记发货...
+    期望: SHIPMENT_CREATE
+    实际: MATERIAL_BATCH_USE (方法: SEMANTIC, 置信度: 0.73)
+
+  [#9] cost
+    输入: 我想查成本分析...
+    期望: COST_QUERY
+    实际: COST_TREND_ANALYSIS (方法: SEMANTIC, 置信度: 0.81)
+
+  [#13] production
+    输入: 我要看生产批次记录呢...
+    期望: PROCESSING_BATCH_TIMELINE
+    实际: PROCESSING_BATCH_LIST (方法: PHRASE_MATCH, 置信度: 0.98)
+
+  [#20] trace
+    输入: 帮我查一下溯源记录呢...
+    期望: TRACE_FULL
+    实际: ATTENDANCE_MONTHLY (方法: SEMANTIC, 置信度: 0.77)
+
+  [#27] production
+    输入: 看看上周生产状况呢...
+    期望: PRODUCTION_STATUS_QUERY
+    实际: PROCESSING_BATCH_TIMELINE (方法: SEMANTIC, 置信度: 0.76)
+
+  [#30] supplier
+    输入: 查看供应商呢...
+    期望: SUPPLIER_LIST
+    实际: SUPPLIER_SEARCH (方法: SEMANTIC, 置信度: 0.80)
+
+  [#32] alert
+    输入: 帮我看看标记已处理呢...
+    期望: ALERT_RESOLVE
+    实际: ALERT_ACTIVE (方法: SEMANTIC, 置信度: 0.77)
+
+  [#36] report
+    输入: 帮我看看收支情况本周吧...
+    期望: REPORT_FINANCE
+    实际: ATTENDANCE_MONTHLY (方法: SEMANTIC, 置信度: 0.75)
+
+  [#38] shipment
+    输入: 我要看发货订单统计...
+    期望: SHIPMENT_STATS
+    实际: MATERIAL_UPDATE (方法: SEMANTIC, 置信度: 0.74)
+
+  [#39] production
+    输入: 生产批次记录...
+    期望: PROCESSING_BATCH_TIMELINE
+    实际: PROCESSING_BATCH_LIST (方法: PHRASE_MATCH, 置信度: 0.98)
+
+  [#42] material
+    输入: 我要看修改原料数据吧...
+    期望: MATERIAL_UPDATE
+    实际: SUPPLIER_SEARCH (方法: SEMANTIC, 置信度: 0.70)
+
+  [#48] shipment
+    输入: 看看发货订单统计呢...
+    期望: SHIPMENT_STATS
+    实际: MATERIAL_UPDATE (方法: SEMANTIC, 置信度: 0.74)
+
+  [#49] report
+    输入: 查一下财务分析报告吧...
+    期望: REPORT_FINANCE
+    实际: EQUIPMENT_ALERT_STATS (方法: SEMANTIC, 置信度: 0.78)
+
+  [#50] report
+    输入: 看看库存够不够...
+    期望: REPORT_INVENTORY
+    实际: MATERIAL_LOW_STOCK_ALERT (方法: PHRASE_MATCH, 置信度: 0.98)
+
+  [#53] equipment
+    输入: 我想查保养记录查询...
+    期望: EQUIPMENT_MAINTENANCE
+    实际: ATTENDANCE_MONTHLY (方法: SEMANTIC, 置信度: 0.77)
+
+  [#55] shipment
+    输入: 查一下发货订单统计...
+    期望: SHIPMENT_STATS
+    实际: MATERIAL_BATCH_QUERY (方法: SEMANTIC, 置信度: 0.76)
+
+  [#57] cost
+    输入: 我想查成本分析...
+    期望: COST_QUERY
+    实际: COST_TREND_ANALYSIS (方法: SEMANTIC, 置信度: 0.81)
+
+  [#65] production
+    输入: 我想查生产批次记录呢...
+    期望: PROCESSING_BATCH_TIMELINE
+    实际: PROCESSING_BATCH_LIST (方法: PHRASE_MATCH, 置信度: 0.98)
+
+  [#70] material
+    输入: 我要看上周原料情况呢...
+    期望: MATERIAL_BATCH_QUERY
+    实际: SUPPLIER_SEARCH (方法: SEMANTIC, 置信度: 0.70)
+
+详细报告已保存: tests/ai-intent/reports/ralph_loop_2000_report_20260125_180733.json

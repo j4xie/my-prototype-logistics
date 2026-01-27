@@ -1,0 +1,8 @@
+{
+  "timestamp": "2026-01-26T14:39:23.059868",
+  "total": 200,
+  "passed": 153,
+  "accuracy": 76.5,
+  "duration_seconds": 49.222692012786865,
+  "workers": 10
+}

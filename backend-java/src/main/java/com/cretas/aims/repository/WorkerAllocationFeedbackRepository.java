@@ -206,11 +206,12 @@ public interface WorkerAllocationFeedbackRepository extends JpaRepository<Worker
      * 每日指标聚合
      * 返回: [日期, 任务数, 平均效率, 平均预测误差率, 不同工人数, 不同任务类型数]
      */
-    @Query("SELECT DATE(f.assignedAt), COUNT(f), AVG(f.actualEfficiency), " +
-           "AVG(ABS(f.predictedScore - f.actualEfficiency) / NULLIF(f.predictedScore, 0)), " +
-           "COUNT(DISTINCT f.workerId), COUNT(DISTINCT f.taskType) " +
-           "FROM WorkerAllocationFeedback f WHERE f.factoryId = :factoryId " +
-           "AND f.assignedAt >= :startDate GROUP BY DATE(f.assignedAt) ORDER BY DATE(f.assignedAt)")
+    @Query(value = "SELECT CAST(f.assigned_at AS DATE) as day, COUNT(*), AVG(f.actual_efficiency), " +
+           "AVG(ABS(f.predicted_score - f.actual_efficiency) / NULLIF(f.predicted_score, 0)), " +
+           "COUNT(DISTINCT f.worker_id), COUNT(DISTINCT f.task_type) " +
+           "FROM worker_allocation_feedbacks f WHERE f.factory_id = :factoryId " +
+           "AND f.assigned_at >= :startDate GROUP BY CAST(f.assigned_at AS DATE) ORDER BY CAST(f.assigned_at AS DATE)",
+           nativeQuery = true)
     List<Object[]> getDailyMetrics(@Param("factoryId") String factoryId, @Param("startDate") LocalDateTime startDate);
 
     /**

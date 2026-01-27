@@ -18,7 +18,7 @@ import { Icon } from 'react-native-paper';
 type DeviceStackParamList = {
   CameraAddMethod: undefined;
   DeviceSetupWizard: undefined;
-  IsapiDeviceDiscovery: undefined;
+  UnifiedDeviceDiscovery: undefined;
   AIDeviceInput: { deviceType: 'CAMERA' | 'SCALE' };
 };
 
@@ -40,7 +40,7 @@ const ADD_METHODS: AddMethodOption[] = [
     id: 'auto',
     title: '自动发现',
     subtitle: '推荐 · 同局域网设备',
-    description: '扫描局域网内的海康威视设备，自动发现、激活并配置推送',
+    description: '扫描局域网内的海康威视、大华等品牌设备，自动发现、激活并配置',
     icon: 'radar',
     color: '#3182ce',
     bgColor: '#ebf8ff',
@@ -62,8 +62,8 @@ export function CameraAddMethodScreen() {
 
   const handleSelectMethod = (method: 'auto' | 'ai') => {
     if (method === 'auto') {
-      // 自动发现 -> SADP + HTTP 双模式设备发现
-      navigation.navigate('IsapiDeviceDiscovery');
+      // 自动发现 -> 统一多品牌设备发现 (海康+大华并行)
+      navigation.navigate('UnifiedDeviceDiscovery');
     } else {
       // AI 识别 -> 进入 AI 输入页面
       navigation.navigate('AIDeviceInput', { deviceType: 'CAMERA' });

@@ -354,6 +354,8 @@ export type FAManagementStackParamList = {
   AIDeviceInput: { deviceType: 'CAMERA' | 'SCALE' };
   // 标签自动识别监控
   LabelRecognitionMonitor: undefined;
+  // 统一多品牌设备发现
+  UnifiedDeviceDiscovery: undefined;
 };
 
 export type FAProfileStackParamList = {
