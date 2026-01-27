@@ -29,7 +29,7 @@ class TwoStageIntentClassifierV9SimulatedTest {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== 复杂语句测试 (20个) ====================
