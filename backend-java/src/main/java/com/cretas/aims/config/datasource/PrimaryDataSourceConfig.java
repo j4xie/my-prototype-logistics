@@ -196,6 +196,9 @@ public class PrimaryDataSourceConfig {
     @Bean(name = "primaryTransactionManager")
     public PlatformTransactionManager primaryTransactionManager(
             @Qualifier("primaryEntityManagerFactory") EntityManagerFactory entityManagerFactory) {
-        return new JpaTransactionManager(entityManagerFactory);
+        System.out.println("======= Creating primaryTransactionManager =======");
+        JpaTransactionManager txManager = new JpaTransactionManager(entityManagerFactory);
+        System.out.println("======= primaryTransactionManager created =======");
+        return txManager;
     }
 }
