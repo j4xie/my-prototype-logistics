@@ -31,7 +31,7 @@ class TwoStageIntentClassifierV9Test {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== v8.0 兼容性测试 ====================

@@ -72,7 +72,7 @@ class IntentResponseE2EV9Test {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== 权限控制响应测试 (20个) ====================

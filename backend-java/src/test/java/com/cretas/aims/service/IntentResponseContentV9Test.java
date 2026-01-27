@@ -43,7 +43,7 @@ class IntentResponseContentV9Test {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== 响应状态验证 (15个) ====================

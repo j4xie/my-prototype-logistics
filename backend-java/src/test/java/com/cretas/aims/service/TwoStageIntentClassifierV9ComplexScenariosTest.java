@@ -31,7 +31,7 @@ class TwoStageIntentClassifierV9ComplexScenariosTest {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== 多修饰语组合测试 (15个) ====================

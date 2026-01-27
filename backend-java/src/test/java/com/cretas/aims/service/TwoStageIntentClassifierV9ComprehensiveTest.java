@@ -32,7 +32,7 @@ class TwoStageIntentClassifierV9ComprehensiveTest {
     void setUp() {
         compositionConfig = new IntentCompositionConfig();
         compositionConfig.init();
-        classifier = new TwoStageIntentClassifier(compositionConfig);
+        classifier = new TwoStageIntentClassifier(compositionConfig, null, null, null);
     }
 
     // ==================== MATERIAL 领域 (15个) ====================
