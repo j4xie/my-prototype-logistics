@@ -179,6 +179,17 @@ public class PrimaryDataSourceConfig {
             .properties(properties)
             .build();
             System.out.println("======= EntityManagerFactory built successfully =======");
+            System.out.println("======= Calling afterPropertiesSet() =======");
+            try {
+                result.afterPropertiesSet();
+                System.out.println("======= afterPropertiesSet() completed =======");
+            } catch (Exception e) {
+                System.out.println("======= afterPropertiesSet() FAILED =======");
+                System.out.println("Exception: " + e.getClass().getName());
+                System.out.println("Message: " + e.getMessage());
+                e.printStackTrace();
+                throw e;
+            }
             return result;
         } catch (Exception e) {
             System.out.println("======= EntityManagerFactory build FAILED =======");
