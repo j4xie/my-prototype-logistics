@@ -15,37 +15,37 @@
     </resultMap>
 
     <sql id="keywordMappingSql">
-        t.`id`, t.`keyword`, t.`mapping_type`, t.`mapping_value`, t.`theme_code`,
-        t.`weight`, t.`match_count`, t.`status`, t.`create_time`
+        t.id, t.keyword, t.mapping_type, t.mapping_value, t.theme_code,
+        t.weight, t.match_count, t.status, t.create_time
     </sql>
 
     <select id="selectByKeyword" resultMap="keywordMappingMap">
         SELECT <include refid="keywordMappingSql"/>
         FROM decoration_keyword_mapping t
-        WHERE t.`keyword` = #{keyword} AND t.`status` = 1
-        ORDER BY t.`weight` DESC
+        WHERE t.keyword = #{keyword} AND t.status = 1
+        ORDER BY t.weight DESC
         LIMIT 1
     </select>
 
     <select id="selectByKeywordLike" resultMap="keywordMappingMap">
         SELECT <include refid="keywordMappingSql"/>
         FROM decoration_keyword_mapping t
-        WHERE t.`status` = 1 AND t.`keyword` LIKE CONCAT('%', #{keyword}, '%')
-        ORDER BY t.`weight` DESC
+        WHERE t.status = 1 AND t.keyword LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY t.weight DESC
     </select>
 
     <select id="selectByMappingType" resultMap="keywordMappingMap">
         SELECT <include refid="keywordMappingSql"/>
         FROM decoration_keyword_mapping t
-        WHERE t.`status` = 1 AND t.`mapping_type` = #{mappingType}
-        ORDER BY t.`weight` DESC
+        WHERE t.status = 1 AND t.mapping_type = #{mappingType}
+        ORDER BY t.weight DESC
     </select>
 
     <select id="selectActiveList" resultMap="keywordMappingMap">
         SELECT <include refid="keywordMappingSql"/>
         FROM decoration_keyword_mapping t
-        WHERE t.`status` = 1
-        ORDER BY t.`weight` DESC
+        WHERE t.status = 1
+        ORDER BY t.weight DESC
     </select>
 
     <update id="incrementMatchCount">

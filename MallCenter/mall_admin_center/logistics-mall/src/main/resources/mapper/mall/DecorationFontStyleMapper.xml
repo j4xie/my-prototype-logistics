@@ -22,23 +22,23 @@
     </resultMap>
 
     <sql id="fontStyleSql">
-        t.`id`, t.`name`, t.`code`, t.`font_family`, t.`font_url`,
-        t.`usage_type`, t.`font_weight`, t.`font_size`, t.`line_height`,
-        t.`letter_spacing`, t.`preview_text`, t.`style_config`,
-        t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+        t.id, t.name, t.code, t.font_family, t.font_url,
+        t.usage_type, t.font_weight, t.font_size, t.line_height,
+        t.letter_spacing, t.preview_text, t.style_config,
+        t.status, t.sort_order, t.use_count, t.create_time
     </sql>
 
     <select id="selectByUsageType" resultMap="fontStyleMap">
         SELECT <include refid="fontStyleSql"/>
         FROM decoration_font_style t
-        WHERE t.`status` = 1 AND t.`usage_type` = #{usageType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.usage_type = #{usageType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="fontStyleMap">
         SELECT <include refid="fontStyleSql"/>
         FROM decoration_font_style t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 </mapper>

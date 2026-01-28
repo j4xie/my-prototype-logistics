@@ -15,23 +15,23 @@
     </resultMap>
 
     <sql id="tierSql">
-        gpt.`id`,
-        gpt.`spu_id`,
-        gpt.`min_quantity`,
-        gpt.`max_quantity`,
-        gpt.`price`,
-        gpt.`discount_rate`,
-        gpt.`sort_order`,
-        gpt.`create_time`,
-        gpt.`update_time`
+        gpt.id,
+        gpt.spu_id,
+        gpt.min_quantity,
+        gpt.max_quantity,
+        gpt.price,
+        gpt.discount_rate,
+        gpt.sort_order,
+        gpt.create_time,
+        gpt.update_time
     </sql>
 
     <select id="selectBySpuId" resultMap="tierMap">
         SELECT
         <include refid="tierSql"/>
         FROM goods_price_tier gpt
-        WHERE gpt.`spu_id` = #{spuId}
-        ORDER BY gpt.`min_quantity` ASC
+        WHERE gpt.spu_id = #{spuId}
+        ORDER BY gpt.min_quantity ASC
     </select>
 
     <delete id="deleteBySpuId">

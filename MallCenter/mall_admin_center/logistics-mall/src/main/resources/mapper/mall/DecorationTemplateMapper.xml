@@ -23,56 +23,56 @@
     </resultMap>
 
     <sql id="templateSql">
-        t.`id`, t.`name`, t.`code`, t.`description`, t.`thumbnail`, t.`preview_url`,
-        t.`style_type`, t.`industry_type`, t.`theme_config`, t.`modules_config`,
-        t.`status`, t.`is_default`, t.`use_count`, t.`create_by`, t.`create_time`, t.`update_time`
+        t.id, t.name, t.code, t.description, t.thumbnail, t.preview_url,
+        t.style_type, t.industry_type, t.theme_config, t.modules_config,
+        t.status, t.is_default, t.use_count, t.create_by, t.create_time, t.update_time
     </sql>
 
     <select id="selectPage1" resultMap="templateMap">
         SELECT <include refid="templateSql"/>
         FROM decoration_template t
         <where>
-            t.`deleted_at` IS NULL
+            t.deleted_at IS NULL
             <if test="query.styleType != null and query.styleType != ''">
-                AND t.`style_type` = #{query.styleType}
+                AND t.style_type = #{query.styleType}
             </if>
             <if test="query.industryType != null and query.industryType != ''">
-                AND t.`industry_type` = #{query.industryType}
+                AND t.industry_type = #{query.industryType}
             </if>
             <if test="query.status != null">
-                AND t.`status` = #{query.status}
+                AND t.status = #{query.status}
             </if>
             <if test="query.name != null and query.name != ''">
-                AND t.`name` LIKE CONCAT('%',#{query.name},'%')
+                AND t.name LIKE CONCAT('%',#{query.name},'%')
             </if>
         </where>
-        ORDER BY t.`is_default` DESC, t.`use_count` DESC, t.`create_time` DESC
+        ORDER BY t.is_default DESC, t.use_count DESC, t.create_time DESC
     </select>
 
     <select id="selectByCode" resultMap="templateMap">
         SELECT <include refid="templateSql"/>
         FROM decoration_template t
-        WHERE t.`code` = #{code} AND t.`deleted_at` IS NULL
+        WHERE t.code = #{code} AND t.deleted_at IS NULL
     </select>
 
     <select id="selectActiveList" resultMap="templateMap">
         SELECT <include refid="templateSql"/>
         FROM decoration_template t
-        WHERE t.`status` = 1 AND t.`deleted_at` IS NULL
-        ORDER BY t.`is_default` DESC, t.`use_count` DESC
+        WHERE t.status = 1 AND t.deleted_at IS NULL
+        ORDER BY t.is_default DESC, t.use_count DESC
     </select>
 
     <select id="selectByStyleType" resultMap="templateMap">
         SELECT <include refid="templateSql"/>
         FROM decoration_template t
-        WHERE t.`style_type` = #{styleType} AND t.`status` = 1 AND t.`deleted_at` IS NULL
-        ORDER BY t.`use_count` DESC
+        WHERE t.style_type = #{styleType} AND t.status = 1 AND t.deleted_at IS NULL
+        ORDER BY t.use_count DESC
     </select>
 
     <select id="selectDefault" resultMap="templateMap">
         SELECT <include refid="templateSql"/>
         FROM decoration_template t
-        WHERE t.`is_default` = 1 AND t.`status` = 1 AND t.`deleted_at` IS NULL
+        WHERE t.is_default = 1 AND t.status = 1 AND t.deleted_at IS NULL
         LIMIT 1
     </select>
 </mapper>

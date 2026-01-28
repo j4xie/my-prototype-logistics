@@ -17,24 +17,24 @@
     </resultMap>
 
     <sql id="reportSql">
-        tqr.`id`,
-        tqr.`batch_id`,
-        tqr.`stage`,
-        tqr.`result`,
-        tqr.`inspector`,
-        tqr.`inspector_id`,
-        tqr.`inspection_time`,
-        tqr.`test_items`,
-        tqr.`certificate_image`,
-        tqr.`report_file`,
-        tqr.`create_time`
+        tqr.id,
+        tqr.batch_id,
+        tqr.stage,
+        tqr.result,
+        tqr.inspector,
+        tqr.inspector_id,
+        tqr.inspection_time,
+        tqr.test_items,
+        tqr.certificate_image,
+        tqr.report_file,
+        tqr.create_time
     </sql>
 
     <select id="selectByBatchId" resultMap="reportMap">
         SELECT
         <include refid="reportSql"/>
         FROM traceability_quality_report tqr
-        WHERE tqr.`batch_id` = #{batchId}
-        ORDER BY tqr.`inspection_time` DESC
+        WHERE tqr.batch_id = #{batchId}
+        ORDER BY tqr.inspection_time DESC
     </select>
 </mapper>

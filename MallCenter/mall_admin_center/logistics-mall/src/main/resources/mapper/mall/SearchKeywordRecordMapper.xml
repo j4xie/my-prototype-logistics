@@ -24,24 +24,24 @@
     </resultMap>
 
     <sql id="recordSql">
-        r.`id`,
-        r.`keyword`,
-        r.`normalized_keyword`,
-        r.`user_id`,
-        r.`merchant_id`,
-        r.`phone`,
-        r.`openid`,
-        r.`result_count`,
-        r.`search_source`,
-        r.`status`,
-        r.`matched_product_ids`,
-        r.`matched_time`,
-        r.`matched_by`,
-        r.`notification_id`,
-        r.`notified_time`,
-        r.`extra_data`,
-        r.`create_time`,
-        r.`update_time`
+        r.id,
+        r.keyword,
+        r.normalized_keyword,
+        r.user_id,
+        r.merchant_id,
+        r.phone,
+        r.openid,
+        r.result_count,
+        r.search_source,
+        r.status,
+        r.matched_product_ids,
+        r.matched_time,
+        r.matched_by,
+        r.notification_id,
+        r.notified_time,
+        r.extra_data,
+        r.create_time,
+        r.update_time
     </sql>
 
     <select id="selectPage1" resultMap="recordMap">
@@ -50,39 +50,39 @@
         FROM search_keyword_record r
         <where>
             <if test="query.keyword != null and query.keyword != ''">
-                AND r.`keyword` LIKE CONCAT('%',#{query.keyword},'%')
+                AND r.keyword LIKE CONCAT('%',#{query.keyword},'%')
             </if>
             <if test="query.status != null">
-                AND r.`status` = #{query.status}
+                AND r.status = #{query.status}
             </if>
             <if test="query.merchantId != null">
-                AND r.`merchant_id` = #{query.merchantId}
+                AND r.merchant_id = #{query.merchantId}
             </if>
             <if test="query.resultCount != null">
-                AND r.`result_count` = #{query.resultCount}
+                AND r.result_count = #{query.resultCount}
             </if>
             <if test="query.searchSource != null and query.searchSource != ''">
-                AND r.`search_source` = #{query.searchSource}
+                AND r.search_source = #{query.searchSource}
             </if>
         </where>
-        ORDER BY r.`create_time` DESC
+        ORDER BY r.create_time DESC
     </select>
 
     <select id="selectByKeyword" resultMap="recordMap">
         SELECT
         <include refid="recordSql"/>
         FROM search_keyword_record r
-        WHERE r.`normalized_keyword` = #{keyword}
-        ORDER BY r.`create_time` DESC
+        WHERE r.normalized_keyword = #{keyword}
+        ORDER BY r.create_time DESC
     </select>
 
     <select id="selectNoResultRecords" resultMap="recordMap">
         SELECT
         <include refid="recordSql"/>
         FROM search_keyword_record r
-        WHERE r.`result_count` = 0
-          AND r.`create_time` BETWEEN #{startTime} AND #{endTime}
-        ORDER BY r.`create_time` DESC
+        WHERE r.result_count = 0
+          AND r.create_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY r.create_time DESC
     </select>
 
     <select id="countByKeyword" resultType="int">

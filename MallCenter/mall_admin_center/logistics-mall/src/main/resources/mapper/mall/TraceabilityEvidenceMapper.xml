@@ -15,22 +15,22 @@
     </resultMap>
 
     <sql id="evidenceSql">
-        te.`id`,
-        te.`batch_id`,
-        te.`type`,
-        te.`title`,
-        te.`description`,
-        te.`url`,
-        te.`thumbnail_url`,
-        te.`sort_order`,
-        te.`create_time`
+        te.id,
+        te.batch_id,
+        te.type,
+        te.title,
+        te.description,
+        te.url,
+        te.thumbnail_url,
+        te.sort_order,
+        te.create_time
     </sql>
 
     <select id="selectByBatchId" resultMap="evidenceMap">
         SELECT
         <include refid="evidenceSql"/>
         FROM traceability_evidence te
-        WHERE te.`batch_id` = #{batchId}
-        ORDER BY te.`sort_order` ASC, te.`create_time` ASC
+        WHERE te.batch_id = #{batchId}
+        ORDER BY te.sort_order ASC, te.create_time ASC
     </select>
 </mapper>

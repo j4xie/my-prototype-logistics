@@ -21,28 +21,28 @@
     </resultMap>
 
     <sql id="timelineSql">
-        tt.`id`,
-        tt.`batch_id`,
-        tt.`stage`,
-        tt.`title`,
-        tt.`description`,
-        tt.`operator`,
-        tt.`operator_id`,
-        tt.`workshop`,
-        tt.`equipment`,
-        tt.`status`,
-        tt.`sort_order`,
-        tt.`timestamp`,
-        tt.`extra_data`,
-        tt.`create_time`,
-        tt.`update_time`
+        tt.id,
+        tt.batch_id,
+        tt.stage,
+        tt.title,
+        tt.description,
+        tt.operator,
+        tt.operator_id,
+        tt.workshop,
+        tt.equipment,
+        tt.status,
+        tt.sort_order,
+        tt.timestamp,
+        tt.extra_data,
+        tt.create_time,
+        tt.update_time
     </sql>
 
     <select id="selectByBatchId" resultMap="timelineMap">
         SELECT
         <include refid="timelineSql"/>
         FROM traceability_timeline tt
-        WHERE tt.`batch_id` = #{batchId}
-        ORDER BY tt.`sort_order` ASC, tt.`timestamp` ASC
+        WHERE tt.batch_id = #{batchId}
+        ORDER BY tt.sort_order ASC, tt.timestamp ASC
     </select>
 </mapper>
