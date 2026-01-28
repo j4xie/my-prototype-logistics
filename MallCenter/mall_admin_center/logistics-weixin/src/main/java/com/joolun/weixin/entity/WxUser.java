@@ -167,7 +167,7 @@ private static final long serialVersionUID = 1L;
 	/**
 	 * 地理位置精度
 	 */
-	@TableField(value = "`precision`")
+	@TableField(value = "\"precision\"")
 	private Double precision;
     /**
    * 会话密钥
