@@ -21,36 +21,36 @@
     </resultMap>
 
     <sql id="imageLibrarySql">
-        t.`id`, t.`name`, t.`image_url`, t.`thumbnail_url`, t.`image_type`,
-        t.`industry_type`, t.`style_type`, t.`width`, t.`height`, t.`file_size`,
-        t.`tags`, t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+        t.id, t.name, t.image_url, t.thumbnail_url, t.image_type,
+        t.industry_type, t.style_type, t.width, t.height, t.file_size,
+        t.tags, t.status, t.sort_order, t.use_count, t.create_time
     </sql>
 
     <select id="selectByIndustry" resultMap="imageLibraryMap">
         SELECT <include refid="imageLibrarySql"/>
         FROM decoration_image_library t
-        WHERE t.`status` = 1 AND t.`industry_type` = #{industryType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.industry_type = #{industryType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByStyle" resultMap="imageLibraryMap">
         SELECT <include refid="imageLibrarySql"/>
         FROM decoration_image_library t
-        WHERE t.`status` = 1 AND t.`style_type` = #{styleType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.style_type = #{styleType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByType" resultMap="imageLibraryMap">
         SELECT <include refid="imageLibrarySql"/>
         FROM decoration_image_library t
-        WHERE t.`status` = 1 AND t.`image_type` = #{imageType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.image_type = #{imageType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="imageLibraryMap">
         SELECT <include refid="imageLibrarySql"/>
         FROM decoration_image_library t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 </mapper>

@@ -2,8 +2,7 @@
 <!--
   ~ Copyright (C) 2018-2019
   ~ All rights reserved, Designed By www.joolun.com
-  ~ 注意：
-  ~ 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  ~ 注意�?  ~ 本软件为www.joolun.com开发研制，项目使用请保留此说明
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
@@ -48,49 +47,49 @@
 	</resultMap>
 
 	<sql id="goodsSpuSql">
-		goods_spu.`id`,
-		goods_spu.`spu_code`,
-		goods_spu.`name`,
-		goods_spu.`sell_point`,
-		goods_spu.`description`,
-		goods_spu.`category_first`,
-		goods_spu.`category_second`,
-		goods_spu.`pic_urls`,
-		goods_spu.`shelf`,
-		goods_spu.`sort`,
-		goods_spu.`sales_price`,
-		goods_spu.`market_price`,
-		goods_spu.`cost_price`,
-		goods_spu.`stock`,
-		goods_spu.`sale_num`,
-		goods_spu.`create_time`,
-		goods_spu.`update_time`,
-		goods_spu.`del_flag`,
-		goods_spu.`version`,
-		goods_spu.`merchant_id`
+		goods_spu.id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		goods_spu.description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.sales_price,
+		goods_spu.market_price,
+		goods_spu.cost_price,
+		goods_spu.stock,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.del_flag,
+		goods_spu.version,
+		goods_spu.merchant_id
 	</sql>
 
 	<sql id="goodsSpuSql2">
-		goods_spu.`id`,
-		goods_spu.`spu_code`,
-		goods_spu.`name`,
-		goods_spu.`sell_point`,
-		null `description`,
-		goods_spu.`category_first`,
-		goods_spu.`category_second`,
-		goods_spu.`pic_urls`,
-		goods_spu.`shelf`,
-		goods_spu.`sort`,
-		goods_spu.`sales_price`,
-		goods_spu.`market_price`,
-		goods_spu.`cost_price`,
-		goods_spu.`stock`,
-		goods_spu.`sale_num`,
-		goods_spu.`create_time`,
-		goods_spu.`update_time`,
-		goods_spu.`del_flag`,
-		goods_spu.`version`,
-		goods_spu.`merchant_id`
+		goods_spu.id,
+		goods_spu.spu_code,
+		goods_spu.name,
+		goods_spu.sell_point,
+		null description,
+		goods_spu.category_first,
+		goods_spu.category_second,
+		goods_spu.pic_urls,
+		goods_spu.shelf,
+		goods_spu.sort,
+		goods_spu.sales_price,
+		goods_spu.market_price,
+		goods_spu.cost_price,
+		goods_spu.stock,
+		goods_spu.sale_num,
+		goods_spu.create_time,
+		goods_spu.update_time,
+		goods_spu.del_flag,
+		goods_spu.version,
+		goods_spu.merchant_id
 	</sql>
 
 	<select id="selectPage1" resultMap="goodsSpuMap">
@@ -99,19 +98,19 @@
 		FROM goods_spu goods_spu
 		<where>
 			<if test="query.shelf != null">
-				AND goods_spu.`shelf` = #{query.shelf}
+				AND goods_spu.shelf = #{query.shelf}
 			</if>
 			<if test="query.categorySecond != null">
-				AND goods_spu.`category_second` = #{query.categorySecond}
+				AND goods_spu.category_second = #{query.categorySecond}
 			</if>
 			<if test="query.name != null">
-				AND goods_spu.`name` LIKE CONCAT('%',#{query.name},'%')
+				AND goods_spu.name LIKE CONCAT('%',#{query.name},'%')
 			</if>
 			<if test="query.spuCode != null">
-				AND goods_spu.`spu_code` = #{query.spuCode}
+				AND goods_spu.spu_code = #{query.spuCode}
 			</if>
 			<if test="query.merchantId != null">
-				AND goods_spu.`merchant_id` = #{query.merchantId}
+				AND goods_spu.merchant_id = #{query.merchantId}
 			</if>
 		</where>
 	</select>
@@ -120,27 +119,27 @@
 		SELECT
 		<include refid="goodsSpuSql"/>
 		FROM goods_spu goods_spu
-		WHERE goods_spu.`id` = #{id}
+		WHERE goods_spu.id = #{id}
 	</select>
 
 	<select id="selectById2" resultMap="goodsSpuMap2">
 		SELECT
 			<include refid="goodsSpuSql"/>
 		FROM goods_spu goods_spu
-		WHERE goods_spu.`id` = #{id}
+		WHERE goods_spu.id = #{id}
 	</select>
 
 	<select id="selectOneByShoppingCart" resultMap="goodsSpuMap3">
 		SELECT
 			<include refid="goodsSpuSql2"/>
 		FROM goods_spu goods_spu
-		WHERE goods_spu.`id` = #{id}
+		WHERE goods_spu.id = #{id}
 	</select>
 
 	<select id="selectById4" resultMap="goodsSpuMap4">
 		SELECT
 		<include refid="goodsSpuSql"/>
 		FROM goods_spu goods_spu
-		WHERE goods_spu.`id` = #{id}
+		WHERE goods_spu.id = #{id}
 	</select>
 </mapper>

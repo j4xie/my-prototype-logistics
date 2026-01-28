@@ -19,22 +19,22 @@
     </resultMap>
 
     <sql id="componentStyleSql">
-        t.`id`, t.`name`, t.`code`, t.`component_type`, t.`description`,
-        t.`preview_image`, t.`style_config`, t.`default_props`, t.`style_tags`,
-        t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+        t.id, t.name, t.code, t.component_type, t.description,
+        t.preview_image, t.style_config, t.default_props, t.style_tags,
+        t.status, t.sort_order, t.use_count, t.create_time
     </sql>
 
     <select id="selectByComponentType" resultMap="componentStyleMap">
         SELECT <include refid="componentStyleSql"/>
         FROM decoration_component_style t
-        WHERE t.`status` = 1 AND t.`component_type` = #{componentType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.component_type = #{componentType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="componentStyleMap">
         SELECT <include refid="componentStyleSql"/>
         FROM decoration_component_style t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 </mapper>

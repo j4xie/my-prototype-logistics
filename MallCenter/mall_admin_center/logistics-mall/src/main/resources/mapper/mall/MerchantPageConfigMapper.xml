@@ -19,31 +19,31 @@
     </resultMap>
 
     <sql id="configSql">
-        c.`id`, c.`merchant_id`, c.`page_type`, c.`template_id`, c.`theme_config`,
-        c.`modules_config`, c.`status`, c.`published_at`, c.`ai_generated`, c.`ai_prompt`,
-        c.`create_by`, c.`create_time`, c.`update_time`
+        c.id, c.merchant_id, c.page_type, c.template_id, c.theme_config,
+        c.modules_config, c.status, c.published_at, c.ai_generated, c.ai_prompt,
+        c.create_by, c.create_time, c.update_time
     </sql>
 
     <select id="selectByMerchantAndPageType" resultMap="configMap">
         SELECT <include refid="configSql"/>
         FROM merchant_page_config c
-        WHERE c.`merchant_id` = #{merchantId} AND c.`page_type` = #{pageType}
+        WHERE c.merchant_id = #{merchantId} AND c.page_type = #{pageType}
         LIMIT 1
     </select>
 
     <select id="selectByMerchantId" resultMap="configMap">
         SELECT <include refid="configSql"/>
         FROM merchant_page_config c
-        WHERE c.`merchant_id` = #{merchantId}
-        ORDER BY c.`page_type` ASC
+        WHERE c.merchant_id = #{merchantId}
+        ORDER BY c.page_type ASC
     </select>
 
     <select id="selectPublishedConfig" resultMap="configMap">
         SELECT <include refid="configSql"/>
         FROM merchant_page_config c
-        WHERE c.`merchant_id` = #{merchantId}
-          AND c.`page_type` = #{pageType}
-          AND c.`status` = 1
+        WHERE c.merchant_id = #{merchantId}
+          AND c.page_type = #{pageType}
+          AND c.status = 1
         LIMIT 1
     </select>
 </mapper>

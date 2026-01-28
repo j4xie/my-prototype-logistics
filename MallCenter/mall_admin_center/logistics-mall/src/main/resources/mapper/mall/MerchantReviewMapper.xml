@@ -13,20 +13,20 @@
     </resultMap>
 
     <sql id="reviewSql">
-        mr.`id`,
-        mr.`merchant_id`,
-        mr.`reviewer_id`,
-        mr.`reviewer_name`,
-        mr.`action`,
-        mr.`remark`,
-        mr.`create_time`
+        mr.id,
+        mr.merchant_id,
+        mr.reviewer_id,
+        mr.reviewer_name,
+        mr.action,
+        mr.remark,
+        mr.create_time
     </sql>
 
     <select id="selectByMerchantId" resultMap="reviewMap">
         SELECT
         <include refid="reviewSql"/>
         FROM merchant_review mr
-        WHERE mr.`merchant_id` = #{merchantId}
-        ORDER BY mr.`create_time` DESC
+        WHERE mr.merchant_id = #{merchantId}
+        ORDER BY mr.create_time DESC
     </select>
 </mapper>

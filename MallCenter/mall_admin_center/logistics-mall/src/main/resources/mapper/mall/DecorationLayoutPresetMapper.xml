@@ -20,29 +20,29 @@
     </resultMap>
 
     <sql id="layoutPresetSql">
-        t.`id`, t.`name`, t.`code`, t.`description`, t.`preview_image`,
-        t.`layout_config`, t.`module_types`, t.`industry_type`, t.`style_type`,
-        t.`page_type`, t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+        t.id, t.name, t.code, t.description, t.preview_image,
+        t.layout_config, t.module_types, t.industry_type, t.style_type,
+        t.page_type, t.status, t.sort_order, t.use_count, t.create_time
     </sql>
 
     <select id="selectByIndustry" resultMap="layoutPresetMap">
         SELECT <include refid="layoutPresetSql"/>
         FROM decoration_layout_preset t
-        WHERE t.`status` = 1 AND t.`industry_type` = #{industryType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.industry_type = #{industryType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByStyle" resultMap="layoutPresetMap">
         SELECT <include refid="layoutPresetSql"/>
         FROM decoration_layout_preset t
-        WHERE t.`status` = 1 AND t.`style_type` = #{styleType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.style_type = #{styleType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="layoutPresetMap">
         SELECT <include refid="layoutPresetSql"/>
         FROM decoration_layout_preset t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 </mapper>

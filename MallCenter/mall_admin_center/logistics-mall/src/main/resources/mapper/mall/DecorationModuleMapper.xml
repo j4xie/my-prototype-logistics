@@ -21,29 +21,29 @@
     </resultMap>
 
     <sql id="moduleSql">
-        m.`id`, m.`name`, m.`code`, m.`module_type`, m.`component_name`,
-        m.`wxml_template`, m.`wxss_template`, m.`params_schema`, m.`default_params`,
-        m.`data_source_type`, m.`data_source_api`, m.`status`, m.`sort_order`,
-        m.`create_time`, m.`update_time`
+        m.id, m.name, m.code, m.module_type, m.component_name,
+        m.wxml_template, m.wxss_template, m.params_schema, m.default_params,
+        m.data_source_type, m.data_source_api, m.status, m.sort_order,
+        m.create_time, m.update_time
     </sql>
 
     <select id="selectActiveList" resultMap="moduleMap">
         SELECT <include refid="moduleSql"/>
         FROM decoration_module m
-        WHERE m.`status` = 1
-        ORDER BY m.`sort_order` ASC
+        WHERE m.status = 1
+        ORDER BY m.sort_order ASC
     </select>
 
     <select id="selectByCode" resultMap="moduleMap">
         SELECT <include refid="moduleSql"/>
         FROM decoration_module m
-        WHERE m.`code` = #{code}
+        WHERE m.code = #{code}
     </select>
 
     <select id="selectByModuleType" resultMap="moduleMap">
         SELECT <include refid="moduleSql"/>
         FROM decoration_module m
-        WHERE m.`module_type` = #{moduleType} AND m.`status` = 1
-        ORDER BY m.`sort_order` ASC
+        WHERE m.module_type = #{moduleType} AND m.status = 1
+        ORDER BY m.sort_order ASC
     </select>
 </mapper>

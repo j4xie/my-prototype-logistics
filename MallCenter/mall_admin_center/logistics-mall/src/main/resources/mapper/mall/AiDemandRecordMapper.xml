@@ -29,29 +29,29 @@
     </resultMap>
 
     <sql id="demandSql">
-        d.`id`,
-        d.`session_id`,
-        d.`message_id`,
-        d.`user_id`,
-        d.`merchant_id`,
-        d.`openid`,
-        d.`user_message`,
-        d.`ai_response`,
-        d.`extracted_keywords`,
-        d.`extracted_intent`,
-        d.`confidence_score`,
-        d.`matched_product_ids`,
-        d.`recommended_product_ids`,
-        d.`match_count`,
-        d.`demand_type`,
-        d.`demand_urgency`,
-        d.`status`,
-        d.`processed_time`,
-        d.`processed_by`,
-        d.`user_feedback`,
-        d.`feedback_time`,
-        d.`create_time`,
-        d.`update_time`
+        d.id,
+        d.session_id,
+        d.message_id,
+        d.user_id,
+        d.merchant_id,
+        d.openid,
+        d.user_message,
+        d.ai_response,
+        d.extracted_keywords,
+        d.extracted_intent,
+        d.confidence_score,
+        d.matched_product_ids,
+        d.recommended_product_ids,
+        d.match_count,
+        d.demand_type,
+        d.demand_urgency,
+        d.status,
+        d.processed_time,
+        d.processed_by,
+        d.user_feedback,
+        d.feedback_time,
+        d.create_time,
+        d.update_time
     </sql>
 
     <select id="selectPage1" resultMap="demandMap">
@@ -60,36 +60,36 @@
         FROM ai_demand_record d
         <where>
             <if test="query.sessionId != null and query.sessionId != ''">
-                AND d.`session_id` = #{query.sessionId}
+                AND d.session_id = #{query.sessionId}
             </if>
             <if test="query.merchantId != null">
-                AND d.`merchant_id` = #{query.merchantId}
+                AND d.merchant_id = #{query.merchantId}
             </if>
             <if test="query.demandType != null and query.demandType != ''">
-                AND d.`demand_type` = #{query.demandType}
+                AND d.demand_type = #{query.demandType}
             </if>
             <if test="query.status != null">
-                AND d.`status` = #{query.status}
+                AND d.status = #{query.status}
             </if>
         </where>
-        ORDER BY d.`create_time` DESC
+        ORDER BY d.create_time DESC
     </select>
 
     <select id="selectBySessionId" resultMap="demandMap">
         SELECT
         <include refid="demandSql"/>
         FROM ai_demand_record d
-        WHERE d.`session_id` = #{sessionId}
-        ORDER BY d.`create_time` ASC
+        WHERE d.session_id = #{sessionId}
+        ORDER BY d.create_time ASC
     </select>
 
     <select id="selectPendingDemands" resultMap="demandMap">
         SELECT
         <include refid="demandSql"/>
         FROM ai_demand_record d
-        WHERE d.`status` = 0
-          AND d.`match_count` = 0
-        ORDER BY d.`demand_urgency` DESC, d.`create_time` ASC
+        WHERE d.status = 0
+          AND d.match_count = 0
+        ORDER BY d.demand_urgency DESC, d.create_time ASC
         LIMIT #{limit}
     </select>
 

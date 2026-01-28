@@ -35,35 +35,35 @@
     </resultMap>
 
     <sql id="merchantSql">
-        merchant.`id`,
-        merchant.`user_id`,
-        merchant.`merchant_no`,
-        merchant.`merchant_name`,
-        merchant.`short_name`,
-        merchant.`logo_url`,
-        merchant.`license_no`,
-        merchant.`license_image`,
-        merchant.`legal_person`,
-        merchant.`legal_id_card`,
-        merchant.`legal_id_front`,
-        merchant.`legal_id_back`,
-        merchant.`bank_account`,
-        merchant.`bank_name`,
-        merchant.`bank_branch`,
-        merchant.`contact_name`,
-        merchant.`contact_phone`,
-        merchant.`contact_email`,
-        merchant.`address`,
-        merchant.`status`,
-        merchant.`rating`,
-        merchant.`review_rate`,
-        merchant.`operating_years`,
-        merchant.`product_count`,
-        merchant.`order_count`,
-        merchant.`total_sales`,
-        merchant.`create_time`,
-        merchant.`update_time`,
-        merchant.`del_flag`
+        merchant.id,
+        merchant.user_id,
+        merchant.merchant_no,
+        merchant.merchant_name,
+        merchant.short_name,
+        merchant.logo_url,
+        merchant.license_no,
+        merchant.license_image,
+        merchant.legal_person,
+        merchant.legal_id_card,
+        merchant.legal_id_front,
+        merchant.legal_id_back,
+        merchant.bank_account,
+        merchant.bank_name,
+        merchant.bank_branch,
+        merchant.contact_name,
+        merchant.contact_phone,
+        merchant.contact_email,
+        merchant.address,
+        merchant.status,
+        merchant.rating,
+        merchant.review_rate,
+        merchant.operating_years,
+        merchant.product_count,
+        merchant.order_count,
+        merchant.total_sales,
+        merchant.create_time,
+        merchant.update_time,
+        merchant.del_flag
     </sql>
 
     <select id="selectPage1" resultMap="merchantMap">
@@ -71,36 +71,36 @@
         <include refid="merchantSql"/>
         FROM merchant merchant
         <where>
-            merchant.`del_flag` = 0
+            merchant.del_flag = 0
             <if test="query.status != null">
-                AND merchant.`status` = #{query.status}
+                AND merchant.status = #{query.status}
             </if>
             <if test="query.merchantName != null and query.merchantName != ''">
-                AND merchant.`merchant_name` LIKE CONCAT('%',#{query.merchantName},'%')
+                AND merchant.merchant_name LIKE CONCAT('%',#{query.merchantName},'%')
             </if>
             <if test="query.contactPhone != null and query.contactPhone != ''">
-                AND merchant.`contact_phone` = #{query.contactPhone}
+                AND merchant.contact_phone = #{query.contactPhone}
             </if>
             <if test="query.merchantNo != null and query.merchantNo != ''">
-                AND merchant.`merchant_no` = #{query.merchantNo}
+                AND merchant.merchant_no = #{query.merchantNo}
             </if>
         </where>
-        ORDER BY merchant.`create_time` DESC
+        ORDER BY merchant.create_time DESC
     </select>
 
     <select id="selectByUserId" resultMap="merchantMap">
         SELECT
         <include refid="merchantSql"/>
         FROM merchant merchant
-        WHERE merchant.`del_flag` = 0
-          AND merchant.`user_id` = #{userId}
+        WHERE merchant.del_flag = 0
+          AND merchant.user_id = #{userId}
     </select>
 
     <select id="selectByMerchantNo" resultMap="merchantMap">
         SELECT
         <include refid="merchantSql"/>
         FROM merchant merchant
-        WHERE merchant.`del_flag` = 0
-          AND merchant.`merchant_no` = #{merchantNo}
+        WHERE merchant.del_flag = 0
+          AND merchant.merchant_no = #{merchantNo}
     </select>
 </mapper>

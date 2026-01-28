@@ -31,11 +31,11 @@
     </resultMap>
 
     <sql id="sessionSql">
-        s.`id`, s.`session_id`, s.`merchant_id`, s.`user_id`, s.`user_prompt`,
-        s.`ai_analysis`, s.`generated_config`, s.`feedback_score`, s.`feedback_comment`,
-        s.`status`, s.`current_step`, s.`selected_industry`, s.`selected_style`,
-        s.`selected_theme_code`, s.`selected_layout_id`, s.`guide_data`,
-        s.`create_time`, s.`update_time`
+        s.id, s.session_id, s.merchant_id, s.user_id, s.user_prompt,
+        s.ai_analysis, s.generated_config, s.feedback_score, s.feedback_comment,
+        s.status, s.current_step, s.selected_industry, s.selected_style,
+        s.selected_theme_code, s.selected_layout_id, s.guide_data,
+        s.create_time, s.update_time
     </sql>
 
     <select id="selectPage1" resultMap="sessionMap">
@@ -43,40 +43,40 @@
         FROM ai_decoration_session s
         <where>
             <if test="query.merchantId != null">
-                AND s.`merchant_id` = #{query.merchantId}
+                AND s.merchant_id = #{query.merchantId}
             </if>
             <if test="query.status != null and query.status != ''">
-                AND s.`status` = #{query.status}
+                AND s.status = #{query.status}
             </if>
         </where>
-        ORDER BY s.`create_time` DESC
+        ORDER BY s.create_time DESC
     </select>
 
     <select id="selectBySessionId" resultMap="sessionMap">
         SELECT <include refid="sessionSql"/>
         FROM ai_decoration_session s
-        WHERE s.`session_id` = #{sessionId}
+        WHERE s.session_id = #{sessionId}
     </select>
 
     <select id="selectByMerchantId" resultMap="sessionMap">
         SELECT <include refid="sessionSql"/>
         FROM ai_decoration_session s
-        WHERE s.`merchant_id` = #{merchantId}
-        ORDER BY s.`create_time` DESC
+        WHERE s.merchant_id = #{merchantId}
+        ORDER BY s.create_time DESC
     </select>
 
     <select id="selectActiveByUserId" resultMap="sessionMap">
         SELECT <include refid="sessionSql"/>
         FROM ai_decoration_session s
-        WHERE s.`user_id` = #{userId} AND s.`status` = 'active'
-        ORDER BY s.`create_time` DESC
+        WHERE s.user_id = #{userId} AND s.status = 'active'
+        ORDER BY s.create_time DESC
     </select>
 
     <select id="selectExpiredSessions" resultMap="sessionMap">
         SELECT <include refid="sessionSql"/>
         FROM ai_decoration_session s
-        WHERE s.`status` = 'active'
-        ORDER BY s.`create_time` ASC
+        WHERE s.status = 'active'
+        ORDER BY s.create_time ASC
     </select>
 
     <!-- 统计查询 -->

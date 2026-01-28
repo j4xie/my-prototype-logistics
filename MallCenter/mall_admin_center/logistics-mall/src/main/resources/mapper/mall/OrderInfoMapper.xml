@@ -2,8 +2,7 @@
 <!--
   ~ Copyright (C) 2018-2019
   ~ All rights reserved, Designed By www.joolun.com
-  ~ 注意：
-  ~ 本软件为www.joolun.com开发研制，项目使用请保留此说明
+  ~ 注意�?  ~ 本软件为www.joolun.com开发研制，项目使用请保留此说明
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
@@ -45,27 +44,27 @@
 	</resultMap>
 
 	<sql id="orderInfoSql">
-		order_info.`id`,
-		order_info.`del_flag`,
-		order_info.`create_time`,
-		order_info.`update_time`,
-		order_info.`user_id`,
-		order_info.`order_no`,
-		order_info.`sales_price`,
-		order_info.`freight_price`,
-		order_info.`payment_way`,
-		order_info.`payment_price`,
-		order_info.`payment_time`,
-		order_info.`delivery_time`,
-		order_info.`receiver_time`,
-		order_info.`closing_time`,
-		order_info.`is_pay`,
-		order_info.`name`,
-		order_info.`status`,
-		order_info.`user_message`,
-		order_info.`transaction_id`,
-		order_info.`logistics_id`,
-		order_info.`remark`
+		order_info.id,
+		order_info.del_flag,
+		order_info.create_time,
+		order_info.update_time,
+		order_info.user_id,
+		order_info.order_no,
+		order_info.sales_price,
+		order_info.freight_price,
+		order_info.payment_way,
+		order_info.payment_price,
+		order_info.payment_time,
+		order_info.delivery_time,
+		order_info.receiver_time,
+		order_info.closing_time,
+		order_info.is_pay,
+		order_info.name,
+		order_info.status,
+		order_info.user_message,
+		order_info.transaction_id,
+		order_info.logistics_id,
+		order_info.remark
 	</sql>
 
 	<select id="selectPage1" resultMap="orderInfoMap2">
@@ -74,31 +73,31 @@
 		FROM order_info order_info
 		<where>
 			<if test="query.userId != null">
-				AND order_info.`user_id` = #{query.userId}
+				AND order_info.user_id = #{query.userId}
 			</if>
 			<if test="query.status != null">
 				<if test="query.status == '0'.toString()">
-					AND order_info.`is_pay` = '0'
-					AND order_info.`status` is null
+					AND order_info.is_pay = '0'
+					AND order_info.status is null
 				</if>
 				<if test="query.status == '4'.toString()">
-					AND order_info.`status` = '3'
+					AND order_info.status = '3'
 				</if>
 				<if test="query.status != '0'.toString() and query.status != '4'.toString()">
-					AND order_info.`status` = #{query.status}
+					AND order_info.status = #{query.status}
 				</if>
 			</if>
 			<if test="query.isPay != null">
-				AND order_info.`is_pay` = #{query.isPay}
+				AND order_info.is_pay = #{query.isPay}
 			</if>
 			<if test="query.orderNo != null">
-				AND order_info.`order_no` = #{query.orderNo}
+				AND order_info.order_no = #{query.orderNo}
 			</if>
 			<if test="query.beginTime != null">
-				AND order_info.`create_time` >= #{query.beginTime}
+				AND order_info.create_time >= #{query.beginTime}
 			</if>
 			<if test="query.endTime != null">
-				AND #{query.endTime} >= order_info.`create_time`
+				AND #{query.endTime} >= order_info.create_time
 			</if>
 		</where>
 	</select>
@@ -109,22 +108,22 @@
 		FROM order_info order_info
 		<where>
 			<if test="query.userId != null">
-				AND order_info.`user_id` = #{query.userId}
+				AND order_info.user_id = #{query.userId}
 			</if>
 			<if test="query.status != null">
 				<if test="query.status == '0'.toString()">
-					AND order_info.`is_pay` = '0'
-					AND order_info.`status` is null
+					AND order_info.is_pay = '0'
+					AND order_info.status is null
 				</if>
 				<if test="query.status == '4'.toString()">
-					AND order_info.`status` = '3'
+					AND order_info.status = '3'
 				</if>
 				<if test="query.status != '0'.toString() and query.status != '4'.toString()">
-					AND order_info.`status` = #{query.status}
+					AND order_info.status = #{query.status}
 				</if>
 			</if>
 			<if test="query.orderNo != null">
-				AND order_info.`order_no` = #{query.orderNo}
+				AND order_info.order_no = #{query.orderNo}
 			</if>
 		</where>
 	</select>
@@ -133,6 +132,6 @@
 		SELECT
 		<include refid="orderInfoSql"/>
 		FROM order_info order_info
-		WHERE order_info.`id` = #{id}
+		WHERE order_info.id = #{id}
 	</select>
 </mapper>

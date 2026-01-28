@@ -19,29 +19,29 @@
     </resultMap>
 
     <sql id="iconLibrarySql">
-        t.`id`, t.`name`, t.`code`, t.`icon_content`, t.`icon_type`,
-        t.`category`, t.`tags`, t.`default_color`, t.`default_size`,
-        t.`status`, t.`sort_order`, t.`use_count`, t.`create_time`
+        t.id, t.name, t.code, t.icon_content, t.icon_type,
+        t.category, t.tags, t.default_color, t.default_size,
+        t.status, t.sort_order, t.use_count, t.create_time
     </sql>
 
     <select id="selectByCategory" resultMap="iconLibraryMap">
         SELECT <include refid="iconLibrarySql"/>
         FROM decoration_icon_library t
-        WHERE t.`status` = 1 AND t.`category` = #{category}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.category = #{category}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByIconType" resultMap="iconLibraryMap">
         SELECT <include refid="iconLibrarySql"/>
         FROM decoration_icon_library t
-        WHERE t.`status` = 1 AND t.`icon_type` = #{iconType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.icon_type = #{iconType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="iconLibraryMap">
         SELECT <include refid="iconLibrarySql"/>
         FROM decoration_icon_library t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 </mapper>
