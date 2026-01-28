@@ -24,24 +24,24 @@
     </resultMap>
 
     <sql id="batchSql">
-        tb.`id`,
-        tb.`batch_no`,
-        tb.`spu_id`,
-        tb.`product_name`,
-        tb.`merchant_id`,
-        tb.`merchant_name`,
-        tb.`origin`,
-        tb.`production_date`,
-        tb.`expiry_date`,
-        tb.`quantity`,
-        tb.`unit`,
-        tb.`specification`,
-        tb.`storage_condition`,
-        tb.`certifications`,
-        tb.`status`,
-        tb.`create_time`,
-        tb.`update_time`,
-        tb.`del_flag`
+        tb.id,
+        tb.batch_no,
+        tb.spu_id,
+        tb.product_name,
+        tb.merchant_id,
+        tb.merchant_name,
+        tb.origin,
+        tb.production_date,
+        tb.expiry_date,
+        tb.quantity,
+        tb.unit,
+        tb.specification,
+        tb.storage_condition,
+        tb.certifications,
+        tb.status,
+        tb.create_time,
+        tb.update_time,
+        tb.del_flag
     </sql>
 
     <select id="selectPage1" resultMap="batchMap">
@@ -49,20 +49,20 @@
         <include refid="batchSql"/>
         FROM traceability_batch tb
         <where>
-            tb.`del_flag` = 0
+            tb.del_flag = 0
             <if test="query.status != null">
-                AND tb.`status` = #{query.status}
+                AND tb.status = #{query.status}
             </if>
             <if test="query.batchNo != null and query.batchNo != ''">
-                AND tb.`batch_no` = #{query.batchNo}
+                AND tb.batch_no = #{query.batchNo}
             </if>
             <if test="query.productName != null and query.productName != ''">
-                AND tb.`product_name` LIKE CONCAT('%',#{query.productName},'%')
+                AND tb.product_name LIKE CONCAT('%',#{query.productName},'%')
             </if>
             <if test="query.merchantId != null">
-                AND tb.`merchant_id` = #{query.merchantId}
+                AND tb.merchant_id = #{query.merchantId}
             </if>
         </where>
-        ORDER BY tb.`create_time` DESC
+        ORDER BY tb.create_time DESC
     </select>
 </mapper>

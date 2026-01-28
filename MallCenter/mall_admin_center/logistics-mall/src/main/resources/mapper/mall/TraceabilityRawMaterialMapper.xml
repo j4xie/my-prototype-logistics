@@ -20,27 +20,27 @@
     </resultMap>
 
     <sql id="materialSql">
-        trm.`id`,
-        trm.`batch_id`,
-        trm.`material_name`,
-        trm.`supplier`,
-        trm.`supplier_id`,
-        trm.`origin`,
-        trm.`material_batch_no`,
-        trm.`production_date`,
-        trm.`expiry_date`,
-        trm.`quantity`,
-        trm.`unit`,
-        trm.`verified`,
-        trm.`verify_time`,
-        trm.`create_time`
+        trm.id,
+        trm.batch_id,
+        trm.material_name,
+        trm.supplier,
+        trm.supplier_id,
+        trm.origin,
+        trm.material_batch_no,
+        trm.production_date,
+        trm.expiry_date,
+        trm.quantity,
+        trm.unit,
+        trm.verified,
+        trm.verify_time,
+        trm.create_time
     </sql>
 
     <select id="selectByBatchId" resultMap="materialMap">
         SELECT
         <include refid="materialSql"/>
         FROM traceability_raw_material trm
-        WHERE trm.`batch_id` = #{batchId}
-        ORDER BY trm.`create_time` ASC
+        WHERE trm.batch_id = #{batchId}
+        ORDER BY trm.create_time ASC
     </select>
 </mapper>

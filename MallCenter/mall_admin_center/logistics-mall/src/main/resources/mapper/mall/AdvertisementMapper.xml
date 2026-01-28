@@ -23,23 +23,23 @@
     </resultMap>
 
     <sql id="adSql">
-        ad.`id`,
-        ad.`type`,
-        ad.`title`,
-        ad.`description`,
-        ad.`image_url`,
-        ad.`video_url`,
-        ad.`link_type`,
-        ad.`link_value`,
-        ad.`position`,
-        ad.`start_time`,
-        ad.`end_time`,
-        ad.`status`,
-        ad.`view_count`,
-        ad.`click_count`,
-        ad.`create_by`,
-        ad.`create_time`,
-        ad.`update_time`
+        ad.id,
+        ad.type,
+        ad.title,
+        ad.description,
+        ad.image_url,
+        ad.video_url,
+        ad.link_type,
+        ad.link_value,
+        ad.position,
+        ad.start_time,
+        ad.end_time,
+        ad.status,
+        ad.view_count,
+        ad.click_count,
+        ad.create_by,
+        ad.create_time,
+        ad.update_time
     </sql>
 
     <select id="selectPage1" resultMap="adMap">
@@ -48,38 +48,38 @@
         FROM advertisement ad
         <where>
             <if test="query.type != null and query.type != ''">
-                AND ad.`type` = #{query.type}
+                AND ad.type = #{query.type}
             </if>
             <if test="query.status != null">
-                AND ad.`status` = #{query.status}
+                AND ad.status = #{query.status}
             </if>
             <if test="query.title != null and query.title != ''">
-                AND ad.`title` LIKE CONCAT('%',#{query.title},'%')
+                AND ad.title LIKE CONCAT('%',#{query.title},'%')
             </if>
         </where>
-        ORDER BY ad.`position` ASC, ad.`create_time` DESC
+        ORDER BY ad.position ASC, ad.create_time DESC
     </select>
 
     <select id="selectActiveByType" resultMap="adMap">
         SELECT
         <include refid="adSql"/>
         FROM advertisement ad
-        WHERE ad.`status` = 1
-          AND ad.`type` = #{type}
-          AND (ad.`start_time` IS NULL OR ad.`start_time` &lt;= NOW())
-          AND (ad.`end_time` IS NULL OR ad.`end_time` &gt;= NOW())
-        ORDER BY ad.`position` ASC
+        WHERE ad.status = 1
+          AND ad.type = #{type}
+          AND (ad.start_time IS NULL OR ad.start_time &lt;= NOW())
+          AND (ad.end_time IS NULL OR ad.end_time &gt;= NOW())
+        ORDER BY ad.position ASC
     </select>
 
     <select id="selectActiveSplashAd" resultMap="adMap">
         SELECT
         <include refid="adSql"/>
         FROM advertisement ad
-        WHERE ad.`status` = 1
-          AND ad.`type` = 'splash_ad'
-          AND (ad.`start_time` IS NULL OR ad.`start_time` &lt;= NOW())
-          AND (ad.`end_time` IS NULL OR ad.`end_time` &gt;= NOW())
-        ORDER BY ad.`position` ASC
+        WHERE ad.status = 1
+          AND ad.type = 'splash_ad'
+          AND (ad.start_time IS NULL OR ad.start_time &lt;= NOW())
+          AND (ad.end_time IS NULL OR ad.end_time &gt;= NOW())
+        ORDER BY ad.position ASC
         LIMIT 1
     </select>
 </mapper>

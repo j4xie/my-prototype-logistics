@@ -32,32 +32,32 @@
     </resultMap>
 
     <sql id="notificationSql">
-        n.`id`,
-        n.`merchant_id`,
-        n.`user_id`,
-        n.`phone`,
-        n.`title`,
-        n.`content`,
-        n.`summary`,
-        n.`category`,
-        n.`sub_category`,
-        n.`priority`,
-        n.`related_keyword`,
-        n.`related_product_ids`,
-        n.`related_order_id`,
-        n.`related_link`,
-        n.`in_app_status`,
-        n.`in_app_sent_time`,
-        n.`in_app_read_time`,
-        n.`sms_enabled`,
-        n.`sms_status`,
-        n.`sms_sent_time`,
-        n.`sms_result`,
-        n.`sms_template_id`,
-        n.`created_by`,
-        n.`created_by_name`,
-        n.`create_time`,
-        n.`update_time`
+        n.id,
+        n.merchant_id,
+        n.user_id,
+        n.phone,
+        n.title,
+        n.content,
+        n.summary,
+        n.category,
+        n.sub_category,
+        n.priority,
+        n.related_keyword,
+        n.related_product_ids,
+        n.related_order_id,
+        n.related_link,
+        n.in_app_status,
+        n.in_app_sent_time,
+        n.in_app_read_time,
+        n.sms_enabled,
+        n.sms_status,
+        n.sms_sent_time,
+        n.sms_result,
+        n.sms_template_id,
+        n.created_by,
+        n.created_by_name,
+        n.create_time,
+        n.update_time
     </sql>
 
     <select id="selectPage1" resultMap="notificationMap">
@@ -65,27 +65,27 @@
         <include refid="notificationSql"/>
         FROM merchant_notification n
         <where>
-            n.`in_app_status` != 3
+            n.in_app_status != 3
             <if test="query.merchantId != null">
-                AND n.`merchant_id` = #{query.merchantId}
+                AND n.merchant_id = #{query.merchantId}
             </if>
             <if test="query.category != null and query.category != ''">
-                AND n.`category` = #{query.category}
+                AND n.category = #{query.category}
             </if>
             <if test="query.inAppStatus != null">
-                AND n.`in_app_status` = #{query.inAppStatus}
+                AND n.in_app_status = #{query.inAppStatus}
             </if>
         </where>
-        ORDER BY n.`create_time` DESC
+        ORDER BY n.create_time DESC
     </select>
 
     <select id="selectUnreadByMerchantId" resultMap="notificationMap">
         SELECT
         <include refid="notificationSql"/>
         FROM merchant_notification n
-        WHERE n.`merchant_id` = #{merchantId}
-          AND n.`in_app_status` = 1
-        ORDER BY n.`create_time` DESC
+        WHERE n.merchant_id = #{merchantId}
+          AND n.in_app_status = 1
+        ORDER BY n.create_time DESC
     </select>
 
     <select id="countUnreadByMerchantId" resultType="int">
@@ -108,10 +108,10 @@
         SELECT
         <include refid="notificationSql"/>
         FROM merchant_notification n
-        WHERE n.`sms_enabled` = 1
-          AND n.`sms_status` = 1
-          AND n.`phone` IS NOT NULL
-        ORDER BY n.`create_time` ASC
+        WHERE n.sms_enabled = 1
+          AND n.sms_status = 1
+          AND n.phone IS NOT NULL
+        ORDER BY n.create_time ASC
         LIMIT 100
     </select>
 

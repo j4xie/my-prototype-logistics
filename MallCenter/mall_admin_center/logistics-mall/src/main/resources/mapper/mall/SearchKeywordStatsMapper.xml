@@ -23,23 +23,23 @@
     </resultMap>
 
     <sql id="statsSql">
-        s.`id`,
-        s.`keyword`,
-        s.`original_keywords`,
-        s.`search_count`,
-        s.`no_result_count`,
-        s.`unique_users`,
-        s.`unique_merchants`,
-        s.`first_search_time`,
-        s.`last_search_time`,
-        s.`status`,
-        s.`priority`,
-        s.`is_hot`,
-        s.`matched_product_ids`,
-        s.`matched_category_ids`,
-        s.`admin_note`,
-        s.`create_time`,
-        s.`update_time`
+        s.id,
+        s.keyword,
+        s.original_keywords,
+        s.search_count,
+        s.no_result_count,
+        s.unique_users,
+        s.unique_merchants,
+        s.first_search_time,
+        s.last_search_time,
+        s.status,
+        s.priority,
+        s.is_hot,
+        s.matched_product_ids,
+        s.matched_category_ids,
+        s.admin_note,
+        s.create_time,
+        s.update_time
     </sql>
 
     <select id="selectPage1" resultMap="statsMap">
@@ -48,28 +48,28 @@
         FROM search_keyword_stats s
         <where>
             <if test="query.keyword != null and query.keyword != ''">
-                AND s.`keyword` LIKE CONCAT('%',#{query.keyword},'%')
+                AND s.keyword LIKE CONCAT('%',#{query.keyword},'%')
             </if>
             <if test="query.status != null">
-                AND s.`status` = #{query.status}
+                AND s.status = #{query.status}
             </if>
             <if test="query.priority != null">
-                AND s.`priority` = #{query.priority}
+                AND s.priority = #{query.priority}
             </if>
             <if test="query.isHot != null">
-                AND s.`is_hot` = #{query.isHot}
+                AND s.is_hot = #{query.isHot}
             </if>
         </where>
-        ORDER BY s.`priority` DESC, s.`no_result_count` DESC, s.`search_count` DESC
+        ORDER BY s.priority DESC, s.no_result_count DESC, s.search_count DESC
     </select>
 
     <select id="selectHotKeywords" resultMap="statsMap">
         SELECT
         <include refid="statsSql"/>
         FROM search_keyword_stats s
-        WHERE s.`is_hot` = 1
-           OR s.`search_count` >= 20
-        ORDER BY s.`search_count` DESC
+        WHERE s.is_hot = 1
+           OR s.search_count >= 20
+        ORDER BY s.search_count DESC
         LIMIT #{limit}
     </select>
 
@@ -77,9 +77,9 @@
         SELECT
         <include refid="statsSql"/>
         FROM search_keyword_stats s
-        WHERE s.`status` = 0
-          AND s.`priority` >= 1
-        ORDER BY s.`priority` DESC, s.`no_result_count` DESC
+        WHERE s.status = 0
+          AND s.priority >= 1
+        ORDER BY s.priority DESC, s.no_result_count DESC
         LIMIT #{limit}
     </select>
 
@@ -87,7 +87,7 @@
         SELECT
         <include refid="statsSql"/>
         FROM search_keyword_stats s
-        WHERE s.`keyword` = #{keyword}
+        WHERE s.keyword = #{keyword}
     </select>
 
     <update id="incrementSearchCount">

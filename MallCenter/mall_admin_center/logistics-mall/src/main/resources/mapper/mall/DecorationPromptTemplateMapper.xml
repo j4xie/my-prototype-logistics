@@ -22,45 +22,45 @@
     </resultMap>
 
     <sql id="promptTemplateSql">
-        t.`id`, t.`name`, t.`code`, t.`industry_type`, t.`image_type`, t.`style_type`,
-        t.`base_prompt`, t.`variables_def`, t.`negative_prompt`, t.`recommended_size`,
-        t.`example_image`, t.`use_count`, t.`status`, t.`sort_order`, t.`create_time`, t.`update_time`
+        t.id, t.name, t.code, t.industry_type, t.image_type, t.style_type,
+        t.base_prompt, t.variables_def, t.negative_prompt, t.recommended_size,
+        t.example_image, t.use_count, t.status, t.sort_order, t.create_time, t.update_time
     </sql>
 
     <select id="selectByCode" resultMap="promptTemplateMap">
         SELECT <include refid="promptTemplateSql"/>
         FROM decoration_prompt_template t
-        WHERE t.`code` = #{code} AND t.`status` = 1
+        WHERE t.code = #{code} AND t.status = 1
     </select>
 
     <select id="selectByIndustryAndType" resultMap="promptTemplateMap">
         SELECT <include refid="promptTemplateSql"/>
         FROM decoration_prompt_template t
-        WHERE t.`status` = 1
-        AND t.`industry_type` = #{industryType}
-        AND t.`image_type` = #{imageType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        AND t.industry_type = #{industryType}
+        AND t.image_type = #{imageType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByIndustry" resultMap="promptTemplateMap">
         SELECT <include refid="promptTemplateSql"/>
         FROM decoration_prompt_template t
-        WHERE t.`status` = 1 AND t.`industry_type` = #{industryType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.industry_type = #{industryType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectByImageType" resultMap="promptTemplateMap">
         SELECT <include refid="promptTemplateSql"/>
         FROM decoration_prompt_template t
-        WHERE t.`status` = 1 AND t.`image_type` = #{imageType}
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1 AND t.image_type = #{imageType}
+        ORDER BY t.sort_order ASC
     </select>
 
     <select id="selectActiveList" resultMap="promptTemplateMap">
         SELECT <include refid="promptTemplateSql"/>
         FROM decoration_prompt_template t
-        WHERE t.`status` = 1
-        ORDER BY t.`sort_order` ASC
+        WHERE t.status = 1
+        ORDER BY t.sort_order ASC
     </select>
 
     <update id="incrementUseCount">
