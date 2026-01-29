@@ -310,11 +310,11 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
             // 4. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
             List<GoodsSpu> matchedProducts = new ArrayList<>();
-            boolean fromRag = false;
+            boolean trustSearchResults = false; // RAG/品类回退等已通过其他方式验证相关性的结果
             if (!ragProducts.isEmpty()) {
-                // 优先使用RAG检索的商品
+                // 优先使用RAG检索的商品（已通过余弦相似度阈值）
                 matchedProducts = ragProducts;
-                fromRag = true;
+                trustSearchResults = true;
             } else if (!expandedKeywords.isEmpty()) {
                 String query = String.join(" ", expandedKeywords);
                 if (vectorSearchService.isAvailable()) {
@@ -327,12 +327,15 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 // 关键词搜索也无结果时，品类回退搜索
                 if (matchedProducts.isEmpty()) {
                     matchedProducts = categoryFallbackSearch(expandedKeywords, 5);
+                    if (!matchedProducts.isEmpty()) {
+                        trustSearchResults = true; // 品类回退搜索已通过分类匹配验证
+                    }
                 }
             }
 
             // 5. 检查商品与关键词的相关性
-            // RAG/向量搜索结果已通过相似度阈值，信任其相关性
-            boolean hasRelevantProducts = fromRag || hasRelevantProducts(matchedProducts, expandedKeywords);
+            // RAG/品类回退搜索结果已通过其他方式验证相关性，直接信任
+            boolean hasRelevantProducts = trustSearchResults || hasRelevantProducts(matchedProducts, expandedKeywords);
 
             // 6. 构建响应
             result.put("sessionId", sessionId);
