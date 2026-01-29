@@ -273,46 +273,52 @@ public class ProductKnowledgeServiceImpl implements ProductKnowledgeService {
     public String enhancePromptWithKnowledge(String userQuery, List<GoodsSpu> products) {
         StringBuilder knowledgeBuilder = new StringBuilder();
 
-        // 添加相关商品知识
+        // 添加精简商品知识（只保留名称、价格、卖点，减少LLM上下文token）
         if (products != null && !products.isEmpty()) {
             knowledgeBuilder.append("=== 相关商品信息 ===\n\n");
 
             for (int i = 0; i < products.size(); i++) {
                 GoodsSpu product = products.get(i);
-                knowledgeBuilder.append(String.format("商品%d：\n", i + 1));
-                knowledgeBuilder.append(buildProductContext(product.getId()));
+                knowledgeBuilder.append(String.format("商品%d：%s", i + 1, product.getName()));
+                if (product.getSalesPrice() != null) {
+                    knowledgeBuilder.append(" | ").append(formatPrice(product.getSalesPrice())).append("元");
+                }
+                if (product.getSellPoint() != null && !product.getSellPoint().isEmpty()) {
+                    knowledgeBuilder.append(" | ").append(truncate(product.getSellPoint(), 60));
+                }
+                if (product.getStock() != null) {
+                    knowledgeBuilder.append(" | 库存:").append(product.getStock());
+                }
                 knowledgeBuilder.append("\n");
             }
         }
 
-        // 添加分类知识（如果商品有分类信息）
+        // 添加分类名称（精简，不再查询完整分类上下文）
         Set<String> categoryIds = new HashSet<>();
         if (products != null) {
             for (GoodsSpu product : products) {
                 if (product.getCategoryFirst() != null) {
                     categoryIds.add(product.getCategoryFirst());
                 }
-                if (product.getCategorySecond() != null) {
-                    categoryIds.add(product.getCategorySecond());
-                }
             }
         }
 
         if (!categoryIds.isEmpty()) {
-            knowledgeBuilder.append("=== 相关分类信息 ===\n\n");
-            for (String categoryId : categoryIds) {
-                knowledgeBuilder.append(buildCategoryContext(categoryId));
-                knowledgeBuilder.append("\n");
+            // 批量查询分类名称
+            List<GoodsCategory> categories = categoryMapper.selectBatchIds(new ArrayList<>(categoryIds));
+            if (!categories.isEmpty()) {
+                String catNames = categories.stream()
+                        .map(GoodsCategory::getName)
+                        .collect(Collectors.joining("、"));
+                knowledgeBuilder.append("相关分类：").append(catNames).append("\n");
             }
         }
 
-        // 如果没有找到相关知识
         if (knowledgeBuilder.length() == 0) {
             knowledgeBuilder.append("当前知识库中暂无与用户查询直接相关的商品信息。\n");
             knowledgeBuilder.append("请基于一般知识回答用户问题，并建议用户具体描述需求。\n");
         }
 
-        // 添加用户查询上下文
         knowledgeBuilder.append("\n=== 用户查询 ===\n");
         knowledgeBuilder.append("用户问题：").append(userQuery).append("\n");
 

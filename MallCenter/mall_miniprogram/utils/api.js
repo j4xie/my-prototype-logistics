@@ -221,6 +221,30 @@ module.exports = {
   aiChat: (data) => {//AI对话
     return request('/weixin/api/ma/ai/chat', 'post', data, true)
   },
+  aiChatStream: (data, onComplete) => {//AI流式对话（SSE）- 返回RequestTask用于接收流式数据
+    const url = __config.basePath + '/weixin/api/ma/ai/chat/stream'
+    return new Promise((resolve, reject) => {
+      const task = wx.request({
+        url: url,
+        method: 'POST',
+        data: data,
+        enableChunked: true,
+        header: {
+          'content-type': 'application/json',
+          'app-id': wx.getAccountInfoSync().miniProgram.appId,
+          'third-session': getApp().globalData.thirdSession != null ? getApp().globalData.thirdSession : ''
+        },
+        success(res) {
+          // 流式请求的HTTP连接结束（微信没有onReceivedEnd，此为替代信号）
+          if (onComplete) onComplete()
+        },
+        fail(err) {
+          reject(err)
+        }
+      })
+      resolve(task)
+    })
+  },
   aiSemanticSearch: (query, limit = 10) => {//AI语义搜索
     return request('/weixin/api/ma/ai/semantic-search?query=' + encodeURIComponent(query) + '&limit=' + limit, 'get', null, false)
   },

@@ -4,6 +4,7 @@
  */
 const app = getApp()
 const api = require('../../../utils/api')
+const util = require('../../../utils/util')
 
 Page({
   data: {
@@ -248,22 +249,257 @@ Page({
     this.scrollToBottom()
     this.saveHistory()
 
+    // 优先使用SSE流式接口，失败则降级到非流式
+    const streamSuccess = await this.askQuestionStream(question)
+    if (!streamSuccess) {
+      await this.askQuestionNonStream(question)
+    }
+  },
+
+  // SSE流式问答 - 真实流式响应，首字延迟 <100ms
+  async askQuestionStream(question) {
     try {
-      // 调用AI API
+      const requestData = {
+        message: question,
+        sessionId: this.data.sessionId
+      }
+      const currentProduct = this.data.currentProduct
+      if (currentProduct && currentProduct.id) {
+        requestData.productId = currentProduct.id
+        requestData.productName = currentProduct.name || ''
+      }
+
+      const task = await api.aiChatStream(requestData, () => {
+        // HTTP连接关闭回调（补充done事件未收到时的兜底）
+        setTimeout(() => {
+          const msgs = this.data.messages
+          if (msgs[messageIndex] && msgs[messageIndex].isStreaming) {
+            msgs[messageIndex].isStreaming = false
+            this.setData({ messages: msgs })
+            this.saveHistory()
+          }
+        }, 200)
+      })
+      if (!task || !task.onChunkReceived) {
+        console.log('[AI Chat] 当前环境不支持流式传输，降级到非流式')
+        return false
+      }
+
+      // 先添加空的AI消息（立即显示，等待token填充）
+      const aiMessage = {
+        id: Date.now(),
+        sender: 'ai',
+        text: '',
+        sources: [],
+        products: [],
+        keywords: [],
+        timeStr: this.formatTime(new Date()),
+        isStreaming: true
+      }
+      const newMessages = [...this.data.messages, aiMessage]
+      const messageIndex = newMessages.length - 1
+      this.setData({
+        messages: newMessages,
+        isTyping: false
+      })
+
+      // SSE数据缓冲区（处理跨chunk的不完整行）
+      let sseBuffer = ''
+      // UTF-8多字节字符残留缓冲（处理中文字符被截断在chunk边界的情况）
+      let utf8RemainBytes = new Uint8Array(0)
+      let streamResolved = false
+
+      const finishStream = () => {
+        if (streamResolved) return
+        streamResolved = true
+        const messages = this.data.messages
+        if (messages[messageIndex] && messages[messageIndex].isStreaming) {
+          messages[messageIndex].isStreaming = false
+          this.setData({ messages })
+          this.saveHistory()
+        }
+      }
+
+      return new Promise((resolve) => {
+        task.onChunkReceived((res) => {
+          try {
+            // 合并残留字节 + 新chunk
+            const newBytes = new Uint8Array(res.data)
+            let allBytes
+            if (utf8RemainBytes.length > 0) {
+              allBytes = new Uint8Array(utf8RemainBytes.length + newBytes.length)
+              allBytes.set(utf8RemainBytes)
+              allBytes.set(newBytes, utf8RemainBytes.length)
+              utf8RemainBytes = new Uint8Array(0)
+            } else {
+              allBytes = newBytes
+            }
+
+            // UTF-8安全解码（检测尾部不完整多字节序列）
+            const decoded = this._utf8DecodeSafe(allBytes)
+            sseBuffer += decoded.text
+            utf8RemainBytes = decoded.remain
+
+            // 按行解析SSE事件
+            const lines = sseBuffer.split('\n')
+            sseBuffer = lines.pop() || ''
+
+            let currentEvent = ''
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                currentEvent = line.substring(6).trim()
+              } else if (line.startsWith('data:')) {
+                const data = line.substring(5).trim()
+                this._handleSSEEvent(currentEvent, data, messageIndex)
+                if (currentEvent === 'done' || currentEvent === 'error') {
+                  finishStream()
+                  resolve(true)
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('[AI Chat] 解析SSE chunk失败:', e)
+          }
+        })
+
+        // 微信没有onReceivedEnd，用success回调作为流结束信号
+        // 注意：api.aiChatStream返回的是task，wx.request的success在内部处理
+        // 因此使用超时作为兜底
+        setTimeout(() => {
+          finishStream()
+          resolve(true)
+        }, 30000)
+      })
+
+    } catch (error) {
+      console.warn('[AI Chat] 流式请求失败，降级:', error)
+      return false
+    }
+  },
+
+  // 处理单个SSE事件
+  _handleSSEEvent(eventName, data, messageIndex) {
+    const messages = this.data.messages
+    if (!messages[messageIndex]) return
+
+    if (eventName === 'token') {
+      // 追加token文本
+      messages[messageIndex].text += data
+      this.setData({ messages })
+      this.scrollToBottom()
+
+    } else if (eventName === 'meta') {
+      try {
+        const meta = JSON.parse(data)
+        // 更新sessionId
+        if (meta.sessionId) {
+          this.setData({ sessionId: meta.sessionId })
+          wx.setStorageSync('aiChatSessionId', meta.sessionId)
+        }
+        // 更新商品推荐
+        let products = meta.products || []
+        if (products.length > 0) {
+          products = util.processGoodsList(products).map(p => ({
+            ...p,
+            picUrl: (p.picUrls && p.picUrls.length > 0) ? p.picUrls[0] : (p.picUrl || '')
+          }))
+        }
+        messages[messageIndex].products = products
+        this.setData({ messages })
+
+        // 如果是特殊状态的完整响应（meta中包含response）
+        if (meta.response) {
+          messages[messageIndex].text = meta.response
+          messages[messageIndex].isStreaming = false
+          this.setData({ messages, isTyping: false })
+          this.saveHistory()
+        }
+      } catch (e) {
+        console.warn('[AI Chat] 解析meta数据失败:', e)
+      }
+
+    } else if (eventName === 'done') {
+      messages[messageIndex].isStreaming = false
+      this.setData({ messages, isTyping: false })
+      this.saveHistory()
+      this.scrollToBottom()
+
+    } else if (eventName === 'error') {
+      try {
+        const err = JSON.parse(data)
+        messages[messageIndex].text = err.message || '服务暂时不可用'
+      } catch (e) {
+        messages[messageIndex].text = '服务暂时不可用'
+      }
+      messages[messageIndex].isStreaming = false
+      this.setData({ messages, isTyping: false })
+    }
+  },
+
+  // UTF-8安全解码（处理多字节字符被截断在chunk边界的情况）
+  // 返回 { text: 已解码文本, remain: 尾部不完整字节 }
+  _utf8DecodeSafe(bytes) {
+    let result = ''
+    let i = 0
+    while (i < bytes.length) {
+      const byte1 = bytes[i]
+      let charLen = 1
+      if (byte1 < 0x80) {
+        charLen = 1
+      } else if (byte1 < 0xE0) {
+        charLen = 2
+      } else if (byte1 < 0xF0) {
+        charLen = 3
+      } else {
+        charLen = 4
+      }
+
+      // 检查剩余字节是否足够组成完整字符
+      if (i + charLen > bytes.length) {
+        // 不完整的多字节序列，保留到下次chunk
+        return { text: result, remain: bytes.slice(i) }
+      }
+
+      if (charLen === 1) {
+        result += String.fromCharCode(byte1)
+      } else if (charLen === 2) {
+        result += String.fromCharCode(((byte1 & 0x1F) << 6) | (bytes[i + 1] & 0x3F))
+      } else if (charLen === 3) {
+        result += String.fromCharCode(((byte1 & 0x0F) << 12) | ((bytes[i + 1] & 0x3F) << 6) | (bytes[i + 2] & 0x3F))
+      } else {
+        const codePoint = ((byte1 & 0x07) << 18) | ((bytes[i + 1] & 0x3F) << 12) | ((bytes[i + 2] & 0x3F) << 6) | (bytes[i + 3] & 0x3F)
+        const adjusted = codePoint - 0x10000
+        result += String.fromCharCode(0xD800 + (adjusted >> 10), 0xDC00 + (adjusted & 0x3FF))
+      }
+      i += charLen
+    }
+    return { text: result, remain: new Uint8Array(0) }
+  },
+
+  // 非流式问答 - 降级方案
+  async askQuestionNonStream(question) {
+    try {
       const res = await this.callAIService(question)
 
       const fullText = res.response || res.answer || '抱歉，我暂时无法回答这个问题。'
 
-      // 先添加空消息 (显示loading)
+      let products = res.products || []
+      if (products.length > 0) {
+        products = util.processGoodsList(products).map(p => ({
+          ...p,
+          picUrl: (p.picUrls && p.picUrls.length > 0) ? p.picUrls[0] : (p.picUrl || '')
+        }))
+      }
+
       const aiMessage = {
         id: Date.now(),
         sender: 'ai',
-        text: '',  // 初始为空，通过流式显示逐步填充
+        text: '',
         sources: res.sources || [],
-        products: res.products || [],
+        products: products,
         keywords: res.keywords || [],
         timeStr: this.formatTime(new Date()),
-        isStreaming: true  // 标记正在流式显示
+        isStreaming: true
       }
 
       const newMessages = [...this.data.messages, aiMessage]
@@ -273,13 +509,12 @@ Page({
         isTyping: false
       })
 
-      // 模拟流式显示 (借鉴白垩纪App 3字符/20ms效果)
+      // 模拟流式显示
       this.simulateStreamDisplay(messageIndex, fullText, res)
 
     } catch (error) {
       console.error('AI回复失败:', error)
 
-      // 添加错误消息
       const errorMessage = {
         id: Date.now(),
         sender: 'ai',
@@ -299,16 +534,15 @@ Page({
     }
   },
 
-  // 模拟流式显示AI回复 (借鉴白垩纪App 3字符/20ms效果)
+  // 模拟流式显示AI回复 (降级方案：3字符/20ms)
   simulateStreamDisplay(messageIndex, fullText, resData) {
     let currentIndex = 0
-    const chunkSize = 3  // 每次显示3个字符
-    const interval = 20  // 20ms间隔
+    const chunkSize = 3
+    const interval = 20
 
     const timer = setInterval(() => {
       if (currentIndex >= fullText.length) {
         clearInterval(timer)
-        // 显示完成，更新状态
         const messages = this.data.messages
         if (messages[messageIndex]) {
           messages[messageIndex].isStreaming = false
@@ -325,7 +559,6 @@ Page({
         this.setData({ messages })
       }
 
-      // 滚动到底部
       this.scrollToBottom()
     }, interval)
   },

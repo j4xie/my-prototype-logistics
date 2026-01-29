@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.joolun.mall.entity.AiDemandRecord;
 import com.joolun.mall.entity.GoodsSpu;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +24,16 @@ public interface AiRecommendService extends IService<AiDemandRecord> {
      * @return AI回复和推荐商品
      */
     Map<String, Object> chat(String sessionId, Long userId, Long merchantId, String message);
+
+    /**
+     * AI流式对话 - SSE推送LLM token到客户端
+     * @param sessionId 会话ID
+     * @param userId 用户ID
+     * @param merchantId 商户ID
+     * @param message 用户消息
+     * @param emitter SSE发射器
+     */
+    void chatStream(String sessionId, Long userId, Long merchantId, String message, SseEmitter emitter);
 
     /**
      * 语义搜索商品
