@@ -153,6 +153,29 @@ Page({
         }
       })
   },
+  // 加载更多商品（触底加载，追加到当前显示列表）
+  loadMoreProducts() {
+    app.api.goodsPage(this.data.page)
+      .then(res => {
+        let products = util.processGoodsList(res.data.records)
+        if (this.data.recommendList.length > 0) {
+          // recommendList 正在显示，追加到 recommendList
+          this.setData({
+            recommendList: [...this.data.recommendList, ...products]
+          })
+        } else {
+          // 普通模式，追加到 goodsList
+          this.setData({
+            goodsList: [...this.data.goodsList, ...products]
+          })
+        }
+        if (products.length < this.data.page.size) {
+          this.setData({
+            loadmore: false
+          })
+        }
+      })
+  },
   refresh(){
     // P1修复: 刷新时清除曝光记录，确保统计正确
     tracker.clearExposures()
@@ -186,11 +209,11 @@ Page({
     if (this.data.usePersonalized && this.data.hasMoreRecommend && !this.data.recommendLoading) {
       this.loadMoreRecommendations()
     } else if (this.data.loadmore) {
-      // 否则加载更多普通商品
+      // 加载更多普通商品
       this.setData({
         ['page.current']: this.data.page.current + 1
       })
-      this.goodsPage()
+      this.loadMoreProducts()
     }
   },
   jumpPage(e){
