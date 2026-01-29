@@ -42,6 +42,14 @@ Component({
       }, 500)
     },
 
+    // 图片加载失败，替换为默认图
+    onImageError(e) {
+      const index = e.currentTarget.dataset.index
+      this.setData({
+        [`goodsList[${index}].picUrls[0]`]: '/public/img/no_pic.png'
+      })
+    },
+
     // 商品点击事件
     onProductTap(e) {
       const product = e.currentTarget.dataset.product

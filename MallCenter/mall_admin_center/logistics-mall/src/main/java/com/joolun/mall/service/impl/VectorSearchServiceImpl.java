@@ -54,13 +54,23 @@ public class VectorSearchServiceImpl implements VectorSearchService {
     private String embeddingModel;
 
     private static final String PRODUCT_VECTOR_KEY_PREFIX = "mall:product:vector:";
+    private static final String QUERY_EMBEDDING_CACHE_KEY_PREFIX = "ai:embed:query:";
     private static final int VECTOR_DIMENSION = 1536;
     private static final long VECTOR_CACHE_TTL_HOURS = 24;
+    private static final long QUERY_EMBEDDING_CACHE_TTL_HOURS = 1;
 
     @Override
     public float[] generateEmbedding(String text) {
         if (text == null || text.trim().isEmpty()) {
             return new float[VECTOR_DIMENSION];
+        }
+
+        // 查询嵌入缓存（相同查询复用，避免重复调用DashScope API ~200ms）
+        String cacheKey = QUERY_EMBEDDING_CACHE_KEY_PREFIX + md5Hash(text.trim());
+        float[] cachedEmbedding = getCachedEmbedding(cacheKey);
+        if (cachedEmbedding != null) {
+            log.debug("查询嵌入命中缓存: {}", text.substring(0, Math.min(text.length(), 30)));
+            return cachedEmbedding;
         }
 
         try {
@@ -96,6 +106,8 @@ public class VectorSearchServiceImpl implements VectorSearchService {
                     for (int i = 0; i < embeddingNode.size(); i++) {
                         embedding[i] = (float) embeddingNode.get(i).asDouble();
                     }
+                    // 缓存查询嵌入
+                    cacheEmbedding(cacheKey, embedding);
                     return embedding;
                 }
             }
@@ -148,21 +160,37 @@ public class VectorSearchServiceImpl implements VectorSearchService {
             wrapper.eq(GoodsSpu::getShelf, "1");
             List<GoodsSpu> allProducts = goodsSpuMapper.selectList(wrapper);
 
-            // 3. 计算相似度并排序
+            // 3. 批量获取产品向量（MGET替代逐个GET）
+            Map<String, float[]> vectorMap = batchGetProductVectors(allProducts);
+
+            // 4. 计算相似度并排序
             List<ProductSimilarity> similarities = new ArrayList<>();
+            List<GoodsSpu> needVectorize = new ArrayList<>();
             for (GoodsSpu product : allProducts) {
-                float[] productVector = getProductVector(product);
+                float[] productVector = vectorMap.get(product.getId());
+                if (productVector != null && !isZeroVector(productVector)) {
+                    double similarity = cosineSimilarity(queryVector, productVector);
+                    similarities.add(new ProductSimilarity(product, similarity));
+                } else {
+                    needVectorize.add(product);
+                }
+            }
+
+            // 5. 对缓存未命中的产品生成向量（异步缓存）
+            for (GoodsSpu product : needVectorize) {
+                float[] productVector = vectorizeProduct(product);
                 if (!isZeroVector(productVector)) {
+                    cacheProductVector(product.getId(), productVector);
                     double similarity = cosineSimilarity(queryVector, productVector);
                     similarities.add(new ProductSimilarity(product, similarity));
                 }
             }
 
-            // 4. 按相似度降序排序，取前limit个
+            // 6. 按相似度降序排序，取前limit个
             return similarities.stream()
                     .sorted((a, b) -> Double.compare(b.similarity, a.similarity))
                     .limit(limit)
-                    .filter(s -> s.similarity > 0.3) // 相似度阈值
+                    .filter(s -> s.similarity > 0.3)
                     .map(s -> s.product)
                     .collect(Collectors.toList());
 
@@ -311,6 +339,103 @@ public class VectorSearchServiceImpl implements VectorSearchService {
         wrapper.eq(GoodsSpu::getShelf, "1")
                 .last("LIMIT " + limit);
         return goodsSpuMapper.selectList(wrapper);
+    }
+
+    /**
+     * 批量获取产品向量（使用Redis MGET减少网络往返）
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, float[]> batchGetProductVectors(List<GoodsSpu> products) {
+        Map<String, float[]> result = new HashMap<>();
+        if (products == null || products.isEmpty()) {
+            return result;
+        }
+
+        List<String> keys = products.stream()
+                .map(p -> PRODUCT_VECTOR_KEY_PREFIX + p.getId())
+                .collect(Collectors.toList());
+
+        try {
+            List<Object> values = redisTemplate.opsForValue().multiGet(keys);
+            if (values != null) {
+                for (int i = 0; i < products.size(); i++) {
+                    Object cached = values.get(i);
+                    if (cached instanceof List) {
+                        List<Number> cachedList = (List<Number>) cached;
+                        float[] vector = new float[cachedList.size()];
+                        for (int j = 0; j < cachedList.size(); j++) {
+                            vector[j] = cachedList.get(j).floatValue();
+                        }
+                        result.put(products.get(i).getId(), vector);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("批量获取产品向量失败，降级到逐个获取: {}", e.getMessage());
+            for (GoodsSpu product : products) {
+                float[] vector = getProductVector(product);
+                if (!isZeroVector(vector)) {
+                    result.put(product.getId(), vector);
+                }
+            }
+        }
+
+        log.debug("批量获取产品向量: total={}, cached={}", products.size(), result.size());
+        return result;
+    }
+
+    /**
+     * 从缓存获取查询嵌入
+     */
+    @SuppressWarnings("unchecked")
+    private float[] getCachedEmbedding(String cacheKey) {
+        try {
+            Object cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached instanceof List) {
+                List<Number> cachedList = (List<Number>) cached;
+                float[] vector = new float[cachedList.size()];
+                for (int i = 0; i < cachedList.size(); i++) {
+                    vector[i] = cachedList.get(i).floatValue();
+                }
+                return vector;
+            }
+        } catch (Exception e) {
+            log.warn("读取嵌入缓存失败: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * 缓存查询嵌入
+     */
+    private void cacheEmbedding(String cacheKey, float[] embedding) {
+        try {
+            List<Float> vectorList = new ArrayList<>(embedding.length);
+            for (float v : embedding) {
+                vectorList.add(v);
+            }
+            redisTemplate.opsForValue().set(cacheKey, vectorList,
+                    QUERY_EMBEDDING_CACHE_TTL_HOURS, TimeUnit.HOURS);
+        } catch (Exception e) {
+            log.warn("缓存嵌入向量失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 计算文本的MD5哈希（用于缓存key）
+     */
+    private String md5Hash(String text) {
+        try {
+            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
+            byte[] digest = md.digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            return Integer.toHexString(text.hashCode());
+        }
     }
 
     /**

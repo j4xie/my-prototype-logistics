@@ -23,10 +23,18 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -71,6 +79,10 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     @Value("${ai.deepseek.max-tokens:500}")
     private int maxTokens;
 
+    // 流式响应专用 max_tokens（更短，加速首token和整体延迟）
+    @Value("${ai.stream.max-tokens:200}")
+    private int streamMaxTokens;
+
     // AI响应缓存key前缀
     private static final String AI_RESPONSE_CACHE_KEY = "mall:ai:response:cache:";
     // 缓存有效期 (分钟)
@@ -82,7 +94,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     private static final int CONVERSATION_HISTORY_TTL_HOURS = 24;
 
     // 保留的历史对话轮数 (每轮 = 用户消息 + AI回复)
-    @Value("${ai.conversation.history-turns:20}")
+    @Value("${ai.conversation.history-turns:3}")
     private int historyTurns;
 
     // RAG 功能开关
@@ -90,7 +102,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     private boolean ragEnabled;
 
     // RAG 检索数量
-    @Value("${ai.rag.topk:5}")
+    @Value("${ai.rag.topk:3}")
     private int ragTopK;
 
     private static final String SYSTEM_PROMPT = """
@@ -116,6 +128,24 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             "response": "给用户的回复内容",
             "confidence": 0.95
         }
+        """;
+
+    // 流式响应专用系统提示（纯文本输出，不要求JSON格式）
+    private static final String STREAM_SYSTEM_PROMPT = """
+        你是白垩纪食品溯源商城的智能客服助手。
+        请用自然、简洁、专业的语气直接回答用户问题。
+        不要返回JSON格式，直接用自然语言回复。
+        如果用户在询问商品，我会在上下文中提供相关商品信息供你参考。
+        回复控制在100字以内。
+        """;
+
+    // 流式响应专用RAG提示模板
+    private static final String STREAM_RAG_PROMPT_TEMPLATE = """
+        你是白垩纪食品溯源商城的智能客服助手。
+        基于以下商品信息回答用户问题，用自然语言直接回复，不要返回JSON。
+        回复控制在100字以内。
+
+        %s
         """;
 
     /**
@@ -221,8 +251,8 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
     public Map<String, Object> chat(String sessionId, Long userId, Long merchantId, String message) {
+        long startTime = System.currentTimeMillis();
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -259,38 +289,44 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 }
             }
 
-            // 1. RAG: 先检索相关商品知识
-            List<GoodsSpu> ragProducts = new ArrayList<>();
-            String enhancedPrompt = null;
-
-            // 如果有产品上下文，优先使用该产品
-            if (contextProduct != null) {
-                ragProducts.add(contextProduct);
-                log.debug("使用产品上下文: {}", contextProduct.getName());
-            }
-
-            if (ragEnabled && productKnowledgeService != null) {
-                try {
-                    List<GoodsSpu> retrieved = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
-                    if (!retrieved.isEmpty()) {
-                        // 合并上下文产品和RAG检索结果，去重
+            // 1. 并行执行: RAG知识检索 + 会话历史加载（优化7）
+            final GoodsSpu ctxProduct = contextProduct;
+            CompletableFuture<List<GoodsSpu>> ragFuture = CompletableFuture.supplyAsync(() -> {
+                List<GoodsSpu> products = new ArrayList<>();
+                if (ctxProduct != null) {
+                    products.add(ctxProduct);
+                }
+                if (ragEnabled && productKnowledgeService != null) {
+                    try {
+                        List<GoodsSpu> retrieved = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
                         for (GoodsSpu p : retrieved) {
-                            if (ragProducts.stream().noneMatch(rp -> rp.getId().equals(p.getId()))) {
-                                ragProducts.add(p);
+                            if (products.stream().noneMatch(rp -> rp.getId().equals(p.getId()))) {
+                                products.add(p);
                             }
                         }
+                    } catch (Exception ragEx) {
+                        log.warn("RAG 知识检索失败，降级到普通模式: {}", ragEx.getMessage());
                     }
-                    if (!ragProducts.isEmpty()) {
-                        enhancedPrompt = productKnowledgeService.enhancePromptWithKnowledge(message, ragProducts);
-                        log.debug("RAG 检索到 {} 个相关商品，已增强提示", ragProducts.size());
-                    }
-                } catch (Exception ragEx) {
-                    log.warn("RAG 知识检索失败，降级到普通模式: {}", ragEx.getMessage());
                 }
+                return products;
+            });
+            CompletableFuture<List<Map<String, String>>> historyFuture = CompletableFuture.supplyAsync(() ->
+                    getConversationHistory(sessionId));
+
+            // 等待并行任务完成
+            CompletableFuture.allOf(ragFuture, historyFuture).join();
+            List<GoodsSpu> ragProducts = ragFuture.join();
+            List<Map<String, String>> conversationHistory = historyFuture.join();
+
+            // 构建RAG增强提示
+            String enhancedPrompt = null;
+            if (!ragProducts.isEmpty()) {
+                enhancedPrompt = productKnowledgeService.enhancePromptWithKnowledge(message, ragProducts);
+                log.debug("RAG 检索到 {} 个相关商品，已增强提示", ragProducts.size());
             }
 
-            // 2. 调用LLM API分析用户意图（使用RAG增强的提示或普通提示，传入sessionId获取历史上下文）
-            Map<String, Object> analysis = analyzeMessageWithRag(sessionId, message, enhancedPrompt);
+            // 2. 调用LLM API分析用户意图（使用预加载的历史和RAG增强提示）
+            Map<String, Object> analysis = analyzeMessageWithRag(message, enhancedPrompt, conversationHistory);
             String intent = (String) analysis.getOrDefault("intent", "other");
             List<String> keywords = (List<String>) analysis.getOrDefault("keywords", new ArrayList<>());
             String aiResponse = (String) analysis.getOrDefault("response", "抱歉，我没有理解您的问题");
@@ -308,27 +344,22 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 log.debug("关键词扩展: {} -> {}", keywords, expandedKeywords);
             }
 
-            // 4. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
+            // 4. 根据关键词搜索商品 - 优先使用RAG结果，否则关键词搜索
+            // 注意: RAG流程已包含向量搜索，此处不再重复调用以避免冗余延迟
             List<GoodsSpu> matchedProducts = new ArrayList<>();
-            boolean trustSearchResults = false; // RAG/品类回退等已通过其他方式验证相关性的结果
+            boolean trustSearchResults = false;
             if (!ragProducts.isEmpty()) {
-                // 优先使用RAG检索的商品（已通过余弦相似度阈值）
                 matchedProducts = ragProducts;
                 trustSearchResults = true;
             } else if (!expandedKeywords.isEmpty()) {
                 String query = String.join(" ", expandedKeywords);
-                if (vectorSearchService.isAvailable()) {
-                    matchedProducts = vectorSearchService.searchSimilarProducts(query, 5);
-                }
-                // 向量搜索无结果时降级到关键词搜索
-                if (matchedProducts.isEmpty()) {
-                    matchedProducts = semanticSearch(query, 5);
-                }
+                // 直接使用关键词搜索（向量搜索已在RAG阶段完成，不再重复调用）
+                matchedProducts = keywordOnlySearch(query, 5);
                 // 关键词搜索也无结果时，品类回退搜索
                 if (matchedProducts.isEmpty()) {
                     matchedProducts = categoryFallbackSearch(expandedKeywords, 5);
                     if (!matchedProducts.isEmpty()) {
-                        trustSearchResults = true; // 品类回退搜索已通过分类匹配验证
+                        trustSearchResults = true;
                     }
                 }
             }
@@ -347,12 +378,18 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             result.put("products", hasRelevantProducts ? matchedProducts : new ArrayList<>());
             result.put("hasProducts", hasRelevantProducts);
 
-            // 7. 记录需求
+            // 7. 异步记录需求（避免DB INSERT阻塞响应）
             List<String> productIds = matchedProducts.stream()
                     .map(GoodsSpu::getId)
                     .collect(Collectors.toList());
-            recordDemand(sessionId, userId, merchantId, message, aiResponse, keywords,
-                    intent, confidence, productIds, intent);
+            CompletableFuture.runAsync(() -> {
+                try {
+                    recordDemand(sessionId, userId, merchantId, message, aiResponse, keywords,
+                            intent, confidence, productIds, intent);
+                } catch (Exception e) {
+                    log.warn("异步记录需求失败: {}", e.getMessage());
+                }
+            });
 
             // 8. 极速匹配服务 - 当产品咨询无相关结果时主动询问
             // 支持英文和中文意图匹配
@@ -391,7 +428,188 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             result.put("error", e.getMessage());
         }
 
+        log.info("chat() 总耗时: {}ms, message={}", System.currentTimeMillis() - startTime,
+                message.length() > 30 ? message.substring(0, 30) + "..." : message);
         return result;
+    }
+
+    @Override
+    public void chatStream(String sessionId, Long userId, Long merchantId, String message, SseEmitter emitter) {
+        long startTime = System.currentTimeMillis();
+        try {
+            // 0. 检查会话状态 - 特殊状态走非流式路径
+            Map<String, Object> sessionState = getSessionState(sessionId);
+            String currentState = sessionState != null ? (String) sessionState.get("state") : null;
+
+            if (STATE_AWAITING_EXPRESS_MATCH_CONFIRM.equals(currentState) ||
+                STATE_COLLECTING_REQUIREMENTS.equals(currentState)) {
+                // 特殊状态走完整chat()，然后一次性发送
+                Map<String, Object> result = chat(sessionId, userId, merchantId, message);
+                emitter.send(SseEmitter.event().name("meta").data(objectMapper.writeValueAsString(result)));
+                emitter.send(SseEmitter.event().name("done").data("{}"));
+                emitter.complete();
+                return;
+            }
+
+            // 0.5 解析产品上下文
+            GoodsSpu contextProduct = null;
+            if (message.contains("[用户正在查看商品") && message.contains("ID:")) {
+                try {
+                    int idStart = message.indexOf("ID:") + 3;
+                    int idEnd = message.indexOf("]", idStart);
+                    if (idEnd > idStart) {
+                        String productId = message.substring(idStart, idEnd).trim();
+                        contextProduct = goodsSpuMapper.selectById(productId);
+                    }
+                } catch (Exception ex) {
+                    log.warn("解析产品上下文失败: {}", ex.getMessage());
+                }
+            }
+
+            // 1. 并行: RAG检索 + 会话历史
+            final GoodsSpu ctxProduct = contextProduct;
+            CompletableFuture<List<GoodsSpu>> ragFuture = CompletableFuture.supplyAsync(() -> {
+                List<GoodsSpu> products = new ArrayList<>();
+                if (ctxProduct != null) products.add(ctxProduct);
+                if (ragEnabled && productKnowledgeService != null) {
+                    try {
+                        List<GoodsSpu> retrieved = productKnowledgeService.retrieveRelevantKnowledge(message, ragTopK);
+                        for (GoodsSpu p : retrieved) {
+                            if (products.stream().noneMatch(rp -> rp.getId().equals(p.getId()))) {
+                                products.add(p);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("RAG检索失败: {}", e.getMessage());
+                    }
+                }
+                return products;
+            });
+            CompletableFuture<List<Map<String, String>>> historyFuture = CompletableFuture.supplyAsync(() ->
+                    getConversationHistory(sessionId));
+
+            CompletableFuture.allOf(ragFuture, historyFuture).join();
+            List<GoodsSpu> ragProducts = ragFuture.join();
+            List<Map<String, String>> history = historyFuture.join();
+
+            // 2. 立即发送meta事件（产品、sessionId），用户马上看到商品卡片
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("sessionId", sessionId);
+            meta.put("products", ragProducts);
+            meta.put("hasProducts", !ragProducts.isEmpty());
+            meta.put("ragEnabled", ragEnabled && !ragProducts.isEmpty());
+            emitter.send(SseEmitter.event().name("meta").data(objectMapper.writeValueAsString(meta)));
+            log.info("chatStream meta阶段耗时: {}ms (RAG+历史并行)", System.currentTimeMillis() - startTime);
+
+            // 3. 构建流式LLM请求
+            String systemPrompt;
+            if (!ragProducts.isEmpty()) {
+                StringBuilder kb = new StringBuilder();
+                for (int i = 0; i < ragProducts.size(); i++) {
+                    GoodsSpu p = ragProducts.get(i);
+                    kb.append(String.format("商品%d：%s", i + 1, p.getName()));
+                    if (p.getSalesPrice() != null) kb.append(" | ").append(p.getSalesPrice()).append("元");
+                    if (p.getSellPoint() != null) kb.append(" | ").append(p.getSellPoint());
+                    kb.append("\n");
+                }
+                systemPrompt = String.format(STREAM_RAG_PROMPT_TEMPLATE, kb.toString());
+            } else {
+                systemPrompt = STREAM_SYSTEM_PROMPT;
+            }
+
+            List<Map<String, Object>> messages = new ArrayList<>();
+            messages.add(Map.of("role", "system", "content", systemPrompt));
+            for (Map<String, String> h : history) {
+                messages.add(Map.of("role", h.get("role"), "content", h.get("content")));
+            }
+            messages.add(Map.of("role", "user", "content", message));
+
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("model", llmModel);
+            requestBody.put("messages", messages);
+            requestBody.put("temperature", 0.7);
+            requestBody.put("top_p", 0.8);  // 缩小采样空间，加速token生成
+            requestBody.put("max_tokens", streamMaxTokens);  // 流式专用，更短更快
+            requestBody.put("stream", true);
+            // DashScope增量输出: 每次只返回新增token，减少传输量
+            requestBody.put("stream_options", Map.of("include_usage", true));
+
+            // 4. 流式调用DashScope API，逐token转发到SseEmitter
+            String apiUrl = llmBaseUrl + "/v1/chat/completions";
+            StringBuilder fullResponse = new StringBuilder();
+
+            HttpURLConnection conn = null;
+            try {
+                conn = (HttpURLConnection) new URL(apiUrl).openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Content-Type", "application/json");
+                conn.setRequestProperty("Authorization", "Bearer " + llmApiKey);
+                conn.setRequestProperty("Connection", "keep-alive");
+                conn.setRequestProperty("Accept", "text/event-stream");
+                conn.setDoOutput(true);
+                conn.setConnectTimeout(5000);   // 5s连接超时（DashScope国内延迟低）
+                conn.setReadTimeout(30000);
+
+                try (OutputStream os = conn.getOutputStream()) {
+                    objectMapper.writeValue(os, requestBody);
+                }
+
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    boolean firstToken = true;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.startsWith("data: ")) {
+                            String data = line.substring(6).trim();
+                            if ("[DONE]".equals(data)) break;
+                            try {
+                                JsonNode node = objectMapper.readTree(data);
+                                String token = node.path("choices").path(0).path("delta").path("content").asText("");
+                                if (!token.isEmpty()) {
+                                    if (firstToken) {
+                                        log.info("chatStream 首token延迟: {}ms", System.currentTimeMillis() - startTime);
+                                        firstToken = false;
+                                    }
+                                    fullResponse.append(token);
+                                    emitter.send(SseEmitter.event().name("token").data(token));
+                                }
+                            } catch (Exception parseEx) {
+                                log.debug("解析streaming token失败: {}", data);
+                            }
+                        }
+                    }
+                }
+            } finally {
+                if (conn != null) conn.disconnect();
+            }
+
+            // 5. 流式完成后发送done事件
+            emitter.send(SseEmitter.event().name("done").data("{}"));
+            emitter.complete();
+            log.info("chatStream 总耗时: {}ms, 响应长度: {}字", System.currentTimeMillis() - startTime, fullResponse.length());
+
+            // 6. 异步: 保存会话历史 + 记录需求
+            String responseText = fullResponse.toString();
+            CompletableFuture.runAsync(() -> {
+                try {
+                    saveConversationHistory(sessionId, message, responseText);
+                    List<String> productIds = ragProducts.stream().map(GoodsSpu::getId).collect(Collectors.toList());
+                    recordDemand(sessionId, userId, merchantId, message, responseText,
+                            List.of(), "product_inquiry", 0.8, productIds, "product_inquiry");
+                } catch (Exception e) {
+                    log.warn("异步保存流式对话记录失败: {}", e.getMessage());
+                }
+            });
+
+        } catch (Exception e) {
+            log.error("AI流式对话失败", e);
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"message\":\"服务暂时不可用\"}"));
+                emitter.complete();
+            } catch (Exception emitEx) {
+                emitter.completeWithError(e);
+            }
+        }
     }
 
     /**
@@ -719,6 +937,28 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     }
 
     /**
+     * 纯关键词搜索（不包含向量搜索，用于RAG已完成向量搜索后的降级路径）
+     */
+    private List<GoodsSpu> keywordOnlySearch(String query, int limit) {
+        if (query == null || query.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        LambdaQueryWrapper<GoodsSpu> wrapper = new LambdaQueryWrapper<>();
+        wrapper.and(w -> {
+            String[] words = query.split("\\s+");
+            for (String word : words) {
+                if (word.length() >= 2) {
+                    w.or(q -> q.like(GoodsSpu::getName, word)
+                              .or().like(GoodsSpu::getDescription, word));
+                }
+            }
+        });
+        wrapper.eq(GoodsSpu::getShelf, "1")
+               .last("LIMIT " + limit);
+        return goodsSpuMapper.selectList(wrapper);
+    }
+
+    /**
      * 品类回退搜索：当关键词搜索和向量搜索都返回空时，
      * 通过同义词映射找到对应的分类名，查询该分类下的商品作为兜底。
      * @param expandedKeywords 已扩展的关键词列表（包含同义词）
@@ -975,21 +1215,18 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
 
     /**
      * 使用RAG增强的提示分析用户消息
-     * @param sessionId 会话ID (用于获取历史上下文)
      * @param message 用户消息
      * @param ragEnhancedPrompt RAG增强的系统提示（可为null，null时使用默认提示）
+     * @param history 预加载的会话历史（并行加载以减少延迟）
      * @return 分析结果
      */
-    private Map<String, Object> analyzeMessageWithRag(String sessionId, String message, String ragEnhancedPrompt) {
+    private Map<String, Object> analyzeMessageWithRag(String message, String ragEnhancedPrompt, List<Map<String, String>> history) {
         if (llmApiKey == null || llmApiKey.isEmpty()) {
             log.warn("AI API Key未配置，使用降级分析");
             return fallbackAnalysis(message);
         }
 
-        // 1. 获取会话历史 (核心改动 - 借鉴白垩纪App的多轮对话机制)
-        List<Map<String, String>> history = getConversationHistory(sessionId);
-
-        // 2. 检查缓存 (仅对无RAG增强且无历史的简单问题使用缓存)
+        // 检查缓存 (仅对无RAG增强且无历史的简单问题使用缓存)
         if (ragEnhancedPrompt == null && history.isEmpty()) {
             Map<String, Object> cached = getCachedResponse(message);
             if (cached != null) {

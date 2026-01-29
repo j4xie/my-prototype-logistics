@@ -13,12 +13,15 @@ import com.joolun.weixin.utils.ThirdSessionHolder;
 import com.joolun.web.utils.MerchantUserHelper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * AI聊天API - 小程序端
@@ -118,6 +121,77 @@ public class AiChatApi {
 
             return AjaxResult.success(errorResult);
         }
+    }
+
+    /**
+     * AI流式对话 (SSE)
+     * 实时推送LLM token到客户端，首字延迟 <100ms
+     *
+     * 事件类型:
+     * - meta: 商品推荐数据 (立即发送)
+     * - token: LLM生成的文本片段 (逐个推送)
+     * - done: 对话完成
+     * - error: 错误信息
+     */
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter chatStream(@RequestBody Map<String, Object> params) {
+        String message = (String) params.get("message");
+        String sessionId = (String) params.get("sessionId");
+        String productId = (String) params.get("productId");
+        String productName = (String) params.get("productName");
+
+        SseEmitter emitter = new SseEmitter(60000L); // 60s超时
+
+        if (message == null || message.trim().isEmpty()) {
+            try {
+                emitter.send(SseEmitter.event().name("error").data("{\"message\":\"消息不能为空\"}"));
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
+
+        if (sessionId == null || sessionId.isEmpty()) {
+            sessionId = UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+        }
+
+        String enhancedMessage = message.trim();
+        if (productId != null && !productId.isEmpty()) {
+            if (productName != null && !productName.isEmpty()) {
+                enhancedMessage = String.format("[用户正在查看商品「%s」(ID:%s)] %s", productName, productId, message.trim());
+            } else {
+                enhancedMessage = String.format("[用户正在查看商品ID:%s] %s", productId, message.trim());
+            }
+        }
+
+        WxUser wxUser = getCurrentWxUser();
+        Long userId = null;
+        Long merchantId = null;
+        if (wxUser != null) {
+            userId = Long.parseLong(wxUser.getId());
+            merchantId = merchantUserHelper.getMerchantIdFromUser(wxUser);
+        }
+
+        final String finalSessionId = sessionId;
+        final String finalMessage = enhancedMessage;
+        final Long finalUserId = userId;
+        final Long finalMerchantId = merchantId;
+
+        // 异步执行流式对话
+        CompletableFuture.runAsync(() -> {
+            aiRecommendService.chatStream(finalSessionId, finalUserId, finalMerchantId, finalMessage, emitter);
+        });
+
+        emitter.onTimeout(() -> {
+            log.warn("SSE超时: sessionId={}", finalSessionId);
+            emitter.complete();
+        });
+        emitter.onError(e -> {
+            log.warn("SSE错误: sessionId={}, error={}", finalSessionId, e.getMessage());
+        });
+
+        return emitter;
     }
 
     /**
