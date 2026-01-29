@@ -6,8 +6,10 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.joolun.mall.entity.AiDemandRecord;
+import com.joolun.mall.entity.GoodsCategory;
 import com.joolun.mall.entity.GoodsSpu;
 import com.joolun.mall.mapper.AiDemandRecordMapper;
+import com.joolun.mall.mapper.GoodsCategoryMapper;
 import com.joolun.mall.mapper.GoodsSpuMapper;
 import com.joolun.mall.service.AiRecommendService;
 import com.joolun.mall.service.ProductKnowledgeService;
@@ -39,6 +41,7 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         implements AiRecommendService {
 
     private final GoodsSpuMapper goodsSpuMapper;
+    private final GoodsCategoryMapper goodsCategoryMapper;
     private final SearchKeywordService searchKeywordService;
     private final VectorSearchService vectorSearchService;
     private final ProductKnowledgeService productKnowledgeService;
@@ -97,6 +100,15 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
         3. 根据关键词推荐相关商品
         4. 回答用户关于商品、溯源、价格等问题
 
+        我们的商品分类包括：丸滑产品、家禽蛋副、小吃点心、水发产品、海鲜水产、
+        牛羊肉类、猪肉猪副、米面制品、肉肠罐头、蔬菜菌菇、蘸料底料、调理肉类、
+        豆制品类、饮料甜品。
+
+        提取关键词时请将口语表达映射到具体食品词汇，keywords中同时包含用户原始词汇和相关分类名。
+        例如：用户说"鸡蛋" → keywords应包含["鸡蛋", "家禽蛋副"]；
+        用户说"零食" → keywords应包含["零食", "小吃点心"]；
+        用户说"调味品" → keywords应包含["调味品", "蘸料底料"]。
+
         请以JSON格式返回分析结果：
         {
             "intent": "用户意图(product_inquiry/price_inquiry/stock_inquiry/usage_inquiry/other)",
@@ -105,6 +117,108 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             "confidence": 0.95
         }
         """;
+
+    /**
+     * 品类同义词/口语映射表
+     * key: 用户常用搜索词, value: 对应的数据库分类名和相关产品词
+     */
+    private static final Map<String, List<String>> CATEGORY_SYNONYM_MAP;
+    static {
+        Map<String, List<String>> map = new HashMap<>();
+        // 禽蛋类
+        map.put("鸡蛋", List.of("家禽蛋副", "禽蛋", "蛋"));
+        map.put("鸭蛋", List.of("家禽蛋副", "禽蛋", "蛋"));
+        map.put("蛋", List.of("家禽蛋副", "禽蛋"));
+        map.put("鸡肉", List.of("家禽蛋副", "鸡", "土鸡"));
+        map.put("鸡", List.of("家禽蛋副", "土鸡"));
+        map.put("鸭", List.of("家禽蛋副"));
+        map.put("鸭肉", List.of("家禽蛋副"));
+        // 乳饮类
+        map.put("牛奶", List.of("饮料甜品", "乳制品", "奶"));
+        map.put("酸奶", List.of("饮料甜品", "乳制品"));
+        map.put("饮料", List.of("饮料甜品"));
+        map.put("果汁", List.of("饮料甜品"));
+        // 米面粮油类
+        map.put("大米", List.of("米面制品", "米"));
+        map.put("米", List.of("米面制品"));
+        map.put("面条", List.of("米面制品", "面", "挂面"));
+        map.put("面粉", List.of("米面制品", "面"));
+        map.put("挂面", List.of("米面制品", "面"));
+        map.put("食用油", List.of("米面制品", "粮油", "油"));
+        map.put("粮油", List.of("米面制品"));
+        // 速冻/丸滑类
+        map.put("速冻食品", List.of("丸滑产品", "调理肉类", "小吃点心"));
+        map.put("丸子", List.of("丸滑产品"));
+        map.put("火锅丸子", List.of("丸滑产品"));
+        map.put("鱼丸", List.of("丸滑产品"));
+        map.put("肉丸", List.of("丸滑产品"));
+        // 零食点心类
+        map.put("零食", List.of("小吃点心", "饮料甜品"));
+        map.put("点心", List.of("小吃点心"));
+        map.put("甜品", List.of("饮料甜品", "小吃点心"));
+        map.put("蛋糕", List.of("小吃点心", "饮料甜品"));
+        // 调味品类
+        map.put("调味品", List.of("蘸料底料", "调料", "酱料"));
+        map.put("调料", List.of("蘸料底料"));
+        map.put("酱料", List.of("蘸料底料"));
+        map.put("火锅底料", List.of("蘸料底料"));
+        map.put("蘸料", List.of("蘸料底料"));
+        // 肉类
+        map.put("牛肉", List.of("牛羊肉类", "牛"));
+        map.put("羊肉", List.of("牛羊肉类", "羊"));
+        map.put("猪肉", List.of("猪肉猪副", "猪"));
+        map.put("猪蹄", List.of("猪肉猪副"));
+        map.put("排骨", List.of("猪肉猪副"));
+        map.put("五花肉", List.of("猪肉猪副"));
+        map.put("肉", List.of("猪肉猪副", "牛羊肉类", "调理肉类"));
+        // 海鲜类
+        map.put("海鲜", List.of("海鲜水产", "水产"));
+        map.put("鱼", List.of("海鲜水产"));
+        map.put("虾", List.of("海鲜水产"));
+        map.put("蟹", List.of("海鲜水产"));
+        map.put("水产", List.of("海鲜水产"));
+        // 蔬菜类
+        map.put("蔬菜", List.of("蔬菜菌菇"));
+        map.put("菌菇", List.of("蔬菜菌菇"));
+        map.put("蘑菇", List.of("蔬菜菌菇"));
+        map.put("香菇", List.of("蔬菜菌菇"));
+        // 豆制品类
+        map.put("豆腐", List.of("豆制品类"));
+        map.put("豆制品", List.of("豆制品类"));
+        map.put("豆皮", List.of("豆制品类"));
+        map.put("腐竹", List.of("豆制品类"));
+        // 肠罐头类
+        map.put("香肠", List.of("肉肠罐头"));
+        map.put("火腿肠", List.of("肉肠罐头"));
+        map.put("罐头", List.of("肉肠罐头"));
+        map.put("午餐肉", List.of("肉肠罐头"));
+        // 水发产品
+        map.put("水发", List.of("水发产品"));
+        map.put("海带", List.of("水发产品"));
+        map.put("粉丝", List.of("水发产品"));
+        CATEGORY_SYNONYM_MAP = Collections.unmodifiableMap(map);
+    }
+
+    /**
+     * 使用同义词映射扩展关键词列表
+     * @param keywords 原始关键词
+     * @return 扩展后的关键词列表（包含原始词+同义词，去重）
+     */
+    private List<String> expandKeywordsWithSynonyms(List<String> keywords) {
+        if (keywords == null || keywords.isEmpty()) {
+            return keywords;
+        }
+        Set<String> expanded = new LinkedHashSet<>(keywords); // 保持原始顺序
+        for (String keyword : keywords) {
+            String normalized = keyword.trim().toLowerCase();
+            List<String> synonyms = CATEGORY_SYNONYM_MAP.get(normalized);
+            if (synonyms != null) {
+                expanded.addAll(synonyms);
+                log.debug("关键词 '{}' 扩展同义词: {}", keyword, synonyms);
+            }
+        }
+        return new ArrayList<>(expanded);
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -188,13 +302,21 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 saveConversationHistory(sessionId, message, aiResponse);
             }
 
-            // 3. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
+            // 3. 扩展关键词（使用同义词映射）
+            List<String> expandedKeywords = expandKeywordsWithSynonyms(keywords);
+            if (expandedKeywords.size() > keywords.size()) {
+                log.debug("关键词扩展: {} -> {}", keywords, expandedKeywords);
+            }
+
+            // 4. 根据关键词搜索商品 - 优先使用RAG结果，否则向量搜索
             List<GoodsSpu> matchedProducts = new ArrayList<>();
+            boolean fromRag = false;
             if (!ragProducts.isEmpty()) {
                 // 优先使用RAG检索的商品
                 matchedProducts = ragProducts;
-            } else if (!keywords.isEmpty()) {
-                String query = String.join(" ", keywords);
+                fromRag = true;
+            } else if (!expandedKeywords.isEmpty()) {
+                String query = String.join(" ", expandedKeywords);
                 if (vectorSearchService.isAvailable()) {
                     matchedProducts = vectorSearchService.searchSimilarProducts(query, 5);
                 }
@@ -202,12 +324,17 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
                 if (matchedProducts.isEmpty()) {
                     matchedProducts = semanticSearch(query, 5);
                 }
+                // 关键词搜索也无结果时，品类回退搜索
+                if (matchedProducts.isEmpty()) {
+                    matchedProducts = categoryFallbackSearch(expandedKeywords, 5);
+                }
             }
 
-            // 4. 检查商品与关键词的相关性
-            boolean hasRelevantProducts = hasRelevantProducts(matchedProducts, keywords);
+            // 5. 检查商品与关键词的相关性
+            // RAG/向量搜索结果已通过相似度阈值，信任其相关性
+            boolean hasRelevantProducts = fromRag || hasRelevantProducts(matchedProducts, expandedKeywords);
 
-            // 5. 构建响应
+            // 6. 构建响应
             result.put("sessionId", sessionId);
             result.put("response", aiResponse);
             result.put("ragEnabled", ragEnabled && !ragProducts.isEmpty());
@@ -217,14 +344,14 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             result.put("products", hasRelevantProducts ? matchedProducts : new ArrayList<>());
             result.put("hasProducts", hasRelevantProducts);
 
-            // 6. 记录需求
+            // 7. 记录需求
             List<String> productIds = matchedProducts.stream()
                     .map(GoodsSpu::getId)
                     .collect(Collectors.toList());
             recordDemand(sessionId, userId, merchantId, message, aiResponse, keywords,
                     intent, confidence, productIds, intent);
 
-            // 7. 极速匹配服务 - 当产品咨询无相关结果时主动询问
+            // 8. 极速匹配服务 - 当产品咨询无相关结果时主动询问
             // 支持英文和中文意图匹配
             boolean isProductInquiry = "product_inquiry".equals(intent)
                     || (intent != null && (intent.contains("商品") || intent.contains("查询") || intent.contains("推荐") || intent.contains("product")));
@@ -589,10 +716,68 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
     }
 
     /**
+     * 品类回退搜索：当关键词搜索和向量搜索都返回空时，
+     * 通过同义词映射找到对应的分类名，查询该分类下的商品作为兜底。
+     * @param expandedKeywords 已扩展的关键词列表（包含同义词）
+     * @param limit 最大返回数
+     * @return 匹配的商品列表
+     */
+    private List<GoodsSpu> categoryFallbackSearch(List<String> expandedKeywords, int limit) {
+        if (expandedKeywords == null || expandedKeywords.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        try {
+            // 1. 从扩展关键词中查找匹配的分类
+            LambdaQueryWrapper<GoodsCategory> catWrapper = new LambdaQueryWrapper<>();
+            catWrapper.eq(GoodsCategory::getEnable, "1")
+                      .and(w -> {
+                          for (String keyword : expandedKeywords) {
+                              if (keyword != null && keyword.length() >= 2) {
+                                  w.or(q -> q.like(GoodsCategory::getName, keyword));
+                              }
+                          }
+                      });
+            List<GoodsCategory> matchedCategories = goodsCategoryMapper.selectList(catWrapper);
+
+            if (matchedCategories.isEmpty()) {
+                log.debug("品类回退搜索：无匹配分类, keywords={}", expandedKeywords);
+                return new ArrayList<>();
+            }
+
+            // 2. 获取匹配分类的ID列表
+            List<String> categoryIds = matchedCategories.stream()
+                    .map(GoodsCategory::getId)
+                    .collect(Collectors.toList());
+            log.debug("品类回退搜索：匹配分类 {} -> {}",
+                    matchedCategories.stream().map(GoodsCategory::getName).collect(Collectors.toList()),
+                    categoryIds);
+
+            // 3. 查询这些分类下的上架商品
+            LambdaQueryWrapper<GoodsSpu> spuWrapper = new LambdaQueryWrapper<>();
+            spuWrapper.eq(GoodsSpu::getShelf, "1")
+                      .and(w -> {
+                          w.in(GoodsSpu::getCategoryFirst, categoryIds)
+                           .or().in(GoodsSpu::getCategorySecond, categoryIds);
+                      })
+                      .orderByDesc(GoodsSpu::getSaleNum) // 优先推荐销量高的
+                      .last("LIMIT " + limit);
+
+            List<GoodsSpu> results = goodsSpuMapper.selectList(spuWrapper);
+            log.debug("品类回退搜索：返回 {} 个商品", results.size());
+            return results;
+
+        } catch (Exception e) {
+            log.warn("品类回退搜索失败: {}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
      * 检查商品列表是否与搜索关键词相关
-     * 相关性判断: 商品名称必须包含至少一个关键词的核心部分
+     * 相关性判断: 商品名称/卖点/描述包含至少一个关键词的核心部分
      * @param products 商品列表
-     * @param keywords 搜索关键词
+     * @param keywords 搜索关键词（应已经过同义词扩展）
      * @return 是否有相关商品
      */
     private boolean hasRelevantProducts(List<GoodsSpu> products, List<String> keywords) {
@@ -604,32 +789,34 @@ public class AiRecommendServiceImpl extends ServiceImpl<AiDemandRecordMapper, Ai
             return true;
         }
 
-        // 对于每个商品，检查其名称是否包含任一关键词
+        // 对于每个商品，检查其名称/卖点/描述是否包含任一关键词
         for (GoodsSpu product : products) {
-            String productName = product.getName();
-            if (productName == null) continue;
+            // 合并名称、卖点、描述为搜索文本
+            StringBuilder searchText = new StringBuilder();
+            if (product.getName() != null) searchText.append(product.getName()).append(" ");
+            if (product.getSellPoint() != null) searchText.append(product.getSellPoint()).append(" ");
+            if (product.getDescription() != null) searchText.append(product.getDescription());
+            String fullText = searchText.toString().toLowerCase();
 
-            productName = productName.toLowerCase();
+            if (fullText.isEmpty()) continue;
+
             for (String keyword : keywords) {
                 if (keyword == null || keyword.length() < 2) continue;
 
                 String normalizedKeyword = keyword.toLowerCase().trim();
 
-                // 直接匹配：商品名包含完整关键词
-                if (productName.contains(normalizedKeyword)) {
+                // 直接匹配：商品文本包含完整关键词
+                if (fullText.contains(normalizedKeyword)) {
                     log.debug("商品 '{}' 匹配关键词 '{}'", product.getName(), keyword);
                     return true;
                 }
 
                 // 部分匹配：关键词长度>=3时，检查是否包含关键词的核心部分
-                // 例如："牛肉丸" -> "牛肉" 或 "肉丸" 都算匹配
                 if (normalizedKeyword.length() >= 3) {
-                    // 检查关键词的前N-1个字符
                     String prefix = normalizedKeyword.substring(0, normalizedKeyword.length() - 1);
-                    // 检查关键词的后N-1个字符
                     String suffix = normalizedKeyword.substring(1);
 
-                    if (productName.contains(prefix) || productName.contains(suffix)) {
+                    if (fullText.contains(prefix) || fullText.contains(suffix)) {
                         log.debug("商品 '{}' 部分匹配关键词 '{}' (prefix={}, suffix={})",
                                 product.getName(), keyword, prefix, suffix);
                         return true;
