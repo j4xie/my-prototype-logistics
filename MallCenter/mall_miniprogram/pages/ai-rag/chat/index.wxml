@@ -60,7 +60,7 @@
               <view class="product-card" wx:for="{{item.products}}" wx:for-item="product" wx:key="id">
                 <!-- 点击图片区域跳转详情 -->
                 <view class="product-main" bindtap="goToProduct" data-id="{{product.id}}">
-                  <image class="product-image" src="{{product.picUrl || product.coverImg}}" mode="aspectFill"></image>
+                  <image class="product-image" src="{{product.picUrl || '/public/img/no_pic.png'}}" mode="aspectFill"></image>
                   <view class="product-info">
                     <text class="product-name">{{product.name}}</text>
                     <view class="product-price">

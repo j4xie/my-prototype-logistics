@@ -9,7 +9,7 @@
         data-product="{{item}}" bindtap="onProductTap">
     <view class="text-black margin-top text-bold padding-lr overflow-1">{{item.name}}</view>
     <view class="goods-box-img-box">
-      <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" class="margin-top-xs"/>
+      <image src="{{item.picUrls[0] ? item.picUrls[0] : '/public/img/no_pic.png'}}" class="margin-top-xs" binderror="onImageError" data-index="{{index}}"/>
     </view>
     <view class="text-center margin-top">
       <!-- 已登录显示价格 -->
