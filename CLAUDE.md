@@ -23,9 +23,11 @@ This file provides guidance to Claude Code when working with this repository.
 | Service | Port | URL |
 |---------|------|-----|
 | React Native | 3010 | `http://localhost:3010` |
-| Cretas 后端 | 10010 | `http://139.196.165.140:10010` |
+| Cretas 后端 (Java) | 10010 | `http://139.196.165.140:10010` |
+| Python 服务 | 8083 | `http://localhost:8083` |
+| Embedding 服务 | 9090 | gRPC |
 | Mall 后端 | 8080 | `http://139.196.165.140:8080` |
-| MySQL | 3306 | `localhost:3306` |
+| PostgreSQL | 5432 | `localhost:5432` |
 | Redis | 6379 | `localhost:6379` |
 | FRP | 7501 | 内网穿透 |
 
@@ -51,11 +53,18 @@ npm start                    # Start Expo
 npx expo start --clear      # Clear cache
 ```
 
-### 后端 (Spring Boot)
+### 后端 (Java - Spring Boot)
 ```bash
-cd backend-java
+cd backend/java/cretas-api
 mvn clean package -DskipTests    # Build
 mvn spring-boot:run              # Run locally
+```
+
+### 后端 (Python - FastAPI)
+```bash
+cd backend/python
+pip install -r requirements.txt  # 安装依赖
+uvicorn main:app --port 8083     # 启动服务
 ```
 
 ### 部署到服务器
@@ -111,15 +120,27 @@ tail -f /www/wwwroot/mall/backend/mall-admin.log
 
 ## Architecture
 
-### 后端结构
+### 后端目录结构
 ```
-backend-java/src/main/java/com/cretas/aims/
-├── controller/    # REST API
-├── entity/        # JPA 实体
-├── service/       # 业务逻辑
-├── repository/    # 数据访问
-├── dto/           # 数据传输对象
-└── config/        # 配置类
+backend/
+├── java/                          # Java 服务
+│   ├── cretas-api/                # 主后端 (Spring Boot, 端口 10010)
+│   │   └── src/main/java/com/cretas/aims/
+│   │       ├── controller/        # REST API
+│   │       ├── entity/            # JPA 实体
+│   │       ├── service/           # 业务逻辑
+│   │       ├── repository/        # 数据访问
+│   │       └── config/            # 配置类
+│   └── embedding-service/         # 向量嵌入服务 (gRPC, 端口 9090)
+│
+└── python/                        # Python 服务 (FastAPI, 端口 8083)
+    ├── main.py                    # 统一入口
+    ├── smartbi/                   # SmartBI 数据分析模块
+    │   ├── api/                   # API 路由
+    │   └── services/              # 业务逻辑
+    └── efficiency_recognition/    # 人效识别模块
+        ├── api/                   # API 路由
+        └── services/              # VL 分析服务
 ```
 
 ### 前端结构
@@ -134,9 +155,21 @@ frontend/CretasFoodTrace/src/
 ```
 
 ### API 路径
+
+**Java 后端 (10010)**
 - 基础路径: `/api/mobile/*`
 - 认证: `/api/mobile/auth/*`
 - 业务: `/api/mobile/{factoryId}/*`
+
+**Python 服务 (8083)**
+- SmartBI: `/api/smartbi/*`
+  - Excel: `/api/smartbi/excel/*`
+  - 分析: `/api/smartbi/analysis/*`
+  - 图表: `/api/smartbi/chart/*`
+  - 预测: `/api/smartbi/forecast/*`
+- 人效识别: `/api/efficiency/*`
+  - 帧分析: `/api/efficiency/analyze-frame`
+  - 视频分析: `/api/efficiency/analyze-video-upload`
 
 ---
 
