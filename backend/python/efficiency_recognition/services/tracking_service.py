@@ -11,6 +11,10 @@
 
 数据流:
 摄像头帧 -> VL特征提取 -> 特征匹配 -> 追踪ID关联 -> 轨迹记录
+
+数据持久化:
+- 支持 PostgreSQL 数据库存储
+- 无数据库时自动降级为内存存储
 """
 
 import os
@@ -22,6 +26,14 @@ from typing import Dict, List, Optional, Any, Tuple
 import logging
 
 logger = logging.getLogger(__name__)
+
+# 尝试导入数据库仓库
+try:
+    from ..database.repository import get_repository, EfficiencyRepository
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+    logger.warning("Database repository not available, using in-memory storage only")
 
 
 @dataclass
@@ -85,16 +97,27 @@ class WorkerIdentification:
 class WorkerTrackingService:
     """基于全身多维度特征的跨摄像头追踪服务"""
 
-    def __init__(self, vl_client=None):
+    def __init__(self, vl_client=None, factory_id: str = "F001"):
         """
         初始化追踪服务
 
         Args:
             vl_client: VL 模型客户端
+            factory_id: 工厂ID（用于数据库存储）
         """
         self._vl_client = vl_client
+        self.factory_id = factory_id
 
-        # 内存存储（生产环境应使用数据库）
+        # 获取数据库仓库（支持自动降级到内存存储）
+        self._repository = None
+        if DATABASE_AVAILABLE:
+            try:
+                self._repository = get_repository()
+                logger.info(f"Tracking service using database: {self._repository.is_database_enabled}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize repository: {e}")
+
+        # 内存缓存（仅在没有数据库时作为主存储，有数据库时作为热缓存）
         self.tracking_records: Dict[str, TrackingRecord] = {}
         self.trajectories: Dict[str, List[TrajectoryPoint]] = {}
         self.camera_topology: Dict[str, CameraTopology] = {}
@@ -102,6 +125,18 @@ class WorkerTrackingService:
         # 匹配参数
         self.match_threshold = 0.6           # 匹配阈值
         self.time_window_seconds = 300       # 时间窗口（5分钟）
+
+    @property
+    def repository(self):
+        """获取仓库实例"""
+        if self._repository is None and DATABASE_AVAILABLE:
+            self._repository = get_repository()
+        return self._repository
+
+    @property
+    def use_database(self) -> bool:
+        """是否使用数据库"""
+        return self.repository is not None and self.repository.is_database_enabled
 
     @property
     def vl_client(self):
@@ -319,6 +354,40 @@ class WorkerTrackingService:
         cutoff_time = timestamp - timedelta(seconds=self.time_window_seconds)
         candidates = []
 
+        # 优先从数据库获取
+        if self.use_database:
+            db_records = self.repository.get_recent_tracking_candidates(
+                camera_id=camera_id,
+                time_window_seconds=self.time_window_seconds,
+                factory_id=self.factory_id
+            )
+            for db_record in db_records:
+                # 转换为 TrackingRecord
+                features = WorkerFeatures(
+                    badge_number=db_record.get("badgeNumber"),
+                    clothing_upper=db_record.get("clothingUpper", ""),
+                    clothing_lower=db_record.get("clothingLower", ""),
+                    body_type=db_record.get("bodyType", ""),
+                    height_estimate=db_record.get("heightEstimate", ""),
+                    safety_gear=db_record.get("safetyGear", {})
+                )
+                last_seen = db_record.get("lastSeenTime")
+                if isinstance(last_seen, str):
+                    last_seen = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
+
+                record = TrackingRecord(
+                    tracking_id=db_record.get("trackingId"),
+                    worker_id=db_record.get("workerId"),
+                    features=features,
+                    last_camera_id=db_record.get("lastSeenCamera", ""),
+                    last_seen_time=last_seen or datetime.now(),
+                    total_sightings=db_record.get("totalSightings", 0)
+                )
+                if self._can_transition(record.last_camera_id, camera_id, timestamp, record.last_seen_time):
+                    candidates.append(record)
+            return candidates
+
+        # 降级：从内存获取
         for tracking_id, record in self.tracking_records.items():
             # 时间窗口内的追踪
             if record.last_seen_time >= cutoff_time:
@@ -463,16 +532,45 @@ class WorkerTrackingService:
         timestamp: datetime
     ):
         """更新追踪记录"""
-        if tracking_id not in self.tracking_records:
-            return
+        # 转换特征为字典
+        features_dict = {
+            "badge_number": worker.badge_number,
+            "clothing_upper": worker.clothing_upper,
+            "clothing_lower": worker.clothing_lower,
+            "body_type": worker.body_type,
+            "height_estimate": worker.height_estimate,
+            "safety_gear": worker.safety_gear
+        }
 
-        record = self.tracking_records[tracking_id]
-        record.features = worker
-        record.last_camera_id = camera_id
-        record.last_seen_time = timestamp
-        record.total_sightings += 1
+        # 保存到数据库
+        if self.use_database:
+            self.repository.save_tracking_feature(
+                tracking_id=tracking_id,
+                factory_id=self.factory_id,
+                features=features_dict,
+                camera_id=camera_id,
+                timestamp=timestamp,
+                confidence=worker.confidence
+            )
+            self.repository.save_trajectory_point(
+                tracking_id=tracking_id,
+                factory_id=self.factory_id,
+                camera_id=camera_id,
+                timestamp=timestamp,
+                position=worker.position_in_frame,
+                action=worker.action,
+                confidence=worker.confidence
+            )
 
-        # 添加轨迹点
+        # 同时更新内存缓存
+        if tracking_id in self.tracking_records:
+            record = self.tracking_records[tracking_id]
+            record.features = worker
+            record.last_camera_id = camera_id
+            record.last_seen_time = timestamp
+            record.total_sightings += 1
+
+        # 添加轨迹点到缓存
         if tracking_id not in self.trajectories:
             self.trajectories[tracking_id] = []
 
@@ -493,6 +591,37 @@ class WorkerTrackingService:
         """创建新追踪"""
         tracking_id = f"track_{uuid.uuid4().hex[:12]}"
 
+        # 转换特征为字典
+        features_dict = {
+            "badge_number": worker.badge_number,
+            "clothing_upper": worker.clothing_upper,
+            "clothing_lower": worker.clothing_lower,
+            "body_type": worker.body_type,
+            "height_estimate": worker.height_estimate,
+            "safety_gear": worker.safety_gear
+        }
+
+        # 保存到数据库
+        if self.use_database:
+            self.repository.save_tracking_feature(
+                tracking_id=tracking_id,
+                factory_id=self.factory_id,
+                features=features_dict,
+                camera_id=camera_id,
+                timestamp=timestamp,
+                confidence=worker.confidence
+            )
+            self.repository.save_trajectory_point(
+                tracking_id=tracking_id,
+                factory_id=self.factory_id,
+                camera_id=camera_id,
+                timestamp=timestamp,
+                position=worker.position_in_frame,
+                action=worker.action,
+                confidence=worker.confidence
+            )
+
+        # 创建内存记录
         record = TrackingRecord(
             tracking_id=tracking_id,
             features=worker,
@@ -512,10 +641,18 @@ class WorkerTrackingService:
             confidence=worker.confidence
         )]
 
+        logger.info(f"Created new tracking: {tracking_id}, database={self.use_database}")
         return tracking_id
 
     def get_trajectory(self, tracking_id: str) -> Optional[List[Dict]]:
         """获取工人轨迹"""
+        # 优先从数据库获取
+        if self.use_database:
+            db_points = self.repository.get_trajectory(tracking_id)
+            if db_points:
+                return db_points
+
+        # 降级：从内存获取
         if tracking_id not in self.trajectories:
             return None
 
@@ -532,6 +669,29 @@ class WorkerTrackingService:
 
     def get_tracking_record(self, tracking_id: str) -> Optional[Dict]:
         """获取追踪记录详情"""
+        # 优先从数据库获取
+        if self.use_database:
+            db_record = self.repository.get_tracking_record(tracking_id)
+            if db_record:
+                return {
+                    "tracking_id": db_record.get("trackingId"),
+                    "worker_id": db_record.get("workerId"),
+                    "features": {
+                        "badge_number": db_record.get("badgeNumber"),
+                        "clothing_upper": db_record.get("clothingUpper"),
+                        "clothing_lower": db_record.get("clothingLower"),
+                        "body_type": db_record.get("bodyType"),
+                        "height_estimate": db_record.get("heightEstimate"),
+                        "safety_gear": db_record.get("safetyGear", {})
+                    },
+                    "last_camera_id": db_record.get("lastSeenCamera"),
+                    "last_seen_time": db_record.get("lastSeenTime"),
+                    "first_seen_time": db_record.get("firstSeenTime"),
+                    "total_sightings": db_record.get("totalSightings", 0),
+                    "match_confidence": db_record.get("featureConfidence", 0)
+                }
+
+        # 降级：从内存获取
         if tracking_id not in self.tracking_records:
             return None
 
@@ -562,6 +722,17 @@ class WorkerTrackingService:
         direction: str = "BIDIRECTIONAL"
     ):
         """设置摄像头拓扑关系"""
+        # 保存到数据库
+        if self.use_database:
+            self.repository.save_camera_topology(
+                factory_id=self.factory_id,
+                camera_a_id=camera_a_id,
+                camera_b_id=camera_b_id,
+                transition_time_seconds=transition_time_seconds,
+                direction=direction
+            )
+
+        # 同时保存到内存缓存
         key = f"{camera_a_id}_{camera_b_id}"
         self.camera_topology[key] = CameraTopology(
             camera_a_id=camera_a_id,
@@ -572,6 +743,11 @@ class WorkerTrackingService:
 
     def get_camera_topology(self) -> List[Dict]:
         """获取所有摄像头拓扑关系"""
+        # 优先从数据库获取
+        if self.use_database:
+            return self.repository.get_camera_topology(self.factory_id)
+
+        # 降级：从内存获取
         return [
             {
                 "camera_a_id": t.camera_a_id,
@@ -584,6 +760,17 @@ class WorkerTrackingService:
 
     def link_to_worker(self, tracking_id: str, worker_id: int) -> bool:
         """将追踪ID关联到系统工人"""
+        # 保存到数据库
+        if self.use_database:
+            result = self.repository.link_tracking_to_worker(tracking_id, worker_id)
+            if result:
+                # 同步更新内存缓存
+                if tracking_id in self.tracking_records:
+                    self.tracking_records[tracking_id].worker_id = worker_id
+                return True
+            return False
+
+        # 降级：仅内存操作
         if tracking_id not in self.tracking_records:
             return False
 
@@ -592,6 +779,22 @@ class WorkerTrackingService:
 
     def get_all_tracks(self) -> List[Dict]:
         """获取所有追踪记录摘要"""
+        # 优先从数据库获取
+        if self.use_database:
+            db_records = self.repository.get_all_tracking_records(self.factory_id)
+            return [
+                {
+                    "tracking_id": r.get("trackingId"),
+                    "worker_id": r.get("workerId"),
+                    "badge_number": r.get("badgeNumber"),
+                    "last_camera_id": r.get("lastSeenCamera"),
+                    "last_seen_time": r.get("lastSeenTime"),
+                    "total_sightings": r.get("totalSightings", 0)
+                }
+                for r in db_records
+            ]
+
+        # 降级：从内存获取
         return [
             {
                 "tracking_id": record.tracking_id,
@@ -606,6 +809,14 @@ class WorkerTrackingService:
 
     def get_statistics(self) -> Dict[str, Any]:
         """获取追踪统计信息"""
+        # 优先从数据库获取
+        if self.use_database:
+            stats = self.repository.get_tracking_statistics(self.factory_id)
+            topology = self.repository.get_camera_topology(self.factory_id)
+            stats["topology_relations"] = len(topology)
+            return stats
+
+        # 降级：从内存计算
         now = datetime.now()
         active_threshold = now - timedelta(minutes=30)
 
@@ -643,7 +854,8 @@ class WorkerTrackingService:
             "badge_identified": badge_identified,
             "camera_stats": camera_stats,
             "topology_relations": len(self.camera_topology),
-            "total_trajectory_points": sum(len(t) for t in self.trajectories.values())
+            "total_trajectory_points": sum(len(t) for t in self.trajectories.values()),
+            "database_enabled": False
         }
 
     def cleanup_old_tracks(
