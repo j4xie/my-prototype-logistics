@@ -1,0 +1,86 @@
+{
+  "round": 16,
+  "timestamp": "2026-01-29T15:37:27.035Z",
+  "summary": {
+    "total": 500,
+    "passed": 500,
+    "failed": 0,
+    "passRate": "100%",
+    "overallAvg": 4.12,
+    "overallScores": {
+      "accuracy": 3.8,
+      "completeness": 3.84,
+      "speed": 4.99,
+      "streaming": 4,
+      "coherence": 3.98
+    },
+    "errorCount": 11,
+    "errorRate": "2.2%"
+  },
+  "latency": {
+    "min": 222,
+    "max": 2858,
+    "avg": 632,
+    "p50": 268,
+    "p95": 1619,
+    "p99": 2064
+  },
+  "categories": {
+    "product_inquiry": {
+      "total": 100,
+      "passed": 100,
+      "scores": {
+        "accuracy": 3.05,
+        "completeness": 3.37,
+        "speed": 4.97,
+        "streaming": 4,
+        "coherence": 4
+      }
+    },
+    "price_discount": {
+      "total": 80,
+      "passed": 80,
+      "scores": {
+        "accuracy": 4,
+        "completeness": 4,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      }
+    },
+    "traceability": {
+      "total": 80,
+      "passed": 80,
+      "scores": {
+        "accuracy": 4,
+        "completeness": 3.95,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      }
+    },
+    "multi_turn": {
+      "total": 240,
+      "passed": 240,
+      "scores": {
+        "accuracy": 3.98,
+        "completeness": 3.95,
+        "speed": 4.99,
+        "streaming": 4,
+        "coherence": 3.95
+      }
+    }
+  },
+  "topIssues": [
+    {
+      "issue": "NO_PRODUCTS",
+      "count": 68,
+      "pct": "13.6%"
+    },
+    {
+      "issue": "API_ERROR",
+      "count": 11,
+      "pct": "2.2%"
+    }
+  ]
+}

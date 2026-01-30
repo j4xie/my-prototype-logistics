@@ -1,0 +1,1120 @@
+[
+  {
+    "testCaseId": 1001,
+    "category": "product_inquiry",
+    "message": "帮我找一下面条",
+    "success": true,
+    "latencyMs": 5749,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 2,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.2,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1002,
+    "category": "product_inquiry",
+    "message": "进口鸡蛋有吗",
+    "success": true,
+    "latencyMs": 5639,
+    "responseLength": 96,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 2,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.2,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1003,
+    "category": "product_inquiry",
+    "message": "调味品有哪些选择？",
+    "success": true,
+    "latencyMs": 5691,
+    "responseLength": 98,
+    "productsCount": 5,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 2,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1004,
+    "category": "product_inquiry",
+    "message": "最受欢迎的食用油是什么？",
+    "success": true,
+    "latencyMs": 5608,
+    "responseLength": 95,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 2,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.2,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1005,
+    "category": "product_inquiry",
+    "message": "你们卖酸奶吗",
+    "success": true,
+    "latencyMs": 5573,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 2,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.2,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1006,
+    "category": "product_inquiry",
+    "message": "推荐酸奶商品",
+    "success": true,
+    "latencyMs": 2288,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1007,
+    "category": "product_inquiry",
+    "message": "哪款酸奶性价比高",
+    "success": true,
+    "latencyMs": 2387,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1008,
+    "category": "product_inquiry",
+    "message": "推荐几款好的速冻食品",
+    "success": true,
+    "latencyMs": 3130,
+    "responseLength": 111,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 3,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.4,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1009,
+    "category": "product_inquiry",
+    "message": "推荐几款好的豆腐",
+    "success": true,
+    "latencyMs": 2569,
+    "responseLength": 161,
+    "productsCount": 3,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.2,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1010,
+    "category": "product_inquiry",
+    "message": "我要买虾",
+    "success": true,
+    "latencyMs": 1986,
+    "responseLength": 93,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1011,
+    "category": "product_inquiry",
+    "message": "进口水果有吗",
+    "success": true,
+    "latencyMs": 1721,
+    "responseLength": 91,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1012,
+    "category": "product_inquiry",
+    "message": "进口鱼有吗",
+    "success": true,
+    "latencyMs": 1832,
+    "responseLength": 77,
+    "productsCount": 5,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1013,
+    "category": "product_inquiry",
+    "message": "帮我找一下速冻食品",
+    "success": true,
+    "latencyMs": 2283,
+    "responseLength": 111,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1014,
+    "category": "product_inquiry",
+    "message": "有什么猪肉？",
+    "success": true,
+    "latencyMs": 1673,
+    "responseLength": 85,
+    "productsCount": 3,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1015,
+    "category": "product_inquiry",
+    "message": "哪款速冻食品性价比高",
+    "success": true,
+    "latencyMs": 2515,
+    "responseLength": 95,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1016,
+    "category": "product_inquiry",
+    "message": "哪款面条性价比高",
+    "success": true,
+    "latencyMs": 1949,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1017,
+    "category": "product_inquiry",
+    "message": "我要买零食",
+    "success": true,
+    "latencyMs": 2659,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1018,
+    "category": "product_inquiry",
+    "message": "帮我找一下罐头",
+    "success": true,
+    "latencyMs": 2321,
+    "responseLength": 158,
+    "productsCount": 2,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.2,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1019,
+    "category": "product_inquiry",
+    "message": "面条有哪些选择？",
+    "success": true,
+    "latencyMs": 2407,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1020,
+    "category": "product_inquiry",
+    "message": "适合送礼的蔬菜",
+    "success": true,
+    "latencyMs": 1620,
+    "responseLength": 62,
+    "productsCount": 2,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1021,
+    "category": "product_inquiry",
+    "message": "有什么豆腐？",
+    "success": true,
+    "latencyMs": 1526,
+    "responseLength": 46,
+    "productsCount": 3,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1022,
+    "category": "product_inquiry",
+    "message": "有机牛肉有卖吗",
+    "success": true,
+    "latencyMs": 1950,
+    "responseLength": 96,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1023,
+    "category": "product_inquiry",
+    "message": "茶叶有哪些选择？",
+    "success": true,
+    "latencyMs": 1741,
+    "responseLength": 60,
+    "productsCount": 1,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1024,
+    "category": "product_inquiry",
+    "message": "家庭装的鱼",
+    "success": true,
+    "latencyMs": 2169,
+    "responseLength": 97,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1025,
+    "category": "product_inquiry",
+    "message": "你们卖零食吗",
+    "success": true,
+    "latencyMs": 2165,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1026,
+    "category": "product_inquiry",
+    "message": "推荐几款好的鱼",
+    "success": true,
+    "latencyMs": 2239,
+    "responseLength": 93,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1027,
+    "category": "product_inquiry",
+    "message": "国产海鲜推荐",
+    "success": true,
+    "latencyMs": 1912,
+    "responseLength": 96,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1028,
+    "category": "product_inquiry",
+    "message": "有什么茶叶？",
+    "success": true,
+    "latencyMs": 1685,
+    "responseLength": 68,
+    "productsCount": 1,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1029,
+    "category": "product_inquiry",
+    "message": "推荐几款好的速冻食品",
+    "success": true,
+    "latencyMs": 2340,
+    "responseLength": 106,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1030,
+    "category": "product_inquiry",
+    "message": "你们卖猪肉吗",
+    "success": true,
+    "latencyMs": 1744,
+    "responseLength": 70,
+    "productsCount": 3,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1031,
+    "category": "product_inquiry",
+    "message": "我要买牛肉",
+    "success": true,
+    "latencyMs": 1429,
+    "responseLength": 69,
+    "productsCount": 5,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1032,
+    "category": "product_inquiry",
+    "message": "推荐几款好的罐头",
+    "success": true,
+    "latencyMs": 2402,
+    "responseLength": 197,
+    "productsCount": 2,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 4,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.2,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1033,
+    "category": "product_inquiry",
+    "message": "有没有便宜的鱼",
+    "success": true,
+    "latencyMs": 1316,
+    "responseLength": 93,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1034,
+    "category": "product_inquiry",
+    "message": "国产罐头推荐",
+    "success": true,
+    "latencyMs": 1651,
+    "responseLength": 74,
+    "productsCount": 2,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1035,
+    "category": "product_inquiry",
+    "message": "想买点水果",
+    "success": true,
+    "latencyMs": 1579,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1036,
+    "category": "product_inquiry",
+    "message": "你们卖蜂蜜吗",
+    "success": true,
+    "latencyMs": 1758,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1037,
+    "category": "product_inquiry",
+    "message": "想买点酸奶",
+    "success": true,
+    "latencyMs": 1383,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1038,
+    "category": "product_inquiry",
+    "message": "推荐茶叶商品",
+    "success": true,
+    "latencyMs": 1272,
+    "responseLength": 67,
+    "productsCount": 1,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1039,
+    "category": "product_inquiry",
+    "message": "面粉推荐一下",
+    "success": true,
+    "latencyMs": 1382,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1040,
+    "category": "product_inquiry",
+    "message": "哪款牛肉性价比高",
+    "success": true,
+    "latencyMs": 1383,
+    "responseLength": 73,
+    "productsCount": 5,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1041,
+    "category": "product_inquiry",
+    "message": "帮我找一下零食",
+    "success": true,
+    "latencyMs": 1663,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1042,
+    "category": "product_inquiry",
+    "message": "推荐蜂蜜商品",
+    "success": true,
+    "latencyMs": 1409,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1043,
+    "category": "product_inquiry",
+    "message": "有没有便宜的食用油",
+    "success": true,
+    "latencyMs": 1227,
+    "responseLength": 48,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 2,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.6,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1044,
+    "category": "product_inquiry",
+    "message": "想买点海鲜",
+    "success": true,
+    "latencyMs": 1284,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1045,
+    "category": "product_inquiry",
+    "message": "有没有新鲜的水果",
+    "success": true,
+    "latencyMs": 1325,
+    "responseLength": 89,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1046,
+    "category": "product_inquiry",
+    "message": "有什么大米？",
+    "success": true,
+    "latencyMs": 1739,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1047,
+    "category": "product_inquiry",
+    "message": "国产坚果推荐",
+    "success": true,
+    "latencyMs": 1938,
+    "responseLength": 99,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1048,
+    "category": "product_inquiry",
+    "message": "有没有便宜的猪肉",
+    "success": true,
+    "latencyMs": 1807,
+    "responseLength": 139,
+    "productsCount": 3,
+    "evaluation": {
+      "scores": {
+        "accuracy": 4,
+        "completeness": 5,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 4.4,
+      "issues": [],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1049,
+    "category": "product_inquiry",
+    "message": "有没有便宜的鱼",
+    "success": true,
+    "latencyMs": 1960,
+    "responseLength": 96,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  },
+  {
+    "testCaseId": 1050,
+    "category": "product_inquiry",
+    "message": "最好的蜂蜜是哪个",
+    "success": true,
+    "latencyMs": 1579,
+    "responseLength": 94,
+    "productsCount": 0,
+    "evaluation": {
+      "scores": {
+        "accuracy": 3,
+        "completeness": 3,
+        "speed": 5,
+        "streaming": 4,
+        "coherence": 4
+      },
+      "avgScore": 3.8,
+      "issues": [
+        "NO_PRODUCTS: Product inquiry did not return any products"
+      ],
+      "passed": true
+    }
+  }
+]

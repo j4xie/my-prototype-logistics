@@ -1,0 +1,48 @@
+{
+  "round": 21,
+  "timestamp": "2026-01-29T17:17:24.963Z",
+  "summary": {
+    "total": 50,
+    "passed": 50,
+    "failed": 0,
+    "passRate": "100%",
+    "overallAvg": 3.87,
+    "overallScores": {
+      "accuracy": 3.32,
+      "completeness": 3.62,
+      "speed": 4.4,
+      "streaming": 4,
+      "coherence": 4
+    },
+    "errorCount": 0,
+    "errorRate": "0%"
+  },
+  "latency": {
+    "min": 1227,
+    "max": 5749,
+    "avg": 2251,
+    "p50": 1912,
+    "p95": 5639,
+    "p99": 5749
+  },
+  "categories": {
+    "product_inquiry": {
+      "total": 50,
+      "passed": 50,
+      "scores": {
+        "accuracy": 3.32,
+        "completeness": 3.62,
+        "speed": 4.4,
+        "streaming": 4,
+        "coherence": 4
+      }
+    }
+  },
+  "topIssues": [
+    {
+      "issue": "NO_PRODUCTS",
+      "count": 34,
+      "pct": "68%"
+    }
+  ]
+}

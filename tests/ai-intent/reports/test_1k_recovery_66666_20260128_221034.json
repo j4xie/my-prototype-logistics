@@ -1,0 +1,177 @@
+{
+  "summary": {
+    "total": 1000,
+    "correct": 1000,
+    "accuracy": 100.0,
+    "recovery_ok": 1000,
+    "recovery_rate": 100.0,
+    "seed": 66666,
+    "elapsed": 61.71873641014099
+  },
+  "method_stats": {
+    "PHRASE_MATCH": {
+      "total": 990,
+      "correct": 990
+    },
+    "SEMANTIC": {
+      "total": 1,
+      "correct": 1
+    },
+    "CLASSIFIER": {
+      "total": 9,
+      "correct": 9
+    }
+  },
+  "intent_stats": {
+    "REPORT_KPI": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_FULL": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_PRODUCTION": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_ACTIVE": {
+      "total": 27,
+      "correct": 27
+    },
+    "COST_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_TRENDS": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_FINANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 28,
+      "correct": 28
+    },
+    "ALERT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_BATCH": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "CLOCK_OUT": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "CLOCK_IN": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "SUPPLIER_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_INVENTORY": {
+      "total": 27,
+      "correct": 27
+    }
+  },
+  "failures": [],
+  "recovery_issues": []
+}

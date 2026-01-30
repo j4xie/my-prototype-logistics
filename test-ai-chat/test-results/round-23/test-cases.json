@@ -1,0 +1,1402 @@
+[
+  {
+    "id": 4401,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产罐头推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4402,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4403,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的坚果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4404,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "鸡肉有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4405,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖海鲜吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4406,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买大米",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4407,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款酸奶性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4408,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的鸡肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4409,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的鸡肉是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4410,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么食用油？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4411,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4412,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4413,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的调味品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4414,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的水果是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4415,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的茶叶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4416,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的羊肉是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4417,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的蔬菜是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4418,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的大米",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4419,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点虾",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4420,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买蜂蜜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4421,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下调味品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4422,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4423,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口面条有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4424,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索豆腐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4425,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4426,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买豆腐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4427,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索调味品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4428,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产面条推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4429,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4430,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产海鲜推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4431,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐速冻食品商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4432,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4433,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐面粉商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4434,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产鱼推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4435,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索鱼",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4436,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的茶叶是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4437,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的牛奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4438,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口羊肉有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4439,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "蔬菜推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4440,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4441,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的调味品是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4442,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐酸奶商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4443,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4444,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的猪肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4445,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛奶推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4446,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口食用油有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4447,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4448,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么牛奶？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4449,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4450,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4451,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4452,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4453,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的牛奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4454,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "鸡肉推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4455,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐零食商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4456,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4457,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4458,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的鱼是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4459,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛肉推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4460,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鸡肉有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4461,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4462,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的茶叶是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4463,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点面条",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4464,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的牛奶是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4465,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买蜂蜜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4466,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口蜂蜜有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4467,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4468,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "食用油推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4469,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "面粉有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4470,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点酸奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4471,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的面条",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4472,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么食用油？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4473,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的坚果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4474,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "鸡蛋有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4475,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "鸡蛋推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4476,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买大米",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4477,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口零食有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4478,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "豆腐推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4479,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索酸奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4480,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鸡肉有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4481,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么速冻食品？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4482,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口虾有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4483,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买蜂蜜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4484,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4485,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么零食？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4486,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么牛奶？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4487,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口饮料有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4488,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口水果有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4489,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款坚果性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4490,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的猪肉是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4491,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么零食？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4492,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐蔬菜商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4493,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款速冻食品性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4494,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产鱼推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4495,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛奶有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4496,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机羊肉有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4497,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4498,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机调味品有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4499,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐鱼商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4500,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么大米？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 4501,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4502,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4503,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4504,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4505,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4506,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买50件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4507,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4508,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4509,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4510,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4511,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4512,
+    "category": "price_discount",
+    "type": "single",
+    "message": "海鲜的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4513,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4514,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4515,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4516,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4517,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4518,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4519,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4520,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4521,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4522,
+    "category": "price_discount",
+    "type": "single",
+    "message": "蔬菜的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4523,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买500件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4524,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4525,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4526,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4527,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4528,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买100件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4529,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4530,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4531,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4532,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买200件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4533,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4534,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4535,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4536,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买100件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4537,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4538,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4539,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4540,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4541,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4542,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4543,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4544,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4545,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4546,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4547,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4548,
+    "category": "price_discount",
+    "type": "single",
+    "message": "食用油多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4549,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4550,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买100件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4551,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4552,
+    "category": "price_discount",
+    "type": "single",
+    "message": "水果多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4553,
+    "category": "price_discount",
+    "type": "single",
+    "message": "水果多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4554,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4555,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4556,
+    "category": "price_discount",
+    "type": "single",
+    "message": "猪肉的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4557,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4558,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4559,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4560,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4561,
+    "category": "price_discount",
+    "type": "single",
+    "message": "猪肉的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4562,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4563,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4564,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4565,
+    "category": "price_discount",
+    "type": "single",
+    "message": "海鲜多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4566,
+    "category": "price_discount",
+    "type": "single",
+    "message": "牛肉的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4567,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4568,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4569,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4570,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4571,
+    "category": "price_discount",
+    "type": "single",
+    "message": "牛肉多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4572,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4573,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买200件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4574,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4575,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4576,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4577,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4578,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4579,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买500件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4580,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 4581,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4582,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4583,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4584,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4585,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4586,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4587,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4588,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4589,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4590,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4591,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4592,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4593,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4594,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4595,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4596,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4597,
+    "category": "traceability",
+    "type": "single",
+    "message": "这个牛肉从哪里来的？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4598,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4599,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 4600,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  }
+]

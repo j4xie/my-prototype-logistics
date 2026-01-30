@@ -153,7 +153,7 @@ import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
 import * as echarts from 'echarts';
 
 const authStore = useAuthStore();
-const factoryId = computed(() => authStore.factoryId);
+const factoryId = computed(() => authStore.factoryId || 'F001');
 
 // 上传相关
 const uploadRef = ref<UploadInstance>();

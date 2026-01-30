@@ -1,0 +1,4222 @@
+[
+  {
+    "id": 501,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 502,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 503,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐罐头商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 504,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款调味品性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 505,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款茶叶性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 506,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 507,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的坚果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 508,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 509,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么鸡蛋？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 510,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 511,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 512,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产鸡蛋推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 513,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的猪肉是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 514,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 515,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下调味品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 516,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的速冻食品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 517,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的豆腐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 518,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 519,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的鱼是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 520,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "罐头有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 521,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 522,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "面条有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 523,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买零食",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 524,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么水果？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 525,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "羊肉有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 526,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 527,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的豆腐是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 528,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 529,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 530,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鱼有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 531,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 532,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 533,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖食用油吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 534,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 535,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买面条",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 536,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "罐头推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 537,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口鱼有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 538,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 539,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 540,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 541,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的酸奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 542,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下虾",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 543,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么面条？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 544,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的鸡肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 545,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产大米推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 546,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 547,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 548,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下鸡肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 549,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的调味品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 550,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的牛奶是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 551,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买面条",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 552,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐调味品商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 553,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索大米",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 554,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鱼有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 555,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的蜂蜜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 556,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机零食有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 557,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么茶叶？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 558,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 559,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛肉推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 560,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下海鲜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 561,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 562,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖蔬菜吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 563,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐零食商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 564,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 565,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索坚果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 566,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 567,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 568,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 569,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "面粉有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 570,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的鸡肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 571,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的猪肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 572,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款调味品性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 573,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的饮料是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 574,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐羊肉商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 575,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产豆腐推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 576,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的牛奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 577,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索羊肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 578,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的牛奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 579,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么虾？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 580,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 581,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的坚果是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 582,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款牛奶性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 583,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产茶叶推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 584,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买牛肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 585,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的零食",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 586,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产大米推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 587,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鱼有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 588,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买速冻食品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 589,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 590,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖调味品吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 591,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖牛奶吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 592,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "虾有哪些选择？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 593,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖蜂蜜吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 594,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的羊肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 595,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下酸奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 596,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最好的面条是哪个",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 597,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么食用油？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 598,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 599,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 600,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的鸡蛋是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 601,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 602,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 603,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 604,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 605,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 606,
+    "category": "price_discount",
+    "type": "single",
+    "message": "海鲜的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 607,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 608,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 609,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 610,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 611,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 612,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 613,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 614,
+    "category": "price_discount",
+    "type": "single",
+    "message": "蔬菜的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 615,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 616,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 617,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 618,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 619,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 620,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 621,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 622,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 623,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 624,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 625,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 626,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 627,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 628,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 629,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 630,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 631,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 632,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 633,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 634,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 635,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 636,
+    "category": "price_discount",
+    "type": "single",
+    "message": "猪肉多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 637,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 638,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 639,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 640,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 641,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 642,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 643,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 644,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 645,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 646,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 647,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 648,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 649,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 650,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 651,
+    "category": "price_discount",
+    "type": "single",
+    "message": "买1000件有优惠吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 652,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 653,
+    "category": "price_discount",
+    "type": "single",
+    "message": "海鲜的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 654,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 655,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 656,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 657,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 658,
+    "category": "price_discount",
+    "type": "single",
+    "message": "满减活动有没有？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 659,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 660,
+    "category": "price_discount",
+    "type": "single",
+    "message": "牛肉的批发价是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 661,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 662,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 663,
+    "category": "price_discount",
+    "type": "single",
+    "message": "阶梯价格是怎么算的？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 664,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 665,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 666,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有优惠券吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 667,
+    "category": "price_discount",
+    "type": "single",
+    "message": "100件和500件的价格区别",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 668,
+    "category": "price_discount",
+    "type": "single",
+    "message": "怎么购买最划算？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 669,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 670,
+    "category": "price_discount",
+    "type": "single",
+    "message": "今天有什么特价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 671,
+    "category": "price_discount",
+    "type": "single",
+    "message": "海鲜多少钱？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 672,
+    "category": "price_discount",
+    "type": "single",
+    "message": "最低价格是多少？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 673,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 674,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 675,
+    "category": "price_discount",
+    "type": "single",
+    "message": "会员有什么优惠？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 676,
+    "category": "price_discount",
+    "type": "single",
+    "message": "批量购买有折扣吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 677,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 678,
+    "category": "price_discount",
+    "type": "single",
+    "message": "大量采购怎么定价？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 679,
+    "category": "price_discount",
+    "type": "single",
+    "message": "有没有促销活动？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 680,
+    "category": "price_discount",
+    "type": "single",
+    "message": "价格能再便宜点吗？",
+    "expectedBehavior": "Should provide pricing info or explain pricing policy"
+  },
+  {
+    "id": 681,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 682,
+    "category": "traceability",
+    "type": "single",
+    "message": "运输过程是怎样的？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 683,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 684,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 685,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 686,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 687,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 688,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 689,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 690,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 691,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 692,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 693,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 694,
+    "category": "traceability",
+    "type": "single",
+    "message": "产品的产地在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 695,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 696,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 697,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 698,
+    "category": "traceability",
+    "type": "single",
+    "message": "这个牛肉从哪里来的？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 699,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 700,
+    "category": "traceability",
+    "type": "single",
+    "message": "产品的产地在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 701,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 702,
+    "category": "traceability",
+    "type": "single",
+    "message": "产品的产地在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 703,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 704,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 705,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 706,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 707,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 708,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 709,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 710,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 711,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 712,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 713,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 714,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 715,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 716,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 717,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 718,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 719,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 720,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 721,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 722,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 723,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 724,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 725,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 726,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 727,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 728,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 729,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 730,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 731,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 732,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 733,
+    "category": "traceability",
+    "type": "single",
+    "message": "扫码溯源怎么操作？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 734,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 735,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 736,
+    "category": "traceability",
+    "type": "single",
+    "message": "这个蔬菜从哪里来的？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 737,
+    "category": "traceability",
+    "type": "single",
+    "message": "检验检疫信息在哪？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 738,
+    "category": "traceability",
+    "type": "single",
+    "message": "产品的产地在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 739,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 740,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 741,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 742,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 743,
+    "category": "traceability",
+    "type": "single",
+    "message": "有质检报告吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 744,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 745,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 746,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么确保产品是正品？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 747,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 748,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 749,
+    "category": "traceability",
+    "type": "single",
+    "message": "溯源二维码在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 750,
+    "category": "traceability",
+    "type": "single",
+    "message": "能看到养殖过程吗？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 751,
+    "category": "traceability",
+    "type": "single",
+    "message": "冷链运输怎么保证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 752,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 753,
+    "category": "traceability",
+    "type": "single",
+    "message": "有没有有机认证？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 754,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 755,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 756,
+    "category": "traceability",
+    "type": "single",
+    "message": "生产日期是什么时候？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 757,
+    "category": "traceability",
+    "type": "single",
+    "message": "产品的产地在哪里？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 758,
+    "category": "traceability",
+    "type": "single",
+    "message": "保质期多长？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 759,
+    "category": "traceability",
+    "type": "single",
+    "message": "怎么查看溯源信息？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 760,
+    "category": "traceability",
+    "type": "single",
+    "message": "食品安全证书在哪看？",
+    "expectedBehavior": "Should explain traceability features or provide source info"
+  },
+  {
+    "id": 761,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt0_1769698808833",
+    "message": "推荐一些牛肉",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 762,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt0_1769698808833",
+    "message": "有没有更便宜的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 763,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt0_1769698808833",
+    "message": "最便宜那个多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 764,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt0_1769698808833",
+    "message": "帮我加入购物车",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 765,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt1_1769698808833",
+    "message": "有什么海鲜？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 766,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt1_1769698808833",
+    "message": "虾有几种？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 767,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt1_1769698808833",
+    "message": "推荐一种适合炒菜的",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 768,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt1_1769698808833",
+    "message": "产地是哪里的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 769,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt2_1769698808833",
+    "message": "我想买水果",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 770,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt2_1769698808833",
+    "message": "苹果有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 771,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt2_1769698808833",
+    "message": "有没有有机的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 772,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt2_1769698808833",
+    "message": "价格多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 773,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt3_1769698808833",
+    "message": "推荐今天的特价商品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 774,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt3_1769698808833",
+    "message": "第一个商品详细介绍一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 775,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt3_1769698808833",
+    "message": "有溯源信息吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 776,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt4_1769698808833",
+    "message": "蔬菜类有哪些",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 777,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt4_1769698808833",
+    "message": "叶菜类的推荐几个",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 778,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt4_1769698808833",
+    "message": "西兰花有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 779,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt4_1769698808833",
+    "message": "多少钱一斤？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 780,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt5_1769698808833",
+    "message": "猪肉有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 781,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt5_1769698808833",
+    "message": "五花肉推荐一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 782,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt5_1769698808833",
+    "message": "是黑猪肉吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 783,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt5_1769698808833",
+    "message": "买5斤多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 784,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt6_1769698808833",
+    "message": "你好",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 785,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt6_1769698808833",
+    "message": "我想问一下你们的食品安全标准",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 786,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt6_1769698808833",
+    "message": "有第三方检测吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 787,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt6_1769698808833",
+    "message": "报告能下载吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 788,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt7_1769698808833",
+    "message": "鸡蛋有卖吗？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 789,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt7_1769698808833",
+    "message": "土鸡蛋和普通鸡蛋有什么区别？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 790,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt7_1769698808833",
+    "message": "推荐土鸡蛋",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 791,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt7_1769698808833",
+    "message": "一箱多少个？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 792,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt8_1769698808833",
+    "message": "批量采购怎么操作？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 793,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt8_1769698808833",
+    "message": "最低起订量是多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 794,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt8_1769698808833",
+    "message": "有专属客服吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 795,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt8_1769698808833",
+    "message": "合同怎么签？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 796,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt9_1769698808833",
+    "message": "食用油推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 797,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt9_1769698808833",
+    "message": "花生油和菜籽油哪个好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 798,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt9_1769698808833",
+    "message": "5L装多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 799,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt9_1769698808833",
+    "message": "产地在哪？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 800,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt10_1769698808833",
+    "message": "有没有儿童食品？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 801,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt10_1769698808833",
+    "message": "有机奶推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 802,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt10_1769698808833",
+    "message": "适合3岁孩子喝吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 803,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt10_1769698808833",
+    "message": "配料表能看吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 804,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt11_1769698808833",
+    "message": "大米怎么选？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 805,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt11_1769698808833",
+    "message": "东北大米有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 806,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt11_1769698808833",
+    "message": "五常大米多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 807,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt11_1769698808833",
+    "message": "买10袋有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 808,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt12_1769698808833",
+    "message": "退货政策是什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 809,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt12_1769698808833",
+    "message": "生鲜可以退吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 810,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt12_1769698808833",
+    "message": "多长时间内能退？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 811,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt12_1769698808833",
+    "message": "退款多久到账？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 812,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt13_1769698808833",
+    "message": "配送范围是哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 813,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt13_1769698808833",
+    "message": "冷链配送到哪些城市？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 814,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt13_1769698808833",
+    "message": "同城配送要多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 815,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt13_1769698808833",
+    "message": "运费怎么算？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 816,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt14_1769698808833",
+    "message": "你能做什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 817,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt14_1769698808833",
+    "message": "推荐当季水果",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 818,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt14_1769698808833",
+    "message": "芒果是哪里产的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 819,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt14_1769698808833",
+    "message": "有没有组合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 820,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt15_1769698808833",
+    "message": "想买调味品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 821,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt15_1769698808833",
+    "message": "酱油推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 822,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt15_1769698808833",
+    "message": "有没有无添加的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 823,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt15_1769698808833",
+    "message": "和醋一起买有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 824,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt16_1769698808833",
+    "message": "坚果零食推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 825,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt16_1769698808833",
+    "message": "有没有混合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 826,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt16_1769698808833",
+    "message": "保质期多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 827,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt16_1769698808833",
+    "message": "适合送人吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 828,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt17_1769698808833",
+    "message": "豆制品有哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 829,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt17_1769698808833",
+    "message": "豆腐怎么保存？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 830,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt17_1769698808833",
+    "message": "有卤豆干吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 831,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt17_1769698808833",
+    "message": "热量高不高？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 832,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt18_1769698808833",
+    "message": "面条有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 833,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt18_1769698808833",
+    "message": "手工面推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 834,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt18_1769698808833",
+    "message": "宽面还是细面好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 835,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt18_1769698808833",
+    "message": "怎么煮好吃？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 836,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt19_1769698808833",
+    "message": "茶叶推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 837,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt19_1769698808833",
+    "message": "绿茶有哪些？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 838,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt19_1769698808833",
+    "message": "龙井多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 839,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt19_1769698808833",
+    "message": "是今年新茶吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 840,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt20_1769698808833",
+    "message": "推荐一些牛肉",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 841,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt20_1769698808833",
+    "message": "有没有更便宜的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 842,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt20_1769698808833",
+    "message": "最便宜那个多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 843,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt20_1769698808833",
+    "message": "帮我加入购物车",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 844,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt21_1769698808833",
+    "message": "有什么海鲜？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 845,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt21_1769698808833",
+    "message": "虾有几种？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 846,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt21_1769698808833",
+    "message": "推荐一种适合炒菜的",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 847,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt21_1769698808833",
+    "message": "产地是哪里的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 848,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt22_1769698808833",
+    "message": "我想买水果",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 849,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt22_1769698808833",
+    "message": "苹果有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 850,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt22_1769698808833",
+    "message": "有没有有机的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 851,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt22_1769698808833",
+    "message": "价格多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 852,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt23_1769698808833",
+    "message": "推荐今天的特价商品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 853,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt23_1769698808833",
+    "message": "第一个商品详细介绍一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 854,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt23_1769698808833",
+    "message": "有溯源信息吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 855,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt24_1769698808833",
+    "message": "蔬菜类有哪些",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 856,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt24_1769698808833",
+    "message": "叶菜类的推荐几个",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 857,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt24_1769698808833",
+    "message": "西兰花有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 858,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt24_1769698808833",
+    "message": "多少钱一斤？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 859,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt25_1769698808833",
+    "message": "猪肉有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 860,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt25_1769698808833",
+    "message": "五花肉推荐一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 861,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt25_1769698808833",
+    "message": "是黑猪肉吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 862,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt25_1769698808833",
+    "message": "买5斤多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 863,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt26_1769698808833",
+    "message": "你好",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 864,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt26_1769698808833",
+    "message": "我想问一下你们的食品安全标准",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 865,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt26_1769698808833",
+    "message": "有第三方检测吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 866,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt26_1769698808833",
+    "message": "报告能下载吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 867,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt27_1769698808833",
+    "message": "鸡蛋有卖吗？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 868,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt27_1769698808833",
+    "message": "土鸡蛋和普通鸡蛋有什么区别？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 869,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt27_1769698808833",
+    "message": "推荐土鸡蛋",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 870,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt27_1769698808833",
+    "message": "一箱多少个？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 871,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt28_1769698808833",
+    "message": "批量采购怎么操作？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 872,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt28_1769698808833",
+    "message": "最低起订量是多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 873,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt28_1769698808833",
+    "message": "有专属客服吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 874,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt28_1769698808833",
+    "message": "合同怎么签？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 875,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt29_1769698808833",
+    "message": "食用油推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 876,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt29_1769698808833",
+    "message": "花生油和菜籽油哪个好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 877,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt29_1769698808833",
+    "message": "5L装多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 878,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt29_1769698808833",
+    "message": "产地在哪？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 879,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt30_1769698808833",
+    "message": "有没有儿童食品？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 880,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt30_1769698808833",
+    "message": "有机奶推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 881,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt30_1769698808833",
+    "message": "适合3岁孩子喝吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 882,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt30_1769698808833",
+    "message": "配料表能看吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 883,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt31_1769698808833",
+    "message": "大米怎么选？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 884,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt31_1769698808833",
+    "message": "东北大米有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 885,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt31_1769698808833",
+    "message": "五常大米多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 886,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt31_1769698808833",
+    "message": "买10袋有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 887,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt32_1769698808833",
+    "message": "退货政策是什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 888,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt32_1769698808833",
+    "message": "生鲜可以退吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 889,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt32_1769698808833",
+    "message": "多长时间内能退？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 890,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt32_1769698808833",
+    "message": "退款多久到账？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 891,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt33_1769698808833",
+    "message": "配送范围是哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 892,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt33_1769698808833",
+    "message": "冷链配送到哪些城市？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 893,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt33_1769698808833",
+    "message": "同城配送要多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 894,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt33_1769698808833",
+    "message": "运费怎么算？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 895,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt34_1769698808833",
+    "message": "你能做什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 896,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt34_1769698808833",
+    "message": "推荐当季水果",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 897,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt34_1769698808833",
+    "message": "芒果是哪里产的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 898,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt34_1769698808833",
+    "message": "有没有组合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 899,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt35_1769698808833",
+    "message": "想买调味品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 900,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt35_1769698808833",
+    "message": "酱油推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 901,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt35_1769698808833",
+    "message": "有没有无添加的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 902,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt35_1769698808833",
+    "message": "和醋一起买有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 903,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt36_1769698808833",
+    "message": "坚果零食推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 904,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt36_1769698808833",
+    "message": "有没有混合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 905,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt36_1769698808833",
+    "message": "保质期多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 906,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt36_1769698808833",
+    "message": "适合送人吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 907,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt37_1769698808833",
+    "message": "豆制品有哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 908,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt37_1769698808833",
+    "message": "豆腐怎么保存？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 909,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt37_1769698808833",
+    "message": "有卤豆干吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 910,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt37_1769698808833",
+    "message": "热量高不高？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 911,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt38_1769698808833",
+    "message": "面条有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 912,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt38_1769698808833",
+    "message": "手工面推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 913,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt38_1769698808833",
+    "message": "宽面还是细面好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 914,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt38_1769698808833",
+    "message": "怎么煮好吃？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 915,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt39_1769698808833",
+    "message": "茶叶推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 916,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt39_1769698808833",
+    "message": "绿茶有哪些？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 917,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt39_1769698808833",
+    "message": "龙井多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 918,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt39_1769698808833",
+    "message": "是今年新茶吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 919,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt40_1769698808833",
+    "message": "推荐一些牛肉",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 920,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt40_1769698808833",
+    "message": "有没有更便宜的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 921,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt40_1769698808833",
+    "message": "最便宜那个多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 922,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt40_1769698808833",
+    "message": "帮我加入购物车",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 923,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt41_1769698808833",
+    "message": "有什么海鲜？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 924,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt41_1769698808833",
+    "message": "虾有几种？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 925,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt41_1769698808833",
+    "message": "推荐一种适合炒菜的",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 926,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt41_1769698808833",
+    "message": "产地是哪里的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 927,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt42_1769698808833",
+    "message": "我想买水果",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 928,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt42_1769698808833",
+    "message": "苹果有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 929,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt42_1769698808833",
+    "message": "有没有有机的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 930,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt42_1769698808833",
+    "message": "价格多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 931,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt43_1769698808833",
+    "message": "推荐今天的特价商品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 932,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt43_1769698808833",
+    "message": "第一个商品详细介绍一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 933,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 3,
+    "sessionId": "test_session_r2_mt43_1769698808833",
+    "message": "有溯源信息吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 934,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt44_1769698808833",
+    "message": "蔬菜类有哪些",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 935,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt44_1769698808833",
+    "message": "叶菜类的推荐几个",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 936,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt44_1769698808833",
+    "message": "西兰花有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 937,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt44_1769698808833",
+    "message": "多少钱一斤？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 938,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt45_1769698808833",
+    "message": "猪肉有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 939,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt45_1769698808833",
+    "message": "五花肉推荐一下",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 940,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt45_1769698808833",
+    "message": "是黑猪肉吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 941,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt45_1769698808833",
+    "message": "买5斤多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 942,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt46_1769698808833",
+    "message": "你好",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 943,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt46_1769698808833",
+    "message": "我想问一下你们的食品安全标准",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 944,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt46_1769698808833",
+    "message": "有第三方检测吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 945,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt46_1769698808833",
+    "message": "报告能下载吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 946,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt47_1769698808833",
+    "message": "鸡蛋有卖吗？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 947,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt47_1769698808833",
+    "message": "土鸡蛋和普通鸡蛋有什么区别？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 948,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt47_1769698808833",
+    "message": "推荐土鸡蛋",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 949,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt47_1769698808833",
+    "message": "一箱多少个？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 950,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt48_1769698808833",
+    "message": "批量采购怎么操作？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 951,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt48_1769698808833",
+    "message": "最低起订量是多少？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 952,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt48_1769698808833",
+    "message": "有专属客服吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 953,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt48_1769698808833",
+    "message": "合同怎么签？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 954,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt49_1769698808833",
+    "message": "食用油推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 955,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt49_1769698808833",
+    "message": "花生油和菜籽油哪个好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 956,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt49_1769698808833",
+    "message": "5L装多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 957,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt49_1769698808833",
+    "message": "产地在哪？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 958,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt50_1769698808833",
+    "message": "有没有儿童食品？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 959,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt50_1769698808833",
+    "message": "有机奶推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 960,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt50_1769698808833",
+    "message": "适合3岁孩子喝吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 961,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt50_1769698808833",
+    "message": "配料表能看吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 962,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt51_1769698808833",
+    "message": "大米怎么选？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 963,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt51_1769698808833",
+    "message": "东北大米有吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 964,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt51_1769698808833",
+    "message": "五常大米多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 965,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt51_1769698808833",
+    "message": "买10袋有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 966,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt52_1769698808833",
+    "message": "退货政策是什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 967,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt52_1769698808833",
+    "message": "生鲜可以退吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 968,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt52_1769698808833",
+    "message": "多长时间内能退？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 969,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt52_1769698808833",
+    "message": "退款多久到账？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 970,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt53_1769698808833",
+    "message": "配送范围是哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 971,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt53_1769698808833",
+    "message": "冷链配送到哪些城市？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 972,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt53_1769698808833",
+    "message": "同城配送要多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 973,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt53_1769698808833",
+    "message": "运费怎么算？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 974,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt54_1769698808833",
+    "message": "你能做什么？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 975,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt54_1769698808833",
+    "message": "推荐当季水果",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 976,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt54_1769698808833",
+    "message": "芒果是哪里产的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 977,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt54_1769698808833",
+    "message": "有没有组合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 978,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt55_1769698808833",
+    "message": "想买调味品",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 979,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt55_1769698808833",
+    "message": "酱油推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 980,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt55_1769698808833",
+    "message": "有没有无添加的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 981,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt55_1769698808833",
+    "message": "和醋一起买有优惠吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 982,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt56_1769698808833",
+    "message": "坚果零食推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 983,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt56_1769698808833",
+    "message": "有没有混合装？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 984,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt56_1769698808833",
+    "message": "保质期多久？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 985,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt56_1769698808833",
+    "message": "适合送人吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 986,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt57_1769698808833",
+    "message": "豆制品有哪些？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 987,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt57_1769698808833",
+    "message": "豆腐怎么保存？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 988,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt57_1769698808833",
+    "message": "有卤豆干吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 989,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt57_1769698808833",
+    "message": "热量高不高？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 990,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt58_1769698808833",
+    "message": "面条有什么种类？",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 991,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt58_1769698808833",
+    "message": "手工面推荐",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 992,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt58_1769698808833",
+    "message": "宽面还是细面好？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 993,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt58_1769698808833",
+    "message": "怎么煮好吃？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 994,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt59_1769698808833",
+    "message": "茶叶推荐",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 995,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt59_1769698808833",
+    "message": "绿茶有哪些？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 996,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt59_1769698808833",
+    "message": "龙井多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 997,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 3,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt59_1769698808833",
+    "message": "是今年新茶吗？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 998,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 0,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt60_1769698808833",
+    "message": "推荐一些牛肉",
+    "expectedBehavior": "Should understand initial topic"
+  },
+  {
+    "id": 999,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 1,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt60_1769698808833",
+    "message": "有没有更便宜的？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  },
+  {
+    "id": 1000,
+    "category": "multi_turn",
+    "type": "multi_turn",
+    "turnIndex": 2,
+    "totalTurns": 4,
+    "sessionId": "test_session_r2_mt60_1769698808833",
+    "message": "最便宜那个多少钱？",
+    "expectedBehavior": "Should maintain context from previous turns"
+  }
+]

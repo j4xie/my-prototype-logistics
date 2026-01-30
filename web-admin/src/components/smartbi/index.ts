@@ -21,6 +21,12 @@ export { default as CategoryStructureComparisonChart } from './CategoryStructure
 export { default as RadarChart } from './RadarChart.vue';
 export { default as NestedDonutChart } from './NestedDonutChart.vue';
 
+// Dynamic rendering components
+export { default as DynamicChartRenderer } from './DynamicChartRenderer.vue';
+export { default as DynamicKPIRow } from './DynamicKPIRow.vue';
+export { default as DynamicRankingsRow } from './DynamicRankingsRow.vue';
+export { default as DynamicChartsSection } from './DynamicChartsSection.vue';
+
 // Layout Components
 export { default as DashboardBuilder } from './DashboardBuilder.vue';
 

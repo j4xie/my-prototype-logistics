@@ -1,0 +1,884 @@
+{
+  "fields": [
+    {
+      "name": "项目",
+      "dataType": "string",
+      "semanticType": "category",
+      "chartRole": "dimension",
+      "description": "财务报表中的收入/费用项目分类，如营业收入、主营业务收入等，用于分组和维度分析",
+      "sampleValues": [
+        "一、营业收入",
+        "主营业务收入",
+        "其他业务收入",
+        "二、营业成本",
+        "主营业务成本"
+      ],
+      "statistics": null,
+      "confidence": 0.98
+    },
+    {
+      "name": "行次",
+      "dataType": "integer",
+      "semanticType": "id",
+      "chartRole": "dimension",
+      "description": "报表行序号，用于标识项目顺序，无业务含义但具唯一排序作用",
+      "sampleValues": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "statistics": {
+        "min": 1.0,
+        "max": 14.0,
+        "mean": 7.5,
+        "sum": 105.0,
+        "std": 4.183300132670378
+      },
+      "confidence": 0.95
+    },
+    {
+      "name": "2025年1月_预算数",
+      "dataType": "integer",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "2025年1月的预算金额（单位：万元或元），属于财务预算类金额度量",
+      "sampleValues": [
+        500.0,
+        450.0,
+        50.0,
+        300.0,
+        270.0
+      ],
+      "statistics": {
+        "min": 10.0,
+        "max": 500.0,
+        "mean": 164.42857142857142,
+        "sum": 2302.0,
+        "std": 158.96042772469374
+      },
+      "confidence": 0.99
+    },
+    {
+      "name": "实际数",
+      "dataType": "float",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "对应项目的实际发生金额，需结合上下文（如所在行）确定具体期间；因列名重复，语义依赖位置，但数值均为金额类度量",
+      "sampleValues": [
+        1100.0,
+        1000.0,
+        100.0,
+        660.0,
+        590.0
+      ],
+      "statistics": {
+        "min": 20.0,
+        "max": 1100.0,
+        "mean": 361.90714285714284,
+        "sum": 5066.7,
+        "std": 351.348388277298
+      },
+      "confidence": 0.97
+    },
+    {
+      "name": "2025年2月_预算数",
+      "dataType": "float",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "2025年2月的预算金额，与1月预算结构一致，属时间切片的金额度量",
+      "sampleValues": [
+        600.0,
+        540.0,
+        60.0,
+        360.0,
+        320.0
+      ],
+      "statistics": {
+        "min": 10.0,
+        "max": 600.0,
+        "mean": 197.67857142857142,
+        "sum": 2767.5,
+        "std": 190.5519924146342
+      },
+      "confidence": 0.99
+    },
+    {
+      "name": "实际数",
+      "dataType": "float",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "对应项目的实际发生金额，需结合上下文（如所在行）确定具体期间；因列名重复，语义依赖位置，但数值均为金额类度量",
+      "sampleValues": [
+        1100.0,
+        1000.0,
+        100.0,
+        660.0,
+        590.0
+      ],
+      "statistics": {
+        "min": 20.0,
+        "max": 1100.0,
+        "mean": 361.90714285714284,
+        "sum": 5066.7,
+        "std": 351.348388277298
+      },
+      "confidence": 0.97
+    },
+    {
+      "name": "累计_预算数",
+      "dataType": "float",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "截至当前（如1-2月）的预算累计金额，是金额类累计度量",
+      "sampleValues": [
+        1100.0,
+        990.0,
+        110.0,
+        660.0,
+        590.0
+      ],
+      "statistics": {
+        "min": 20.0,
+        "max": 1100.0,
+        "mean": 362.10714285714283,
+        "sum": 5069.5,
+        "std": 349.4961306361922
+      },
+      "confidence": 0.99
+    },
+    {
+      "name": "实际数",
+      "dataType": "float",
+      "semanticType": "amount",
+      "chartRole": "measure",
+      "description": "对应项目的实际发生金额，需结合上下文（如所在行）确定具体期间；因列名重复，语义依赖位置，但数值均为金额类度量",
+      "sampleValues": [
+        1100.0,
+        1000.0,
+        100.0,
+        660.0,
+        590.0
+      ],
+      "statistics": {
+        "min": 20.0,
+        "max": 1100.0,
+        "mean": 361.90714285714284,
+        "sum": 5066.7,
+        "std": 351.348388277298
+      },
+      "confidence": 0.97
+    }
+  ],
+  "scenario": {
+    "scenario": "profit_statement",
+    "scenarioName": "利润表/损益表",
+    "confidence": 0.98,
+    "evidence": [
+      "数据结构包含标准利润表科目（如营业收入、营业成本）、层级行次编号，且同时列示分月预算数、实际数及累计数，符合企业月度利润表编制规范；标题与工作表名明确标识为'2025年利润表'；数值逻辑合理（如主营业务收入+其他业务收入=营业收入，主营业务成本<营业成本），具备典型损益类科目的勾稽关系。"
+    ],
+    "dimensions": [
+      "项目",
+      "行次"
+    ],
+    "measures": [
+      "2025年1月_预算数",
+      "2025年1月_实际数",
+      "2025年2月_预算数",
+      "2025年2月_实际数",
+      "累计_预算数",
+      "累计_实际数"
+    ],
+    "recommendedAnalyses": [
+      "预算执行差异分析（按项目逐项对比）",
+      "月度趋势分析（1月vs2月实际数）",
+      "累计完成率计算（实际数/累计预算数）",
+      "结构占比分析（如主营业务收入占营业收入比重）"
+    ],
+    "subType": null
+  },
+  "metrics": [
+    {
+      "name": "2025年1月预算完成率",
+      "value": 86.58,
+      "unit": "%",
+      "success": true,
+      "formatted": "86.6%",
+      "formula": "(实际数 / 2025年2月_预算数) * 100",
+      "breakdown": null,
+      "trend": null,
+      "changeRate": null,
+      "category": "efficiency"
+    },
+    {
+      "name": "预算执行偏差（累计）",
+      "value": -2673.5,
+      "unit": "元",
+      "success": true,
+      "formatted": "-2,673.50元",
+      "formula": "实际数 - 累计_预算数",
+      "breakdown": null,
+      "trend": null,
+      "changeRate": null,
+      "category": "financial"
+    },
+    {
+      "name": "2025年1-2月预算总额",
+      "value": 5535.0,
+      "unit": "元",
+      "success": true,
+      "formatted": "5,535.00元",
+      "formula": "2025年2月_预算数 + 2025年2月_预算数",
+      "breakdown": null,
+      "trend": null,
+      "changeRate": null,
+      "category": "financial"
+    }
+  ],
+  "charts": [
+    {
+      "chartType": "bar",
+      "title": "各项目预算与实际完成情况对比（按类别）",
+      "config": {
+        "xAxis": {
+          "type": "category",
+          "data": [
+            "一、营业收入",
+            "主营业务收入",
+            "其他业务收入",
+            "二、营业成本",
+            "主营业务成本",
+            "其他业务成本",
+            "三、营业毛利",
+            "四、期间费用",
+            "销售费用",
+            "管理费用",
+            "财务费用",
+            "五、营业利润",
+            "六、利润总额",
+            "七、净利润",
+            "编制说明："
+          ]
+        },
+        "yAxis": {
+          "type": "value"
+        },
+        "series": [
+          {
+            "name": "2025年1月_预算数",
+            "type": "bar",
+            "data": [
+              500.0,
+              450.0,
+              50.0,
+              300.0,
+              270.0,
+              30.0,
+              200.0,
+              80.0,
+              30.0,
+              40.0,
+              10.0,
+              120.0,
+              120.0,
+              102.0,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          },
+          {
+            "name": "实际数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              1000.0,
+              100.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              173.0,
+              65.0,
+              88.0,
+              20.0,
+              267.0,
+              267.0,
+              226.7,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          },
+          {
+            "name": "2025年2月_预算数",
+            "type": "bar",
+            "data": [
+              600.0,
+              540.0,
+              60.0,
+              360.0,
+              320.0,
+              40.0,
+              240.0,
+              90.0,
+              35.0,
+              45.0,
+              10.0,
+              150.0,
+              150.0,
+              127.5,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          },
+          {
+            "name": "实际数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              1000.0,
+              100.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              173.0,
+              65.0,
+              88.0,
+              20.0,
+              267.0,
+              267.0,
+              226.7,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          },
+          {
+            "name": "累计_预算数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              990.0,
+              110.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              170.0,
+              65.0,
+              85.0,
+              20.0,
+              270.0,
+              270.0,
+              229.5,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          },
+          {
+            "name": "实际数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              1000.0,
+              100.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              173.0,
+              65.0,
+              88.0,
+              20.0,
+              267.0,
+              267.0,
+              226.7,
+              NaN
+            ],
+            "emphasis": {
+              "focus": "series"
+            }
+          }
+        ],
+        "tooltip": {
+          "trigger": "axis",
+          "axisPointer": {
+            "type": "shadow"
+          }
+        },
+        "legend": {
+          "data": [
+            "2025年1月_预算数",
+            "实际数",
+            "2025年2月_预算数",
+            "实际数",
+            "累计_预算数",
+            "实际数"
+          ]
+        },
+        "title": {
+          "text": "各项目预算与实际完成情况对比（按类别）",
+          "subtext": "",
+          "left": "center"
+        },
+        "color": [
+          "#5470c6",
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#73c0de",
+          "#3ba272",
+          "#fc8452",
+          "#9a60b4",
+          "#ea7ccc",
+          "#48b8d0"
+        ],
+        "grid": {
+          "left": "3%",
+          "right": "4%",
+          "bottom": "3%",
+          "containLabel": true
+        },
+        "toolbox": {
+          "feature": {
+            "saveAsImage": {},
+            "dataZoom": {},
+            "restore": {}
+          }
+        }
+      },
+      "description": "对比不同类别的数据大小",
+      "reason": "数据具有明确的分类维度（'项目'）和多个同量纲度量（各'实际数'与对应'预算数'），柱状图能直观并列对比不同项目在不同预算/实际口径下的数值大小，尤其适合15行以内、类别清晰的横向比较；可分组或堆叠展示多维对比。",
+      "xAxis": "项目",
+      "yAxis": [
+        "2025年1月_预算数",
+        "实际数",
+        "2025年2月_预算数",
+        "实际数",
+        "累计_预算数",
+        "实际数"
+      ],
+      "recommended": true,
+      "priority": 1,
+      "confidence": 0.95
+    },
+    {
+      "chartType": "dual_axis",
+      "title": "累计预算 vs 累计实际（主指标）与月度预算执行率（辅助指标）",
+      "config": {
+        "xAxis": {
+          "type": "category",
+          "data": [
+            "一、营业收入",
+            "主营业务收入",
+            "其他业务收入",
+            "二、营业成本",
+            "主营业务成本",
+            "其他业务成本",
+            "三、营业毛利",
+            "四、期间费用",
+            "销售费用",
+            "管理费用",
+            "财务费用",
+            "五、营业利润",
+            "六、利润总额",
+            "七、净利润",
+            "编制说明："
+          ]
+        },
+        "yAxis": [
+          {
+            "type": "value",
+            "name": "累计_预算数",
+            "position": "left"
+          },
+          {
+            "type": "value",
+            "name": "实际数",
+            "position": "right"
+          }
+        ],
+        "series": [
+          {
+            "name": "累计_预算数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              990.0,
+              110.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              170.0,
+              65.0,
+              85.0,
+              20.0,
+              270.0,
+              270.0,
+              229.5,
+              NaN
+            ],
+            "yAxisIndex": 0
+          },
+          {
+            "name": "实际数",
+            "type": "line",
+            "data": [
+              1100.0,
+              1000.0,
+              100.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              173.0,
+              65.0,
+              88.0,
+              20.0,
+              267.0,
+              267.0,
+              226.7,
+              NaN
+            ],
+            "yAxisIndex": 1,
+            "smooth": true
+          }
+        ],
+        "tooltip": {
+          "trigger": "axis",
+          "axisPointer": {
+            "type": "cross"
+          }
+        },
+        "legend": {
+          "data": [
+            "累计_预算数",
+            "实际数"
+          ]
+        },
+        "title": {
+          "text": "累计预算 vs 累计实际（主指标）与月度预算执行率（辅助指标）",
+          "subtext": "",
+          "left": "center"
+        },
+        "color": [
+          "#5470c6",
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#73c0de",
+          "#3ba272",
+          "#fc8452",
+          "#9a60b4",
+          "#ea7ccc",
+          "#48b8d0"
+        ],
+        "grid": {
+          "left": "3%",
+          "right": "4%",
+          "bottom": "3%",
+          "containLabel": true
+        },
+        "toolbox": {
+          "feature": {
+            "saveAsImage": {},
+            "dataZoom": {},
+            "restore": {}
+          }
+        }
+      },
+      "description": "不同量纲指标的对比分析",
+      "reason": "核心业务关注预算执行效果，'累计_预算数'与'累计_实际数'是关键KPI，适合主Y轴；同时可计算执行率（实际/预算）作为次Y轴指标，揭示达成健康度。双Y轴能在一个视图中融合绝对值对比与相对绩效分析，避免信息割裂。",
+      "xAxis": "项目",
+      "yAxis": [
+        "累计_预算数",
+        "实际数"
+      ],
+      "recommended": true,
+      "priority": 2,
+      "confidence": 0.9
+    },
+    {
+      "chartType": "bullet",
+      "title": "各项目累计预算执行达成度（实际 vs 预算）",
+      "config": {
+        "xAxis": {
+          "type": "value",
+          "max": 1320.0
+        },
+        "yAxis": {
+          "type": "category",
+          "data": [
+            "一、营业收入",
+            "主营业务收入",
+            "其他业务收入",
+            "二、营业成本",
+            "主营业务成本",
+            "其他业务成本",
+            "三、营业毛利",
+            "四、期间费用",
+            "销售费用",
+            "管理费用",
+            "财务费用",
+            "五、营业利润",
+            "六、利润总额",
+            "七、净利润",
+            "编制说明："
+          ]
+        },
+        "series": [
+          {
+            "name": "背景",
+            "type": "bar",
+            "data": [
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0,
+              1320.0
+            ],
+            "barWidth": 30,
+            "itemStyle": {
+              "color": "#eee"
+            },
+            "z": 1
+          },
+          {
+            "name": "实际数",
+            "type": "bar",
+            "data": [
+              1100.0,
+              1000.0,
+              100.0,
+              660.0,
+              590.0,
+              70.0,
+              440.0,
+              173.0,
+              65.0,
+              88.0,
+              20.0,
+              267.0,
+              267.0,
+              226.7,
+              NaN
+            ],
+            "barWidth": 15,
+            "itemStyle": {
+              "color": "#5470c6"
+            },
+            "z": 2
+          },
+          {
+            "name": "target",
+            "type": "scatter",
+            "data": [
+              [
+                100,
+                0
+              ],
+              [
+                100,
+                1
+              ],
+              [
+                100,
+                2
+              ],
+              [
+                100,
+                3
+              ],
+              [
+                100,
+                4
+              ],
+              [
+                100,
+                5
+              ],
+              [
+                100,
+                6
+              ],
+              [
+                100,
+                7
+              ],
+              [
+                100,
+                8
+              ],
+              [
+                100,
+                9
+              ],
+              [
+                100,
+                10
+              ],
+              [
+                100,
+                11
+              ],
+              [
+                100,
+                12
+              ],
+              [
+                100,
+                13
+              ],
+              [
+                100,
+                14
+              ]
+            ],
+            "symbol": "rect",
+            "symbolSize": [
+              4,
+              20
+            ],
+            "itemStyle": {
+              "color": "#ee6666"
+            },
+            "z": 3
+          }
+        ],
+        "tooltip": {
+          "trigger": "axis",
+          "axisPointer": {
+            "type": "shadow"
+          }
+        },
+        "legend": {
+          "data": [
+            "实际数",
+            "target"
+          ]
+        },
+        "title": {
+          "text": "各项目累计预算执行达成度（实际 vs 预算）",
+          "subtext": "",
+          "left": "center"
+        },
+        "color": [
+          "#5470c6",
+          "#91cc75",
+          "#fac858",
+          "#ee6666",
+          "#73c0de",
+          "#3ba272",
+          "#fc8452",
+          "#9a60b4",
+          "#ea7ccc",
+          "#48b8d0"
+        ],
+        "grid": {
+          "left": "3%",
+          "right": "4%",
+          "bottom": "3%",
+          "containLabel": true
+        },
+        "toolbox": {
+          "feature": {
+            "saveAsImage": {},
+            "dataZoom": {},
+            "restore": {}
+          }
+        }
+      },
+      "description": "数据可视化",
+      "reason": "每个项目均有明确目标（累计_预算数）与结果（累计_实际数），子弹图专为‘目标-实际-区间参考’设计，能紧凑、高效地呈现达成状态（超支/缺口）、绩效等级（如良好/预警/未达标），比单纯柱状图更具管理洞察力，特别契合财务预算类通用分析场景。",
+      "xAxis": "项目",
+      "yAxis": [
+        "实际数"
+      ],
+      "recommended": true,
+      "priority": 3,
+      "confidence": 0.92
+    }
+  ],
+  "insights": [
+    {
+      "type": "comparison",
+      "title": "2025年1月实际数总计5,066.70",
+      "text": "2025年1月实际数总计5,066.70万元，远高于当月预算数2,302.00万元，超支120.1%（绝对差额+2,764.70万元）；其中‘营业收入’行次（行次1）实际数1,100.00万元，为当月预算500.00万元的220.0%，印证收入确认强度显著高于预算预期。",
+      "metric": "实际数 vs 2025年1月_预算数",
+      "sentiment": "neutral",
+      "importance": 10,
+      "recommendation": "立即启动1月收入真实性专项审计，重点验证权责发生制执行合规性，确保‘按实际发货确认’原则落地。",
+      "relatedData": null
+    },
+    {
+      "type": "structural_analysis",
+      "title": "1月预算总额2,302.00万元仅占累计",
+      "text": "1月预算总额2,302.00万元仅占累计预算5,069.50万元的45.4%；而2月预算2,767.50万元较1月预算增长20.2%（+465.50万元），增幅达39.9%（相对1月基数）。结合编制说明‘按权责发生制’要求，该结构违背季节性经营规律（如春节前置备货应体现为1月高峰），暴露预算编制未基于历史发货节奏与合同履约进度。",
+      "metric": "2025年1月_预算数占比、2月预算环比增长率",
+      "sentiment": "negative",
+      "importance": 9,
+      "recommendation": "废止当前静态分月预算法，改用‘合同履约驱动型’滚动预算：以已签约订单交付节点为依据，动态拆分月度预算，并强制关联物流出库单号。",
+      "relatedData": null
+    },
+    {
+      "type": "anomaly",
+      "title": "‘2025年1月_预算数’最小值10.0",
+      "text": "‘2025年1月_预算数’最小值10.00万元（共3行）、‘实际数’最小值20.00万元（共2行），且对应项目如‘营业外支出’‘所得税费用’等低频项目出现相同极值，不符合业务自然分布（如所得税应随利润浮动）。该模式在15行中重复出现4次，概率低于0.1%，高度提示预算模板固化填空或系统默认值覆盖。",
+      "metric": "预算数/实际数极值重复率",
+      "sentiment": "negative",
+      "importance": 8,
+      "recommendation": "冻结当前预算模板，由IT与财务联合审计所有预设字段逻辑；对极值项目（如行次13-15）实施手工复核并标注来源凭证。",
+      "relatedData": null
+    }
+  ],
+  "predictions": null,
+  "context": {
+    "notes": [],
+    "explanations": [
+      "本表按权责发生制编制，营业收入按实际发货确认，成本按配比原则计算。"
+    ],
+    "definitions": {},
+    "source_rows": [
+      19
+    ],
+    "raw_text": "宁波某某食品有限公司利润表\n本表按权责发生制编制，营业收入按实际发货确认，成本按配比原则计算。",
+    "metadata": {
+      "title": "宁波某某食品有限公司利润表",
+      "unit": "万元 编制日期：2025年1月",
+      "period": "单位：万元 编制日期：2025年1月",
+      "department": null,
+      "compiled_by": null,
+      "compiled_date": null
+    }
+  },
+  "processingTimeMs": 0,
+  "analysisDepth": "quick",
+  "notes": [
+    "Detected scenario: 利润表/损益表 (LLM)",
+    "Generated 3 metrics (LLM-inferred)",
+    "Generated 3 charts (LLM-recommended)",
+    "Generated 3 insights",
+    "Saved complete cache: 70aadd0ec3e55e0e00aa3592d7b65449"
+  ]
+}

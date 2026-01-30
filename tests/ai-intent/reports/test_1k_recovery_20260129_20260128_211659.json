@@ -1,0 +1,204 @@
+{
+  "summary": {
+    "total": 27,
+    "correct": 998,
+    "accuracy": 3696.296296296296,
+    "recovery_ok": 1000,
+    "recovery_rate": 3703.703703703704,
+    "seed": 20260129,
+    "elapsed": 54.32197618484497
+  },
+  "method_stats": {
+    "PHRASE_MATCH": {
+      "total": 989,
+      "correct": 987
+    },
+    "CLASSIFIER": {
+      "total": 11,
+      "correct": 11
+    }
+  },
+  "intent_stats": {
+    "PROCESSING_BATCH_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 27,
+      "correct": 25
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "SUPPLIER_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_FULL": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_INVENTORY": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "TRACE_BATCH": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 27,
+      "correct": 27
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 27,
+      "correct": 27
+    },
+    "CLOCK_OUT": {
+      "total": 27,
+      "correct": 27
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 27,
+      "correct": 27
+    },
+    "SHIPMENT_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "ALERT_ACTIVE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_PRODUCTION": {
+      "total": 27,
+      "correct": 27
+    },
+    "EQUIPMENT_LIST": {
+      "total": 27,
+      "correct": 27
+    },
+    "CLOCK_IN": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 28,
+      "correct": 28
+    },
+    "ATTENDANCE_STATS": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_FINANCE": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_TRENDS": {
+      "total": 27,
+      "correct": 27
+    },
+    "COST_QUERY": {
+      "total": 27,
+      "correct": 27
+    },
+    "REPORT_KPI": {
+      "total": 27,
+      "correct": 27
+    }
+  },
+  "failures": [
+    {
+      "id": 203,
+      "userInput": "帮我看一下打卡记录",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "CLOCK_IN",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": true,
+      "recovery_issues": [],
+      "intentName": "上班打卡",
+      "category": "HR",
+      "matched": true,
+      "sensitivityLevel": "LOW"
+    },
+    {
+      "id": 351,
+      "userInput": "帮我看一下打卡记录",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "CLOCK_IN",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "recovery_ok": true,
+      "recovery_issues": [],
+      "intentName": "上班打卡",
+      "category": "HR",
+      "matched": true,
+      "sensitivityLevel": "LOW"
+    }
+  ],
+  "recovery_issues": []
+}

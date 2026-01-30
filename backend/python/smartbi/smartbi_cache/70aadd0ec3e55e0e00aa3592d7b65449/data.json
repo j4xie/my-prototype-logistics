@@ -1,0 +1,176 @@
+{
+  "sheet_name": "2025年利润表",
+  "sheet_index": 0,
+  "row_count": 15,
+  "col_count": 8,
+  "columns": [
+    "项目",
+    "行次",
+    "2025年1月_预算数",
+    "实际数",
+    "2025年2月_预算数",
+    "实际数",
+    "累计_预算数",
+    "实际数"
+  ],
+  "data_types": {
+    "项目": "object",
+    "行次": "object",
+    "2025年1月_预算数": "float64",
+    "实际数": "float64",
+    "2025年2月_预算数": "float64",
+    "累计_预算数": "float64"
+  },
+  "statistics": {
+    "项目": {
+      "non_null_count": 15,
+      "null_count": 0,
+      "unique_count": 15
+    },
+    "行次": {
+      "non_null_count": 15,
+      "null_count": 0,
+      "unique_count": 15
+    },
+    "2025年1月_预算数": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 12,
+      "min": 10.0,
+      "max": 500.0,
+      "mean": 164.42857142857142,
+      "sum": 2302.0
+    },
+    "实际数": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 13,
+      "min": 10.0,
+      "max": 520.0,
+      "mean": 171.14285714285714,
+      "sum": 2396.0
+    },
+    "2025年2月_预算数": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 13,
+      "min": 10.0,
+      "max": 600.0,
+      "mean": 197.67857142857142,
+      "sum": 2767.5
+    },
+    "实际数_5": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 13,
+      "min": 10.0,
+      "max": 580.0,
+      "mean": 190.7642857142857,
+      "sum": 2670.7
+    },
+    "累计_预算数": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 13,
+      "min": 20.0,
+      "max": 1100.0,
+      "mean": 362.10714285714283,
+      "sum": 5069.5
+    },
+    "实际数_7": {
+      "non_null_count": 14,
+      "null_count": 1,
+      "unique_count": 13,
+      "min": 20.0,
+      "max": 1100.0,
+      "mean": 361.90714285714284,
+      "sum": 5066.7
+    }
+  },
+  "raw_stats": {
+    "non_empty_row_count": 19,
+    "avg_fill_rate": 0.8421052631578947,
+    "potential_data_start_row": 4,
+    "first_10_rows_summary": [
+      {
+        "row": 0,
+        "non_empty": 1,
+        "numeric": 0,
+        "fill_rate": 0.12
+      },
+      {
+        "row": 1,
+        "non_empty": 2,
+        "numeric": 0,
+        "fill_rate": 0.25
+      },
+      {
+        "row": 2,
+        "non_empty": 5,
+        "numeric": 0,
+        "fill_rate": 0.62
+      },
+      {
+        "row": 3,
+        "non_empty": 6,
+        "numeric": 0,
+        "fill_rate": 0.75
+      },
+      {
+        "row": 4,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 5,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 6,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 7,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 8,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 9,
+        "non_empty": 8,
+        "numeric": 7,
+        "fill_rate": 1.0
+      }
+    ]
+  },
+  "context": {
+    "notes": [],
+    "explanations": [
+      "本表按权责发生制编制，营业收入按实际发货确认，成本按配比原则计算。"
+    ],
+    "definitions": {},
+    "source_rows": [
+      19
+    ],
+    "raw_text": "宁波某某食品有限公司利润表\n本表按权责发生制编制，营业收入按实际发货确认，成本按配比原则计算。",
+    "metadata": {
+      "title": "宁波某某食品有限公司利润表",
+      "unit": "万元 编制日期：2025年1月",
+      "period": "单位：万元 编制日期：2025年1月",
+      "department": null,
+      "compiled_by": null,
+      "compiled_date": null
+    }
+  }
+}

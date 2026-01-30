@@ -2,8 +2,9 @@
 /**
  * SmartBI 财务分析页面
  * 提供财务数据分析，包含利润、成本、应收、应付、预算等模块
+ * 使用动态渲染组件替代硬编码图表
  */
-import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
 import {
@@ -12,7 +13,7 @@ import {
   getUploadTableData,
   type UploadHistoryItem,
   type DynamicAnalysisResponse,
-  type TableDataResponse
+  type TableDataResponse,
 } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
@@ -25,19 +26,21 @@ import {
   Warning,
   Calendar,
   View,
-  Close
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import DynamicKPIRow from '@/components/smartbi/DynamicKPIRow.vue';
+import DynamicChartsSection from '@/components/smartbi/DynamicChartsSection.vue';
+import type { KPICard, ChartConfig, DynamicChartConfig, LegacyChartConfig } from '@/types/smartbi';
 
 const authStore = useAuthStore();
-const factoryId = computed(() => authStore.factoryId);
+// 使用 authStore 的 factoryId，如果为空则使用默认值 (用于测试/演示)
+const factoryId = computed(() => authStore.factoryId || 'F001');
 
 // 分析类型
 type AnalysisType = 'profit' | 'cost' | 'receivable' | 'payable' | 'budget';
 const analysisType = ref<AnalysisType>('profit');
 
-// 日期范围
-const dateRange = ref<[Date, Date] | null>(null);
+// 日期范围 (使用 value-format="YYYY-MM-DD" 后，值为字符串数组)
+const dateRange = ref<[string, string] | [Date, Date] | null>(null);
 
 // 日期快捷选项
 const shortcuts = [
@@ -48,7 +51,7 @@ const shortcuts = [
       const start = new Date();
       start.setTime(start.getTime() - 3600 * 1000 * 24 * 7);
       return [start, end];
-    }
+    },
   },
   {
     text: '最近30天',
@@ -57,7 +60,7 @@ const shortcuts = [
       const start = new Date();
       start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
       return [start, end];
-    }
+    },
   },
   {
     text: '本月',
@@ -65,7 +68,7 @@ const shortcuts = [
       const end = new Date();
       const start = new Date(end.getFullYear(), end.getMonth(), 1);
       return [start, end];
-    }
+    },
   },
   {
     text: '本季度',
@@ -74,7 +77,7 @@ const shortcuts = [
       const quarter = Math.floor(end.getMonth() / 3);
       const start = new Date(end.getFullYear(), quarter * 3, 1);
       return [start, end];
-    }
+    },
   },
   {
     text: '本年',
@@ -82,8 +85,8 @@ const shortcuts = [
       const end = new Date();
       const start = new Date(end.getFullYear(), 0, 1);
       return [start, end];
-    }
-  }
+    },
+  },
 ];
 
 // 加载状态
@@ -106,62 +109,14 @@ const previewData = ref<TableDataResponse>({
   total: 0,
   page: 0,
   size: 50,
-  totalPages: 0
+  totalPages: 0,
 });
 
-// 财务 KPI 数据
-interface FinanceKPI {
-  // 利润相关
-  grossProfit: number;
-  grossProfitMargin: number;
-  netProfit: number;
-  netProfitMargin: number;
-  // 成本相关
-  totalCost: number;
-  costGrowth: number;
-  materialCost: number;
-  laborCost: number;
-  overheadCost: number;
-  // 应收相关
-  totalReceivable: number;
-  receivableAge30: number;
-  receivableAge60: number;
-  receivableAge90Plus: number;
-  // 应付相关
-  totalPayable: number;
-  payableAge30: number;
-  payableAge60: number;
-  payableAge90Plus: number;
-  // 预算相关
-  budgetTotal: number;
-  budgetUsed: number;
-  budgetRemaining: number;
-  budgetUsageRate: number;
-}
+// 动态 KPI 和图表
+const kpiCards = ref<KPICard[]>([]);
+const allCharts = ref<Record<string, ChartConfig>>({});
 
-const kpiData = ref<FinanceKPI>({
-  grossProfit: 0,
-  grossProfitMargin: 0,
-  netProfit: 0,
-  netProfitMargin: 0,
-  totalCost: 0,
-  costGrowth: 0,
-  materialCost: 0,
-  laborCost: 0,
-  overheadCost: 0,
-  totalReceivable: 0,
-  receivableAge30: 0,
-  receivableAge60: 0,
-  receivableAge90Plus: 0,
-  totalPayable: 0,
-  payableAge30: 0,
-  payableAge60: 0,
-  payableAge90Plus: 0,
-  budgetTotal: 0,
-  budgetUsed: 0,
-  budgetRemaining: 0,
-  budgetUsageRate: 0
-});
+const hasCharts = computed(() => Object.keys(allCharts.value).length > 0);
 
 // 预警列表
 interface WarningItem {
@@ -172,86 +127,28 @@ interface WarningItem {
 }
 const warnings = ref<WarningItem[]>([]);
 
-// 图表配置 (从 API 获取)
-interface ChartConfig {
-  chartType: string;
-  title?: string;
-  xAxisField?: string;
-  yAxisField?: string;
-  seriesField?: string;
-  data?: Array<Record<string, unknown>>;
-  options?: Record<string, unknown>;
-}
-
-interface DynamicChartConfig {
-  chartType: string;
-  title?: string;
-  subTitle?: string;
-  xAxis?: {
-    type: string;
-    name?: string;
-    data?: string[];
-  };
-  yAxis?: Array<{
-    type: string;
-    name?: string;
-    position?: string;
-    min?: number;
-    max?: number;
-    axisLabel?: Record<string, unknown>;
-  }>;
-  legend?: {
-    show?: boolean;
-    data?: string[];
-    position?: string;
-    orient?: string;
-  };
-  series?: Array<{
-    name?: string;
-    type: string;
-    data?: unknown[];
-    yAxisIndex?: number;
-    stack?: string;
-    smooth?: boolean;
-    areaStyle?: boolean;
-    itemStyle?: Record<string, unknown>;
-    label?: Record<string, unknown>;
-  }>;
-  tooltip?: {
-    trigger?: string;
-    axisPointer?: Record<string, unknown>;
-    formatter?: string;
-  };
-  options?: Record<string, unknown>;
-}
-
-const chartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
-const secondaryChartConfig = ref<ChartConfig | DynamicChartConfig | null>(null);
-
-// 图表实例
-let mainChart: echarts.ECharts | null = null;
-
 // 分析类型配置
 const analysisTypes = [
   { type: 'profit' as AnalysisType, label: '利润分析', icon: TrendCharts },
   { type: 'cost' as AnalysisType, label: '成本分析', icon: Wallet },
   { type: 'receivable' as AnalysisType, label: '应收分析', icon: Money },
   { type: 'payable' as AnalysisType, label: '应付分析', icon: CreditCard },
-  { type: 'budget' as AnalysisType, label: '预算分析', icon: Document }
+  { type: 'budget' as AnalysisType, label: '预算分析', icon: Document },
 ];
 
 onMounted(async () => {
-  // 默认选择最近30天
-  const end = new Date();
-  const start = new Date();
-  start.setTime(start.getTime() - 3600 * 1000 * 24 * 30);
-  dateRange.value = [start, end];
+  // 默认选择本年度数据 (2025年全年，用于预算分析)
+  // 使用 2025 年作为默认年份 (与上传的测试数据匹配)
+  const startDate = '2025-01-01';
+  const endDate = '2025-12-31';
+  dateRange.value = [startDate, endDate];
+
+  console.log('[FinanceAnalysis] 初始化 - factoryId:', factoryId.value, 'dateRange:', dateRange.value);
 
   // 加载数据源列表
   await loadDataSources();
 
   loadFinanceData();
-  initChart();
 });
 
 // 加载数据源列表
@@ -259,25 +156,21 @@ async function loadDataSources() {
   try {
     const res = await getUploadHistory();
     if (res.success && res.data) {
-      // 只显示处理成功的上传记录
       dataSources.value = res.data.filter(
         (item: UploadHistoryItem) => item.status === 'COMPLETED' || item.status === 'SUCCESS'
       );
     }
   } catch (error) {
     console.warn('加载数据源列表失败:', error);
-    // 不显示错误提示，因为可能是 PostgreSQL 功能未启用
   }
 }
 
 // 数据源切换处理
 async function onDataSourceChange(sourceId: string) {
   if (sourceId === 'system') {
-    // 切换回系统数据
     aiInsights.value = [];
     loadFinanceData();
   } else {
-    // 加载上传的动态数据
     await loadDynamicData(Number(sourceId));
   }
 }
@@ -298,17 +191,58 @@ async function loadDynamicData(uploadId: number) {
         aiInsights.value = data.insights;
       }
 
-      // 更新 KPI 数据 (从 kpiCards 提取)
+      // 更新 KPI (转换动态格式 → KPICard)
       if (data.kpiCards && data.kpiCards.length > 0) {
-        updateKpiFromDynamicData(data.kpiCards);
+        kpiCards.value = data.kpiCards.map((kpi, index) => ({
+          key: `dynamic_${index}`,
+          title: kpi.title,
+          value: kpi.value,
+          rawValue: kpi.rawValue,
+          unit: '',
+          change: 0,
+          changeRate: 0,
+          trend: 'flat' as const,
+          status: 'green' as const,
+          compareText: '',
+        }));
       }
 
-      // 更新图表
+      // 更新图表 (转换动态分析格式)
       if (data.charts && data.charts.length > 0) {
-        updateChartFromDynamicData(data.charts);
+        const charts: Record<string, ChartConfig> = {};
+        data.charts.forEach((chart, index) => {
+          const labels = chart.data?.labels || [];
+          const datasets = chart.data?.datasets || [];
+
+          if (chart.type === 'pie') {
+            const pieData = labels.map((label, idx) => ({
+              name: label,
+              value: datasets[0]?.data?.[idx] || 0,
+            }));
+            charts[`dynamic_chart_${index}`] = {
+              chartType: 'pie',
+              title: chart.title,
+              xAxisField: 'name',
+              yAxisField: 'value',
+              data: pieData as Array<Record<string, unknown>>,
+            } as LegacyChartConfig;
+          } else {
+            charts[`dynamic_chart_${index}`] = {
+              chartType: chart.type,
+              title: chart.title,
+              xAxis: { type: 'category', data: labels },
+              series: datasets.map(ds => ({
+                name: ds.label,
+                type: chart.type,
+                data: ds.data,
+                smooth: chart.type === 'line',
+              })),
+            } as DynamicChartConfig;
+          }
+        });
+        allCharts.value = charts;
       }
 
-      // 清空预警 (动态数据暂不支持预警)
       warnings.value = [];
     } else {
       ElMessage.error(res.message || '加载分析数据失败');
@@ -321,116 +255,34 @@ async function loadDynamicData(uploadId: number) {
   }
 }
 
-// 从动态数据更新 KPI
-function updateKpiFromDynamicData(kpiCards: DynamicAnalysisResponse['kpiCards']) {
-  // 重置 KPI 数据
-  resetData();
-
-  for (const kpi of kpiCards) {
-    const title = kpi.title?.toLowerCase() || '';
-    const value = kpi.rawValue || 0;
-
-    if (title.includes('毛利') && !title.includes('率')) {
-      kpiData.value.grossProfit = value;
-    } else if (title.includes('毛利') && title.includes('率')) {
-      kpiData.value.grossProfitMargin = value;
-    } else if (title.includes('净利') && !title.includes('率')) {
-      kpiData.value.netProfit = value;
-    } else if (title.includes('净利') && title.includes('率')) {
-      kpiData.value.netProfitMargin = value;
-    } else if (title.includes('成本') || title.includes('cost')) {
-      kpiData.value.totalCost = value;
-    } else if (title.includes('收入') || title.includes('revenue') || title.includes('销售额')) {
-      // 如果没有毛利数据，用收入作为近似
-      if (kpiData.value.grossProfit === 0) {
-        kpiData.value.grossProfit = value;
-      }
-    } else if (title.includes('利润') || title.includes('profit')) {
-      // 通用利润字段
-      if (kpiData.value.netProfit === 0) {
-        kpiData.value.netProfit = value;
-      }
-    }
-  }
-}
-
-// 从动态数据更新图表
-function updateChartFromDynamicData(charts: DynamicAnalysisResponse['charts']) {
-  if (!mainChart || charts.length === 0) return;
-
-  // 使用第一个图表
-  const chart = charts[0];
-  const labels = chart.data?.labels || [];
-  const datasets = chart.data?.datasets || [];
-
-  let option: echarts.EChartsOption;
-
-  if (chart.type === 'pie') {
-    // 饼图
-    const pieData = labels.map((label, idx) => ({
-      name: label,
-      value: datasets[0]?.data?.[idx] || 0
-    }));
-
-    option = {
-      tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { orient: 'vertical', right: '10%', top: 'center' },
-      series: [{
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['40%', '50%'],
-        data: pieData,
-        emphasis: {
-          itemStyle: { shadowBlur: 10, shadowOffsetX: 0, shadowColor: 'rgba(0, 0, 0, 0.5)' }
-        }
-      }]
-    };
-  } else {
-    // 柱状图或折线图
-    option = {
-      tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: chart.type === 'line' ? 'cross' : 'shadow' }
-      },
-      grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
-      xAxis: { type: 'category', data: labels },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          formatter: (value: number) => {
-            if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-            return String(value);
-          }
-        }
-      },
-      series: datasets.map(ds => ({
-        name: ds.label,
-        type: chart.type as 'bar' | 'line',
-        data: ds.data,
-        smooth: chart.type === 'line',
-        itemStyle: { color: '#409EFF' }
-      }))
-    };
-  }
-
-  mainChart.setOption(option, true);
-}
-
 watch([analysisType, dateRange], () => {
-  loadFinanceData();
+  if (selectedDataSource.value === 'system') {
+    loadFinanceData();
+  }
 });
 
-function formatDate(date: Date): string {
+function formatDate(date: Date | string): string {
+  // Element Plus date picker with value-format returns string
+  if (typeof date === 'string') {
+    return date; // Already in YYYY-MM-DD format
+  }
   return date.toISOString().split('T')[0];
 }
 
 async function loadFinanceData() {
-  if (!factoryId.value || !dateRange.value) return;
+  console.log('[FinanceAnalysis] loadFinanceData - factoryId:', factoryId.value, 'dateRange:', dateRange.value);
+
+  if (!factoryId.value || !dateRange.value) {
+    console.warn('[FinanceAnalysis] 跳过加载 - factoryId 或 dateRange 为空');
+    return;
+  }
 
   loading.value = true;
   try {
     const startDate = formatDate(dateRange.value[0]);
     const endDate = formatDate(dateRange.value[1]);
+
+    console.log('[FinanceAnalysis] API 请求 - startDate:', startDate, 'endDate:', endDate, 'type:', analysisType.value);
 
     const response = await get(
       `/${factoryId.value}/smart-bi/analysis/finance`,
@@ -438,67 +290,33 @@ async function loadFinanceData() {
         params: {
           startDate,
           endDate,
-          analysisType: analysisType.value
-        }
+          analysisType: analysisType.value,
+        },
       }
     );
+
+    console.log('[FinanceAnalysis] API 响应:', response);
 
     if (response.success && response.data) {
       const data = response.data as Record<string, unknown>;
 
-      // 提取 metrics 数据到 kpiData
-      if (data.metrics) {
-        const metrics = data.metrics as Record<string, unknown>;
-        updateKpiDataFromMetrics(metrics);
-      }
+      // 提取 KPI 卡片
+      extractKpiCards(data);
 
-      // 提取 overview 数据 (当没有 analysisType 时)
-      if (data.overview) {
-        const overview = data.overview as Record<string, unknown>;
-        if (overview.kpiCards) {
-          updateKpiDataFromKpiCards(overview.kpiCards as Array<Record<string, unknown>>);
-        }
-      }
-
-      // 提取图表配置
-      if (data.trendChart) {
-        chartConfig.value = data.trendChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.structureChart) {
-        chartConfig.value = data.structureChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.agingChart) {
-        chartConfig.value = data.agingChart as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.waterfall) {
-        chartConfig.value = data.waterfall as ChartConfig | DynamicChartConfig;
-        updateChart();
-      } else if (data.comparison) {
-        chartConfig.value = data.comparison as ChartConfig | DynamicChartConfig;
-        updateChart();
-      }
+      // 提取所有图表
+      extractAllCharts(data);
 
       // 提取预警列表
-      if (data.warnings) {
-        warnings.value = data.warnings as WarningItem[];
-      } else if (data.overdueRanking) {
-        // 将逾期客户转换为预警
-        const ranking = data.overdueRanking as Array<Record<string, unknown>>;
-        warnings.value = ranking.slice(0, 5).map((item, index) => ({
-          level: index < 2 ? 'danger' : 'warning',
-          title: String(item.customerName || '未知客户'),
-          description: `逾期 ${item.overdueDays || 0} 天`,
-          amount: Number(item.overdueAmount || 0)
-        })) as WarningItem[];
-      } else {
-        warnings.value = [];
-      }
+      extractWarnings(data);
+
+      console.log('[FinanceAnalysis] 数据已加载 - KPIs:', kpiCards.value.length, 'Charts:', Object.keys(allCharts.value).length);
     } else {
+      console.error('[FinanceAnalysis] API 返回失败:', response.message);
       ElMessage.error(response.message || '加载财务数据失败');
       resetData();
     }
   } catch (error) {
-    console.error('加载财务数据失败:', error);
+    console.error('[FinanceAnalysis] API 调用异常:', error);
     ElMessage.error('加载财务数据失败，请检查网络连接');
     resetData();
   } finally {
@@ -506,324 +324,184 @@ async function loadFinanceData() {
   }
 }
 
-function updateKpiDataFromMetrics(metrics: Record<string, unknown>) {
-  // 利润相关
-  if (metrics.grossProfit !== undefined) kpiData.value.grossProfit = Number(metrics.grossProfit);
-  if (metrics.grossProfitMargin !== undefined) kpiData.value.grossProfitMargin = Number(metrics.grossProfitMargin);
-  if (metrics.netProfit !== undefined) kpiData.value.netProfit = Number(metrics.netProfit);
-  if (metrics.netProfitMargin !== undefined) kpiData.value.netProfitMargin = Number(metrics.netProfitMargin);
+/** 从响应中提取 KPI 卡片 */
+function extractKpiCards(data: Record<string, unknown>) {
+  const cards: KPICard[] = [];
 
-  // 成本相关
-  if (metrics.totalCost !== undefined) kpiData.value.totalCost = Number(metrics.totalCost);
-  if (metrics.costGrowth !== undefined) kpiData.value.costGrowth = Number(metrics.costGrowth);
-  if (metrics.materialCost !== undefined) kpiData.value.materialCost = Number(metrics.materialCost);
-  if (metrics.laborCost !== undefined) kpiData.value.laborCost = Number(metrics.laborCost);
-  if (metrics.overheadCost !== undefined) kpiData.value.overheadCost = Number(metrics.overheadCost);
+  // 从 overview.kpiCards 提取
+  if (data.overview) {
+    const overview = data.overview as Record<string, unknown>;
+    if (overview.kpiCards && Array.isArray(overview.kpiCards)) {
+      cards.push(...(overview.kpiCards as KPICard[]));
+    }
+  }
 
-  // 应收相关
-  if (metrics.totalReceivable !== undefined) kpiData.value.totalReceivable = Number(metrics.totalReceivable);
-  if (metrics.receivableAge30 !== undefined) kpiData.value.receivableAge30 = Number(metrics.receivableAge30);
-  if (metrics.receivableAge60 !== undefined) kpiData.value.receivableAge60 = Number(metrics.receivableAge60);
-  if (metrics.receivableAge90Plus !== undefined) kpiData.value.receivableAge90Plus = Number(metrics.receivableAge90Plus);
-  // 支持不同的字段命名
-  if (metrics.within30Days !== undefined) kpiData.value.receivableAge30 = Number(metrics.within30Days);
-  if (metrics.days30To60 !== undefined) kpiData.value.receivableAge60 = Number(metrics.days30To60);
-  if (metrics.over90Days !== undefined) kpiData.value.receivableAge90Plus = Number(metrics.over90Days);
+  // 从 metrics 提取 (转换为 KPICard 格式)
+  if (data.metrics) {
+    // Handle metrics as array (new budget API format)
+    if (Array.isArray(data.metrics)) {
+      interface MetricItem {
+        metricCode: string;
+        metricName: string;
+        value: number;
+        formattedValue: string;
+        unit?: string;
+        alertLevel?: string;
+      }
+      const metricsArray = data.metrics as MetricItem[];
+      if (cards.length === 0) {
+        metricsArray.forEach((metric) => {
+          cards.push({
+            key: metric.metricCode,
+            title: metric.metricName,
+            value: metric.formattedValue,
+            rawValue: metric.value,
+            unit: metric.unit || '',
+            change: 0,
+            changeRate: 0,
+            trend: 'flat',
+            status: metric.alertLevel === 'RED' ? 'red' : metric.alertLevel === 'YELLOW' ? 'yellow' : 'green',
+            compareText: '',
+          });
+        });
+      }
+    } else {
+      // Handle metrics as object (legacy format)
+      const metrics = data.metrics as Record<string, unknown>;
+      const metricLabels: Record<string, string> = {
+        grossProfit: '毛利润',
+        grossProfitMargin: '毛利率',
+        netProfit: '净利润',
+        netProfitMargin: '净利率',
+        totalCost: '总成本',
+        materialCost: '原材料成本',
+        laborCost: '人工成本',
+        overheadCost: '间接成本',
+        totalReceivable: '应收总额',
+        receivableAge30: '30天内应收',
+        receivableAge60: '逾期30-60天',
+        receivableAge90Plus: '逾期90天+',
+        totalPayable: '应付总额',
+        payableAge30: '30天内应付',
+        payableAge60: '30-60天应付',
+        payableAge90Plus: '逾期90天+应付',
+        budgetTotal: '年度预算',
+        budgetUsed: '已使用预算',
+        budgetRemaining: '剩余预算',
+        budgetUsageRate: '预算使用率',
+      };
 
-  // 应付相关
-  if (metrics.totalPayable !== undefined) kpiData.value.totalPayable = Number(metrics.totalPayable);
-  if (metrics.payableAge30 !== undefined) kpiData.value.payableAge30 = Number(metrics.payableAge30);
-  if (metrics.payableAge60 !== undefined) kpiData.value.payableAge60 = Number(metrics.payableAge60);
-  if (metrics.payableAge90Plus !== undefined) kpiData.value.payableAge90Plus = Number(metrics.payableAge90Plus);
+      // Only add from metrics if we didn't get kpiCards from overview
+      if (cards.length === 0) {
+        Object.entries(metrics).forEach(([key, value]) => {
+          if (value != null && typeof value === 'number' && metricLabels[key]) {
+            cards.push({
+              key,
+              title: metricLabels[key],
+              value: formatMetricValue(key, value),
+              rawValue: value,
+              unit: key.includes('Margin') || key.includes('Rate') || key.includes('rate') ? '%' : '',
+              change: 0,
+              changeRate: Number(metrics[`${key}Growth`] || metrics.costGrowth || 0),
+              trend: 'flat',
+              status: 'green',
+              compareText: '',
+            });
+          }
+        });
+      }
+    }
+  }
 
-  // 预算相关
-  if (metrics.budgetTotal !== undefined) kpiData.value.budgetTotal = Number(metrics.budgetTotal);
-  if (metrics.budgetUsed !== undefined) kpiData.value.budgetUsed = Number(metrics.budgetUsed);
-  if (metrics.budgetRemaining !== undefined) kpiData.value.budgetRemaining = Number(metrics.budgetRemaining);
-  if (metrics.budgetUsageRate !== undefined) kpiData.value.budgetUsageRate = Number(metrics.budgetUsageRate);
-  // 支持不同的字段命名
-  if (metrics.totalBudget !== undefined) kpiData.value.budgetTotal = Number(metrics.totalBudget);
-  if (metrics.usedBudget !== undefined) kpiData.value.budgetUsed = Number(metrics.usedBudget);
-  if (metrics.remainingBudget !== undefined) kpiData.value.budgetRemaining = Number(metrics.remainingBudget);
-  if (metrics.usageRate !== undefined) kpiData.value.budgetUsageRate = Number(metrics.usageRate);
+  // Filter based on analysis type
+  kpiCards.value = filterKpiByAnalysisType(cards, analysisType.value);
 }
 
-function updateKpiDataFromKpiCards(kpiCards: Array<Record<string, unknown>>) {
-  for (const card of kpiCards) {
-    const label = String(card.label || '');
-    const value = Number(card.value || 0);
+/** 根据分析类型过滤 KPI */
+function filterKpiByAnalysisType(cards: KPICard[], type: AnalysisType): KPICard[] {
+  if (cards.length === 0) return cards;
 
-    if (label.includes('毛利') && label.includes('率')) {
-      kpiData.value.grossProfitMargin = value;
-    } else if (label.includes('毛利')) {
-      kpiData.value.grossProfit = value;
-    } else if (label.includes('净利') && label.includes('率')) {
-      kpiData.value.netProfitMargin = value;
-    } else if (label.includes('净利')) {
-      kpiData.value.netProfit = value;
-    } else if (label.includes('总成本')) {
-      kpiData.value.totalCost = value;
-    } else if (label.includes('应收')) {
-      kpiData.value.totalReceivable = value;
-    } else if (label.includes('应付')) {
-      kpiData.value.totalPayable = value;
-    } else if (label.includes('预算') && label.includes('使用')) {
-      kpiData.value.budgetUsageRate = value;
-    } else if (label.includes('预算')) {
-      kpiData.value.budgetTotal = value;
+  const typeKeywords: Record<AnalysisType, string[]> = {
+    profit: ['profit', '利润', '毛利', '净利', 'margin', '利率'],
+    cost: ['cost', '成本', '原材料', '人工', '间接', 'material', 'labor', 'overhead'],
+    receivable: ['receivable', '应收', '逾期', 'age', 'within', 'days'],
+    payable: ['payable', '应付'],
+    budget: ['budget', '预算', '使用率'],
+  };
+
+  const keywords = typeKeywords[type];
+  const filtered = cards.filter(card => {
+    const titleLower = (card.title || '').toLowerCase();
+    const keyLower = (card.key || '').toLowerCase();
+    return keywords.some(kw => titleLower.includes(kw) || keyLower.includes(kw));
+  });
+
+  // If filtering produced no results, return all cards
+  return filtered.length > 0 ? filtered : cards;
+}
+
+/** 格式化 metric 值 */
+function formatMetricValue(key: string, value: number): string {
+  if (key.includes('Margin') || key.includes('Rate') || key.includes('rate')) {
+    return value.toFixed(1) + '%';
+  }
+  if (value >= 10000) {
+    return (value / 10000).toFixed(1) + '万';
+  }
+  return value.toLocaleString();
+}
+
+/** 从响应中提取所有图表 */
+function extractAllCharts(data: Record<string, unknown>) {
+  const charts: Record<string, ChartConfig> = {};
+
+  // 已知的图表字段
+  const chartKeys = [
+    'trendChart', 'structureChart', 'agingChart', 'waterfall',
+    'comparison', 'costStructure', 'receivableAging', 'budgetAchievement',
+  ];
+
+  for (const key of chartKeys) {
+    if (data[key]) {
+      charts[key] = data[key] as ChartConfig;
     }
+  }
+
+  // 从 overview.charts 提取
+  if (data.overview) {
+    const overview = data.overview as Record<string, unknown>;
+    if (overview.charts) {
+      const overviewCharts = overview.charts as Record<string, ChartConfig>;
+      Object.entries(overviewCharts).forEach(([key, config]) => {
+        charts[key] = config;
+      });
+    }
+  }
+
+  allCharts.value = charts;
+}
+
+/** 提取预警列表 */
+function extractWarnings(data: Record<string, unknown>) {
+  if (data.warnings) {
+    warnings.value = data.warnings as WarningItem[];
+  } else if (data.overdueRanking) {
+    const ranking = data.overdueRanking as Array<Record<string, unknown>>;
+    warnings.value = ranking.slice(0, 5).map((item, index) => ({
+      level: index < 2 ? 'danger' as const : 'warning' as const,
+      title: String(item.customerName || '未知客户'),
+      description: `逾期 ${item.overdueDays || 0} 天`,
+      amount: Number(item.overdueAmount || 0),
+    }));
+  } else {
+    warnings.value = [];
   }
 }
 
 function resetData() {
-  kpiData.value = {
-    grossProfit: 0,
-    grossProfitMargin: 0,
-    netProfit: 0,
-    netProfitMargin: 0,
-    totalCost: 0,
-    costGrowth: 0,
-    materialCost: 0,
-    laborCost: 0,
-    overheadCost: 0,
-    totalReceivable: 0,
-    receivableAge30: 0,
-    receivableAge60: 0,
-    receivableAge90Plus: 0,
-    totalPayable: 0,
-    payableAge30: 0,
-    payableAge60: 0,
-    payableAge90Plus: 0,
-    budgetTotal: 0,
-    budgetUsed: 0,
-    budgetRemaining: 0,
-    budgetUsageRate: 0
-  };
+  kpiCards.value = [];
+  allCharts.value = {};
   warnings.value = [];
-  chartConfig.value = null;
-}
-
-function initChart() {
-  const chartDom = document.getElementById('finance-main-chart');
-  if (!chartDom) return;
-
-  mainChart = echarts.init(chartDom);
-  window.addEventListener('resize', handleResize);
-}
-
-function updateChart() {
-  if (!mainChart || !chartConfig.value) return;
-
-  const config = chartConfig.value;
-  const option = buildEChartsOption(config);
-
-  if (option) {
-    mainChart.setOption(option, true);
-  }
-}
-
-function buildEChartsOption(config: ChartConfig | DynamicChartConfig): echarts.EChartsOption | null {
-  // 检查是否是 DynamicChartConfig
-  if ('series' in config && Array.isArray(config.series)) {
-    return buildFromDynamicConfig(config as DynamicChartConfig);
-  }
-
-  // ChartConfig 格式
-  const chartConfig = config as ChartConfig;
-  if (!chartConfig.data || chartConfig.data.length === 0) {
-    return getEmptyChartOption();
-  }
-
-  const chartType = chartConfig.chartType?.toLowerCase() || 'bar';
-
-  if (chartType === 'pie') {
-    return buildPieChart(chartConfig);
-  } else {
-    return buildAxisChart(chartConfig);
-  }
-}
-
-function buildFromDynamicConfig(config: DynamicChartConfig): echarts.EChartsOption {
-  const option: echarts.EChartsOption = {
-    tooltip: {
-      trigger: config.tooltip?.trigger || 'axis',
-      axisPointer: config.tooltip?.axisPointer || { type: 'shadow' }
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '10%',
-      containLabel: true
-    }
-  };
-
-  // 设置标题
-  if (config.title) {
-    option.title = { text: config.title, subtext: config.subTitle };
-  }
-
-  // 设置图例
-  if (config.legend) {
-    option.legend = {
-      show: config.legend.show !== false,
-      data: config.legend.data,
-      bottom: config.legend.position === 'bottom' ? 0 : undefined,
-      top: config.legend.position === 'top' ? 0 : undefined,
-      orient: config.legend.orient as 'horizontal' | 'vertical' || 'horizontal'
-    };
-  }
-
-  // 设置 X 轴
-  if (config.xAxis) {
-    option.xAxis = {
-      type: config.xAxis.type as 'category' | 'value' || 'category',
-      name: config.xAxis.name,
-      data: config.xAxis.data
-    };
-  }
-
-  // 设置 Y 轴
-  if (config.yAxis && config.yAxis.length > 0) {
-    option.yAxis = config.yAxis.map(axis => ({
-      type: axis.type as 'value' | 'category' || 'value',
-      name: axis.name,
-      position: axis.position as 'left' | 'right' || undefined,
-      min: axis.min,
-      max: axis.max,
-      axisLabel: axis.axisLabel || {
-        formatter: (value: number) => {
-          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-          return String(value);
-        }
-      }
-    }));
-  }
-
-  // 设置系列
-  if (config.series && config.series.length > 0) {
-    option.series = config.series.map(s => {
-      const seriesItem: echarts.SeriesOption = {
-        name: s.name,
-        type: s.type as 'line' | 'bar' | 'pie' || 'bar',
-        data: s.data,
-        yAxisIndex: s.yAxisIndex || 0,
-        stack: s.stack,
-        smooth: s.smooth,
-        itemStyle: s.itemStyle,
-        label: s.label
-      };
-
-      if (s.areaStyle && s.type === 'line') {
-        (seriesItem as echarts.LineSeriesOption).areaStyle = {};
-      }
-
-      return seriesItem;
-    }) as echarts.SeriesOption[];
-  }
-
-  return option;
-}
-
-function buildPieChart(config: ChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || 'name';
-  const yField = config.yAxisField || 'value';
-
-  const pieData = config.data?.map(item => ({
-    name: String(item[xField] || ''),
-    value: Number(item[yField] || 0)
-  })) || [];
-
-  return {
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      right: '10%',
-      top: 'center'
-    },
-    series: [
-      {
-        type: 'pie',
-        radius: ['40%', '70%'],
-        center: ['40%', '50%'],
-        data: pieData,
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        }
-      }
-    ]
-  };
-}
-
-function buildAxisChart(config: ChartConfig): echarts.EChartsOption {
-  const xField = config.xAxisField || 'name';
-  const yField = config.yAxisField || 'value';
-  const chartType = config.chartType?.toLowerCase() || 'bar';
-
-  const xData = config.data?.map(item => String(item[xField] || '')) || [];
-  const yData = config.data?.map(item => Number(item[yField] || 0)) || [];
-
-  return {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: chartType === 'line' ? 'cross' : 'shadow' }
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '10%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: xData
-    },
-    yAxis: {
-      type: 'value',
-      axisLabel: {
-        formatter: (value: number) => {
-          if (value >= 10000) return (value / 10000).toFixed(0) + '万';
-          return String(value);
-        }
-      }
-    },
-    series: [
-      {
-        type: chartType as 'bar' | 'line',
-        data: yData,
-        smooth: chartType === 'line',
-        itemStyle: {
-          color: '#409EFF'
-        }
-      }
-    ]
-  };
-}
-
-function getEmptyChartOption(): echarts.EChartsOption {
-  return {
-    title: {
-      text: '暂无数据',
-      left: 'center',
-      top: 'center',
-      textStyle: {
-        color: '#909399',
-        fontSize: 14
-      }
-    }
-  };
-}
-
-function handleResize() {
-  mainChart?.resize();
 }
 
 function formatMoney(value: number): string {
@@ -833,23 +511,20 @@ function formatMoney(value: number): string {
   return value.toLocaleString();
 }
 
-function formatPercent(value: number): string {
-  return value.toFixed(1) + '%';
-}
-
 function getWarningTagType(level: string): 'danger' | 'warning' | 'info' {
   return level as 'danger' | 'warning' | 'info';
 }
 
 function handleRefresh() {
-  loadFinanceData();
+  if (selectedDataSource.value === 'system') {
+    loadFinanceData();
+  } else {
+    loadDynamicData(Number(selectedDataSource.value));
+  }
 }
 
 // ==================== 数据预览功能 ====================
 
-/**
- * 打开数据预览对话框
- */
 async function openDataPreview() {
   if (selectedDataSource.value === 'system') {
     ElMessage.warning('请先选择一个上传的数据源');
@@ -861,9 +536,6 @@ async function openDataPreview() {
   await loadPreviewData();
 }
 
-/**
- * 加载预览数据（分页）
- */
 async function loadPreviewData() {
   const uploadId = Number(selectedDataSource.value);
   if (!uploadId) return;
@@ -884,25 +556,14 @@ async function loadPreviewData() {
   }
 }
 
-/**
- * 预览分页变化
- */
 function handlePreviewPageChange(page: number) {
   previewPage.value = page;
   loadPreviewData();
 }
 
-/**
- * 关闭数据预览
- */
 function closeDataPreview() {
   showDataPreview.value = false;
 }
-
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize);
-  mainChart?.dispose();
-});
 </script>
 
 <template>
@@ -992,167 +653,16 @@ onUnmounted(() => {
       </div>
     </el-card>
 
-    <!-- 财务 KPI -->
-    <el-row :gutter="16" class="kpi-section" v-loading="loading">
-      <!-- 利润分析 KPI -->
-      <template v-if="analysisType === 'profit'">
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">毛利润</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.grossProfit) }}</div>
-            <div class="kpi-sub">毛利率 {{ formatPercent(kpiData.grossProfitMargin) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">净利润</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.netProfit) }}</div>
-            <div class="kpi-sub">净利率 {{ formatPercent(kpiData.netProfitMargin) }}</div>
-          </el-card>
-        </el-col>
-      </template>
-
-      <!-- 成本分析 KPI -->
-      <template v-if="analysisType === 'cost'">
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">总成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalCost) }}</div>
-            <div class="kpi-sub" :class="kpiData.costGrowth >= 0 ? 'growth-down' : 'growth-up'">
-              环比 {{ kpiData.costGrowth >= 0 ? '+' : '' }}{{ kpiData.costGrowth }}%
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">原材料成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.materialCost) }}</div>
-            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.materialCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">人工成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.laborCost) }}</div>
-            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.laborCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">间接成本</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.overheadCost) }}</div>
-            <div class="kpi-sub">占比 {{ kpiData.totalCost > 0 ? ((kpiData.overheadCost / kpiData.totalCost) * 100).toFixed(0) : 0 }}%</div>
-          </el-card>
-        </el-col>
-      </template>
-
-      <!-- 应收分析 KPI -->
-      <template v-if="analysisType === 'receivable'">
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">应收总额</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalReceivable) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
-            <div class="kpi-label">30天内</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge30) }}</div>
-            <div class="kpi-sub">正常账期</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card warning">
-            <div class="kpi-label">逾期30-60天</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge60) }}</div>
-            <div class="kpi-sub">需关注</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card danger">
-            <div class="kpi-label">逾期90天+</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.receivableAge90Plus) }}</div>
-            <div class="kpi-sub">高风险</div>
-          </el-card>
-        </el-col>
-      </template>
-
-      <!-- 应付分析 KPI -->
-      <template v-if="analysisType === 'payable'">
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">应付总额</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.totalPayable) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
-            <div class="kpi-label">30天内</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge30) }}</div>
-            <div class="kpi-sub">正常账期</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card warning">
-            <div class="kpi-label">30-60天</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge60) }}</div>
-            <div class="kpi-sub">即将到期</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card danger">
-            <div class="kpi-label">逾期90天+</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.payableAge90Plus) }}</div>
-            <div class="kpi-sub">需立即处理</div>
-          </el-card>
-        </el-col>
-      </template>
-
-      <!-- 预算分析 KPI -->
-      <template v-if="analysisType === 'budget'">
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">年度预算</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetTotal) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">已使用</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetUsed) }}</div>
-            <div class="kpi-sub">使用率 {{ formatPercent(kpiData.budgetUsageRate) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card success">
-            <div class="kpi-label">剩余预算</div>
-            <div class="kpi-value">{{ formatMoney(kpiData.budgetRemaining) }}</div>
-          </el-card>
-        </el-col>
-        <el-col :xs="24" :sm="12" :md="6">
-          <el-card class="kpi-card">
-            <div class="kpi-label">预算进度</div>
-            <el-progress
-              :percentage="kpiData.budgetUsageRate"
-              :status="kpiData.budgetUsageRate > 90 ? 'exception' : kpiData.budgetUsageRate > 75 ? 'warning' : 'success'"
-              :stroke-width="12"
-            />
-          </el-card>
-        </el-col>
-      </template>
-    </el-row>
+    <!-- 动态 KPI 卡片 -->
+    <DynamicKPIRow :cards="kpiCards" :loading="loading" />
 
     <!-- 图表和预警 -->
     <el-row :gutter="16" class="content-section">
-      <el-col :xs="24" :lg="16">
-        <el-card class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><TrendCharts /></el-icon>
-              <span>{{ analysisTypes.find(t => t.type === analysisType)?.label }}图表</span>
-            </div>
-          </template>
-          <div id="finance-main-chart" class="chart-container"></div>
+      <el-col :xs="24" :lg="hasCharts ? 16 : 24">
+        <!-- 动态图表 -->
+        <DynamicChartsSection v-if="hasCharts" :charts="allCharts" :loading="loading" />
+        <el-card v-else class="empty-chart-card">
+          <el-empty description="暂无图表数据" :image-size="120" />
         </el-card>
       </el-col>
 
@@ -1217,13 +727,11 @@ onUnmounted(() => {
       destroy-on-close
     >
       <div v-loading="previewLoading" class="preview-container">
-        <!-- 数据信息 -->
         <div class="preview-info">
           <span>共 {{ previewData.total }} 条数据</span>
           <span>当前第 {{ previewPage }} / {{ previewData.totalPages || 1 }} 页</span>
         </div>
 
-        <!-- 数据表格 -->
         <el-table
           :data="previewData.data"
           stripe
@@ -1245,7 +753,6 @@ onUnmounted(() => {
           </el-table-column>
         </el-table>
 
-        <!-- 分页 -->
         <div class="preview-pagination">
           <el-pagination
             v-model:current-page="previewPage"
@@ -1370,60 +877,6 @@ onUnmounted(() => {
   }
 }
 
-// KPI 卡片
-.kpi-section {
-  margin-bottom: 16px;
-
-  .el-col {
-    margin-bottom: 16px;
-  }
-}
-
-.kpi-card {
-  border-radius: 8px;
-  text-align: center;
-  padding: 8px 0;
-  border-left: 4px solid #409EFF;
-
-  &.success {
-    border-left-color: #67C23A;
-  }
-
-  &.warning {
-    border-left-color: #E6A23C;
-  }
-
-  &.danger {
-    border-left-color: #F56C6C;
-  }
-
-  .kpi-label {
-    font-size: 13px;
-    color: #909399;
-    margin-bottom: 8px;
-  }
-
-  .kpi-value {
-    font-size: 26px;
-    font-weight: 600;
-    color: #303133;
-    margin-bottom: 4px;
-  }
-
-  .kpi-sub {
-    font-size: 12px;
-    color: #909399;
-
-    &.growth-up {
-      color: #67C23A;
-    }
-
-    &.growth-down {
-      color: #F56C6C;
-    }
-  }
-}
-
 // 内容区
 .content-section {
   .el-col {
@@ -1431,7 +884,15 @@ onUnmounted(() => {
   }
 }
 
-.chart-card, .warning-card {
+.empty-chart-card {
+  border-radius: 8px;
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.warning-card {
   border-radius: 8px;
   height: 100%;
 
@@ -1445,11 +906,6 @@ onUnmounted(() => {
       color: #409EFF;
     }
   }
-}
-
-.chart-container {
-  height: 360px;
-  width: 100%;
 }
 
 .warning-list {

@@ -179,6 +179,11 @@ public class IsapiConfig {
         // NVR 通道
         public static final String CONTENT_MGMT_INPUT = "/ISAPI/ContentMgmt/InputProxy/channels";
 
+        // 录像管理 (Phase 3: NVR 历史录像分析)
+        public static final String CONTENT_MGMT_SEARCH = "/ISAPI/ContentMgmt/search";
+        public static final String CONTENT_MGMT_RECORD_STATUS = "/ISAPI/ContentMgmt/record/tracks";
+        public static final String PLAYBACK_URI = "/ISAPI/Streaming/tracks/%d";
+
         // 系统管理
         public static final String REBOOT = "/ISAPI/System/reboot";
         public static final String FACTORY_RESET = "/ISAPI/System/factoryReset";
