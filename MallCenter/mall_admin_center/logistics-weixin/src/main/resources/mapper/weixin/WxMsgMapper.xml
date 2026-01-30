@@ -49,25 +49,25 @@
 		  wx_msg as a
 		  right join
 			(select
-			  `wx_user_id`,
-			  max(`create_time`) as maxtime,
-			  count(`wx_user_id`) as count_msg
+			  wx_user_id,
+			  max(create_time) as maxtime,
+			  count(wx_user_id) as count_msg
 			from
 			  wx_msg
 			<where>
 				<if test="query.type != null and query.type != ''">
-					AND `type` = #{query.type}
+					AND type = #{query.type}
 				</if>
 				<if test="query.readFlag != null and query.readFlag != ''">
-					AND `read_flag` = #{query.readFlag}
+					AND read_flag = #{query.readFlag}
 				</if>
 				<if test="query.notInRepType != null and query.notInRepType != ''">
-					AND `rep_type` NOT IN (#{query.notInRepType})
+					AND rep_type NOT IN (#{query.notInRepType})
 				</if>
 			</where>
-			group by `wx_user_id`) as b
-			on a.`wx_user_id` = b.`wx_user_id`
-			and a.`create_time` = b.maxtime
-		order by a.`create_time` desc ;
+			group by wx_user_id) as b
+			on a.wx_user_id = b.wx_user_id
+			and a.create_time = b.maxtime
+		order by a.create_time desc ;
 	</select>
 </mapper>
