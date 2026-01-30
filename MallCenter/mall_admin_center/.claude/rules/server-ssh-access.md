@@ -64,10 +64,11 @@ ssh root@139.196.165.140 "cd /www/wwwroot/project/mall_center && bash restart.sh
 
 | 项目 | 值 |
 |------|-----|
-| 数据库类型 | MySQL |
-| 数据库名称 | joolun (MallCenter) |
+| 数据库类型 | PostgreSQL |
+| 数据库名称 | mall_center |
+| 用户名 | cretas |
 | 主机 | localhost |
-| 端口 | 3306 |
+| 端口 | 5432 |
 
 ---
-**最后更新**: 2025-12-27
+**最后更新**: 2026-01-28

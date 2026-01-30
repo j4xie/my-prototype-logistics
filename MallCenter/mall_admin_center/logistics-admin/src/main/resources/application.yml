@@ -52,7 +52,8 @@ spring:
     # 国际化资源文件路径
     basename: i18n/messages
   profiles:
-    active: druid
+    # MySQL: druid | PostgreSQL: pg
+    active: pg
   # 文件上传
   servlet:
     multipart:
@@ -114,9 +115,9 @@ mybatis-plus:
       #主键类型
       id-type: auto
 
-# PageHelper分页插件
+# PageHelper分页插件 (pg profile 会覆盖此配置)
 pagehelper:
-  helperDialect: mysql
+  helperDialect: postgresql
   supportMethodsArguments: true
   params: count=countSql
 
