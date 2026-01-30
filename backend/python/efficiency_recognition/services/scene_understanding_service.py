@@ -15,6 +15,10 @@ LLM 动态场景理解服务 (Phase 7)
 - 自动推断工作流程
 - 自然语言描述变化原因
 - 可解释的变化分析
+
+数据持久化:
+- 支持 PostgreSQL 数据库存储
+- 无数据库时自动降级为内存存储
 """
 
 import os
@@ -28,6 +32,14 @@ from enum import Enum
 import logging
 
 logger = logging.getLogger(__name__)
+
+# 尝试导入数据库仓库
+try:
+    from ..database.repository import get_repository, EfficiencyRepository
+    DATABASE_AVAILABLE = True
+except ImportError:
+    DATABASE_AVAILABLE = False
+    logger.warning("Database repository not available for scene understanding")
 
 
 class ChangeType(str, Enum):
@@ -137,22 +149,45 @@ class AdaptationResult:
 class SceneUnderstandingService:
     """基于 LLM 的动态场景理解服务"""
 
-    def __init__(self, vl_client=None):
+    def __init__(self, vl_client=None, factory_id: str = "F001"):
         """
         初始化场景理解服务
 
         Args:
             vl_client: VL 模型客户端（可选）
+            factory_id: 工厂ID（用于数据库存储）
         """
         self._vl_client = vl_client
+        self.factory_id = factory_id
 
-        # 内存存储（生产环境应使用数据库）
+        # 获取数据库仓库
+        self._repository = None
+        if DATABASE_AVAILABLE:
+            try:
+                self._repository = get_repository()
+                logger.info(f"Scene service using database: {self._repository.is_database_enabled}")
+            except Exception as e:
+                logger.warning(f"Failed to initialize repository: {e}")
+
+        # 内存缓存（有数据库时作为热缓存，无数据库时作为主存储）
         self.scene_understandings: Dict[str, SceneUnderstanding] = {}  # camera_id -> understanding
         self.change_history: Dict[str, List[SceneChangeResult]] = {}   # camera_id -> changes
 
         # 配置
         self.change_confidence_threshold = 60  # 变化置信度阈值
         self.auto_adapt_threshold = 80         # 自动适应阈值
+
+    @property
+    def repository(self):
+        """获取仓库实例"""
+        if self._repository is None and DATABASE_AVAILABLE:
+            self._repository = get_repository()
+        return self._repository
+
+    @property
+    def use_database(self) -> bool:
+        """是否使用数据库"""
+        return self.repository is not None and self.repository.is_database_enabled
 
     async def understand_scene(
         self,
@@ -314,13 +349,55 @@ class SceneUnderstandingService:
                 notes=data.get("notes", "")
             )
 
-            # 保存为当前场景理解
+            # 保存到数据库
+            if self.use_database:
+                self.repository.save_scene_understanding(
+                    camera_id=camera_id,
+                    factory_id=self.factory_id,
+                    scene_description=understanding.scene_description,
+                    equipment=[
+                        {
+                            "name": e.name,
+                            "equipment_type": e.equipment_type,
+                            "location": e.location,
+                            "status": e.status,
+                            "confidence": e.confidence
+                        }
+                        for e in understanding.equipment
+                    ],
+                    workstations=[
+                        {
+                            "station_id": w.station_id,
+                            "station_type": w.station_type,
+                            "location": w.location,
+                            "occupied": w.occupied,
+                            "worker_count": w.worker_count,
+                            "confidence": w.confidence
+                        }
+                        for w in understanding.workstations
+                    ],
+                    zones=[
+                        {
+                            "name": z.name,
+                            "zone_type": z.zone_type,
+                            "boundaries": z.boundaries,
+                            "description": z.description
+                        }
+                        for z in understanding.zones
+                    ],
+                    workflow=understanding.workflow_understanding,
+                    confidence=understanding.confidence,
+                    captured_at=understanding.captured_at
+                )
+
+            # 同时保存到内存缓存
             self.scene_understandings[camera_id] = understanding
 
             logger.info(f"Scene understanding completed for camera {camera_id}: "
                        f"{len(understanding.equipment)} equipment, "
                        f"{len(understanding.workstations)} workstations, "
-                       f"{len(understanding.zones)} zones")
+                       f"{len(understanding.zones)} zones, "
+                       f"database={self.use_database}")
 
             return understanding
 
@@ -497,7 +574,33 @@ class SceneUnderstandingService:
 
             # 如果检测到变化且置信度高，更新场景理解
             if change_result.has_changes and change_result.confidence >= self.change_confidence_threshold:
-                # 保存变化历史
+                # 保存变化历史到数据库
+                if self.use_database:
+                    self.repository.save_scene_change(
+                        camera_id=camera_id,
+                        factory_id=self.factory_id,
+                        change_summary=change_result.change_summary,
+                        change_details={
+                            "details": [
+                                {
+                                    "change_type": d.change_type.value,
+                                    "description": d.description,
+                                    "old_value": d.old_value,
+                                    "new_value": d.new_value,
+                                    "location": d.location,
+                                    "confidence": d.confidence
+                                }
+                                for d in change_result.change_details
+                            ]
+                        },
+                        impact_assessment=change_result.impact_assessment,
+                        impact_level=change_result.impact_level.value,
+                        suggested_actions=change_result.suggested_actions,
+                        confidence=change_result.confidence,
+                        detected_at=change_result.detected_at
+                    )
+
+                # 同时保存到内存缓存
                 if camera_id not in self.change_history:
                     self.change_history[camera_id] = []
                 self.change_history[camera_id].append(change_result)
@@ -602,6 +705,13 @@ class SceneUnderstandingService:
 
     def get_current_understanding(self, camera_id: str) -> Optional[Dict]:
         """获取当前场景理解"""
+        # 优先从数据库获取
+        if self.use_database:
+            db_record = self.repository.get_current_scene_understanding(camera_id)
+            if db_record:
+                return db_record
+
+        # 降级：从内存获取
         understanding = self.scene_understandings.get(camera_id)
         if not understanding:
             return None
@@ -653,6 +763,11 @@ class SceneUnderstandingService:
         only_applied: Optional[bool] = None
     ) -> List[Dict]:
         """获取变化历史"""
+        # 优先从数据库获取
+        if self.use_database:
+            return self.repository.get_scene_change_history(camera_id, limit, only_applied)
+
+        # 降级：从内存获取
         changes = self.change_history.get(camera_id, [])
 
         if only_applied is not None:
@@ -722,7 +837,8 @@ class SceneUnderstandingService:
             "total_zones_detected": total_zones,
             "total_changes_detected": total_changes,
             "applied_changes": applied_changes,
-            "pending_changes": total_changes - applied_changes
+            "pending_changes": total_changes - applied_changes,
+            "database_enabled": self.use_database
         }
 
     def _summarize_understanding(self, understanding: SceneUnderstanding) -> str:
