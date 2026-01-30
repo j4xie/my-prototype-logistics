@@ -1,0 +1,88 @@
+version: '3.8'
+
+# Cretas IoT 基础设施
+# EMQX MQTT Broker + 可选的时序数据库
+#
+# 使用方式:
+#   开发环境: docker-compose -f docker-compose-iot.yml up -d emqx
+#   生产环境: docker-compose -f docker-compose-iot.yml up -d
+#
+# EMQX Dashboard: http://localhost:18083 (admin/public)
+# MQTT端口: 1883 (TCP), 8083 (WebSocket)
+
+services:
+  # ============================================
+  # EMQX MQTT Broker (开源版)
+  # 文档: https://www.emqx.io/docs/zh/latest/
+  # ============================================
+  emqx:
+    image: emqx/emqx:5.4.1
+    container_name: cretas-emqx
+    restart: unless-stopped
+    ports:
+      - "1883:1883"       # MQTT TCP
+      - "8083:8083"       # MQTT WebSocket
+      - "8084:8084"       # MQTT WSS (需配置SSL)
+      - "8883:8883"       # MQTT SSL (需配置SSL)
+      - "18083:18083"     # EMQX Dashboard
+    environment:
+      # 集群名称
+      - EMQX_NAME=cretas-emqx
+      # Dashboard 默认账号 (生产环境请修改)
+      - EMQX_DASHBOARD__DEFAULT_USERNAME=admin
+      - EMQX_DASHBOARD__DEFAULT_PASSWORD=public
+      # 日志级别
+      - EMQX_LOG__CONSOLE__LEVEL=warning
+      # 允许匿名连接 (开发环境)
+      - EMQX_ALLOW_ANONYMOUS=true
+      # 认证链 (生产环境启用)
+      # - EMQX_AUTHENTICATION__1__MECHANISM=password_based
+      # - EMQX_AUTHENTICATION__1__BACKEND=built_in_database
+    volumes:
+      - emqx_data:/opt/emqx/data
+      - emqx_log:/opt/emqx/log
+      # 自定义配置 (可选)
+      # - ./emqx/emqx.conf:/opt/emqx/etc/emqx.conf:ro
+    healthcheck:
+      test: ["CMD", "emqx", "ctl", "status"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - cretas-iot
+
+  # ============================================
+  # TDengine 时序数据库 (可选，用于高频称重数据)
+  # 文档: https://docs.taosdata.com/
+  # ============================================
+  # tdengine:
+  #   image: tdengine/tdengine:3.2.3.0
+  #   container_name: cretas-tdengine
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6030:6030"     # 原生连接端口
+  #     - "6041:6041"     # REST API 端口
+  #     - "6043-6049:6043-6049"  # 其他端口
+  #     - "6043-6049:6043-6049/udp"
+  #   environment:
+  #     - TAOS_FQDN=tdengine
+  #   volumes:
+  #     - tdengine_data:/var/lib/taos
+  #     - tdengine_log:/var/log/taos
+  #   networks:
+  #     - cretas-iot
+
+networks:
+  cretas-iot:
+    driver: bridge
+    name: cretas-iot-network
+
+volumes:
+  emqx_data:
+    name: cretas-emqx-data
+  emqx_log:
+    name: cretas-emqx-log
+  # tdengine_data:
+  #   name: cretas-tdengine-data
+  # tdengine_log:
+  #   name: cretas-tdengine-log

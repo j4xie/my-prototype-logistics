@@ -1,0 +1,54 @@
+{
+  "77d9dc0fae5215597769f51498b26bfc": {
+    "cacheKey": "77d9dc0fae5215597769f51498b26bfc",
+    "version": "2.0",
+    "sheetIndex": 0,
+    "sheetName": "索引",
+    "createdAt": 1769577531.3871922,
+    "createdAtStr": "2026-01-28T00:18:51.387192",
+    "fileSize": 884313,
+    "rowCount": 24,
+    "colCount": 3,
+    "hasData": true,
+    "hasAnalysis": true
+  },
+  "0683964ebb7a25db83768949a0e3c811": {
+    "cacheKey": "0683964ebb7a25db83768949a0e3c811",
+    "version": "2.0",
+    "sheetIndex": 1,
+    "sheetName": "收入及净利简表",
+    "createdAt": 1769577596.0796914,
+    "createdAtStr": "2026-01-28T00:19:56.079691",
+    "fileSize": 884313,
+    "rowCount": 20,
+    "colCount": 40,
+    "hasData": true,
+    "hasAnalysis": true
+  },
+  "70aadd0ec3e55e0e00aa3592d7b65449": {
+    "cacheKey": "70aadd0ec3e55e0e00aa3592d7b65449",
+    "version": "2.0",
+    "sheetIndex": 0,
+    "sheetName": "2025年利润表",
+    "createdAt": 1769577722.4865453,
+    "createdAtStr": "2026-01-28T00:22:02.486545",
+    "fileSize": 12528,
+    "rowCount": 15,
+    "colCount": 8,
+    "hasData": true,
+    "hasAnalysis": true
+  },
+  "198365f6358510ad9e343a3ee0379512": {
+    "cacheKey": "198365f6358510ad9e343a3ee0379512",
+    "version": "2.0",
+    "sheetIndex": 1,
+    "sheetName": "销售明细",
+    "createdAt": 1769577780.276026,
+    "createdAtStr": "2026-01-28T00:23:00.276026",
+    "fileSize": 12528,
+    "rowCount": 51,
+    "colCount": 10,
+    "hasData": true,
+    "hasAnalysis": true
+  }
+}

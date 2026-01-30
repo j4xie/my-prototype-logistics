@@ -35,7 +35,7 @@ import * as echarts from 'echarts';
 const router = useRouter();
 
 const authStore = useAuthStore();
-const factoryId = computed(() => authStore.factoryId);
+const factoryId = computed(() => authStore.factoryId || 'F001');
 
 // 上传步骤
 const currentStep = ref(0);

@@ -1,0 +1,128 @@
+package com.cretas.aims.service;
+
+import com.cretas.aims.entity.DisposalRecord;
+import org.springframework.data.domain.Page;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+/**
+ * 报废记录服务接口
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-01-09
+ */
+public interface IDisposalRecordService {
+
+    /**
+     * 创建报废记录
+     *
+     * @param record 报废记录实体
+     * @return 创建的报废记录
+     */
+    DisposalRecord createDisposalRecord(DisposalRecord record);
+
+    /**
+     * 审批报废记录
+     *
+     * @param id 记录ID
+     * @param approverId 审批人ID
+     * @param approverName 审批人姓名
+     * @return 审批后的记录
+     */
+    DisposalRecord approveDisposal(Long id, Integer approverId, String approverName);
+
+    /**
+     * 根据ID获取报废记录
+     *
+     * @param id 记录ID
+     * @return 报废记录（可选）
+     */
+    Optional<DisposalRecord> getById(Long id);
+
+    /**
+     * 分页查询工厂报废记录
+     *
+     * @param factoryId 工厂ID
+     * @param page 页码
+     * @param size 每页大小
+     * @return 分页结果
+     */
+    Page<DisposalRecord> getByFactoryId(String factoryId, int page, int size);
+
+    /**
+     * 按报废类型分页查询
+     *
+     * @param factoryId 工厂ID
+     * @param disposalType 报废类型
+     * @param page 页码
+     * @param size 每页大小
+     * @return 分页结果
+     */
+    Page<DisposalRecord> getByFactoryIdAndType(String factoryId, String disposalType, int page, int size);
+
+    /**
+     * 获取待审批的报废记录
+     *
+     * @param factoryId 工厂ID
+     * @return 待审批记录列表
+     */
+    List<DisposalRecord> getPendingApprovals(String factoryId);
+
+    /**
+     * 按日期范围查询
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 报废记录列表
+     */
+    List<DisposalRecord> getByDateRange(String factoryId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * 获取报废统计
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 统计数据Map
+     */
+    Map<String, Object> getDisposalStats(String factoryId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * 按类型统计
+     *
+     * @param factoryId 工厂ID
+     * @param startDate 开始日期
+     * @param endDate 结束日期
+     * @return 分类统计结果
+     */
+    List<Object[]> getStatsByType(String factoryId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * 获取可回收报废记录
+     *
+     * @param factoryId 工厂ID
+     * @return 可回收记录列表
+     */
+    List<DisposalRecord> getRecyclableDisposals(String factoryId);
+
+    /**
+     * 更新报废记录
+     *
+     * @param id 记录ID
+     * @param updateData 更新数据
+     * @return 更新后的记录
+     */
+    DisposalRecord updateDisposalRecord(Long id, DisposalRecord updateData);
+
+    /**
+     * 删除报废记录（软删除）
+     *
+     * @param id 记录ID
+     */
+    void deleteDisposalRecord(Long id);
+}

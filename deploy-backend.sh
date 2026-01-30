@@ -153,11 +153,11 @@ deploy_jar() {
     # ----- 1. 本地 Maven 打包 -----
     echo ""
     echo "📦 [1/4] 本地 Maven 打包..."
-    cd backend-java
+    cd backend/java/cretas-api
     mvn clean package -Dmaven.test.skip=true -q
-    cd ..
+    cd ../../..
 
-    JAR_PATH="backend-java/target/$JAR_NAME"
+    JAR_PATH="backend/java/cretas-api/target/$JAR_NAME"
     if [ ! -f "$JAR_PATH" ]; then
         echo "❌ JAR 文件不存在: $JAR_PATH"
         exit 1
@@ -465,6 +465,8 @@ deploy_jar() {
         fi
 
         mv $REMOTE_TMP/$JAR_NAME aims-0.0.1-SNAPSHOT.jar
+        # 同步到 restart.sh 使用的 JAR 名称
+        cp aims-0.0.1-SNAPSHOT.jar cretas-backend-system-1.0.0.jar
         echo '   重启服务...'
         bash restart.sh
     "

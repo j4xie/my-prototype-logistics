@@ -25,6 +25,27 @@
 - **180 张表迁移完成** - 通过 pgloader
 - **14 个核心 API 验证通过** - 100% 成功率
 - **SmartBI Python 服务正常** - 端口 8083
+- **Native Query 已兼容** - 所有查询已使用 PostgreSQL 语法
+- **测试配置完善** - application-pg-test.properties 已就绪
+
+### 📋 收尾工作 (2026-01-28)
+
+| 任务 | 状态 | 说明 |
+|------|------|------|
+| Native Query 转换 | ✅ 已完成 | 所有查询已使用 PostgreSQL JSONB 语法 |
+| 测试配置 | ✅ 已完成 | Dialect 统一为 PostgreSQL10Dialect |
+| MySQL 备份 | ⏭️ 跳过 | 无真实用户数据，无需备份 |
+| MySQL 下线 | ✅ 已完成 | 2026-01-28 停止并禁用 MySQL 服务 |
+
+### 资源释放 (2026-01-28)
+
+```bash
+# 执行命令
+systemctl stop mysql && systemctl disable mysql
+
+# 释放后内存
+Mem: 7.3Gi total, 4.8Gi available
+```
 
 ### 最新部署信息 (2026-01-28)
 

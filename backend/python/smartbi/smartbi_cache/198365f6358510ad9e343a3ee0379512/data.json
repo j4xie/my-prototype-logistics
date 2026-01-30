@@ -1,0 +1,178 @@
+{
+  "sheet_name": "销售明细",
+  "sheet_index": 1,
+  "row_count": 51,
+  "col_count": 10,
+  "columns": [
+    "序号",
+    "日期",
+    "客户名称",
+    "产品名称",
+    "规格",
+    "数量",
+    "单价",
+    "金额",
+    "业务员",
+    "备注"
+  ],
+  "data_types": {
+    "序号": "object",
+    "日期": "object",
+    "客户名称": "object",
+    "产品名称": "object",
+    "规格": "object",
+    "数量": "float64",
+    "单价": "float64",
+    "金额": "float64",
+    "业务员": "object",
+    "备注": "object"
+  },
+  "statistics": {
+    "序号": {
+      "non_null_count": 51,
+      "null_count": 0,
+      "unique_count": 51
+    },
+    "日期": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 28
+    },
+    "客户名称": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 5
+    },
+    "产品名称": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 5
+    },
+    "规格": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 4
+    },
+    "数量": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 47,
+      "min": 105.0,
+      "max": 997.0,
+      "mean": 463.4,
+      "sum": 23170.0
+    },
+    "单价": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 49,
+      "min": 15.15,
+      "max": 44.44,
+      "mean": 28.529600000000002,
+      "sum": 1426.48
+    },
+    "金额": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 50,
+      "min": 2256.0,
+      "max": 38787.21,
+      "mean": 13426.977399999998,
+      "sum": 671348.8699999999
+    },
+    "业务员": {
+      "non_null_count": 50,
+      "null_count": 1,
+      "unique_count": 4
+    },
+    "备注": {
+      "non_null_count": 5,
+      "null_count": 46,
+      "unique_count": 1
+    }
+  },
+  "raw_stats": {
+    "non_empty_row_count": 54,
+    "avg_fill_rate": 0.8666666666666659,
+    "potential_data_start_row": 3,
+    "first_10_rows_summary": [
+      {
+        "row": 0,
+        "non_empty": 1,
+        "numeric": 0,
+        "fill_rate": 0.1
+      },
+      {
+        "row": 1,
+        "non_empty": 1,
+        "numeric": 0,
+        "fill_rate": 0.1
+      },
+      {
+        "row": 2,
+        "non_empty": 10,
+        "numeric": 0,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 3,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 4,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 5,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 6,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 7,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 8,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      },
+      {
+        "row": 9,
+        "non_empty": 9,
+        "numeric": 4,
+        "fill_rate": 0.9
+      }
+    ]
+  },
+  "context": {
+    "notes": [],
+    "explanations": [],
+    "definitions": {},
+    "source_rows": [
+      54
+    ],
+    "raw_text": "统计期间：2025年1月1日-2025年1月31日",
+    "metadata": {
+      "title": "统计期间：2025年1月1日-2025年1月31日",
+      "unit": null,
+      "period": "1 2025-01-02 嘉兴世纪联华 菌菇底料 500g/袋 429 16.2 6949.8 赵六",
+      "department": null,
+      "compiled_by": null,
+      "compiled_date": null
+    }
+  }
+}

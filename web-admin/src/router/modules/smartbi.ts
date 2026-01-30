@@ -42,6 +42,12 @@ const smartBIRoutes: RouteRecordRaw[] = [
         component: () => import('@/views/smart-bi/SmartBIAnalysis.vue'),
         meta: { requiresAuth: true, title: '数据导入', icon: 'Upload', module: 'analytics', action: 'write' },
       },
+      {
+        path: 'chart-test',
+        name: 'SmartBIChartTest',
+        component: () => import('@/views/smart-bi/ChartTestPage.vue'),
+        meta: { requiresAuth: true, title: '图表测试', icon: 'PieChart', module: 'analytics' },
+      },
     ],
   },
 ];

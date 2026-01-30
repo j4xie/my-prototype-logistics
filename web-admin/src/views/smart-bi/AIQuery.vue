@@ -24,7 +24,7 @@ import { AIInsightPanel } from '@/components/smartbi';
 
 const route = useRoute();
 const authStore = useAuthStore();
-const factoryId = computed(() => authStore.factoryId);
+const factoryId = computed(() => authStore.factoryId || 'F001');
 
 // 输入框
 const inputQuery = ref('');

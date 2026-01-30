@@ -1,0 +1,95 @@
+package com.cretas.aims.repository.intent;
+
+import com.cretas.aims.entity.intent.IntentPreviewToken;
+import com.cretas.aims.entity.intent.IntentPreviewToken.TokenStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+/**
+ * 意图预览令牌 Repository
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2026-01-24
+ */
+@Repository
+public interface IntentPreviewTokenRepository extends JpaRepository<IntentPreviewToken, Long> {
+
+    /**
+     * 根据令牌值查找
+     */
+    Optional<IntentPreviewToken> findByToken(String token);
+
+    /**
+     * 根据令牌值和状态查找
+     */
+    Optional<IntentPreviewToken> findByTokenAndStatus(String token, TokenStatus status);
+
+    /**
+     * 查找用户的待确认令牌
+     */
+    List<IntentPreviewToken> findByFactoryIdAndUserIdAndStatus(String factoryId, Long userId, TokenStatus status);
+
+    /**
+     * 查找已过期但状态仍为 PENDING 的令牌
+     */
+    @Query("SELECT t FROM IntentPreviewToken t WHERE t.status = 'PENDING' AND t.expiresAt < :now")
+    List<IntentPreviewToken> findExpiredPendingTokens(@Param("now") LocalDateTime now);
+
+    /**
+     * 批量标记过期令牌
+     */
+    @Modifying
+    @Query("UPDATE IntentPreviewToken t SET t.status = 'EXPIRED', t.resolvedAt = :now, " +
+           "t.resolutionMessage = '令牌已自动过期' WHERE t.status = 'PENDING' AND t.expiresAt < :now")
+    int expireOldTokens(@Param("now") LocalDateTime now);
+
+    /**
+     * 取消用户指定意图的所有待确认令牌 (用于创建新令牌时清理旧的)
+     */
+    @Modifying
+    @Query("UPDATE IntentPreviewToken t SET t.status = 'CANCELLED', t.resolvedAt = :now, " +
+           "t.resolutionMessage = '被新的预览操作替代' " +
+           "WHERE t.factoryId = :factoryId AND t.userId = :userId AND t.intentCode = :intentCode " +
+           "AND t.status = 'PENDING'")
+    int cancelPreviousTokens(@Param("factoryId") String factoryId,
+                             @Param("userId") Long userId,
+                             @Param("intentCode") String intentCode,
+                             @Param("now") LocalDateTime now);
+
+    /**
+     * 删除指定天数之前的已处理令牌 (清理历史数据)
+     */
+    @Modifying
+    @Query("DELETE FROM IntentPreviewToken t WHERE t.status != 'PENDING' AND t.resolvedAt < :before")
+    int deleteOldResolvedTokens(@Param("before") LocalDateTime before);
+
+    /**
+     * 统计工厂的待确认令牌数量
+     */
+    @Query("SELECT COUNT(t) FROM IntentPreviewToken t WHERE t.factoryId = :factoryId AND t.status = 'PENDING'")
+    long countPendingByFactory(@Param("factoryId") String factoryId);
+
+    /**
+     * 验证令牌有效性 (存在、状态为PENDING、未过期)
+     */
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM IntentPreviewToken t " +
+           "WHERE t.token = :token AND t.status = 'PENDING' AND t.expiresAt > :now")
+    boolean isTokenValid(@Param("token") String token, @Param("now") LocalDateTime now);
+
+    /**
+     * 验证令牌有效性并检查用户匹配
+     */
+    @Query("SELECT CASE WHEN COUNT(t) > 0 THEN true ELSE false END FROM IntentPreviewToken t " +
+           "WHERE t.token = :token AND t.userId = :userId AND t.status = 'PENDING' AND t.expiresAt > :now")
+    boolean isTokenValidForUser(@Param("token") String token,
+                                @Param("userId") Long userId,
+                                @Param("now") LocalDateTime now);
+}

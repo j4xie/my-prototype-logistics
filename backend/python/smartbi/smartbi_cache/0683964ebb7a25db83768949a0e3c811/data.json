@@ -1,0 +1,350 @@
+{
+  "sheet_name": "收入及净利简表",
+  "sheet_index": 1,
+  "row_count": 20,
+  "col_count": 40,
+  "columns": [
+    "区域",
+    "1月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "2月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "3月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "4月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "5月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "6月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "7月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "8月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "9月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "10月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "11月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "12月_预算收入",
+    "24年同期实际",
+    "实际收入",
+    "合计_预算收入",
+    "24年同期实际",
+    "实际收入"
+  ],
+  "data_types": {
+    "区域": "object",
+    "1月_预算收入": "object",
+    "24年同期实际": "object",
+    "实际收入": "object",
+    "2月_预算收入": "object",
+    "3月_预算收入": "object",
+    "4月_预算收入": "object",
+    "5月_预算收入": "object",
+    "6月_预算收入": "object",
+    "7月_预算收入": "object",
+    "8月_预算收入": "object",
+    "9月_预算收入": "object",
+    "10月_预算收入": "object",
+    "11月_预算收入": "object",
+    "12月_预算收入": "object",
+    "合计_预算收入": "object"
+  },
+  "statistics": {
+    "区域": {
+      "non_null_count": 18,
+      "null_count": 2,
+      "unique_count": 12
+    },
+    "1月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 15
+    },
+    "24年同期实际": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "2月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_5": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_6": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "3月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_8": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_9": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "4月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_11": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_12": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "5月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_14": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_15": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "6月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_17": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_18": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "7月_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_20": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_21": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "8月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 14
+    },
+    "24年同期实际_23": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_24": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "9月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 14
+    },
+    "24年同期实际_26": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_27": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "10月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 14
+    },
+    "24年同期实际_29": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_30": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 13
+    },
+    "11月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 14
+    },
+    "24年同期实际_32": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_33": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "12月_预算收入": {
+      "non_null_count": 15,
+      "null_count": 5,
+      "unique_count": 14
+    },
+    "24年同期实际_35": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_36": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "合计_预算收入": {
+      "non_null_count": 14,
+      "null_count": 6,
+      "unique_count": 14
+    },
+    "24年同期实际_38": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    },
+    "实际收入_39": {
+      "non_null_count": 13,
+      "null_count": 7,
+      "unique_count": 13
+    }
+  },
+  "raw_stats": {
+    "non_empty_row_count": 23,
+    "avg_fill_rate": 0.5710227272727272,
+    "potential_data_start_row": 3,
+    "first_10_rows_summary": [
+      {
+        "row": 0,
+        "non_empty": 1,
+        "numeric": 0,
+        "fill_rate": 0.02
+      },
+      {
+        "row": 1,
+        "non_empty": 14,
+        "numeric": 0,
+        "fill_rate": 0.32
+      },
+      {
+        "row": 2,
+        "non_empty": 39,
+        "numeric": 0,
+        "fill_rate": 0.89
+      },
+      {
+        "row": 3,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 4,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 5,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 6,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 7,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 8,
+        "non_empty": 40,
+        "numeric": 39,
+        "fill_rate": 0.91
+      },
+      {
+        "row": 9,
+        "non_empty": 0,
+        "numeric": 0,
+        "fill_rate": 0.0
+      }
+    ]
+  },
+  "context": {
+    "notes": [],
+    "explanations": [],
+    "definitions": {},
+    "source_rows": [],
+    "raw_text": "销售1中心2025年各分部及区域收入&净利简表",
+    "metadata": {
+      "title": "销售1中心2025年各分部及区域收入&净利简表",
+      "unit": null,
+      "period": null,
+      "department": null,
+      "compiled_by": null,
+      "compiled_date": null
+    }
+  }
+}

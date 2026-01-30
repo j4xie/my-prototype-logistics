@@ -1,0 +1,352 @@
+[
+  {
+    "id": 1051,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1052,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛肉推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1053,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1054,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "牛奶推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1055,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机鸡蛋有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1056,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的牛奶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1057,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的羊肉是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1058,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1059,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的鱼",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1060,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的虾",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1061,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1062,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点水果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1063,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐几款好的蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1064,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐牛奶商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1065,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的虾",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1066,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有什么罐头？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1067,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "推荐蔬菜商品",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1068,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机牛肉有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1069,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1070,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "帮我找一下茶叶",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1071,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "想买点零食",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1072,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "最受欢迎的海鲜是什么？",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1073,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1074,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口水果有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1075,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口鱼有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1076,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "哪款食用油性价比高",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1077,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的羊肉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1078,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索罐头",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1079,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口鸡肉有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1080,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "搜索蔬菜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1081,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产茶叶推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1082,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的虾",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1083,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖虾吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1084,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "进口海鲜有吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1085,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "虾推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1086,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的鸡蛋",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1087,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "家庭装的饮料",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1088,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "国产蜂蜜推荐",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1089,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1090,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的零食",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1091,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买面粉",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1092,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的海鲜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1093,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机猪肉有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1094,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "适合送礼的蜂蜜",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1095,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "你们卖零食吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1096,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "我要买零食",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1097,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有新鲜的食用油",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1098,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有机酸奶有卖吗",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1099,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "有没有便宜的坚果",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  },
+  {
+    "id": 1100,
+    "category": "product_inquiry",
+    "type": "single",
+    "message": "罐头推荐一下",
+    "expectedBehavior": "Should return relevant products with images and prices"
+  }
+]

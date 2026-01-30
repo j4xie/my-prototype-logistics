@@ -1,0 +1,241 @@
+package com.cretas.aims.entity;
+
+import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import lombok.*;
+import javax.persistence.*;
+import javax.validation.constraints.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+/**
+ * 原材料批次实体类
+ *
+ * @author Cretas Team
+ * @version 1.0.0
+ * @since 2025-01-09
+ */
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(exclude = {"factory", "materialType", "supplier", "createdBy", "consumptions", "adjustments", "planBatchUsages"})
+@AllArgsConstructor
+@NoArgsConstructor
+@Entity
+@Table(name = "material_batches",
+       indexes = {
+           @Index(name = "idx_batch_factory", columnList = "factory_id"),
+           @Index(name = "idx_batch_status", columnList = "status"),
+           @Index(name = "idx_batch_expire", columnList = "expire_date"),
+           @Index(name = "idx_batch_material", columnList = "material_type_id")
+       }
+)
+public class MaterialBatch extends BaseEntity {
+    @Id
+    @Column(name = "id", nullable = false, length = 191)
+    private String id;
+    @Column(name = "factory_id", nullable = false)
+    private String factoryId;
+    @Column(name = "batch_number", nullable = false, unique = true, length = 50)
+    private String batchNumber;
+    @Column(name = "material_type_id", nullable = false)
+    private String materialTypeId;  // 修改为String类型以匹配MaterialType的UUID
+    @Column(name = "supplier_id")
+    private String supplierId;  // 修改为String类型以匹配Supplier的UUID
+    @Column(name = "inbound_date", nullable = false)
+    private LocalDate receiptDate;  // 映射到inbound_date (入库日期)
+
+    @Column(name = "production_date")
+    private LocalDate productionDate;  // 生产日期
+
+    @Column(name = "purchase_date")
+    private LocalDate purchaseDate;
+    @Column(name = "expire_date")
+    private LocalDate expireDate;
+    // ===================================================================
+    // 核心字段 - 存储在数据库
+    // ===================================================================
+
+    @NotNull(message = "入库数量不能为空")
+    @Positive(message = "入库数量必须大于0")
+    @Column(name = "receipt_quantity", nullable = false, precision = 10, scale = 2)
+    private BigDecimal receiptQuantity;
+
+    @NotBlank(message = "数量单位不能为空")
+    @Column(name = "quantity_unit", nullable = false, length = 20)
+    private String quantityUnit;
+
+    @PositiveOrZero(message = "每单位重量不能为负数")
+    @Column(name = "weight_per_unit", precision = 10, scale = 3)
+    private BigDecimal weightPerUnit;
+
+    @PositiveOrZero(message = "已用数量不能为负数")
+    @Column(name = "used_quantity", nullable = false, precision = 10, scale = 2)
+    private BigDecimal usedQuantity = BigDecimal.ZERO;
+
+    @PositiveOrZero(message = "预留数量不能为负数")
+    @Column(name = "reserved_quantity", nullable = false, precision = 10, scale = 2)
+    private BigDecimal reservedQuantity = BigDecimal.ZERO;
+
+    @Column(name = "unit_price", precision = 10, scale = 2)
+    private BigDecimal unitPrice;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private MaterialBatchStatus status = MaterialBatchStatus.AVAILABLE;
+    @Column(name = "storage_location", length = 100)
+    private String storageLocation;
+    @Column(name = "quality_certificate", length = 100)
+    private String qualityCertificate;
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
+    @Column(name = "created_by", nullable = false)
+    private Long createdBy;
+    @Column(name = "last_used_at")
+    private LocalDateTime lastUsedAt;
+    // 关联关系
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @org.hibernate.annotations.BatchSize(size = 10)
+    private Factory factory;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "material_type_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @org.hibernate.annotations.BatchSize(size = 20)
+    private RawMaterialType materialType;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @org.hibernate.annotations.BatchSize(size = 10)
+    private Supplier supplier;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
+    private User createdByUser;
+
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MaterialConsumption> consumptions = new ArrayList<>();
+
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<MaterialBatchAdjustment> adjustments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "materialBatch", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<ProductionPlanBatchUsage> planBatchUsages = new ArrayList<>();
+
+    // ===================================================================
+    // 计算属性 - 不存储在数据库，动态计算
+    // ===================================================================
+
+    /**
+     * 获取当前可用数量
+     * 计算公式: receiptQuantity - usedQuantity - reservedQuantity
+     */
+    @Transient
+    public BigDecimal getCurrentQuantity() {
+        if (receiptQuantity == null) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal used = usedQuantity != null ? usedQuantity : BigDecimal.ZERO;
+        BigDecimal reserved = reservedQuantity != null ? reservedQuantity : BigDecimal.ZERO;
+        return receiptQuantity.subtract(used).subtract(reserved);
+    }
+
+    /**
+     * 获取剩余数量（与getCurrentQuantity相同）
+     */
+    @Transient
+    public BigDecimal getRemainingQuantity() {
+        return getCurrentQuantity();
+    }
+
+    /**
+     * 获取总数量（与receiptQuantity相同）
+     */
+    @Transient
+    public BigDecimal getTotalQuantity() {
+        return receiptQuantity;
+    }
+
+    /**
+     * 获取初始数量（与receiptQuantity相同）
+     */
+    @Transient
+    public BigDecimal getInitialQuantity() {
+        return receiptQuantity;
+    }
+
+    /**
+     * 获取总价
+     * 计算公式: unitPrice × receiptQuantity
+     */
+    @Transient
+    public BigDecimal getTotalPrice() {
+        if (unitPrice == null || receiptQuantity == null) {
+            return BigDecimal.ZERO;
+        }
+        return unitPrice.multiply(receiptQuantity);
+    }
+
+    /**
+     * 获取总价值（与getTotalPrice相同）
+     */
+    @Transient
+    public BigDecimal getTotalValue() {
+        return getTotalPrice();
+    }
+
+    /**
+     * 获取总重量
+     * 计算公式: weightPerUnit × receiptQuantity
+     */
+    @Transient
+    public BigDecimal getTotalWeight() {
+        if (weightPerUnit == null || receiptQuantity == null) {
+            return BigDecimal.ZERO;
+        }
+        return weightPerUnit.multiply(receiptQuantity);
+    }
+
+    // ===================================================================
+    // 前端兼容别名 - 统一字段命名
+    // ===================================================================
+
+    /**
+     * 获取入库数量 (前端使用 inboundQuantity)
+     */
+    @Transient
+    public BigDecimal getInboundQuantity() {
+        return receiptQuantity;
+    }
+
+    /**
+     * 获取过期日期 (前端使用 expiryDate)
+     */
+    @Transient
+    public LocalDate getExpiryDate() {
+        return expireDate;
+    }
+
+    /**
+     * 获取入库日期 (前端使用 inboundDate)
+     */
+    @Transient
+    public LocalDate getInboundDate() {
+        return receiptDate;
+    }
+
+    /**
+     * 获取质量等级 (前端使用 qualityGrade)
+     */
+    @Transient
+    public String getQualityGrade() {
+        return qualityCertificate;
+    }
+
+    /**
+     * 获取总成本 (前端使用 totalCost)
+     */
+    @Transient
+    public BigDecimal getTotalCost() {
+        return getTotalPrice();
+    }
+}

@@ -1,0 +1,166 @@
+{
+  "category": "self_learning",
+  "description": "自学习闭环验证测试",
+  "testCases": [
+    {
+      "id": "S001",
+      "input": "帮我瞅瞅今天到了啥货",
+      "expectedIntent": "MATERIAL_BATCH_QUERY",
+      "description": "表达学习 - 方言表达'瞅瞅'",
+      "learnedExpression": "瞅瞅",
+      "verificationInput": "瞅瞅库存"
+    },
+    {
+      "id": "S002",
+      "input": "看看仓库里头还剩多少带鱼",
+      "expectedIntent": "MATERIAL_INVENTORY_QUERY",
+      "description": "表达学习 - 口语化'里头'='里面'",
+      "learnedExpression": "里头",
+      "verificationInput": "仓库里头的黄鱼"
+    },
+    {
+      "id": "S003",
+      "input": "今儿个谁没来上班",
+      "expectedIntent": "ATTENDANCE_ANOMALY",
+      "description": "表达学习 - 北方口语'今儿个'='今天'",
+      "learnedExpression": "今儿个",
+      "verificationInput": "今儿个的考勤"
+    },
+    {
+      "id": "S004",
+      "input": "瞧瞧那台切鱼机咋样了",
+      "expectedIntent": "EQUIPMENT_STATUS_QUERY",
+      "description": "表达学习 - 方言'瞧瞧'=查看，'咋样'=状态",
+      "learnedExpression": "咋样",
+      "verificationInput": "设备咋样了"
+    },
+    {
+      "id": "S005",
+      "input": "上礼拜的出货单拉出来看看",
+      "expectedIntent": "SHIPMENT_QUERY",
+      "description": "表达学习 - 口语'上礼拜'=上周",
+      "learnedExpression": "上礼拜",
+      "verificationInput": "上礼拜的质检"
+    },
+    {
+      "id": "S006",
+      "input": "给我整个这个月的生产汇总",
+      "expectedIntent": "PRODUCTION_STATS",
+      "description": "表达学习 - 东北口语'整个'=生成",
+      "learnedExpression": "整个",
+      "verificationInput": "整个报表"
+    },
+    {
+      "id": "S007",
+      "input": "查查有没有快到期的玩意儿",
+      "expectedIntent": "MATERIAL_EXPIRING_ALERT",
+      "description": "表达学习 - 口语'玩意儿'=物料",
+      "learnedExpression": "玩意儿",
+      "verificationInput": "临期的玩意儿"
+    },
+    {
+      "id": "S008",
+      "input": "帮我瞅瞅小王的打卡记录咋回事",
+      "expectedIntent": "ATTENDANCE_HISTORY",
+      "description": "表达学习 - 员工姓名+考勤意图组合",
+      "learnedExpression": "打卡记录咋回事",
+      "verificationInput": "小李的打卡咋回事"
+    },
+    {
+      "id": "S009",
+      "input": "这批货能不能用，帮我看看检验报告",
+      "expectedIntent": "QUALITY_CHECK_QUERY",
+      "description": "表达学习 - '能不能用'=质量判定意图",
+      "learnedExpression": "能不能用",
+      "verificationInput": "这批黄鱼能不能用"
+    },
+    {
+      "id": "S010",
+      "input": "把明天要用的料都列出来",
+      "expectedIntent": "MATERIAL_REQUIREMENT_QUERY",
+      "description": "表达学习 - '要用的料'=生产用料需求",
+      "learnedExpression": "要用的料",
+      "verificationInput": "后天的料"
+    },
+    {
+      "id": "S011",
+      "input": "帮我查一下海鲜类的原料库存",
+      "expectedIntent": "MATERIAL_INVENTORY_QUERY",
+      "description": "关键词学习 - '海鲜类'→MATERIAL领域",
+      "learnedKeyword": "海鲜类",
+      "verificationInput": "海鲜类原料还有多少"
+    },
+    {
+      "id": "S012",
+      "input": "看看冷冻仓的温度记录",
+      "expectedIntent": "WAREHOUSE_MONITOR",
+      "description": "关键词学习 - '冷冻仓'→仓储/设备领域",
+      "learnedKeyword": "冷冻仓",
+      "verificationInput": "冷冻仓的情况"
+    },
+    {
+      "id": "S013",
+      "input": "统计一下水产加工线的产量",
+      "expectedIntent": "PRODUCTION_STATS",
+      "description": "关键词学习 - '水产加工线'→生产领域",
+      "learnedKeyword": "水产加工线",
+      "verificationInput": "水产加工线今天怎么样"
+    },
+    {
+      "id": "S014",
+      "input": "查查珍鱼的采购价格",
+      "expectedIntent": "MATERIAL_PRICE_QUERY",
+      "description": "关键词学习 - '珍鱼'→原料名称",
+      "learnedKeyword": "珍鱼",
+      "verificationInput": "珍鱼到货了吗"
+    },
+    {
+      "id": "S015",
+      "input": "看看速冻车间的出勤情况",
+      "expectedIntent": "ATTENDANCE_STATS",
+      "description": "关键词学习 - '速冻车间'→部门名称",
+      "learnedKeyword": "速冻车间",
+      "verificationInput": "速冻车间的人员"
+    },
+    {
+      "id": "S016",
+      "input": "帮我导出海关报检的数据",
+      "expectedIntent": "COMPLIANCE_EXPORT",
+      "description": "关键词学习 - '海关报检'→质检/合规领域",
+      "learnedKeyword": "海关报检",
+      "verificationInput": "海关报检材料"
+    },
+    {
+      "id": "S017",
+      "input": "查一下冷链配送的发货记录",
+      "expectedIntent": "SHIPMENT_QUERY",
+      "description": "关键词学习 - '冷链配送'→物流方式",
+      "learnedKeyword": "冷链配送",
+      "verificationInput": "冷链配送的订单"
+    },
+    {
+      "id": "S018",
+      "input": "看看急冻设备的运行状态",
+      "expectedIntent": "EQUIPMENT_STATUS_QUERY",
+      "description": "关键词学习 - '急冻设备'→设备类型",
+      "learnedKeyword": "急冻设备",
+      "verificationInput": "急冻设备维护"
+    },
+    {
+      "id": "S019",
+      "input": "统计原料损耗率",
+      "expectedIntent": "MATERIAL_LOSS_STATS",
+      "description": "关键词学习 - '损耗率'→分析指标",
+      "learnedKeyword": "损耗率",
+      "verificationInput": "本月损耗率"
+    },
+    {
+      "id": "S020",
+      "input": "查查SC认证的到期时间",
+      "expectedIntent": "COMPLIANCE_QUERY",
+      "description": "关键词学习 - 'SC认证'→资质/合规",
+      "learnedKeyword": "SC认证",
+      "verificationInput": "SC认证续期"
+    }
+  ]
+}

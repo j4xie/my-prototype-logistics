@@ -1,0 +1,1465 @@
+{
+  "testFile": "C:\\Users\\Steve\\my-prototype-logistics\\smartbi\\tests\\test_complex_scenarios.xlsx",
+  "startTime": "2026-01-27T16:55:45.131102",
+  "endTime": "2026-01-27T17:09:06.619615",
+  "totalTimeMs": 801488,
+  "totalSheets": 10,
+  "successCount": 10,
+  "errorCount": 0,
+  "cacheHitCount": 0,
+  "sheets": [
+    {
+      "sheetIndex": 0,
+      "sheetName": "利润表_合并表头",
+      "totalTimeMs": 67797,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "838bdcc7d65ab18547a48ddc889e4ec8"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 237,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 14,
+            "cols": 6
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 10,
+            "cols": 6
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 240,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 6726,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 6
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 6311,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "profit_statement",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 13041,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 28,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 17092,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37387,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 54507,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 7,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 1,
+      "sheetName": "销售明细_500行",
+      "totalTimeMs": 71885,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "c7abcb69c27334ede16c3a253facf3cf"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 322,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 501,
+            "cols": 9
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 500,
+            "cols": 9
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 6,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 331,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 11883,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 9
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 5991,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "sales_detail",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 17876,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 8,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 16134,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37525,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 53669,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 8,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 2,
+      "sheetName": "预算对比_多层表头",
+      "totalTimeMs": 64878,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "c30771d52154381fdba8aeb1d4891c73"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 275,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 8,
+            "cols": 13
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 5,
+            "cols": 13
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 277,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 6002,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 13
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 5672,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "budget_report",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 11675,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 26,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 15554,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37332,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 52912,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 11,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 3,
+      "sheetName": "时间序列_日数据",
+      "totalTimeMs": 98499,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "d04e4403770b6c528217c1b86c048b21"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 331,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 366,
+            "cols": 7
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 365,
+            "cols": 7
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 335,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 9333,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 7
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 5464,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "ecommerce_daily_performance",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 14798,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 30912,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 14761,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37680,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 83355,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 9,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 4,
+      "sheetName": "混合类型_复杂",
+      "totalTimeMs": 64558,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "b7d9fb32c24bd6f7312bbc524cd2ea46"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 288,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 101,
+            "cols": 5
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 100,
+            "cols": 5
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 291,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 7935,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 5
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 6062,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "transaction_log",
+            "confidence": 0.92
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 13999,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 5,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 15081,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 35174,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 50260,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 5,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 5,
+      "sheetName": "稀疏数据_70%空",
+      "totalTimeMs": 127466,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "8e68dab359252b7b9074689d6ebde602"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 319,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 101,
+            "cols": 20
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 100,
+            "cols": 20
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 4,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 324,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 27739,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 20
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 7840,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "sparse_matrix_analysis",
+            "confidence": 0.92
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 35581,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 36344,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 17481,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37718,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 91544,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 15,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 6,
+      "sheetName": "超宽表_120列",
+      "totalTimeMs": 110476,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "634e0f2bb0f1372a37b886f37cf2964f"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 271,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 51,
+            "cols": 120
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 50,
+            "cols": 120
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 9,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 282,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 37640,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 120
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 10396,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "generic_numeric_dataset",
+            "confidence": 0.95
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 48042,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 10367,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 21007,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 30728,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 62103,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 47,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 7,
+      "sheetName": "嵌套分组_3级",
+      "totalTimeMs": 68570,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 1,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "7f50a58d8b620f857dd92ed8bddbe6f7"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 290,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 36,
+            "cols": 6
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 35,
+            "cols": 6
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 3,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 293,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 8960,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 6
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 6370,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "sales_summary",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 15330,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 3,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 15529,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37405,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 52938,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 6,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 8,
+      "sheetName": "中英文_Bilingual",
+      "totalTimeMs": 60155,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "bc08aeb9e44f91645750ae047301da8d"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 289,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 6,
+            "cols": 5
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 5,
+            "cols": 5
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 292,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 7254,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 5
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 5165,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "inventory_report",
+            "confidence": 0.98
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 12420,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 4,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 14236,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 33198,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 47439,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 3,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "sheetIndex": 9,
+      "sheetName": "特殊字符_Formula",
+      "totalTimeMs": 67198,
+      "fromCache": false,
+      "success": true,
+      "error": null,
+      "timings": [
+        {
+          "name": "cache_check",
+          "phase": "Phase 0: Cache Check",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "cache_hit": false,
+            "cache_key": "d2804bed239b7df37aa96bac3a9c451d"
+          }
+        },
+        {
+          "name": "raw_export",
+          "phase": "Phase 1a: Raw Export",
+          "durationMs": 273,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 21,
+            "cols": 5
+          }
+        },
+        {
+          "name": "build_dataframe",
+          "phase": "Phase 1b: Build DataFrame",
+          "durationMs": 0,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "rows": 20,
+            "cols": 5
+          }
+        },
+        {
+          "name": "data_cleaning",
+          "phase": "Phase 1c: Data Cleaning",
+          "durationMs": 2,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "changes": 0
+          }
+        },
+        {
+          "name": "data_extraction",
+          "phase": "Phase 1: Data Extraction",
+          "durationMs": 275,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "field_detection",
+          "phase": "Phase 2a: Field Detection",
+          "durationMs": 8839,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "field_count": 5
+          }
+        },
+        {
+          "name": "scenario_detection",
+          "phase": "Phase 2b: Scenario Detection",
+          "durationMs": 5356,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "scenario": "data_quality_test_case",
+            "confidence": 0.95
+          }
+        },
+        {
+          "name": "llm_detection",
+          "phase": "Phase 2: LLM Detection",
+          "durationMs": 14196,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "metric_calculation",
+          "phase": "Phase 3a: Metrics",
+          "durationMs": 3,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "metric_count": 6
+          }
+        },
+        {
+          "name": "chart_recommendation",
+          "phase": "Phase 3b: Charts",
+          "durationMs": 15366,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "chart_count": 3
+          }
+        },
+        {
+          "name": "insight_generation",
+          "phase": "Phase 3c: Insights",
+          "durationMs": 37349,
+          "success": true,
+          "error": null,
+          "metadata": {
+            "insight_count": 3
+          }
+        },
+        {
+          "name": "parallel_analysis",
+          "phase": "Phase 3: Parallel Analysis",
+          "durationMs": 52718,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        },
+        {
+          "name": "cache_save",
+          "phase": "Phase 5: Cache Save",
+          "durationMs": 6,
+          "success": true,
+          "error": null,
+          "metadata": {}
+        }
+      ]
+    }
+  ],
+  "phaseSummary": {
+    "cache_check": {
+      "count": 10,
+      "total_ms": 2,
+      "avg_ms": 0.2,
+      "min_ms": 0,
+      "max_ms": 1
+    },
+    "raw_export": {
+      "count": 10,
+      "total_ms": 2895,
+      "avg_ms": 289.5,
+      "min_ms": 237,
+      "max_ms": 331
+    },
+    "build_dataframe": {
+      "count": 10,
+      "total_ms": 7,
+      "avg_ms": 0.7,
+      "min_ms": 0,
+      "max_ms": 2
+    },
+    "data_cleaning": {
+      "count": 10,
+      "total_ms": 33,
+      "avg_ms": 3.3,
+      "min_ms": 1,
+      "max_ms": 9
+    },
+    "data_extraction": {
+      "count": 10,
+      "total_ms": 2940,
+      "avg_ms": 294.0,
+      "min_ms": 240,
+      "max_ms": 335
+    },
+    "field_detection": {
+      "count": 10,
+      "total_ms": 132311,
+      "avg_ms": 13231.1,
+      "min_ms": 6002,
+      "max_ms": 37640
+    },
+    "scenario_detection": {
+      "count": 10,
+      "total_ms": 64627,
+      "avg_ms": 6462.7,
+      "min_ms": 5165,
+      "max_ms": 10396
+    },
+    "llm_detection": {
+      "count": 10,
+      "total_ms": 196958,
+      "avg_ms": 19695.8,
+      "min_ms": 11675,
+      "max_ms": 48042
+    },
+    "metric_calculation": {
+      "count": 10,
+      "total_ms": 77700,
+      "avg_ms": 7770.0,
+      "min_ms": 3,
+      "max_ms": 36344
+    },
+    "chart_recommendation": {
+      "count": 10,
+      "total_ms": 162241,
+      "avg_ms": 16224.1,
+      "min_ms": 14236,
+      "max_ms": 21007
+    },
+    "insight_generation": {
+      "count": 10,
+      "total_ms": 361496,
+      "avg_ms": 36149.6,
+      "min_ms": 30728,
+      "max_ms": 37718
+    },
+    "parallel_analysis": {
+      "count": 10,
+      "total_ms": 601445,
+      "avg_ms": 60144.5,
+      "min_ms": 47439,
+      "max_ms": 91544
+    },
+    "cache_save": {
+      "count": 10,
+      "total_ms": 117,
+      "avg_ms": 11.7,
+      "min_ms": 3,
+      "max_ms": 47
+    }
+  }
+}
