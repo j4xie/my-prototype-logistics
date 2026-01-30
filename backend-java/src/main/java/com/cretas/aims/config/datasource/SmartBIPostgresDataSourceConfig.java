@@ -98,6 +98,9 @@ public class SmartBIPostgresDataSourceConfig {
         dataSource.setMaxLifetime(maxLifetime);
         dataSource.setConnectionTimeout(connectionTimeout);
 
+        // Critical: disable autoCommit for JPA transaction management
+        dataSource.setAutoCommit(false);
+
         // PostgreSQL-specific settings
         dataSource.addDataSourceProperty("cachePrepStmts", "true");
         dataSource.addDataSourceProperty("prepStmtCacheSize", "250");
