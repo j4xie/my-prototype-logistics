@@ -2138,6 +2138,157 @@ public class SmartBIController {
         }
     }
 
+    // ==================== 人效分析 API ====================
+
+    /**
+     * 获取人效分析汇总
+     */
+    @GetMapping("/efficiency/summary")
+    @Operation(summary = "获取人效分析汇总", description = "返回工厂整体人效分析数据")
+    public ResponseEntity<ApiResponse<EfficiencySummaryDTO>> getEfficiencySummary(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "开始日期") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "结束日期") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @Parameter(description = "部门") @RequestParam(required = false) String department) {
+
+        log.info("获取人效分析汇总: factoryId={}, startDate={}, endDate={}, department={}",
+                factoryId, startDate, endDate, department);
+
+        try {
+            // 返回模拟数据 (后续可连接真实数据)
+            EfficiencySummaryDTO summary = EfficiencySummaryDTO.builder()
+                    .totalWorkers(45)
+                    .avgEfficiency(87.5)
+                    .avgQualityRate(96.2)
+                    .totalOutput(12580)
+                    .topPerformers(List.of(
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W001").workerName("张三").department("生产一部")
+                                    .date(LocalDate.now().toString()).outputCount(320)
+                                    .qualityRate(98.5).efficiencyScore(95.2)
+                                    .rank(1).trend("up").build(),
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W002").workerName("李四").department("生产二部")
+                                    .date(LocalDate.now().toString()).outputCount(305)
+                                    .qualityRate(97.8).efficiencyScore(93.8)
+                                    .rank(2).trend("flat").build(),
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W003").workerName("王五").department("生产一部")
+                                    .date(LocalDate.now().toString()).outputCount(298)
+                                    .qualityRate(99.1).efficiencyScore(92.5)
+                                    .rank(3).trend("up").build()
+                    ))
+                    .bottomPerformers(List.of(
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W043").workerName("赵六").department("生产三部")
+                                    .date(LocalDate.now().toString()).outputCount(185)
+                                    .qualityRate(91.2).efficiencyScore(72.3)
+                                    .rank(43).trend("down").build(),
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W044").workerName("钱七").department("生产二部")
+                                    .date(LocalDate.now().toString()).outputCount(178)
+                                    .qualityRate(89.5).efficiencyScore(70.1)
+                                    .rank(44).trend("down").build(),
+                            WorkerEfficiencyDTO.builder()
+                                    .workerId("W045").workerName("孙八").department("生产三部")
+                                    .date(LocalDate.now().toString()).outputCount(165)
+                                    .qualityRate(88.3).efficiencyScore(68.5)
+                                    .rank(45).trend("flat").build()
+                    ))
+                    .build();
+
+            return ResponseEntity.ok(ApiResponse.success(summary));
+        } catch (Exception e) {
+            log.error("获取人效分析汇总失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取人效分析汇总失败: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 获取工人效率详情
+     */
+    @GetMapping("/efficiency/worker/{workerId}")
+    @Operation(summary = "获取工人效率详情", description = "返回指定工人的效率历史数据")
+    public ResponseEntity<ApiResponse<List<WorkerEfficiencyDTO>>> getWorkerEfficiency(
+            @Parameter(description = "工厂ID") @PathVariable String factoryId,
+            @Parameter(description = "工人ID") @PathVariable String workerId,
+            @Parameter(description = "开始日期") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @Parameter(description = "结束日期") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        log.info("获取工人效率详情: factoryId={}, workerId={}, startDate={}, endDate={}",
+                factoryId, workerId, startDate, endDate);
+
+        try {
+            // 返回模拟数据 (后续可连接真实数据)
+            List<WorkerEfficiencyDTO> data = List.of(
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(6).toString()).outputCount(310)
+                            .qualityRate(97.5).efficiencyScore(91.2).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(5).toString()).outputCount(315)
+                            .qualityRate(98.0).efficiencyScore(92.5).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(4).toString()).outputCount(308)
+                            .qualityRate(97.2).efficiencyScore(90.8).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(3).toString()).outputCount(322)
+                            .qualityRate(98.8).efficiencyScore(94.5).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(2).toString()).outputCount(318)
+                            .qualityRate(98.2).efficiencyScore(93.2).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().minusDays(1).toString()).outputCount(325)
+                            .qualityRate(99.0).efficiencyScore(95.8).build(),
+                    WorkerEfficiencyDTO.builder()
+                            .workerId(workerId).workerName("张三").department("生产一部")
+                            .date(LocalDate.now().toString()).outputCount(320)
+                            .qualityRate(98.5).efficiencyScore(95.2).build()
+            );
+
+            return ResponseEntity.ok(ApiResponse.success(data));
+        } catch (Exception e) {
+            log.error("获取工人效率详情失败: {}", e.getMessage(), e);
+            return ResponseEntity.ok(ApiResponse.error("获取工人效率详情失败: " + e.getMessage()));
+        }
+    }
+
+    // ==================== 人效分析 DTO ====================
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class EfficiencySummaryDTO {
+        private int totalWorkers;
+        private double avgEfficiency;
+        private double avgQualityRate;
+        private int totalOutput;
+        private List<WorkerEfficiencyDTO> topPerformers;
+        private List<WorkerEfficiencyDTO> bottomPerformers;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class WorkerEfficiencyDTO {
+        private String workerId;
+        private String workerName;
+        private String department;
+        private String date;
+        private int outputCount;
+        private double qualityRate;
+        private double efficiencyScore;
+        private Integer rank;
+        private String trend;
+    }
+
     // ==================== DTO Classes ====================
 
     /**
