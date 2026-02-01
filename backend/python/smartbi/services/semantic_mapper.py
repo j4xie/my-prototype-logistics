@@ -1,11 +1,23 @@
 from __future__ import annotations
 """
-Semantic Mapper Service
+Semantic Mapper Service (PRIMARY - LLM-Powered)
 
-Maps Excel column names to standard business fields using:
+The primary field mapping service for SmartBI. Maps Excel column names to
+standard business fields using:
 1. LLM-based semantic understanding with caching (primary)
-2. Rule-based dictionary matching (fallback reference)
+2. Rule-based dictionary matching (fast fallback)
 3. Multi-model consensus for ambiguous cases
+4. Persistent learning (saves successful mappings for reuse)
+
+This is the RECOMMENDED service for field mapping in new code.
+
+Related services:
+- FieldMappingService (field_mapping.py): Fast dictionary-only, no LLM
+- LLMMapper (llm_mapper.py): Sheet analysis & chart recommendations
+
+Usage:
+    mapper = SemanticMapper()
+    result = await mapper.map_fields_async(columns, context="销售数据")
 
 Part of the Zero-Code SmartBI architecture.
 """
@@ -20,6 +32,39 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 from services.utils.json_parser import robust_json_parse
 
 logger = logging.getLogger(__name__)
+
+# Category to Java dataType mapping
+# This ensures Python field mappings translate correctly to Java's expected format
+CATEGORY_TO_DATA_TYPE = {
+    # Numeric categories → NUMERIC
+    "amount": "NUMERIC",
+    "rate": "NUMERIC",
+    "quantity": "NUMERIC",
+    "percentage": "NUMERIC",
+    "price": "NUMERIC",
+    "cost": "NUMERIC",
+    "revenue": "NUMERIC",
+    "profit": "NUMERIC",
+    "measure": "NUMERIC",
+    "numeric": "NUMERIC",
+
+    # Categorical categories → CATEGORICAL
+    "category": "CATEGORICAL",
+    "region": "CATEGORICAL",
+    "department": "CATEGORICAL",
+    "product": "CATEGORICAL",
+    "customer": "CATEGORICAL",
+    "name": "CATEGORICAL",
+    "dimension": "CATEGORICAL",
+    "categorical": "CATEGORICAL",
+
+    # Time categories → DATE
+    "time": "DATE",
+    "date": "DATE",
+    "period": "DATE",
+    "year": "DATE",
+    "month": "DATE",
+}
 
 # Cache file path for learned mappings
 LEARNED_MAPPINGS_FILE = Path(__file__).parent.parent / "data" / "learned_field_mappings.json"
@@ -58,12 +103,16 @@ class FieldMapping:
     description: Optional[str] = None  # Human-readable description
 
     def to_dict(self) -> Dict[str, Any]:
+        # Infer data_type from category for Java compatibility
+        data_type = CATEGORY_TO_DATA_TYPE.get(self.category, "TEXT") if self.category else "TEXT"
+
         return {
             "original": self.original,
             "standard": self.standard,
             "confidence": self.confidence,
             "method": self.method,
             "category": self.category,
+            "data_type": data_type,  # Java expects this for field classification
             "description": self.description
         }
 
