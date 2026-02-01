@@ -125,8 +125,8 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
 
         } catch (Exception e) {
             log.error("Failed to persist dynamic data: {}", e.getMessage(), e);
-            return DynamicPersistenceResult.failure("Persistence failed: " + e.getMessage(),
-                    Collections.singletonList(e.getMessage()));
+            // 重新抛出异常让 Spring 事务正确回滚，避免 "Transaction silently rolled back" 错误
+            throw new RuntimeException("Persistence failed: " + e.getMessage(), e);
         }
     }
 
@@ -365,42 +365,122 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
 
     private boolean isDimension(FieldMappingResult mapping) {
         String dataType = mapping.getDataType();
+        String category = mapping.getCategory();
         String standardField = mapping.getStandardField();
+        String originalColumn = mapping.getOriginalColumn();
 
+        // 1. Check dataType (primary)
         if ("CATEGORICAL".equalsIgnoreCase(dataType)) {
             return true;
         }
+
+        // 2. Check category (Python SemanticMapper fallback)
+        if (category != null) {
+            String categoryLower = category.toLowerCase();
+            if (categoryLower.matches("category|region|department|product|customer|name|dimension|categorical")) {
+                return true;
+            }
+        }
+
+        // 3. Check standardField keywords
         if (standardField != null) {
             String lower = standardField.toLowerCase();
-            return lower.matches(".*(department|region|category|product|name|部门|区域|类别|产品|名称).*");
+            if (lower.matches(".*(department|region|category|product|name|部门|区域|类别|产品|名称).*")) {
+                return true;
+            }
         }
+
+        // 4. Check originalColumn keywords
+        if (originalColumn != null) {
+            String lower = originalColumn.toLowerCase();
+            if (lower.matches(".*(区域|部门|类别|产品|名称|项目|科目|分类|region|department|category|product|name).*")) {
+                return true;
+            }
+        }
+
+        // 5. Check unique values count (low cardinality indicates dimension)
+        List<String> uniqueValues = mapping.getUniqueValues();
+        if (uniqueValues != null && !uniqueValues.isEmpty() && uniqueValues.size() <= 50) {
+            // If not explicitly numeric, treat as dimension
+            if (!"NUMERIC".equalsIgnoreCase(dataType)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
     private boolean isMeasure(FieldMappingResult mapping) {
         String dataType = mapping.getDataType();
+        String category = mapping.getCategory();
         String subType = mapping.getSubType();
+        String originalColumn = mapping.getOriginalColumn();
 
+        // 1. Check dataType (primary)
         if ("NUMERIC".equalsIgnoreCase(dataType)) {
             return true;
         }
-        if ("AMOUNT".equalsIgnoreCase(subType) || "CURRENCY".equalsIgnoreCase(subType)) {
+
+        // 2. Check category (Python SemanticMapper fallback)
+        if (category != null) {
+            String categoryLower = category.toLowerCase();
+            if (categoryLower.matches("amount|rate|quantity|percentage|price|cost|revenue|profit|measure|numeric")) {
+                return true;
+            }
+        }
+
+        // 3. Check subType
+        if ("AMOUNT".equalsIgnoreCase(subType) || "CURRENCY".equalsIgnoreCase(subType) ||
+            "QUANTITY".equalsIgnoreCase(subType) || "PERCENTAGE".equalsIgnoreCase(subType)) {
             return true;
         }
+
+        // 4. Check originalColumn keywords
+        if (originalColumn != null) {
+            String lower = originalColumn.toLowerCase();
+            if (lower.matches(".*(金额|数量|价格|成本|收入|利润|预算|实际|合计|总计|amount|price|qty|count|total|sum|revenue|cost|profit|budget|actual).*")) {
+                return true;
+            }
+        }
+
         return false;
     }
 
     private boolean isTimeField(FieldMappingResult mapping) {
         String dataType = mapping.getDataType();
+        String category = mapping.getCategory();
         String standardField = mapping.getStandardField();
+        String originalColumn = mapping.getOriginalColumn();
 
+        // 1. Check dataType (primary)
         if ("DATE".equalsIgnoreCase(dataType)) {
             return true;
         }
+
+        // 2. Check category (Python SemanticMapper fallback)
+        if (category != null) {
+            String categoryLower = category.toLowerCase();
+            if (categoryLower.matches("time|date|period|year|month")) {
+                return true;
+            }
+        }
+
+        // 3. Check standardField keywords
         if (standardField != null) {
             String lower = standardField.toLowerCase();
-            return lower.matches(".*(date|time|period|year|month|日期|时间|期间|年|月).*");
+            if (lower.matches(".*(date|time|period|year|month|日期|时间|期间|年|月).*")) {
+                return true;
+            }
         }
+
+        // 4. Check originalColumn keywords
+        if (originalColumn != null) {
+            String lower = originalColumn.toLowerCase();
+            if (lower.matches(".*(日期|时间|期间|年份|月份|date|time|period|year|month).*")) {
+                return true;
+            }
+        }
+
         return false;
     }
 

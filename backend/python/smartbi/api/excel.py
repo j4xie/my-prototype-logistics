@@ -59,6 +59,39 @@ def get_fixed_executor() -> FixedExecutor:
     return _fixed_executor
 
 
+def _infer_data_type_from_category(category: Optional[str]) -> str:
+    """
+    Infer Java dataType from category.
+    This is a fallback when data_type is not explicitly set.
+
+    Args:
+        category: The field category (amount, rate, category, time, etc.)
+
+    Returns:
+        Java-compatible dataType: NUMERIC, CATEGORICAL, DATE, or TEXT
+    """
+    if not category:
+        return "TEXT"
+
+    category_lower = category.lower()
+
+    # Numeric categories
+    if category_lower in ("amount", "rate", "quantity", "percentage", "price",
+                          "cost", "revenue", "profit", "measure", "numeric"):
+        return "NUMERIC"
+
+    # Categorical categories
+    if category_lower in ("category", "region", "department", "product",
+                          "customer", "name", "dimension", "categorical"):
+        return "CATEGORICAL"
+
+    # Time categories
+    if category_lower in ("time", "date", "period", "year", "month"):
+        return "DATE"
+
+    return "TEXT"
+
+
 class ParseMetadata(BaseModel):
     """Parse metadata model - Java compatible"""
     sheetName: Optional[str] = None
@@ -844,6 +877,411 @@ async def analyze_sheets(file: UploadFile = File(...)):
 
 
 # =============================================================================
+# Analyze Sheets By Upload ID (for Web Admin)
+# =============================================================================
+
+
+class AnalyzeSheetsRequest(BaseModel):
+    """Request for analyzing sheets by upload ID"""
+    uploadId: int
+    factoryId: str = "F001"
+
+
+class FieldDefinitionModel(BaseModel):
+    """Field definition model"""
+    originalName: str
+    standardName: str
+    fieldType: str = "string"
+    semanticType: str = "dimension"
+    chartRole: str = "NONE"
+    sampleValues: List[str] = []
+
+
+class ScenarioDetectionModel(BaseModel):
+    """Scenario detection model"""
+    scenarioType: str = "custom"
+    confidence: float = 0.0
+    suggestedCharts: List[str] = []
+
+
+class MetricResultModel(BaseModel):
+    """Metric result model"""
+    metricCode: str
+    metricName: str
+    value: float
+    formattedValue: str
+    unit: str = ""
+    changePercent: Optional[float] = None
+    changeDirection: Optional[str] = None
+
+
+class AxisConfigModel(BaseModel):
+    """Axis config model"""
+    field: str
+    label: str
+    type: str = "category"
+    format: Optional[str] = None
+
+
+class LegendConfigModel(BaseModel):
+    """Legend config model"""
+    show: bool = True
+    position: str = "top"
+    items: List[str] = []
+
+
+class SeriesConfigModel(BaseModel):
+    """Series config model"""
+    name: str
+    field: str
+    type: str = "BAR"
+    color: Optional[str] = None
+    stack: Optional[str] = None
+    yAxisIndex: int = 0
+    data: List[Dict[str, Any]] = []
+
+
+class TooltipConfigModel(BaseModel):
+    """Tooltip config model"""
+    show: bool = True
+    trigger: str = "axis"
+    formatter: Optional[str] = None
+
+
+class AlternativeDimensionModel(BaseModel):
+    """Alternative dimension model"""
+    fieldName: str
+    displayName: str
+    semanticType: str = "dimension"
+    selected: bool = False
+
+
+class DynamicChartConfigModel(BaseModel):
+    """Dynamic chart config model"""
+    chartType: str = "BAR"
+    title: str
+    subTitle: Optional[str] = None
+    xAxis: AxisConfigModel
+    yAxis: List[AxisConfigModel] = []
+    legend: LegendConfigModel = LegendConfigModel()
+    series: List[SeriesConfigModel] = []
+    tooltip: TooltipConfigModel = TooltipConfigModel()
+    alternativeXAxis: List[AlternativeDimensionModel] = []
+    alternativeSeries: List[AlternativeDimensionModel] = []
+    alternativeMeasures: List[AlternativeDimensionModel] = []
+    rawData: List[Dict[str, Any]] = []
+    totalRows: int = 0
+
+
+class AIInsightModel(BaseModel):
+    """AI insight model"""
+    id: str
+    level: str = "green"
+    category: str
+    text: str
+
+
+class SheetAnalysisResultModel(BaseModel):
+    """Sheet analysis result model"""
+    sheetName: str
+    sheetIndex: int
+    rowCount: int = 0
+    columnCount: int = 0
+    fields: List[FieldDefinitionModel] = []
+    scenario: ScenarioDetectionModel = ScenarioDetectionModel()
+    metrics: List[MetricResultModel] = []
+    charts: List[DynamicChartConfigModel] = []
+    insights: List[AIInsightModel] = []
+    fromCache: bool = False
+    processingTimeMs: int = 0
+
+
+class MultiSheetAnalysisResultModel(BaseModel):
+    """Multi-sheet analysis result model - matches frontend types"""
+    success: bool = True
+    data: Optional["MultiSheetAnalysisDataModel"] = None
+    message: str = ""
+
+
+class MultiSheetAnalysisDataModel(BaseModel):
+    """Multi-sheet analysis data"""
+    totalSheets: int = 0
+    successCount: int = 0
+    failedCount: int = 0
+    cacheHitCount: int = 0
+    processingTimeMs: int = 0
+    sheetResults: List[SheetAnalysisResultModel] = []
+
+
+# Forward reference update (compatible with both Pydantic v1 and v2)
+try:
+    # Pydantic v2
+    MultiSheetAnalysisResultModel.model_rebuild()
+except AttributeError:
+    # Pydantic v1
+    MultiSheetAnalysisResultModel.update_forward_refs()
+
+
+@router.post("/analyze-by-upload", response_model=MultiSheetAnalysisResultModel)
+async def analyze_sheets_by_upload_id(request: AnalyzeSheetsRequest):
+    """
+    Analyze sheets by upload ID from PostgreSQL.
+
+    This endpoint reads uploaded Excel data from PostgreSQL and generates
+    analysis results including metrics, charts, and insights.
+
+    - **uploadId**: The upload record ID from Java backend
+    - **factoryId**: Factory ID (default: F001)
+    """
+    import time
+    import uuid
+    from config import get_settings
+
+    settings = get_settings()
+    start_time = time.time()
+
+    if not settings.postgres_enabled:
+        return MultiSheetAnalysisResultModel(
+            success=False,
+            message="PostgreSQL is not enabled. Set POSTGRES_ENABLED=true."
+        )
+
+    try:
+        from database.connection import get_db_context, is_postgres_enabled
+        from database.repository import (
+            DynamicDataRepository,
+            FieldDefinitionRepository,
+            UploadRepository
+        )
+
+        if not is_postgres_enabled():
+            return MultiSheetAnalysisResultModel(
+                success=False,
+                message="PostgreSQL connection not available"
+            )
+
+        with get_db_context() as db:
+            upload_repo = UploadRepository(db)
+            data_repo = DynamicDataRepository(db)
+            field_repo = FieldDefinitionRepository(db)
+
+            # Get upload metadata
+            upload = upload_repo.get_by_id(request.uploadId)
+            if not upload:
+                return MultiSheetAnalysisResultModel(
+                    success=False,
+                    message=f"Upload not found: {request.uploadId}"
+                )
+
+            # Get field definitions
+            fields = field_repo.get_by_upload_id(request.uploadId)
+
+            # Get data
+            data = data_repo.get_by_upload_id(request.factoryId, request.uploadId)
+            row_count = len(data) if data else 0
+
+            # Build field definitions
+            field_definitions = []
+            dimensions = []
+            measures = []
+            time_fields = []
+
+            for f in fields:
+                semantic_type = "dimension"
+                if f.is_measure:
+                    semantic_type = "measure"
+                    measures.append(f)
+                elif f.is_time:
+                    semantic_type = "time"
+                    time_fields.append(f)
+                else:
+                    dimensions.append(f)
+
+                chart_role = "NONE"
+                if f.is_dimension:
+                    chart_role = "X_AXIS"
+                elif f.is_measure:
+                    chart_role = "Y_AXIS"
+                elif f.is_time:
+                    chart_role = "X_AXIS"
+
+                field_definitions.append(FieldDefinitionModel(
+                    originalName=f.original_name,
+                    standardName=f.standard_name or f.original_name,
+                    fieldType=f.field_type or "string",
+                    semanticType=semantic_type,
+                    chartRole=chart_role,
+                    sampleValues=[]
+                ))
+
+            # Build metrics from measures
+            metrics = []
+            for m in measures:
+                total = data_repo.sum_field(
+                    request.factoryId, request.uploadId, m.original_name
+                )
+                if total is not None:
+                    metrics.append(MetricResultModel(
+                        metricCode=m.original_name.lower().replace(" ", "_"),
+                        metricName=m.standard_name or m.original_name,
+                        value=total,
+                        formattedValue=format_number_for_chart(total),
+                        unit="",
+                        changeDirection="STABLE"
+                    ))
+
+            # Build charts
+            charts = []
+            primary_measure = measures[0] if measures else None
+
+            if primary_measure and dimensions:
+                # Create bar chart for each dimension
+                for dim in dimensions[:2]:  # Limit to 2 charts
+                    agg_data = data_repo.aggregate(
+                        request.factoryId, request.uploadId,
+                        dim.original_name, primary_measure.original_name
+                    )
+                    if agg_data:
+                        series_data = [
+                            {"name": str(d["group"]), "value": d["value"]}
+                            for d in agg_data
+                        ]
+
+                        # Determine chart type
+                        chart_type = "BAR"
+                        if len(agg_data) <= 5:
+                            chart_type = "PIE"
+
+                        # Build alternative dimensions
+                        alt_x_axis = [
+                            AlternativeDimensionModel(
+                                fieldName=d.original_name,
+                                displayName=d.standard_name or d.original_name,
+                                semanticType="dimension",
+                                selected=(d.original_name == dim.original_name)
+                            )
+                            for d in dimensions
+                        ]
+
+                        # Build alternative measures
+                        alt_measures = [
+                            AlternativeDimensionModel(
+                                fieldName=m.original_name,
+                                displayName=m.standard_name or m.original_name,
+                                semanticType="measure",
+                                selected=(m.original_name == primary_measure.original_name)
+                            )
+                            for m in measures
+                        ]
+
+                        charts.append(DynamicChartConfigModel(
+                            chartType=chart_type,
+                            title=f"{primary_measure.standard_name or primary_measure.original_name} by {dim.standard_name or dim.original_name}",
+                            xAxis=AxisConfigModel(
+                                field=dim.original_name,
+                                label=dim.standard_name or dim.original_name,
+                                type="category"
+                            ),
+                            yAxis=[AxisConfigModel(
+                                field=primary_measure.original_name,
+                                label=primary_measure.standard_name or primary_measure.original_name,
+                                type="value"
+                            )],
+                            series=[SeriesConfigModel(
+                                name=primary_measure.standard_name or primary_measure.original_name,
+                                field=primary_measure.original_name,
+                                type=chart_type,
+                                data=series_data
+                            )],
+                            alternativeXAxis=alt_x_axis,
+                            alternativeMeasures=alt_measures,
+                            rawData=agg_data,
+                            totalRows=len(agg_data)
+                        ))
+
+            # Build insights
+            insights = [
+                AIInsightModel(
+                    id=str(uuid.uuid4())[:8],
+                    level="green",
+                    category="summary",
+                    text=f"数据包含 {row_count} 条记录"
+                )
+            ]
+
+            if metrics and metrics[0].value > 0:
+                insights.append(AIInsightModel(
+                    id=str(uuid.uuid4())[:8],
+                    level="green",
+                    category="metric",
+                    text=f"{metrics[0].metricName} 总计: {metrics[0].formattedValue}"
+                ))
+
+            # Detect scenario
+            table_type = upload.detected_table_type or "custom"
+            scenario_type = "custom"
+            if "sales" in table_type.lower() or "销售" in table_type:
+                scenario_type = "sales"
+            elif "finance" in table_type.lower() or "财务" in table_type:
+                scenario_type = "finance"
+            elif "hr" in table_type.lower() or "人力" in table_type:
+                scenario_type = "hr"
+
+            # Build sheet result
+            sheet_result = SheetAnalysisResultModel(
+                sheetName=upload.file_name or "Sheet1",
+                sheetIndex=0,
+                rowCount=row_count,
+                columnCount=len(fields),
+                fields=field_definitions,
+                scenario=ScenarioDetectionModel(
+                    scenarioType=scenario_type,
+                    confidence=0.8,
+                    suggestedCharts=["BAR", "PIE", "LINE"]
+                ),
+                metrics=metrics,
+                charts=charts,
+                insights=insights,
+                fromCache=False,
+                processingTimeMs=int((time.time() - start_time) * 1000)
+            )
+
+            processing_time = int((time.time() - start_time) * 1000)
+
+            return MultiSheetAnalysisResultModel(
+                success=True,
+                message="Analysis completed",
+                data=MultiSheetAnalysisDataModel(
+                    totalSheets=1,
+                    successCount=1,
+                    failedCount=0,
+                    cacheHitCount=0,
+                    processingTimeMs=processing_time,
+                    sheetResults=[sheet_result]
+                )
+            )
+
+    except Exception as e:
+        logger.error(f"Analysis by upload ID failed: {e}", exc_info=True)
+        return MultiSheetAnalysisResultModel(
+            success=False,
+            message=str(e)
+        )
+
+
+def format_number_for_chart(value: float) -> str:
+    """Format number for display in charts"""
+    if value is None:
+        return "0"
+    if abs(value) >= 1_000_000:
+        return f"{value / 1_000_000:.2f}M"
+    elif abs(value) >= 1_000:
+        return f"{value / 1_000:.2f}K"
+    else:
+        return f"{value:.2f}"
+
+
+# =============================================================================
 # Zero-Code Auto-Parse Endpoint
 # =============================================================================
 
@@ -1065,11 +1503,20 @@ async def auto_parse_excel(
         field_mappings_java = []
         for fm in mapping_result.field_mappings:
             fm_dict = fm.to_dict()
-            # Ensure camelCase keys
+            category = fm_dict.get("category")
+
+            # Get dataType with fallback: data_type -> infer from category
+            data_type = fm_dict.get("data_type") or fm_dict.get("dataType")
+            if not data_type:
+                data_type = _infer_data_type_from_category(category)
+
+            # Ensure camelCase keys and include category for Java fallback
             field_mappings_java.append({
                 "originalColumn": fm_dict.get("original") or fm_dict.get("originalColumn"),
                 "standardField": fm_dict.get("standard") or fm_dict.get("standardField"),
-                "dataType": fm_dict.get("data_type") or fm_dict.get("dataType"),
+                "dataType": data_type,
+                "category": category,  # For Java isDimension/isMeasure fallback
+                "subType": category,   # Java also uses subType for classification
                 "confidence": fm_dict.get("confidence", 0.0),
                 "source": fm_dict.get("source", "auto")
             })
@@ -1203,7 +1650,7 @@ def _recommend_charts(
     return charts[:5]  # Limit to 5 recommendations
 
 
-@router.post("/auto-parse/feedback")
+@router.post("/auto-parse/feedback", deprecated=True)
 async def submit_auto_parse_feedback(
     cache_key: str = Form(...),
     correction_type: str = Form(...),
@@ -1211,7 +1658,11 @@ async def submit_auto_parse_feedback(
     correct_value: str = Form(...)
 ):
     """
-    Submit feedback for auto-parse results to improve future detection.
+    [DEPRECATED] Submit feedback for auto-parse results to improve future detection.
+
+    NOTE: This endpoint is deprecated and not actively used.
+    Feedback collection was planned but never integrated into the Java backend.
+    Retained for backward compatibility but may be removed in future versions.
 
     - **cache_key**: The cache key from auto-parse response
     - **correction_type**: Type of correction (mapping, structure, data_type)
@@ -1703,14 +2154,18 @@ async def batch_export_all_sheets(
         )
 
 
-@router.post("/export/batch/save")
+@router.post("/export/batch/save", deprecated=True)
 async def batch_export_and_save(
     file: UploadFile = File(...),
     output_dir: str = Form(...),
     max_rows_per_md: int = Form(500)
 ):
     """
-    批量导出并保存到指定目录。
+    [DEPRECATED] 批量导出并保存到指定目录。
+
+    NOTE: This endpoint is deprecated. Server-side file saving is not used
+    by the Java backend. Use /export/batch for in-memory export instead.
+    Retained for backward compatibility but may be removed in future versions.
 
     参数:
     - **file**: Excel文件
@@ -2586,7 +3041,7 @@ class LLMAnalysisResponse(BaseModel):
     processing_time_ms: int = 0
 
 
-@router.post("/analyze-structure", response_model=LLMAnalysisResponse)
+@router.post("/analyze-structure", response_model=LLMAnalysisResponse, deprecated=True)
 async def analyze_excel_structure(
     file: UploadFile = File(...),
     sheet_index: Optional[int] = Form(0),
@@ -2594,7 +3049,11 @@ async def analyze_excel_structure(
     include_recommendations: bool = Form(True)
 ):
     """
-    使用LLM分析Excel结构
+    [DEPRECATED] 使用LLM分析Excel结构
+
+    NOTE: This endpoint is deprecated. The Java backend uses /smart-parse
+    endpoint which provides the same functionality with better integration.
+    Retained for backward compatibility but may be removed in future versions.
 
     流程:
     1. 使用RawExporter导出原始数据（保真）

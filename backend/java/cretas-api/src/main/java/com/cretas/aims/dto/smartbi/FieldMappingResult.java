@@ -52,6 +52,13 @@ public class FieldMappingResult {
     private String subType;
 
     /**
+     * 语义分类 (由 Python SemanticMapper 返回)
+     * 用于 dataType 为空时的 fallback 推断
+     * 值如: amount, rate, category, region, time, date 等
+     */
+    private String category;
+
+    /**
      * 置信度 (0-100)
      */
     private Double confidence;
