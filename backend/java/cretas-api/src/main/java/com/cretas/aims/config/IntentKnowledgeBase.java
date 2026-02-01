@@ -1518,6 +1518,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("订购记录", "CUSTOMER_PURCHASE_HISTORY");
 
         // === v12.2: ORDER 域短语映射 ===
+        phraseToIntentMapping.put("订单", "ORDER_LIST");  // v22.0 Phase 3: 短词映射
         phraseToIntentMapping.put("查看订单", "ORDER_LIST");
         phraseToIntentMapping.put("订单列表", "ORDER_LIST");
         phraseToIntentMapping.put("订单查询", "ORDER_LIST");
@@ -1685,6 +1686,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("批次来源", "TRACE_BATCH");
         phraseToIntentMapping.put("批次从哪来", "TRACE_BATCH");
         phraseToIntentMapping.put("溯源这个批次", "TRACE_BATCH");
+        phraseToIntentMapping.put("溯源记录", "TRACE_BATCH");  // v22.0 Phase 4: 新增
         phraseToIntentMapping.put("全链路追溯", "TRACE_FULL");
         phraseToIntentMapping.put("全链路溯源", "TRACE_FULL");
         phraseToIntentMapping.put("完整溯源", "TRACE_FULL");
@@ -1905,6 +1907,8 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("查出货", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("看发货", "SHIPMENT_QUERY");
         phraseToIntentMapping.put("看下发货", "SHIPMENT_QUERY");
+        phraseToIntentMapping.put("发货", "SHIPMENT_CREATE");  // v22.0: 短词映射
+        phraseToIntentMapping.put("出货", "SHIPMENT_CREATE");  // v22.0: 短词映射
         phraseToIntentMapping.put("创建发货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("新建发货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("新建出货单", "SHIPMENT_CREATE");
@@ -1913,6 +1917,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("安排发货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("安排一批发货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("登记出货", "SHIPMENT_CREATE");
+        phraseToIntentMapping.put("登记发货", "SHIPMENT_CREATE");  // v22.0 Phase 4
         phraseToIntentMapping.put("准备发货", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("开一张出货单", "SHIPMENT_CREATE");
         phraseToIntentMapping.put("发个货", "SHIPMENT_CREATE");
@@ -2125,12 +2130,13 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("看下告警", "ALERT_LIST");
         phraseToIntentMapping.put("给我看告警", "ALERT_LIST");
         // 更新/处理类短语 - ALERT_ACKNOWLEDGE / ALERT_RESOLVE
-        phraseToIntentMapping.put("处理告警", "ALERT_ACKNOWLEDGE");
+        // v22.0: "处理"="解决"语义，应为 RESOLVE；"确认"="收到"语义，应为 ACKNOWLEDGE
+        phraseToIntentMapping.put("处理告警", "ALERT_RESOLVE");
         phraseToIntentMapping.put("确认告警", "ALERT_ACKNOWLEDGE");
         phraseToIntentMapping.put("解决告警", "ALERT_RESOLVE");
         phraseToIntentMapping.put("关闭告警", "ALERT_RESOLVE");
-        phraseToIntentMapping.put("把告警处理掉", "ALERT_ACKNOWLEDGE");
-        phraseToIntentMapping.put("告警已处理", "ALERT_ACKNOWLEDGE");
+        phraseToIntentMapping.put("把告警处理掉", "ALERT_RESOLVE");
+        phraseToIntentMapping.put("告警已处理", "ALERT_RESOLVE");
 
         // === v12.0优化：查询/更新区分增强 - 质检领域 ===
         // 查询类短语 - QUALITY_CHECK_QUERY
@@ -3190,6 +3196,7 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("异常报告", "REPORT_ANOMALY");
         phraseToIntentMapping.put("异常报表", "REPORT_ANOMALY");
         phraseToIntentMapping.put("异常分析", "REPORT_ANOMALY");
+        phraseToIntentMapping.put("问题数据汇总", "REPORT_ANOMALY");  // v22.0 Phase 4
 
         // 设备类修复
         phraseToIntentMapping.put("设备详情", "EQUIPMENT_DETAIL");
@@ -3242,10 +3249,14 @@ public class IntentKnowledgeBase {
         phraseToIntentMapping.put("今日打卡记录", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("今天的打卡", "ATTENDANCE_TODAY");
         phraseToIntentMapping.put("考勤统计", "ATTENDANCE_STATS");
+        // v22.0 Phase 3: 短词映射
+        phraseToIntentMapping.put("考勤", "ATTENDANCE_STATS");
 
         // 警报类修复
         phraseToIntentMapping.put("警报统计", "ALERT_STATS");
         phraseToIntentMapping.put("告警统计", "ALERT_STATS");
+        phraseToIntentMapping.put("异常事件统计", "ALERT_STATS");  // v22.0 Phase 4
+        phraseToIntentMapping.put("异常事件", "ALERT_STATS");      // v22.0 Phase 4
         phraseToIntentMapping.put("确认警报", "ALERT_ACKNOWLEDGE");
         phraseToIntentMapping.put("解决警报", "ALERT_RESOLVE");
         phraseToIntentMapping.put("按级别警报", "ALERT_BY_LEVEL");
@@ -4267,8 +4278,17 @@ public class IntentKnowledgeBase {
         for (String indicator : generalQuestionIndicators) {
             if (trimmedInput.startsWith(indicator.toLowerCase()) ||
                 trimmedInput.contains(indicator.toLowerCase())) {
+
+                // v11.15新增：检查是否以疑问句结尾 - 如果是，优先返回 GENERAL_QUESTION
+                // 例如 "我需要入货1000kg包材，你有什么建议吗" 应为咨询问题
+                if (endsWithQuestionPattern(trimmedInput)) {
+                    log.debug("检测到以疑问句结尾的建议类问题: input='{}', indicator='{}'", input, indicator);
+                    return QuestionType.GENERAL_QUESTION;
+                }
+
                 // 额外检查：如果同时包含明确的操作指示词，可能是混合型
                 // 例如 "怎么查询库存" 是操作指令，而 "怎么提高效率" 是通用问题
+                // 只有非疑问句且包含强操作指示词时才返回 OPERATIONAL_COMMAND
                 if (containsStrongOperationalIndicator(trimmedInput)) {
                     log.debug("检测到混合型问题，优先按操作指令处理: input='{}', indicator='{}'", input, indicator);
                     return QuestionType.OPERATIONAL_COMMAND;
@@ -4349,6 +4369,14 @@ public class IntentKnowledgeBase {
         boolean hasQuestionIndicator = questionIndicators.stream()
                 .anyMatch(normalizedInput::contains);
 
+        // v11.15新增: 排除建议类问题
+        // 如果用户在询问建议（如"有什么建议吗"），这是咨询而非业务分析请求
+        // 不应该将其当作业务分析请求处理，以避免被错误匹配到操作类意图
+        if (endsWithQuestionPattern(normalizedInput)) {
+            log.debug("isAnalysisRequest: 检测到建议类问题后缀，排除业务分析: input='{}'", input);
+            return false;
+        }
+
         // v11.13修正: 只要包含业务关键词就认为是业务查询
         // 这解决了"为什么发货这么慢"这类查询被误拒的问题
         boolean isAnalysis = hasBusinessKeyword;
@@ -4409,6 +4437,51 @@ public class IntentKnowledgeBase {
 
         return strongIndicators.stream().anyMatch(input::contains) ||
                businessKeywords.stream().anyMatch(input::contains);
+    }
+
+    /**
+     * v11.15新增：检测输入是否以疑问句模式结尾
+     * 用于区分咨询类问题和操作指令
+     *
+     * 例如:
+     * - "我需要入货1000kg包材，你有什么建议吗" -> true (咨询建议)
+     * - "入库1000kg包材" -> false (操作指令)
+     *
+     * @param input 用户输入（建议传入小写形式）
+     * @return true 如果以疑问句模式结尾
+     */
+    private boolean endsWithQuestionPattern(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+
+        // 疑问句结尾模式 - 表示用户在寻求建议或咨询
+        List<String> questionEndings = Arrays.asList(
+                // 建议类
+                "有什么建议吗", "有何建议", "有什么建议",
+                "建议吗", "啥建议", "什么建议",
+                // 方法/办法类
+                "怎么办", "该怎么办", "应该怎么办",
+                "有什么方法", "有什么技巧", "有什么办法",
+                // 确认类
+                "好不好", "行不行", "可以吗", "能吗", "对吗",
+                // 疑问语气词
+                "吗？", "吗?", "呢？", "呢?", "吗"
+        );
+
+        String trimmed = input.trim().toLowerCase();
+
+        for (String ending : questionEndings) {
+            String lowerEnding = ending.toLowerCase();
+            if (trimmed.endsWith(lowerEnding) ||
+                trimmed.endsWith(lowerEnding + "？") ||
+                trimmed.endsWith(lowerEnding + "?")) {
+                log.debug("检测到疑问句结尾模式: ending='{}'", ending);
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
