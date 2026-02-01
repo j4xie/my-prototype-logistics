@@ -44,16 +44,23 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
     @Override
     @Transactional("smartbiPostgresTransactionManager")
     public DynamicPersistenceResult persistDynamic(String factoryId, ExcelParseResponse parseResponse) {
-        return persistDynamic(factoryId, parseResponse, parseResponse.getFieldMappings());
+        return persistDynamic(factoryId, parseResponse, parseResponse.getFieldMappings(), null);
     }
 
     @Override
-    @Transactional("smartbiPostgresTransactionManager")
+    @Transactional(value = "smartbiPostgresTransactionManager", propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public DynamicPersistenceResult persistDynamic(String factoryId, ExcelParseResponse parseResponse,
                                                     List<FieldMappingResult> confirmedMappings) {
+        return persistDynamic(factoryId, parseResponse, confirmedMappings, null);
+    }
+
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager", propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public DynamicPersistenceResult persistDynamic(String factoryId, ExcelParseResponse parseResponse,
+                                                    List<FieldMappingResult> confirmedMappings, String fileName) {
         String sheetName = getSheetName(parseResponse);
-        log.info("Persisting dynamic data: factoryId={}, sheetName={}, rowCount={}",
-                factoryId, sheetName, parseResponse.getRowCount());
+        log.info("Persisting dynamic data: factoryId={}, fileName={}, sheetName={}, rowCount={}",
+                factoryId, fileName, sheetName, parseResponse.getRowCount());
 
         List<Map<String, Object>> previewData = parseResponse.getPreviewData();
         if (previewData == null || previewData.isEmpty()) {
@@ -61,8 +68,8 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
         }
 
         try {
-            // 1. Create upload record
-            SmartBiPgExcelUpload upload = createUploadRecord(factoryId, parseResponse, confirmedMappings);
+            // 1. Create upload record with fileName for multi-sheet grouping
+            SmartBiPgExcelUpload upload = createUploadRecord(factoryId, parseResponse, confirmedMappings, fileName);
             upload = uploadRepository.save(upload);
             Long uploadId = upload.getId();
             log.info("Created upload record: uploadId={}", uploadId);
@@ -211,7 +218,7 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
     }
 
     private SmartBiPgExcelUpload createUploadRecord(String factoryId, ExcelParseResponse parseResponse,
-                                                     List<FieldMappingResult> fieldMappings) {
+                                                     List<FieldMappingResult> fieldMappings, String fileName) {
         // Build field mappings map
         Map<String, String> mappingsMap = new HashMap<>();
         if (fieldMappings != null) {
@@ -238,6 +245,7 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
 
         return SmartBiPgExcelUpload.builder()
                 .factoryId(factoryId)
+                .fileName(fileName)  // Store original file name for multi-sheet grouping
                 .sheetName(sheetName)
                 .detectedTableType(tableType)
                 .fieldMappings(mappingsMap)
