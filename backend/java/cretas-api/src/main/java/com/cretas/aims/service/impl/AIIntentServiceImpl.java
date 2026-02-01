@@ -679,8 +679,14 @@ public class AIIntentServiceImpl implements AIIntentService {
                     log.info("v16.0 Classifier: intent={}, confidence={}, latency={}ms",
                             result.getIntentCode(), String.format("%.4f", result.getConfidence()), result.getLatencyMs());
 
-                    // 高置信度直接返回
-                    if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                    // v11.15: 检测建议类问题 - 如果是建议类问题，跳过分类器直接返回
+                    // 例如 "我需要入货1000kg包材，你有什么建议吗" 应该被识别为咨询问题
+                    boolean isAdviceSeekingQuestion = isAdviceSeeking(userInput.toLowerCase().trim());
+                    if (isAdviceSeekingQuestion) {
+                        log.info("v11.15 检测到建议类问题，跳过分类器直接返回: input='{}'", userInput);
+                        // 继续走后续流程，不直接返回分类器结果
+                    } else if (result.getConfidence() >= classifierHighConfidenceThreshold) {
+                        // 高置信度直接返回（非建议类问题）
                         List<AIIntentConfig> allIntents = getAllIntents(factoryId);
                         Optional<AIIntentConfig> intentOpt = allIntents.stream()
                                 .filter(i -> i.getIntentCode().equals(result.getIntentCode()))
@@ -717,9 +723,9 @@ public class AIIntentServiceImpl implements AIIntentService {
                             return applyNegationConversion(classifierMatchResult, enhancedResult, factoryId);
                         }
                     }
-                    // 低置信度记录日志，继续走语义路由器
-                    log.debug("v16.0 Classifier confidence too low ({} < {}), proceeding to semantic router",
-                            String.format("%.4f", result.getConfidence()), classifierHighConfidenceThreshold);
+                    // 低置信度或建议类问题，继续走语义路由器
+                    log.debug("v16.0 Classifier confidence too low or advice-seeking ({} < {} or isAdvice={}), proceeding to semantic router",
+                            String.format("%.4f", result.getConfidence()), classifierHighConfidenceThreshold, isAdviceSeekingQuestion);
                 }
             } catch (Exception e) {
                 log.warn("v16.0 Classifier failed, falling back to semantic router: {}", e.getMessage());
@@ -2681,6 +2687,51 @@ public class AIIntentServiceImpl implements AIIntentService {
     }
 
     /**
+     * v11.15: 检测用户输入是否为建议类问题
+     *
+     * 建议类问题是用户在询问建议、方法或意见，而非执行具体操作。
+     * 例如：
+     * - "我需要入货1000kg包材，你有什么建议吗" -> true
+     * - "入库1000kg包材" -> false
+     *
+     * @param input 用户输入（建议传入小写形式）
+     * @return 如果是建议类问题返回 true
+     */
+    private boolean isAdviceSeeking(String input) {
+        if (input == null || input.isEmpty()) {
+            return false;
+        }
+
+        // 建议类问题的结尾模式
+        List<String> adviceEndingPatterns = Arrays.asList(
+                // 建议类
+                "有什么建议吗", "有何建议", "有什么建议",
+                "建议吗", "啥建议", "什么建议",
+                "给点建议", "给些建议",
+                // 方法/办法类
+                "怎么办", "该怎么办", "应该怎么办",
+                "有什么方法", "有什么技巧", "有什么办法",
+                "有啥方法", "有啥办法",
+                // 确认类（询问意见）
+                "好不好", "行不行", "可以吗", "能吗", "对吗",
+                "合适吗", "合理吗"
+        );
+
+        String trimmed = input.trim().toLowerCase();
+
+        for (String pattern : adviceEndingPatterns) {
+            if (trimmed.endsWith(pattern) ||
+                trimmed.endsWith(pattern + "？") ||
+                trimmed.endsWith(pattern + "?")) {
+                log.debug("v11.15 检测到建议类问题模式: pattern='{}'", pattern);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 检测用户输入是否包含多意图触发词
      *
      * 多意图触发词表明用户可能在一次输入中表达了多个独立的意图，
@@ -2842,6 +2893,12 @@ public class AIIntentServiceImpl implements AIIntentService {
             "用户", "账号", "员工", "工时", "绩效", "排班", "班次",
             "出库", "入库", "采购", "销售", "盘点", "成品",
             "HACCP", "溯源", "产线", "工单", "维修", "维护",
+            // v22.0: 2字符短词白名单（有明确业务含义）
+            "签退", "签到", "打卡", "请假", "加班", "退勤", "上班", "下班",
+            // v22.0 Phase 3: 更多2字符业务短词
+            "出货", "发货", "入库", "出库", "盘点", "报废", "退货", "调拨",
+            // v22.0 Phase 3.1: 更多业务短词
+            "考勤", "库存", "订单", "告警", "预警", "报表", "统计",
             // 业务名词 - 扩展
             "产品", "仓库", "配置", "价格", "参数", "进度", "周期",
             "报表", "季度", "年度", "月份",
