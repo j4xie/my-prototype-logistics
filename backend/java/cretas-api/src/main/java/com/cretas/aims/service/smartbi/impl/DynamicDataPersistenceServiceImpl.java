@@ -141,17 +141,32 @@ public class DynamicDataPersistenceServiceImpl implements DynamicDataPersistence
         // Delete existing definitions
         fieldDefRepository.deleteByUploadId(uploadId);
 
-        // Create new definitions
+        // Create new definitions with unique names
         List<SmartBiPgFieldDefinition> definitions = new ArrayList<>();
         int order = 0;
+
+        // Track used names to handle duplicates (common in wide tables with merged headers)
+        Map<String, Integer> nameCountMap = new HashMap<>();
 
         for (FieldMappingResult mapping : fieldMappings) {
             // Get sample values from dataFeature if available
             List<Object> sampleValues = getSampleValues(mapping);
 
+            // Handle duplicate column names by appending index
+            String originalName = mapping.getOriginalColumn();
+            if (originalName == null || originalName.isEmpty()) {
+                originalName = "Col" + order;
+            }
+
+            int count = nameCountMap.getOrDefault(originalName, 0);
+            nameCountMap.put(originalName, count + 1);
+
+            // Append suffix for duplicates (e.g., "1月" -> "1月", "1月_2", "1月_3")
+            String uniqueName = count == 0 ? originalName : originalName + "_" + (count + 1);
+
             SmartBiPgFieldDefinition def = SmartBiPgFieldDefinition.builder()
                     .uploadId(uploadId)
-                    .originalName(mapping.getOriginalColumn())
+                    .originalName(uniqueName)
                     .standardName(mapping.getStandardField())
                     .fieldType(mapping.getDataType())
                     .semanticType(inferSemanticType(mapping))
