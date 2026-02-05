@@ -1,1 +1,0 @@
-# SmartBI Module - Business Intelligence
