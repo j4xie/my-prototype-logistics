@@ -1,9 +1,0 @@
-{
-  "weights": [],
-  "biases": [0.0, 0.0, 0.0, 0.0, 0.0],
-  "embedding_dim": 768,
-  "num_classes": 5,
-  "trained_samples": 0,
-  "trained_at": "not_trained",
-  "note": "Default empty model - run /api/ai/complexity/train to train"
-}
