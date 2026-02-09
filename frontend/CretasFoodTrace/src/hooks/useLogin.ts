@@ -75,8 +75,8 @@ export function useLogin(options?: UseLoginOptions): UseLoginReturn {
       const deviceInfo = {
         deviceId: userIdentification.deviceId,
         deviceModel: 'Unknown',
-        platform: Platform.OS as 'ios' | 'android',
-        osVersion: Platform.Version.toString(),
+        platform: Platform.OS as 'ios' | 'android' | 'web',
+        osVersion: Platform.Version ? Platform.Version.toString() : 'web',
         appVersion: '1.0.0',
       };
 

@@ -141,7 +141,7 @@ export function WHBatchDetailScreen() {
         setBatchDetail({
           batchNumber: batch.batchNumber || `MB-${batch.id}`,
           materialName: batch.materialName || '物料',
-          materialType: batch.storageType === 'frozen' ? '冻品' : '鲜品',
+          materialType: batch.storageType?.toLowerCase() === 'frozen' ? '冻品' : '鲜品',
           status: statusInfo.status,
           statusLabel: statusInfo.label,
           expiryDays,

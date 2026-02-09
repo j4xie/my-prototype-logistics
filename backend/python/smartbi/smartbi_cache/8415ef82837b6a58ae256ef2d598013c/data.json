@@ -1,0 +1,318 @@
+{
+  "sheet_name": "2025年中心利润表 ",
+  "sheet_index": 3,
+  "row_count": 263,
+  "col_count": 32,
+  "columns": [
+    "项　　　  　目",
+    "行次",
+    "2025-01-01T00:00:00_预算数",
+    "本月实际",
+    "2025-02-01T00:00:00_预算数",
+    "本月实际_1",
+    "2025-03-01T00:00:00_预算数",
+    "本月实际_2",
+    "2025-04-01T00:00:00_预算数",
+    "本月实际_3",
+    "2025-05-01T00:00:00_预算数",
+    "本月实际_4",
+    "2025-06-01T00:00:00_预算数",
+    "本月实际_5",
+    "2025-07-01T00:00:00_预算数",
+    "本月实际_6",
+    "2025-08-01T00:00:00_预算数",
+    "本月实际_7",
+    "2025-09-01T00:00:00_预算数",
+    "本月实际_8",
+    "2025-10-01T00:00:00_预算数",
+    "本月实际_9",
+    "2025-11-01T00:00:00_预算数",
+    "本月实际_10",
+    "2025-12-01T00:00:00_预算数",
+    "本月实际_11",
+    "2025年合计_预算数",
+    "本年实际",
+    "2025年合计逆向验证_预算数",
+    "本月实际_12",
+    "检验结果_预算数",
+    "本月实际_13"
+  ],
+  "data_types": {
+    "项　　　  　目": "object",
+    "行次": "object",
+    "2025-01-01T00:00:00_预算数": "object",
+    "本月实际": "object",
+    "2025-02-01T00:00:00_预算数": "object",
+    "本月实际_1": "object",
+    "2025-03-01T00:00:00_预算数": "object",
+    "本月实际_2": "object",
+    "2025-04-01T00:00:00_预算数": "object",
+    "本月实际_3": "object",
+    "2025-05-01T00:00:00_预算数": "object",
+    "本月实际_4": "object",
+    "2025-06-01T00:00:00_预算数": "object",
+    "本月实际_5": "object",
+    "2025-07-01T00:00:00_预算数": "object",
+    "本月实际_6": "object",
+    "2025-08-01T00:00:00_预算数": "object",
+    "本月实际_7": "object",
+    "2025-09-01T00:00:00_预算数": "object",
+    "本月实际_8": "object",
+    "2025-10-01T00:00:00_预算数": "object",
+    "本月实际_9": "object",
+    "2025-11-01T00:00:00_预算数": "object",
+    "本月实际_10": "object",
+    "2025-12-01T00:00:00_预算数": "object",
+    "本月实际_11": "object",
+    "2025年合计_预算数": "object",
+    "本年实际": "object",
+    "2025年合计逆向验证_预算数": "object",
+    "本月实际_12": "object",
+    "检验结果_预算数": "object",
+    "本月实际_13": "object"
+  },
+  "statistics": {
+    "项　　　  　目": {
+      "non_null_count": 263,
+      "null_count": 0,
+      "unique_count": 109
+    },
+    "行次": {
+      "non_null_count": 24,
+      "null_count": 239,
+      "unique_count": 24
+    },
+    "2025-01-01T00:00:00_预算数": {
+      "non_null_count": 25,
+      "null_count": 238,
+      "unique_count": 13
+    },
+    "本月实际": {
+      "non_null_count": 77,
+      "null_count": 186,
+      "unique_count": 34
+    },
+    "2025-02-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 13
+    },
+    "本月实际_1": {
+      "non_null_count": 226,
+      "null_count": 37,
+      "unique_count": 34
+    },
+    "2025-03-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 14
+    },
+    "本月实际_2": {
+      "non_null_count": 224,
+      "null_count": 39,
+      "unique_count": 34
+    },
+    "2025-04-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 13
+    },
+    "本月实际_3": {
+      "non_null_count": 169,
+      "null_count": 94,
+      "unique_count": 29
+    },
+    "2025-05-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 13
+    },
+    "本月实际_4": {
+      "non_null_count": 146,
+      "null_count": 117,
+      "unique_count": 21
+    },
+    "2025-06-01T00:00:00_预算数": {
+      "non_null_count": 25,
+      "null_count": 238,
+      "unique_count": 13
+    },
+    "本月实际_5": {
+      "non_null_count": 76,
+      "null_count": 187,
+      "unique_count": 26
+    },
+    "2025-07-01T00:00:00_预算数": {
+      "non_null_count": 27,
+      "null_count": 236,
+      "unique_count": 13
+    },
+    "本月实际_6": {
+      "non_null_count": 81,
+      "null_count": 182,
+      "unique_count": 24
+    },
+    "2025-08-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 13
+    },
+    "本月实际_7": {
+      "non_null_count": 81,
+      "null_count": 182,
+      "unique_count": 22
+    },
+    "2025-09-01T00:00:00_预算数": {
+      "non_null_count": 27,
+      "null_count": 236,
+      "unique_count": 13
+    },
+    "本月实际_8": {
+      "non_null_count": 84,
+      "null_count": 179,
+      "unique_count": 23
+    },
+    "2025-10-01T00:00:00_预算数": {
+      "non_null_count": 26,
+      "null_count": 237,
+      "unique_count": 13
+    },
+    "本月实际_9": {
+      "non_null_count": 34,
+      "null_count": 229,
+      "unique_count": 10
+    },
+    "2025-11-01T00:00:00_预算数": {
+      "non_null_count": 27,
+      "null_count": 236,
+      "unique_count": 13
+    },
+    "本月实际_10": {
+      "non_null_count": 71,
+      "null_count": 192,
+      "unique_count": 18
+    },
+    "2025-12-01T00:00:00_预算数": {
+      "non_null_count": 24,
+      "null_count": 239,
+      "unique_count": 13
+    },
+    "本月实际_11": {
+      "non_null_count": 47,
+      "null_count": 216,
+      "unique_count": 22
+    },
+    "2025年合计_预算数": {
+      "non_null_count": 261,
+      "null_count": 2,
+      "unique_count": 14
+    },
+    "本年实际": {
+      "non_null_count": 263,
+      "null_count": 0,
+      "unique_count": 39
+    },
+    "2025年合计逆向验证_预算数": {
+      "non_null_count": 261,
+      "null_count": 2,
+      "unique_count": 15
+    },
+    "本月实际_12": {
+      "non_null_count": 263,
+      "null_count": 0,
+      "unique_count": 39
+    },
+    "检验结果_预算数": {
+      "non_null_count": 258,
+      "null_count": 5,
+      "unique_count": 2
+    },
+    "本月实际_13": {
+      "non_null_count": 259,
+      "null_count": 4,
+      "unique_count": 2
+    }
+  },
+  "raw_stats": {
+    "non_empty_row_count": 268,
+    "avg_fill_rate": 0.10536524230126541,
+    "potential_data_start_row": null,
+    "first_10_rows_summary": [
+      {
+        "row": 0,
+        "non_empty": 1,
+        "numeric": 0,
+        "fill_rate": 0.01
+      },
+      {
+        "row": 1,
+        "non_empty": 2,
+        "numeric": 0,
+        "fill_rate": 0.02
+      },
+      {
+        "row": 2,
+        "non_empty": 2,
+        "numeric": 0,
+        "fill_rate": 0.02
+      },
+      {
+        "row": 3,
+        "non_empty": 17,
+        "numeric": 0,
+        "fill_rate": 0.14
+      },
+      {
+        "row": 4,
+        "non_empty": 30,
+        "numeric": 0,
+        "fill_rate": 0.25
+      },
+      {
+        "row": 5,
+        "non_empty": 32,
+        "numeric": 31,
+        "fill_rate": 0.27
+      },
+      {
+        "row": 6,
+        "non_empty": 10,
+        "numeric": 9,
+        "fill_rate": 0.08
+      },
+      {
+        "row": 7,
+        "non_empty": 10,
+        "numeric": 9,
+        "fill_rate": 0.08
+      },
+      {
+        "row": 8,
+        "non_empty": 14,
+        "numeric": 13,
+        "fill_rate": 0.12
+      },
+      {
+        "row": 9,
+        "non_empty": 7,
+        "numeric": 6,
+        "fill_rate": 0.06
+      }
+    ]
+  },
+  "context": {
+    "notes": [],
+    "explanations": [],
+    "definitions": {},
+    "source_rows": [],
+    "raw_text": "2025-12-30 00:00:00 会企01表",
+    "metadata": {
+      "title": "2025-12-30 00:00:00 会企01表",
+      "unit": "江苏美鑫食品科技有限公司 单位：元",
+      "period": "项　　　  　目 行次 2025-01-01 00:00:00 2025-02-01 00:00:00 2025-03-01 00:00:00 2025-04-01 00:00:00 2025-05-01 00:00:00 2025-06-01 00:00:00 2025-07-01 00:00:00 2025-08-01 00:00:00 2025-09-01 00:00:00 2025-10-01 00:00:00 2025-11-01 00:00:00 2025-12-01 00:00:00 2025年合计 2025年合计逆向验证 检验结果",
+      "department": "中心利润表",
+      "compiled_by": null,
+      "compiled_date": null
+    }
+  }
+}

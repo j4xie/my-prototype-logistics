@@ -38,10 +38,10 @@ export default function StaffListScreen() {
   const [statusFilter, setStatusFilter] = useState<StaffStatus | 'all'>('all');
   const [menuVisible, setMenuVisible] = useState(false);
   const [staffList, setStaffList] = useState<StaffListItem[]>([]);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  const loadData = useCallback(async (pageNum = 0, append = false) => {
+  const loadData = useCallback(async (pageNum = 1, append = false) => {
     try {
       const res = await userApiClient.getUsers({
         page: pageNum,
@@ -86,15 +86,15 @@ export default function StaffListScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      setPage(0);
-      loadData(0);
+      setPage(1);
+      loadData(1);
     }, [loadData])
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setPage(0);
-    loadData(0);
+    setPage(1);
+    loadData(1);
   }, [loadData]);
 
   const onEndReached = () => {
@@ -133,7 +133,7 @@ export default function StaffListScreen() {
                 </Chip>
               </View>
               <Text style={styles.meta}>
-                {item.department || t('staff.list.noDepartment')} · {item.position || item.roleName || t('staff.list.employee')}
+                {item.department || t('staff.card.noDepartment')} · {item.position || item.roleName || t('staff.card.defaultPosition')}
               </Text>
               {item.phone && (
                 <Text style={styles.phone}>{item.phone}</Text>
@@ -152,11 +152,11 @@ export default function StaffListScreen() {
 
   // P2 Fix: Memoize statusOptions to avoid recreation on every render
   const statusOptions = useMemo<{ value: StaffStatus | 'all'; label: string }[]>(() => [
-    { value: 'all', label: t('staff.list.filter.all') },
-    { value: 'active', label: t('staff.list.filter.active') },
-    { value: 'on_leave', label: t('staff.list.filter.onLeave') },
-    { value: 'resigned', label: t('staff.list.filter.resigned') },
-    { value: 'suspended', label: t('staff.list.filter.suspended') },
+    { value: 'all', label: t('staff.filter.all') },
+    { value: 'active', label: t('staff.filter.active') },
+    { value: 'on_leave', label: t('staff.filter.onLeave') },
+    { value: 'resigned', label: t('staff.filter.resigned') },
+    { value: 'suspended', label: t('staff.filter.suspended') },
   ], [t]);
 
   if (loading && staffList.length === 0) {
@@ -179,9 +179,9 @@ export default function StaffListScreen() {
           value={searchQuery}
           onChangeText={(text) => {
             setSearchQuery(text);
-            setPage(0);
+            setPage(1);
           }}
-          onSubmitEditing={() => loadData(0)}
+          onSubmitEditing={() => loadData(1)}
           style={styles.searchbar}
         />
         <Menu
@@ -205,8 +205,8 @@ export default function StaffListScreen() {
               onPress={() => {
                 setStatusFilter(option.value);
                 setMenuVisible(false);
-                setPage(0);
-                loadData(0);
+                setPage(1);
+                loadData(1);
               }}
               title={option.label}
             />

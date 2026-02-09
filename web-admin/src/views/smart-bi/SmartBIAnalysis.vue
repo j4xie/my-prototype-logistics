@@ -146,11 +146,13 @@
           >
             <!-- 自定义 Tab 标签 -->
             <template #label>
-              <span class="custom-tab-label" :class="{ 'is-index': isIndexSheet(sheet) }">
-                <el-icon v-if="isIndexSheet(sheet)"><List /></el-icon>
+              <span class="custom-tab-label" :class="{ 'is-index': isIndexSheet(sheet), 'is-failed': !sheet.success }">
+                <el-icon v-if="!sheet.success" color="#F56C6C"><WarningFilled /></el-icon>
+                <el-icon v-else-if="isIndexSheet(sheet)"><List /></el-icon>
                 <el-icon v-else><Document /></el-icon>
                 <span>{{ getSheetDisplayName(sheet) }}</span>
-                <el-tag v-if="!isIndexSheet(sheet)" size="small" type="info">{{ sheet.savedRows }}行</el-tag>
+                <el-tag v-if="!sheet.success" size="small" type="danger">失败</el-tag>
+                <el-tag v-else-if="!isIndexSheet(sheet)" size="small" type="info">{{ sheet.savedRows }}行</el-tag>
               </span>
             </template>
 
@@ -189,6 +191,25 @@
                 <el-icon><Pointer /></el-icon>
                 <span>点击报表名称跳转到对应 Sheet</span>
               </div>
+            </div>
+
+            <!-- 失败的 Sheet - 显示重试按钮 -->
+            <div v-else-if="!sheet.success" class="failed-sheet-view">
+              <el-result icon="error" :title="'Sheet 处理失败'" :sub-title="sheet.message">
+                <template #extra>
+                  <el-button
+                    v-if="sheet.uploadId"
+                    type="primary"
+                    :loading="retryingSheets[sheet.sheetIndex]"
+                    @click="handleRetrySheet(sheet)"
+                  >
+                    {{ retryingSheets[sheet.sheetIndex] ? '重试中...' : '重新处理' }}
+                  </el-button>
+                  <el-text v-else type="info" style="margin-top: 8px">
+                    该 Sheet 未生成上传记录，请重新上传整个文件
+                  </el-text>
+                </template>
+              </el-result>
             </div>
 
             <!-- 普通 Sheet 展示 -->
@@ -710,14 +731,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
-import { getUploadTableData, getUploadHistory, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache } from '@/api/smartbi';
+import { getUploadTableData, getUploadHistory, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload } from '@/api/smartbi';
 import type { UploadHistoryItem, EnrichResult, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
-import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter } from '@element-plus/icons-vue';
+import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, WarningFilled } from '@element-plus/icons-vue';
 import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
 import * as echarts from 'echarts';
 import KPICard from '@/components/smartbi/KPICard.vue';
@@ -813,6 +834,9 @@ const previewPage = ref(1);
 const previewSheetName = ref('');
 const previewUploadId = ref<number>(0);
 
+// Sheet retry 状态
+const retryingSheets = reactive<Record<number, boolean>>({});
+
 // Enrichment 状态 (前端驱动的图表/AI补充)
 const enrichingSheets = ref<Set<number>>(new Set());
 const enrichedSheets = ref<Set<number>>(new Set());
@@ -858,7 +882,7 @@ const yoyVisible = ref(false);
 const yoyLoading = ref(false);
 const yoyResult = ref<YoYResult | null>(null);
 const yoySheetName = ref('');
-const dataSheets = computed(() => uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId));
+const dataSheets = computed(() => uploadedSheets.value.filter(s => !isIndexSheet(s) && s.uploadId && s.success));
 
 // P5: 因果分析状态
 const statisticalVisible = ref(false);
@@ -1347,7 +1371,8 @@ const handleSSEEvent = (event: any) => {
     uploadStatus.value = 'success';
     progressText.value = '分析完成！';
     uploadResult.value = result;
-    uploadedSheets.value = result.results?.filter((r: SheetResult) => r.success) || [];
+    // Include both successful AND failed sheets (failed ones get retry button)
+    uploadedSheets.value = result.results || [];
 
     // 捕获索引元数据
     if (result.indexMetadata) {
@@ -1363,7 +1388,9 @@ const handleSSEEvent = (event: any) => {
     console.log('First sheet chartConfig:', uploadedSheets.value[0]?.flowResult?.chartConfig);
 
     if (uploadedSheets.value.length > 0) {
-      activeTab.value = String(uploadedSheets.value[0].sheetIndex);
+      // Prefer first successful sheet as active tab
+      const firstSuccess = uploadedSheets.value.find(s => s.success);
+      activeTab.value = String((firstSuccess || uploadedSheets.value[0]).sheetIndex);
 
       // 重要：先设置 uploading = false，让 DOM 渲染出来，然后再渲染图表
       uploading.value = false;
@@ -1478,6 +1505,22 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
 // P1: 图表轴标签万/亿自动格式化
 // 从 Python chart_builder 的 yAxis.name (如 " (万)") 中提取量级，注入 axisLabel.formatter
 const enhanceChartOption = (opts: Record<string, unknown>): void => {
+  // Helper: extract max absolute value from all series data
+  const getSeriesMaxValue = (o: Record<string, unknown>): number => {
+    const series = (o as any).series;
+    if (!Array.isArray(series)) return 0;
+    let maxVal = 0;
+    for (const s of series) {
+      const data = s?.data;
+      if (!Array.isArray(data)) continue;
+      for (const d of data) {
+        const v = typeof d === 'number' ? Math.abs(d) : (Array.isArray(d) ? Math.abs(Number(d[1]) || 0) : Math.abs(Number(d?.value) || 0));
+        if (v > maxVal) maxVal = v;
+      }
+    }
+    return maxVal;
+  };
+
   const yAxis = (opts as any).yAxis;
   if (!yAxis || typeof yAxis.name !== 'string') return;
 
@@ -1488,10 +1531,19 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
   const suffix = match[1];
   const divisor = suffix === '亿' ? 1e8 : 1e4;
 
+  // Skip division if data values suggest they're already in 万/亿 units.
+  // If suffix is 万 and maxVal < 10000, data is likely already scaled (e.g., 100万 = real 100).
+  // If suffix is 亿 and maxVal < 10000, same logic. Only divide raw values (>= 10000).
+  const seriesMax = getSeriesMaxValue(opts);
+  const shouldDivide = seriesMax >= 1e4;
+
   yAxis.axisLabel = yAxis.axisLabel || {};
   if (!yAxis.axisLabel.formatter) {
     yAxis.axisLabel.formatter = (value: number) => {
       if (value === 0) return '0';
+      if (!shouldDivide) {
+        return Number.isInteger(value) ? `${value}${suffix}` : `${value.toFixed(1)}${suffix}`;
+      }
       const scaled = value / divisor;
       return Number.isInteger(scaled) ? `${scaled}${suffix}` : `${scaled.toFixed(1)}${suffix}`;
     };
@@ -1504,10 +1556,14 @@ const enhanceChartOption = (opts: Record<string, unknown>): void => {
     if (xMatch) {
       const xSuffix = xMatch[1];
       const xDivisor = xSuffix === '亿' ? 1e8 : 1e4;
+      const xShouldDivide = seriesMax >= 1e4;
       xAxis.axisLabel = xAxis.axisLabel || {};
       if (!xAxis.axisLabel.formatter) {
         xAxis.axisLabel.formatter = (value: number) => {
           if (value === 0) return '0';
+          if (!xShouldDivide) {
+            return Number.isInteger(value) ? `${value}${xSuffix}` : `${value.toFixed(1)}${xSuffix}`;
+          }
           const scaled = value / xDivisor;
           return Number.isInteger(scaled) ? `${scaled}${xSuffix}` : `${scaled.toFixed(1)}${xSuffix}`;
         };
@@ -1643,6 +1699,24 @@ watch(layoutEditMode, (isBuilder) => {
         layoutRenderPending = false;
       };
       requestAnimationFrame(tryRender);
+    });
+  } else if (!isBuilder) {
+    // Switching back to standard mode — re-render charts with DOM-ready check
+    nextTick(() => {
+      const tryRenderStandard = () => {
+        const activeSheetIndex = parseInt(activeTab.value);
+        const activeSheet = uploadedSheets.value.find(s => s.sheetIndex === activeSheetIndex);
+        if (!activeSheet) return;
+        const charts = getSheetCharts(activeSheet);
+        if (charts.length === 0) return;
+        const firstDom = document.getElementById(`chart-${activeSheetIndex}-0`);
+        if (!firstDom) {
+          requestAnimationFrame(tryRenderStandard);
+          return;
+        }
+        renderActiveCharts();
+      };
+      setTimeout(() => requestAnimationFrame(tryRenderStandard), 300);
     });
   }
 });
@@ -2540,6 +2614,54 @@ const resetUpload = () => {
   enrichingSheets.value = new Set();
 };
 
+// 重试失败的 Sheet
+const handleRetrySheet = async (sheet: SheetResult) => {
+  if (!sheet.uploadId) {
+    ElMessage.error('该 Sheet 无上传记录，请重新上传文件');
+    return;
+  }
+
+  retryingSheets[sheet.sheetIndex] = true;
+  try {
+    const res = await retrySheetUpload(sheet.uploadId);
+    if (res.success) {
+      ElMessage.success(res.data?.message || '重试成功');
+      // Update sheet to successful state
+      sheet.success = true;
+      sheet.savedRows = res.data?.rowCount || 0;
+      sheet.message = '重试成功';
+
+      // Trigger enrichment for the retried sheet
+      if (sheet.uploadId) {
+        enrichedSheets.value.delete(sheet.uploadId);
+        enrichingSheets.value.delete(sheet.uploadId);
+        nextTick(() => {
+          enrichSheetAnalysis(sheet.uploadId!).then(enrichResult => {
+            if (enrichResult) {
+              sheet.flowResult = {
+                ...sheet.flowResult,
+                charts: enrichResult.charts,
+                kpiSummary: enrichResult.kpiSummary,
+                structuredAI: enrichResult.structuredAI,
+              };
+              enrichedSheets.value.add(sheet.uploadId!);
+            }
+          }).catch(err => {
+            console.warn('Enrichment after retry failed:', err);
+          });
+        });
+      }
+    } else {
+      ElMessage.error(res.message || '重试失败');
+    }
+  } catch (error) {
+    console.error('Retry failed:', error);
+    ElMessage.error('重试请求失败');
+  } finally {
+    retryingSheets[sheet.sheetIndex] = false;
+  }
+};
+
 // 将上传记录列表组装为一个批次
 const makeBatch = (uploads: UploadHistoryItem[]): UploadBatch => {
   const first = uploads[0];
@@ -2547,7 +2669,7 @@ const makeBatch = (uploads: UploadHistoryItem[]): UploadBatch => {
   const pad = (n: number) => String(n).padStart(2, '0');
   const uploadTime = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   return {
-    fileName: first.fileName,
+    fileName: (first.fileName && first.fileName !== 'null' && first.fileName.trim() !== '') ? first.fileName : `Excel_${uploadTime.replace(/[- :]/g, '')}`,
     uploadTime,
     sheetCount: uploads.length,
     totalRows: uploads.reduce((sum, u) => sum + (u.rowCount || 0), 0),
@@ -3137,6 +3259,15 @@ onMounted(() => {
             color: #8b5cf6;
           }
         }
+
+        &.is-failed {
+          color: #F56C6C;
+        }
+      }
+
+      .failed-sheet-view {
+        padding: 40px 20px;
+        text-align: center;
       }
 
       // 图表区域头部（含下钻提示）

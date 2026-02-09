@@ -89,11 +89,10 @@ export const personnelApiClient = {
     if (startDate) params.startDate = startDate;
     if (endDate) params.endDate = endDate;
 
-    const response = await apiClient.get(
+    return await apiClient.get(
       `/api/mobile/${factoryId}/personnel/statistics`,
       { params }
     );
-    return (response as any).data;
   },
 
   /**
@@ -110,13 +109,12 @@ export const personnelApiClient = {
     data: WorkHoursRankingItem[];
     message?: string;
   }> => {
-    const response = await apiClient.get(
+    return await apiClient.get(
       `/api/mobile/${factoryId}/personnel/work-hours-ranking`,
       {
         params: { startDate, endDate, limit },
       }
     );
-    return (response as any).data;
   },
 
   /**
@@ -136,11 +134,10 @@ export const personnelApiClient = {
     const params: Record<string, string> = { startDate, endDate };
     if (departmentId) params.departmentId = departmentId;
 
-    const response = await apiClient.get(
+    return await apiClient.get(
       `/api/mobile/${factoryId}/personnel/overtime-statistics`,
       { params }
     );
-    return (response as any).data;
   },
 
   /**
@@ -160,10 +157,9 @@ export const personnelApiClient = {
     const params: Record<string, any> = { startDate, endDate };
     if (userId !== undefined) params.userId = userId;
 
-    const response = await apiClient.get(
+    return await apiClient.get(
       `/api/mobile/${factoryId}/personnel/performance`,
       { params }
     );
-    return (response as any).data;
   },
 };

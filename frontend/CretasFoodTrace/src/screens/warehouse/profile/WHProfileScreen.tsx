@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
 import {
   Text,
@@ -216,6 +217,12 @@ export function WHProfileScreen() {
   ];
 
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('profile.dialogs.logoutMessage'))) {
+        logout();
+      }
+      return;
+    }
     Alert.alert(t('profile.dialogs.logoutTitle'), t('profile.dialogs.logoutMessage'), [
       { text: t('profile.dialogs.cancel'), style: "cancel" },
       {

@@ -48,11 +48,11 @@ export const vehicleApiClient = {
   async getVehicles(status?: string): Promise<Vehicle[]> {
     const factoryId = getCurrentFactoryId();
     const params = status ? { status } : {};
-    const response = await apiClient.get<Vehicle[]>(
+    const response = await apiClient.get<{ code: number; data: Vehicle[]; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles`,
       { params }
     );
-    return response || [];
+    return response.data || [];
   },
 
   /**
@@ -60,10 +60,10 @@ export const vehicleApiClient = {
    */
   async getAvailableVehicles(): Promise<Vehicle[]> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.get<Vehicle[]>(
+    const response = await apiClient.get<{ code: number; data: Vehicle[]; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles/available`
     );
-    return response || [];
+    return response.data || [];
   },
 
   /**
@@ -79,13 +79,13 @@ export const vehicleApiClient = {
    */
   async getVehicle(vehicleId: string): Promise<Vehicle> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.get<Vehicle>(
+    const response = await apiClient.get<{ code: number; data: Vehicle; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}`
     );
-    if (!response) {
+    if (!response.data) {
       throw new Error('车辆不存在');
     }
-    return response;
+    return response.data;
   },
 
   /**
@@ -93,14 +93,14 @@ export const vehicleApiClient = {
    */
   async createVehicle(data: VehicleRequest): Promise<Vehicle> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.post<Vehicle>(
+    const response = await apiClient.post<{ code: number; data: Vehicle; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles`,
       data
     );
-    if (!response) {
+    if (!response.data) {
       throw new Error('创建失败');
     }
-    return response;
+    return response.data;
   },
 
   /**
@@ -108,14 +108,14 @@ export const vehicleApiClient = {
    */
   async updateVehicle(vehicleId: string, data: Partial<VehicleRequest>): Promise<Vehicle> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.put<Vehicle>(
+    const response = await apiClient.put<{ code: number; data: Vehicle; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}`,
       data
     );
-    if (!response) {
+    if (!response.data) {
       throw new Error('更新失败');
     }
-    return response;
+    return response.data;
   },
 
   /**
@@ -123,15 +123,15 @@ export const vehicleApiClient = {
    */
   async updateVehicleStatus(vehicleId: string, status: string): Promise<Vehicle> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.patch<Vehicle>(
+    const response = await apiClient.patch<{ code: number; data: Vehicle; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}/status`,
       null,
       { params: { status } }
     );
-    if (!response) {
+    if (!response.data) {
       throw new Error('状态更新失败');
     }
-    return response;
+    return response.data;
   },
 
   /**
@@ -139,15 +139,15 @@ export const vehicleApiClient = {
    */
   async updateCurrentLoad(vehicleId: string, load: number): Promise<Vehicle> {
     const factoryId = getCurrentFactoryId();
-    const response = await apiClient.patch<Vehicle>(
+    const response = await apiClient.patch<{ code: number; data: Vehicle; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/vehicles/${vehicleId}/load`,
       null,
       { params: { load } }
     );
-    if (!response) {
+    if (!response.data) {
       throw new Error('装载量更新失败');
     }
-    return response;
+    return response.data;
   },
 
   /**

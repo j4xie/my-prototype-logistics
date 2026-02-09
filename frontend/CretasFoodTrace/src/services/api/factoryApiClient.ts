@@ -88,8 +88,11 @@ class FactoryApiClient {
   async getFactorySettings(
     factoryId?: string
   ): Promise<{ success: boolean; data: FactorySettingsResponse; message: string }> {
-    const response = await apiClient.get(this.getPath(factoryId));
-    return (response as any).data;
+    return await apiClient.get(this.getPath(factoryId)) as {
+      success: boolean;
+      data: FactorySettingsResponse;
+      message: string;
+    };
   }
 
   /**
@@ -100,8 +103,11 @@ class FactoryApiClient {
     request: UpdateFactorySettingsRequest,
     factoryId?: string
   ): Promise<{ success: boolean; data: FactorySettingsResponse; message: string }> {
-    const response = await apiClient.put(this.getPath(factoryId), request);
-    return (response as any).data;
+    return await apiClient.put(this.getPath(factoryId), request) as {
+      success: boolean;
+      data: FactorySettingsResponse;
+      message: string;
+    };
   }
 }
 

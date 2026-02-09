@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-  View, ScrollView, StyleSheet, TouchableOpacity, Alert,
+  View, ScrollView, StyleSheet, TouchableOpacity, Alert, Platform,
 } from 'react-native';
 import { Text, Card, Avatar, Divider, ActivityIndicator } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -40,7 +40,20 @@ export default function HRProfileScreen() {
     setLanguage(newLang);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('profile.logoutMessage'))) {
+        setLoading(true);
+        try {
+          await logout();
+        } catch (error) {
+          console.error('退出失败:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+      return;
+    }
     Alert.alert(t('profile.logoutConfirm'), t('profile.logoutMessage'), [
       { text: t('profile.cancel'), style: 'cancel' },
       { text: t('profile.confirm'), style: 'destructive', onPress: async () => {

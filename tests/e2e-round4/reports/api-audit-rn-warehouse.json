@@ -1,0 +1,158 @@
+{
+  "session": "RN Warehouse (warehouse_mgr1)",
+  "startedAt": "2026-02-09T04:01:24.665Z",
+  "completedAt": "2026-02-09T04:02:07.425Z",
+  "pages": [
+    {
+      "page": "Warehouse/Login+Home",
+      "apiCalls": [
+        {
+          "method": "POST",
+          "url": "/api/mobile/auth/unified-login",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches/low-stock",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/shipments?status=pending&page=1&size=10",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches/expiring?days=7",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/overview?period=today",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "type": "error",
+          "text": "[23:01:31.314][ERROR][web] [PushNotification] 未找到 EAS Project ID undefined undefined"
+        },
+        {
+          "type": "error",
+          "text": "[23:01:31.343][ERROR][web] [PushNotification] 推送通知权限被拒绝 undefined undefined"
+        }
+      ],
+      "timestamp": "2026-02-09T04:01:41.994Z"
+    },
+    {
+      "page": "Warehouse/Tab:首页",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:47.060Z"
+    },
+    {
+      "page": "Warehouse/Tab:入库",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?page=1&size=50",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:52.152Z"
+    },
+    {
+      "page": "Warehouse/Tab:出货",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/shipments?page=1&size=50",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/shipments/stats",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:57.276Z"
+    },
+    {
+      "page": "Warehouse/Tab:库存",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches/inventory/statistics",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?page=1&size=50",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:02:02.366Z"
+    },
+    {
+      "page": "Warehouse/Tab:我的",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/overview?period=today",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:02:07.425Z"
+    }
+  ],
+  "summary": {
+    "totalApiCalls": 12,
+    "ok": 12,
+    "warn": 0,
+    "fail": 0,
+    "consoleErrors": 2,
+    "pagesWithFailures": 0
+  }
+}

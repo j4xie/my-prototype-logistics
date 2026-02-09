@@ -81,7 +81,7 @@ export default function AttendanceManageScreen() {
           setRecords(mappedRecords);
         }
       } else {
-        const res = await timeclockApiClient.getHistoryRecords({ page: 0, size: 50 });
+        const res = await timeclockApiClient.getHistoryRecords({ page: 1, size: 50 });
         // getHistoryRecords 返回 ApiResponse<PagedResponse<ClockRecord>>
         if (res?.data?.content) {
           const mappedRecords = res.data.content.map((r): AttendanceRecord => ({

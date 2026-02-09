@@ -210,12 +210,12 @@ export async function triggerRecognition(configId: number): Promise<LabelRecogni
 
 /**
  * 获取识别记录列表
- * @param page 页码（从0开始）
+ * @param page 页码（从1开始）
  * @param size 每页数量
  * @param configId 可选，按配置ID筛选
  */
 export async function getRecords(
-  page: number = 0,
+  page: number = 1,
   size: number = 20,
   configId?: number
 ): Promise<PageResponse<LabelRecognitionRecord>> {

@@ -1180,7 +1180,7 @@ export function computeFinancialMetrics(
   monthlyColumns: string[],
   labelField: string
 ): FinancialMetrics | null {
-  if (!data.length || !labelField) return null;
+  if (!data.length) return null;
 
   const keywordMap: Array<{ keywords: string[]; field: keyof Pick<FinancialMetrics, 'revenue' | 'cost' | 'grossProfit' | 'netProfit'> }> = [
     { keywords: ['营业收入', '主营业务收入'], field: 'revenue' },
@@ -1189,6 +1189,55 @@ export function computeFinancialMetrics(
     { keywords: ['净利润'], field: 'netProfit' },
   ];
   const expenseKeywords = ['销售费用', '管理费用', '财务费用', '研发费用'];
+  const allFinancialKeywords = [
+    ...keywordMap.flatMap(m => m.keywords),
+    ...expenseKeywords,
+  ];
+
+  // Auto-detect label column by scanning for financial keywords in row values.
+  // Always run detection if the passed labelField doesn't contain financial keywords
+  // (handles numeric/merged-cell column names where detectLabelField picks the wrong column).
+  let effectiveLabelField = labelField;
+  const sample = data.slice(0, Math.min(data.length, 80));
+
+  // Validate that the passed labelField actually contains financial keywords
+  if (effectiveLabelField) {
+    let labelFieldMatches = 0;
+    for (const row of sample) {
+      const val = String(row[effectiveLabelField] ?? '').replace(/[\s\u3000]+/g, '');
+      if (val && allFinancialKeywords.some(kw => val.includes(kw))) {
+        labelFieldMatches++;
+      }
+    }
+    if (labelFieldMatches < 2) {
+      effectiveLabelField = ''; // Force auto-detection
+    }
+  }
+
+  if (!effectiveLabelField) {
+    const allKeys = Object.keys(data[0] || {});
+    let bestCol = '';
+    let bestMatches = 0;
+    for (const key of allKeys) {
+      let matchCount = 0;
+      for (const row of sample) {
+        const val = String(row[key] ?? '').replace(/[\s\u3000]+/g, '');
+        if (val && allFinancialKeywords.some(kw => val.includes(kw))) {
+          matchCount++;
+        }
+      }
+      if (matchCount > bestMatches) {
+        bestMatches = matchCount;
+        bestCol = key;
+      }
+    }
+    // Need at least 2 financial keyword matches to be confident
+    if (bestMatches >= 2) {
+      effectiveLabelField = bestCol;
+    }
+  }
+
+  if (!effectiveLabelField) return null;
 
   const result: FinancialMetrics = {
     expenses: [],
@@ -1198,14 +1247,16 @@ export function computeFinancialMetrics(
 
   // Scan rows for financial line items
   for (const row of data) {
-    const label = String(row[labelField] ?? '').trim();
+    // Normalize full-width spaces (U+3000) and collapse whitespace for matching
+    const rawLabel = String(row[effectiveLabelField] ?? '');
+    const label = rawLabel.replace(/[\s\u3000]+/g, '').trim();
     if (!label) continue;
 
     // Collect numeric values for this row
     const values: Record<string, number> = {};
     let total = 0;
     for (const [key, val] of Object.entries(row)) {
-      if (key === labelField) continue;
+      if (key === effectiveLabelField) continue;
       const num = typeof val === 'number' ? val : parseFloat(String(val));
       if (!isNaN(num)) {
         values[key] = num;
@@ -2801,4 +2852,19 @@ export async function correlationAnalysis(params: {
       error: error instanceof Error ? error.message : 'Correlation analysis failed'
     };
   }
+}
+
+// ==================== Sheet Retry API ====================
+
+/**
+ * Retry a failed or stuck sheet upload
+ * Loads stored Excel file from disk, re-parses via Python, and re-persists data
+ *
+ * @param uploadId - Upload record ID to retry
+ * @returns Retry result with upload details
+ */
+export function retrySheetUpload(uploadId: number) {
+  return post<{ uploadId: number; message: string; rowCount?: number; headers?: string[] }>(
+    `${getSmartBIBasePath()}/retry-sheet/${uploadId}`
+  );
 }

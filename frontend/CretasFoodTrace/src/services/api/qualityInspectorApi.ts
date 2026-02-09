@@ -58,7 +58,7 @@ class QualityInspectorApiClient {
         params: {
           page: params?.page ?? 1,
           size: params?.size ?? 20,
-          status: params?.status ?? 'pending_inspection',
+          status: params?.status ?? 'COMPLETED',
           keyword: params?.keyword,
         },
       }
@@ -145,7 +145,7 @@ class QualityInspectorApiClient {
     inspectorId?: number;
   }): Promise<QIPagedResponse<QualityRecord>> {
     const response = await apiClient.get<QIApiResponse<QIPagedResponse<QualityRecord>>>(
-      `${this.getBasePath()}/processing/quality/records`,
+      `${this.getBasePath()}/processing/quality/inspections`,
       { params }
     );
     return response.data;
@@ -156,7 +156,7 @@ class QualityInspectorApiClient {
    */
   async getRecordDetail(recordId: string): Promise<QualityRecord> {
     const response = await apiClient.get<QIApiResponse<QualityRecord>>(
-      `${this.getBasePath()}/processing/quality/records/${recordId}`
+      `${this.getBasePath()}/processing/quality/inspections/${recordId}`
     );
     return response.data;
   }
@@ -169,8 +169,11 @@ class QualityInspectorApiClient {
    * 获取质检统计数据
    */
   async getStatistics(): Promise<QualityStatistics> {
+    const endDate = new Date().toISOString().split('T')[0];
+    const startDate = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
     const response = await apiClient.get<QIApiResponse<QualityStatistics>>(
-      `${this.getBasePath()}/processing/quality/statistics`
+      `${this.getBasePath()}/processing/quality/statistics`,
+      { params: { startDate, endDate } }
     );
     return response.data;
   }

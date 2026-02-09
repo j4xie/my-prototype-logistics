@@ -353,7 +353,8 @@
       "myRecords": "My Records",
       "settings": "Settings",
       "help": "Help Center",
-      "about": "About"
+      "about": "About",
+      "language": "Language"
     },
     "confirmLogout": "Confirm Logout",
     "confirmLogoutMessage": "Are you sure you want to logout?",

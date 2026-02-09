@@ -28,6 +28,9 @@ import type {
   DepartmentAnalysisResponse,
   RegionAnalysisResponse,
   FinanceAnalysisResponse,
+  ExcelUploadRecord,
+  MultiSheetAnalysisResult,
+  DynamicChartConfig,
 } from '../../types/smartbi';
 
 /**
@@ -299,6 +302,63 @@ export const smartBIApi = {
     const currentFactoryId = requireFactoryId(factoryId);
     return apiClient.get<ApiResponse<IncentivePlan>>(
       `/api/mobile/${currentFactoryId}/smart-bi/incentive-plan/${targetType}/${targetId}`
+    );
+  },
+
+  // ==================== 多Sheet分析 ====================
+
+  /**
+   * 获取数据集列表（已上传的 Excel 文件）
+   * @param factoryId - 工厂ID
+   */
+  getDatasets: async (
+    factoryId?: string
+  ): Promise<ApiResponse<ExcelUploadRecord[]>> => {
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.get<ApiResponse<ExcelUploadRecord[]>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/datasets`
+    );
+  },
+
+  /**
+   * 分析所有 Sheet（多Sheet并行分析）
+   * @param uploadId - 上传记录ID
+   * @param factoryId - 工厂ID
+   */
+  analyzeAllSheets: async (
+    uploadId: number,
+    factoryId?: string
+  ): Promise<ApiResponse<MultiSheetAnalysisResult>> => {
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.post<ApiResponse<MultiSheetAnalysisResult>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/analyze-all-sheets/${uploadId}`
+    );
+  },
+
+  /**
+   * 切换图表维度
+   * @param uploadId - 上传记录ID
+   * @param sheetIndex - Sheet索引
+   * @param chartIndex - 图表索引
+   * @param dimension - 新维度
+   * @param factoryId - 工厂ID
+   */
+  switchChartDimension: async (
+    uploadId: number,
+    sheetIndex: number,
+    chartIndex: number,
+    dimension: string,
+    factoryId?: string
+  ): Promise<ApiResponse<DynamicChartConfig>> => {
+    const currentFactoryId = requireFactoryId(factoryId);
+    return apiClient.post<ApiResponse<DynamicChartConfig>>(
+      `/api/mobile/${currentFactoryId}/smart-bi/switch-dimension`,
+      {
+        uploadId,
+        sheetIndex,
+        chartIndex,
+        dimension,
+      }
     );
   },
 };

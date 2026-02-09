@@ -39,16 +39,19 @@ async function loadReports() {
   }
 }
 
+const anomalyError = ref('');
+
 async function loadAnomalies() {
   if (!factoryId.value) return;
   anomalyLoading.value = true;
+  anomalyError.value = '';
   try {
     const response = await get(`/${factoryId.value}/reports/anomalies`);
     if (response.success && response.data) {
       anomalies.value = response.data.anomalies || [];
     }
-  } catch (error) {
-    console.error('加载异常检测失败:', error);
+  } catch {
+    anomalyError.value = '异常检测服务暂不可用';
   } finally {
     anomalyLoading.value = false;
   }
@@ -166,7 +169,10 @@ function getSeverityType(severity: string) {
           </template>
 
           <div v-loading="anomalyLoading">
-            <div v-if="anomalies.length === 0" class="empty-state">
+            <div v-if="anomalyError" class="empty-state">
+              <el-empty :description="anomalyError" :image-size="80" />
+            </div>
+            <div v-else-if="anomalies.length === 0" class="empty-state">
               <el-empty description="暂无异常" :image-size="80" />
             </div>
             <div v-else class="anomaly-list">

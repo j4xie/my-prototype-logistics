@@ -136,7 +136,7 @@ export function WHInboundDetailScreen() {
           statusBgColor: statusInfo.bgColor,
           statusTextColor: statusInfo.textColor,
           material: batch.materialName ?? '未知原料',
-          materialType: batch.storageType === 'frozen' ? '冻品' : batch.storageType === 'dry' ? '干货' : '鲜品',
+          materialType: batch.storageType?.toLowerCase() === 'frozen' ? '冻品' : batch.storageType?.toLowerCase() === 'dry' ? '干货' : '鲜品',
           supplier: batch.supplierName ?? '未知供应商',
           supplierContact: '-',  // Backend doesn't provide supplier contact
           quantity: qty,

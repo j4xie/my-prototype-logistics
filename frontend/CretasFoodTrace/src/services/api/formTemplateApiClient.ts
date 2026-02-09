@@ -184,10 +184,13 @@ class FormTemplateApiClient {
     factoryId?: string
   ): Promise<string | null> {
     try {
-      const response = await apiClient.get<string>(
+      const response = await apiClient.get<ApiResponse<string>>(
         `${this.getPath(factoryId)}/${entityType}/schema`
       );
-      return response || null;
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return null;
     } catch (error) {
       console.log(`[FormTemplateApiClient] 无自定义Schema: ${entityType}`);
       return null;

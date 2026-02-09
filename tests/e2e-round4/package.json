@@ -1,0 +1,20 @@
+{
+  "name": "e2e-round4",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "w1-s1": "npx playwright test --project=vue-admin",
+    "w1-s2": "npx playwright test --project=rn-platform-admin",
+    "w1-s3": "npx playwright test --project=rn-dispatcher",
+    "w1-s4": "npx playwright test --project=rn-warehouse",
+    "w1-s5": "npx playwright test --project=rn-hr",
+    "w2-s1": "npx playwright test --project=rn-fa-reports",
+    "w2-s2": "npx playwright test --project=rn-fa-smartbi",
+    "w2-s3": "npx playwright test --project=rn-fa-management",
+    "w2-s4": "npx playwright test --project=rn-workshop",
+    "w2-s5": "npx playwright test --project=rn-qi-ai"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
+  }
+}

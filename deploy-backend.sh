@@ -153,11 +153,11 @@ deploy_jar() {
     # ----- 1. 本地 Maven 打包 -----
     echo ""
     echo "📦 [1/4] 本地 Maven 打包..."
-    cd backend/java/cretas-api
+    cd backend-java
     mvn clean package -Dmaven.test.skip=true -q
-    cd ../../..
+    cd ..
 
-    JAR_PATH="backend/java/cretas-api/target/$JAR_NAME"
+    JAR_PATH="backend-java/target/$JAR_NAME"
     if [ ! -f "$JAR_PATH" ]; then
         echo "❌ JAR 文件不存在: $JAR_PATH"
         exit 1
@@ -165,7 +165,8 @@ deploy_jar() {
 
     JAR_SIZE=$(du -h "$JAR_PATH" | cut -f1)
     JAR_SIZE_BYTES=$(stat -f%z "$JAR_PATH" 2>/dev/null || stat -c%s "$JAR_PATH" 2>/dev/null)
-    echo "   ✓ 打包完成: $JAR_NAME ($JAR_SIZE)"
+    MIN_JAR_SIZE=$((JAR_SIZE_BYTES * 95 / 100))
+    echo "   ✓ 打包完成: $JAR_NAME ($JAR_SIZE, ${JAR_SIZE_BYTES} bytes)"
 
     # 预先创建 gzip 压缩版本
     echo "   压缩中..."
@@ -231,8 +232,8 @@ deploy_jar() {
 
             if ssh -o ConnectTimeout=5 $SERVER "
                 cd $REMOTE_TMP && \
-                curl -sL --connect-timeout 10 --max-time 60 -o $JAR_NAME '$INTERNAL_URL' && \
-                [ -s $JAR_NAME ]
+                curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$INTERNAL_URL' && \
+                REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
             " 2>/dev/null; then
                 if ! check_winner; then
                     echo "OSS加速" > "$UPLOAD_STATUS_DIR/winner"
@@ -267,8 +268,8 @@ deploy_jar() {
 
             if ssh -o ConnectTimeout=5 $SERVER "
                 cd $REMOTE_TMP && \
-                curl -sL --connect-timeout 10 --max-time 120 -o $JAR_NAME '$R2_URL' && \
-                [ -s $JAR_NAME ]
+                curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$R2_URL' && \
+                REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
             " 2>/dev/null; then
                 if ! check_winner; then
                     echo "R2" > "$UPLOAD_STATUS_DIR/winner"
@@ -310,7 +311,7 @@ deploy_jar() {
                 if ssh -o ConnectTimeout=5 $SERVER "
                     cd $REMOTE_TMP && \
                     curl -sL --connect-timeout 15 --max-time 300 -o $JAR_NAME '$URL' && \
-                    [ -s $JAR_NAME ]
+                    REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
                 " 2>/dev/null; then
                     if [ ! -f "$UPLOAD_STATUS_DIR/winner" ]; then
                         echo "GitHub直连" > "$UPLOAD_STATUS_DIR/winner"
@@ -329,7 +330,7 @@ deploy_jar() {
                     if ssh -o ConnectTimeout=5 $SERVER "
                         cd $REMOTE_TMP && \
                         curl -sL --connect-timeout 10 --max-time 300 -o $JAR_NAME '$URL' && \
-                        [ -s $JAR_NAME ]
+                        REMOTE_SIZE=\$(stat -c%s $JAR_NAME 2>/dev/null || stat -f%z $JAR_NAME 2>/dev/null || echo 0) && [ \$REMOTE_SIZE -ge $MIN_JAR_SIZE ]
                     " 2>/dev/null; then
                         if [ ! -f "$UPLOAD_STATUS_DIR/winner" ]; then
                             echo "GitHub/$mirror" > "$UPLOAD_STATUS_DIR/winner"
@@ -464,9 +465,15 @@ deploy_jar() {
             ls -t aims-0.0.1-SNAPSHOT.jar.bak.* 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
         fi
 
+        # 验证 JAR 完整性
+        REMOTE_SIZE=\$(stat -c%s $REMOTE_TMP/$JAR_NAME 2>/dev/null || echo 0)
+        echo \"   JAR 大小: \${REMOTE_SIZE} bytes (预期 >= $MIN_JAR_SIZE)\"
+        if [ \$REMOTE_SIZE -lt $MIN_JAR_SIZE ]; then
+            echo '   ❌ JAR 文件不完整，中止部署!'
+            exit 1
+        fi
+
         mv $REMOTE_TMP/$JAR_NAME aims-0.0.1-SNAPSHOT.jar
-        # 同步到 restart.sh 使用的 JAR 名称
-        cp aims-0.0.1-SNAPSHOT.jar cretas-backend-system-1.0.0.jar
         echo '   重启服务...'
         bash restart.sh
     "

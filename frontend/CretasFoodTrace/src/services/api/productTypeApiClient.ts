@@ -8,6 +8,16 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
  * Phase 5 更新: 新增 SKU 配置相关接口
  */
 
+/**
+ * 后端统一响应格式
+ */
+interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
 // ==================== Phase 5: SKU Configuration Types ====================
 
 /**
@@ -215,15 +225,18 @@ class ProductTypeApiClient {
   }
 
   async createProductType(data: CreateProductTypeRequest, factoryId?: string): Promise<ProductType> {
-    return await apiClient.post(this.getPath(factoryId), data);
+    const response = await apiClient.post<ApiResponse<ProductType>>(this.getPath(factoryId), data);
+    return response.data;
   }
 
   async getProductTypeById(id: string, factoryId?: string): Promise<ProductType> {
-    return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
+    const response = await apiClient.get<ApiResponse<ProductType>>(`${this.getPath(factoryId)}/${id}`);
+    return response.data;
   }
 
   async updateProductType(id: string, data: UpdateProductTypeRequest, factoryId?: string): Promise<ProductType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
+    const response = await apiClient.put<ApiResponse<ProductType>>(`${this.getPath(factoryId)}/${id}`, data);
+    return response.data;
   }
 
   async deleteProductType(id: string, factoryId?: string): Promise<void> {
@@ -231,23 +244,28 @@ class ProductTypeApiClient {
   }
 
   async getActiveProductTypes(factoryId?: string): Promise<ProductType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/active`);
+    const response = await apiClient.get<ApiResponse<ProductType[]>>(`${this.getPath(factoryId)}/active`);
+    return response.data || [];
   }
 
   async getProductTypesByCategory(category: string, factoryId?: string): Promise<ProductType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/category/${category}`);
+    const response = await apiClient.get<ApiResponse<ProductType[]>>(`${this.getPath(factoryId)}/category/${category}`);
+    return response.data || [];
   }
 
   async searchProductTypes(keyword: string, factoryId?: string): Promise<ProductType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/search`, { params: { keyword } });
+    const response = await apiClient.get<ApiResponse<ProductType[]>>(`${this.getPath(factoryId)}/search`, { params: { keyword } });
+    return response.data || [];
   }
 
   async checkProductCodeExists(productCode: string, factoryId?: string): Promise<{ exists: boolean }> {
-    return await apiClient.get(`${this.getPath(factoryId)}/check-code`, { params: { productCode } });
+    const response = await apiClient.get<ApiResponse<{ exists: boolean }>>(`${this.getPath(factoryId)}/check-code`, { params: { productCode } });
+    return response.data;
   }
 
   async getCategories(factoryId?: string): Promise<string[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/categories`);
+    const response = await apiClient.get<ApiResponse<string[]>>(`${this.getPath(factoryId)}/categories`);
+    return response.data || [];
   }
 
   async initDefaults(factoryId?: string): Promise<void> {
@@ -265,7 +283,8 @@ class ProductTypeApiClient {
    * 用于前端下拉选择
    */
   async getProcessingStages(factoryId?: string): Promise<ProcessingStageOption[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/processing-stages`);
+    const response = await apiClient.get<ApiResponse<ProcessingStageOption[]>>(`${this.getPath(factoryId)}/processing-stages`);
+    return response.data || [];
   }
 
   /**
@@ -284,7 +303,8 @@ class ProductTypeApiClient {
     },
     factoryId?: string
   ): Promise<ProductType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}/config`, config);
+    const response = await apiClient.put<ApiResponse<ProductType>>(`${this.getPath(factoryId)}/${id}/config`, config);
+    return response.data;
   }
 
   /**
@@ -292,14 +312,16 @@ class ProductTypeApiClient {
    * 返回调度系统所需的关键字段
    */
   async getSchedulingInfo(id: string, factoryId?: string): Promise<ProductSchedulingInfo> {
-    return await apiClient.get(`${this.getPath(factoryId)}/${id}/scheduling-info`);
+    const response = await apiClient.get<ApiResponse<ProductSchedulingInfo>>(`${this.getPath(factoryId)}/${id}/scheduling-info`);
+    return response.data;
   }
 
   /**
    * 批量获取产品类型的调度信息
    */
   async getSchedulingInfoBatch(productTypeIds: string[], factoryId?: string): Promise<ProductSchedulingInfo[]> {
-    return await apiClient.post(`${this.getPath(factoryId)}/scheduling-info/batch`, productTypeIds);
+    const response = await apiClient.post<ApiResponse<ProductSchedulingInfo[]>>(`${this.getPath(factoryId)}/scheduling-info/batch`, productTypeIds);
+    return response.data || [];
   }
 
   // ==================== Custom Schema Configuration Methods ====================
@@ -340,9 +362,10 @@ class ProductTypeApiClient {
     schemaOverrides: CustomSchemaOverrides,
     factoryId?: string
   ): Promise<ProductType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, {
+    const response = await apiClient.put<ApiResponse<ProductType>>(`${this.getPath(factoryId)}/${id}`, {
       customSchemaOverrides: JSON.stringify(schemaOverrides),
     });
+    return response.data;
   }
 
   /**
@@ -351,9 +374,10 @@ class ProductTypeApiClient {
    * @param factoryId 工厂ID (可选)
    */
   async clearCustomSchemaOverrides(id: string, factoryId?: string): Promise<ProductType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, {
+    const response = await apiClient.put<ApiResponse<ProductType>>(`${this.getPath(factoryId)}/${id}`, {
       customSchemaOverrides: null,
     });
+    return response.data;
   }
 
   // ==================== End Custom Schema Configuration Methods ====================

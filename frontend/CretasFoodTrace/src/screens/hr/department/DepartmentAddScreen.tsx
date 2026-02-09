@@ -44,7 +44,7 @@ export default function DepartmentAddScreen() {
   const loadManagers = async () => {
     try {
       // getUsers returns PageResponse<UserDTO> directly (with content array)
-      const res = await userApiClient.getUsers({ page: 0, size: 100 });
+      const res = await userApiClient.getUsers({ page: 1, size: 100 });
       if (res?.content) {
         const users = res.content.map(u => ({
           id: u.id || 0,

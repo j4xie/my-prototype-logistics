@@ -115,11 +115,11 @@ class WhitelistApiClient {
     sortDirection?: 'ASC' | 'DESC';
   }): Promise<PageResponse<WhitelistDTO>> {
     const { factoryId, ...queryParams } = params || {};
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<PageResponse<WhitelistDTO>>(
+    const response = await apiClient.get<{ code: number; data: PageResponse<WhitelistDTO>; message: string; success: boolean; }>(
       this.getPath(factoryId),
       { params: queryParams }
     );
+    return response.data || { content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 };
   }
 
   /**
@@ -138,11 +138,11 @@ class WhitelistApiClient {
     request: BatchAddRequest,
     factoryId?: string
   ): Promise<BatchResult> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.post<BatchResult>(
+    const response = await apiClient.post<{ code: number; data: BatchResult; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/batch`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -153,11 +153,11 @@ class WhitelistApiClient {
     ids: number[],
     factoryId?: string
   ): Promise<BatchResult> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.delete<BatchResult>(
+    const response = await apiClient.delete<{ code: number; data: BatchResult; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/batch`,
       { data: { ids } }
     );
+    return response.data;
   }
 
   /**
@@ -172,13 +172,15 @@ class WhitelistApiClient {
     whitelist?: WhitelistDTO;
     message?: string;
   }> {
-    return await apiClient.get<{
-      isValid: boolean;
-      whitelist?: WhitelistDTO;
-      message?: string;
+    const response = await apiClient.get<{
+      code: number;
+      data: { isValid: boolean; whitelist?: WhitelistDTO; message?: string };
+      message: string;
+      success: boolean;
     }>(
       `${this.getPath(factoryId)}/validate/${encodeURIComponent(phoneNumber)}`
     );
+    return response.data;
   }
 
   // ===== 新增功能 (Phase 3) =====
@@ -191,9 +193,10 @@ class WhitelistApiClient {
     id: number,
     factoryId?: string
   ): Promise<WhitelistDTO> {
-    return await apiClient.get<WhitelistDTO>(
+    const response = await apiClient.get<{ code: number; data: WhitelistDTO; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/${id}`
     );
+    return response.data;
   }
 
   /**
@@ -205,10 +208,11 @@ class WhitelistApiClient {
     request: Partial<CreateWhitelistRequest>,
     factoryId?: string
   ): Promise<WhitelistDTO> {
-    return await apiClient.put<WhitelistDTO>(
+    const response = await apiClient.put<{ code: number; data: WhitelistDTO; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/${id}`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -223,16 +227,15 @@ class WhitelistApiClient {
     expired: number;
     limitReached: number;
   }> {
-    return await apiClient.get<{
-      total: number;
-      pending: number;
-      active: number;
-      disabled: number;
-      expired: number;
-      limitReached: number;
+    const response = await apiClient.get<{
+      code: number;
+      data: { total: number; pending: number; active: number; disabled: number; expired: number; limitReached: number };
+      message: string;
+      success: boolean;
     }>(
       `${this.getPath(factoryId)}/stats`
     );
+    return response.data;
   }
 
   /**
@@ -240,9 +243,10 @@ class WhitelistApiClient {
    * PUT /api/{factoryId}/whitelist/expired
    */
   async updateExpiredStatus(factoryId?: string): Promise<{ updated: number }> {
-    return await apiClient.put<{ updated: number }>(
+    const response = await apiClient.put<{ code: number; data: { updated: number }; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/expired`
     );
+    return response.data;
   }
 
   /**
@@ -256,10 +260,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<PageResponse<WhitelistDTO>> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<PageResponse<WhitelistDTO>>(
+    const response = await apiClient.get<{ code: number; data: PageResponse<WhitelistDTO>; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/search`,
       { params: queryParams }
     );
+    return response.data || { content: [], totalElements: 0, totalPages: 0, size: 20, number: 0 };
   }
 
   /**
@@ -271,10 +276,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<WhitelistDTO[]> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<WhitelistDTO[]>(
+    const response = await apiClient.get<{ code: number; data: WhitelistDTO[]; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/expiring`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -286,10 +292,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<WhitelistDTO[]> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<WhitelistDTO[]>(
+    const response = await apiClient.get<{ code: number; data: WhitelistDTO[]; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/most-active`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -301,10 +308,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<WhitelistDTO[]> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<WhitelistDTO[]>(
+    const response = await apiClient.get<{ code: number; data: WhitelistDTO[]; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/recently-used`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -333,10 +341,11 @@ class WhitelistApiClient {
     csvData: string,
     factoryId?: string
   ): Promise<BatchResult> {
-    return await apiClient.post<BatchResult>(
+    const response = await apiClient.post<{ code: number; data: BatchResult; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/import`,
       { csvData }
     );
+    return response.data;
   }
 
   /**
@@ -348,10 +357,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<{ deleted: number }> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.delete<{ deleted: number }>(
+    const response = await apiClient.delete<{ code: number; data: { deleted: number }; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/cleanup`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -364,10 +374,11 @@ class WhitelistApiClient {
     factoryId?: string;
   }): Promise<WhitelistDTO> {
     const { factoryId, id, days } = params;
-    return await apiClient.put<WhitelistDTO>(
+    const response = await apiClient.put<{ code: number; data: WhitelistDTO; message: string; success: boolean; }>(
       `${this.getPath(factoryId)}/${id}/extend`,
       { days }
     );
+    return response.data;
   }
 
   // ===== 不实现的功能 (详见 .claude/rules/unused-api-endpoints.md) =====

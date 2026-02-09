@@ -464,9 +464,9 @@ export function AlertDetailScreen() {
             <View style={styles.alertDetailRow}>
               <Text style={styles.alertDetailLabel}>存储类型</Text>
               <Text style={styles.alertDetailValue}>
-                {batch?.storageType === "fresh"
+                {batch?.storageType?.toLowerCase() === "fresh"
                   ? "鲜品"
-                  : batch?.storageType === "frozen"
+                  : batch?.storageType?.toLowerCase() === "frozen"
                   ? "冻品"
                   : "干货"}
               </Text>

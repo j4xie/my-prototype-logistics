@@ -23,6 +23,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -257,6 +258,18 @@ export default function DSProfileScreen() {
 
   // 退出登录
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm('确定要退出登录吗？')) {
+        logout();
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{ name: 'Auth' }],
+          })
+        );
+      }
+      return;
+    }
     Alert.alert(
       '退出登录',
       '确定要退出登录吗？',

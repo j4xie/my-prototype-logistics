@@ -124,13 +124,11 @@ class SupplierApiClient {
     request: CreateSupplierRequest,
     factoryId?: string
   ): Promise<{data: Supplier}> {
-    // apiClient拦截器已统一返回data
-    const apiData = await apiClient.post<Supplier>(
+    const response = await apiClient.post<{ code: number; data: Supplier; message: string; success: boolean }>(
       `${this.getPath(factoryId)}`,
       request
     );
-    // 兼容旧格式：包装成 {data: {...}}
-    return { data: apiData };
+    return { data: response.data };
   }
 
   /**
@@ -138,10 +136,10 @@ class SupplierApiClient {
    * GET /api/mobile/{factoryId}/suppliers/{supplierId}
    */
   async getSupplierById(supplierId: string, factoryId?: string): Promise<Supplier> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Supplier>(
+    const response = await apiClient.get<{ code: number; data: Supplier; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}`
     );
+    return response.data;
   }
 
   /**
@@ -153,11 +151,11 @@ class SupplierApiClient {
     request: Partial<CreateSupplierRequest>,
     factoryId?: string
   ): Promise<Supplier> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<Supplier>(
+    const response = await apiClient.put<{ code: number; data: Supplier; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -173,10 +171,10 @@ class SupplierApiClient {
    * GET /api/mobile/{factoryId}/suppliers/active
    */
   async getActiveSuppliers(factoryId?: string): Promise<Supplier[]> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Supplier[]>(
+    const response = await apiClient.get<{ code: number; data: Supplier[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/active`
     );
+    return response.data || [];
   }
 
   /**
@@ -191,11 +189,11 @@ class SupplierApiClient {
     isActive?: boolean;
   }): Promise<Supplier[]> {
     const { factoryId, ...queryParams } = params;
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Supplier[]>(
+    const response = await apiClient.get<{ code: number; data: Supplier[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/search`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -207,12 +205,12 @@ class SupplierApiClient {
     isActive: boolean,
     factoryId?: string
   ): Promise<Supplier> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<Supplier>(
+    const response = await apiClient.put<{ code: number; data: Supplier; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}/status`,
       {},
       { params: { isActive: isActive } }
     );
+    return response.data;
   }
 
   // ===== 新增功能 (Phase 3) =====
@@ -226,10 +224,11 @@ class SupplierApiClient {
     factoryId?: string;
   }): Promise<Supplier[]> {
     const { factoryId, materialType } = params;
-    return await apiClient.get<Supplier[]>(
+    const response = await apiClient.get<{ code: number; data: Supplier[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/by-material`,
       { params: { materialType } }
     );
+    return response.data || [];
   }
 
   /**
@@ -243,10 +242,11 @@ class SupplierApiClient {
     factoryId?: string;
   }): Promise<Supplier> {
     const { factoryId, supplierId, ...body } = params;
-    return await apiClient.put<Supplier>(
+    const response = await apiClient.put<{ code: number; data: Supplier; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}/rating`,
       body
     );
+    return response.data;
   }
 
   /**
@@ -257,9 +257,10 @@ class SupplierApiClient {
     supplierId: string,
     factoryId?: string
   ): Promise<SupplierStats> {
-    return await apiClient.get<SupplierStats>(
+    const response = await apiClient.get<{ code: number; data: SupplierStats; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}/statistics`
     );
+    return response.data;
   }
 
   /**
@@ -275,14 +276,15 @@ class SupplierApiClient {
     totalValue: number;
     averageDeliveryDays: number;
   }> {
-    return await apiClient.get<{
+    const response = await apiClient.get<{ code: number; data: {
       batches: any[];
       totalBatches: number;
       totalValue: number;
       averageDeliveryDays: number;
-    }>(
+    }; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${supplierId}/history`
     );
+    return response.data;
   }
 
   // ===== 保留供后续版本的功能 =====

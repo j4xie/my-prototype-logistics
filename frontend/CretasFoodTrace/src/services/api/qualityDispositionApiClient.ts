@@ -117,11 +117,11 @@ export const qualityDispositionAPI = {
     factoryId: string,
     qualityResult: QualityCheckResult
   ): Promise<DispositionEvaluation> {
-    const response = await apiClient.post<DispositionEvaluation>(
+    const response = await apiClient.post<{ code: number; data: DispositionEvaluation; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/evaluate`,
       qualityResult
     );
-    return response;
+    return response.data;
   },
 
   /**
@@ -131,10 +131,10 @@ export const qualityDispositionAPI = {
    * @returns 处置动作列表
    */
   async getAvailableActions(factoryId: string): Promise<DispositionActionInfo[]> {
-    const response = await apiClient.get<DispositionActionInfo[]>(
+    const response = await apiClient.get<{ code: number; data: DispositionActionInfo[]; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/actions`
     );
-    return response;
+    return response.data || [];
   },
 
   /**
@@ -148,11 +148,11 @@ export const qualityDispositionAPI = {
     factoryId: string,
     request: ExecuteDispositionRequest
   ): Promise<DispositionResult> {
-    const response = await apiClient.post<DispositionResult>(
+    const response = await apiClient.post<{ code: number; data: DispositionResult; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/execute`,
       request
     );
-    return response;
+    return response.data;
   },
 
   /**
@@ -166,10 +166,10 @@ export const qualityDispositionAPI = {
     factoryId: string,
     batchId: number
   ): Promise<DispositionHistory[]> {
-    const response = await apiClient.get<DispositionHistory[]>(
+    const response = await apiClient.get<{ code: number; data: DispositionHistory[]; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/history/${batchId}`
     );
-    return response;
+    return response.data || [];
   },
 
   /**
@@ -183,11 +183,11 @@ export const qualityDispositionAPI = {
     factoryId: string,
     request: CreateDispositionRuleRequest
   ): Promise<DispositionRule> {
-    const response = await apiClient.post<DispositionRule>(
+    const response = await apiClient.post<{ code: number; data: DispositionRule; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/rules`,
       request
     );
-    return response;
+    return response.data;
   },
 
   /**
@@ -197,10 +197,10 @@ export const qualityDispositionAPI = {
    * @returns 规则列表
    */
   async getRules(factoryId: string): Promise<DispositionRule[]> {
-    const response = await apiClient.get<DispositionRule[]>(
+    const response = await apiClient.get<{ code: number; data: DispositionRule[]; message: string; success: boolean }>(
       `/api/mobile/${factoryId}/quality-disposition/rules`
     );
-    return response;
+    return response.data || [];
   },
 };
 

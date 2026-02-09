@@ -6,6 +6,16 @@ import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
  * 总计22个API - 路径：/api/mobile/{factoryId}/material-batches/*
  */
 
+/**
+ * 后端统一响应格式
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
 export interface MaterialBatch {
   id: string;
   batchNumber: string;
@@ -57,18 +67,18 @@ class MaterialBatchApiClient {
   }
 
   // 1. 获取原材料批次列表（分页）
-  async getMaterialBatches(params?: { factoryId?: string; [key: string]: any }) {
+  async getMaterialBatches(params?: { factoryId?: string; [key: string]: any }): Promise<ApiResponse<{ content: MaterialBatch[]; totalElements: number; totalPages: number }>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(this.getPath(factoryId), { params: query });
   }
 
   // 2. 创建原材料批次
-  async createBatch(data: any, factoryId?: string) {
+  async createBatch(data: any, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(this.getPath(factoryId), data);
   }
 
   // 3. 批量创建材料批次
-  async batchCreate(batches: any[], factoryId?: string) {
+  async batchCreate(batches: any[], factoryId?: string): Promise<ApiResponse<MaterialBatch[]>> {
     return await apiClient.post(`${this.getPath(factoryId)}/batch`, { batches });
   }
 
@@ -78,69 +88,69 @@ class MaterialBatchApiClient {
   }
 
   // 5. 更新原材料批次
-  async updateBatch(batchId: string, data: any, factoryId?: string) {
+  async updateBatch(batchId: string, data: any, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.put(`${this.getPath(factoryId)}/${batchId}`, data);
   }
 
   // 6. 删除原材料批次
-  async deleteBatch(batchId: string, factoryId?: string) {
+  async deleteBatch(batchId: string, factoryId?: string): Promise<ApiResponse<void>> {
     return await apiClient.delete(`${this.getPath(factoryId)}/${batchId}`);
   }
 
   // 7. 预留批次材料（创建生产计划时）
-  async reserveBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string) {
+  async reserveBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/reserve`, null, {
       params: { quantity, productionPlanId }
     });
   }
 
   // 8. 释放预留材料（取消生产计划时）
-  async releaseBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string) {
+  async releaseBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/release`, null, {
       params: { quantity, productionPlanId }
     });
   }
 
   // 9. 消耗批次材料（生产完成时）- 新增
-  async consumeBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string) {
+  async consumeBatch(batchId: string, quantity: number, productionPlanId: number, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/consume`, null, {
       params: { quantity, productionPlanId }
     });
   }
 
   // 10. 使用批次材料（旧接口，保留兼容）
-  async useBatch(batchId: string, quantity: number, productionPlanId?: number, factoryId?: string) {
+  async useBatch(batchId: string, quantity: number, productionPlanId?: number, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/use`, null, {
       params: { quantity, productionPlanId }
     });
   }
 
   // 10. 调整批次数量
-  async adjustBatch(batchId: string, newQuantity: number, reason: string, factoryId?: string) {
+  async adjustBatch(batchId: string, newQuantity: number, reason: string, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/adjust`, null, {
       params: { newQuantity, reason }
     });
   }
 
   // 11. 更新批次状态
-  async updateBatchStatus(batchId: string, status: string, factoryId?: string) {
+  async updateBatchStatus(batchId: string, status: string, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.put(`${this.getPath(factoryId)}/${batchId}/status`, { status });
   }
 
   // 12. 按材料类型获取批次
-  async getBatchesByMaterialType(materialTypeId: string, factoryId?: string) {
+  async getBatchesByMaterialType(materialTypeId: string, factoryId?: string): Promise<ApiResponse<MaterialBatch[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/material-type/${materialTypeId}`);
   }
 
   // 13. 按状态获取批次
-  async getBatchesByStatus(status: string, factoryId?: string) {
+  async getBatchesByStatus(status: string, factoryId?: string): Promise<ApiResponse<MaterialBatch[]>> {
     // 后端枚举使用大写，需要转换
     const upperStatus = status.toUpperCase();
     return await apiClient.get(`${this.getPath(factoryId)}/status/${upperStatus}`);
   }
 
   // 14. 获取FIFO批次（先进先出）
-  async getFifoBatches(materialTypeId: string, quantity: number, factoryId?: string) {
+  async getFifoBatches(materialTypeId: string, quantity: number, factoryId?: string): Promise<ApiResponse<MaterialBatch[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/fifo/${materialTypeId}`, {
       params: { quantity }
     });
@@ -157,12 +167,12 @@ class MaterialBatchApiClient {
   }
 
   // 17. 处理过期批次
-  async handleExpiredBatches(factoryId?: string) {
+  async handleExpiredBatches(factoryId?: string): Promise<ApiResponse<{ processed: number }>> {
     return await apiClient.post(`${this.getPath(factoryId)}/handle-expired`);
   }
 
   // 18. 获取批次使用历史
-  async getBatchUsageHistory(batchId: string, factoryId?: string) {
+  async getBatchUsageHistory(batchId: string, factoryId?: string): Promise<ApiResponse<any[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/${batchId}/usage-history`);
   }
 
@@ -172,12 +182,12 @@ class MaterialBatchApiClient {
   }
 
   // 20. 获取库存统计
-  async getInventoryStatistics(factoryId?: string) {
+  async getInventoryStatistics(factoryId?: string): Promise<ApiResponse<any>> {
     return await apiClient.get(`${this.getPath(factoryId)}/inventory/statistics`);
   }
 
   // 21. 获取库存价值
-  async getInventoryValuation(factoryId?: string) {
+  async getInventoryValuation(factoryId?: string): Promise<ApiResponse<any>> {
     return await apiClient.get(`${this.getPath(factoryId)}/inventory/valuation`);
   }
 
@@ -191,12 +201,12 @@ class MaterialBatchApiClient {
   }
 
   // 23. 转冻品
-  async convertToFrozen(batchId: string, request: ConvertToFrozenRequest, factoryId?: string) {
+  async convertToFrozen(batchId: string, request: ConvertToFrozenRequest, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/convert-to-frozen`, request);
   }
 
   // 24. 撤销转冻品
-  async undoFrozen(batchId: string, request: UndoFrozenRequest, factoryId?: string) {
+  async undoFrozen(batchId: string, request: UndoFrozenRequest, factoryId?: string): Promise<ApiResponse<MaterialBatch>> {
     return await apiClient.post(`${this.getPath(factoryId)}/${batchId}/undo-frozen`, request);
   }
 }

@@ -1,0 +1,101 @@
+{
+  "session": "RN Workshop (workshop_sup1)",
+  "startedAt": "2026-02-09T04:02:50.709Z",
+  "completedAt": "2026-02-09T04:03:33.434Z",
+  "pages": [
+    {
+      "page": "Workshop/Login+Home",
+      "apiCalls": [
+        {
+          "method": "POST",
+          "url": "/api/mobile/auth/unified-login",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/overview?period=today",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/processing/batches?status=IN_PROGRESS&page=1&size=5",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/processing/batches?status=PLANNED&page=1&size=1",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/supervisor/tasks?status=pending,in_progress",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "type": "error",
+          "text": "[23:02:57.320][ERROR][web] [PushNotification] 未找到 EAS Project ID undefined undefined"
+        },
+        {
+          "type": "error",
+          "text": "[23:02:57.341][ERROR][web] [PushNotification] 推送通知权限被拒绝 undefined undefined"
+        }
+      ],
+      "timestamp": "2026-02-09T04:03:08.027Z"
+    },
+    {
+      "page": "Workshop/Tab:首页",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:03:13.074Z"
+    },
+    {
+      "page": "Workshop/Tab:批次",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:03:18.168Z"
+    },
+    {
+      "page": "Workshop/Tab:人员",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:03:23.271Z"
+    },
+    {
+      "page": "Workshop/Tab:设备",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:03:28.367Z"
+    },
+    {
+      "page": "Workshop/Tab:我的",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:03:33.434Z"
+    }
+  ],
+  "summary": {
+    "totalApiCalls": 5,
+    "ok": 5,
+    "warn": 0,
+    "fail": 0,
+    "consoleErrors": 2,
+    "pagesWithFailures": 0
+  }
+}

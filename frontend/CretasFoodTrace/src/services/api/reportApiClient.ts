@@ -327,10 +327,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<InventoryReport> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<InventoryReport>(
+    const response = await apiClient.get<{ code: number; data: InventoryReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/inventory`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -343,10 +344,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<FinanceReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<FinanceReport>(
+    const response = await apiClient.get<{ code: number; data: FinanceReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/finance`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -358,10 +360,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<PersonnelReport> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<PersonnelReport>(
+    const response = await apiClient.get<{ code: number; data: PersonnelReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/personnel`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -374,10 +377,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<SalesReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<SalesReport>(
+    const response = await apiClient.get<{ code: number; data: SalesReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/sales`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -390,10 +394,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<EfficiencyReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<EfficiencyReport>(
+    const response = await apiClient.get<{ code: number; data: EfficiencyReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency-analysis`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -405,10 +410,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<KPIMetrics> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<KPIMetrics>(
+    const response = await apiClient.get<{ code: number; data: KPIMetrics; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/kpi`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -423,10 +429,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<PeriodComparisonReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<PeriodComparisonReport>(
+    const response = await apiClient.get<{ code: number; data: PeriodComparisonReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/period-comparison`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -439,10 +446,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<ForecastReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<ForecastReport>(
+    const response = await apiClient.get<{ code: number; data: ForecastReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/forecast`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -455,10 +463,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<AnomalyReport> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<AnomalyReport>(
+    const response = await apiClient.get<{ code: number; data: AnomalyReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/anomalies`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -511,10 +520,11 @@ class ReportApiClient {
     parameters: CustomReportParams,
     factoryId?: string
   ): Promise<Record<string, unknown>> {
-    return await apiClient.post<Record<string, unknown>>(
+    const response = await apiClient.post<{ code: number; data: Record<string, unknown>; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/custom`,
       parameters
     );
+    return response.data;
   }
 
   /**
@@ -522,9 +532,10 @@ class ReportApiClient {
    * GET /api/mobile/{factoryId}/reports/realtime
    */
   async getRealtimeData(factoryId?: string): Promise<RealtimeData> {
-    return await apiClient.get<RealtimeData>(
+    const response = await apiClient.get<{ code: number; data: RealtimeData; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/realtime`
     );
+    return response.data;
   }
 
   // ========== 新增报表API (2026-01-14) ==========
@@ -539,10 +550,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<OeeReportDTO> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<OeeReportDTO>(
+    const response = await apiClient.get<{ code: number; data: OeeReportDTO; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/oee`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -555,10 +567,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<CostVarianceReportDTO> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<CostVarianceReportDTO>(
+    const response = await apiClient.get<{ code: number; data: CostVarianceReportDTO; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/cost-variance`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -570,10 +583,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<KpiMetricsDTO> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<KpiMetricsDTO>(
+    const response = await apiClient.get<{ code: number; data: KpiMetricsDTO; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/kpi-metrics`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -586,10 +600,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<CapacityUtilizationReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<CapacityUtilizationReport>(
+    const response = await apiClient.get<{ code: number; data: CapacityUtilizationReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/capacity-utilization`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
@@ -602,10 +617,11 @@ class ReportApiClient {
     factoryId?: string;
   }): Promise<OnTimeDeliveryReport> {
     const { factoryId, ...queryParams } = params;
-    return await apiClient.get<OnTimeDeliveryReport>(
+    const response = await apiClient.get<{ code: number; data: OnTimeDeliveryReport; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/on-time-delivery`,
       { params: queryParams }
     );
+    return response.data;
   }
 }
 

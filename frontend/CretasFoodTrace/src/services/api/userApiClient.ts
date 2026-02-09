@@ -109,11 +109,11 @@ class UserApiClient {
    * POST /api/{factoryId}/users
    */
   async createUser(request: CreateUserRequest, factoryId?: string): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.post<UserDTO>(
+    const response = await apiClient.post<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -121,10 +121,10 @@ class UserApiClient {
    * GET /api/{factoryId}/users/{userId}
    */
   async getUserById(userId: number, factoryId?: string): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<UserDTO>(
+    const response = await apiClient.get<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}`
     );
+    return response.data;
   }
 
   /**
@@ -136,11 +136,11 @@ class UserApiClient {
     request: UpdateUserRequest,
     factoryId?: string
   ): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<UserDTO>(
+    const response = await apiClient.put<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -156,10 +156,10 @@ class UserApiClient {
    * POST /api/{factoryId}/users/{userId}/activate
    */
   async activateUser(userId: number, factoryId?: string): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.post<UserDTO>(
+    const response = await apiClient.post<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/activate`
     );
+    return response.data;
   }
 
   /**
@@ -167,10 +167,10 @@ class UserApiClient {
    * POST /api/{factoryId}/users/{userId}/deactivate
    */
   async deactivateUser(userId: number, factoryId?: string): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.post<UserDTO>(
+    const response = await apiClient.post<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/deactivate`
     );
+    return response.data;
   }
 
   /**
@@ -182,11 +182,11 @@ class UserApiClient {
     request: UpdateUserRoleRequest,
     factoryId?: string
   ): Promise<UserDTO> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<UserDTO>(
+    const response = await apiClient.put<{ code: number; data: UserDTO; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/role`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -194,10 +194,10 @@ class UserApiClient {
    * GET /api/{factoryId}/users/role/{roleCode}
    */
   async getUsersByRole(roleCode: string, factoryId?: string): Promise<UserDTO[]> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<UserDTO[]>(
+    const response = await apiClient.get<{ code: number; data: UserDTO[]; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/role/${roleCode}`
     );
+    return response.data || [];
   }
 
   /**
@@ -212,11 +212,11 @@ class UserApiClient {
     isActive?: boolean;
   }): Promise<UserDTO[]> {
     const { factoryId, ...queryParams } = params;
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<UserDTO[]>(
+    const response = await apiClient.get<{ code: number; data: UserDTO[]; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/search`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -224,11 +224,11 @@ class UserApiClient {
    * GET /api/{factoryId}/users/check/username
    */
   async checkUsernameExists(username: string, factoryId?: string): Promise<boolean> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<boolean>(
+    const response = await apiClient.get<{ code: number; data: boolean; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/check/username`,
       { params: { username } }
     );
+    return response.data;
   }
 
   /**
@@ -236,11 +236,11 @@ class UserApiClient {
    * GET /api/{factoryId}/users/check/email
    */
   async checkEmailExists(email: string, factoryId?: string): Promise<boolean> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<boolean>(
+    const response = await apiClient.get<{ code: number; data: boolean; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/check/email`,
       { params: { email } }
     );
+    return response.data;
   }
 
   /**
@@ -273,11 +273,11 @@ class UserApiClient {
     const formData = new FormData();
     formData.append('file', file);
 
-    // apiClient拦截器已统一返回data
-    return await apiClient.post<{
-      success: number;
-      failed: number;
-      errors?: string[];
+    const response = await apiClient.post<{
+      code: number;
+      data: { success: number; failed: number; errors?: string[] };
+      message: string;
+      success: boolean;
     }>(
       `${this.getFactoryPath(factoryId)}/users/import`,
       formData,
@@ -287,6 +287,7 @@ class UserApiClient {
         },
       }
     );
+    return response.data;
   }
 
   /**
@@ -302,13 +303,13 @@ class UserApiClient {
     request: ChangePasswordRequest,
     factoryId?: string
   ): Promise<{ message: string }> {
-    console.log('📤 Changing password for user:', userId);
+    console.log('Changing password for user:', userId);
 
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<{ message: string }>(
+    const response = await apiClient.put<{ code: number; data: { message: string }; message: string; success: boolean; }>(
       `${this.getFactoryPath(factoryId)}/users/${userId}/password`,
       request
     );
+    return response.data;
   }
 }
 

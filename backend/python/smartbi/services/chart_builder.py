@@ -5,13 +5,34 @@ Chart Builder Service
 Builds ECharts configuration from data and chart specifications.
 """
 import logging
-from typing import Any, Optional, List, Dict, Tuple
+from typing import Any, Optional, List, Dict
 from enum import Enum
 
+import math
 import pandas as pd
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_for_json(obj):
+    """Replace NaN/Infinity/-Infinity with None to prevent JSON serialization errors."""
+    if isinstance(obj, float):
+        if math.isnan(obj) or math.isinf(obj):
+            return 0
+        return obj
+    if isinstance(obj, dict):
+        return {k: _sanitize_for_json(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_sanitize_for_json(item) for item in obj]
+    if isinstance(obj, np.floating):
+        val = float(obj)
+        if math.isnan(val) or math.isinf(val):
+            return 0
+        return val
+    if isinstance(obj, np.integer):
+        return int(obj)
+    return obj
 
 
 class ChartType(str, Enum):
@@ -46,206 +67,224 @@ class ChartType(str, Enum):
 class ChartBuilder:
     """ECharts configuration builder"""
 
-    # Color palettes
-    DEFAULT_COLORS = [
-        "#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de",
-        "#3ba272", "#fc8452", "#9a60b4", "#ea7ccc", "#48b8d0"
-    ]
+    # ========== 8-Benchmark Color System ==========
+    # Synthesized from: Tableau (professional palettes) + Looker (Material) + Metabase (friendly)
+    THEME_PALETTES = {
+        "business": {  # 商务蓝 (default) — Tableau + Power BI inspired
+            "primary": ["#2563eb", "#3b82f6", "#60a5fa", "#93c5fd", "#bfdbfe"],
+            "secondary": ["#059669", "#10b981", "#34d399", "#6ee7b7", "#a7f3d0"],
+            "accent": ["#d97706", "#f59e0b", "#fbbf24", "#fcd34d", "#fde68a"],
+            "danger": ["#dc2626", "#ef4444", "#f87171", "#fca5a5"],
+            "charts": [
+                "#2563eb", "#059669", "#d97706", "#7c3aed", "#dc2626",
+                "#0891b2", "#c026d3", "#ea580c", "#4f46e5", "#15803d"
+            ],
+            "gradients": [
+                {"start": "#2563eb", "end": "#60a5fa"},   # blue
+                {"start": "#059669", "end": "#34d399"},   # green
+                {"start": "#d97706", "end": "#fbbf24"},   # gold
+                {"start": "#7c3aed", "end": "#a78bfa"},   # purple
+                {"start": "#dc2626", "end": "#f87171"},   # red
+            ],
+            "semantic": {
+                "success": "#059669",
+                "warning": "#d97706",
+                "danger": "#dc2626",
+                "info": "#2563eb",
+                "muted": "#9ca3af",
+            }
+        }
+    }
 
-    GRADIENT_COLORS = [
-        {"start": "#667eea", "end": "#764ba2"},
-        {"start": "#f093fb", "end": "#f5576c"},
-        {"start": "#4facfe", "end": "#00f2fe"},
-        {"start": "#43e97b", "end": "#38f9d7"},
-        {"start": "#fa709a", "end": "#fee140"}
-    ]
+    # Active theme
+    _active_theme = "business"
+
+    @classmethod
+    def _get_palette(cls) -> dict:
+        return cls.THEME_PALETTES[cls._active_theme]
+
+    # Legacy aliases for backward compatibility
+    DEFAULT_COLORS = THEME_PALETTES["business"]["charts"]
+
+    GRADIENT_COLORS = THEME_PALETTES["business"]["gradients"]
+
+    # ========== Animation Presets (Tableau + Power BI Fluent Motion) ==========
+    ANIMATION_PRESETS = {
+        "bar": {
+            "animationDuration": 800,
+            "animationEasing": "elasticOut",
+            "animationDelay": "__FUNC__function(idx){return idx*80}",
+        },
+        "line": {
+            "animationDuration": 1200,
+            "animationEasing": "cubicOut",
+        },
+        "pie": {
+            "animationDuration": 1000,
+            "animationEasing": "cubicOut",
+            "animationType": "expansion",
+        },
+        "scatter": {
+            "animationDuration": 600,
+            "animationEasing": "elasticOut",
+            "animationDelayUpdate": "__FUNC__function(idx){return idx*5}",
+        },
+        "area": {
+            "animationDuration": 1200,
+            "animationEasing": "cubicOut",
+        },
+        "waterfall": {
+            "animationDuration": 800,
+            "animationEasing": "cubicOut",
+            "animationDelay": "__FUNC__function(idx){return idx*60}",
+        },
+    }
 
     def __init__(self):
         pass
 
-    def _validate_and_resolve_field(
-        self,
-        field: Optional[str],
-        df: pd.DataFrame,
-        field_type: str = "field"
-    ) -> Optional[str]:
-        """
-        Validate that a field exists in the DataFrame.
-        If not found, try fuzzy matching (case-insensitive, partial match).
+    # ==================== 视觉增强工具方法 ====================
 
-        Args:
-            field: Field name to validate
-            df: DataFrame with actual columns
-            field_type: Type of field for logging (x_axis, y_axis, etc.)
+    @staticmethod
+    def _detect_value_scale(values: list) -> dict:
+        """检测数值量级，返回缩放因子和单位后缀"""
+        try:
+            abs_values = [abs(v) for v in values if isinstance(v, (int, float)) and not np.isnan(v)]
+            if not abs_values:
+                return {"divisor": 1, "suffix": "", "name_suffix": ""}
+            max_val = max(abs_values)
+            if max_val >= 1e8:
+                return {"divisor": 1e8, "suffix": "亿", "name_suffix": " (亿元)"}
+            elif max_val >= 1e4:
+                return {"divisor": 1e4, "suffix": "万", "name_suffix": " (万)"}
+            return {"divisor": 1, "suffix": "", "name_suffix": ""}
+        except Exception:
+            return {"divisor": 1, "suffix": "", "name_suffix": ""}
 
-        Returns:
-            Valid field name or None if not found
-        """
-        if field is None:
-            return None
-
-        actual_columns = set(df.columns)
-
-        # 1. Exact match
-        if field in actual_columns:
-            return field
-
-        # 2. Case-insensitive match
-        field_lower = field.lower()
-        for col in actual_columns:
-            if col.lower() == field_lower:
-                logger.debug(f"Resolved {field_type} '{field}' -> '{col}' (case-insensitive)")
-                return col
-
-        # 3. Partial match (field contained in column name or vice versa)
-        for col in actual_columns:
-            if field_lower in col.lower() or col.lower() in field_lower:
-                logger.debug(f"Resolved {field_type} '{field}' -> '{col}' (partial match)")
-                return col
-
-        # 4. Not found
-        logger.warning(
-            f"{field_type} '{field}' not found in columns. "
-            f"Available: {list(actual_columns)[:5]}..."
-        )
-        return None
-
-    def _ensure_numeric_field(
-        self,
-        df: pd.DataFrame,
-        field: Optional[str],
-        fallback_to_first: bool = True
-    ) -> Optional[str]:
-        """
-        确保字段是数值类型，如果不是则尝试找到合适的数值字段。
-
-        Args:
-            df: DataFrame
-            field: 候选字段名
-            fallback_to_first: 如果字段不是数值类型，是否回退到第一个数值字段
-
-        Returns:
-            有效的数值字段名，或 None
-        """
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-
-        if not numeric_cols:
-            logger.warning("No numeric columns found in DataFrame")
-            return None
-
-        # 如果指定的字段是数值类型，直接返回
-        if field and field in numeric_cols:
-            return field
-
-        # 如果字段存在但不是数值类型
-        if field and field in df.columns:
-            logger.warning(
-                f"Field '{field}' is not numeric (type={df[field].dtype}), "
-                f"falling back to numeric field"
-            )
-
-        # 回退到第一个数值字段
-        if fallback_to_first and numeric_cols:
-            fallback_field = numeric_cols[0]
-            logger.debug(f"Using fallback numeric field: {fallback_field}")
-            return fallback_field
-
-        return None
-
-    def _get_valid_numeric_fields(
-        self,
-        df: pd.DataFrame,
-        y_fields: Optional[List[str]]
-    ) -> List[str]:
-        """
-        从 y_fields 中筛选出有效的数值字段。
-
-        Args:
-            df: DataFrame
-            y_fields: 候选 Y 轴字段列表
-
-        Returns:
-            有效的数值字段列表
-        """
-        numeric_cols = set(df.select_dtypes(include=[np.number]).columns.tolist())
-
-        if not y_fields:
-            return list(numeric_cols)[:3]  # 默认返回前3个数值字段
-
-        valid_fields = []
-        for field in y_fields:
-            if field in numeric_cols:
-                valid_fields.append(field)
+    @staticmethod
+    def _scale_series_data(data: list, divisor: float) -> list:
+        """缩放数据系列"""
+        if divisor == 1:
+            return data
+        scaled = []
+        for v in data:
+            if isinstance(v, (int, float)) and not np.isnan(v):
+                scaled.append(round(v / divisor, 2))
             else:
-                logger.warning(f"Y-axis field '{field}' is not numeric, skipping")
+                scaled.append(v)
+        return scaled
 
-        # 如果所有字段都无效，回退到数值字段
-        if not valid_fields and numeric_cols:
-            valid_fields = list(numeric_cols)[:3]
-            logger.debug(f"All y_fields invalid, using fallback: {valid_fields}")
+    def _apply_gradient_to_series(self, series: list) -> list:
+        """为柱状图系列应用渐变色 + 圆角"""
+        gradients = self._get_palette()["gradients"]
+        for i, s in enumerate(series):
+            if s.get("type") != "bar":
+                continue
+            gc = gradients[i % len(gradients)]
+            s["itemStyle"] = {
+                "color": {
+                    "type": "linear",
+                    "x": 0, "y": 0, "x2": 0, "y2": 1,
+                    "colorStops": [
+                        {"offset": 0, "color": gc["start"]},
+                        {"offset": 1, "color": gc["end"]}
+                    ]
+                },
+                "borderRadius": [4, 4, 0, 0]
+            }
+        return series
 
-        return valid_fields
+    def _make_bar_label(self, suffix: str = "") -> dict:
+        """柱状图顶部数据标签"""
+        label = {
+            "show": True,
+            "position": "top",
+            "fontSize": 11,
+            "color": "#606266"
+        }
+        if suffix:
+            label["formatter"] = "{c}" + suffix
+        return label
 
-    def _validate_fields(
+    @staticmethod
+    def _make_enhanced_tooltip(trigger: str = "axis") -> dict:
+        """Structured Tooltip (Tableau multi-row + ThoughtSpot minimal + FineBI comparison)"""
+        return {
+            "trigger": trigger,
+            "backgroundColor": "rgba(255,255,255,0.96)",
+            "borderColor": "#e5e7eb",
+            "borderWidth": 1,
+            "borderRadius": 8,
+            "padding": [12, 16],
+            "textStyle": {"color": "#374151", "fontSize": 13},
+            "extraCssText": "box-shadow: 0 4px 20px rgba(0,0,0,0.12);",
+            "confine": True,
+            **({"axisPointer": {"type": "shadow", "shadowStyle": {"color": "rgba(37,99,235,0.06)"}}} if trigger == "axis" else {})
+        }
+
+    @staticmethod
+    def _aggregate_pie_top_n(data: list, n: int = 5) -> list:
+        """饼图超过 N 个分类时合并为 Top N + 其他"""
+        if len(data) <= n + 1:
+            return data
+        sorted_data = sorted(data, key=lambda d: abs(d.get("value", 0)), reverse=True)
+        top = sorted_data[:n]
+        others_val = sum(d.get("value", 0) for d in sorted_data[n:])
+        if others_val != 0:
+            top.append({"name": "其他", "value": round(others_val, 2)})
+        return top
+
+    def _add_mark_annotations(
         self,
+        config: dict,
         df: pd.DataFrame,
-        x_field: Optional[str],
         y_fields: Optional[List[str]],
-        series_field: Optional[str] = None
-    ) -> Tuple[Optional[str], Optional[List[str]], Optional[str]]:
-        """
-        Validate and resolve all fields for chart building.
-
-        Returns:
-            Tuple of (resolved_x_field, resolved_y_fields, resolved_series_field)
-        """
-        # Resolve x_field
-        resolved_x = self._validate_and_resolve_field(x_field, df, "x_axis")
-
-        # Resolve y_fields
-        resolved_y = None
-        if y_fields:
-            resolved_y = []
-            for y_field in y_fields:
-                resolved = self._validate_and_resolve_field(y_field, df, "y_axis")
-                if resolved:
-                    resolved_y.append(resolved)
-
-            if not resolved_y:
-                resolved_y = None
-
-        # Resolve series_field
-        resolved_series = self._validate_and_resolve_field(series_field, df, "series")
-
-        return resolved_x, resolved_y, resolved_series
-
-    def _get_fallback_fields(
-        self,
-        df: pd.DataFrame,
         chart_type: str
-    ) -> Tuple[Optional[str], Optional[List[str]]]:
-        """
-        Get fallback x_field and y_fields from DataFrame columns.
+    ) -> dict:
+        """Add markLine (average, min/max) and markPoint annotations to chart series"""
+        if chart_type not in ("bar", "line", "area"):
+            return config
+        series = config.get("series", [])
+        if not series or not y_fields:
+            return config
 
-        Returns:
-            Tuple of (x_field, y_fields) based on data types
-        """
-        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-        non_numeric_cols = df.select_dtypes(exclude=[np.number]).columns.tolist()
+        for s in series:
+            s_name = s.get("name", "")
+            # Only annotate main data series (skip placeholder, trend lines, forecasts)
+            if s.get("type") not in ("bar", "line"):
+                continue
+            if s_name in ("Placeholder", "趋势线") or "预测" in s_name or "置信" in s_name:
+                continue
 
-        x_field = None
-        y_fields = None
+            # Check if this series name corresponds to a y_field or contains data
+            data_vals = s.get("data", [])
+            numeric_vals = [v for v in data_vals if isinstance(v, (int, float)) and not (isinstance(v, float) and (math.isnan(v) or math.isinf(v)))]
+            if len(numeric_vals) < 3:
+                continue
 
-        # For most charts: first non-numeric as x, first numeric as y
-        if non_numeric_cols:
-            x_field = non_numeric_cols[0]
-        elif len(df.columns) > 0:
-            x_field = df.columns[0]
+            mean_val = sum(numeric_vals) / len(numeric_vals)
 
-        if numeric_cols:
-            y_fields = numeric_cols[:3]  # Limit to 3 y fields
+            # markLine: average reference line
+            s["markLine"] = {
+                "silent": True,
+                "lineStyle": {"type": "dashed", "color": "#9ca3af", "width": 1},
+                "label": {"position": "insideEndTop", "fontSize": 10, "color": "#6b7280",
+                          "formatter": f"均值: {{c}}"},
+                "data": [{"type": "average", "name": "均值"}]
+            }
 
-        return x_field, y_fields
+            # markPoint: max and min values (only for first series to avoid clutter)
+            if s is series[0] or len(series) == 1:
+                s["markPoint"] = {
+                    "symbolSize": 40,
+                    "label": {"fontSize": 10},
+                    "data": [
+                        {"type": "max", "name": "最高"},
+                        {"type": "min", "name": "最低"}
+                    ]
+                }
+
+        return config
 
     def build(
         self,
@@ -283,16 +322,6 @@ class ChartBuilder:
                 return self._empty_chart_config(title)
 
             chart_type_enum = ChartType(chart_type.lower())
-
-            # Validate and resolve field names
-            x_field, y_fields, series_field = self._validate_fields(
-                df, x_field, y_fields, series_field
-            )
-
-            # If no valid fields found, use fallback
-            if x_field is None and y_fields is None:
-                x_field, y_fields = self._get_fallback_fields(df, chart_type)
-                logger.debug(f"Using fallback fields: x={x_field}, y={y_fields}")
 
             # Build chart based on type
             if chart_type_enum == ChartType.LINE:
@@ -334,14 +363,24 @@ class ChartBuilder:
             else:
                 config = self._build_line_chart(df, x_field, y_fields, series_field)
 
-            # Add common options
-            config = self._add_common_options(config, title, subtitle, theme, options)
+            # Add mark annotations (average line, max/min points)
+            config = self._add_mark_annotations(config, df, y_fields, chart_type_enum.value)
 
-            return {
+            # Add common options
+            config = self._add_common_options(config, title, subtitle, theme, options, chart_type_enum.value)
+
+            # Anomaly detection (ThoughtSpot SpotIQ + Grafana thresholds)
+            anomalies = self._detect_chart_anomalies(df, y_fields, chart_type_enum.value)
+
+            result = {
                 "success": True,
                 "chartType": chart_type,
-                "config": config
+                "config": _sanitize_for_json(config)
             }
+            if anomalies:
+                result["anomalies"] = _sanitize_for_json(anomalies)
+
+            return result
 
         except Exception as e:
             logger.error(f"Chart build failed: {e}", exc_info=True)
@@ -361,30 +400,58 @@ class ChartBuilder:
         """Build line chart configuration"""
         x_data = df[x_field].tolist() if x_field else df.index.tolist()
 
+        all_values = []
         series = []
         if series_field and series_field in df.columns:
-            # Multiple series from grouping
             for i, (name, group) in enumerate(df.groupby(series_field)):
                 for y_field in (y_fields or []):
                     if y_field in group.columns:
+                        raw = group[y_field].tolist()
+                        all_values.extend([v for v in raw if isinstance(v, (int, float))])
                         series.append({
                             "name": f"{name}",
                             "type": "line",
-                            "data": group[y_field].tolist(),
+                            "data": raw,
                             "smooth": True,
                             "emphasis": {"focus": "series"}
                         })
         else:
-            # Single or multiple y fields
-            for y_field in (y_fields or []):
+            for i, y_field in enumerate(y_fields or []):
                 if y_field in df.columns:
+                    raw = df[y_field].tolist()
+                    all_values.extend([v for v in raw if isinstance(v, (int, float))])
+                    palette_colors = self._get_palette()["charts"]
+                    color = palette_colors[i % len(palette_colors)]
                     series.append({
                         "name": y_field,
                         "type": "line",
-                        "data": df[y_field].tolist(),
+                        "data": raw,
                         "smooth": True,
-                        "emphasis": {"focus": "series"}
+                        "emphasis": {"focus": "series"},
+                        "symbol": "circle",
+                        "symbolSize": 6,
+                        "showSymbol": len(raw) <= 20,
+                        "areaStyle": {
+                            "color": {
+                                "type": "linear", "x": 0, "y": 0, "x2": 0, "y2": 1,
+                                "colorStops": [
+                                    {"offset": 0, "color": color + "30"},
+                                    {"offset": 1, "color": color + "05"}
+                                ]
+                            }
+                        } if i == 0 else None
                     })
+
+        # Y轴缩放
+        scale = self._detect_value_scale(all_values)
+        if scale["divisor"] != 1:
+            for s in series:
+                s["data"] = self._scale_series_data(s["data"], scale["divisor"])
+
+        # Clean None areaStyle
+        for s in series:
+            if s.get("areaStyle") is None:
+                s.pop("areaStyle", None)
 
         return {
             "xAxis": {
@@ -393,12 +460,12 @@ class ChartBuilder:
                 "boundaryGap": False
             },
             "yAxis": {
-                "type": "value"
+                "type": "value",
+                "name": scale["name_suffix"].strip() if scale["name_suffix"] else None,
+                "splitLine": {"lineStyle": {"type": "dashed", "color": "#f0f0f0"}}
             },
             "series": series,
-            "tooltip": {
-                "trigger": "axis"
-            },
+            "tooltip": self._make_enhanced_tooltip("axis"),
             "legend": {
                 "data": [s["name"] for s in series]
             }
@@ -414,26 +481,45 @@ class ChartBuilder:
         """Build bar chart configuration"""
         x_data = df[x_field].tolist() if x_field else df.index.tolist()
 
+        # 收集所有数值用于量级检测
+        all_values = []
         series = []
         if series_field and series_field in df.columns:
             for name, group in df.groupby(series_field):
                 for y_field in (y_fields or []):
                     if y_field in group.columns:
+                        raw = group[y_field].tolist()
+                        all_values.extend([v for v in raw if isinstance(v, (int, float))])
                         series.append({
                             "name": str(name),
                             "type": "bar",
-                            "data": group[y_field].tolist(),
+                            "data": raw,
                             "emphasis": {"focus": "series"}
                         })
         else:
             for y_field in (y_fields or []):
                 if y_field in df.columns:
+                    raw = df[y_field].tolist()
+                    all_values.extend([v for v in raw if isinstance(v, (int, float))])
                     series.append({
                         "name": y_field,
                         "type": "bar",
-                        "data": df[y_field].tolist(),
+                        "data": raw,
                         "emphasis": {"focus": "series"}
                     })
+
+        # Y轴缩放
+        scale = self._detect_value_scale(all_values)
+        if scale["divisor"] != 1:
+            for s in series:
+                s["data"] = self._scale_series_data(s["data"], scale["divisor"])
+
+        # 数据标签
+        for s in series:
+            s["label"] = self._make_bar_label(scale["suffix"])
+
+        # 渐变配色
+        series = self._apply_gradient_to_series(series)
 
         return {
             "xAxis": {
@@ -441,13 +527,11 @@ class ChartBuilder:
                 "data": x_data
             },
             "yAxis": {
-                "type": "value"
+                "type": "value",
+                "name": scale["name_suffix"].strip() if scale["name_suffix"] else None
             },
             "series": series,
-            "tooltip": {
-                "trigger": "axis",
-                "axisPointer": {"type": "shadow"}
-            },
+            "tooltip": self._make_enhanced_tooltip("axis"),
             "legend": {
                 "data": [s["name"] for s in series]
             }
@@ -461,23 +545,19 @@ class ChartBuilder:
     ) -> dict:
         """Build pie chart configuration"""
         name_field = x_field or df.columns[0]
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) == 0:
+            return self._empty_chart_config(None)
+        value_field = y_fields[0] if y_fields else numeric_cols[0]
 
-        # 确保 value_field 是数值类型
-        candidate_value = y_fields[0] if y_fields else None
-        value_field = self._ensure_numeric_field(df, candidate_value, fallback_to_first=True)
+        data = [
+            {"name": str(row[name_field]), "value": round(float(row[value_field]), 2)}
+            for _, row in df.iterrows()
+            if pd.notna(row[value_field])
+        ]
 
-        if value_field is None:
-            raise ValueError("No valid numeric column found for pie chart")
-
-        # 安全地构建数据，跳过无效值
-        data = []
-        for _, row in df.iterrows():
-            val = pd.to_numeric(row[value_field], errors='coerce')
-            if pd.notna(val) and val > 0:  # 饼图只接受正数
-                data.append({"name": str(row[name_field]), "value": float(val)})
-
-        if not data:
-            raise ValueError("No valid data points for pie chart")
+        # Top5 + 其他 合并
+        data = self._aggregate_pie_top_n(data, 5)
 
         return {
             "series": [{
@@ -492,8 +572,12 @@ class ChartBuilder:
                 },
                 "label": {
                     "show": True,
-                    "formatter": "{b}: {d}%"
+                    "formatter": "{b}\n{d}%",
+                    "overflow": "truncate",
+                    "width": 80
                 },
+                "labelLayout": {"hideOverlap": True},
+                "labelLine": {"length": 15, "length2": 10},
                 "emphasis": {
                     "label": {
                         "show": True,
@@ -503,10 +587,7 @@ class ChartBuilder:
                 },
                 "data": data
             }],
-            "tooltip": {
-                "trigger": "item",
-                "formatter": "{a} <br/>{b}: {c} ({d}%)"
-            },
+            "tooltip": self._make_enhanced_tooltip("item"),
             "legend": {
                 "orient": "vertical",
                 "left": "left",
@@ -540,14 +621,26 @@ class ChartBuilder:
         y_fields: Optional[List[str]],
         series_field: Optional[str]
     ) -> dict:
-        """Build scatter chart configuration"""
+        """Build scatter chart configuration with trendline"""
         x_col = x_field or df.select_dtypes(include=[np.number]).columns[0]
-        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[1] if len(df.select_dtypes(include=[np.number]).columns) > 1 else x_col
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        if not y_fields and len(numeric_cols) < 2:
+            return self._empty_chart_config("散点图需要至少2个数值列")
+        y_col = y_fields[0] if y_fields else numeric_cols[1]
 
+        all_x, all_y = [], []
         series = []
         if series_field and series_field in df.columns:
             for name, group in df.groupby(series_field):
-                data = [[float(row[x_col]), float(row[y_col])] for _, row in group.iterrows()]
+                data = []
+                for _, row in group.iterrows():
+                    try:
+                        xv, yv = float(row[x_col]), float(row[y_col])
+                        data.append([xv, yv])
+                        all_x.append(xv)
+                        all_y.append(yv)
+                    except (ValueError, TypeError):
+                        continue
                 series.append({
                     "name": str(name),
                     "type": "scatter",
@@ -555,7 +648,15 @@ class ChartBuilder:
                     "symbolSize": 10
                 })
         else:
-            data = [[float(row[x_col]), float(row[y_col])] for _, row in df.iterrows()]
+            data = []
+            for _, row in df.iterrows():
+                try:
+                    xv, yv = float(row[x_col]), float(row[y_col])
+                    data.append([xv, yv])
+                    all_x.append(xv)
+                    all_y.append(yv)
+                except (ValueError, TypeError):
+                    continue
             series.append({
                 "name": f"{x_col} vs {y_col}",
                 "type": "scatter",
@@ -563,14 +664,31 @@ class ChartBuilder:
                 "symbolSize": 10
             })
 
+        # 趋势线：线性回归
+        if len(all_x) >= 3:
+            try:
+                coeffs = np.polyfit(all_x, all_y, 1)
+                x_min, x_max = min(all_x), max(all_x)
+                series.append({
+                    "name": "趋势线",
+                    "type": "line",
+                    "data": [
+                        [round(x_min, 2), round(coeffs[0] * x_min + coeffs[1], 2)],
+                        [round(x_max, 2), round(coeffs[0] * x_max + coeffs[1], 2)]
+                    ],
+                    "smooth": False,
+                    "symbol": "none",
+                    "lineStyle": {"type": "dashed", "color": "#ff7875", "width": 2},
+                    "tooltip": {"show": False}
+                })
+            except Exception:
+                pass
+
         return {
             "xAxis": {"type": "value", "name": x_col},
             "yAxis": {"type": "value", "name": y_col},
             "series": series,
-            "tooltip": {
-                "trigger": "item",
-                "formatter": "{a}: ({c})"
-            }
+            "tooltip": self._make_enhanced_tooltip("item")
         }
 
     def _build_waterfall_chart(
@@ -581,15 +699,7 @@ class ChartBuilder:
     ) -> dict:
         """Build waterfall chart configuration"""
         x_data = df[x_field].tolist() if x_field else df.index.tolist()
-
-        # 确保 y_col 是数值类型
-        candidate_y = y_fields[0] if y_fields else None
-        y_col = self._ensure_numeric_field(df, candidate_y, fallback_to_first=True)
-
-        if y_col is None:
-            raise ValueError("No valid numeric column found for waterfall chart")
-
-        # 安全地转换为数值，处理 None 和非数值
+        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
         values = pd.to_numeric(df[y_col], errors='coerce').fillna(0).tolist()
 
         # Calculate waterfall data
@@ -615,13 +725,21 @@ class ChartBuilder:
                     negative_data.append(abs(val))
             cumulative += val
 
+        # Y轴缩放
+        scale = self._detect_value_scale(values)
+        if scale["divisor"] != 1:
+            placeholder_data = self._scale_series_data(placeholder_data, scale["divisor"])
+            positive_data = self._scale_series_data(positive_data, scale["divisor"])
+            negative_data = self._scale_series_data(negative_data, scale["divisor"])
+
         return {
             "xAxis": {
                 "type": "category",
                 "data": x_data
             },
             "yAxis": {
-                "type": "value"
+                "type": "value",
+                "name": scale["name_suffix"].strip() if scale["name_suffix"] else None
             },
             "series": [
                 {
@@ -632,24 +750,23 @@ class ChartBuilder:
                     "data": placeholder_data
                 },
                 {
-                    "name": "Increase",
+                    "name": "增长",
                     "type": "bar",
                     "stack": "Total",
-                    "itemStyle": {"color": "#91cc75"},
+                    "itemStyle": {"color": "#91cc75", "borderRadius": [4, 4, 0, 0]},
+                    "label": self._make_bar_label(scale["suffix"]),
                     "data": positive_data
                 },
                 {
-                    "name": "Decrease",
+                    "name": "下降",
                     "type": "bar",
                     "stack": "Total",
-                    "itemStyle": {"color": "#ee6666"},
+                    "itemStyle": {"color": "#ee6666", "borderRadius": [4, 4, 0, 0]},
+                    "label": self._make_bar_label(scale["suffix"]),
                     "data": negative_data
                 }
             ],
-            "tooltip": {
-                "trigger": "axis",
-                "axisPointer": {"type": "shadow"}
-            }
+            "tooltip": self._make_enhanced_tooltip("axis")
         }
 
     def _build_radar_chart(
@@ -662,38 +779,19 @@ class ChartBuilder:
         indicators = []
         data_values = []
 
-        def safe_max(series):
-            """Safely get max value from a series, handling non-numeric data."""
-            try:
-                numeric_vals = pd.to_numeric(series, errors='coerce')
-                max_val = numeric_vals.max()
-                return float(max_val) if pd.notna(max_val) else 100
-            except Exception:
-                return 100
-
-        def safe_first(series):
-            """Safely get first value from a series."""
-            try:
-                if len(series) > 0:
-                    val = pd.to_numeric(series.iloc[0], errors='coerce')
-                    return float(val) if pd.notna(val) else 0
-                return 0
-            except Exception:
-                return 0
-
         # Use y_fields as indicators
         if y_fields:
             for field in y_fields:
                 if field in df.columns:
-                    max_val = safe_max(df[field])
+                    max_val = float(df[field].max())
                     indicators.append({"name": field, "max": max_val * 1.2})
-                    data_values.append(safe_first(df[field]))
+                    data_values.append(float(df[field].iloc[0]) if len(df) > 0 else 0)
         else:
             # Use numeric columns
             for col in df.select_dtypes(include=[np.number]).columns[:6]:
-                max_val = safe_max(df[col])
+                max_val = float(df[col].max())
                 indicators.append({"name": col, "max": max_val * 1.2})
-                data_values.append(safe_first(df[col]))
+                data_values.append(float(df[col].iloc[0]) if len(df) > 0 else 0)
 
         return {
             "radar": {
@@ -781,37 +879,19 @@ class ChartBuilder:
         """Build heatmap chart configuration"""
         x_col = x_field or df.columns[0]
         y_col = series_field or df.columns[1]
+        value_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
 
-        # 确保 value_col 是数值类型
-        candidate_value = y_fields[0] if y_fields else None
-        value_col = self._ensure_numeric_field(df, candidate_value, fallback_to_first=True)
+        x_data = df[x_col].unique().tolist()
+        y_data = df[y_col].unique().tolist()
 
-        if value_col is None:
-            raise ValueError("No valid numeric column found for heatmap chart")
-
-        # 过滤掉 x_col 或 y_col 中的 NaN 值
-        df_clean = df.dropna(subset=[x_col, y_col])
-        x_data = df_clean[x_col].unique().tolist()
-        y_data = df_clean[y_col].unique().tolist()
-
-        # 安全地转换数值
         data = []
-        for _, row in df_clean.iterrows():
-            try:
-                x_idx = x_data.index(row[x_col])
-                y_idx = y_data.index(row[y_col])
-                val = pd.to_numeric(row[value_col], errors='coerce')
-                if pd.notna(val):
-                    data.append([x_idx, y_idx, float(val)])
-            except (ValueError, KeyError):
-                continue
+        for _, row in df.iterrows():
+            x_idx = x_data.index(row[x_col])
+            y_idx = y_data.index(row[y_col])
+            data.append([x_idx, y_idx, float(row[value_col])])
 
-        if not data:
-            raise ValueError("No valid data points for heatmap chart")
-
-        numeric_values = pd.to_numeric(df_clean[value_col], errors='coerce').dropna()
-        max_val = numeric_values.max() if len(numeric_values) > 0 else 1
-        min_val = numeric_values.min() if len(numeric_values) > 0 else 0
+        max_val = df[value_col].max()
+        min_val = df[value_col].min()
 
         return {
             "xAxis": {
@@ -894,10 +974,7 @@ class ChartBuilder:
             },
             "yAxis": y_axis_list,
             "series": series,
-            "tooltip": {
-                "trigger": "axis",
-                "axisPointer": {"type": "cross"}
-            },
+            "tooltip": self._make_enhanced_tooltip("axis"),
             "legend": {
                 "data": [s["name"] for s in series]
             }
@@ -909,21 +986,26 @@ class ChartBuilder:
         title: Optional[str],
         subtitle: Optional[str],
         theme: str,
-        options: Optional[dict]
+        options: Optional[dict],
+        chart_type: str = ""
     ) -> dict:
-        """Add common ECharts options"""
-        # Add title
+        """Add common ECharts options with visual enhancements (8-benchmark synthesis)"""
+        palette = self._get_palette()
+
+        # Title (ThoughtSpot minimal style)
         if title:
             config["title"] = {
                 "text": title,
                 "subtext": subtitle or "",
-                "left": "center"
+                "left": "center",
+                "textStyle": {"fontSize": 14, "fontWeight": 600, "color": "#374151"},
+                "subtextStyle": {"fontSize": 12, "color": "#9ca3af"}
             }
 
-        # Add colors
-        config["color"] = self.DEFAULT_COLORS
+        # Theme colors
+        config["color"] = palette["charts"]
 
-        # Add grid for proper spacing
+        # Grid with better spacing
         if "grid" not in config:
             config["grid"] = {
                 "left": "3%",
@@ -932,14 +1014,56 @@ class ChartBuilder:
                 "containLabel": True
             }
 
-        # Add toolbox
+        # Toolbox (minimal, right-aligned)
         config["toolbox"] = {
             "feature": {
-                "saveAsImage": {},
+                "saveAsImage": {"pixelRatio": 2},
                 "dataZoom": {},
                 "restore": {}
-            }
+            },
+            "right": 16,
+            "top": 4,
+            "iconStyle": {"borderColor": "#9ca3af"}
         }
+
+        # Legend auto-position (Power BI style)
+        if "legend" in config:
+            legend = config["legend"]
+            legend_data = legend.get("data", [])
+            if len(legend_data) > 5:
+                legend["type"] = "scroll"
+            if legend.get("orient") != "vertical":
+                legend.setdefault("bottom", 0)
+                legend.setdefault("left", "center")
+
+        # ===== X轴中文自适应 =====
+        x_axis = config.get("xAxis")
+        if isinstance(x_axis, dict) and x_axis.get("type") == "category":
+            x_data = x_axis.get("data", [])
+            max_len = max((len(str(d)) for d in x_data), default=0)
+            if max_len > 4:
+                x_axis.setdefault("axisLabel", {})
+                x_axis["axisLabel"]["rotate"] = 30
+                x_axis["axisLabel"]["overflow"] = "truncate"
+                x_axis["axisLabel"]["width"] = 80
+            if len(x_data) > 15:
+                config["dataZoom"] = [
+                    {"type": "slider", "start": 0, "end": round(15 / len(x_data) * 100),
+                     "borderColor": "transparent", "backgroundColor": "#f3f4f6",
+                     "fillerColor": "rgba(37,99,235,0.12)", "handleStyle": {"color": "#2563eb"}},
+                    {"type": "inside"}
+                ]
+                config["grid"]["bottom"] = "15%"
+
+        # ===== Type-specific animation (Tableau + Power BI Fluent Motion) =====
+        config["animation"] = True
+        preset = self.ANIMATION_PRESETS.get(chart_type, {})
+        config["animationDuration"] = preset.get("animationDuration", 800)
+        config["animationEasing"] = preset.get("animationEasing", "cubicOut")
+        # JS function refs are serialized as "__FUNC__..." strings — frontend handles eval
+        for anim_key in ("animationDelay", "animationDelayUpdate"):
+            if anim_key in preset:
+                config[anim_key] = preset[anim_key]
 
         # Merge custom options
         if options:
@@ -950,6 +1074,57 @@ class ChartBuilder:
                     config[key] = value
 
         return config
+
+    def _detect_chart_anomalies(
+        self,
+        df: pd.DataFrame,
+        y_fields: Optional[List[str]],
+        chart_type: str
+    ) -> Dict[str, Any]:
+        """Detect anomalies using IQR method (ThoughtSpot SpotIQ + Grafana thresholds).
+        Returns markPoint/markLine config for frontend overlay."""
+        if chart_type not in ("bar", "line", "area"):
+            return {}
+        if not y_fields:
+            return {}
+
+        anomaly_result: Dict[str, Any] = {}
+        for col in y_fields:
+            if col not in df.columns:
+                continue
+            values = pd.to_numeric(df[col], errors="coerce").dropna()
+            if len(values) < 5:
+                continue
+
+            q1, q3 = values.quantile(0.25), values.quantile(0.75)
+            iqr = q3 - q1
+            if iqr == 0:
+                continue
+            lower = q1 - 1.5 * iqr
+            upper = q3 + 1.5 * iqr
+            mean_val = float(values.mean())
+            std_val = float(values.std())
+
+            outlier_indices = []
+            for idx_pos, (idx, val) in enumerate(values.items()):
+                if val < lower or val > upper:
+                    deviation = (val - mean_val) / std_val if std_val > 0 else 0
+                    outlier_indices.append({
+                        "index": idx_pos,
+                        "value": float(val),
+                        "deviation": round(float(deviation), 2)
+                    })
+
+            if outlier_indices:
+                anomaly_result[col] = {
+                    "outliers": outlier_indices[:10],
+                    "mean": round(mean_val, 2),
+                    "std": round(std_val, 2),
+                    "q1": round(float(q1), 2),
+                    "q3": round(float(q3), 2),
+                }
+
+        return anomaly_result
 
     def _empty_chart_config(self, title: Optional[str] = None) -> dict:
         """Return empty chart configuration"""
@@ -1025,29 +1200,15 @@ class ChartBuilder:
     ) -> dict:
         """Build Pareto chart (80/20 analysis)"""
         x_col = x_field or df.columns[0]
-
-        # 确保 y_col 是数值类型
-        candidate_y = y_fields[0] if y_fields else None
-        y_col = self._ensure_numeric_field(df, candidate_y, fallback_to_first=True)
-
-        if y_col is None:
-            raise ValueError("No valid numeric column found for pareto chart")
-
-        # 转换为数值并清理数据
-        df_clean = df.copy()
-        df_clean[y_col] = pd.to_numeric(df_clean[y_col], errors='coerce')
-        df_clean = df_clean.dropna(subset=[y_col])
-
-        if df_clean.empty:
-            raise ValueError("No valid numeric data for pareto chart")
+        y_col = y_fields[0] if y_fields else df.select_dtypes(include=[np.number]).columns[0]
 
         # Sort by value descending
-        sorted_df = df_clean.sort_values(y_col, ascending=False)
+        sorted_df = df.sort_values(y_col, ascending=False)
         x_data = sorted_df[x_col].tolist()
         y_data = sorted_df[y_col].tolist()
 
         # Calculate cumulative percentage
-        total = sum(y_data) if y_data else 1
+        total = sum(y_data)
         cumulative = []
         cum_sum = 0
         for val in y_data:
@@ -1108,18 +1269,8 @@ class ChartBuilder:
         actual_data = df[actual_col].tolist() if actual_col in df.columns else [0] * len(x_data)
         target_data = df[target_col].tolist() if target_col in df.columns else [100] * len(x_data)
 
-        # Filter None values and convert to numeric for max calculation
-        actual_numeric = [v for v in actual_data if v is not None and isinstance(v, (int, float))]
-        target_numeric = [v for v in target_data if v is not None and isinstance(v, (int, float))]
-
-        # Calculate max for background ranges (with fallback)
-        max_actual = max(actual_numeric) if actual_numeric else 100
-        max_target = max(target_numeric) if target_numeric else 100
-        max_val = max(max_actual, max_target) * 1.2
-
-        # Replace None with 0 for display
-        actual_data = [v if v is not None and isinstance(v, (int, float)) else 0 for v in actual_data]
-        target_data = [v if v is not None and isinstance(v, (int, float)) else 0 for v in target_data]
+        # Calculate max for background ranges
+        max_val = max(max(actual_data), max(target_data)) * 1.2
 
         return {
             "xAxis": {

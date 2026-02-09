@@ -16,12 +16,14 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import AIScheduleScreen from '../../screens/dispatcher/ai/AIScheduleScreen';
 import AIScheduleGenerateScreen from '../../screens/dispatcher/ai/AIScheduleGenerateScreen';
+import AIScheduleAnalysisScreen from '../../screens/dispatcher/ai/AIScheduleAnalysisScreen';
 import AICompletionProbScreen from '../../screens/dispatcher/ai/AICompletionProbScreen';
 import AIWorkerOptimizeScreen from '../../screens/dispatcher/ai/AIWorkerOptimizeScreen';
 
 type DSAIStackParamList = {
   AISchedule: undefined;
   AIScheduleGenerate: undefined;
+  AIScheduleAnalysis: undefined;
   AICompletionProb: undefined;
   AIWorkerOptimize: undefined;
 };
@@ -37,6 +39,7 @@ export function DSAIStackNavigator() {
     >
       <Stack.Screen name="AISchedule" component={AIScheduleScreen} />
       <Stack.Screen name="AIScheduleGenerate" component={AIScheduleGenerateScreen} />
+      <Stack.Screen name="AIScheduleAnalysis" component={AIScheduleAnalysisScreen} />
       <Stack.Screen name="AICompletionProb" component={AICompletionProbScreen} />
       <Stack.Screen name="AIWorkerOptimize" component={AIWorkerOptimizeScreen} />
     </Stack.Navigator>

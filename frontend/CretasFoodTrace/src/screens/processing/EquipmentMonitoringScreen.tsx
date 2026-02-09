@@ -74,16 +74,16 @@ export default function EquipmentMonitoringScreen() {
       // API integration - GET /equipment/overall-statistics
       equipmentMonitoringLogger.debug('Fetching equipment statistics', { factoryId });
 
-      const response = await equipmentApiClient.getOverallStatistics(factoryId);
+      const stats = await equipmentApiClient.getOverallStatistics(factoryId);
 
       equipmentMonitoringLogger.info('Equipment statistics loaded successfully', {
         factoryId,
-        totalCount: (response as any).data.totalCount,
-        activeCount: (response as any).data.activeCount,
-        maintenanceCount: (response as any).data.maintenanceCount,
+        totalCount: stats.totalCount,
+        activeCount: stats.activeCount,
+        maintenanceCount: stats.maintenanceCount,
       });
 
-      setStatistics((response as any).data);
+      setStatistics(stats);
 
     } catch (error) {
       equipmentMonitoringLogger.error('Failed to fetch equipment statistics', error as Error, {

@@ -665,7 +665,7 @@ class AIApiClient {
       `${this.getBasePath(factoryId)}/quota`,
       null,
       {
-        params: { newQuota }
+        params: { newQuotaLimit: newQuota }
       }
     );
   }
@@ -750,9 +750,10 @@ class AIApiClient {
     sessionId: string,
     factoryId?: string
   ): Promise<ConversationResponse> {
-    return await apiClient.get<ConversationResponse>(
-      `${this.getBasePath(factoryId)}/conversations/${sessionId}`
+    const response = await apiClient.get<ApiResponseWrapper<ConversationResponse>>(
+      `${this.getConversationBasePath(factoryId)}/${sessionId}`
     );
+    return response.data;
   }
 
   /**
@@ -765,12 +766,14 @@ class AIApiClient {
     request: ConversationRequest,
     factoryId?: string
   ): Promise<AICostAnalysisResponse> {
-    // API返回格式: { code, message, data: AICostAnalysisResponseBackend, ... }
+    // 使用批次成本分析端点的 follow-up 模式（通过 sessionId 关联上下文）
     const response = await apiClient.post<ApiResponseWrapper<AICostAnalysisResponseBackend>>(
-      `${this.getBasePath(factoryId)}/conversations/continue`,
-      request
+      `${this.getBasePath(factoryId)}/analysis/cost/batch`,
+      {
+        question: request.message,
+        sessionId: request.sessionId,
+      }
     );
-    // 安全提取数据：优先使用 response.data，兼容直接返回数据的情况
     const data = response?.data ?? (response as unknown as AICostAnalysisResponseBackend);
     return transformAnalysisResponse(data);
   }
@@ -785,8 +788,9 @@ class AIApiClient {
     sessionId: string,
     factoryId?: string
   ): Promise<void> {
-    await apiClient.delete(
-      `${this.getBasePath(factoryId)}/conversations/${sessionId}`
+    await apiClient.post(
+      `${this.getConversationBasePath(factoryId)}/${sessionId}/cancel`,
+      {}
     );
   }
 
@@ -899,11 +903,11 @@ class AIApiClient {
     context?: Record<string, unknown>,
     factoryId?: string
   ): Promise<IntentRecognizeResponse> {
-    const response = await apiClient.post<IntentRecognizeResponse>(
+    const response = await apiClient.post<ApiResponseWrapper<IntentRecognizeResponse>>(
       `${this.getIntentBasePath(factoryId)}/recognize`,
       { userInput, context }
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -956,11 +960,11 @@ class AIApiClient {
       thinkingBudget: parameters?.thinkingBudget,
     };
 
-    const response = await apiClient.post<IntentExecuteResponse>(
+    const response = await apiClient.post<ApiResponseWrapper<IntentExecuteResponse>>(
       `${this.getIntentBasePath(factoryId)}/execute`,
       requestBody
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -1094,9 +1098,10 @@ class AIApiClient {
    * @param factoryId 工厂ID（可选）
    */
   async checkHealth(factoryId?: string): Promise<HealthCheckResponse> {
-    return await apiClient.get<HealthCheckResponse>(
+    const response = await apiClient.get<ApiResponseWrapper<HealthCheckResponse>>(
       `${this.getBasePath(factoryId)}/health`
     );
+    return response.data;
   }
 }
 

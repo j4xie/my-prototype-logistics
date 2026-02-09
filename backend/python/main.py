@@ -4,6 +4,8 @@ Unified Python Services Entry Point
 
 Consolidates all Python modules into a single FastAPI application:
 - SmartBI: Data analysis, Excel parsing, field detection, forecasting
+- Efficiency Recognition: Video/image analysis for worker efficiency
+- Scene Intelligence: LLM-powered factory scene understanding
 - Client Requirements: Customer feedback system
 
 Port: 8083
@@ -44,8 +46,35 @@ from smartbi.api import (
     cross_sheet,
     yoy,
     statistical,
-    analysis_cache
+    analysis_cache,
+    ai_proxy
 )
+
+# Import Efficiency Recognition API routers (optional - requires opencv)
+try:
+    from efficiency_recognition.api import (
+        router as efficiency_router,
+        stream_router as efficiency_stream_router,
+        photo_router as efficiency_photo_router,
+        tracking_router as efficiency_tracking_router,
+        cost_router as efficiency_cost_router,
+        recording_router as efficiency_recording_router,
+        scene_router as efficiency_scene_router,
+    )
+    _efficiency_available = True
+except ImportError as e:
+    _efficiency_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Efficiency Recognition not available: {e}")
+
+# Import Scene Intelligence API router (optional)
+try:
+    from scene_intelligence import scene_router as scene_intelligence_router
+    _scene_available = True
+except ImportError as e:
+    _scene_available = False
+    import logging as _log
+    _log.getLogger(__name__).warning(f"Scene Intelligence not available: {e}")
 
 # Import Client Requirement API router
 from client_requirement.api import routes as client_requirement_routes
@@ -120,6 +149,11 @@ app.include_router(yoy.router, prefix="/api/smartbi", tags=["YoY Comparison"])
 app.include_router(statistical.router, prefix="/api/statistical", tags=["Statistical Analysis"])
 app.include_router(analysis_cache.router, prefix="/api/smartbi", tags=["Analysis Cache"])
 
+# =====================================================
+# AI Proxy Routes (called by Java backend)
+# =====================================================
+app.include_router(ai_proxy.router, prefix="/api/ai", tags=["AI Proxy"])
+
 # Optional: classifier router (requires torch + transformers)
 if classifier is not None:
     app.include_router(classifier.router, prefix="/api/classifier", tags=["Intent Classifier"])
@@ -129,6 +163,28 @@ else:
 # Database analysis endpoints (PostgreSQL)
 # Note: db_analysis.router already has /api/smartbi/analysis/db prefix
 app.include_router(db_analysis.router, tags=["Database Analysis"])
+
+# =====================================================
+# Efficiency Recognition API Routes (optional)
+# =====================================================
+if _efficiency_available:
+    app.include_router(efficiency_router, prefix="/api/efficiency", tags=["人效识别"])
+    app.include_router(efficiency_stream_router, prefix="/api/efficiency/streams", tags=["多摄像头流管理"])
+    app.include_router(efficiency_photo_router, prefix="/api/efficiency/photo", tags=["手动照片分析"])
+    app.include_router(efficiency_tracking_router, prefix="/api/efficiency/tracking", tags=["跨摄像头追踪"])
+    app.include_router(efficiency_cost_router, prefix="/api/efficiency/cost", tags=["成本监控"])
+    app.include_router(efficiency_recording_router, prefix="/api/efficiency/recording", tags=["NVR录像分析"])
+    app.include_router(efficiency_scene_router, prefix="/api/efficiency/scene", tags=["场景理解"])
+else:
+    logger.warning("Efficiency Recognition routes not registered")
+
+# =====================================================
+# Scene Intelligence API Routes (optional)
+# =====================================================
+if _scene_available:
+    app.include_router(scene_intelligence_router, prefix="/api/scene", tags=["场景智能"])
+else:
+    logger.warning("Scene Intelligence routes not registered")
 
 # =====================================================
 # Client Requirement API Routes
@@ -161,7 +217,12 @@ async def health_check():
             "service": "python-services",
             "version": "2.0.0",
             "timestamp": datetime.now().isoformat(),
-            "modules": ["smartbi", "client_requirement"],
+            "modules": [
+                "smartbi",
+                "client_requirement",
+                *( ["efficiency_recognition"] if _efficiency_available else []),
+                *( ["scene_intelligence"] if _scene_available else []),
+            ],
             "postgres": postgres_status
         }
     )
@@ -188,9 +249,12 @@ async def root():
                 "chat": "/api/chat",
                 "classifier": "/api/classifier",
                 "db_analysis": "/api/smartbi/analysis/db",
-                "cross_sheet": "/api/smartbi/cross-sheet-analysis"
+                "cross_sheet": "/api/smartbi/cross-sheet-analysis",
+                "ai_proxy": "/api/ai"
             },
-            "client_requirement": "/api/client-requirement"
+            "client_requirement": "/api/client-requirement",
+            **({"efficiency_recognition": "/api/efficiency"} if _efficiency_available else {}),
+            **({"scene_intelligence": "/api/scene"} if _scene_available else {}),
         },
         "endpoints": {
             "health": "/health",

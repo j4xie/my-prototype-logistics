@@ -22,6 +22,7 @@ from services.structure_detector import StructureDetector
 from services.semantic_mapper import SemanticMapper
 from services.fixed_executor import FixedExecutor
 from services.schema_cache import get_schema_cache
+from services.table_classifier import TableClassifier, TableType
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -36,6 +37,7 @@ field_mapping_service = FieldMappingService()
 _structure_detector: Optional[StructureDetector] = None
 _semantic_mapper: Optional[SemanticMapper] = None
 _fixed_executor: Optional[FixedExecutor] = None
+_table_classifier: Optional[TableClassifier] = None
 
 
 def get_structure_detector() -> StructureDetector:
@@ -59,37 +61,11 @@ def get_fixed_executor() -> FixedExecutor:
     return _fixed_executor
 
 
-def _infer_data_type_from_category(category: Optional[str]) -> str:
-    """
-    Infer Java dataType from category.
-    This is a fallback when data_type is not explicitly set.
-
-    Args:
-        category: The field category (amount, rate, category, time, etc.)
-
-    Returns:
-        Java-compatible dataType: NUMERIC, CATEGORICAL, DATE, or TEXT
-    """
-    if not category:
-        return "TEXT"
-
-    category_lower = category.lower()
-
-    # Numeric categories
-    if category_lower in ("amount", "rate", "quantity", "percentage", "price",
-                          "cost", "revenue", "profit", "measure", "numeric"):
-        return "NUMERIC"
-
-    # Categorical categories
-    if category_lower in ("category", "region", "department", "product",
-                          "customer", "name", "dimension", "categorical"):
-        return "CATEGORICAL"
-
-    # Time categories
-    if category_lower in ("time", "date", "period", "year", "month"):
-        return "DATE"
-
-    return "TEXT"
+def get_table_classifier() -> TableClassifier:
+    global _table_classifier
+    if _table_classifier is None:
+        _table_classifier = TableClassifier()
+    return _table_classifier
 
 
 class ParseMetadata(BaseModel):
@@ -134,26 +110,6 @@ class SheetInfo(BaseModel):
     columnCount: Optional[int] = None
     hasData: bool = True
     previewHeaders: Optional[List[str]] = None
-
-
-class SheetPreviewInfo(BaseModel):
-    """Enhanced sheet preview info with type detection"""
-    index: int
-    name: str
-    rows: int = 0
-    cols: int = 0
-    type: str = "unknown"   # sales, finance, unknown
-    is_wide: bool = False
-    skip: bool = False      # True if non-data sheet (e.g., index/TOC)
-    previewHeaders: Optional[List[str]] = None
-
-
-class SheetPreviewResponse(BaseModel):
-    """Response for preview-sheets endpoint"""
-    success: bool
-    totalSheets: int = 0
-    sheets: List[SheetPreviewInfo] = []
-    errorMessage: Optional[str] = None
 
 
 class SheetNamesResponse(BaseModel):
@@ -224,320 +180,6 @@ def _perform_analysis(
     return field_mappings, data_features_dict, missing_required
 
 
-@router.post("/parse", response_model=ParseResponse)
-async def parse_excel(
-    file: UploadFile = File(...),
-    sheet_name: Optional[str] = Form(None),
-    sheet_index: Optional[int] = Form(None),
-    sheetIndex: Optional[int] = Form(None),  # Alias for Java client compatibility
-    header_rows: int = Form(1),
-    skip_rows: int = Form(0),
-    transpose: bool = Form(False),
-    analyze: bool = Query(False, description="Include field analysis in response")
-):
-    """
-    Parse Excel file and return structured data
-
-    - **file**: Excel file (.xlsx, .xls) or CSV file
-    - **sheet_name**: Sheet name to parse (default: first sheet)
-    - **sheet_index**: Sheet index to parse (0-based, alternative to sheet_name)
-    - **sheetIndex**: Alias for sheet_index (Java client compatibility)
-    - **header_rows**: Number of header rows (1 for single, 2 for multi-level)
-    - **skip_rows**: Number of rows to skip at the top
-    - **transpose**: Whether to transpose the data
-    - **analyze**: Include field analysis (field mappings, data features) in response
-    """
-    start_time = time.time()
-
-    try:
-        # Validate file type
-        filename = file.filename or ""
-        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
-
-        if ext not in excel_parser.supported_extensions:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type. Supported: {excel_parser.supported_extensions}"
-            )
-
-        # Read file content
-        content = await file.read()
-
-        # Parse based on file type
-        if ext == ".csv":
-            result = excel_parser.parse_csv(content)
-        else:
-            # Determine sheet to parse: sheet_name takes priority, then sheet_index/sheetIndex
-            # Use sheetIndex as alias for sheet_index (Java client compatibility)
-            effective_index = sheet_index if sheet_index is not None else sheetIndex
-
-            if sheet_name:
-                sheet = sheet_name
-            elif effective_index is not None:
-                sheet = int(effective_index)  # Ensure it's an integer
-            else:
-                sheet = 0  # Default to first sheet
-
-            logger.info(f"Parsing Excel sheet: {sheet} (sheet_name={sheet_name}, sheet_index={sheet_index}, sheetIndex={sheetIndex})")
-
-            result = excel_parser.parse(
-                content,
-                sheet_name=sheet,
-                header_rows=header_rows,
-                skip_rows=skip_rows,
-                transpose=transpose
-            )
-
-        # Convert rows to previewData (List[Dict]) for Java compatibility
-        headers = result.get("headers", [])
-        rows = result.get("rows", [])
-        preview_data = []
-        for row in rows[:100]:  # Limit to 100 rows for preview
-            row_dict = {}
-            for i, value in enumerate(row):
-                if i < len(headers):
-                    row_dict[headers[i]] = value
-            preview_data.append(row_dict)
-
-        # Calculate parse time
-        parse_time_ms = int((time.time() - start_time) * 1000)
-
-        # Build metadata
-        metadata = ParseMetadata(
-            sheetName=result.get("currentSheet"),
-            originalColumnCount=result.get("columnCount"),
-            sampledRowCount=min(len(rows), 100),
-            parseTimeMs=parse_time_ms,
-            hasMultiHeader=header_rows > 1,
-            headerRowCount=header_rows,
-            detectedOrientation=result.get("direction"),
-            totalRowCount=result.get("rowCount", len(rows))
-        )
-
-        # Optionally perform analysis
-        field_mappings = None
-        data_features = None
-        missing_required_fields = None
-
-        if analyze and headers and rows:
-            field_mappings, data_features, missing_required_fields = _perform_analysis(
-                headers, rows, None
-            )
-
-        return ParseResponse(
-            success=result.get("success", True),
-            errorMessage=result.get("error"),
-            headers=headers,
-            rowCount=result.get("rowCount", len(rows)),
-            columnCount=result.get("columnCount", len(headers)),
-            previewData=preview_data,
-            fieldMappings=field_mappings,
-            dataFeatures=data_features,
-            missingRequiredFields=missing_required_fields,
-            metadata=metadata,
-            status="PARSED" if not analyze else "ANALYZED",
-            # Keep backward compatibility
-            rows=rows,
-            direction=result.get("direction"),
-            sheetNames=result.get("sheetNames"),
-            currentSheet=result.get("currentSheet")
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Excel parse error: {e}", exc_info=True)
-        return ParseResponse(success=False, errorMessage=str(e))
-
-
-@router.post("/parse-analyze", response_model=ParseResponse)
-async def parse_and_analyze(
-    file: UploadFile = File(...),
-    factory_id: Optional[str] = Form(None),
-    sheet_name: Optional[str] = Form(None),
-    sheet_index: Optional[int] = Form(None),
-    sheetIndex: Optional[int] = Form(None),  # Alias for Java client compatibility
-    header_rows: int = Form(1),
-    skip_rows: int = Form(0),
-    auto_detect_multi_header: bool = Form(True),
-    auto_detect_orientation: bool = Form(True),
-    auto_detect_title_rows: bool = Form(True)  # NEW: Auto-detect and skip title rows
-):
-    """
-    Parse Excel file with full field analysis.
-
-    This endpoint performs:
-    1. Basic parsing (like /parse)
-    2. Data feature analysis (type detection, statistics)
-    3. Field mapping (maps columns to standard fields)
-    4. Missing field detection
-
-    - **file**: Excel file (.xlsx, .xls) or CSV file
-    - **factory_id**: Factory ID for factory-specific field mappings
-    - **sheet_name**: Sheet name to parse (default: first sheet)
-    - **sheet_index**: Sheet index to parse (0-based)
-    - **sheetIndex**: Alias for sheet_index (Java client compatibility)
-    - **header_rows**: Number of header rows (default: 1)
-    - **skip_rows**: Number of rows to skip at the top
-    - **auto_detect_multi_header**: Automatically detect multi-level headers
-    - **auto_detect_orientation**: Automatically detect data orientation (row vs column)
-    - **auto_detect_title_rows**: Automatically detect and skip title rows (NEW)
-    """
-    start_time = time.time()
-
-    try:
-        # Validate file type
-        filename = file.filename or ""
-        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
-
-        if ext not in excel_parser.supported_extensions:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Unsupported file type. Supported: {excel_parser.supported_extensions}"
-            )
-
-        # Read file content
-        content = await file.read()
-
-        # Determine sheet to parse
-        effective_index = sheet_index if sheet_index is not None else sheetIndex
-
-        if sheet_name:
-            sheet = sheet_name
-        elif effective_index is not None:
-            sheet = int(effective_index)
-        else:
-            sheet = 0
-
-        logger.info(f"Parse-analyze: sheet={sheet}, factory_id={factory_id}, auto_detect_multi_header={auto_detect_multi_header}, auto_detect_title_rows={auto_detect_title_rows}")
-
-        # NEW: Use StructureDetector for comprehensive header detection
-        detected_header_rows = header_rows
-        detected_skip_rows = skip_rows
-        structure_result = None
-
-        if auto_detect_title_rows and ext != ".csv":
-            try:
-                detector = get_structure_detector()
-                structure_result = await detector.detect(
-                    content,
-                    sheet_index=sheet if isinstance(sheet, int) else 0,
-                    max_header_rows=10
-                )
-
-                if structure_result.success and structure_result.confidence >= 0.5:
-                    # data_start_row tells us where actual data begins (0-indexed)
-                    # header_row_count tells us how many header rows there are
-                    # skip_rows = data_start_row - header_row_count
-
-                    # Calculate rows to skip (title rows before headers)
-                    title_rows_count = structure_result.data_start_row - structure_result.header_row_count
-                    if title_rows_count > 0:
-                        detected_skip_rows = title_rows_count
-                        logger.info(f"StructureDetector: skipping {title_rows_count} title rows")
-
-                    detected_header_rows = structure_result.header_row_count
-                    logger.info(f"StructureDetector: detected header_rows={detected_header_rows}, data_start={structure_result.data_start_row}, confidence={structure_result.confidence:.2f}")
-            except Exception as e:
-                logger.warning(f"StructureDetector failed, falling back to simple detection: {e}")
-
-        # Fallback: Auto-detect multi-header using simple method if StructureDetector didn't run
-        if structure_result is None and auto_detect_multi_header and ext != ".csv":
-            detection_result = excel_parser.detect_multi_header(content, sheet)
-            if detection_result.get("success") and detection_result.get("isMultiHeader"):
-                detected_header_rows = detection_result.get("recommendedHeaderRows", header_rows)
-                logger.info(f"Simple detection: multi-header with {detected_header_rows} rows")
-
-        # Parse the file with detected parameters
-        if ext == ".csv":
-            result = excel_parser.parse_csv(content)
-        else:
-            result = excel_parser.parse(
-                content,
-                sheet_name=sheet,
-                header_rows=detected_header_rows,
-                skip_rows=detected_skip_rows,
-                transpose=False  # Will handle orientation separately
-            )
-
-        if not result.get("success"):
-            return ParseResponse(
-                success=False,
-                errorMessage=result.get("error", "Parse failed"),
-                status="PARSE_ERROR"
-            )
-
-        headers = result.get("headers", [])
-        rows = result.get("rows", [])
-
-        # Auto-detect orientation if enabled
-        detected_orientation = result.get("direction", "row")
-        if auto_detect_orientation and hasattr(excel_parser, 'detect_orientation'):
-            try:
-                orientation_result = excel_parser.detect_orientation(content, sheet)
-                if orientation_result.get("success"):
-                    detected_orientation = orientation_result.get("direction", "row")
-            except Exception as e:
-                logger.warning(f"Orientation detection failed: {e}")
-
-        # Perform full analysis
-        field_mappings, data_features, missing_required_fields = _perform_analysis(
-            headers, rows, factory_id
-        )
-
-        # Convert rows to previewData
-        preview_data = []
-        for row in rows[:100]:
-            row_dict = {}
-            for i, value in enumerate(row):
-                if i < len(headers):
-                    row_dict[headers[i]] = value
-            preview_data.append(row_dict)
-
-        # Calculate parse time
-        parse_time_ms = int((time.time() - start_time) * 1000)
-
-        # Build metadata
-        metadata = ParseMetadata(
-            sheetName=result.get("currentSheet"),
-            originalColumnCount=len(headers),
-            sampledRowCount=min(len(rows), 100),
-            parseTimeMs=parse_time_ms,
-            hasMultiHeader=detected_header_rows > 1,
-            headerRowCount=detected_header_rows,
-            detectedOrientation=detected_orientation,
-            totalRowCount=result.get("rowCount", len(rows))
-        )
-
-        return ParseResponse(
-            success=True,
-            headers=headers,
-            rowCount=result.get("rowCount", len(rows)),
-            columnCount=len(headers),
-            previewData=preview_data,
-            fieldMappings=field_mappings,
-            dataFeatures=data_features,
-            missingRequiredFields=missing_required_fields,
-            metadata=metadata,
-            status="ANALYZED",
-            # Backward compatibility
-            rows=rows,
-            direction=detected_orientation,
-            sheetNames=result.get("sheetNames"),
-            currentSheet=result.get("currentSheet")
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Parse-analyze error: {e}", exc_info=True)
-        return ParseResponse(
-            success=False,
-            errorMessage=str(e),
-            status="ERROR"
-        )
-
-
 @router.post("/list-sheets", response_model=ListSheetsResponse)
 async def list_sheets_detailed(file: UploadFile = File(...)):
     """
@@ -596,99 +238,6 @@ async def list_sheets_detailed(file: UploadFile = File(...)):
     except Exception as e:
         logger.error(f"List sheets error: {e}", exc_info=True)
         return ListSheetsResponse(
-            success=False,
-            errorMessage=str(e)
-        )
-
-
-@router.post("/preview-sheets", response_model=SheetPreviewResponse)
-async def preview_sheets(file: UploadFile = File(...)):
-    """
-    Preview all sheets in an Excel file with metadata and type detection.
-
-    Returns sheet name, row/col counts, detected type (sales/finance),
-    wide-format flag, and whether the sheet should be skipped (e.g., index/TOC pages).
-
-    - **file**: Excel file (.xlsx, .xls)
-    """
-    import re
-    try:
-        filename = file.filename or ""
-        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
-        if ext not in [".xlsx", ".xls"]:
-            raise HTTPException(status_code=400, detail="Only Excel files (.xlsx, .xls) supported")
-
-        content = await file.read()
-        sheet_names = excel_parser.get_sheet_names(content)
-
-        # Finance keywords for type detection
-        FINANCE_KEYWORDS = ["利润", "资产", "负债", "现金流", "预算", "成本", "费用",
-                            "收入", "profit", "balance", "budget", "cost", "revenue"]
-        SALES_KEYWORDS = ["销售", "订单", "客户", "sales", "order", "customer"]
-        SKIP_KEYWORDS = ["索引", "目录", "说明", "index", "toc", "目次", "封面", "sheet"]
-
-        sheets: List[SheetPreviewInfo] = []
-        for i, name in enumerate(sheet_names):
-            try:
-                result = excel_parser.parse(content, sheet_name=i, header_rows=1)
-                row_count = result.get("rowCount", 0)
-                col_count = result.get("columnCount", 0)
-                headers = result.get("headers", [])
-
-                # Skip detection: only skip very small sheets
-                # Note: Index/TOC sheets are NO LONGER skipped - they contain important text for LLM analysis
-                skip = (row_count < 2 and col_count < 2)  # Only skip truly empty sheets
-
-                # Type detection from sheet name and headers
-                name_lower = name.lower()
-                headers_str = " ".join(h.lower() for h in headers if h)
-
-                finance_score = sum(1 for kw in FINANCE_KEYWORDS
-                                    if kw in name_lower or kw in headers_str)
-                sales_score = sum(1 for kw in SALES_KEYWORDS
-                                  if kw in name_lower or kw in headers_str)
-
-                if finance_score > sales_score and finance_score >= 1:
-                    sheet_type = "finance"
-                elif sales_score > finance_score and sales_score >= 1:
-                    sheet_type = "sales"
-                else:
-                    sheet_type = "unknown"
-
-                # Wide format detection: many columns with month patterns
-                month_pattern = re.compile(r'(1[0-2]|[1-9])月|\d{4}[-_]?\d{2}')
-                month_cols = sum(1 for h in headers if h and month_pattern.search(h))
-                is_wide = month_cols >= 3 or col_count >= 20
-
-                sheets.append(SheetPreviewInfo(
-                    index=i,
-                    name=name,
-                    rows=row_count,
-                    cols=col_count,
-                    type=sheet_type,
-                    is_wide=is_wide,
-                    skip=skip,
-                    previewHeaders=headers[:15] if headers else None
-                ))
-            except Exception as e:
-                logger.warning(f"Preview failed for sheet '{name}': {e}")
-                sheets.append(SheetPreviewInfo(
-                    index=i,
-                    name=name,
-                    skip=True
-                ))
-
-        return SheetPreviewResponse(
-            success=True,
-            totalSheets=len(sheets),
-            sheets=sheets
-        )
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Preview sheets error: {e}", exc_info=True)
-        return SheetPreviewResponse(
             success=False,
             errorMessage=str(e)
         )
@@ -877,411 +426,6 @@ async def analyze_sheets(file: UploadFile = File(...)):
 
 
 # =============================================================================
-# Analyze Sheets By Upload ID (for Web Admin)
-# =============================================================================
-
-
-class AnalyzeSheetsRequest(BaseModel):
-    """Request for analyzing sheets by upload ID"""
-    uploadId: int
-    factoryId: str = "F001"
-
-
-class FieldDefinitionModel(BaseModel):
-    """Field definition model"""
-    originalName: str
-    standardName: str
-    fieldType: str = "string"
-    semanticType: str = "dimension"
-    chartRole: str = "NONE"
-    sampleValues: List[str] = []
-
-
-class ScenarioDetectionModel(BaseModel):
-    """Scenario detection model"""
-    scenarioType: str = "custom"
-    confidence: float = 0.0
-    suggestedCharts: List[str] = []
-
-
-class MetricResultModel(BaseModel):
-    """Metric result model"""
-    metricCode: str
-    metricName: str
-    value: float
-    formattedValue: str
-    unit: str = ""
-    changePercent: Optional[float] = None
-    changeDirection: Optional[str] = None
-
-
-class AxisConfigModel(BaseModel):
-    """Axis config model"""
-    field: str
-    label: str
-    type: str = "category"
-    format: Optional[str] = None
-
-
-class LegendConfigModel(BaseModel):
-    """Legend config model"""
-    show: bool = True
-    position: str = "top"
-    items: List[str] = []
-
-
-class SeriesConfigModel(BaseModel):
-    """Series config model"""
-    name: str
-    field: str
-    type: str = "BAR"
-    color: Optional[str] = None
-    stack: Optional[str] = None
-    yAxisIndex: int = 0
-    data: List[Dict[str, Any]] = []
-
-
-class TooltipConfigModel(BaseModel):
-    """Tooltip config model"""
-    show: bool = True
-    trigger: str = "axis"
-    formatter: Optional[str] = None
-
-
-class AlternativeDimensionModel(BaseModel):
-    """Alternative dimension model"""
-    fieldName: str
-    displayName: str
-    semanticType: str = "dimension"
-    selected: bool = False
-
-
-class DynamicChartConfigModel(BaseModel):
-    """Dynamic chart config model"""
-    chartType: str = "BAR"
-    title: str
-    subTitle: Optional[str] = None
-    xAxis: AxisConfigModel
-    yAxis: List[AxisConfigModel] = []
-    legend: LegendConfigModel = LegendConfigModel()
-    series: List[SeriesConfigModel] = []
-    tooltip: TooltipConfigModel = TooltipConfigModel()
-    alternativeXAxis: List[AlternativeDimensionModel] = []
-    alternativeSeries: List[AlternativeDimensionModel] = []
-    alternativeMeasures: List[AlternativeDimensionModel] = []
-    rawData: List[Dict[str, Any]] = []
-    totalRows: int = 0
-
-
-class AIInsightModel(BaseModel):
-    """AI insight model"""
-    id: str
-    level: str = "green"
-    category: str
-    text: str
-
-
-class SheetAnalysisResultModel(BaseModel):
-    """Sheet analysis result model"""
-    sheetName: str
-    sheetIndex: int
-    rowCount: int = 0
-    columnCount: int = 0
-    fields: List[FieldDefinitionModel] = []
-    scenario: ScenarioDetectionModel = ScenarioDetectionModel()
-    metrics: List[MetricResultModel] = []
-    charts: List[DynamicChartConfigModel] = []
-    insights: List[AIInsightModel] = []
-    fromCache: bool = False
-    processingTimeMs: int = 0
-
-
-class MultiSheetAnalysisResultModel(BaseModel):
-    """Multi-sheet analysis result model - matches frontend types"""
-    success: bool = True
-    data: Optional["MultiSheetAnalysisDataModel"] = None
-    message: str = ""
-
-
-class MultiSheetAnalysisDataModel(BaseModel):
-    """Multi-sheet analysis data"""
-    totalSheets: int = 0
-    successCount: int = 0
-    failedCount: int = 0
-    cacheHitCount: int = 0
-    processingTimeMs: int = 0
-    sheetResults: List[SheetAnalysisResultModel] = []
-
-
-# Forward reference update (compatible with both Pydantic v1 and v2)
-try:
-    # Pydantic v2
-    MultiSheetAnalysisResultModel.model_rebuild()
-except AttributeError:
-    # Pydantic v1
-    MultiSheetAnalysisResultModel.update_forward_refs()
-
-
-@router.post("/analyze-by-upload", response_model=MultiSheetAnalysisResultModel)
-async def analyze_sheets_by_upload_id(request: AnalyzeSheetsRequest):
-    """
-    Analyze sheets by upload ID from PostgreSQL.
-
-    This endpoint reads uploaded Excel data from PostgreSQL and generates
-    analysis results including metrics, charts, and insights.
-
-    - **uploadId**: The upload record ID from Java backend
-    - **factoryId**: Factory ID (default: F001)
-    """
-    import time
-    import uuid
-    from config import get_settings
-
-    settings = get_settings()
-    start_time = time.time()
-
-    if not settings.postgres_enabled:
-        return MultiSheetAnalysisResultModel(
-            success=False,
-            message="PostgreSQL is not enabled. Set POSTGRES_ENABLED=true."
-        )
-
-    try:
-        from database.connection import get_db_context, is_postgres_enabled
-        from database.repository import (
-            DynamicDataRepository,
-            FieldDefinitionRepository,
-            UploadRepository
-        )
-
-        if not is_postgres_enabled():
-            return MultiSheetAnalysisResultModel(
-                success=False,
-                message="PostgreSQL connection not available"
-            )
-
-        with get_db_context() as db:
-            upload_repo = UploadRepository(db)
-            data_repo = DynamicDataRepository(db)
-            field_repo = FieldDefinitionRepository(db)
-
-            # Get upload metadata
-            upload = upload_repo.get_by_id(request.uploadId)
-            if not upload:
-                return MultiSheetAnalysisResultModel(
-                    success=False,
-                    message=f"Upload not found: {request.uploadId}"
-                )
-
-            # Get field definitions
-            fields = field_repo.get_by_upload_id(request.uploadId)
-
-            # Get data
-            data = data_repo.get_by_upload_id(request.factoryId, request.uploadId)
-            row_count = len(data) if data else 0
-
-            # Build field definitions
-            field_definitions = []
-            dimensions = []
-            measures = []
-            time_fields = []
-
-            for f in fields:
-                semantic_type = "dimension"
-                if f.is_measure:
-                    semantic_type = "measure"
-                    measures.append(f)
-                elif f.is_time:
-                    semantic_type = "time"
-                    time_fields.append(f)
-                else:
-                    dimensions.append(f)
-
-                chart_role = "NONE"
-                if f.is_dimension:
-                    chart_role = "X_AXIS"
-                elif f.is_measure:
-                    chart_role = "Y_AXIS"
-                elif f.is_time:
-                    chart_role = "X_AXIS"
-
-                field_definitions.append(FieldDefinitionModel(
-                    originalName=f.original_name,
-                    standardName=f.standard_name or f.original_name,
-                    fieldType=f.field_type or "string",
-                    semanticType=semantic_type,
-                    chartRole=chart_role,
-                    sampleValues=[]
-                ))
-
-            # Build metrics from measures
-            metrics = []
-            for m in measures:
-                total = data_repo.sum_field(
-                    request.factoryId, request.uploadId, m.original_name
-                )
-                if total is not None:
-                    metrics.append(MetricResultModel(
-                        metricCode=m.original_name.lower().replace(" ", "_"),
-                        metricName=m.standard_name or m.original_name,
-                        value=total,
-                        formattedValue=format_number_for_chart(total),
-                        unit="",
-                        changeDirection="STABLE"
-                    ))
-
-            # Build charts
-            charts = []
-            primary_measure = measures[0] if measures else None
-
-            if primary_measure and dimensions:
-                # Create bar chart for each dimension
-                for dim in dimensions[:2]:  # Limit to 2 charts
-                    agg_data = data_repo.aggregate(
-                        request.factoryId, request.uploadId,
-                        dim.original_name, primary_measure.original_name
-                    )
-                    if agg_data:
-                        series_data = [
-                            {"name": str(d["group"]), "value": d["value"]}
-                            for d in agg_data
-                        ]
-
-                        # Determine chart type
-                        chart_type = "BAR"
-                        if len(agg_data) <= 5:
-                            chart_type = "PIE"
-
-                        # Build alternative dimensions
-                        alt_x_axis = [
-                            AlternativeDimensionModel(
-                                fieldName=d.original_name,
-                                displayName=d.standard_name or d.original_name,
-                                semanticType="dimension",
-                                selected=(d.original_name == dim.original_name)
-                            )
-                            for d in dimensions
-                        ]
-
-                        # Build alternative measures
-                        alt_measures = [
-                            AlternativeDimensionModel(
-                                fieldName=m.original_name,
-                                displayName=m.standard_name or m.original_name,
-                                semanticType="measure",
-                                selected=(m.original_name == primary_measure.original_name)
-                            )
-                            for m in measures
-                        ]
-
-                        charts.append(DynamicChartConfigModel(
-                            chartType=chart_type,
-                            title=f"{primary_measure.standard_name or primary_measure.original_name} by {dim.standard_name or dim.original_name}",
-                            xAxis=AxisConfigModel(
-                                field=dim.original_name,
-                                label=dim.standard_name or dim.original_name,
-                                type="category"
-                            ),
-                            yAxis=[AxisConfigModel(
-                                field=primary_measure.original_name,
-                                label=primary_measure.standard_name or primary_measure.original_name,
-                                type="value"
-                            )],
-                            series=[SeriesConfigModel(
-                                name=primary_measure.standard_name or primary_measure.original_name,
-                                field=primary_measure.original_name,
-                                type=chart_type,
-                                data=series_data
-                            )],
-                            alternativeXAxis=alt_x_axis,
-                            alternativeMeasures=alt_measures,
-                            rawData=agg_data,
-                            totalRows=len(agg_data)
-                        ))
-
-            # Build insights
-            insights = [
-                AIInsightModel(
-                    id=str(uuid.uuid4())[:8],
-                    level="green",
-                    category="summary",
-                    text=f"数据包含 {row_count} 条记录"
-                )
-            ]
-
-            if metrics and metrics[0].value > 0:
-                insights.append(AIInsightModel(
-                    id=str(uuid.uuid4())[:8],
-                    level="green",
-                    category="metric",
-                    text=f"{metrics[0].metricName} 总计: {metrics[0].formattedValue}"
-                ))
-
-            # Detect scenario
-            table_type = upload.detected_table_type or "custom"
-            scenario_type = "custom"
-            if "sales" in table_type.lower() or "销售" in table_type:
-                scenario_type = "sales"
-            elif "finance" in table_type.lower() or "财务" in table_type:
-                scenario_type = "finance"
-            elif "hr" in table_type.lower() or "人力" in table_type:
-                scenario_type = "hr"
-
-            # Build sheet result
-            sheet_result = SheetAnalysisResultModel(
-                sheetName=upload.file_name or "Sheet1",
-                sheetIndex=0,
-                rowCount=row_count,
-                columnCount=len(fields),
-                fields=field_definitions,
-                scenario=ScenarioDetectionModel(
-                    scenarioType=scenario_type,
-                    confidence=0.8,
-                    suggestedCharts=["BAR", "PIE", "LINE"]
-                ),
-                metrics=metrics,
-                charts=charts,
-                insights=insights,
-                fromCache=False,
-                processingTimeMs=int((time.time() - start_time) * 1000)
-            )
-
-            processing_time = int((time.time() - start_time) * 1000)
-
-            return MultiSheetAnalysisResultModel(
-                success=True,
-                message="Analysis completed",
-                data=MultiSheetAnalysisDataModel(
-                    totalSheets=1,
-                    successCount=1,
-                    failedCount=0,
-                    cacheHitCount=0,
-                    processingTimeMs=processing_time,
-                    sheetResults=[sheet_result]
-                )
-            )
-
-    except Exception as e:
-        logger.error(f"Analysis by upload ID failed: {e}", exc_info=True)
-        return MultiSheetAnalysisResultModel(
-            success=False,
-            message=str(e)
-        )
-
-
-def format_number_for_chart(value: float) -> str:
-    """Format number for display in charts"""
-    if value is None:
-        return "0"
-    if abs(value) >= 1_000_000:
-        return f"{value / 1_000_000:.2f}M"
-    elif abs(value) >= 1_000:
-        return f"{value / 1_000:.2f}K"
-    else:
-        return f"{value:.2f}"
-
-
-# =============================================================================
 # Zero-Code Auto-Parse Endpoint
 # =============================================================================
 
@@ -1322,6 +466,7 @@ class AutoParseResponse(BaseModel):
     # Auto-parse specific fields
     autoDetected: bool = True
     tableType: Optional[str] = None
+    linkedSheets: Optional[List[str]] = None  # Linked sheets from index table
     structure: Optional[Dict[str, Any]] = None
     unmappedFields: Optional[List[str]] = None
     originalHeaders: List[str] = []
@@ -1345,11 +490,16 @@ async def auto_parse_excel(
     file: UploadFile = File(...),
     sheet_index: Optional[int] = Form(None),
     sheetIndex: Optional[int] = Form(None),
+    sheet_name: Optional[str] = Form(None),
+    sheetName: Optional[str] = Form(None),  # Alias for Java client compatibility
     factory_id: Optional[str] = Form(None),
     use_cache: bool = Form(True),
     max_rows: int = Form(10000),
     skip_empty_rows: bool = Form(True),
-    calculate_stats: bool = Form(True)
+    calculate_stats: bool = Form(True),
+    transpose: bool = Form(False),
+    header_rows_override: Optional[int] = Form(None),
+    headerRowsOverride: Optional[int] = Form(None)  # Alias for Java client
 ):
     """
     Zero-Code Excel Auto-Parse
@@ -1371,11 +521,16 @@ async def auto_parse_excel(
     - **file**: Excel file (.xlsx, .xls) or CSV
     - **sheet_index**: Sheet index (0-based, default: 0)
     - **sheetIndex**: Alias for sheet_index
+    - **sheet_name**: Sheet name to parse (alternative to sheet_index)
+    - **sheetName**: Alias for sheet_name (Java client compatibility)
     - **factory_id**: Optional factory ID for custom mappings
     - **use_cache**: Use cached results if available (default: true)
     - **max_rows**: Maximum rows to extract (default: 10000)
     - **skip_empty_rows**: Skip empty rows (default: true)
     - **calculate_stats**: Calculate column statistics (default: true)
+    - **transpose**: Transpose data (swap rows and columns, default: false)
+    - **header_rows_override**: Manual override for header row count (bypasses auto-detection)
+    - **headerRowsOverride**: Alias for header_rows_override (Java client compatibility)
     """
     start_time = time.time()
 
@@ -1393,12 +548,36 @@ async def auto_parse_excel(
         # Read file content
         content = await file.read()
 
-        # Determine sheet index
+        # Determine sheet - by name or by index
+        effective_sheet_name = sheet_name or sheetName
         effective_index = sheet_index if sheet_index is not None else sheetIndex
+
+        # If sheet_name is provided, convert to index
+        if effective_sheet_name and ext != ".csv":
+            import pandas as pd
+            import io
+            try:
+                xl = pd.ExcelFile(io.BytesIO(content))
+                if effective_sheet_name in xl.sheet_names:
+                    effective_index = xl.sheet_names.index(effective_sheet_name)
+                    logger.info(f"Resolved sheet_name '{effective_sheet_name}' to index {effective_index}")
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Sheet '{effective_sheet_name}' not found. Available: {xl.sheet_names}"
+                    )
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"Failed to resolve sheet name: {e}")
+
         if effective_index is None:
             effective_index = 0
 
-        logger.info(f"Auto-parse starting: file={filename}, sheet={effective_index}")
+        # Determine header_rows override
+        effective_header_override = header_rows_override if header_rows_override is not None else headerRowsOverride
+
+        logger.info(f"Auto-parse starting: file={filename}, sheet={effective_index}, transpose={transpose}, header_override={effective_header_override}")
 
         # Initialize services
         detector = get_structure_detector()
@@ -1431,6 +610,14 @@ async def auto_parse_excel(
                     error=structure_result.error or "Structure detection failed"
                 )
 
+            # Apply header_rows_override if provided (bypass auto-detection)
+            if effective_header_override is not None and effective_header_override > 0:
+                logger.info(f"Applying header_rows_override={effective_header_override} (auto-detected was {structure_result.header_row_count})")
+                structure_result.header_row_count = effective_header_override
+                structure_result.data_start_row = effective_header_override
+                structure_result.method = "manual_override"
+                structure_result.confidence = 1.0
+
             logger.info(
                 f"Structure detected: method={structure_result.method}, "
                 f"header_rows={structure_result.header_row_count}, "
@@ -1455,6 +642,37 @@ async def auto_parse_excel(
                 f"confidence={mapping_result.confidence:.2f}"
             )
 
+        # Step 3.5: Classify table type using TableClassifier
+        # This properly detects index/TOC sheets
+        linked_sheets = None  # Will be populated if table is an index
+        try:
+            classifier = get_table_classifier()
+            import pandas as pd
+            import io
+
+            # Read DataFrame for classification
+            if ext == ".csv":
+                df = pd.read_csv(io.BytesIO(content), nrows=50)
+            else:
+                df = pd.read_excel(
+                    io.BytesIO(content),
+                    sheet_name=effective_index,
+                    nrows=50,
+                    header=None
+                )
+
+            classification = classifier.classify(structure_result.sheet_name, df)
+            detected_table_type = classification.table_type.value
+            linked_sheets = classification.linked_sheets  # Extract linked sheets for index tables
+
+            # Override mapping_result.table_type with TableClassifier result
+            if mapping_result.table_type is None or detected_table_type in ["index", "summary", "metadata"]:
+                mapping_result.table_type = detected_table_type
+                logger.info(f"TableClassifier detected table_type={detected_table_type} "
+                           f"(confidence={classification.confidence:.2f})")
+        except Exception as e:
+            logger.warning(f"TableClassifier failed, using semantic mapper result: {e}")
+
         # Step 4: Cache results
         if use_cache and structure_result and mapping_result:
             cache_key = cache.set(
@@ -1471,7 +689,8 @@ async def auto_parse_excel(
             options={
                 "max_rows": max_rows,
                 "skip_empty_rows": skip_empty_rows,
-                "calculate_stats": calculate_stats
+                "calculate_stats": calculate_stats,
+                "transpose": transpose
             }
         )
 
@@ -1482,6 +701,26 @@ async def auto_parse_excel(
                 errorMessage=extracted.error or "Data extraction failed",
                 status="EXTRACT_ERROR"
             )
+
+        # Apply transpose if requested (swap rows and columns)
+        detected_orientation = "row"
+        if transpose and extracted.rows:
+            logger.info("Applying transpose to extracted data")
+            # Transpose: first column becomes headers, first row values become row identifiers
+            import pandas as pd
+            try:
+                df = pd.DataFrame(extracted.rows, columns=extracted.headers)
+                df_transposed = df.T
+                df_transposed.columns = df_transposed.iloc[0] if len(df_transposed) > 0 else []
+                df_transposed = df_transposed.iloc[1:] if len(df_transposed) > 1 else df_transposed
+                extracted.headers = [str(c) for c in df_transposed.columns.tolist()]
+                extracted.rows = df_transposed.values.tolist()
+                extracted.row_count = len(extracted.rows)
+                extracted.column_count = len(extracted.headers)
+                detected_orientation = "column"
+                logger.info(f"Transposed: {extracted.row_count} rows x {extracted.column_count} columns")
+            except Exception as e:
+                logger.warning(f"Transpose failed: {e}")
 
         # Build response
         processing_time = int((time.time() - start_time) * 1000)
@@ -1503,20 +742,11 @@ async def auto_parse_excel(
         field_mappings_java = []
         for fm in mapping_result.field_mappings:
             fm_dict = fm.to_dict()
-            category = fm_dict.get("category")
-
-            # Get dataType with fallback: data_type -> infer from category
-            data_type = fm_dict.get("data_type") or fm_dict.get("dataType")
-            if not data_type:
-                data_type = _infer_data_type_from_category(category)
-
-            # Ensure camelCase keys and include category for Java fallback
+            # Ensure camelCase keys
             field_mappings_java.append({
                 "originalColumn": fm_dict.get("original") or fm_dict.get("originalColumn"),
                 "standardField": fm_dict.get("standard") or fm_dict.get("standardField"),
-                "dataType": data_type,
-                "category": category,  # For Java isDimension/isMeasure fallback
-                "subType": category,   # Java also uses subType for classification
+                "dataType": fm_dict.get("data_type") or fm_dict.get("dataType"),
                 "confidence": fm_dict.get("confidence", 0.0),
                 "source": fm_dict.get("source", "auto")
             })
@@ -1525,17 +755,18 @@ async def auto_parse_excel(
         metadata = {
             "sheetName": structure_result.sheet_name,
             "originalColumnCount": structure_result.total_cols,
-            "sampledRowCount": min(extracted.row_count, 100),
+            "sampledRowCount": extracted.row_count,
             "parseTimeMs": processing_time,
             "hasMultiHeader": structure_result.header_row_count > 1,
             "headerRowCount": structure_result.header_row_count,
-            "detectedOrientation": "row",  # Default
-            "totalRowCount": extracted.row_count
+            "detectedOrientation": detected_orientation,
+            "totalRowCount": extracted.row_count,
+            "transposed": transpose
         }
 
         # Convert rows to previewData (List[Dict]) format
         preview_data = []
-        for row in extracted.rows[:100]:
+        for row in extracted.rows:
             if isinstance(row, dict):
                 preview_data.append(row)
             elif isinstance(row, (list, tuple)):
@@ -1561,13 +792,14 @@ async def auto_parse_excel(
 
             # Backward compatibility
             rows=[],  # Don't send raw rows to save bandwidth
-            direction="row",
+            direction=detected_orientation,
             sheetNames=None,
             currentSheet=structure_result.sheet_name,
 
             # Auto-parse specific (camelCase)
             autoDetected=True,
             tableType=mapping_result.table_type,
+            linkedSheets=linked_sheets,  # Linked sheets from index table classification
             structure={
                 "headerRows": structure_result.header_row_count,
                 "dataStartRow": structure_result.data_start_row,
@@ -1650,7 +882,7 @@ def _recommend_charts(
     return charts[:5]  # Limit to 5 recommendations
 
 
-@router.post("/auto-parse/feedback", deprecated=True)
+@router.post("/auto-parse/feedback")
 async def submit_auto_parse_feedback(
     cache_key: str = Form(...),
     correction_type: str = Form(...),
@@ -1658,11 +890,7 @@ async def submit_auto_parse_feedback(
     correct_value: str = Form(...)
 ):
     """
-    [DEPRECATED] Submit feedback for auto-parse results to improve future detection.
-
-    NOTE: This endpoint is deprecated and not actively used.
-    Feedback collection was planned but never integrated into the Java backend.
-    Retained for backward compatibility but may be removed in future versions.
+    Submit feedback for auto-parse results to improve future detection.
 
     - **cache_key**: The cache key from auto-parse response
     - **correction_type**: Type of correction (mapping, structure, data_type)
@@ -2154,18 +1382,14 @@ async def batch_export_all_sheets(
         )
 
 
-@router.post("/export/batch/save", deprecated=True)
+@router.post("/export/batch/save")
 async def batch_export_and_save(
     file: UploadFile = File(...),
     output_dir: str = Form(...),
     max_rows_per_md: int = Form(500)
 ):
     """
-    [DEPRECATED] 批量导出并保存到指定目录。
-
-    NOTE: This endpoint is deprecated. Server-side file saving is not used
-    by the Java backend. Use /export/batch for in-memory export instead.
-    Retained for backward compatibility but may be removed in future versions.
+    批量导出并保存到指定目录。
 
     参数:
     - **file**: Excel文件
@@ -3041,7 +2265,7 @@ class LLMAnalysisResponse(BaseModel):
     processing_time_ms: int = 0
 
 
-@router.post("/analyze-structure", response_model=LLMAnalysisResponse, deprecated=True)
+@router.post("/analyze-structure", response_model=LLMAnalysisResponse)
 async def analyze_excel_structure(
     file: UploadFile = File(...),
     sheet_index: Optional[int] = Form(0),
@@ -3049,11 +2273,7 @@ async def analyze_excel_structure(
     include_recommendations: bool = Form(True)
 ):
     """
-    [DEPRECATED] 使用LLM分析Excel结构
-
-    NOTE: This endpoint is deprecated. The Java backend uses /smart-parse
-    endpoint which provides the same functionality with better integration.
-    Retained for backward compatibility but may be removed in future versions.
+    使用LLM分析Excel结构
 
     流程:
     1. 使用RawExporter导出原始数据（保真）
@@ -3322,3 +2542,367 @@ async def smart_analyze_excel(
             "error": str(e),
             "processing_time_ms": int((time.time() - start_time) * 1000)
         }
+
+
+# ============================================================
+# Multi-Sheet Workbook Analysis with Index Metadata
+# ============================================================
+
+class IndexSheetMappingModel(BaseModel):
+    """Mapping from index sheet to report info"""
+    index: int
+    sheetName: str
+    reportName: str
+    description: str = ""
+
+
+class IndexMetadataModel(BaseModel):
+    """Index/TOC sheet metadata"""
+    hasIndex: bool = False
+    indexSheetIndex: int = -1
+    indexSheetName: str = ""
+    sheetMappings: List[IndexSheetMappingModel] = []
+
+
+class SheetAnalysisResultModel(BaseModel):
+    """Analysis result for a single sheet"""
+    sheetIndex: int
+    sheetName: str
+    tableType: Optional[str] = None
+    rowCount: int = 0
+    columnCount: int = 0
+    charts: List[Dict[str, Any]] = []
+    metrics: List[Dict[str, Any]] = []
+    insights: List[Dict[str, Any]] = []
+    fromCache: bool = False
+    scenario: Optional[Dict[str, Any]] = None
+    processingTimeMs: int = 0
+    error: Optional[str] = None
+
+
+class MultiSheetAnalysisResponse(BaseModel):
+    """Response for multi-sheet workbook analysis"""
+    success: bool
+    totalSheets: int = 0
+    successCount: int = 0
+    failedCount: int = 0
+    skippedCount: int = 0
+    cacheHitCount: int = 0
+    sheetResults: List[SheetAnalysisResultModel] = []
+    indexMetadata: Optional[IndexMetadataModel] = None
+    processingTimeMs: int = 0
+    error: Optional[str] = None
+
+
+@router.post("/analyze-workbook", response_model=MultiSheetAnalysisResponse)
+async def analyze_workbook(
+    file: UploadFile = File(...),
+    factory_id: Optional[str] = Form(None),
+    skip_empty: bool = Form(True),
+    skip_index_sheets: bool = Form(True),
+    extract_index_metadata: bool = Form(True),
+    max_rows_per_sheet: int = Form(10000),
+    generate_charts: bool = Form(True),
+    generate_insights: bool = Form(True)
+):
+    """
+    Analyze all sheets in an Excel workbook with index metadata extraction.
+
+    Features:
+    - Parallel processing of all sheets
+    - Index/TOC sheet metadata extraction (report names, descriptions)
+    - Chart and insight generation for each sheet
+    - Cache support for repeated analysis
+
+    Returns:
+    - totalSheets: Total number of sheets in workbook
+    - successCount: Number of successfully analyzed sheets
+    - sheetResults: Analysis results for each sheet (charts, metrics, insights)
+    - indexMetadata: If index sheet detected, contains sheet name mappings
+
+    Args:
+    - **file**: Excel file (.xlsx, .xls)
+    - **factory_id**: Optional factory ID for custom field mappings
+    - **skip_empty**: Skip empty sheets (default: true)
+    - **skip_index_sheets**: Skip index/TOC sheets from analysis (default: true)
+    - **extract_index_metadata**: Extract metadata from index sheet (default: true)
+    - **max_rows_per_sheet**: Maximum rows to analyze per sheet (default: 10000)
+    - **generate_charts**: Generate chart configurations (default: true)
+    - **generate_insights**: Generate AI insights (default: true)
+    """
+    from services.parallel_processor import ParallelProcessor
+
+    start_time = time.time()
+
+    try:
+        # Validate file type
+        filename = file.filename or ""
+        ext = "." + filename.split(".")[-1].lower() if "." in filename else ""
+
+        if ext not in [".xlsx", ".xls"]:
+            raise HTTPException(
+                status_code=400,
+                detail="Supported file types: .xlsx, .xls"
+            )
+
+        content = await file.read()
+        logger.info(f"Analyze workbook: {filename}, size={len(content)}")
+
+        # Initialize parallel processor
+        processor = ParallelProcessor(max_workers=4, max_concurrent_llm_calls=2)
+
+        try:
+            # Process workbook
+            workbook_result = await processor.process_workbook(
+                file_bytes=content,
+                factory_id=factory_id,
+                skip_empty=skip_empty,
+                skip_index_sheets=skip_index_sheets,
+                extract_index_metadata=extract_index_metadata,
+                max_rows_per_sheet=max_rows_per_sheet,
+                calculate_stats=True
+            )
+
+            # Convert to response model
+            sheet_results: List[SheetAnalysisResultModel] = []
+            cache_hit_count = 0
+
+            # Get index metadata for context enrichment
+            idx_meta = workbook_result.index_metadata
+
+            # Import SmartAnalyzer for chart and insight generation
+            from services.smart_analyzer import SmartAnalyzer
+            from services.chart_builder import ChartBuilder
+            smart_analyzer = SmartAnalyzer()
+            chart_builder = ChartBuilder()
+
+            for sheet in workbook_result.sheets:
+                # Generate charts and insights if requested
+                charts = []
+                metrics = []
+                insights = []
+
+                # Get description from index metadata for this sheet (编制说明)
+                sheet_description = ""
+                if idx_meta and idx_meta.has_index:
+                    sheet_description = idx_meta.get_description(sheet.index)
+
+                # Use SmartAnalyzer for full chart and insight generation
+                if sheet.success and (generate_charts or generate_insights) and sheet.preview_data:
+                    try:
+                        # Prepare data for SmartAnalyzer
+                        exported_data = {
+                            "metadata": {
+                                "title": sheet.name,
+                                "description": sheet_description,
+                                "table_type": sheet.table_type
+                            },
+                            "columns": [
+                                {"name": h, "type": sheet.data_types.get(h, "string") if sheet.data_types else "string"}
+                                for h in sheet.headers
+                            ],
+                            "rows": sheet.preview_data
+                        }
+
+                        # Run smart analysis
+                        analysis_output = await smart_analyzer.analyze(
+                            exported_data,
+                            max_analyses=3  # Limit to 3 analyses per sheet
+                        )
+
+                        # Extract charts from analyses
+                        if generate_charts:
+                            for analysis in analysis_output.analyses:
+                                if analysis.chart_config:
+                                    chart_id = f"chart_{sheet.index}_{len(charts)}"
+                                    charts.append({
+                                        "id": chart_id,
+                                        "chartType": analysis.chart_config.get("chartType", "bar"),
+                                        "title": analysis.title,
+                                        "config": analysis.chart_config.get("config", {}),
+                                        "dimensions": [],
+                                        "measures": []
+                                    })
+
+                            # Generate basic charts if SmartAnalyzer didn't produce any
+                            if not charts and sheet.statistics:
+                                # Auto-generate a bar chart from statistics
+                                numeric_cols = [k for k, v in sheet.statistics.items()
+                                              if v and isinstance(v, dict) and "sum" in v][:5]
+                                if numeric_cols:
+                                    chart_data = [{"name": col, "value": sheet.statistics[col].get("sum", 0)}
+                                                for col in numeric_cols]
+                                    chart_result = chart_builder.build(
+                                        chart_type="bar",
+                                        data=chart_data,
+                                        x_field="name",
+                                        y_fields=["value"],
+                                        title=f"{sheet.name} - 数据汇总"
+                                    )
+                                    if chart_result.get("success"):
+                                        charts.append({
+                                            "id": f"chart_{sheet.index}_auto",
+                                            "chartType": "bar",
+                                            "title": f"{sheet.name} - 数据汇总",
+                                            "config": chart_result.get("config", {}),
+                                            "dimensions": ["name"],
+                                            "measures": ["value"]
+                                        })
+
+                        # Extract insights
+                        if generate_insights:
+                            for analysis in analysis_output.analyses:
+                                for idx, insight_text in enumerate(analysis.insights):
+                                    insights.append({
+                                        "id": f"insight_{sheet.index}_{len(insights)}",
+                                        "level": "green",
+                                        "category": analysis.analysis_type,
+                                        "text": insight_text
+                                    })
+                                for idx, warning_text in enumerate(analysis.warnings):
+                                    insights.append({
+                                        "id": f"warning_{sheet.index}_{len(insights)}",
+                                        "level": "yellow",
+                                        "category": "警告",
+                                        "text": warning_text
+                                    })
+
+                            # Add summary as insight if available
+                            if analysis_output.summary:
+                                insights.insert(0, {
+                                    "id": f"summary_{sheet.index}",
+                                    "level": "green",
+                                    "category": "总结",
+                                    "text": analysis_output.summary
+                                })
+
+                        # Extract metrics from statistics
+                        if sheet.statistics:
+                            for col_name, stats in list(sheet.statistics.items())[:4]:
+                                if stats and isinstance(stats, dict) and "sum" in stats:
+                                    metrics.append({
+                                        "id": f"metric_{col_name}",
+                                        "label": col_name,
+                                        "value": stats.get("sum", 0),
+                                        "format": "number"
+                                    })
+
+                    except Exception as e:
+                        logger.warning(f"SmartAnalyzer failed for sheet {sheet.name}: {e}")
+                        # Fallback to basic statistics-based insights
+                        if sheet.statistics:
+                            for col_name, stats in list(sheet.statistics.items())[:4]:
+                                if stats and isinstance(stats, dict):
+                                    if "mean" in stats and "std" in stats:
+                                        insights.append({
+                                            "id": f"stat_{col_name}",
+                                            "level": "green",
+                                            "category": "统计",
+                                            "text": f"{col_name}: 均值 {stats.get('mean', 0):.2f}, 标准差 {stats.get('std', 0):.2f}"
+                                        })
+                                    if "sum" in stats:
+                                        metrics.append({
+                                            "id": f"metric_{col_name}",
+                                            "label": col_name,
+                                            "value": stats.get("sum", 0),
+                                            "format": "number"
+                                        })
+
+                # Build scenario info with context from index metadata
+                scenario_info = {
+                    "scenarioType": sheet.table_type or "unknown",
+                    "confidence": sheet.confidence if hasattr(sheet, 'confidence') else 0.5
+                }
+                if sheet_description:
+                    scenario_info["description"] = sheet_description
+                    scenario_info["hasIndexContext"] = True
+
+                sheet_analysis = SheetAnalysisResultModel(
+                    sheetIndex=sheet.index,
+                    sheetName=sheet.name,
+                    tableType=sheet.table_type,
+                    rowCount=sheet.row_count,
+                    columnCount=sheet.column_count,
+                    charts=charts,
+                    metrics=metrics,
+                    insights=insights,
+                    fromCache=False,  # TODO: track cache hits
+                    scenario=scenario_info,
+                    processingTimeMs=sheet.processing_time_ms,
+                    error=sheet.error
+                )
+                sheet_results.append(sheet_analysis)
+
+            # Convert index metadata and add index sheet to results if it was skipped
+            index_metadata = None
+            if workbook_result.index_metadata and workbook_result.index_metadata.has_index:
+                index_metadata = IndexMetadataModel(
+                    hasIndex=True,
+                    indexSheetIndex=workbook_result.index_metadata.index_sheet_index,
+                    indexSheetName=workbook_result.index_metadata.index_sheet_name,
+                    sheetMappings=[
+                        IndexSheetMappingModel(
+                            index=m.index,
+                            sheetName=m.sheet_name,
+                            reportName=m.report_name,
+                            description=m.description
+                        )
+                        for m in workbook_result.index_metadata.sheet_mappings
+                    ]
+                )
+
+                # If index sheet was skipped (skip_index_sheets=True), add it to results
+                # so the frontend can display the IndexPageView
+                index_sheet_idx = workbook_result.index_metadata.index_sheet_index
+                if not any(s.sheetIndex == index_sheet_idx for s in sheet_results):
+                    index_sheet_result = SheetAnalysisResultModel(
+                        sheetIndex=index_sheet_idx,
+                        sheetName=workbook_result.index_metadata.index_sheet_name,
+                        tableType='index',
+                        rowCount=0,
+                        columnCount=0,
+                        charts=[],
+                        metrics=[],
+                        insights=[],
+                        fromCache=False,
+                        scenario={"scenarioType": "index", "confidence": 1.0},
+                        processingTimeMs=0,
+                        error=None
+                    )
+                    # Insert at correct position by sheetIndex
+                    inserted = False
+                    for i, s in enumerate(sheet_results):
+                        if s.sheetIndex > index_sheet_idx:
+                            sheet_results.insert(i, index_sheet_result)
+                            inserted = True
+                            break
+                    if not inserted:
+                        sheet_results.append(index_sheet_result)
+
+            processing_time = int((time.time() - start_time) * 1000)
+
+            return MultiSheetAnalysisResponse(
+                success=workbook_result.success,
+                totalSheets=workbook_result.total_sheets,
+                successCount=workbook_result.processed_sheets,
+                failedCount=workbook_result.failed_sheets,
+                skippedCount=workbook_result.skipped_sheets,
+                cacheHitCount=cache_hit_count,
+                sheetResults=sheet_results,
+                indexMetadata=index_metadata,
+                processingTimeMs=processing_time,
+                error=workbook_result.error
+            )
+
+        finally:
+            processor.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Analyze workbook error: {e}", exc_info=True)
+        return MultiSheetAnalysisResponse(
+            success=False,
+            error=str(e),
+            processingTimeMs=int((time.time() - start_time) * 1000)
+        )

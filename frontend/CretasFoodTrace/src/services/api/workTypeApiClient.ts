@@ -60,17 +60,20 @@ class WorkTypeApiClient {
 
   // 2. 创建工作类型
   async createWorkType(data: CreateWorkTypeRequest, factoryId?: string): Promise<WorkType> {
-    return await apiClient.post(this.getPath(factoryId), data);
+    const response = await apiClient.post<{ code: number; data: WorkType; message: string; success: boolean; }>(this.getPath(factoryId), data);
+    return response.data;
   }
 
   // 3. 获取工作类型详情
   async getWorkTypeById(id: string, factoryId?: string): Promise<WorkType> {
-    return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
+    const response = await apiClient.get<{ code: number; data: WorkType; message: string; success: boolean; }>(`${this.getPath(factoryId)}/${id}`);
+    return response.data;
   }
 
   // 4. 更新工作类型
   async updateWorkType(id: string, data: UpdateWorkTypeRequest, factoryId?: string): Promise<WorkType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
+    const response = await apiClient.put<{ code: number; data: WorkType; message: string; success: boolean; }>(`${this.getPath(factoryId)}/${id}`, data);
+    return response.data;
   }
 
   // 5. 删除工作类型
@@ -80,22 +83,26 @@ class WorkTypeApiClient {
 
   // 6. 获取活跃工作类型
   async getActiveWorkTypes(factoryId?: string): Promise<WorkType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/active`);
+    const response = await apiClient.get<{ code: number; data: WorkType[]; message: string; success: boolean; }>(`${this.getPath(factoryId)}/active`);
+    return response.data || [];
   }
 
   // 7. 按部门获取工作类型
   async getWorkTypesByDepartment(department: string, factoryId?: string): Promise<WorkType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/department/${department}`);
+    const response = await apiClient.get<{ code: number; data: WorkType[]; message: string; success: boolean; }>(`${this.getPath(factoryId)}/department/${department}`);
+    return response.data || [];
   }
 
   // 8. 搜索工作类型
   async searchWorkTypes(keyword: string, factoryId?: string): Promise<WorkType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/search`, { params: { keyword } });
+    const response = await apiClient.get<{ code: number; data: WorkType[]; message: string; success: boolean; }>(`${this.getPath(factoryId)}/search`, { params: { keyword } });
+    return response.data || [];
   }
 
   // 9. 获取工作类型统计
   async getWorkTypeStatistics(factoryId?: string): Promise<any> {
-    return await apiClient.get(`${this.getPath(factoryId)}/statistics`);
+    const response = await apiClient.get<{ code: number; data: any; message: string; success: boolean; }>(`${this.getPath(factoryId)}/statistics`);
+    return response.data;
   }
 
   // 10. 批量更新状态

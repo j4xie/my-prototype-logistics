@@ -81,15 +81,18 @@ class MaterialTypeApiClient {
   }
 
   async createMaterialType(data: CreateMaterialTypeRequest, factoryId?: string): Promise<MaterialType> {
-    return await apiClient.post(this.getPath(factoryId), data);
+    const response = await apiClient.post<{ code: number; data: MaterialType; message: string; success: boolean }>(this.getPath(factoryId), data);
+    return response.data;
   }
 
   async getMaterialTypeById(id: string, factoryId?: string): Promise<MaterialType> {
-    return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
+    const response = await apiClient.get<{ code: number; data: MaterialType; message: string; success: boolean }>(`${this.getPath(factoryId)}/${id}`);
+    return response.data;
   }
 
   async updateMaterialType(id: string, data: UpdateMaterialTypeRequest, factoryId?: string): Promise<MaterialType> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
+    const response = await apiClient.put<{ code: number; data: MaterialType; message: string; success: boolean }>(`${this.getPath(factoryId)}/${id}`, data);
+    return response.data;
   }
 
   async deleteMaterialType(id: string, factoryId?: string): Promise<void> {
@@ -101,11 +104,13 @@ class MaterialTypeApiClient {
   }
 
   async getMaterialTypesByCategory(category: string, factoryId?: string): Promise<MaterialType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/category/${category}`);
+    const response = await apiClient.get<{ code: number; data: MaterialType[]; message: string; success: boolean }>(`${this.getPath(factoryId)}/category/${category}`);
+    return response.data || [];
   }
 
   async getMaterialTypesByStorageType(storageType: string, factoryId?: string): Promise<MaterialType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/storage-type/${storageType}`);
+    const response = await apiClient.get<{ code: number; data: MaterialType[]; message: string; success: boolean }>(`${this.getPath(factoryId)}/storage-type/${storageType}`);
+    return response.data || [];
   }
 
   async searchMaterialTypes(keyword: string, factoryId?: string): Promise<{ data: { content: MaterialType[] } }> {
@@ -123,7 +128,8 @@ class MaterialTypeApiClient {
     if (excludeId) {
       params.excludeId = excludeId;
     }
-    return await apiClient.get(`${this.getPath(factoryId)}/check-code`, { params });
+    const response = await apiClient.get<{ code: number; data: { exists: boolean }; message: string; success: boolean }>(`${this.getPath(factoryId)}/check-code`, { params });
+    return response.data;
   }
 
   /**
@@ -134,11 +140,13 @@ class MaterialTypeApiClient {
   }
 
   async getCategories(factoryId?: string): Promise<string[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/categories`);
+    const response = await apiClient.get<{ code: number; data: string[]; message: string; success: boolean }>(`${this.getPath(factoryId)}/categories`);
+    return response.data || [];
   }
 
   async getLowStockMaterials(factoryId?: string): Promise<MaterialType[]> {
-    return await apiClient.get(`${this.getPath(factoryId)}/low-stock`);
+    const response = await apiClient.get<{ code: number; data: MaterialType[]; message: string; success: boolean }>(`${this.getPath(factoryId)}/low-stock`);
+    return response.data || [];
   }
 
   async batchUpdateStatus(ids: string[], isActive: boolean, factoryId?: string): Promise<void> {

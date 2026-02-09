@@ -127,32 +127,30 @@ export default function EquipmentDetailScreen() {
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
       const [
-        equipmentResponse,
-        maintenanceHistoryResponse,
-        oeeResponse,
-        depreciatedValueResponse,
-        usageStatsResponse,
-        equipmentStatsResponse,
+        eq,
+        maintenanceHistoryResult,
+        oeeResult,
+        depreciatedValueResult,
+        usageStatsResult,
+        equipmentStatsResult,
       ] = await Promise.all([
         equipmentApiClient.getEquipmentById(Number(equipmentId), factoryId),
         equipmentApiClient.getEquipmentMaintenanceHistory(Number(equipmentId), factoryId),
         // OEE Analysis
-        equipmentApiClient.calculateOEE(Number(equipmentId), { startDate, endDate }, factoryId).catch(() => ({ data: null })),
+        equipmentApiClient.calculateOEE(Number(equipmentId), { startDate, endDate }, factoryId).catch(() => null),
         // Depreciated Value
-        equipmentApiClient.calculateDepreciatedValue(Number(equipmentId), factoryId).catch(() => ({ data: null })),
+        equipmentApiClient.calculateDepreciatedValue(Number(equipmentId), factoryId).catch(() => null),
         // Usage Statistics (efficiency report)
-        equipmentApiClient.getEquipmentEfficiencyReport(Number(equipmentId), { startDate, endDate }, factoryId).catch(() => ({ data: null })),
+        equipmentApiClient.getEquipmentEfficiencyReport(Number(equipmentId), { startDate, endDate }, factoryId).catch(() => null),
         // Equipment Statistics
-        equipmentApiClient.getEquipmentStatistics(Number(equipmentId), factoryId).catch(() => ({ data: null })),
+        equipmentApiClient.getEquipmentStatistics(Number(equipmentId), factoryId).catch(() => null),
       ]);
 
       equipmentDetailLogger.info('Equipment detail loaded successfully', {
         equipmentId,
-        name: (equipmentResponse as any).data.name,
-        status: (equipmentResponse as any).data.status,
+        name: eq.name,
+        status: eq.status,
       });
-
-      const eq: Equipment = (equipmentResponse as any).data;
 
       // Map Equipment status to EquipmentStatus
       const mapStatus = (status: string): EquipmentStatus => {
@@ -192,7 +190,7 @@ export default function EquipmentDetailScreen() {
       setParameters({});
 
       // Transform maintenance history
-      const history: APIMaintenanceRecord[] = (maintenanceHistoryResponse as any).data || [];
+      const history: APIMaintenanceRecord[] = maintenanceHistoryResult || [];
       const records: MaintenanceRecord[] = history.map((record) => ({
         id: String(record.id),
         date: record.maintenanceDate,
@@ -205,32 +203,32 @@ export default function EquipmentDetailScreen() {
       setMaintenanceRecords(records);
 
       // Set performance metrics
-      if ((oeeResponse as any).data) {
-        setOeeData((oeeResponse as any).data);
+      if (oeeResult) {
+        setOeeData(oeeResult);
         equipmentDetailLogger.info('OEE data loaded successfully', {
-          oee: ((oeeResponse as any).data.oee * 100).toFixed(1) + '%',
+          oee: typeof oeeResult === 'number' ? oeeResult.toFixed(1) + '%' : 'N/A',
         });
       }
 
-      if ((depreciatedValueResponse as any).data) {
-        setDepreciatedValue((depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data);
+      if (depreciatedValueResult != null) {
+        setDepreciatedValue(typeof depreciatedValueResult === 'number' ? depreciatedValueResult : (depreciatedValueResult as any)?.depreciatedValue || depreciatedValueResult);
         equipmentDetailLogger.info('Depreciated value loaded successfully', {
-          value: (depreciatedValueResponse as any).data.depreciatedValue || (depreciatedValueResponse as any).data,
+          value: depreciatedValueResult,
         });
       }
 
-      if ((usageStatsResponse as any).data) {
-        setUsageStats((usageStatsResponse as any).data);
+      if (usageStatsResult) {
+        setUsageStats(usageStatsResult);
         equipmentDetailLogger.info('Usage statistics loaded successfully', {
-          utilizationRate: (usageStatsResponse as any).data.utilizationRate,
+          utilizationRate: (usageStatsResult as any).utilizationRate,
         });
       }
 
       // Calculate uptime from efficiency report or OEE data
-      if ((usageStatsResponse as any).data?.utilizationRate !== undefined) {
-        setUptime((usageStatsResponse as any).data.utilizationRate);
-      } else if ((oeeResponse as any).data?.availability !== undefined) {
-        setUptime((oeeResponse as any).data.availability * 100);
+      if ((usageStatsResult as any)?.utilizationRate !== undefined) {
+        setUptime((usageStatsResult as any).utilizationRate);
+      } else if ((oeeResult as any)?.availability !== undefined) {
+        setUptime((oeeResult as any).availability * 100);
       } else {
         setUptime(eq.status === 'active' ? 95 : 0);
       }
@@ -243,8 +241,8 @@ export default function EquipmentDetailScreen() {
         ]);
 
         const totalAlerts =
-          ((maintenanceAlerts as any).data || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length +
-          ((warrantyAlerts as any).data || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length;
+          (maintenanceAlerts || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length +
+          (warrantyAlerts || []).filter((e: Equipment) => String(e.id) === String(equipmentId)).length;
 
         setActiveAlertsCount(totalAlerts);
       } catch (alertError) {

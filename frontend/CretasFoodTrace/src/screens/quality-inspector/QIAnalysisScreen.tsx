@@ -59,6 +59,44 @@ interface AnalysisData {
   }[];
 }
 
+// Fallback data used when API is unavailable or returns unexpected format
+const FALLBACK_DATA: AnalysisData = {
+  overview: {
+    totalInspections: 156,
+    passRate: 92.3,
+    avgScore: 87.5,
+    trendDirection: 'up',
+  },
+  gradeDistribution: { A: 45, B: 38, C: 12, D: 5 },
+  categoryScores: {
+    appearance: 17.2,
+    smell: 18.5,
+    specification: 16.8,
+    weight: 17.9,
+    packaging: 17.1,
+  },
+  recentIssues: [
+    { category: '外观', count: 8, description: '色泽不均匀' },
+    { category: '规格', count: 5, description: '尺寸偏差' },
+    { category: '包装', count: 3, description: '标签模糊' },
+  ],
+};
+
+/**
+ * Validate that the API result matches the expected AnalysisData shape.
+ * Returns the data if valid, or null if the shape is unexpected.
+ */
+function isValidAnalysisData(result: unknown): result is AnalysisData {
+  if (!result || typeof result !== 'object') return false;
+  const r = result as Record<string, unknown>;
+  return (
+    r.overview != null &&
+    typeof r.overview === 'object' &&
+    r.gradeDistribution != null &&
+    typeof r.gradeDistribution === 'object'
+  );
+}
+
 export default function QIAnalysisScreen() {
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
@@ -75,6 +113,10 @@ export default function QIAnalysisScreen() {
     if (factoryId) {
       qualityInspectorApi.setFactoryId(factoryId);
       loadData();
+    } else {
+      // No factoryId available - use fallback data instead of loading forever
+      setData(FALLBACK_DATA);
+      setLoading(false);
     }
   }, [factoryId, period]);
 
@@ -82,31 +124,15 @@ export default function QIAnalysisScreen() {
     try {
       setLoading(true);
       const result = await qualityInspectorApi.getAnalysisData(period);
-      setData(result);
+      if (isValidAnalysisData(result)) {
+        setData(result);
+      } else {
+        console.warn('API returned unexpected data format, using fallback');
+        setData(FALLBACK_DATA);
+      }
     } catch (error) {
       console.error('加载分析数据失败:', error);
-      // 使用模拟数据作为回退
-      setData({
-        overview: {
-          totalInspections: 156,
-          passRate: 92.3,
-          avgScore: 87.5,
-          trendDirection: 'up',
-        },
-        gradeDistribution: { A: 45, B: 38, C: 12, D: 5 },
-        categoryScores: {
-          appearance: 17.2,
-          smell: 18.5,
-          specification: 16.8,
-          weight: 17.9,
-          packaging: 17.1,
-        },
-        recentIssues: [
-          { category: '外观', count: 8, description: '色泽不均匀' },
-          { category: '规格', count: 5, description: '尺寸偏差' },
-          { category: '包装', count: 3, description: '标签模糊' },
-        ],
-      });
+      setData(FALLBACK_DATA);
     } finally {
       setLoading(false);
     }
@@ -185,16 +211,16 @@ export default function QIAnalysisScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={QI_COLORS.primary} />
-        <Text style={styles.loadingText}>{t('analysis.loadingData')}</Text>
+        <Text style={styles.loadingText}>{t('analysis.loading')}</Text>
       </View>
     );
   }
 
-  const totalGrades = data
-    ? data.gradeDistribution.A +
-      data.gradeDistribution.B +
-      data.gradeDistribution.C +
-      data.gradeDistribution.D
+  const totalGrades = data?.gradeDistribution
+    ? (data.gradeDistribution.A ?? 0) +
+      (data.gradeDistribution.B ?? 0) +
+      (data.gradeDistribution.C ?? 0) +
+      (data.gradeDistribution.D ?? 0)
     : 0;
 
   return (
@@ -211,25 +237,25 @@ export default function QIAnalysisScreen() {
     >
       {/* 时间周期选择 */}
       <View style={styles.periodBar}>
-        {renderPeriodTab('week', t('analysis.thisWeek'))}
-        {renderPeriodTab('month', t('analysis.thisMonth'))}
-        {renderPeriodTab('quarter', t('analysis.thisQuarter'))}
+        {renderPeriodTab('week', t('analysis.period.week'))}
+        {renderPeriodTab('month', t('analysis.period.month'))}
+        {renderPeriodTab('quarter', t('analysis.period.quarter'))}
       </View>
 
       {/* 概览卡片 */}
       <View style={styles.overviewCard}>
         <View style={styles.overviewItem}>
-          <Text style={styles.overviewValue}>{data?.overview.totalInspections || 0}</Text>
-          <Text style={styles.overviewLabel}>{t('analysis.inspectedBatches')}</Text>
+          <Text style={styles.overviewValue}>{data?.overview?.totalInspections ?? 0}</Text>
+          <Text style={styles.overviewLabel}>{t('analysis.inspectionBatches')}</Text>
         </View>
         <View style={styles.overviewDivider} />
         <View style={styles.overviewItem}>
           <View style={styles.overviewValueRow}>
-            <Text style={styles.overviewValue}>{data?.overview.passRate.toFixed(1)}%</Text>
-            {data?.overview.trendDirection === 'up' && (
+            <Text style={styles.overviewValue}>{(data?.overview?.passRate ?? 0).toFixed(1)}%</Text>
+            {data?.overview?.trendDirection === 'up' && (
               <Ionicons name="trending-up" size={20} color={QI_COLORS.success} />
             )}
-            {data?.overview.trendDirection === 'down' && (
+            {data?.overview?.trendDirection === 'down' && (
               <Ionicons name="trending-down" size={20} color={QI_COLORS.danger} />
             )}
           </View>
@@ -237,7 +263,7 @@ export default function QIAnalysisScreen() {
         </View>
         <View style={styles.overviewDivider} />
         <View style={styles.overviewItem}>
-          <Text style={styles.overviewValue}>{data?.overview.avgScore.toFixed(1)}</Text>
+          <Text style={styles.overviewValue}>{(data?.overview?.avgScore ?? 0).toFixed(1)}</Text>
           <Text style={styles.overviewLabel}>{t('analysis.avgScore')}</Text>
         </View>
       </View>
@@ -251,9 +277,9 @@ export default function QIAnalysisScreen() {
           </TouchableOpacity>
         </View>
         <View style={styles.gradeCard}>
-          {data &&
+          {data?.gradeDistribution &&
             (['A', 'B', 'C', 'D'] as const).map((grade) =>
-              renderGradeBar(grade, data.gradeDistribution[grade], totalGrades)
+              renderGradeBar(grade, data.gradeDistribution[grade] ?? 0, totalGrades)
             )}
         </View>
       </View>
@@ -262,11 +288,11 @@ export default function QIAnalysisScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('analysis.categoryAvgScore')}</Text>
         <View style={styles.categoryCard}>
-          {renderCategoryScore(t('analysis.appearance'), 'eye-outline', data?.categoryScores.appearance || 0)}
-          {renderCategoryScore(t('analysis.smell'), 'flower-outline', data?.categoryScores.smell || 0)}
-          {renderCategoryScore(t('analysis.specification'), 'resize-outline', data?.categoryScores.specification || 0)}
-          {renderCategoryScore(t('analysis.weight'), 'scale-outline', data?.categoryScores.weight || 0)}
-          {renderCategoryScore(t('analysis.packaging'), 'cube-outline', data?.categoryScores.packaging || 0)}
+          {renderCategoryScore(t('analysis.appearance'), 'eye-outline', data?.categoryScores?.appearance ?? 0)}
+          {renderCategoryScore(t('analysis.smell'), 'flower-outline', data?.categoryScores?.smell ?? 0)}
+          {renderCategoryScore(t('analysis.specification'), 'resize-outline', data?.categoryScores?.specification ?? 0)}
+          {renderCategoryScore(t('analysis.weight'), 'scale-outline', data?.categoryScores?.weight ?? 0)}
+          {renderCategoryScore(t('analysis.packaging'), 'cube-outline', data?.categoryScores?.packaging ?? 0)}
         </View>
       </View>
 
@@ -274,7 +300,7 @@ export default function QIAnalysisScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t('analysis.commonIssues')}</Text>
         <View style={styles.issuesCard}>
-          {data?.recentIssues.map((issue, index) => (
+          {data?.recentIssues?.map((issue, index) => (
             <View key={index} style={styles.issueItem}>
               <View style={styles.issueLeft}>
                 <View style={styles.issueBadge}>

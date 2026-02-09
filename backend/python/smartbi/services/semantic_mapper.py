@@ -1,95 +1,21 @@
 from __future__ import annotations
 """
-Semantic Mapper Service (PRIMARY - LLM-Powered)
+Semantic Mapper Service
 
-The primary field mapping service for SmartBI. Maps Excel column names to
-standard business fields using:
-1. LLM-based semantic understanding with caching (primary)
-2. Rule-based dictionary matching (fast fallback)
+Maps Excel column names to standard business fields using:
+1. Rule-based dictionary matching
+2. LLM-based semantic understanding
 3. Multi-model consensus for ambiguous cases
-4. Persistent learning (saves successful mappings for reuse)
-
-This is the RECOMMENDED service for field mapping in new code.
-
-Related services:
-- FieldMappingService (field_mapping.py): Fast dictionary-only, no LLM
-- LLMMapper (llm_mapper.py): Sheet analysis & chart recommendations
-
-Usage:
-    mapper = SemanticMapper()
-    result = await mapper.map_fields_async(columns, context="销售数据")
 
 Part of the Zero-Code SmartBI architecture.
 """
 import json
 import logging
-import os
 import re
 from dataclasses import dataclass, field, asdict
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from services.utils.json_parser import robust_json_parse
-
 logger = logging.getLogger(__name__)
-
-# Category to Java dataType mapping
-# This ensures Python field mappings translate correctly to Java's expected format
-CATEGORY_TO_DATA_TYPE = {
-    # Numeric categories → NUMERIC
-    "amount": "NUMERIC",
-    "rate": "NUMERIC",
-    "quantity": "NUMERIC",
-    "percentage": "NUMERIC",
-    "price": "NUMERIC",
-    "cost": "NUMERIC",
-    "revenue": "NUMERIC",
-    "profit": "NUMERIC",
-    "measure": "NUMERIC",
-    "numeric": "NUMERIC",
-
-    # Categorical categories → CATEGORICAL
-    "category": "CATEGORICAL",
-    "region": "CATEGORICAL",
-    "department": "CATEGORICAL",
-    "product": "CATEGORICAL",
-    "customer": "CATEGORICAL",
-    "name": "CATEGORICAL",
-    "dimension": "CATEGORICAL",
-    "categorical": "CATEGORICAL",
-
-    # Time categories → DATE
-    "time": "DATE",
-    "date": "DATE",
-    "period": "DATE",
-    "year": "DATE",
-    "month": "DATE",
-}
-
-# Cache file path for learned mappings
-LEARNED_MAPPINGS_FILE = Path(__file__).parent.parent / "data" / "learned_field_mappings.json"
-
-# Dynamic field registry path
-FIELD_REGISTRY_FILE = Path(__file__).parent.parent / "data" / "standard_fields_registry.json"
-
-
-@dataclass
-class FieldMappingResult:
-    """Result of a single field mapping via LLM"""
-    standard_field: Optional[str]
-    confidence: float
-    category: Optional[str] = None
-    description: Optional[str] = None
-    source: str = "llm"  # llm, cache, rule
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "standard_field": self.standard_field,
-            "confidence": self.confidence,
-            "category": self.category,
-            "description": self.description,
-            "source": self.source
-        }
 
 
 @dataclass
@@ -103,16 +29,12 @@ class FieldMapping:
     description: Optional[str] = None  # Human-readable description
 
     def to_dict(self) -> Dict[str, Any]:
-        # Infer data_type from category for Java compatibility
-        data_type = CATEGORY_TO_DATA_TYPE.get(self.category, "TEXT") if self.category else "TEXT"
-
         return {
             "original": self.original,
             "standard": self.standard,
             "confidence": self.confidence,
             "method": self.method,
             "category": self.category,
-            "data_type": data_type,  # Java expects this for field classification
             "description": self.description
         }
 
@@ -148,28 +70,123 @@ class SemanticMappingResult:
         return result
 
 
-def _load_field_registry() -> Dict[str, Dict]:
-    """
-    Load standard fields from external registry file.
-    This allows dynamic field extension without code changes.
-    """
-    try:
-        if FIELD_REGISTRY_FILE.exists():
-            with open(FIELD_REGISTRY_FILE, 'r', encoding='utf-8') as f:
-                registry = json.load(f)
-            fields = registry.get("fields", {})
-            logger.info(f"Loaded {len(fields)} standard fields from registry: {FIELD_REGISTRY_FILE}")
-            return fields
-        else:
-            logger.warning(f"Field registry not found at {FIELD_REGISTRY_FILE}, using empty registry")
-            return {}
-    except Exception as e:
-        logger.error(f"Failed to load field registry: {e}")
-        return {}
+# Standard field dictionary for financial/business data
+STANDARD_FIELDS = {
+    # Amount fields
+    "budget_amount": {
+        "synonyms": ["预算数", "预算金额", "预算", "Budget", "budget_amount", "预算值"],
+        "category": "amount",
+        "description": "Budget amount"
+    },
+    "actual_amount": {
+        "synonyms": ["本月实际", "实际数", "实际金额", "实际", "Actual", "actual_amount", "实际值", "当月实际"],
+        "category": "amount",
+        "description": "Actual amount"
+    },
+    "variance": {
+        "synonyms": ["预实差异", "差异", "Variance", "variance", "差额", "预算差异"],
+        "category": "amount",
+        "description": "Variance between budget and actual"
+    },
+    "last_year_actual": {
+        "synonyms": ["去年同期", "同期实际", "Last Year", "YoY", "去年实际", "上年同期"],
+        "category": "amount",
+        "description": "Last year's actual amount"
+    },
+    "ytd_actual": {
+        "synonyms": ["累计实际", "YTD Actual", "累计", "本年累计", "年度累计"],
+        "category": "amount",
+        "description": "Year-to-date actual"
+    },
+    "ytd_budget": {
+        "synonyms": ["累计预算", "YTD Budget", "本年累计预算", "年度累计预算"],
+        "category": "amount",
+        "description": "Year-to-date budget"
+    },
 
+    # Rate fields
+    "achievement_rate": {
+        "synonyms": ["达成率", "完成率", "Achievement Rate", "达成比例", "完成比例", "预算达成率"],
+        "category": "rate",
+        "description": "Achievement/completion rate"
+    },
+    "yoy_rate": {
+        "synonyms": ["同比增长", "YoY Rate", "同比", "同比变化", "同比增幅"],
+        "category": "rate",
+        "description": "Year-over-year growth rate"
+    },
+    "mom_rate": {
+        "synonyms": ["环比增长", "MoM Rate", "环比", "环比变化", "月环比"],
+        "category": "rate",
+        "description": "Month-over-month growth rate"
+    },
+    "gross_margin_rate": {
+        "synonyms": ["毛利率", "Gross Margin", "销售毛利率"],
+        "category": "rate",
+        "description": "Gross margin rate"
+    },
+    "net_margin_rate": {
+        "synonyms": ["净利率", "Net Margin", "销售净利率", "净利润率"],
+        "category": "rate",
+        "description": "Net margin rate"
+    },
 
-# Dynamically loaded standard fields (from external JSON config)
-STANDARD_FIELDS = _load_field_registry()
+    # Category fields
+    "category": {
+        "synonyms": ["项目", "科目", "Category", "类别", "分类", "项目名称"],
+        "category": "category",
+        "description": "Category or line item name"
+    },
+    "department": {
+        "synonyms": ["部门", "Department", "组织", "事业部", "中心"],
+        "category": "category",
+        "description": "Department or organization unit"
+    },
+    "product": {
+        "synonyms": ["产品", "Product", "商品", "产品名称", "品类"],
+        "category": "category",
+        "description": "Product name"
+    },
+    "region": {
+        "synonyms": ["区域", "Region", "地区", "区域名称", "销售区域"],
+        "category": "category",
+        "description": "Region name"
+    },
+
+    # Financial line items
+    "revenue": {
+        "synonyms": ["销售收入", "收入", "Revenue", "营业收入", "主营业务收入"],
+        "category": "amount",
+        "description": "Revenue/Sales income"
+    },
+    "cost": {
+        "synonyms": ["成本", "Cost", "销售成本", "营业成本", "主营业务成本"],
+        "category": "amount",
+        "description": "Cost"
+    },
+    "gross_profit": {
+        "synonyms": ["毛利", "毛利润", "Gross Profit", "销售毛利"],
+        "category": "amount",
+        "description": "Gross profit"
+    },
+    "expense": {
+        "synonyms": ["费用", "Expense", "营业费用", "销售费用", "管理费用"],
+        "category": "amount",
+        "description": "Expense"
+    },
+    "net_profit": {
+        "synonyms": ["净利润", "Net Profit", "利润", "净利", "本期利润"],
+        "category": "amount",
+        "description": "Net profit"
+    },
+
+    # Time fields
+    "period": {
+        "synonyms": ["期间", "Period", "月份", "日期", "时间"],
+        "category": "time",
+        "description": "Time period"
+    }
+}
 
 # Table type patterns
 TABLE_TYPE_PATTERNS = {
@@ -188,10 +205,6 @@ TABLE_TYPE_PATTERNS = {
     "expense_report": {
         "keywords": ["费用报表", "Expense Report", "费用分析"],
         "required_fields": ["expense", "category"]
-    },
-    "sales_detail": {
-        "keywords": ["销售明细", "Sales Detail", "订单明细", "销售流水", "销售记录"],
-        "required_fields": ["amount"]
     }
 }
 
@@ -208,8 +221,6 @@ class SemanticMapper:
     def __init__(self):
         self._settings = None
         self._custom_mappings: Dict[str, Dict[str, str]] = {}  # factory_id -> {original: standard}
-        self.learned_mappings: Dict[str, Dict[str, Any]] = {}  # column_name -> {standard_field, confidence, ...}
-        self._load_learned_mappings()
 
     @property
     def settings(self):
@@ -223,241 +234,6 @@ class SemanticMapper:
         if factory_id not in self._custom_mappings:
             self._custom_mappings[factory_id] = {}
         self._custom_mappings[factory_id][original] = standard
-
-    def _load_learned_mappings(self):
-        """Load learned mappings from cache file"""
-        try:
-            if LEARNED_MAPPINGS_FILE.exists():
-                with open(LEARNED_MAPPINGS_FILE, 'r', encoding='utf-8') as f:
-                    self.learned_mappings = json.load(f)
-                logger.info(f"Loaded {len(self.learned_mappings)} learned mappings from cache")
-            else:
-                self.learned_mappings = {}
-                logger.info("No learned mappings cache found, starting fresh")
-        except Exception as e:
-            logger.warning(f"Failed to load learned mappings: {e}")
-            self.learned_mappings = {}
-
-    def _save_learned_mappings(self):
-        """Save learned mappings to cache file"""
-        try:
-            # Ensure directory exists
-            LEARNED_MAPPINGS_FILE.parent.mkdir(parents=True, exist_ok=True)
-            with open(LEARNED_MAPPINGS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(self.learned_mappings, f, ensure_ascii=False, indent=2)
-            logger.debug(f"Saved {len(self.learned_mappings)} learned mappings to cache")
-        except Exception as e:
-            logger.warning(f"Failed to save learned mappings: {e}")
-
-    async def map_field_with_llm(
-        self,
-        column_name: str,
-        sample_values: List[Any] = None,
-        context: str = None
-    ) -> FieldMappingResult:
-        """
-        Map a single field using LLM with caching.
-
-        This is the primary mapping method that:
-        1. Checks the learned_mappings cache first
-        2. If cache miss, calls LLM to infer the mapping
-        3. Saves the result to cache for future use
-
-        Args:
-            column_name: The column name to map
-            sample_values: Optional sample values from the column
-            context: Optional table/sheet context
-
-        Returns:
-            FieldMappingResult with the mapping result
-        """
-        # Normalize column name for cache lookup
-        cache_key = column_name.strip()
-
-        # 1. Check cache first
-        if cache_key in self.learned_mappings:
-            cached = self.learned_mappings[cache_key]
-            logger.debug(f"Cache hit for '{column_name}': {cached.get('standard_field')}")
-            return FieldMappingResult(
-                standard_field=cached.get("standard_field"),
-                confidence=cached.get("confidence", 0.9),
-                category=cached.get("category"),
-                description=cached.get("description"),
-                source="cache"
-            )
-
-        # 2. LLM inference
-        result = await self._llm_infer_mapping(column_name, sample_values, context)
-
-        # 3. Save to cache if successful
-        if result.standard_field is not None and result.confidence >= 0.7:
-            self.learned_mappings[cache_key] = {
-                "standard_field": result.standard_field,
-                "confidence": result.confidence,
-                "category": result.category,
-                "description": result.description
-            }
-            self._save_learned_mappings()
-            logger.info(f"Learned new mapping: '{column_name}' -> '{result.standard_field}' (confidence: {result.confidence})")
-
-        return result
-
-    async def _llm_infer_mapping(
-        self,
-        column_name: str,
-        sample_values: List[Any] = None,
-        context: str = None
-    ) -> FieldMappingResult:
-        """
-        Use LLM to infer the mapping for a column name.
-
-        Args:
-            column_name: The column name to map
-            sample_values: Optional sample values
-            context: Optional table context
-
-        Returns:
-            FieldMappingResult with LLM inference
-        """
-        try:
-            # Build available standard fields list with descriptions
-            available_fields = []
-            for field_name, field_info in STANDARD_FIELDS.items():
-                available_fields.append(f"{field_name}: {field_info.get('description', '')} ({field_info.get('category', '')})")
-
-            # Build sample values text
-            sample_text = ""
-            if sample_values:
-                # Take up to 5 non-null samples
-                samples = [str(v) for v in sample_values[:5] if v is not None and str(v).strip()]
-                if samples:
-                    sample_text = f"\n数据示例: {', '.join(samples)}"
-
-            prompt = f"""你是一个数据字段映射专家。请分析以下Excel列名，将其映射到标准财务/业务字段。
-
-列名: "{column_name}"
-表格上下文: {context or '未知'}{sample_text}
-
-可选的标准字段:
-{chr(10).join(available_fields)}
-
-请分析这个列名最可能对应哪个标准字段。
-
-返回JSON格式:
-{{
-  "standard_field": "字段名或null",
-  "confidence": 0.0-1.0,
-  "category": "amount/rate/category/time",
-  "reasoning": "简短的推理说明"
-}}
-
-注意:
-- 如果列名明显不属于任何标准字段，返回standard_field为null
-- confidence表示你的确信程度
-- 考虑中文同义词、缩写、英文对应等"""
-
-            response = await self._call_llm(prompt)
-            if response:
-                parsed = self._parse_json_response(response)
-                if parsed:
-                    std_field = parsed.get("standard_field")
-                    # Validate that the field exists in STANDARD_FIELDS or is a dynamic field
-                    if std_field and std_field != "null":
-                        # Check if it's a known standard field
-                        if std_field in STANDARD_FIELDS:
-                            category = STANDARD_FIELDS[std_field].get("category")
-                        else:
-                            category = parsed.get("category")
-
-                        return FieldMappingResult(
-                            standard_field=std_field,
-                            confidence=parsed.get("confidence", 0.7),
-                            category=category,
-                            description=parsed.get("reasoning"),
-                            source="llm"
-                        )
-
-            # LLM returned null or failed to parse
-            return FieldMappingResult(
-                standard_field=None,
-                confidence=0.3,
-                description="LLM could not determine mapping",
-                source="llm"
-            )
-
-        except Exception as e:
-            logger.warning(f"LLM inference failed for '{column_name}': {e}")
-            return FieldMappingResult(
-                standard_field=None,
-                confidence=0.0,
-                description=f"LLM inference error: {str(e)}",
-                source="llm_error"
-            )
-
-    async def map_fields_with_llm(
-        self,
-        columns: List[str],
-        sample_data: Optional[List[List[Any]]] = None,
-        context: str = None
-    ) -> Dict[str, FieldMappingResult]:
-        """
-        Map multiple fields using LLM with caching.
-
-        This is a batch version of map_field_with_llm that processes
-        multiple columns efficiently.
-
-        Args:
-            columns: List of column names to map
-            sample_data: Optional sample data (rows of values)
-            context: Optional table context
-
-        Returns:
-            Dict mapping column names to FieldMappingResult
-        """
-        results = {}
-
-        # Separate cached and uncached columns
-        cached_columns = []
-        uncached_columns = []
-
-        for col in columns:
-            cache_key = col.strip()
-            if cache_key in self.learned_mappings:
-                cached_columns.append(col)
-            else:
-                uncached_columns.append(col)
-
-        # Process cached columns (fast path)
-        for col in cached_columns:
-            cached = self.learned_mappings[col.strip()]
-            results[col] = FieldMappingResult(
-                standard_field=cached.get("standard_field"),
-                confidence=cached.get("confidence", 0.9),
-                category=cached.get("category"),
-                description=cached.get("description"),
-                source="cache"
-            )
-
-        # Batch process uncached columns with LLM
-        if uncached_columns:
-            # Extract sample values for each column
-            col_samples = {}
-            if sample_data:
-                for i, col in enumerate(columns):
-                    if col in uncached_columns and i < len(columns):
-                        samples = []
-                        for row in sample_data[:5]:
-                            if i < len(row) and row[i] is not None:
-                                samples.append(row[i])
-                        col_samples[col] = samples
-
-            # Process uncached columns
-            for col in uncached_columns:
-                sample_values = col_samples.get(col, [])
-                result = await self.map_field_with_llm(col, sample_values, context)
-                results[col] = result
-
-        return results
 
     async def map_fields(
         self,
@@ -538,34 +314,16 @@ class SemanticMapper:
     ) -> Tuple[List[FieldMapping], List[str]]:
         """
         Rule-based field mapping (Layer 1).
-
-        Wide-format time-period columns (e.g., "2025年1月_预算数") are deliberately
-        sent to the LLM layer to get proper time-suffixed mappings like "budget_amount_202501".
         """
         mappings = []
         unmapped = []
 
-        # Detect if this is wide-format data
-        is_wide = self._is_wide_format(columns)
-
         # Check custom mappings first
         custom_map = self._custom_mappings.get(factory_id, {}) if factory_id else {}
-
-        # Pattern to detect time-period columns that need LLM handling
-        time_period_pattern = re.compile(
-            r'(\d{4}年)?(1[0-2]|[1-9])月|'   # 2025年1月, 1月
-            r'\d{4}[-_]\d{2}'                   # 2025-01, 2025_01
-        )
 
         for col in columns:
             col_lower = col.lower().strip()
             col_cleaned = self._clean_column_name(col)
-
-            # For wide-format data, skip time-period columns from rule matching
-            # They need LLM to generate proper time-suffixed field names
-            if is_wide and time_period_pattern.search(col):
-                unmapped.append(col)
-                continue
 
             # Check custom mapping
             if col in custom_map:
@@ -575,20 +333,6 @@ class SemanticMapper:
                     confidence=0.95,
                     method="custom",
                     description="Custom factory mapping"
-                ))
-                continue
-
-            # Check LLM-learned mapping rules (previously inferred by LLM, cached for reuse)
-            cache_key = col.strip()
-            if cache_key in self.learned_mappings:
-                cached = self.learned_mappings[cache_key]
-                mappings.append(FieldMapping(
-                    original=col,
-                    standard=cached.get("standard_field"),
-                    confidence=cached.get("confidence", 0.85),
-                    method="learned_rule",
-                    category=cached.get("category"),
-                    description=cached.get("description", "LLM-learned mapping rule")
                 ))
                 continue
 
@@ -660,11 +404,8 @@ class SemanticMapper:
             return []
 
         try:
-            # Prepare context - include field descriptions for better LLM understanding
-            fields_with_desc = {
-                name: info.get("description", "")
-                for name, info in STANDARD_FIELDS.items()
-            }
+            # Prepare context
+            available_standards = list(STANDARD_FIELDS.keys())
 
             # Sample data context
             sample_text = ""
@@ -677,22 +418,17 @@ class SemanticMapper:
             # Detect wide-format data
             wide_format_instruction = self._build_wide_format_instruction(all_columns)
 
-            prompt = f"""Map these Excel column names to standard business field names.
+            prompt = f"""Map these column names to standard business field names.
 
 Columns to map: {unmapped_columns}
 All columns in table: {all_columns[:20]}
+Available standard fields: {available_standards}
 Table context: {table_context or 'Unknown'}
 {sample_text}
 {wide_format_instruction}
 
-Available standard fields (name → description):
-{json.dumps(fields_with_desc, ensure_ascii=False, indent=2)}
-
-Rules:
-1. For each column, find the best matching standard field from the list above.
-2. If a column clearly represents a known business concept but doesn't match any listed field, you may suggest a new snake_case field name (e.g., "delivery_date", "contact_phone").
-3. Use the sample data to verify your mapping makes sense.
-4. Return null for columns that are purely structural (like serial numbers or empty headers).
+For each column, determine the most appropriate standard field.
+If no match, return null for standard.
 
 Return JSON only:
 {{
@@ -706,36 +442,18 @@ Return JSON only:
                 parsed = self._parse_json_response(response)
                 if parsed and "mappings" in parsed:
                     result = []
-                    new_learned = False
                     for m in parsed["mappings"]:
                         std = m.get("standard")
-                        if std and std != "null":
-                            # Accept both registry fields and LLM-suggested new fields
-                            field_info = STANDARD_FIELDS.get(std, {})
-                            confidence = m.get("confidence", 0.7)
-                            # Lower confidence for fields not in registry
-                            if std not in STANDARD_FIELDS:
-                                confidence = min(confidence, 0.6)
-                                logger.info(f"LLM suggested new field '{std}' for column '{m.get('original')}' (not in registry)")
+                        if std and std != "null" and std in STANDARD_FIELDS:
+                            field_info = STANDARD_FIELDS[std]
                             result.append(FieldMapping(
                                 original=m["original"],
                                 standard=std,
-                                confidence=confidence,
+                                confidence=m.get("confidence", 0.7),
                                 method="llm",
-                                category=field_info.get("category", "unknown"),
+                                category=field_info.get("category"),
                                 description=m.get("reasoning")
                             ))
-
-                            # Save LLM-created mapping as a learned rule for future use
-                            if confidence >= 0.6:
-                                cache_key = m["original"].strip()
-                                self.learned_mappings[cache_key] = {
-                                    "standard_field": std,
-                                    "confidence": confidence,
-                                    "category": field_info.get("category", "unknown"),
-                                    "description": m.get("reasoning", "LLM-learned mapping")
-                                }
-                                new_learned = True
                         else:
                             result.append(FieldMapping(
                                 original=m["original"],
@@ -744,12 +462,6 @@ Return JSON only:
                                 method="llm",
                                 description="No matching standard field"
                             ))
-
-                    # Persist newly learned rules
-                    if new_learned:
-                        self._save_learned_mappings()
-                        logger.info(f"Saved {sum(1 for m in result if m.standard)} new LLM-learned mapping rules")
-
                     return result
 
         except Exception as e:
@@ -935,23 +647,16 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
     def _is_wide_format(self, columns: List[str]) -> bool:
         """
         Detect if data is wide-format (multiple time-period columns).
-        Supports patterns like:
-        - "1月_预算数", "2月_预算数"
-        - "2025年1月_预算数", "2025年2月_本月实际"
-        - "202501", "2025-01"
         """
-        # Chinese month pattern (1月, 2月, ... 12月) - also inside year patterns like "2025年1月"
-        chinese_month_pattern = re.compile(r'(1[0-2]|[1-9])月')
+        # Chinese month pattern (1月, 2月, ... 12月)
+        chinese_month_pattern = re.compile(r'[_]?(1[0-2]|[1-9])月[_]?')
         # English/numeric month pattern (202501, 2025-01)
         numeric_month_pattern = re.compile(r'\d{4}[-_]?\d{2}')
-        # Chinese year+month pattern (2025年1月)
-        year_month_pattern = re.compile(r'\d{4}年(1[0-2]|[1-9])月')
 
         chinese_month_count = sum(1 for col in columns if chinese_month_pattern.search(col))
         numeric_month_count = sum(1 for col in columns if numeric_month_pattern.search(col))
-        year_month_count = sum(1 for col in columns if year_month_pattern.search(col))
 
-        return chinese_month_count >= 3 or numeric_month_count >= 3 or year_month_count >= 3
+        return chinese_month_count >= 3 or numeric_month_count >= 3
 
     def _build_wide_format_instruction(self, columns: List[str]) -> str:
         """
@@ -968,35 +673,20 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
    - 例: "1月_预算收入" → "budget_amount_202501"
    - 例: "2月_实际金额" → "actual_amount_202502"
    - 例: "12月_利润" → "net_profit_202512"
-   - 例: "2025年1月_预算数" → "budget_amount_202501"
-   - 例: "2025年1月_本月实际" → "actual_amount_202501"
-   - 例: "2025年1月_去年同期" → "last_year_actual_202501"
-   - 例: "2025年2月_预算数" → "budget_amount_202502"
 
 2. **年份识别**:
-   - 列名有年份（"2025年"、"25年"）则使用该年份
+   - 列名有年份（2025年、25年）则使用该年份
    - 无年份信息默认使用2025
-   - "去年同期"/"24年" 仍使用列名中标注的月份，仅metric_type改为 last_year_actual
 
 3. **metric_type对照**:
-   - 预算/预算数/计划/目标 → budget_amount
-   - 实际/本月实际/完成/执行/实际数 → actual_amount
-   - 同期/去年同期/去年/上年同期/24年 → last_year_actual
-   - 利润/净利/净利润 → net_profit
-   - 收入/营收/营业收入 → revenue
-   - 成本/营业成本 → cost
-   - 预算收入 → budget_amount (revenue context)
-   - 实际收入 → actual_amount (revenue context)
+   - 预算/计划/目标 → budget_amount
+   - 实际/完成/执行 → actual_amount
+   - 同期/去年/24年 → last_year_actual
+   - 利润/净利 → net_profit
+   - 收入/营收 → revenue
+   - 成本 → cost
 
-4. **年度汇总列**:
-   - "累计预算"/"年度预算" → ytd_budget
-   - "累计实际"/"年度实际"/"累计完成" → ytd_actual
-   - "年度汇总"/"全年" → annual_total
-
-5. **维度列（非时间列）**:
-   - "项目"/"科目" → category
-   - "行次" → serial_number
-   - "部门"/"中心" → department
+4. **年度汇总列**: "年度汇总"/"全年"/"累计" → ytd_actual 或 ytd_budget
 """
 
     async def _call_llm(self, prompt: str, model: str = "default") -> Optional[str]:
@@ -1029,138 +719,12 @@ Return JSON: {{"mappings": [{{"original": "col", "standard": "field_or_null", "c
 
     def _parse_json_response(self, response: str) -> Optional[Dict]:
         """Parse JSON from LLM response"""
-        # Fix: Use centralized robust JSON parser
-        result = robust_json_parse(response, fallback=None)
-        if result is None:
-            logger.warning("Failed to parse LLM response as JSON")
-        return result
-
-    # ========== Learned Mappings Management ==========
-
-    def add_learned_mapping(
-        self,
-        column_name: str,
-        standard_field: str,
-        confidence: float = 0.95,
-        category: Optional[str] = None,
-        description: Optional[str] = None
-    ):
-        """
-        Manually add or update a learned mapping.
-
-        Use this to correct LLM mistakes or add domain-specific mappings.
-
-        Args:
-            column_name: The column name to map
-            standard_field: The standard field to map to
-            confidence: Confidence score (default 0.95 for manual entries)
-            category: Field category (amount, rate, category, time)
-            description: Optional description
-        """
-        cache_key = column_name.strip()
-
-        # Get category from STANDARD_FIELDS if not provided
-        if not category and standard_field in STANDARD_FIELDS:
-            category = STANDARD_FIELDS[standard_field].get("category")
-
-        self.learned_mappings[cache_key] = {
-            "standard_field": standard_field,
-            "confidence": confidence,
-            "category": category,
-            "description": description or "Manually added mapping"
-        }
-        self._save_learned_mappings()
-        logger.info(f"Added manual mapping: '{column_name}' -> '{standard_field}'")
-
-    def remove_learned_mapping(self, column_name: str) -> bool:
-        """
-        Remove a learned mapping from the cache.
-
-        Args:
-            column_name: The column name to remove
-
-        Returns:
-            True if removed, False if not found
-        """
-        cache_key = column_name.strip()
-        if cache_key in self.learned_mappings:
-            del self.learned_mappings[cache_key]
-            self._save_learned_mappings()
-            logger.info(f"Removed learned mapping for: '{column_name}'")
-            return True
-        return False
-
-    def clear_learned_mappings(self):
-        """Clear all learned mappings (reset cache)"""
-        self.learned_mappings = {}
-        self._save_learned_mappings()
-        logger.info("Cleared all learned mappings")
-
-    def get_learned_mappings_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics about learned mappings.
-
-        Returns:
-            Dict with cache statistics
-        """
-        if not self.learned_mappings:
-            return {
-                "total_mappings": 0,
-                "cache_file": str(LEARNED_MAPPINGS_FILE),
-                "cache_exists": LEARNED_MAPPINGS_FILE.exists()
-            }
-
-        # Count by category
-        by_category = {}
-        for col, mapping in self.learned_mappings.items():
-            category = mapping.get("category", "unknown")
-            by_category[category] = by_category.get(category, 0) + 1
-
-        # Average confidence
-        confidences = [m.get("confidence", 0) for m in self.learned_mappings.values()]
-        avg_confidence = sum(confidences) / len(confidences) if confidences else 0
-
-        return {
-            "total_mappings": len(self.learned_mappings),
-            "by_category": by_category,
-            "average_confidence": round(avg_confidence, 3),
-            "cache_file": str(LEARNED_MAPPINGS_FILE),
-            "cache_exists": LEARNED_MAPPINGS_FILE.exists()
-        }
-
-    def export_learned_mappings(self) -> Dict[str, Dict[str, Any]]:
-        """
-        Export all learned mappings for backup or transfer.
-
-        Returns:
-            Copy of the learned mappings dictionary
-        """
-        return dict(self.learned_mappings)
-
-    def import_learned_mappings(
-        self,
-        mappings: Dict[str, Dict[str, Any]],
-        overwrite: bool = False
-    ) -> int:
-        """
-        Import learned mappings from an external source.
-
-        Args:
-            mappings: Dict of column_name -> mapping info
-            overwrite: If True, overwrite existing mappings
-
-        Returns:
-            Number of mappings imported
-        """
-        imported = 0
-        for col, mapping in mappings.items():
-            cache_key = col.strip()
-            if overwrite or cache_key not in self.learned_mappings:
-                self.learned_mappings[cache_key] = mapping
-                imported += 1
-
-        if imported > 0:
-            self._save_learned_mappings()
-            logger.info(f"Imported {imported} learned mappings")
-
-        return imported
+        try:
+            # Try to extract JSON from response
+            json_match = re.search(r'\{[\s\S]*\}', response)
+            if json_match:
+                return json.loads(json_match.group())
+            return None
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse LLM response as JSON: {e}")
+            return None

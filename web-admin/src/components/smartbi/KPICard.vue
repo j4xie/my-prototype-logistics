@@ -4,7 +4,7 @@
  * Features: Title, value, unit, trend arrow, status color
  * Display Modes: default, sparkline, progressBar, waterWave
  */
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 
 // Types
 export type TrendDirection = 'up' | 'down' | 'flat';
@@ -24,6 +24,8 @@ interface Props {
   trend?: TrendDirection;
   trendValue?: number | string;
   trendLabel?: string;
+  change?: number;       // Absolute change value (e.g., +1234)
+  changeRate?: number;   // Period-over-period change rate in % (e.g., +12.3)
   status?: StatusType;
   icon?: string;
   loading?: boolean;
@@ -40,6 +42,9 @@ interface Props {
   progressValue?: number;
   progressColor?: string;
   subMetrics?: SubMetric[];
+  // P1: Industry benchmark comparison
+  benchmarkLabel?: string;
+  benchmarkGap?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -48,6 +53,8 @@ const props = withDefaults(defineProps<Props>(), {
   trend: undefined,
   trendValue: undefined,
   trendLabel: '',
+  change: undefined,
+  changeRate: undefined,
   status: 'default',
   icon: '',
   loading: false,
@@ -63,7 +70,9 @@ const props = withDefaults(defineProps<Props>(), {
   sparklineData: () => [],
   progressValue: 0,
   progressColor: '',
-  subMetrics: () => []
+  subMetrics: () => [],
+  benchmarkLabel: '',
+  benchmarkGap: undefined,
 });
 
 const emit = defineEmits<{
@@ -102,7 +111,7 @@ const formattedValue = computed(() => {
       }).format(val);
       break;
     case 'percent':
-      formatted = val.toFixed(props.precision);
+      formatted = (val * 100).toFixed(props.precision) + '%';
       break;
     case 'number':
     default:
@@ -138,8 +147,11 @@ const currentStatusColor = computed(() => statusColors[props.status]);
 
 // Sparkline SVG path computation
 const sparklinePath = computed(() => {
-  const data = props.sparklineData;
-  if (!data || data.length < 2) return '';
+  const rawData = props.sparklineData;
+  if (!rawData || rawData.length < 2) return '';
+
+  const data = rawData.filter(v => Number.isFinite(v));
+  if (data.length < 2) return '';
 
   const width = 50;
   const height = 20;
@@ -162,7 +174,23 @@ const sparklinePath = computed(() => {
 const sparklineColor = computed(() => {
   const data = props.sparklineData;
   if (!data || data.length < 2) return '#909399';
-  return data[data.length - 1] >= data[0] ? '#67c23a' : '#f56c6c';
+  const filtered = data.filter(v => Number.isFinite(v));
+  if (filtered.length < 2) return '#909399';
+  return filtered[filtered.length - 1] >= filtered[0] ? '#67c23a' : '#f56c6c';
+});
+
+// Period-over-period change display (FineBI + Power BI + Grafana)
+const formattedChange = computed(() => {
+  if (props.changeRate == null) return null;
+  const sign = props.changeRate > 0 ? '+' : '';
+  return `${sign}${props.changeRate.toFixed(1)}%`;
+});
+
+const changeColor = computed(() => {
+  if (props.changeRate == null) return '#909399';
+  if (props.changeRate > 0) return '#059669';
+  if (props.changeRate < 0) return '#dc2626';
+  return '#909399';
 });
 
 // Progress bar display mode color
@@ -175,14 +203,21 @@ const displayProgressColor = computed(() => {
 });
 
 // Water wave animation offset
+let animationId: number | null = null;
 const waveOffset = ref(0);
 onMounted(() => {
   if (props.displayMode === 'waterWave') {
     const animate = () => {
       waveOffset.value = (waveOffset.value + 1) % 100;
-      requestAnimationFrame(animate);
+      animationId = requestAnimationFrame(animate);
     };
     animate();
+  }
+});
+onBeforeUnmount(() => {
+  if (animationId != null) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
   }
 });
 
@@ -226,15 +261,14 @@ function handleClick() {
         </span>
         <span>{{ title }}</span>
       </div>
-      <div v-if="trend" class="kpi-trend" :style="{ color: trendColors[trend] }">
+      <div v-if="trend || formattedChange" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
         <span class="trend-arrow">
-          <template v-if="trend === 'up'">&#8593;</template>
-          <template v-else-if="trend === 'down'">&#8595;</template>
-          <template v-else>&#8594;</template>
+          <template v-if="(changeRate != null ? changeRate > 0 : trend === 'up')">&#9650;</template>
+          <template v-else-if="(changeRate != null ? changeRate < 0 : trend === 'down')">&#9660;</template>
+          <template v-else>&#9654;</template>
         </span>
-        <span v-if="trendValue !== undefined" class="trend-value">
-          {{ trendValue }}{{ trendLabel }}
-        </span>
+        <span v-if="formattedChange" class="trend-value">{{ formattedChange }}</span>
+        <span v-else-if="trendValue !== undefined" class="trend-value">{{ trendValue }}{{ trendLabel }}</span>
       </div>
     </div>
 
@@ -308,6 +342,18 @@ function handleClick() {
       {{ subtitle }}
     </div>
 
+    <!-- Benchmark comparison (P1) -->
+    <div v-if="benchmarkLabel" class="kpi-benchmark">
+      <span class="benchmark-label">{{ benchmarkLabel }}</span>
+      <span
+        v-if="benchmarkGap != null"
+        class="benchmark-gap"
+        :class="{ positive: benchmarkGap >= 0, negative: benchmarkGap < 0 }"
+      >
+        {{ benchmarkGap >= 0 ? '+' : '' }}{{ benchmarkGap.toFixed(1) }}pp
+      </span>
+    </div>
+
     <!-- Sub-metrics Section -->
     <div v-if="subMetrics && subMetrics.length > 0" class="kpi-sub-metrics">
       <div
@@ -343,9 +389,10 @@ function handleClick() {
 .kpi-card {
   position: relative;
   padding: 20px;
-  border-radius: 8px;
-  border: 1px solid;
-  transition: all 0.2s ease;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 
   &.is-clickable {
@@ -419,13 +466,21 @@ function handleClick() {
 .kpi-trend {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: currentColor;
+  -webkit-background-clip: text;
+  background-clip: text;
 
   .trend-arrow {
-    font-size: 14px;
-    font-weight: bold;
+    font-size: 10px;
+  }
+
+  .trend-value {
+    font-size: 12px;
   }
 }
 
@@ -609,6 +664,38 @@ function handleClick() {
   }
   100% {
     transform: translateX(50%);
+  }
+}
+
+// Benchmark comparison
+.kpi-benchmark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 6px;
+  font-size: 11px;
+
+  .benchmark-label {
+    color: #909399;
+  }
+
+  .benchmark-gap {
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 4px;
+
+    &.positive {
+      color: #059669;
+      background: rgba(5, 150, 105, 0.1);
+    }
+
+    &.negative {
+      color: #dc2626;
+      background: rgba(220, 38, 38, 0.1);
+    }
   }
 }
 

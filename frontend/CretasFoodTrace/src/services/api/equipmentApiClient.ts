@@ -2,6 +2,14 @@ import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
 import { getErrorMsg } from '../../utils/errorHandler';
 
+// API 响应包装类型 (后端返回的标准格式)
+interface ApiResponse<T> {
+  code: number;
+  success: boolean;
+  data: T;
+  message: string;
+}
+
 /**
  * 设备管理API客户端
  * 总计30+个API - 路径：/api/mobile/{factoryId}/equipment/*
@@ -207,33 +215,37 @@ class EquipmentApiClient {
    * 1. 创建设备
    * POST /equipment
    */
-  async createEquipment(data: CreateEquipmentRequest, factoryId?: string) {
-    return await apiClient.post(this.getPath(factoryId), data);
+  async createEquipment(data: CreateEquipmentRequest, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.post<ApiResponse<Equipment>>(this.getPath(factoryId), data);
+    return response.data;
   }
 
   /**
    * 2. 获取设备列表（分页）
    * GET /equipment
    */
-  async getEquipments(params?: EquipmentListParams) {
+  async getEquipments(params?: EquipmentListParams): Promise<{ content: Equipment[]; totalElements: number; totalPages: number }> {
     const { factoryId, ...query } = params || {};
-    return await apiClient.get(this.getPath(factoryId), { params: query });
+    const response = await apiClient.get<ApiResponse<{ content: Equipment[]; totalElements: number; totalPages: number }>>(this.getPath(factoryId), { params: query });
+    return response.data;
   }
 
   /**
    * 3. 获取设备详情
    * GET /equipment/{equipmentId}
    */
-  async getEquipmentById(equipmentId: number, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}`);
+  async getEquipmentById(equipmentId: number, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.get<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}`);
+    return response.data;
   }
 
   /**
    * 4. 更新设备
    * PUT /equipment/{equipmentId}
    */
-  async updateEquipment(equipmentId: number, data: Partial<CreateEquipmentRequest>, factoryId?: string) {
-    return await apiClient.put(`${this.getPath(factoryId)}/${equipmentId}`, data);
+  async updateEquipment(equipmentId: number, data: Partial<CreateEquipmentRequest>, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.put<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}`, data);
+    return response.data;
   }
 
   /**
@@ -250,32 +262,36 @@ class EquipmentApiClient {
    * 6. 更新设备状态
    * PUT /equipment/{equipmentId}/status
    */
-  async updateEquipmentStatus(equipmentId: number, status: EquipmentStatus, factoryId?: string) {
-    return await apiClient.put(`${this.getPath(factoryId)}/${equipmentId}/status`, { status });
+  async updateEquipmentStatus(equipmentId: number, status: EquipmentStatus, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.put<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}/status`, { status });
+    return response.data;
   }
 
   /**
    * 7. 启动设备
    * POST /equipment/{equipmentId}/start
    */
-  async startEquipment(equipmentId: number, operatorId?: number, factoryId?: string) {
-    return await apiClient.post(`${this.getPath(factoryId)}/${equipmentId}/start`, { operatorId });
+  async startEquipment(equipmentId: number, operatorId?: number, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.post<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}/start`, { operatorId });
+    return response.data;
   }
 
   /**
    * 8. 停止设备
    * POST /equipment/{equipmentId}/stop
    */
-  async stopEquipment(equipmentId: number, factoryId?: string) {
-    return await apiClient.post(`${this.getPath(factoryId)}/${equipmentId}/stop`);
+  async stopEquipment(equipmentId: number, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.post<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}/stop`);
+    return response.data;
   }
 
   /**
    * 9. 报废设备
    * POST /equipment/{equipmentId}/scrap
    */
-  async scrapEquipment(equipmentId: number, reason?: string, factoryId?: string) {
-    return await apiClient.post(`${this.getPath(factoryId)}/${equipmentId}/scrap`, { reason });
+  async scrapEquipment(equipmentId: number, reason?: string, factoryId?: string): Promise<Equipment> {
+    const response = await apiClient.post<ApiResponse<Equipment>>(`${this.getPath(factoryId)}/${equipmentId}/scrap`, { reason });
+    return response.data;
   }
 
   // ===== 维护管理 =====
@@ -292,26 +308,29 @@ class EquipmentApiClient {
       description?: string;
     },
     factoryId?: string
-  ) {
-    return await apiClient.post(`${this.getPath(factoryId)}/${equipmentId}/maintenance`, data);
+  ): Promise<MaintenanceRecord> {
+    const response = await apiClient.post<ApiResponse<MaintenanceRecord>>(`${this.getPath(factoryId)}/${equipmentId}/maintenance`, data);
+    return response.data;
   }
 
   /**
    * 11. 获取需要维护的设备
    * GET /equipment/needing-maintenance
    */
-  async getEquipmentNeedingMaintenance(factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/needing-maintenance`);
+  async getEquipmentNeedingMaintenance(factoryId?: string): Promise<Equipment[]> {
+    const response = await apiClient.get<ApiResponse<Equipment[]>>(`${this.getPath(factoryId)}/needing-maintenance`);
+    return response.data || [];
   }
 
   /**
    * 12. 获取保修即将到期的设备
    * GET /equipment/expiring-warranty
    */
-  async getEquipmentWithExpiringWarranty(daysAhead: number = 30, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/expiring-warranty`, {
+  async getEquipmentWithExpiringWarranty(daysAhead: number = 30, factoryId?: string): Promise<Equipment[]> {
+    const response = await apiClient.get<ApiResponse<Equipment[]>>(`${this.getPath(factoryId)}/expiring-warranty`, {
       params: { daysAhead }
     });
+    return response.data || [];
   }
 
   // ===== 查询与筛选 =====
@@ -320,26 +339,29 @@ class EquipmentApiClient {
    * 13. 按状态查询设备
    * GET /equipment/status/{status}
    */
-  async getEquipmentsByStatus(status: EquipmentStatus, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/status/${status}`);
+  async getEquipmentsByStatus(status: EquipmentStatus, factoryId?: string): Promise<Equipment[]> {
+    const response = await apiClient.get<ApiResponse<Equipment[]>>(`${this.getPath(factoryId)}/status/${status}`);
+    return response.data || [];
   }
 
   /**
    * 14. 按类型查询设备
    * GET /equipment/type/{type}
    */
-  async getEquipmentsByType(type: EquipmentType, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/type/${type}`);
+  async getEquipmentsByType(type: EquipmentType, factoryId?: string): Promise<Equipment[]> {
+    const response = await apiClient.get<ApiResponse<Equipment[]>>(`${this.getPath(factoryId)}/type/${type}`);
+    return response.data || [];
   }
 
   /**
    * 15. 搜索设备
    * GET /equipment/search
    */
-  async searchEquipments(keyword: string, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/search`, {
+  async searchEquipments(keyword: string, factoryId?: string): Promise<Equipment[]> {
+    const response = await apiClient.get<ApiResponse<Equipment[]>>(`${this.getPath(factoryId)}/search`, {
       params: { keyword }
     });
+    return response.data || [];
   }
 
   // ===== 统计与分析 =====
@@ -348,8 +370,9 @@ class EquipmentApiClient {
    * 16. 获取设备统计信息
    * GET /equipment/{equipmentId}/statistics
    */
-  async getEquipmentStatistics(equipmentId: number, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/statistics`);
+  async getEquipmentStatistics(equipmentId: number, factoryId?: string): Promise<EquipmentStatistics> {
+    const response = await apiClient.get<ApiResponse<EquipmentStatistics>>(`${this.getPath(factoryId)}/${equipmentId}/statistics`);
+    return response.data;
   }
 
   /**
@@ -360,18 +383,20 @@ class EquipmentApiClient {
     equipmentId: number,
     params?: { startDate?: string; endDate?: string },
     factoryId?: string
-  ) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/usage-history`, {
+  ): Promise<EquipmentUsageHistory[]> {
+    const response = await apiClient.get<ApiResponse<EquipmentUsageHistory[]>>(`${this.getPath(factoryId)}/${equipmentId}/usage-history`, {
       params
     });
+    return response.data || [];
   }
 
   /**
    * 18. 获取设备维护历史
    * GET /equipment/{equipmentId}/maintenance-history
    */
-  async getEquipmentMaintenanceHistory(equipmentId: number, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/maintenance-history`);
+  async getEquipmentMaintenanceHistory(equipmentId: number, factoryId?: string): Promise<MaintenanceRecord[]> {
+    const response = await apiClient.get<ApiResponse<MaintenanceRecord[]>>(`${this.getPath(factoryId)}/${equipmentId}/maintenance-history`);
+    return response.data || [];
   }
 
   /**
@@ -382,18 +407,20 @@ class EquipmentApiClient {
     equipmentId: number,
     params?: { startDate?: string; endDate?: string },
     factoryId?: string
-  ) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/efficiency-report`, {
+  ): Promise<EquipmentEfficiencyReport> {
+    const response = await apiClient.get<ApiResponse<EquipmentEfficiencyReport>>(`${this.getPath(factoryId)}/${equipmentId}/efficiency-report`, {
       params
     });
+    return response.data;
   }
 
   /**
    * 20. 计算设备折旧后价值
    * GET /equipment/{equipmentId}/depreciated-value
    */
-  async calculateDepreciatedValue(equipmentId: number, factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/depreciated-value`);
+  async calculateDepreciatedValue(equipmentId: number, factoryId?: string): Promise<number> {
+    const response = await apiClient.get<ApiResponse<number>>(`${this.getPath(factoryId)}/${equipmentId}/depreciated-value`);
+    return response.data;
   }
 
   /**
@@ -404,18 +431,20 @@ class EquipmentApiClient {
     equipmentId: number,
     params?: { startDate?: string; endDate?: string },
     factoryId?: string
-  ) {
-    return await apiClient.get(`${this.getPath(factoryId)}/${equipmentId}/oee`, {
+  ): Promise<number> {
+    const response = await apiClient.get<ApiResponse<number>>(`${this.getPath(factoryId)}/${equipmentId}/oee`, {
       params
     });
+    return response.data;
   }
 
   /**
    * 22. 获取整体设备统计
    * GET /equipment/overall-statistics
    */
-  async getOverallStatistics(factoryId?: string) {
-    return await apiClient.get(`${this.getPath(factoryId)}/overall-statistics`);
+  async getOverallStatistics(factoryId?: string): Promise<EquipmentStatistics> {
+    const response = await apiClient.get<ApiResponse<EquipmentStatistics>>(`${this.getPath(factoryId)}/overall-statistics`);
+    return response.data;
   }
 
   // ===== 批量操作 =====
@@ -424,10 +453,11 @@ class EquipmentApiClient {
    * 23. 批量导入设备
    * POST /equipment/import
    */
-  async importEquipments(file: FormData, factoryId?: string) {
-    return await apiClient.post(`${this.getPath(factoryId)}/import`, file, {
+  async importEquipments(file: FormData, factoryId?: string): Promise<{ imported: number; failed: number }> {
+    const response = await apiClient.post<ApiResponse<{ imported: number; failed: number }>>(`${this.getPath(factoryId)}/import`, file, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+    return response.data;
   }
 
   /**
@@ -457,11 +487,10 @@ class EquipmentApiClient {
     request?: AcknowledgeAlertRequest,
     factoryId?: string
   ): Promise<{ success: boolean; data: AlertResponse; message: string }> {
-    const response = await apiClient.post(
+    return await apiClient.post(
       `${this.getPath(factoryId)}/alerts/${alertId}/acknowledge`,
       request || {}
     );
-    return (response as any).data;
   }
 
   /**
@@ -477,11 +506,10 @@ class EquipmentApiClient {
     request?: ResolveAlertRequest,
     factoryId?: string
   ): Promise<{ success: boolean; data: AlertResponse; message: string }> {
-    const response = await apiClient.post(
+    return await apiClient.post(
       `${this.getPath(factoryId)}/alerts/${alertId}/resolve`,
       request || {}
     );
-    return (response as any).data;
   }
 
   /**
@@ -512,10 +540,9 @@ class EquipmentApiClient {
       last: boolean;
     };
   }> {
-    const response = await apiClient.get(`${this.getPath(factoryId)}/alerts`, {
+    return await apiClient.get(`${this.getPath(factoryId)}/alerts`, {
       params: params || {}
     });
-    return (response as any).data;
   }
 
   /**

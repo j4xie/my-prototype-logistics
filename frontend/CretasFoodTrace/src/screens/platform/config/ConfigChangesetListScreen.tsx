@@ -152,7 +152,7 @@ export function ConfigChangesetListScreen() {
   const [statusFilter, setStatusFilter] = useState<ChangeStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<ConfigType | 'all'>('all');
   const [typeMenuVisible, setTypeMenuVisible] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
@@ -163,7 +163,7 @@ export function ConfigChangesetListScreen() {
     try {
       logger.info('Loading configuration changesets');
 
-      const currentPage = reset ? 0 : page;
+      const currentPage = reset ? 1 : page;
       const statusParam = statusFilter !== 'all' ? `&status=${statusFilter}` : '';
       const response = await apiClient.get<{
         success: boolean;
@@ -182,7 +182,7 @@ export function ConfigChangesetListScreen() {
           setChangesets(prev => [...prev, ...newData]);
         }
         setTotalPages(response.data.totalPages);
-        setHasMore(currentPage + 1 < response.data.totalPages);
+        setHasMore(currentPage < response.data.totalPages);
       }
 
       // Get pending count
@@ -213,7 +213,7 @@ export function ConfigChangesetListScreen() {
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setPage(0);
+    setPage(1);
     loadChangesets(true);
   }, [loadChangesets]);
 

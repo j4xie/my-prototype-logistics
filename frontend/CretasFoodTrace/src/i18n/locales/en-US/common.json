@@ -496,6 +496,11 @@
     "workHours": "Work Hours",
     "efficiency": "Efficiency"
   },
-  "employee": "Employee"
+  "employee": "Employee",
+  "all": "All",
+  "enable": "Enable",
+  "disable": "Disable",
+  "enabled": "Enabled",
+  "disabled": "Disabled"
 }
 

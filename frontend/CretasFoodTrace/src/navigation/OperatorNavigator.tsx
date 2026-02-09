@@ -4,12 +4,13 @@ import { Icon } from 'react-native-paper';
 // import { OperatorTabParamList } from '../types/navigation';
 import AttendanceStackNavigator from './AttendanceStackNavigator';
 import WorkStackNavigator from './WorkStackNavigator';
+import ProfileStackNavigator from './ProfileStackNavigator';
 
 const Tab = createBottomTabNavigator<any>();
 
 /**
  * Operator专用底部Tab导航器
- * 只有考勤和工作两个tab，不显示首页、生产、管理等
+ * 考勤、工作、个人中心三个tab
  */
 export function OperatorNavigator() {
   return (
@@ -40,6 +41,18 @@ export function OperatorNavigator() {
           title: '工作',
           tabBarIcon: ({ color, size }) => (
             <Icon source="briefcase-outline" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* 个人中心Tab - 账号信息、退出登录 */}
+      <Tab.Screen
+        name="OperatorProfileTab"
+        component={ProfileStackNavigator}
+        options={{
+          title: '我的',
+          tabBarIcon: ({ color, size }) => (
+            <Icon source="account-outline" size={size} color={color} />
           ),
         }}
       />

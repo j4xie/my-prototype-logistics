@@ -107,9 +107,9 @@ export function LabelRecognitionMonitorScreen() {
     try {
       const [configsData, recordsData, statsData, camerasData] = await Promise.all([
         getConfigs(),
-        getRecords(0, MAX_RECENT_RECORDS),
+        getRecords(1, MAX_RECENT_RECORDS),
         getStatistics(),
-        getIsapiDevices({ page: 0, size: 100 }),
+        getIsapiDevices({ page: 1, size: 100 }),
       ]);
 
       setConfigs(configsData);

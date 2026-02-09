@@ -120,7 +120,7 @@ export default function TaskAssignmentScreen() {
           const plansResponse = await schedulingApiClient.getPlans({
             startDate: todayDate,
             endDate: todayDate,
-            page: 0,
+            page: 1,
             size: 50,
           });
 

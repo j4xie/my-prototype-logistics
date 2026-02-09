@@ -155,12 +155,12 @@ class SopConfigApiClient {
     page?: number;
     size?: number;
   }): Promise<PaginatedResponse<SopConfig>> {
-    const { factoryId, page = 0, size = 20, ...query } = params || {};
-    const response = await apiClient.get<PaginatedResponse<SopConfig>>(
+    const { factoryId, page = 1, size = 20, ...query } = params || {};
+    const response = await apiClient.get<{ code: number; data: PaginatedResponse<SopConfig>; message: string; success: boolean }>(
       this.getPath(factoryId),
       { params: { page, size, ...query } }
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -170,14 +170,20 @@ class SopConfigApiClient {
     data: CreateSopConfigRequest,
     factoryId?: string
   ): Promise<SopConfig> {
-    return await apiClient.post(this.getPath(factoryId), data);
+    const response = await apiClient.post<{ code: number; data: SopConfig; message: string; success: boolean }>(
+      this.getPath(factoryId), data
+    );
+    return response.data;
   }
 
   /**
    * 获取 SOP 配置详情
    */
   async getSopConfigById(id: string, factoryId?: string): Promise<SopConfig> {
-    return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
+    const response = await apiClient.get<{ code: number; data: SopConfig; message: string; success: boolean }>(
+      `${this.getPath(factoryId)}/${id}`
+    );
+    return response.data;
   }
 
   /**
@@ -188,7 +194,10 @@ class SopConfigApiClient {
     data: UpdateSopConfigRequest,
     factoryId?: string
   ): Promise<SopConfig> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
+    const response = await apiClient.put<{ code: number; data: SopConfig; message: string; success: boolean }>(
+      `${this.getPath(factoryId)}/${id}`, data
+    );
+    return response.data;
   }
 
   /**
@@ -206,9 +215,11 @@ class SopConfigApiClient {
     isActive: boolean,
     factoryId?: string
   ): Promise<SopConfig> {
-    return await apiClient.put(`${this.getPath(factoryId)}/${id}`, {
+    const response = await apiClient.put<{ code: number; data: SopConfig; message: string; success: boolean }>(
+      `${this.getPath(factoryId)}/${id}`, {
       isActive,
     });
+    return response.data;
   }
 
   /**
@@ -248,9 +259,11 @@ class SopConfigApiClient {
     code: string,
     factoryId?: string
   ): Promise<{ exists: boolean }> {
-    return await apiClient.get(`${this.getPath(factoryId)}/check-code`, {
+    const response = await apiClient.get<{ code: number; data: { exists: boolean }; message: string; success: boolean }>(
+      `${this.getPath(factoryId)}/check-code`, {
       params: { code },
     });
+    return response.data;
   }
 
   /**

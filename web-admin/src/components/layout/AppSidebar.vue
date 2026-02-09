@@ -42,7 +42,7 @@ const financeManagerMenu: MenuItem[] = [
   { path: '/smart-bi/finance', title: '财务分析', icon: 'Money', module: 'analytics' },
   { path: '/smart-bi/sales', title: '销售分析', icon: 'TrendCharts', module: 'analytics' },
   { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
-  { path: '/smart-bi/analysis', title: '数据导入', icon: 'Upload', module: 'analytics' }
+  { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' }
 ];
 
 const menuConfig: MenuItem[] = [
@@ -153,7 +153,7 @@ const menuConfig: MenuItem[] = [
       { path: '/smart-bi/sales', title: '智能销售分析', icon: 'Sell', module: 'analytics' },
       { path: '/smart-bi/finance', title: '智能财务分析', icon: 'Money', module: 'analytics' },
       { path: '/smart-bi/upload', title: 'Excel上传(旧)', icon: 'Upload', module: 'analytics' },
-      { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'Upload', module: 'analytics' },
+      { path: '/smart-bi/analysis', title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
       { path: '/smart-bi/query', title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
       { path: '/smart-bi/calibration', title: '行为校准监控', icon: 'Aim', module: 'analytics', roles: ['platform_admin'] }
     ]

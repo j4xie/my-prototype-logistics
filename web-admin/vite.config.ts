@@ -12,18 +12,19 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    host: '127.0.0.1',  // Bind to IPv4 to fix connection issues on Windows
     proxy: {
       '/api': {
-        target: 'http://139.196.165.140:10010', // 远程服务器
-        // target: 'http://localhost:10010', // 本地后端
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:10010',
         changeOrigin: true,
       },
-      // Python SmartBI 服务代理 (可选，前端直连时不需要)
-      // '/smartbi': {
-      //   target: 'http://139.196.165.140:8083',
-      //   changeOrigin: true,
-      //   rewrite: (path) => path.replace(/^\/smartbi/, '/api'),
-      // },
+      // Python SmartBI 服务代理 - 解决跨域问题
+      // /smartbi-api/api/chart/build → http://localhost:8083/api/chart/build
+      '/smartbi-api': {
+        target: process.env.VITE_PYTHON_URL || 'http://localhost:8083',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/smartbi-api/, ''),
+      },
     },
   },
   build: {

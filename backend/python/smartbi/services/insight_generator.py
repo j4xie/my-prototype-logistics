@@ -4,6 +4,7 @@ Insight Generator Service
 
 Generates AI-powered business insights from data analysis.
 """
+import asyncio
 import logging
 import json
 from typing import Any, Optional, List, Dict
@@ -14,8 +15,8 @@ import numpy as np
 import pandas as pd
 
 from config import get_settings
+from common.utils.json_parser import robust_json_parse
 from services.context_extractor import ContextInfo
-from services.utils.json_parser import robust_json_parse
 
 logger = logging.getLogger(__name__)
 
@@ -170,10 +171,12 @@ class InsightGenerator:
         first_val = values.iloc[0]
         last_val = values.iloc[-1]
 
-        if first_val == 0:
+        if abs(first_val) < 1e-6:
             return None
 
         growth_rate = ((last_val - first_val) / abs(first_val)) * 100
+        # Cap extreme growth rates
+        growth_rate = max(min(growth_rate, 10000), -10000)
 
         if abs(growth_rate) < 5:  # Ignore small changes
             return None
@@ -352,10 +355,10 @@ class InsightGenerator:
     ) -> List[dict]:
         """Generate AI-powered insights using LLM"""
         try:
-            # Prepare data summary for LLM
+            # Prepare enriched data summary for LLM
             data_summary = self._prepare_data_summary(df)
+            financial_metrics = self._compute_financial_context(df)
             metrics_summary = self._prepare_metrics_summary(metrics) if metrics else ""
-            existing_insights = "\n".join([i["text"] for i in stat_insights[:3]])
 
             # Prepare context from extracted Excel notes/explanations
             excel_context = ""
@@ -365,83 +368,68 @@ class InsightGenerator:
 {context_info.to_prompt_text()}
 """
 
-            prompt = f"""作为资深商业数据分析师，请对以下数据进行深度分析。
-
-## 分析框架 (MECE原则)
-
-### 1. 描述性分析 (What Happened)
-- 核心数据概览和关键指标表现
-- 时间维度的变化情况
-
-### 2. 诊断性分析 (Why)
-- 变化的驱动因素
-- 结构性分析（构成、占比）
-- 相关性分析
-
-### 3. 预测性分析 (What Next)
-- 趋势预测
-- 风险预警
-- 机会识别
-
-### 4. 规范性分析 (So What)
-- 可执行的建议
-- 优先级排序
-- 预期影响
+            prompt = f"""你是一位为管理层撰写月度经营分析报告的资深财务分析师。
+请基于以下数据提供深度业务分析，而非简单的统计描述。
 
 ## 数据概览
 {data_summary}
 
+{financial_metrics}
+
 {f'## 已计算指标{chr(10)}{metrics_summary}' if metrics_summary else ''}
 
-{f'## 业务背景{chr(10)}{context}' if context else ''}
+{f'## 业务背景{chr(10)}{json.dumps(context, ensure_ascii=False)}' if context else ''}
 {excel_context}
-## 已识别的统计发现
-{existing_insights}
 
-请输出JSON格式的深度分析结果：
+## 分析要求
+
+请按以下结构输出JSON格式分析结果：
+
 {{
-    "executive_summary": "一句话核心结论",
+    "executive_summary": "一句话管理摘要（含关键数字，不超过60字）",
     "insights": [
         {{
             "dimension": "what_happened|why_happened|forecast|recommendation",
             "type": "trend|anomaly|comparison|kpi|recommendation",
             "title": "洞察标题（简洁有力）",
-            "text": "详细描述（包含具体数据和百分比）",
+            "text": "详细描述（必须包含：具体数字 + 业务含义 + 对比基准）",
             "metric": "相关指标名称",
             "sentiment": "positive/negative/neutral",
-            "importance": 1-10的重要性评分,
-            "confidence": 0.0-1.0的置信度,
+            "importance": 1-10,
+            "confidence": 0.0-1.0,
             "action_items": ["建议行动1", "建议行动2"],
-            "related_kpis": ["相关KPI1", "相关KPI2"],
-            "recommendation": "具体改进建议"
+            "recommendation": "具体改进建议（必须可量化、可执行）"
         }}
     ],
     "risk_alerts": [
         {{
             "title": "风险标题",
-            "description": "风险描述",
+            "description": "风险描述（含影响程度的具体数字）",
             "severity": "high|medium|low",
-            "mitigation": "建议措施"
+            "mitigation": "建议措施（含预期效果）"
         }}
     ],
     "opportunities": [
         {{
             "title": "机会标题",
             "description": "机会描述",
-            "potential_impact": "预期影响",
+            "potential_impact": "预期影响（量化）",
             "action_required": "所需行动"
         }}
     ]
 }}
 
-要求：
-1. 遵循MECE原则，洞察不重叠、不遗漏
-2. 每条洞察必须包含具体数字和百分比
-3. 洞察要可操作、可追踪
-4. 使用中文
-5. 如果有备注或编制说明，请在分析时充分考虑
-6. 识别至少1个风险和1个机会
-7. 建议按优先级排序"""
+## 写作规范（严格遵守）
+
+1. **禁止空话**: 不要写"呈现上升/下降趋势"，改为"Q3毛利率28.4%，较Q1下降2.1个百分点，主因原料成本占比从58%升至61%"
+2. **每条洞察必须有**: 具体数字 + 业务解读 + 对比基准（环比/同比/行业均值/目标值）
+3. **因果分析**: 不止说"下降"，要分析可能的驱动因素
+4. **建议可执行**: 每条建议需含优先级、预期效果、责任方向
+5. **行业对标**: 食品加工行业参考基准 — 毛利率25-35%、净利率3-8%、费用率15-25%
+6. **列名翻译**: 将"2025-01-01"类列名解读为"1月"，将英文字段名翻译为中文业务名
+7. **risk_alerts至少1条**, severity取值high/medium/low
+8. **opportunities至少1条**, 描述具体可行的改善方向
+9. **insights至少4条**, 覆盖 what_happened/why_happened/forecast/recommendation 四个维度"""
 
             response = await self._call_llm(prompt)
             return self._parse_llm_insights(response, stat_insights)
@@ -451,20 +439,147 @@ class InsightGenerator:
             return stat_insights
 
     def _prepare_data_summary(self, df: pd.DataFrame) -> str:
-        """Prepare data summary for LLM"""
+        """Prepare enriched data summary for LLM"""
         summary_parts = [
             f"- 数据行数: {len(df)}",
-            f"- 数据列: {', '.join(df.columns.tolist()[:10])}"
+            f"- 数据列 ({len(df.columns)}个): {', '.join(df.columns.tolist()[:15])}"
         ]
 
-        # Add numeric column stats
-        for col in df.select_dtypes(include=[np.number]).columns[:5]:
-            summary_parts.append(
-                f"- {col}: 总计={df[col].sum():,.2f}, 均值={df[col].mean():,.2f}, "
-                f"最大={df[col].max():,.2f}, 最小={df[col].min():,.2f}"
-            )
+        # Detect label column (first text column)
+        text_cols = df.select_dtypes(include=['object']).columns
+        if len(text_cols) > 0:
+            label_col = text_cols[0]
+            labels = df[label_col].dropna().unique().tolist()
+            if labels:
+                summary_parts.append(f"- 数据项目({label_col}): {', '.join(str(l) for l in labels[:20])}")
+
+        # Add numeric column stats with more detail
+        numeric_cols = df.select_dtypes(include=[np.number]).columns
+        for col in numeric_cols[:8]:
+            values = df[col].dropna()
+            if len(values) == 0:
+                continue
+            parts = [f"总计={values.sum():,.2f}", f"均值={values.mean():,.2f}",
+                     f"中位数={values.median():,.2f}", f"最大={values.max():,.2f}",
+                     f"最小={values.min():,.2f}"]
+            # Add trend info if enough data points
+            if len(values) >= 3:
+                first, last = values.iloc[0], values.iloc[-1]
+                if abs(first) > 1e-6:
+                    change_pct = ((last - first) / abs(first)) * 100
+                    parts.append(f"首尾变化={change_pct:+.1f}%")
+            summary_parts.append(f"- {col}: {', '.join(parts)}")
+
+        # Sample data rows for context
+        if len(df) > 0:
+            sample_rows = df.head(3).to_dict('records')
+            sample_text = json.dumps(sample_rows, ensure_ascii=False, default=str)
+            if len(sample_text) < 1500:
+                summary_parts.append(f"\n样本数据(前3行):\n{sample_text}")
 
         return "\n".join(summary_parts)
+
+    def _compute_financial_context(self, df: pd.DataFrame) -> str:
+        """Pre-compute financial metrics to give LLM better 'ingredients'"""
+        parts = []
+
+        # Find label column
+        text_cols = df.select_dtypes(include=['object']).columns
+        if len(text_cols) == 0:
+            return ""
+
+        label_col = text_cols[0]
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if not numeric_cols:
+            return ""
+
+        # Detect monthly columns (YYYY-MM-DD pattern)
+        monthly_cols = [c for c in numeric_cols if pd.to_datetime(c, errors='coerce', format='%Y-%m-%d') is not pd.NaT]
+        if not monthly_cols:
+            # Try other patterns
+            monthly_cols = [c for c in numeric_cols if any(p in c for p in ['月', '年'])]
+
+        # Financial keyword matching
+        kw_map = {
+            '营业收入': ['营业收入', '主营业务收入'],
+            '营业成本': ['营业成本', '主营业务成本'],
+            '毛利': ['毛利润', '毛利'],
+            '净利润': ['净利润', '利润总额'],
+            '费用': ['销售费用', '管理费用', '财务费用', '研发费用'],
+        }
+
+        found_rows = {}
+        for _, row in df.iterrows():
+            label = str(row.get(label_col, '')).strip()
+            if not label:
+                continue
+            for category, keywords in kw_map.items():
+                for kw in keywords:
+                    if kw in label:
+                        row_values = {}
+                        total = 0
+                        for nc in numeric_cols:
+                            val = row.get(nc)
+                            if pd.notna(val) and isinstance(val, (int, float)):
+                                row_values[nc] = val
+                                total += val
+                        if row_values:
+                            found_rows[label] = {'values': row_values, 'total': total}
+                        break
+
+        if not found_rows:
+            return ""
+
+        parts.append("## 预计算财务指标")
+
+        # Output found financial rows
+        for label, info in found_rows.items():
+            total = info['total']
+            if abs(total) >= 1e8:
+                display = f"{total/1e8:.2f}亿"
+            elif abs(total) >= 1e4:
+                display = f"{total/1e4:.2f}万"
+            else:
+                display = f"{total:,.2f}"
+            parts.append(f"- {label}: 合计 {display}")
+
+            # Monthly trend for this row
+            if monthly_cols and len(info['values']) >= 3:
+                vals = [info['values'].get(m) for m in monthly_cols if m in info['values']]
+                if len(vals) >= 2:
+                    non_zero = [v for v in vals if v and v != 0]
+                    if non_zero:
+                        first_nz, last_nz = non_zero[0], non_zero[-1]
+                        if abs(first_nz) > 1e-6:
+                            trend_pct = ((last_nz - first_nz) / abs(first_nz)) * 100
+                            parts.append(f"  趋势: {trend_pct:+.1f}% (从{first_nz:,.0f}到{last_nz:,.0f})")
+
+        # Compute ratio metrics if we found revenue and cost
+        revenue_total = None
+        cost_total = None
+        net_profit_total = None
+        for label, info in found_rows.items():
+            if '营业收入' in label or '主营业务收入' in label:
+                revenue_total = info['total']
+            if '营业成本' in label or '主营业务成本' in label:
+                cost_total = info['total']
+            if '净利润' in label:
+                net_profit_total = info['total']
+
+        if revenue_total and abs(revenue_total) > 0:
+            if cost_total is not None:
+                gross_margin = (revenue_total - cost_total) / abs(revenue_total) * 100
+                parts.append(f"- 毛利率: {gross_margin:.1f}% (行业参考: 25-35%)")
+            if net_profit_total is not None:
+                net_margin = net_profit_total / abs(revenue_total) * 100
+                parts.append(f"- 净利率: {net_margin:.1f}% (行业参考: 3-8%)")
+            # Expense ratios
+            for label, info in found_rows.items():
+                if '费用' in label and info['total']:
+                    expense_ratio = info['total'] / abs(revenue_total) * 100
+                    parts.append(f"- {label}率: {expense_ratio:.1f}%")
+
+        return "\n".join(parts) if len(parts) > 1 else ""
 
     def _prepare_metrics_summary(self, metrics: List[dict]) -> str:
         """Prepare metrics summary for LLM"""
@@ -477,7 +592,7 @@ class InsightGenerator:
         return "\n".join(summary_parts)
 
     async def _call_llm(self, prompt: str) -> str:
-        """Call LLM API"""
+        """Call LLM API with timeout and retry"""
         headers = {
             "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json"
@@ -488,7 +603,7 @@ class InsightGenerator:
             "messages": [
                 {
                     "role": "system",
-                    "content": "你是一个专业的商业数据分析师，擅长从数据中发现业务洞察和改进建议。请用JSON格式回复。"
+                    "content": "你是一位资深财务分析师，正在为食品加工企业管理层撰写经营分析报告。你的分析风格：数据驱动、因果明确、建议可执行。请严格用JSON格式回复。"
                 },
                 {
                     "role": "user",
@@ -496,30 +611,51 @@ class InsightGenerator:
                 }
             ],
             "temperature": 0.5,
-            "max_tokens": 4500  # 增加到4500以支持完整的中文洞察JSON
+            "max_tokens": 4000
         }
 
-        response = await self.client.post(
-            f"{self.settings.llm_base_url}/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        response.raise_for_status()
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                timeout_secs = 60.0 + attempt * 15.0  # 60s, 75s, 90s
+                response = await self.client.post(
+                    f"{self.settings.llm_base_url}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    timeout=httpx.Timeout(timeout_secs)
+                )
+                response.raise_for_status()
 
-        result = response.json()
-        return result["choices"][0]["message"]["content"]
+                result = response.json()
+                return result["choices"][0]["message"]["content"]
+            except httpx.TimeoutException:
+                logger.warning(f"LLM call timeout (attempt {attempt + 1}/{max_attempts}, timeout={timeout_secs}s)")
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(2 ** attempt * 2)
+                else:
+                    logger.error("LLM call failed after all retry attempts due to timeout")
+                    return ""
+            except httpx.HTTPStatusError as e:
+                logger.warning(f"LLM call HTTP error {e.response.status_code} (attempt {attempt + 1}/{max_attempts})")
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(2 ** attempt * 2)
+                else:
+                    logger.error(f"LLM call failed after all retry attempts: {e}")
+                    return ""
+        return ""
 
     def _parse_llm_insights(
         self,
         response: str,
         fallback_insights: List[dict]
     ) -> List[dict]:
-        """Parse LLM response into structured insights with robust JSON handling"""
+        """Parse LLM response into structured insights with _meta envelope"""
         try:
-            # Fix: Use centralized robust JSON parser
-            result = robust_json_parse(response, fallback={})
-            if not result:
-                logger.warning("Could not extract JSON from LLM response")
+            # Parse JSON from response using robust parser
+            logger.debug(f"LLM raw response (first 200 chars): {response[:200]}")
+            result = robust_json_parse(response, fallback=None)
+            if result is None:
+                logger.warning(f"Failed to parse LLM response as JSON")
                 return fallback_insights
             insights = result.get("insights", [])
 
@@ -537,89 +673,28 @@ class InsightGenerator:
                         "source": "llm"
                     })
 
+            # Inject _meta insight with executive_summary, risk_alerts, opportunities
+            executive_summary = result.get("executive_summary", "")
+            risk_alerts = result.get("risk_alerts", [])
+            opportunities = result.get("opportunities", [])
+
+            if executive_summary or risk_alerts or opportunities:
+                meta_insight = {
+                    "type": "_meta",
+                    "text": executive_summary,
+                    "executive_summary": executive_summary,
+                    "risk_alerts": risk_alerts,
+                    "opportunities": opportunities,
+                    "importance": 10,
+                    "source": "llm"
+                }
+                valid_insights.insert(0, meta_insight)
+
             return valid_insights if valid_insights else fallback_insights
 
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON decode error in LLM insights: {e}")
-            return fallback_insights
         except Exception as e:
             logger.error(f"Failed to parse LLM insights: {e}")
             return fallback_insights
-
-    def _robust_json_extract(self, text: str) -> Optional[str]:
-        """
-        Robustly extract JSON from LLM response.
-
-        Handles:
-        - JSON in code blocks
-        - Unterminated strings
-        - Extra commas
-        """
-        import re
-
-        # 1. Try to extract from code blocks
-        if "```json" in text:
-            text = text.split("```json")[1].split("```")[0]
-        elif "```" in text:
-            parts = text.split("```")
-            if len(parts) >= 2:
-                text = parts[1]
-
-        # 2. Find JSON object boundaries
-        json_start = text.find('{')
-        json_end = text.rfind('}')
-
-        if json_start < 0 or json_end < json_start:
-            return None
-
-        json_str = text[json_start:json_end + 1]
-
-        # 3. Try to fix common issues - remove trailing commas
-        json_str = re.sub(r',\s*([\}\]])', r'\1', json_str)
-
-        # Try to validate the JSON
-        try:
-            json.loads(json_str)
-            return json_str
-        except json.JSONDecodeError:
-            pass
-
-        # 4. Try truncating at last valid closing brace
-        depth = 0
-        last_valid_pos = -1
-        in_string = False
-        escape_next = False
-
-        for i, char in enumerate(json_str):
-            if escape_next:
-                escape_next = False
-                continue
-            if char == '\\':
-                escape_next = True
-                continue
-            if char == '"' and not escape_next:
-                in_string = not in_string
-                continue
-            if in_string:
-                continue
-
-            if char == '{':
-                depth += 1
-            elif char == '}':
-                depth -= 1
-                if depth == 0:
-                    last_valid_pos = i
-                    break
-
-        if last_valid_pos > 0:
-            truncated = json_str[:last_valid_pos + 1]
-            try:
-                json.loads(truncated)
-                return truncated
-            except json.JSONDecodeError:
-                pass
-
-        return json_str  # Return original attempt
 
     async def close(self):
         """Close HTTP client"""

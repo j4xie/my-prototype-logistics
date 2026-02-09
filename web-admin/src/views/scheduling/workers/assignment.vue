@@ -81,7 +81,7 @@ async function loadWorkers() {
     const response = await get(`/${factoryId.value}/users`, {
       params: {
         role: 'operator',
-        page: 0,
+        page: 1,
         size: 200
       }
     });

@@ -92,6 +92,7 @@
     "@types/react": "~19.0.10",
     "@typescript-eslint/parser": "^8.53.1",
     "axios-mock-adapter": "^2.1.0",
+    "babel-plugin-transform-import-meta": "^2.3.3",
     "env-cmd": "^10.1.0",
     "eslint-config-expo": "^10.0.0",
     "jest-transform-stub": "^2.0.0",

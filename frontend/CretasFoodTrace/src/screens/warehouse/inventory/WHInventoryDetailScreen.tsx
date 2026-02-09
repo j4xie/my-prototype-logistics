@@ -150,7 +150,7 @@ export function WHInventoryDetailScreen() {
 
         setInventoryDetail({
           materialName: firstBatch.materialName || '物料',
-          materialType: firstBatch.storageType === 'frozen' ? '冻品' : '鲜品',
+          materialType: firstBatch.storageType?.toLowerCase() === 'frozen' ? '冻品' : '鲜品',
           totalQuantity: totalQty,
           safetyStock,
           status: statusInfo.status,

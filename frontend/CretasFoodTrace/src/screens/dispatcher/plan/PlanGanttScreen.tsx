@@ -158,7 +158,7 @@ export default function PlanGanttScreen() {
       const plansRes = await schedulingApiClient.getPlans({
         startDate: currentDate,
         endDate: currentDate,
-        page: 0,
+        page: 1,
         size: 50,
       });
       if (plansRes.success && plansRes.data?.content && plansRes.data.content.length > 0) {

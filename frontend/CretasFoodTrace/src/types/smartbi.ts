@@ -20,6 +20,7 @@ export type SmartBIStackParamList = {
   FinanceAnalysis: { analysisType?: string };
   ExcelUpload: undefined;
   SmartBIDataAnalysis: undefined;  // 智能数据分析
+  DynamicAnalysis: { uploadId?: number };  // 动态多Sheet分析
   NLQuery: { initialQuery?: string };
   DrillDown: { dimension: string; value: string; parentContext?: Record<string, unknown> };
 
@@ -946,4 +947,117 @@ export interface FinancialRatioDetail {
   trend: 'up' | 'down' | 'flat';
   category: 'profitability' | 'liquidity' | 'efficiency' | 'leverage';
   description?: string;
+}
+
+// ==================== 多Sheet分析 ====================
+
+/**
+ * Excel 上传记录（数据集）
+ */
+export interface ExcelUploadRecord {
+  id: number;
+  fileName: string;
+  fileSize: number;
+  sheetCount: number;
+  rowCount: number;
+  columnCount: number;
+  status: 'pending' | 'parsed' | 'analyzed' | 'error';
+  factoryId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 索引页到报表的映射
+ */
+export interface IndexSheetMapping {
+  index: number;
+  sheetName: string;
+  reportName: string;
+  description: string;
+}
+
+/**
+ * 索引页元数据
+ */
+export interface IndexMetadata {
+  hasIndex: boolean;
+  indexSheetIndex: number;
+  indexSheetName: string;
+  sheetMappings: IndexSheetMapping[];
+}
+
+/**
+ * 动态图表配置
+ */
+export interface DynamicChartConfig {
+  id: string;
+  chartType: string;
+  title: string;
+  config: Record<string, unknown>;
+  dimensions: string[];
+  measures: string[];
+  currentDimension?: string;
+  currentMeasure?: string;
+  data?: Array<Record<string, unknown>>;
+}
+
+/**
+ * 指标卡片数据
+ */
+export interface MetricCardData {
+  id: string;
+  label: string;
+  value: number | string;
+  format?: 'number' | 'currency' | 'percent';
+  change?: number;
+  changeType?: 'positive' | 'negative' | 'neutral';
+  unit?: string;
+}
+
+/**
+ * 场景信息
+ */
+export interface ScenarioInfo {
+  scenarioType: string;
+  confidence?: number;
+  evidence?: string[];
+  /** 编制说明 - 来自索引页的报表描述 */
+  description?: string;
+  /** 是否有来自索引页的上下文信息 */
+  hasIndexContext?: boolean;
+}
+
+/**
+ * 单个Sheet分析结果
+ */
+export interface SheetAnalysisResult {
+  sheetIndex: number;
+  sheetName: string;
+  tableType?: 'index' | 'data' | 'summary' | 'metadata' | string;
+  rowCount: number;
+  columnCount: number;
+  charts: DynamicChartConfig[];
+  metrics: MetricCardData[];
+  insights: AIInsight[];
+  fromCache: boolean;
+  scenario: ScenarioInfo;
+  processingTimeMs: number;
+  error?: string;
+}
+
+/**
+ * 多Sheet分析结果
+ */
+export interface MultiSheetAnalysisResult {
+  success: boolean;
+  totalSheets: number;
+  successCount: number;
+  failedCount: number;
+  skippedCount: number;
+  cacheHitCount: number;
+  sheetResults: SheetAnalysisResult[];
+  indexMetadata?: IndexMetadata;
+  processingTimeMs: number;
+  error?: string;
 }

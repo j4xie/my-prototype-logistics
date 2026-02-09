@@ -1,0 +1,150 @@
+{
+  "session": "RN Dispatcher (dispatcher1)",
+  "startedAt": "2026-02-09T04:00:36.496Z",
+  "completedAt": "2026-02-09T04:01:24.441Z",
+  "pages": [
+    {
+      "page": "Dispatcher/Login+Home",
+      "apiCalls": [
+        {
+          "method": "POST",
+          "url": "/api/mobile/auth/unified-login",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/production-lines",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/dashboard",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "type": "error",
+          "text": "[23:00:43.031][ERROR][web] [PushNotification] 未找到 EAS Project ID undefined undefined"
+        },
+        {
+          "type": "error",
+          "text": "[23:00:43.049][ERROR][web] [PushNotification] 推送通知权限被拒绝 undefined undefined"
+        }
+      ],
+      "timestamp": "2026-02-09T04:00:53.853Z"
+    },
+    {
+      "page": "Dispatcher/Tab:首页",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:58.900Z"
+    },
+    {
+      "page": "Dispatcher/Tab:计划",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/approvals/pending",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/config/urgent-threshold",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/pending-batches",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:04.010Z"
+    },
+    {
+      "page": "Dispatcher/Tab:AI调度",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/config/urgent-threshold",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/pending-batches?startDate=2026-02-09&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:09.096Z"
+    },
+    {
+      "page": "Dispatcher/Tab:智能分析",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:14.187Z"
+    },
+    {
+      "page": "Dispatcher/Tab:人员",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/personnel/statistics?startDate=2026-02-01&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/users?role=operator&isActive=true",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:19.293Z"
+    },
+    {
+      "page": "Dispatcher/Tab:我的",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:24.441Z"
+    }
+  ],
+  "summary": {
+    "totalApiCalls": 10,
+    "ok": 10,
+    "warn": 0,
+    "fail": 0,
+    "consoleErrors": 2,
+    "pagesWithFailures": 0
+  }
+}

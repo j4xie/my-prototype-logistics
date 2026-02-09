@@ -217,23 +217,30 @@ export function FAHomeScreen() {
     try {
       setError(null);
 
-      // 并行获取数据
-      const [overviewRes, alertsRes] = await Promise.all([
+      // 并行获取数据，使用 Promise.allSettled 避免单个请求失败导致整体失败
+      const [overviewResult, alertsResult] = await Promise.allSettled([
         dashboardAPI.getDashboardOverview('today'),
         dashboardAPI.getAlertsDashboard('week'),
       ]);
 
-      if (overviewRes.success && overviewRes.data) {
-        setOverviewData(overviewRes.data);
+      // 处理 overview 数据
+      if (overviewResult.status === 'fulfilled' && overviewResult.value.success && overviewResult.value.data) {
+        setOverviewData(overviewResult.value.data);
+      } else if (overviewResult.status === 'rejected') {
+        console.warn('Dashboard overview 加载失败:', overviewResult.reason);
       }
 
-      if (alertsRes.success && alertsRes.data) {
-        setAlertsData(alertsRes.data);
+      // 处理 alerts 数据（允许失败，不影响主面板显示）
+      if (alertsResult.status === 'fulfilled' && alertsResult.value.success && alertsResult.value.data) {
+        setAlertsData(alertsResult.value.data);
+      } else if (alertsResult.status === 'rejected') {
+        console.warn('Dashboard alerts 加载失败:', alertsResult.reason);
       }
 
       // AI 洞察：使用后端真实数据 + 获取AI报告摘要
-      if (overviewRes.success && overviewRes.data) {
-        const kpi = overviewRes.data.kpi;
+      const resolvedOverview = overviewResult.status === 'fulfilled' ? overviewResult.value.data : null;
+      if (resolvedOverview) {
+        const kpi = resolvedOverview.kpi;
         const qualityRate = kpi?.qualityPassRate ?? 98.5;
         const efficiency = kpi?.productionEfficiency ?? 92;
         // 使用后端计算的真实数据
@@ -277,6 +284,14 @@ export function FAHomeScreen() {
             unitCost,
             avgCycle,
           },
+        });
+      } else {
+        // overview 也失败时，显示错误
+        setError(t('error.loadFailed'));
+        setAIInsight({
+          status: 'error',
+          message: t('ai.noData'),
+          metrics: { qualityRate: 0, unitCost: 0, avgCycle: 0 },
         });
       }
     } catch (err) {

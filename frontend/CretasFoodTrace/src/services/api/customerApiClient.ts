@@ -110,12 +110,11 @@ class CustomerApiClient {
     request: CreateCustomerRequest,
     factoryId?: string
   ): Promise<{data: Customer}> {
-    // apiClient拦截器已统一返回data
-    const apiData = await apiClient.post<Customer>(
+    const response = await apiClient.post<{ code: number; data: Customer; message: string; success: boolean }>(
       `${this.getPath(factoryId)}`,
       request
     );
-    return { data: apiData };
+    return { data: response.data };
   }
 
   /**
@@ -123,10 +122,10 @@ class CustomerApiClient {
    * GET /api/mobile/{factoryId}/customers/{customerId}
    */
   async getCustomerById(customerId: string, factoryId?: string): Promise<Customer> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Customer>(
+    const response = await apiClient.get<{ code: number; data: Customer; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${customerId}`
     );
+    return response.data;
   }
 
   /**
@@ -138,11 +137,11 @@ class CustomerApiClient {
     request: Partial<CreateCustomerRequest>,
     factoryId?: string
   ): Promise<Customer> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<Customer>(
+    const response = await apiClient.put<{ code: number; data: Customer; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${customerId}`,
       request
     );
+    return response.data;
   }
 
   /**
@@ -158,10 +157,10 @@ class CustomerApiClient {
    * GET /api/mobile/{factoryId}/customers/active
    */
   async getActiveCustomers(factoryId?: string): Promise<Customer[]> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Customer[]>(
+    const response = await apiClient.get<{ code: number; data: Customer[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/active`
     );
+    return response.data || [];
   }
 
   /**
@@ -176,11 +175,11 @@ class CustomerApiClient {
     isActive?: boolean;
   }): Promise<Customer[]> {
     const { factoryId, ...queryParams } = params;
-    // apiClient拦截器已统一返回data
-    return await apiClient.get<Customer[]>(
+    const response = await apiClient.get<{ code: number; data: Customer[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/search`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
@@ -192,12 +191,12 @@ class CustomerApiClient {
     isActive: boolean,
     factoryId?: string
   ): Promise<Customer> {
-    // apiClient拦截器已统一返回data
-    return await apiClient.put<Customer>(
+    const response = await apiClient.put<{ code: number; data: Customer; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/${customerId}/status`,
       {},
       { params: { isActive: isActive } }
     );
+    return response.data;
   }
 
   // ===== 以下方法在MVP中暂不使用，已注释保留供后续版本使用 =====

@@ -6,7 +6,6 @@
 
 import { apiClient } from './apiClient';
 import { getCurrentFactoryId } from '../../utils/factoryIdHelper';
-import { getErrorMsg } from '../../utils/errorHandler';
 
 export interface AlertDTO {
   id: number | string;
@@ -66,11 +65,10 @@ class AlertApiClient {
     message?: string;
   }> {
     const { factoryId, ...queryParams } = params;
-    const response = await apiClient.get(
+    return await apiClient.get(
       `${this.getPath(factoryId)}/equipment-alerts`,
       { params: queryParams }
     );
-    return (response as any).data;
   }
 
   /**
@@ -95,11 +93,10 @@ class AlertApiClient {
     message?: string;
   }> {
     const { factoryId, alertId, ...data } = params;
-    const response = await apiClient.post(
+    return await apiClient.post(
       `${this.getPath(factoryId)}/equipment/alerts/${alertId}/resolve`,
       data
     );
-    return (response as any).data;
   }
 
   /**
@@ -124,11 +121,10 @@ class AlertApiClient {
     message?: string;
   }> {
     const { factoryId, alertId, ...data } = params;
-    const response = await apiClient.post(
+    return await apiClient.post(
       `${this.getPath(factoryId)}/equipment/alerts/${alertId}/acknowledge`,
       data
     );
-    return (response as any).data;
   }
 
   /**
@@ -149,11 +145,10 @@ class AlertApiClient {
     message?: string;
   }> {
     const { factoryId, alertId, ...data } = params;
-    const response = await apiClient.post(
+    return await apiClient.post(
       `${this.getPath(factoryId)}/equipment/alerts/${alertId}/ignore`,
       data
     );
-    return (response as any).data;
   }
 
   /**
@@ -173,10 +168,9 @@ class AlertApiClient {
     };
     message?: string;
   }> {
-    const response = await apiClient.get(
+    return await apiClient.get(
       `${this.getPath(factoryId)}/equipment-alerts/statistics`
     );
-    return (response as any).data;
   }
 }
 

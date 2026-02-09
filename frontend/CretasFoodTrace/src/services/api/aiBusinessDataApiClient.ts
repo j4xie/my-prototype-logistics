@@ -171,8 +171,8 @@ export async function batchInitializeFactory(
   const fid = factoryId || getFactoryId();
 
   // 调用 Java 代理端点，Java 会转发到 Python AI 服务
-  const response = await apiClient.post<FactoryBatchInitResponse>(
-    `/api/mobile/${fid}/form-assistant/batch-initialize`,
+  const response = await apiClient.post<{ code: number; data: FactoryBatchInitResponse; message: string; success: boolean }>(
+    `/api/platform/factories/${fid}/ai-initialize`,
     {
       factory_description: request.factoryDescription,
       factory_name: request.factoryName,
@@ -181,7 +181,7 @@ export async function batchInitializeFactory(
     }
   );
 
-  return response;
+  return response.data;
 }
 
 /**
@@ -194,12 +194,12 @@ export async function previewBusinessData(
 ): Promise<PreviewResponse> {
   const fid = factoryId || getFactoryId();
 
-  const response = await apiClient.post<PreviewResponse>(
+  const response = await apiClient.post<{ code: number; data: PreviewResponse; message: string; success: boolean }>(
     `/api/mobile/${fid}/ai/business-data/preview`,
     request
   );
 
-  return response;
+  return response.data;
 }
 
 /**
@@ -212,12 +212,12 @@ export async function initializeBusinessData(
 ): Promise<AIBusinessDataResponse> {
   const fid = factoryId || getFactoryId();
 
-  const response = await apiClient.post<AIBusinessDataResponse>(
+  const response = await apiClient.post<{ code: number; data: AIBusinessDataResponse; message: string; success: boolean }>(
     `/api/mobile/${fid}/ai/business-data/initialize`,
     request
   );
 
-  return response;
+  return response.data;
 }
 
 /**

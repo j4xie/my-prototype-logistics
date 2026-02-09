@@ -70,6 +70,54 @@ class SheetResult:
 
 
 @dataclass
+class IndexSheetMapping:
+    """Mapping from index sheet row to report information"""
+    index: int
+    sheet_name: str  # Original sheet name
+    report_name: str  # Display name from index
+    description: str = ""  # 编制说明
+
+
+@dataclass
+class IndexMetadata:
+    """Metadata extracted from index/TOC sheet"""
+    has_index: bool = False
+    index_sheet_index: int = -1
+    index_sheet_name: str = ""
+    sheet_mappings: List[IndexSheetMapping] = field(default_factory=list)
+
+    def get_report_name(self, sheet_index: int) -> Optional[str]:
+        """Get report name for a sheet index"""
+        for mapping in self.sheet_mappings:
+            if mapping.index == sheet_index:
+                return mapping.report_name
+        return None
+
+    def get_description(self, sheet_index: int) -> str:
+        """Get description for a sheet index"""
+        for mapping in self.sheet_mappings:
+            if mapping.index == sheet_index:
+                return mapping.description
+        return ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "hasIndex": self.has_index,
+            "indexSheetIndex": self.index_sheet_index,
+            "indexSheetName": self.index_sheet_name,
+            "sheetMappings": [
+                {
+                    "index": m.index,
+                    "sheetName": m.sheet_name,
+                    "reportName": m.report_name,
+                    "description": m.description,
+                }
+                for m in self.sheet_mappings
+            ],
+        }
+
+
+@dataclass
 class WorkbookResult:
     """Result of processing entire workbook"""
     success: bool
@@ -89,6 +137,9 @@ class WorkbookResult:
 
     # Metadata
     filename: Optional[str] = None
+
+    # Index sheet metadata
+    index_metadata: Optional[IndexMetadata] = None
 
 
 class ParallelProcessor:
@@ -125,7 +176,8 @@ class ParallelProcessor:
         factory_id: Optional[str] = None,
         sheet_indices: Optional[List[int]] = None,
         skip_empty: bool = True,
-        skip_index_sheets: bool = False,  # Changed: 保留索引页用于LLM分析
+        skip_index_sheets: bool = True,
+        extract_index_metadata: bool = True,
         max_rows_per_sheet: int = 10000,
         calculate_stats: bool = True,
         progress_callback: Optional[Callable[[int, int, str], None]] = None
@@ -139,6 +191,7 @@ class ParallelProcessor:
             sheet_indices: Optional list of specific sheet indices to process
             skip_empty: Skip empty sheets
             skip_index_sheets: Skip index/table-of-contents sheets
+            extract_index_metadata: Extract metadata from index sheet before skipping
             max_rows_per_sheet: Maximum rows per sheet
             calculate_stats: Calculate statistics for each sheet
             progress_callback: Optional callback(current, total, sheet_name)
@@ -153,6 +206,15 @@ class ParallelProcessor:
             # Step 1: Quick scan all sheets (synchronous, fast)
             sheets_preview = await self._scan_sheets(file_bytes)
             result.total_sheets = len(sheets_preview)
+
+            # Step 1.5: Extract index metadata before filtering
+            if extract_index_metadata:
+                index_metadata = await self._extract_index_metadata(file_bytes, sheets_preview)
+                result.index_metadata = index_metadata
+                if index_metadata.has_index:
+                    logger.info(
+                        f"Extracted index metadata: {len(index_metadata.sheet_mappings)} mappings"
+                    )
 
             # Step 2: Filter sheets
             sheets_to_process = self._filter_sheets(
@@ -323,7 +385,7 @@ class ParallelProcessor:
         sheets: List[SheetPreview],
         sheet_indices: Optional[List[int]] = None,
         skip_empty: bool = True,
-        skip_index_sheets: bool = False  # Changed: 保留索引页用于LLM分析
+        skip_index_sheets: bool = True
     ) -> List[SheetPreview]:
         """
         Filter sheets based on criteria.
@@ -376,6 +438,218 @@ class ParallelProcessor:
             filtered.append(sheet)
 
         return filtered
+
+    async def _extract_index_metadata(
+        self,
+        file_bytes: bytes,
+        sheets_preview: List[SheetPreview]
+    ) -> IndexMetadata:
+        """
+        Extract metadata from index/TOC sheet.
+
+        Identifies the index sheet and extracts:
+        - Report names for each data sheet
+        - 编制说明 (compilation notes/descriptions) for each sheet
+
+        Args:
+            file_bytes: Raw Excel file bytes
+            sheets_preview: List of sheet previews
+
+        Returns:
+            IndexMetadata with sheet mappings and descriptions
+        """
+        index_metadata = IndexMetadata()
+
+        # Index sheet detection patterns
+        index_patterns = [
+            "目录", "索引", "index", "toc", "contents",
+            "menu", "导航", "封面", "cover", "sheet list"
+        ]
+
+        # Find the index sheet
+        index_sheet = None
+        for sheet in sheets_preview:
+            name_lower = sheet.name.lower()
+            if any(pattern in name_lower for pattern in index_patterns):
+                index_sheet = sheet
+                break
+
+            # Also check structure-based detection
+            if sheet.has_data and sheet.column_count <= 4:
+                headers_text = " ".join(sheet.preview_headers).lower()
+                if "sheet" in headers_text or "表" in headers_text or "报表" in headers_text:
+                    index_sheet = sheet
+                    break
+
+        if not index_sheet:
+            return index_metadata
+
+        # Read the index sheet content
+        try:
+            loop = asyncio.get_event_loop()
+            index_data = await loop.run_in_executor(
+                self._executor,
+                self._read_index_sheet,
+                file_bytes,
+                index_sheet.index
+            )
+
+            if index_data is None:
+                return index_metadata
+
+            index_metadata.has_index = True
+            index_metadata.index_sheet_index = index_sheet.index
+            index_metadata.index_sheet_name = index_sheet.name
+
+            # Process index data to extract mappings
+            sheet_mappings = self._parse_index_content(index_data, sheets_preview)
+            index_metadata.sheet_mappings = sheet_mappings
+
+        except Exception as e:
+            logger.warning(f"Failed to extract index metadata: {e}")
+
+        return index_metadata
+
+    def _read_index_sheet(
+        self,
+        file_bytes: bytes,
+        sheet_index: int
+    ) -> Optional[pd.DataFrame]:
+        """Read index sheet as DataFrame"""
+        try:
+            import io
+            df = pd.read_excel(
+                io.BytesIO(file_bytes),
+                sheet_name=sheet_index,
+                header=None,  # Read raw data
+                nrows=100  # Limit rows
+            )
+            return df
+        except Exception as e:
+            logger.warning(f"Failed to read index sheet: {e}")
+            return None
+
+    def _parse_index_content(
+        self,
+        df: pd.DataFrame,
+        sheets_preview: List[SheetPreview]
+    ) -> List[IndexSheetMapping]:
+        """
+        Parse index sheet content to extract sheet mappings.
+
+        Looks for patterns like:
+        - Row with sheet name/number and report name
+        - 编制说明 (description) text
+
+        Args:
+            df: Index sheet DataFrame
+            sheets_preview: List of available sheets
+
+        Returns:
+            List of IndexSheetMapping
+        """
+        import re
+        mappings: List[IndexSheetMapping] = []
+
+        # Get all sheet names for matching
+        sheet_names = {s.name.lower(): s for s in sheets_preview}
+        sheet_indices = {s.index: s for s in sheets_preview}
+
+        # Convert DataFrame to string matrix for analysis
+        rows_data = []
+        for _, row in df.iterrows():
+            row_strings = [str(v).strip() if pd.notna(v) else "" for v in row]
+            rows_data.append(row_strings)
+
+        current_description = ""
+
+        for row_idx, row in enumerate(rows_data):
+            row_text = " ".join(row)
+
+            # Check if this row references a sheet
+            matched_sheet = None
+            report_name = ""
+
+            for cell_idx, cell in enumerate(row):
+                cell_lower = cell.lower()
+
+                # Check for direct sheet name match
+                if cell_lower in sheet_names:
+                    matched_sheet = sheet_names[cell_lower]
+                    # Report name might be in another column
+                    for other_cell in row:
+                        if other_cell and other_cell != cell and len(other_cell) > 1:
+                            report_name = other_cell
+                            break
+                    if not report_name:
+                        report_name = cell
+                    break
+
+                # Check for partial matches (e.g., "Sheet1" -> "sheet1表")
+                for sheet_name, sheet in sheet_names.items():
+                    if sheet_name in cell_lower or cell_lower in sheet_name:
+                        matched_sheet = sheet
+                        # Look for report name in same row
+                        for other_idx, other_cell in enumerate(row):
+                            if other_idx != cell_idx and other_cell and len(other_cell) > 1:
+                                # Skip if it looks like a number or index
+                                if not re.match(r'^\d+$', other_cell):
+                                    report_name = other_cell
+                                    break
+                        if not report_name:
+                            report_name = cell
+                        break
+
+                if matched_sheet:
+                    break
+
+            # Check if row contains 编制说明 or similar
+            if "编制说明" in row_text or "说明" in row_text:
+                # Description might be in the same row or following rows
+                for cell in row:
+                    if cell and "编制说明" not in cell and "说明" not in cell:
+                        if len(cell) > 10:  # Likely a description
+                            current_description = cell
+                            break
+                # Check next few rows for description content
+                for next_idx in range(row_idx + 1, min(row_idx + 5, len(rows_data))):
+                    next_row = rows_data[next_idx]
+                    for cell in next_row:
+                        if cell and len(cell) > 20:
+                            current_description = cell
+                            break
+
+            if matched_sheet:
+                # Skip the index sheet itself
+                if matched_sheet.index != sheets_preview[0].index or matched_sheet.name.lower() not in [p for p in ["目录", "索引", "index", "toc", "contents"]]:
+                    mappings.append(IndexSheetMapping(
+                        index=matched_sheet.index,
+                        sheet_name=matched_sheet.name,
+                        report_name=report_name or matched_sheet.name,
+                        description=current_description
+                    ))
+                    current_description = ""  # Reset after use
+
+        # Also add mappings for sheets not explicitly listed but with names
+        # that suggest they're data sheets
+        mapped_indices = {m.index for m in mappings}
+        for sheet in sheets_preview:
+            if sheet.index not in mapped_indices:
+                # Check if it's not the index sheet
+                name_lower = sheet.name.lower()
+                is_index = any(p in name_lower for p in ["目录", "索引", "index", "toc", "contents"])
+                if not is_index and not sheet.is_empty:
+                    mappings.append(IndexSheetMapping(
+                        index=sheet.index,
+                        sheet_name=sheet.name,
+                        report_name=sheet.name,  # Use original name
+                        description=""
+                    ))
+
+        # Sort by index
+        mappings.sort(key=lambda m: m.index)
+
+        return mappings
 
     async def _process_single_sheet(
         self,
