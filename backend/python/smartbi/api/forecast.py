@@ -8,7 +8,7 @@ import logging
 from typing import Optional, List, Dict
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, conlist
 
 from services.forecast_service import ForecastService, ForecastAlgorithm
 
