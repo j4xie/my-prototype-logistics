@@ -97,3 +97,4 @@ frontend/CretasFoodTrace/batch-*.json
 frontend/CretasFoodTrace/hr-i18n-*.json
 frontend/CretasFoodTrace/warehouse-*.json
 frontend/CretasFoodTrace/migrate-*.sh~$*
+nul
