@@ -58,7 +58,7 @@ export default function QIInspectListScreen() {
       const result = await qualityInspectorApi.getPendingBatches({
         page: pageNum,
         size: 20,
-        status: 'pending_inspection',
+        status: 'COMPLETED',
       });
 
       if (reset) {

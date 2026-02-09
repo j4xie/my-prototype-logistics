@@ -21,6 +21,9 @@ export const ROLE_DASHBOARD_MAP: Record<string, string> = {
   // Level 10 - 工厂高级管理
   factory_super_admin: 'DashboardAdmin',
 
+  // Level 20 - 调度员
+  dispatcher: 'DashboardProduction',
+
   // Level 20 - 部门经理
   production_manager: 'DashboardProduction',
   quality_manager: 'DashboardDefault',          // 质量经理使用通用版

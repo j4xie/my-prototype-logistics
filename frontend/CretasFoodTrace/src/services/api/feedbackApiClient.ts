@@ -59,9 +59,11 @@ class FeedbackApiClient {
   async submitFeedback(
     request: SubmitFeedbackRequest,
     factoryId?: string
-  ): Promise<{ success: boolean; data: FeedbackResponse; message: string }> {
-    const response = await apiClient.post(this.getPath(factoryId), request);
-    return (response as any).data;
+  ): Promise<FeedbackResponse> {
+    const response = await apiClient.post<{ code: number; data: FeedbackResponse; message: string; success: boolean }>(
+      this.getPath(factoryId), request
+    );
+    return response.data;
   }
 }
 

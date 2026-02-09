@@ -45,7 +45,7 @@ export default function NewHiresScreen() {
       startOfMonth.setHours(0, 0, 0, 0);
 
       const res = await userApiClient.getUsers({
-        page: 0,
+        page: 1,
         size: 100,
       });
 

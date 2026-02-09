@@ -6,7 +6,7 @@
  * 角色映射:
  * - factory_super_admin → DashboardAdmin (全功能)
  * - hr_admin → DashboardHR (人事管理)
- * - production_manager, workshop_supervisor → DashboardProduction (生产管理)
+ * - dispatcher, production_manager, workshop_supervisor → DashboardProduction (生产管理)
  * - warehouse_manager → DashboardWarehouse (仓储管理)
  * - finance_manager → DashboardFinance (财务管理)
  * - 其他角色 → DashboardDefault (通用版)

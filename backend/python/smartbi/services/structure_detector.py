@@ -484,12 +484,7 @@ class StructureDetector:
 
             # Rule: Data row - numeric values present (check this BEFORE column_names)
             # A row with >40% numeric values is data, not a header
-            # BUT: skip if this row is within a merged cell span from a header row above
-            is_within_merge_span = any(
-                m.min_row <= row_idx + 1 <= m.max_row and m.max_row > m.min_row
-                for m in merged_cells
-            )
-            if self._has_numeric_values(row) and not is_within_merge_span:
+            if self._has_numeric_values(row):
                 row_type = "data"
                 if data_start_row == 0:
                     data_start_row = row_idx
@@ -534,34 +529,13 @@ class StructureDetector:
                     merged_count=len(row_merges)
                 ))
 
-        # Ensure header_row_count covers merged cell spans in header area
-        # If merged cells in the header region span multiple rows, data_start_row
-        # must be after the last row covered by any merge
-        max_merge_row = 0
-        for m in merged_cells:
-            # Only consider merges that start in the header area
-            if m.min_row <= (data_start_row if data_start_row > 0 else 5):
-                if m.max_row > max_merge_row:
-                    max_merge_row = m.max_row
-        if max_merge_row > 0 and data_start_row > 0 and max_merge_row >= data_start_row:
-            logger.info(f"Merged cells extend to row {max_merge_row}, adjusting data_start_row from {data_start_row} to {max_merge_row + 1}")
-            data_start_row = max_merge_row + 1
-
         # If no explicit data_start_row set, calculate from header_rows
         if data_start_row == 0:
             if header_rows:
                 # Data starts after the last header row
                 last_header_idx = max(hr.index for hr in header_rows)
                 data_start_row = last_header_idx + 1
-                # Also check merged cell spans
-                if max_merge_row >= data_start_row:
-                    data_start_row = max_merge_row + 1
                 logger.debug(f"Data start row inferred from headers: {data_start_row}")
-            elif max_merge_row > 0:
-                # No header rows detected but merged cells found - use merge extent
-                data_start_row = max_merge_row + 1
-                confidence_factors.append(0.7)
-                logger.debug(f"Data start row from merged cells: {data_start_row}")
             else:
                 data_start_row = 1
                 confidence_factors.append(0.5)
@@ -573,11 +547,9 @@ class StructureDetector:
         result.merged_cells = merged_cells
         result.preview_rows = raw_rows[:min(5, len(raw_rows))]
 
-        # Extract column information - find actual column name row
+        # Extract column information from the last header row
         if data_start_row > 0 and data_start_row <= len(raw_rows):
-            column_names_row = self._find_column_name_row(
-                raw_rows, result.header_row_count, data_start_row
-            )
+            column_names_row = raw_rows[data_start_row - 1]
             result.columns = self._extract_columns(column_names_row, raw_rows[data_start_row:data_start_row + 5])
 
         # Calculate confidence
@@ -631,46 +603,6 @@ class StructureDetector:
                 except (ValueError, TypeError):
                     pass
         return numeric_count >= len(row) * 0.3
-
-    def _find_column_name_row(
-        self, raw_rows: List[List[Any]], header_row_count: int, data_start_row: int
-    ) -> List[Any]:
-        """
-        Find the actual column name row among header rows.
-
-        Title/period rows have only 1-2 non-null cells.
-        Column name rows have many distinct non-null values (mostly text).
-        Scans header rows AND the first "data" row (which LLM may misclassify).
-        Returns the row with the highest non-null cell ratio that looks like headers.
-        """
-        best_row = raw_rows[data_start_row - 1] if data_start_row > 0 else raw_rows[0]
-        best_fill = 0
-        best_idx = data_start_row - 1
-
-        # Scan header rows PLUS the first "data" row (LLM may misidentify column names as data)
-        scan_end = min(data_start_row + 1, len(raw_rows))
-        for i in range(scan_end):
-            row = raw_rows[i]
-            non_null = sum(1 for v in row if v is not None and str(v).strip() != '')
-            fill_ratio = non_null / len(row) if row else 0
-            if fill_ratio > best_fill:
-                best_fill = fill_ratio
-                best_row = row
-                best_idx = i
-
-        # If the best row is the "first data row", also check if it's text-dominant
-        # (column names are text, data rows have numbers)
-        if best_idx == data_start_row and data_start_row + 1 < len(raw_rows):
-            next_row = raw_rows[data_start_row + 1]
-            text_count = sum(1 for v in best_row if v is not None and isinstance(v, str))
-            next_numeric = sum(1 for v in next_row if v is not None and not isinstance(v, str))
-            # Column names: mostly text; actual data: has numbers
-            if text_count > len(best_row) * 0.5 and next_numeric > 0:
-                logger.info(f"Column name row found at index {best_idx} (was classified as data)")
-
-        logger.info(f"_find_column_name_row: best_idx={best_idx}, fill={best_fill:.2f}, "
-                     f"header_rows={header_row_count}, data_start={data_start_row}")
-        return best_row
 
     def _extract_columns(
         self, header_row: List[Any], data_rows: List[List[Any]]
@@ -932,12 +864,9 @@ Return JSON only:
                                 content=content
                             ))
 
-                    # Extract columns - find the actual column name row
-                    # (the header row with the most non-null cells)
+                    # Extract columns
                     if result.data_start_row > 0 and result.data_start_row <= len(raw_rows):
-                        header_row = self._find_column_name_row(
-                            raw_rows, result.header_row_count, result.data_start_row
-                        )
+                        header_row = raw_rows[result.data_start_row - 1]
                         result.columns = self._extract_columns(
                             header_row, raw_rows[result.data_start_row:result.data_start_row + 5]
                         )
@@ -1018,11 +947,9 @@ Return JSON only:
                                     content=content
                                 ))
 
-                        # Extract columns - find actual column name row
+                        # Extract columns
                         if result.data_start_row > 0 and result.data_start_row <= len(raw_rows):
-                            header_row = self._find_column_name_row(
-                                raw_rows, result.header_row_count, result.data_start_row
-                            )
+                            header_row = raw_rows[result.data_start_row - 1]
                             result.columns = self._extract_columns(
                                 header_row, raw_rows[result.data_start_row:result.data_start_row + 5]
                             )
@@ -1104,11 +1031,9 @@ Return JSON only:
                 # Return best guess with note
                 result.note = "Low confidence auto-inference, results marked"
 
-            # Extract columns based on voted result - find actual column name row
+            # Extract columns based on voted result
             if result.data_start_row > 0 and result.data_start_row <= len(raw_rows):
-                header_row = self._find_column_name_row(
-                    raw_rows, result.header_row_count, result.data_start_row
-                )
+                header_row = raw_rows[result.data_start_row - 1]
                 result.columns = self._extract_columns(
                     header_row, raw_rows[result.data_start_row:result.data_start_row + 5]
                 )

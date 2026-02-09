@@ -105,7 +105,8 @@
       "notificationSettings": "通知设置",
       "settings": "系统设置",
       "about": "关于",
-      "logout": "退出登录"
+      "logout": "退出登录",
+      "language": "语言设置"
     }
   },
   "workers": {

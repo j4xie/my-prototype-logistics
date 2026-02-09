@@ -3,8 +3,10 @@
  * AI 行为校准监控 API 服务
  *
  * 注意：校准 API 使用 /api/admin 路径，不同于其他 API 的 /api/mobile
+ * 因此使用独立的 axios 实例，baseURL 为空以避免 /api/mobile 前缀叠加
  */
-import { get, post } from './request';
+import axios from 'axios';
+import type { ApiResponse } from '@/types/api';
 import type {
   CalibrationDashboardData,
   ToolCallQueryParams,
@@ -24,7 +26,41 @@ import type {
   CalibrationHistoryItem
 } from '@/types/calibration';
 
-// API 路径前缀 - 使用绝对路径覆盖 baseURL
+// 校准 API 独立 axios 实例 — baseURL 不含 /api/mobile
+const calibrationRequest = axios.create({
+  baseURL: '',
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' }
+});
+
+// 请求拦截器: 注入 JWT token
+calibrationRequest.interceptors.request.use((config) => {
+  const token = localStorage.getItem('cretas_access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// 响应拦截器: 统一格式
+calibrationRequest.interceptors.response.use(
+  (response) => {
+    const data = response.data;
+    if (data && typeof data.success === 'boolean') return data;
+    return { success: true, data, message: 'OK' };
+  },
+  (error) => {
+    const message = error.response?.data?.message || error.message || '请求失败';
+    return Promise.reject(new Error(message));
+  }
+);
+
+const get = <T>(url: string, config?: object): Promise<ApiResponse<T>> =>
+  calibrationRequest.get(url, config);
+const post = <T>(url: string, data?: object, config?: object): Promise<ApiResponse<T>> =>
+  calibrationRequest.post(url, data, config);
+
+// API 路径前缀
 const API_PREFIX = '/api/admin/calibration';
 
 // ==================== 仪表盘数据 ====================

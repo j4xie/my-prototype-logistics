@@ -7,6 +7,16 @@ import { getErrorMsg } from '../../utils/errorHandler';
  * 总计16个API - 路径：/api/mobile/{factoryId}/conversions/*
  */
 
+/**
+ * 后端统一响应格式
+ */
+export interface ApiResponse<T> {
+  success: boolean;
+  code: number;
+  message: string;
+  data: T;
+}
+
 export interface ConversionRate {
   id: string;
   factoryId: string;
@@ -44,38 +54,38 @@ class ConversionApiClient {
   }
 
   // 1. 分页查询转换率配置
-  async getConversionRates(params?: { factoryId?: string; page?: number; size?: number }) {
+  async getConversionRates(params?: { factoryId?: string; page?: number; size?: number }): Promise<ApiResponse<{ content: ConversionRate[]; totalElements: number; totalPages: number }>> {
     const { factoryId, ...query } = params || {};
     return await apiClient.get(this.getPath(factoryId), { params: query });
   }
 
   // 2. 创建转换率配置
-  async createConversionRate(data: any, factoryId?: string) {
+  async createConversionRate(data: any, factoryId?: string): Promise<ApiResponse<ConversionRate>> {
     return await apiClient.post(this.getPath(factoryId), data);
   }
 
   // 3. 获取转换率详情
-  async getConversionRateById(id: string, factoryId?: string) {
+  async getConversionRateById(id: string, factoryId?: string): Promise<ApiResponse<ConversionRate>> {
     return await apiClient.get(`${this.getPath(factoryId)}/${id}`);
   }
 
   // 4. 更新转换率配置
-  async updateConversionRate(id: string, data: any, factoryId?: string) {
+  async updateConversionRate(id: string, data: any, factoryId?: string): Promise<ApiResponse<ConversionRate>> {
     return await apiClient.put(`${this.getPath(factoryId)}/${id}`, data);
   }
 
   // 5. 删除转换率配置
-  async deleteConversionRate(id: string, factoryId?: string) {
+  async deleteConversionRate(id: string, factoryId?: string): Promise<ApiResponse<void>> {
     return await apiClient.delete(`${this.getPath(factoryId)}/${id}`);
   }
 
   // 6. 根据原材料类型查询转换率
-  async getConversionsByMaterial(materialTypeId: string, factoryId?: string) {
+  async getConversionsByMaterial(materialTypeId: string, factoryId?: string): Promise<ApiResponse<ConversionRate[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/material/${materialTypeId}`);
   }
 
   // 7. 根据产品类型查询转换率
-  async getConversionsByProduct(productTypeId: string, factoryId?: string) {
+  async getConversionsByProduct(productTypeId: string, factoryId?: string): Promise<ApiResponse<ConversionRate[]>> {
     return await apiClient.get(`${this.getPath(factoryId)}/product/${productTypeId}`);
   }
 
@@ -84,7 +94,7 @@ class ConversionApiClient {
     materialTypeId: string;
     productTypeId: string;
     factoryId?: string;
-  }) {
+  }): Promise<ApiResponse<ConversionRate>> {
     const { factoryId, ...query } = params;
     return await apiClient.get(`${this.getPath(factoryId)}/rate`, { params: query });
   }
@@ -94,7 +104,7 @@ class ConversionApiClient {
     productTypeId: string;
     productQuantity: number;
     factoryId?: string;
-  }) {
+  }): Promise<ApiResponse<any>> {
     const { factoryId, ...data } = params;
     return await apiClient.post(`${this.getPath(factoryId)}/calculate/material-requirement`, data);
   }
@@ -104,23 +114,23 @@ class ConversionApiClient {
     materialTypeId: string;
     materialQuantity: number;
     factoryId?: string;
-  }) {
+  }): Promise<ApiResponse<any>> {
     const { factoryId, ...data } = params;
     return await apiClient.post(`${this.getPath(factoryId)}/calculate/product-output`, data);
   }
 
   // 11. 验证转换率配置
-  async validateConversionRate(data: any, factoryId?: string) {
+  async validateConversionRate(data: any, factoryId?: string): Promise<ApiResponse<any>> {
     return await apiClient.post(`${this.getPath(factoryId)}/validate`, data);
   }
 
   // 12. 批量激活/停用转换率配置
-  async batchActivateConversions(ids: string[], isActive: boolean, factoryId?: string) {
+  async batchActivateConversions(ids: string[], isActive: boolean, factoryId?: string): Promise<ApiResponse<any>> {
     return await apiClient.put(`${this.getPath(factoryId)}/batch/activate`, { ids, isActive });
   }
 
   // 13. 获取转换率统计信息
-  async getConversionStatistics(factoryId?: string) {
+  async getConversionStatistics(factoryId?: string): Promise<ApiResponse<any>> {
     return await apiClient.get(`${this.getPath(factoryId)}/statistics`);
   }
 
@@ -146,7 +156,7 @@ class ConversionApiClient {
   }
 
   // 15. 批量导入转换率配置
-  async importConversionRates(file: File, factoryId?: string) {
+  async importConversionRates(file: File, factoryId?: string): Promise<ApiResponse<any>> {
     const formData = new FormData();
     formData.append('file', file);
     return await apiClient.post(`${this.getPath(factoryId)}/import`, formData, {

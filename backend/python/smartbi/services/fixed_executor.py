@@ -254,11 +254,13 @@ class FixedExecutor:
                     file_bytes, structure_config, mapping_config, options
                 )
 
-            # 智能确定 pandas header 参数
-            # 检测标题行（只有1-2个非空单元格的行）vs 实际列名行（大部分单元格非空）
-            header = self._determine_pandas_header(
-                file_bytes, structure_config, header_rows, data_start_row
-            )
+            # 简单表头情况，使用 pandas 默认处理
+            if header_rows == 2:
+                header = [0, 1]
+            elif header_rows == 1:
+                header = 0
+            else:
+                header = data_start_row - 1 if data_start_row > 0 else 0
 
             # Read with pandas
             df = pd.read_excel(
@@ -629,13 +631,8 @@ class FixedExecutor:
 
             # 生成最终列名
             if parts:
-                # 合并所有有意义的层级（如 "2025年1月" + "预算数" -> "2025年1月_预算数"）
-                # 跳过广义报表标题（如"利润表"等不应出现在列名中）
-                REPORT_TITLES = {"利润表", "资产负债表", "现金流量表", "报表", "汇总表", "明细表", "统计表"}
-                filtered_parts = [p for p in parts if p not in REPORT_TITLES]
-                if not filtered_parts:
-                    filtered_parts = parts
-                final_name = "_".join(filtered_parts)
+                # 如果最后一部分已经包含前面部分的信息，只用最后一部分
+                final_name = "_".join(parts) if len(parts) <= 2 else parts[-1]
             else:
                 final_name = f"Column_{col_idx + 1}"
 
@@ -654,57 +651,6 @@ class FixedExecutor:
             return True
         except (ValueError, TypeError):
             return False
-
-    def _determine_pandas_header(
-        self,
-        file_bytes: bytes,
-        structure_config,
-        header_rows: int,
-        data_start_row: int
-    ) -> Union[int, List[int]]:
-        """
-        Determine the correct pandas header parameter by inspecting raw rows.
-
-        Title/period rows (e.g., "销售明细表", "统计期间：2025年1月...") have only
-        1-2 non-null cells. Actual column header rows have many distinct non-null values.
-        When we detect title rows in the header range, we skip them and use only
-        the actual column name row.
-        """
-        if header_rows <= 1:
-            return data_start_row - 1 if data_start_row > 0 else 0
-
-        try:
-            # Read first few rows to inspect (include data_start_row since LLM may misclassify it)
-            df_peek = pd.read_excel(
-                io.BytesIO(file_bytes),
-                sheet_name=structure_config.sheet_name or 0,
-                header=None,
-                nrows=data_start_row + 2
-            )
-
-            # Find the row with the highest non-null ratio (column name row)
-            # Scan header rows AND the first "data" row
-            best_row_idx = header_rows - 1
-            best_fill = 0
-            scan_end = min(data_start_row + 1, len(df_peek))
-            for row_idx in range(scan_end):
-                row_vals = df_peek.iloc[row_idx]
-                non_null_count = row_vals.notna().sum()
-                total_cols = len(row_vals)
-                fill_ratio = non_null_count / total_cols if total_cols > 0 else 0
-
-                if fill_ratio > best_fill:
-                    best_fill = fill_ratio
-                    best_row_idx = row_idx
-
-            logger.info(f"Detected column name row at index {best_row_idx} "
-                        f"(fill={best_fill:.2f}, header_rows={header_rows}, data_start_row={data_start_row})")
-            return best_row_idx
-        except Exception as e:
-            logger.warning(f"Failed to determine pandas header, using default: {e}")
-            if header_rows == 2:
-                return [0, 1]
-            return 0
 
     def _build_column_map(
         self,

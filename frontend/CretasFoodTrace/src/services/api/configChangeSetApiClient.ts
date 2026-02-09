@@ -202,7 +202,7 @@ class ConfigChangeSetApiClient {
     params?: { page?: number; size?: number; status?: ChangeStatus },
     factoryId?: string
   ): Promise<PageResponse<ConfigChangeSet>> {
-    const { page = 0, size = 10, status } = params || {};
+    const { page = 1, size = 10, status } = params || {};
     const response = await apiClient.get<ApiResponse<PageResponse<ConfigChangeSet>>>(
       this.getPath(factoryId),
       { params: { page, size, status } }

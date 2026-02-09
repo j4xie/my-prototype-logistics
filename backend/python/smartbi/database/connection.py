@@ -8,7 +8,7 @@ import logging
 from contextlib import contextmanager
 from typing import Generator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 
@@ -30,6 +30,8 @@ if settings.postgres_enabled:
             pool_size=settings.postgres_pool_size,
             max_overflow=settings.postgres_max_overflow,
             pool_pre_ping=True,  # Test connections before use
+            pool_recycle=3600,
+            pool_timeout=10,
             echo=settings.debug,
         )
         SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -97,7 +99,7 @@ def test_connection() -> bool:
 
     try:
         with get_db_context() as db:
-            db.execute("SELECT 1")
+            db.execute(text("SELECT 1"))
         return True
     except Exception as e:
         logger.error(f"PostgreSQL connection test failed: {e}")

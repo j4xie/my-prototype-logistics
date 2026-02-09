@@ -54,10 +54,9 @@ export function UnifiedDeviceManagementScreen() {
     navigation.navigate('DeviceSetupWizard');
   };
 
-  // 通用设备（在组件内部处理详情）
+  // 通用设备导航
   const handleEquipmentDevicePress = (equipmentId: number) => {
-    // EquipmentDeviceList 内部已有详情弹窗，此回调预留扩展
-    console.log('Equipment pressed:', equipmentId);
+    navigation.navigate('EquipmentDetail', { equipmentId });
   };
 
   const renderContent = () => {

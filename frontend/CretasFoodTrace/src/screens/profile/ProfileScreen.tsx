@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TouchableOpacity, Platform } from 'react-native';
 import { Text, Avatar, List, Divider, Portal, Dialog, TextInput, HelperText, ActivityIndicator, Chip, Card } from 'react-native-paper';
 import { useAuthStore } from '../../store/authStore';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useLanguageStore, LANGUAGE_NAMES, type SupportedLanguage } from '../../store/languageStore';
 import { userApiClient } from '../../services/api/userApiClient';
 import { platformAPI } from '../../services/api/platformApiClient';
@@ -112,9 +112,25 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
+    const doLogout = () => {
+      logout();
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Auth' }],
+        })
+      );
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('确定要退出吗？')) {
+        doLogout();
+      }
+      return;
+    }
     Alert.alert('退出登录', '确定要退出吗？', [
       { text: '取消', style: 'cancel' },
-      { text: '退出', style: 'destructive', onPress: async () => { await logout(); } }
+      { text: '退出', style: 'destructive', onPress: doLogout }
     ]);
   };
 

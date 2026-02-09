@@ -70,9 +70,9 @@ export default function AIScheduleScreen() {
   const [autoAssignWorkers, setAutoAssignWorkers] = useState(true);
   const [optimizeByLinUCB, setOptimizeByLinUCB] = useState(true);
 
-  // Date state
-  const [startDate, setStartDate] = useState('2025-12-28');
-  const [endDate, setEndDate] = useState('2025-12-28');
+  // Date state - default to today
+  const [startDate, setStartDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Batch selection state (按批次模式)
   const [pendingBatches, setPendingBatches] = useState<ProductionPlanDTO[]>([]);

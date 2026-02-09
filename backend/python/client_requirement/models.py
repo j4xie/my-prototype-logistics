@@ -1,63 +1,74 @@
 """
-客户需求反馈系统 - 数据库模型
+Client Requirement Models - SQLAlchemy ORM Models
+
+Tables:
+- client_requirement_companies: Company information and completion tracking
+- client_requirement_feedbacks: Individual feedback items per field
 """
-from sqlalchemy import Column, BigInteger, String, Integer, DateTime, UniqueConstraint, Index, text
+from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import Column, String, Integer, DateTime, Text
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
 
 class ClientRequirementCompany(Base):
-    __tablename__ = "client_requirement_company"
+    """Company entity for client requirement feedback"""
+    __tablename__ = "client_requirement_companies"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    company_id = Column(String(100), unique=True, nullable=False)
-    company_name = Column(String(200), nullable=False)
-    contact_name = Column(String(100))
-    contact_phone = Column(String(50))
-    total_fields = Column(Integer, default=0)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(String(100), unique=True, nullable=False, index=True)
+    company_name = Column(String(255), nullable=False)
+    contact_name = Column(String(100), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+    total_fields = Column(Integer, default=243)
     completed_fields = Column(Integer, default=0)
-    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
-    deleted_at = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    deleted_at = Column(DateTime, nullable=True)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
+            "id": self.id,
             "companyId": self.company_id,
             "companyName": self.company_name,
             "contactName": self.contact_name,
             "contactPhone": self.contact_phone,
             "totalFields": self.total_fields,
             "completedFields": self.completed_fields,
-            "updatedAt": self.updated_at.strftime("%Y-%m-%d %H:%M:%S") if self.updated_at else None,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
         }
 
 
 class ClientRequirementFeedback(Base):
-    __tablename__ = "client_requirement_feedback"
-    __table_args__ = (
-        UniqueConstraint("company_id", "section", "row_index", name="uk_company_section_row"),
-        Index("idx_feedback_company_id", "company_id"),
-    )
+    """Individual feedback item for a spec field"""
+    __tablename__ = "client_requirement_feedbacks"
 
-    id = Column(BigInteger, primary_key=True, autoincrement=True)
-    company_id = Column(String(100), nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(String(100), nullable=False, index=True)
     section = Column(String(100), nullable=False)
     row_index = Column(Integer, nullable=False)
-    field_name = Column(String(200))
-    applicability = Column(String(50))
-    priority = Column(String(50))
-    note = Column(String(1000))
-    created_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
-    updated_at = Column(DateTime, server_default=text("CURRENT_TIMESTAMP"), nullable=False)
-    deleted_at = Column(DateTime)
+    field_name = Column(String(255), nullable=True)
+    applicability = Column(String(50), nullable=True)  # 'applicable', 'not_applicable', 'partial'
+    priority = Column(String(50), nullable=True)  # 'high', 'medium', 'low'
+    note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.now)
+    updated_at = Column(DateTime, default=datetime.now, onupdate=datetime.now)
+    deleted_at = Column(DateTime, nullable=True)
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
+            "id": self.id,
+            "companyId": self.company_id,
             "section": self.section,
             "rowIndex": self.row_index,
             "fieldName": self.field_name,
             "applicability": self.applicability,
             "priority": self.priority,
             "note": self.note,
+            "createdAt": self.created_at.isoformat() if self.created_at else None,
+            "updatedAt": self.updated_at.isoformat() if self.updated_at else None,
         }

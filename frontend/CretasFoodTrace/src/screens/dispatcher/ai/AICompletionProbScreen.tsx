@@ -179,7 +179,7 @@ export default function AICompletionProbScreen() {
         startDate: today,
         endDate: today,
         status: 'confirmed,in_progress',
-        page: 0,
+        page: 1,
         size: 50,
       });
 

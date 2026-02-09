@@ -75,7 +75,7 @@ export default function AIProbabilityDetailScreen() {
       const response = await schedulingApiClient.getPlans({
         startDate: today,
         status: 'confirmed,in_progress',
-        page: 0,
+        page: 1,
         size: 20,
       });
 

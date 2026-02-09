@@ -222,9 +222,9 @@ export default function ProductTypeManagementScreen() {
       ]);
 
       if (equipmentRes.status === 'fulfilled') {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // getEquipments() returns { content, totalElements, totalPages } directly (unwrapped)
         const eqResult = equipmentRes.value as any;
-        const eqData = eqResult?.data?.content || eqResult?.data || eqResult?.content || eqResult || [];
+        const eqData = eqResult?.content || eqResult || [];
         setEquipmentList(Array.isArray(eqData) ? eqData : []);
       } else {
         productTypeLogger.warn('加载设备列表失败', { reason: equipmentRes.reason });

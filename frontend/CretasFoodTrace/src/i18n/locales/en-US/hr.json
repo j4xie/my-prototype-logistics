@@ -37,7 +37,11 @@
   "staff": {
     "title": "Staff Management",
     "list": {
-      "title": "Staff List"
+      "title": "Staff List",
+      "searchPlaceholder": "Search staff...",
+      "filter": {
+        "all": "All"
+      }
     },
     "detail": {
       "title": "Staff Details",
@@ -48,7 +52,35 @@
       "edit": "Edit Info",
       "changeStatus": "Change Status",
       "viewAttendance": "Attendance Records",
-      "viewPerformance": "Performance Records"
+      "viewPerformance": "Performance Records",
+      "noDepartment": "No Department",
+      "employee": "Employee",
+      "aiAnalysis": "AI Analysis",
+      "notFound": "Staff not found",
+      "loadFailed": "Failed to load staff details",
+      "sections": {
+        "basicInfo": "Basic Information",
+        "monthlyAttendance": "Monthly Attendance",
+        "workSummary": "Work Summary",
+        "recentBatches": "Recent Batches"
+      },
+      "fields": {
+        "phone": "Phone",
+        "email": "Email",
+        "hireDate": "Hire Date",
+        "employeeCode": "Employee Code"
+      },
+      "attendance": {
+        "workDays": "Work Days",
+        "late": "Late",
+        "earlyLeave": "Early Leave",
+        "absent": "Absent"
+      },
+      "work": {
+        "batches": "Batches",
+        "totalHours": "Total Hours",
+        "earnings": "Earnings"
+      }
     },
     "add": {
       "title": "Add Staff",
@@ -407,6 +439,7 @@
       "title": "Whitelist",
       "empty": "No whitelist data",
       "search": "Search phone number...",
+      "searchPlaceholder": "Search whitelist...",
       "delete": "Delete",
       "deleteConfirm": "Delete {phone}?",
       "deleteSuccess": "Deleted successfully",
@@ -521,7 +554,8 @@
       "notifications": "Notifications",
       "settings": "Settings",
       "help": "Help Center",
-      "about": "About"
+      "about": "About",
+      "language": "Language"
     },
     "stats": {
       "activeStaff": "Active Staff",

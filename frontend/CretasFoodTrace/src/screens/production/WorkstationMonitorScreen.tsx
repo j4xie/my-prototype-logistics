@@ -104,7 +104,7 @@ export function WorkstationMonitorScreen() {
   const loadCameras = useCallback(async () => {
     setLoadingCameras(true);
     try {
-      const response = await getIsapiDevices({ page: 0, size: 100 });
+      const response = await getIsapiDevices({ page: 1, size: 100 });
       const devices = response.content || [];
       // 只显示在线设备
       const onlineDevices = devices.filter((d) => d.status === 'ONLINE');

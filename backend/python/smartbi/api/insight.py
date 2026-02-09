@@ -11,7 +11,6 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from services.insight_generator import InsightGenerator
-from services.analysis_persistence import get_persistence_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -27,9 +26,6 @@ class InsightRequest(BaseModel):
     analysisContext: Optional[str] = None
     insightTypes: Optional[List[str]] = None
     maxInsights: int = 5
-    # Persistence parameters
-    factoryId: Optional[str] = None
-    uploadId: Optional[int] = None
 
 
 class Insight(BaseModel):
@@ -42,7 +38,12 @@ class Insight(BaseModel):
     sentiment: Optional[str] = None
     importance: Optional[float] = None
     recommendation: Optional[str] = None
+    action_items: Optional[List[str]] = None
     source: Optional[str] = None
+    # Structured fields from _meta type
+    executive_summary: Optional[str] = None
+    risk_alerts: Optional[List[dict]] = None
+    opportunities: Optional[List[dict]] = None
 
 
 class InsightResponse(BaseModel):
@@ -71,11 +72,8 @@ async def generate_insights(request: InsightRequest):
         - `recommendation`: Actionable recommendations
         - `summary`: Summary statistics
     - **maxInsights**: Maximum number of insights to return (default: 5)
-    - **factoryId**: Factory ID for persisting results (optional)
-    - **uploadId**: Upload ID for persisting results (optional)
 
     Returns AI-generated business insights with importance scores.
-    Results are automatically persisted to database when factoryId and uploadId are provided.
     """
     try:
         if not request.data:
@@ -90,19 +88,7 @@ async def generate_insights(request: InsightRequest):
         )
 
         # Convert insights to Pydantic models
-        raw_insights = result.get("insights", [])
-        insights = [Insight(**i) for i in raw_insights]
-
-        # Persist to database if factory_id and upload_id are provided
-        if request.factoryId and request.uploadId and raw_insights:
-            persistence_service = get_persistence_service()
-            persistence_service.save_insights(
-                factory_id=request.factoryId,
-                upload_id=request.uploadId,
-                insights=raw_insights,
-                analysis_context=request.analysisContext
-            )
-            logger.info(f"Persisted {len(raw_insights)} insights for factory={request.factoryId}, upload={request.uploadId}")
+        insights = [Insight(**i) for i in result.get("insights", [])]
 
         return InsightResponse(
             success=result.get("success", False),
@@ -235,12 +221,35 @@ async def quick_summary(data: List[Dict[str, Any]]):
             }
 
             if pd.api.types.is_numeric_dtype(df[col]):
+                col_min = df[col].min()
+                col_max = df[col].max()
+                col_mean = df[col].mean()
+                col_sum = df[col].sum()
                 col_info.update({
-                    "min": float(df[col].min()) if pd.notna(df[col].min()) else None,
-                    "max": float(df[col].max()) if pd.notna(df[col].max()) else None,
-                    "mean": float(df[col].mean()) if pd.notna(df[col].mean()) else None,
-                    "sum": float(df[col].sum()) if pd.notna(df[col].sum()) else None
+                    "min": float(col_min) if pd.notna(col_min) else None,
+                    "max": float(col_max) if pd.notna(col_max) else None,
+                    "mean": float(col_mean) if pd.notna(col_mean) else None,
+                    "sum": float(col_sum) if pd.notna(col_sum) else None
                 })
+
+                # Trend & sparkline for numeric columns
+                values = df[col].dropna().tolist()
+                if len(values) >= 3:
+                    # Sparkline: sample up to 12 points
+                    step = max(1, len(values) // 12)
+                    sparkline = [round(float(v), 2) for v in values[::step]][:12]
+                    col_info["sparkline"] = sparkline
+
+                    # Trend detection
+                    first_val = values[0]
+                    last_val = values[-1]
+                    if first_val != 0:
+                        pct = ((last_val - first_val) / abs(first_val)) * 100
+                        col_info["trend"] = "up" if pct > 5 else ("down" if pct < -5 else "flat")
+                        col_info["trendPercent"] = round(pct, 1)
+                    else:
+                        col_info["trend"] = "flat"
+                        col_info["trendPercent"] = 0
 
             summary["columns"].append(col_info)
 

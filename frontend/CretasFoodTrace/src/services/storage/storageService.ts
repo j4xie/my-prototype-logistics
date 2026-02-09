@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 export class StorageService {
   // 普通存储 (AsyncStorage)
@@ -30,16 +31,28 @@ export class StorageService {
   }
 
   // 安全存储 (SecureStore) - 用于敏感数据
+  // Web平台回退到AsyncStorage (SecureStore是原生模块，Web上不可用)
   static async setSecureItem(key: string, value: string): Promise<void> {
-    await SecureStore.setItemAsync(key, value);
+    if (Platform.OS === 'web') {
+      await AsyncStorage.setItem(key, value);
+    } else {
+      await SecureStore.setItemAsync(key, value);
+    }
   }
 
   static async getSecureItem(key: string): Promise<string | null> {
+    if (Platform.OS === 'web') {
+      return await AsyncStorage.getItem(key);
+    }
     return await SecureStore.getItemAsync(key);
   }
 
   static async removeSecureItem(key: string): Promise<void> {
-    await SecureStore.deleteItemAsync(key);
+    if (Platform.OS === 'web') {
+      await AsyncStorage.removeItem(key);
+    } else {
+      await SecureStore.deleteItemAsync(key);
+    }
   }
 
   // 清理所有存储

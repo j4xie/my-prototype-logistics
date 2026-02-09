@@ -513,6 +513,11 @@
     "workHours": "工时",
     "efficiency": "效率"
   },
-  "employee": "员工"
+  "employee": "员工",
+  "all": "全部",
+  "enable": "启用",
+  "disable": "停用",
+  "enabled": "启用",
+  "disabled": "停用"
 }
 

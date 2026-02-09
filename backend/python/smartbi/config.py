@@ -5,6 +5,7 @@ SmartBI Service Configuration
 import os
 from functools import lru_cache
 from typing import List, Optional
+from urllib.parse import quote
 
 try:
     from pydantic_settings import BaseSettings
@@ -69,15 +70,19 @@ class Settings(BaseSettings):
     @property
     def postgres_url(self) -> str:
         """Get PostgreSQL connection URL"""
-        return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        user = quote(self.postgres_user, safe='')
+        passwd = quote(self.postgres_password, safe='')
+        return f"postgresql://{user}:{passwd}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     @property
     def postgres_async_url(self) -> str:
         """Get PostgreSQL async connection URL (for asyncpg)"""
-        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+        user = quote(self.postgres_user, safe='')
+        passwd = quote(self.postgres_password, safe='')
+        return f"postgresql+asyncpg://{user}:{passwd}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     class Config:
-        env_file = ".env"
+        env_file = (".env", "smartbi/.env")
         env_file_encoding = "utf-8"
         extra = "ignore"
 

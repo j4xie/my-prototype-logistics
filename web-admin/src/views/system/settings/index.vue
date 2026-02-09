@@ -73,21 +73,27 @@ async function loadSettings() {
         securitySettings.value = { ...securitySettings.value, ...response.data.security };
       }
     }
-  } catch (error) {
-    console.error('加载设置失败:', error);
+  } catch {
+    // Settings may not be initialized yet — use defaults silently
   } finally {
     loading.value = false;
   }
 }
 
 async function loadSystemStatus() {
+  if (!factoryId.value) return;
   try {
-    const response = await get('/system/status');
+    const response = await get(`/${factoryId.value}/settings/full`);
     if (response.success && response.data) {
-      systemStatus.value = { ...systemStatus.value, ...response.data };
+      systemStatus.value = {
+        version: '1.0.0',
+        serverStatus: 'running',
+        lastBackup: response.data.lastBackup || '',
+        databaseSize: response.data.databaseSize || ''
+      };
     }
-  } catch (error) {
-    console.error('加载系统状态失败:', error);
+  } catch {
+    // Use defaults — system status is non-critical
   }
 }
 

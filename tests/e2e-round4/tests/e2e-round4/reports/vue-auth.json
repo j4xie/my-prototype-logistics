@@ -1,0 +1,22 @@
+{
+  "cookies": [],
+  "origins": [
+    {
+      "origin": "http://localhost:5173",
+      "localStorage": [
+        {
+          "name": "cretas_user",
+          "value": "{\"id\":1,\"username\":\"factory_admin1\",\"email\":\"\",\"isActive\":true,\"createdAt\":\"2026-02-09T03:59:53.723Z\",\"updatedAt\":\"2026-02-09T03:59:53.723Z\",\"userType\":\"factory\",\"factoryUser\":{\"role\":\"factory_super_admin\",\"factoryId\":\"F001\",\"permissions\":[\"*:*\"]}}"
+        },
+        {
+          "name": "cretas_access_token",
+          "value": "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiZmFjdG9yeV9zdXBlcl9hZG1pbiIsImZhY3RvcnlJZCI6IkYwMDEiLCJ1c2VySWQiOjEsInVzZXJuYW1lIjoiZmFjdG9yeV9hZG1pbjEiLCJzdWIiOiJmYWN0b3J5X2FkbWluMSIsImlhdCI6MTc3MDYwOTU5MywiZXhwIjoxNzcwNjk1OTkzfQ.HWvdqaRW4JbQ49PEeJGc-U8oZhZfK-fVD2TdPBloxmc"
+        },
+        {
+          "name": "cretas_refresh_token",
+          "value": "eyJhbGciOiJIUzI1NiJ9.eyJ0eXBlIjoicmVmcmVzaCIsInVzZXJJZCI6IjEiLCJzdWIiOiIxIiwiaWF0IjoxNzcwNjA5NTkzLCJleHAiOjE3NzMyMDE1OTN9.okLzLQicnWfX9Br9PMR7_pbuGD3488720v0kfmLHYFw"
+        }
+      ]
+    }
+  ]
+}

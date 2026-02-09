@@ -42,25 +42,35 @@ export class TokenManager {
     try {
       const expiryTime = tokens.expiresAt || (Date.now() + 3600 * 1000); // 默认1小时
 
-      // 移动端环境，优先使用SecureStore存储敏感信息
-      try {
+      // Web平台使用AsyncStorage，移动端使用SecureStore
+      if (Platform.OS === 'web') {
         await Promise.all([
-          SecureStore.setItemAsync(this.ACCESS_TOKEN_KEY, tokens.accessToken),
-          SecureStore.setItemAsync(this.REFRESH_TOKEN_KEY, tokens.refreshToken),
+          AsyncStorage.setItem(this.ACCESS_TOKEN_KEY, tokens.accessToken),
+          AsyncStorage.setItem(this.REFRESH_TOKEN_KEY, tokens.refreshToken),
           AsyncStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString()),
           AsyncStorage.setItem(this.TOKEN_TYPE_KEY, tokens.tokenType || 'Bearer'),
         ]);
-
         if (tokens.tempToken) {
-          await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tokens.tempToken);
+          await AsyncStorage.setItem(this.TEMP_TOKEN_KEY, tokens.tempToken);
         }
-      } catch (secureStoreError) {
-        tokenLogger.error('SecureStore不可用', secureStoreError);
+      } else {
+        try {
+          await Promise.all([
+            SecureStore.setItemAsync(this.ACCESS_TOKEN_KEY, tokens.accessToken),
+            SecureStore.setItemAsync(this.REFRESH_TOKEN_KEY, tokens.refreshToken),
+            AsyncStorage.setItem(this.TOKEN_EXPIRY_KEY, expiryTime.toString()),
+            AsyncStorage.setItem(this.TOKEN_TYPE_KEY, tokens.tokenType || 'Bearer'),
+          ]);
 
-        // 抛出安全错误，不允许静默降级
-        throw new SecureStorageUnavailableError(
-          '您的设备不支持安全存储功能。为保护您的登录凭证安全，请使用支持安全存储的设备登录。'
-        );
+          if (tokens.tempToken) {
+            await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tokens.tempToken);
+          }
+        } catch (secureStoreError) {
+          tokenLogger.error('SecureStore不可用', secureStoreError);
+          throw new SecureStorageUnavailableError(
+            '您的设备不支持安全存储功能。为保护您的登录凭证安全，请使用支持安全存储的设备登录。'
+          );
+        }
       }
 
       tokenLogger.debug('Tokens存储成功');
@@ -211,11 +221,12 @@ export class TokenManager {
    */
   private static async getAccessToken(): Promise<string | null> {
     try {
-      // 只使用SecureStore，不允许降级
+      if (Platform.OS === 'web') {
+        return await AsyncStorage.getItem(this.ACCESS_TOKEN_KEY);
+      }
       return await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
     } catch (error) {
       tokenLogger.error('获取访问令牌失败', error);
-      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -225,11 +236,12 @@ export class TokenManager {
    */
   private static async getRefreshToken(): Promise<string | null> {
     try {
-      // 只使用SecureStore，不允许降级
+      if (Platform.OS === 'web') {
+        return await AsyncStorage.getItem(this.REFRESH_TOKEN_KEY);
+      }
       return await SecureStore.getItemAsync(this.REFRESH_TOKEN_KEY);
     } catch (error) {
       tokenLogger.error('获取刷新令牌失败', error);
-      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -239,11 +251,12 @@ export class TokenManager {
    */
   static async getTempToken(): Promise<string | null> {
     try {
-      // 只使用SecureStore，不允许降级
+      if (Platform.OS === 'web') {
+        return await AsyncStorage.getItem(this.TEMP_TOKEN_KEY);
+      }
       return await SecureStore.getItemAsync(this.TEMP_TOKEN_KEY);
     } catch (error) {
       tokenLogger.error('获取临时令牌失败', error);
-      // 如果SecureStore不可用，返回null让上层处理
       return null;
     }
   }
@@ -253,11 +266,13 @@ export class TokenManager {
    */
   static async storeTempToken(tempToken: string): Promise<void> {
     try {
-      // 只使用SecureStore，不允许降级
-      await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tempToken);
+      if (Platform.OS === 'web') {
+        await AsyncStorage.setItem(this.TEMP_TOKEN_KEY, tempToken);
+      } else {
+        await SecureStore.setItemAsync(this.TEMP_TOKEN_KEY, tempToken);
+      }
     } catch (error) {
       tokenLogger.error('临时令牌存储失败', error);
-      // 抛出安全错误
       throw new TokenStorageError('临时令牌存储失败', error as Error);
     }
   }
@@ -268,16 +283,19 @@ export class TokenManager {
   static async clearTokens(): Promise<void> {
     try {
       // 同时清理SecureStore和AsyncStorage，确保完全清理
-      await Promise.all([
-        SecureStore.deleteItemAsync(this.ACCESS_TOKEN_KEY).catch(() => {}),
-        SecureStore.deleteItemAsync(this.REFRESH_TOKEN_KEY).catch(() => {}),
-        SecureStore.deleteItemAsync(this.TEMP_TOKEN_KEY).catch(() => {}),
+      const asyncCleanup = [
         AsyncStorage.removeItem(this.ACCESS_TOKEN_KEY).catch(() => {}),
         AsyncStorage.removeItem(this.REFRESH_TOKEN_KEY).catch(() => {}),
         AsyncStorage.removeItem(this.TEMP_TOKEN_KEY).catch(() => {}),
         AsyncStorage.removeItem(this.TOKEN_EXPIRY_KEY).catch(() => {}),
         AsyncStorage.removeItem(this.TOKEN_TYPE_KEY).catch(() => {}),
-      ]);
+      ];
+      const secureCleanup = Platform.OS === 'web' ? [] : [
+        SecureStore.deleteItemAsync(this.ACCESS_TOKEN_KEY).catch(() => {}),
+        SecureStore.deleteItemAsync(this.REFRESH_TOKEN_KEY).catch(() => {}),
+        SecureStore.deleteItemAsync(this.TEMP_TOKEN_KEY).catch(() => {}),
+      ];
+      await Promise.all([...asyncCleanup, ...secureCleanup]);
 
       tokenLogger.info('所有Token已清除');
     } catch (error) {

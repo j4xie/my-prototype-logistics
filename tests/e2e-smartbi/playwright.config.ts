@@ -1,27 +1,30 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 /**
- * SmartBI E2E 测试配置
+ * SmartBI E2E 全量审计测试配置
  *
  * 环境变量:
- * - BASE_URL: 测试目标地址 (默认: http://139.196.165.140:17400)
+ * - BASE_URL: 测试目标地址 (默认: http://localhost:5173)
  * - HEADED: 是否显示浏览器窗口
  * - SLOW_MO: 操作延迟(ms)，便于观察
  */
 
+const screenshotDir = path.resolve(__dirname, '../../test-screenshots/audit-20260208');
+
 export default defineConfig({
   testDir: './tests',
 
-  // 测试超时
-  timeout: 60 * 1000,
+  // 测试超时 - 长超时以支持上传+enrichment
+  timeout: 180 * 1000,
   expect: {
-    timeout: 10 * 1000,
+    timeout: 15 * 1000,
   },
 
-  // 完整的测试报告
-  fullyParallel: false, // 顺序执行，便于调试
+  // 顺序执行
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 1,
+  retries: 0,
   workers: 1,
 
   // 报告器
@@ -33,8 +36,8 @@ export default defineConfig({
 
   // 全局配置
   use: {
-    // 目标地址
-    baseURL: process.env.BASE_URL || 'http://139.196.165.140:8086',
+    // 目标地址 - 本地 Vite dev server
+    baseURL: process.env.BASE_URL || 'http://localhost:5173',
 
     // 浏览器设置
     headless: process.env.HEADED !== 'true',
@@ -42,48 +45,27 @@ export default defineConfig({
 
     // 截图和录像
     screenshot: 'on',
-    video: 'on-first-retry',
-    trace: 'on-first-retry',
+    video: 'retain-on-failure',
+    trace: 'retain-on-failure',
 
     // 视口
     viewport: { width: 1920, height: 1080 },
 
     // 忽略 HTTPS 错误
     ignoreHTTPSErrors: true,
-
-    // 本地存储状态（登录后保存）
-    storageState: './auth-state.json',
   },
 
   // 项目配置
   projects: [
-    // 登录设置（先执行，保存登录状态）
     {
-      name: 'setup',
-      testMatch: /.*\.setup\.ts/,
-      use: {
-        storageState: undefined, // 登录时不使用已保存状态
-      },
-    },
-
-    // Chrome 测试
-    {
-      name: 'chromium',
+      name: 'audit',
+      testMatch: /smartbi-audit\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome', // 使用本地 Chrome
       },
-      dependencies: ['setup'],
     },
   ],
 
   // 输出目录
   outputDir: 'test-results/',
-
-  // Web Server（可选：本地开发时启动）
-  // webServer: {
-  //   command: 'cd ../../web-admin && npm run dev',
-  //   url: 'http://localhost:5173',
-  //   reuseExistingServer: !process.env.CI,
-  // },
 });

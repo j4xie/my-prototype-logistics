@@ -1,5 +1,5 @@
 #!/bin/bash
-# SmartBI Python 服务部署脚本
+# Python Services 部署脚本 (SmartBI + 其他模块)
 # 部署到阿里云服务器
 
 set -e
@@ -7,10 +7,10 @@ set -e
 # 配置
 SERVER="root@139.196.165.140"
 REMOTE_DIR="/www/wwwroot/smartbi-python"
-LOCAL_DIR="smartbi"
+LOCAL_DIR="backend/python"
 
 echo "=========================================="
-echo "SmartBI Python 服务部署"
+echo "Python Services 部署 (SmartBI + Modules)"
 echo "=========================================="
 
 # 1. 检查本地文件
@@ -73,18 +73,18 @@ fi
 pkill -f "uvicorn main:app.*8083" 2>/dev/null || true
 
 # 启动服务
-echo "启动 SmartBI Python 服务..."
-nohup venv38/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8083 > smartbi.log 2>&1 &
+echo "启动 Python Services..."
+nohup venv38/bin/python -m uvicorn main:app --host 0.0.0.0 --port 8083 > python-services.log 2>&1 &
 
 sleep 3
 
 # 检查服务状态
 if curl -s http://localhost:8083/health > /dev/null; then
-    echo "SmartBI Python 服务启动成功!"
+    echo "Python Services 启动成功!"
     curl -s http://localhost:8083/health
 else
     echo "警告: 服务可能未启动，请检查日志"
-    tail -20 smartbi.log
+    tail -20 python-services.log
 fi
 ENDSSH
 

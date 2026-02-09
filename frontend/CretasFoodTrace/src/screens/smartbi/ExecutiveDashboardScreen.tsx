@@ -109,6 +109,70 @@ interface DashboardData {
   trendData: Array<{ date: string; value: number }>;
 }
 
+// Adapter: transform backend DashboardResponse to frontend DashboardData
+// Backend returns: { kpiCards: [...], rankings: { department: [...], region: [...] }, insights: [...], ... }
+// Frontend expects: { kpi: {...}, departmentRanking: [...], regionRanking: [...], aiInsights: [...], ... }
+function adaptDashboardResponse(raw: any): DashboardData {
+  // If already in expected format, return as-is
+  if (raw?.kpi && raw?.departmentRanking) {
+    return raw as DashboardData;
+  }
+
+  // Map kpiCards array to kpi object
+  const kpiCards: any[] = raw?.kpiCards || [];
+  const findKpi = (key: string) => kpiCards.find((k: any) => k.key === key || k.type === key);
+  const salesKpi = findKpi('sales') || findKpi('revenue') || kpiCards[0];
+  const ordersKpi = findKpi('orders') || findKpi('order_count') || kpiCards[1];
+  const completionKpi = findKpi('completion_rate') || findKpi('completionRate') || kpiCards[2];
+  const profitKpi = findKpi('profit') || findKpi('net_profit') || kpiCards[3];
+
+  const kpi: KPIData = {
+    sales: salesKpi?.value ?? 0,
+    salesChange: salesKpi?.change ?? salesKpi?.changeRate ?? 0,
+    orders: ordersKpi?.value ?? 0,
+    ordersChange: ordersKpi?.change ?? ordersKpi?.changeRate ?? 0,
+    completionRate: completionKpi?.value ?? 0,
+    completionRateChange: completionKpi?.change ?? completionKpi?.changeRate ?? 0,
+    profit: profitKpi?.value ?? 0,
+    profitChange: profitKpi?.change ?? profitKpi?.changeRate ?? 0,
+  };
+
+  // Map rankings
+  const rankings = raw?.rankings || {};
+  const mapRanking = (items: any[]): RankingItem[] =>
+    (items || []).map((item: any, idx: number) => ({
+      rank: item.rank ?? idx + 1,
+      name: item.name || item.label || '',
+      value: item.value ?? item.amount ?? 0,
+      change: item.change ?? item.changeRate ?? 0,
+    }));
+
+  const departmentRanking = mapRanking(rankings.department || raw?.departmentRanking || []);
+  const regionRanking = mapRanking(rankings.region || raw?.regionRanking || []);
+
+  // Map AI insights
+  const rawInsights: any[] = raw?.insights || raw?.aiInsights || [];
+  const aiInsights: AIInsight[] = rawInsights.map((item: any, idx: number) => ({
+    id: item.id || String(idx),
+    type: item.type || 'trend',
+    title: item.title || '',
+    description: item.description || item.content || '',
+    priority: item.priority || 'medium',
+  }));
+
+  // Map quick questions
+  const rawQuestions: any[] = raw?.quickQuestions || raw?.suggestedQuestions || [];
+  const quickQuestions: QuickQuestion[] = rawQuestions.map((item: any, idx: number) => ({
+    id: item.id || String(idx),
+    text: item.text || item.question || '',
+  }));
+
+  // Trend data
+  const trendData = raw?.trendData || raw?.trend || [];
+
+  return { kpi, departmentRanking, regionRanking, aiInsights, quickQuestions, trendData };
+}
+
 // KPI Card Component
 interface KPICardProps {
   title: string;
@@ -275,12 +339,18 @@ export default function ExecutiveDashboardScreen() {
       const response = await smartBIApiClient.getExecutiveDashboard(selectedPeriod, factoryId || undefined);
 
       if (response.success && response.data) {
-        setDashboardData(response.data);
+        setDashboardData(adaptDashboardResponse(response.data));
       } else {
+        // Even on failure, show empty dashboard instead of blank screen
+        setDashboardData(adaptDashboardResponse({}));
         setError(response.message || t('errors.loadFailed', { defaultValue: '加载失败' }));
       }
     } catch (err) {
       console.error('Load executive dashboard failed:', err);
+      // Show empty dashboard with error message instead of blank screen
+      if (!dashboardData) {
+        setDashboardData(adaptDashboardResponse({}));
+      }
       setError(t('errors.loadFailed', { defaultValue: '数据加载失败，请重试' }));
     } finally {
       setLoading(false);
@@ -407,33 +477,33 @@ export default function ExecutiveDashboardScreen() {
         )}
 
         {/* KPI Cards */}
-        {dashboardData && (
+        {dashboardData?.kpi && (
           <View style={styles.kpiGrid}>
             <KPICard
               title={t('kpi.sales', { defaultValue: '销售额' })}
-              value={formatCurrency(dashboardData.kpi.sales)}
-              change={dashboardData.kpi.salesChange}
+              value={formatCurrency(dashboardData.kpi.sales ?? 0)}
+              change={dashboardData.kpi.salesChange ?? 0}
               icon="currency-cny"
               color={SMARTBI_THEME.primary}
             />
             <KPICard
               title={t('kpi.orders', { defaultValue: '订单数' })}
-              value={dashboardData.kpi.orders.toLocaleString()}
-              change={dashboardData.kpi.ordersChange}
+              value={(dashboardData.kpi.orders ?? 0).toLocaleString()}
+              change={dashboardData.kpi.ordersChange ?? 0}
               icon="shopping"
               color={SMARTBI_THEME.info}
             />
             <KPICard
               title={t('kpi.completionRate', { defaultValue: '完成率' })}
-              value={`${dashboardData.kpi.completionRate.toFixed(1)}%`}
-              change={dashboardData.kpi.completionRateChange}
+              value={`${(dashboardData.kpi.completionRate ?? 0).toFixed(1)}%`}
+              change={dashboardData.kpi.completionRateChange ?? 0}
               icon="check-circle"
               color={SMARTBI_THEME.success}
             />
             <KPICard
               title={t('kpi.profit', { defaultValue: '利润' })}
-              value={formatCurrency(dashboardData.kpi.profit)}
-              change={dashboardData.kpi.profitChange}
+              value={formatCurrency(dashboardData.kpi.profit ?? 0)}
+              change={dashboardData.kpi.profitChange ?? 0}
               icon="trending-up"
               color={SMARTBI_THEME.secondary}
             />
@@ -441,7 +511,7 @@ export default function ExecutiveDashboardScreen() {
         )}
 
         {/* Rankings Section */}
-        {dashboardData && (
+        {dashboardData && (dashboardData.departmentRanking?.length > 0 || dashboardData.regionRanking?.length > 0) && (
           <View style={styles.rankingSection}>
             {/* Department Ranking */}
             <View style={styles.rankingCard}>
@@ -480,7 +550,7 @@ export default function ExecutiveDashboardScreen() {
         )}
 
         {/* AI Insights */}
-        {dashboardData && dashboardData.aiInsights.length > 0 && (
+        {dashboardData && dashboardData.aiInsights?.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>
@@ -510,7 +580,7 @@ export default function ExecutiveDashboardScreen() {
         )}
 
         {/* Quick Questions */}
-        {dashboardData && dashboardData.quickQuestions.length > 0 && (
+        {dashboardData && dashboardData.quickQuestions?.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleRow}>

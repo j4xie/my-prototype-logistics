@@ -585,13 +585,15 @@ defineExpose({
             </div>
           </div>
 
-          <!-- Card Content Placeholder -->
+          <!-- Card Content: slot or placeholder -->
           <div class="card-content">
-            <div class="chart-placeholder">
-              <el-icon :size="48"><Rank /></el-icon>
-              <span>{{ getChartTypeName(card.chartType) }}</span>
-              <span class="size-info">{{ card.w }} x {{ card.h }}</span>
-            </div>
+            <slot name="card-content" :card="card" :index="internalLayout.cards.indexOf(card)">
+              <div class="chart-placeholder">
+                <el-icon :size="48"><Rank /></el-icon>
+                <span>{{ getChartTypeName(card.chartType) }}</span>
+                <span class="size-info">{{ card.w }} x {{ card.h }}</span>
+              </div>
+            </slot>
           </div>
 
           <!-- Resize Handle -->

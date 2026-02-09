@@ -441,6 +441,7 @@
       "hint": "Click the \"+\" button at bottom right to create a customer"
     },
     "create": "Create Customer",
+    "createCustomer": "Create Customer",
     "edit": "Edit Customer",
     "form": {
       "code": "Customer Code",

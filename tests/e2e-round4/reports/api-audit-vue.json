@@ -1,0 +1,1265 @@
+{
+  "session": "Vue Web-Admin (factory_admin1)",
+  "startedAt": "2026-02-09T03:59:51.655Z",
+  "completedAt": "2026-02-09T04:02:05.801Z",
+  "pages": [
+    {
+      "page": "/dashboard",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/equipment",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/production?period=today",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/quality",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/overview",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T03:59:57.804Z"
+    },
+    {
+      "page": "/production/batches",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/processing/batches?page=1&size=10&batchNumber=&status=",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:00.837Z"
+    },
+    {
+      "page": "/production/plans",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/production-plans?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/product-types",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:03.864Z"
+    },
+    {
+      "page": "/production/conversions",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/product-types",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/conversions?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/raw-material-types",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:06.891Z"
+    },
+    {
+      "page": "/production/bom",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/product-types/active",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/bom/items/PT-F001-002",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/raw-material-types",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/bom/labor?productTypeId=PT-F001-002",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/bom/overhead",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/bom/cost-summary/PT-F001-002",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/bom/labor/all",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:09.934Z"
+    },
+    {
+      "page": "/warehouse/materials",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:12.964Z"
+    },
+    {
+      "page": "/warehouse/shipments",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/processing/batches?status=COMPLETED&size=100",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/shipments?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/customers",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:15.996Z"
+    },
+    {
+      "page": "/warehouse/inventory",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches/inventory/statistics",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:19.049Z"
+    },
+    {
+      "page": "/quality/inspections",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/processing/quality/inspections?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:22.076Z"
+    },
+    {
+      "page": "/quality/disposals",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/disposal-records?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/material-batches?status=AVAILABLE&size=100",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:25.104Z"
+    },
+    {
+      "page": "/procurement/suppliers",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/suppliers?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:28.131Z"
+    },
+    {
+      "page": "/sales/customers",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/customers?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:31.180Z"
+    },
+    {
+      "page": "/hr/employees",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/users?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:34.213Z"
+    },
+    {
+      "page": "/hr/attendance",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/timeclock/admin/history?page=1&size=10&startDate=2026-01-09&endDate=2026-02-08",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/timeclock/admin/statistics?startDate=2026-01-09&endDate=2026-02-08",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:37.244Z"
+    },
+    {
+      "page": "/hr/whitelist",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/whitelist?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/departments",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/whitelist/stats",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:40.269Z"
+    },
+    {
+      "page": "/hr/departments",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/departments?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/users?size=100",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:43.297Z"
+    },
+    {
+      "page": "/equipment/list",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/equipment?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:46.338Z"
+    },
+    {
+      "page": "/equipment/maintenance",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:49.362Z"
+    },
+    {
+      "page": "/equipment/alerts",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/equipment-alerts/stats",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/equipment-alerts?page=1&size=10",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:52.384Z"
+    },
+    {
+      "page": "/finance/costs",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:55.406Z"
+    },
+    {
+      "page": "/finance/reports",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-01-10&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:00:58.432Z"
+    },
+    {
+      "page": "/system/users",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/users?page=1&size=10&username=&role=",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:01.459Z"
+    },
+    {
+      "page": "/system/roles",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:04.492Z"
+    },
+    {
+      "page": "/system/logs",
+      "apiCalls": [],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:07.524Z"
+    },
+    {
+      "page": "/system/settings",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/settings",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/settings/full",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:10.560Z"
+    },
+    {
+      "page": "/system/ai-intents",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/intent.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/ai-intents/categories",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/ai-intents",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:13.584Z"
+    },
+    {
+      "page": "/system/products",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/product-types?page=1&size=10&productCategory=FINISHED_PRODUCT",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:16.616Z"
+    },
+    {
+      "page": "/analytics/overview",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/quality",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/production?period=today",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/trends?period=week",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/overview",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/equipment",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:19.651Z"
+    },
+    {
+      "page": "/analytics/trends",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/dashboard/trends?period=week",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:22.689Z"
+    },
+    {
+      "page": "/analytics/ai-reports",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/ai/reports?page=0&size=20",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/anomalies",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:25.717Z"
+    },
+    {
+      "page": "/analytics/kpi",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/kpi",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:28.755Z"
+    },
+    {
+      "page": "/analytics/production-report",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/reports/production-by-product?startDate=2026-02-08&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:31.790Z"
+    },
+    {
+      "page": "/scheduling/overview",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/scheduling.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/dashboard",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/alerts/unresolved",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:34.821Z"
+    },
+    {
+      "page": "/scheduling/plans",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/scheduling.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/plans?page=0&size=10",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:37.858Z"
+    },
+    {
+      "page": "/scheduling/realtime",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/scheduling.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/plans?startDate=2026-02-09&endDate=2026-02-09&page=0&size=10",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:40.894Z"
+    },
+    {
+      "page": "/scheduling/workers",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/scheduling.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/plans?status=confirmed&page=0&size=50",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/users?role=operator&page=1&size=200",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:43.925Z"
+    },
+    {
+      "page": "/scheduling/alerts",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/scheduling.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/scheduling/alerts?page=0&size=20",
+          "status": 200,
+          "success": true,
+          "message": "获取成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:46.952Z"
+    },
+    {
+      "page": "/smart-bi/dashboard",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/dashboard/executive?period=month",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:49.989Z"
+    },
+    {
+      "page": "/smart-bi/finance",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/smartbi.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-01-10&endDate=2026-02-09&analysisType=profit",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/uploads",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/finance?startDate=2026-01-10&endDate=2026-02-09&analysisType=profit",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:53.013Z"
+    },
+    {
+      "page": "/smart-bi/sales",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=salesperson",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=product",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=trend",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=salesperson",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=product",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/analysis/sales?startDate=2026-01-10&endDate=2026-02-09&dimension=trend",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:56.062Z"
+    },
+    {
+      "page": "/smart-bi/query",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/smartbi.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 304,
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [],
+      "timestamp": "2026-02-09T04:01:59.102Z"
+    },
+    {
+      "page": "/smart-bi/analysis",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/request.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/src/api/smartbi.ts?t=1770608091949",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/uploads",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/mobile/F001/smart-bi/uploads/343/data?page=0&size=2000",
+          "status": 200,
+          "success": true,
+          "message": "操作成功",
+          "verdict": "OK"
+        },
+        {
+          "method": "POST",
+          "url": "/smartbi-api/api/chart/recommend",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "POST",
+          "url": "/smartbi-api/api/insight/quick-summary",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        },
+        {
+          "method": "POST",
+          "url": "/smartbi-api/api/chart/batch",
+          "status": 200,
+          "success": true,
+          "verdict": "OK"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "timestamp": "2026-02-09T04:02:02.133Z"
+    },
+    {
+      "page": "/calibration/list",
+      "apiCalls": [
+        {
+          "method": "GET",
+          "url": "/src/api/calibration.ts?t=1770604950894",
+          "status": 200,
+          "verdict": "OK"
+        },
+        {
+          "method": "GET",
+          "url": "/api/admin/calibration/statistics?factoryId=F001",
+          "status": 404,
+          "verdict": "FAIL"
+        },
+        {
+          "method": "GET",
+          "url": "/api/admin/calibration/sessions?page=0&size=10&factoryId=F001",
+          "status": 404,
+          "verdict": "FAIL"
+        }
+      ],
+      "consoleErrors": [
+        {
+          "type": "error",
+          "text": "generateInsights 失败: TypeError: Failed to fetch\n    at generateInsights (http://localhost:5173/src/api/smartbi.ts?t=1770608091949:354:28)\n    at enrichSheetAnalysis (http://localhost:5173/src/api/smartbi.ts?t=1770608091949:1352:30)\n    at async enrichSheet (http://localhost:5173/src/views/smart-bi/SmartBIAnalysis.vue?t=1770608091949:814:24)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        },
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "timestamp": "2026-02-09T04:02:05.670Z"
+    }
+  ],
+  "summary": {
+    "totalApiCalls": 130,
+    "ok": 128,
+    "warn": 0,
+    "fail": 2,
+    "consoleErrors": 4,
+    "pagesWithFailures": 1
+  }
+}

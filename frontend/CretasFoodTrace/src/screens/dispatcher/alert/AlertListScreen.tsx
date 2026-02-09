@@ -163,7 +163,7 @@ export default function AlertListScreen() {
         const response = await schedulingApiClient.getAlerts({
           severity: severityFilter,
           alertType: typeFilter,
-          page: 0,
+          page: 1,
           size: 100,
         });
         if (response.success && response.data) {

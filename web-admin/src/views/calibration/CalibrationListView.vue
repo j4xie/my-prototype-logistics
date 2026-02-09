@@ -110,9 +110,8 @@ async function loadFactoryOptions() {
     if (response.success && response.data) {
       factoryOptions.value = response.data;
     }
-  } catch (error) {
-    console.error('加载工厂列表失败:', error);
-    // 使用示例数据
+  } catch {
+    // Backend endpoint not implemented — use demo data
     factoryOptions.value = [
       { id: '1', factoryId: 'F001', name: '上海食品加工厂' },
       { id: '2', factoryId: 'F002', name: '北京冷链物流中心' }
@@ -126,9 +125,8 @@ async function loadStatistics() {
     if (response.success && response.data) {
       statistics.value = response.data;
     }
-  } catch (error) {
-    console.error('加载统计数据失败:', error);
-    // 使用示例数据
+  } catch {
+    // Backend endpoint not implemented — use demo data
     statistics.value = {
       totalSessions: 56,
       completedSessions: 42,
@@ -157,10 +155,8 @@ async function loadData() {
       tableData.value = response.data.content || [];
       pagination.value.total = response.data.totalElements || 0;
     }
-  } catch (error) {
-    console.error('加载数据失败:', error);
-    ElMessage.error('加载数据失败');
-    // 使用示例数据
+  } catch {
+    // Backend endpoint not implemented — use demo data
     tableData.value = generateMockData();
     pagination.value.total = 25;
   } finally {

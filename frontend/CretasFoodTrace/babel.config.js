@@ -17,13 +17,8 @@ module.exports = function(api) {
     ],
   ];
 
-  // Add import.meta transformation for web
-  if (process.env.BABEL_ENV === 'web' || process.env.NODE_ENV === 'web') {
-    plugins.push(
-      ['@babel/plugin-transform-modules-commonjs', { allowTopLevelThis: true }],
-      ['babel-plugin-transform-import-meta', { module: 'ES6' }]
-    );
-  }
+  // Transform import.meta for web compatibility (Zustand devtools uses import.meta.env)
+  plugins.push('babel-plugin-transform-import-meta');
 
   return {
     presets,

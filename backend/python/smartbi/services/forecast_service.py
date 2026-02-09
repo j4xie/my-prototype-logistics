@@ -128,11 +128,24 @@ class ForecastService:
         slope, _, r_value, _, _ = stats.linregress(x, data)
         has_strong_trend = abs(r_value) > 0.7
 
-        # Check for seasonality (simple autocorrelation check)
+        # Check stationarity (ADF test) — P3 enhancement
+        is_stationary = True
+        try:
+            from statsmodels.tsa.stattools import adfuller
+            if n >= 8:
+                adf_result = adfuller(data, maxlag=min(n // 3, 12))
+                is_stationary = adf_result[1] < 0.05  # p-value < 5%
+        except Exception:
+            pass  # Fallback: assume stationary
+
+        # Check for seasonality (enhanced: lower threshold from 24 to 12)
         has_seasonality = self._detect_seasonality(data)
 
-        if has_seasonality and n >= 24:
+        if has_seasonality and n >= 12:
             return ForecastAlgorithm.SEASONAL_DECOMPOSITION
+        elif has_strong_trend and not is_stationary:
+            # Non-stationary with trend → exponential smoothing with trend component
+            return ForecastAlgorithm.EXPONENTIAL_SMOOTHING
         elif has_strong_trend:
             return ForecastAlgorithm.LINEAR_TREND
         elif n >= 10:
@@ -141,8 +154,9 @@ class ForecastService:
             return ForecastAlgorithm.MOVING_AVERAGE
 
     def _detect_seasonality(self, data: np.ndarray, max_lag: int = 12) -> bool:
-        """Detect seasonality using autocorrelation"""
-        if len(data) < max_lag * 2:
+        """Detect seasonality using autocorrelation (enhanced: works with 12+ points)"""
+        n = len(data)
+        if n < 12:  # Changed from max_lag * 2 (24) to 12
             return False
 
         # Calculate autocorrelation
@@ -154,10 +168,12 @@ class ForecastService:
         normalized = data - mean
         acf = np.correlate(normalized, normalized, mode='full')
         acf = acf[len(acf)//2:]  # Take positive lags only
-        acf = acf / (var * len(data))
+        acf = acf / (var * n)
 
         # Check for significant peaks at seasonal lags
-        for lag in [4, 7, 12]:  # Common seasonal periods
+        # Enhanced: also check shorter periods for limited data
+        check_lags = [lag for lag in [4, 6, 7, 12] if lag < n - 1]
+        for lag in check_lags:
             if lag < len(acf) and acf[lag] > 0.3:
                 return True
 
@@ -211,10 +227,15 @@ class ForecastService:
         residual_std = np.std(residuals)
 
         # Prediction intervals widen with distance
-        lower_bound = [float(p - z_score * residual_std * np.sqrt(1 + 1/n + (fx - np.mean(x))**2 / np.sum((x - np.mean(x))**2)))
-                       for p, fx in zip(predictions, future_x)]
-        upper_bound = [float(p + z_score * residual_std * np.sqrt(1 + 1/n + (fx - np.mean(x))**2 / np.sum((x - np.mean(x))**2)))
-                       for p, fx in zip(predictions, future_x)]
+        ss_x = np.sum((x - np.mean(x))**2)
+        if ss_x == 0:
+            lower_bound = [float(p - z_score * residual_std) for p in predictions]
+            upper_bound = [float(p + z_score * residual_std) for p in predictions]
+        else:
+            lower_bound = [float(p - z_score * residual_std * np.sqrt(1 + 1/n + (fx - np.mean(x))**2 / ss_x))
+                           for p, fx in zip(predictions, future_x)]
+            upper_bound = [float(p + z_score * residual_std * np.sqrt(1 + 1/n + (fx - np.mean(x))**2 / ss_x))
+                           for p, fx in zip(predictions, future_x)]
 
         return {
             "predictions": predictions,
@@ -322,7 +343,7 @@ class ForecastService:
             if seasonality is None:
                 seasonality = self._detect_seasonal_period(data)
 
-            if seasonality and len(data) >= seasonality * 2:
+            if seasonality and len(data) >= seasonality:
                 model = ExponentialSmoothing(
                     data,
                     trend='add',
@@ -349,20 +370,23 @@ class ForecastService:
                 }
 
         except Exception as e:
-            logger.warning(f"Seasonal forecast failed: {e}")
+            logger.warning(f"Seasonal forecast failed, falling back to exponential smoothing: {e}")
 
         # Fallback to exponential smoothing
-        return self._exponential_smoothing_forecast(data, periods, confidence_level)
+        fallback_result = self._exponential_smoothing_forecast(data, periods, confidence_level)
+        fallback_result["algorithmNote"] = "seasonal_fallback_to_exponential_smoothing"
+        return fallback_result
 
     def _detect_seasonal_period(self, data: np.ndarray) -> Optional[int]:
-        """Detect seasonal period from data"""
-        if len(data) < 24:
+        """Detect seasonal period from data (enhanced: works with 12+ points)"""
+        n = len(data)
+        if n < 12:  # Changed from 24 to 12
             return None
 
         # Try common seasonal periods
         for period in [12, 7, 4]:
-            if len(data) >= period * 2:
-                # Check if autocorrelation at this lag is significant
+            # Changed: require only 1.0x period instead of 2x
+            if n >= period:
                 mean = np.mean(data)
                 var = np.var(data)
                 if var == 0:

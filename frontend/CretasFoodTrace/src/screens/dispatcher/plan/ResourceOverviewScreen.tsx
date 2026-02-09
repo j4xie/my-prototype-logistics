@@ -121,14 +121,13 @@ export default function ResourceOverviewScreen() {
       // 并行获取多个数据源
       const linesPromise = schedulingApiClient.getProductionLines().catch(() => ({ success: false, data: [] as any[] }));
       const alertsPromise = schedulingApiClient.getUnresolvedAlerts().catch(() => ({ success: false, data: [] as any[] }));
-      const equipmentsPromise = equipmentApiClient.getEquipments().catch(() => ({ success: false, data: { content: [] as any[] } }));
+      const equipmentsPromise = equipmentApiClient.getEquipments().catch(() => ({ content: [] as any[], totalElements: 0, totalPages: 0 }));
 
-      const [linesResponse, alertsResponse, equipmentsResponseRaw] = await Promise.all([
+      const [linesResponse, alertsResponse, equipmentsResponse] = await Promise.all([
         linesPromise,
         alertsPromise,
         equipmentsPromise,
       ]);
-      const equipmentsResponse = equipmentsResponseRaw as { success: boolean; data: { content: any[] } | null };
 
       // 处理产线数据 -> Workshop
       if (linesResponse.success && linesResponse.data) {
@@ -179,8 +178,8 @@ export default function ResourceOverviewScreen() {
       }
 
       // 处理设备数据
-      if (equipmentsResponse.success && equipmentsResponse.data?.content) {
-        const equipmentList = equipmentsResponse.data.content;
+      if (equipmentsResponse?.content) {
+        const equipmentList = equipmentsResponse.content;
         const transformedEquipments: Equipment[] = equipmentList.map((eq: any) => ({
           id: String(eq.id),
           name: eq.name || eq.equipmentName || '-',

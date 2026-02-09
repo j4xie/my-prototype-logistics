@@ -37,7 +37,11 @@
   "staff": {
     "title": "员工管理",
     "list": {
-      "title": "员工列表"
+      "title": "员工列表",
+      "searchPlaceholder": "搜索员工...",
+      "filter": {
+        "all": "全部"
+      }
     },
     "detail": {
       "title": "员工详情",
@@ -48,7 +52,35 @@
       "edit": "编辑信息",
       "changeStatus": "变更状态",
       "viewAttendance": "考勤记录",
-      "viewPerformance": "绩效记录"
+      "viewPerformance": "绩效记录",
+      "noDepartment": "未分配部门",
+      "employee": "员工",
+      "aiAnalysis": "AI分析",
+      "notFound": "未找到员工信息",
+      "loadFailed": "加载员工详情失败",
+      "sections": {
+        "basicInfo": "基本信息",
+        "monthlyAttendance": "本月考勤",
+        "workSummary": "工时汇总",
+        "recentBatches": "最近批次"
+      },
+      "fields": {
+        "phone": "电话",
+        "email": "邮箱",
+        "hireDate": "入职日期",
+        "employeeCode": "工号"
+      },
+      "attendance": {
+        "workDays": "出勤天数",
+        "late": "迟到",
+        "earlyLeave": "早退",
+        "absent": "缺勤"
+      },
+      "work": {
+        "batches": "参与批次",
+        "totalHours": "总工时",
+        "earnings": "总收入"
+      }
     },
     "add": {
       "title": "添加员工",
@@ -407,6 +439,7 @@
       "title": "白名单列表",
       "empty": "暂无白名单数据",
       "search": "搜索手机号...",
+      "searchPlaceholder": "搜索白名单...",
       "delete": "删除",
       "deleteConfirm": "确定要删除 {phone} 吗？",
       "deleteSuccess": "删除成功",
@@ -521,7 +554,8 @@
       "notifications": "消息通知",
       "settings": "系统设置",
       "help": "帮助中心",
-      "about": "关于"
+      "about": "关于",
+      "language": "语言设置"
     },
     "stats": {
       "activeStaff": "在职员工",

@@ -1,0 +1,125 @@
+{
+  "sheet_name": "24年返利明细",
+  "sheet_index": 10,
+  "row_count": 58,
+  "col_count": 6,
+  "columns": [
+    "日期",
+    "月份",
+    "摘要",
+    "贷方金额",
+    "区域",
+    "业务员"
+  ],
+  "data_types": {
+    "日期": "object",
+    "月份": "object",
+    "摘要": "object",
+    "贷方金额": "float64",
+    "区域": "object",
+    "业务员": "object"
+  },
+  "statistics": {
+    "日期": {
+      "non_null_count": 57,
+      "null_count": 1,
+      "unique_count": 10
+    },
+    "月份": {
+      "non_null_count": 57,
+      "null_count": 1,
+      "unique_count": 4
+    },
+    "摘要": {
+      "non_null_count": 58,
+      "null_count": 0,
+      "unique_count": 54
+    },
+    "贷方金额": {
+      "non_null_count": 58,
+      "null_count": 0,
+      "unique_count": 58,
+      "min": -47546.9,
+      "max": 65166.75,
+      "mean": -560.3734482758623,
+      "sum": -32501.660000000014
+    },
+    "区域": {
+      "non_null_count": 57,
+      "null_count": 1,
+      "unique_count": 5
+    },
+    "业务员": {
+      "non_null_count": 57,
+      "null_count": 1,
+      "unique_count": 14
+    }
+  },
+  "raw_stats": {
+    "non_empty_row_count": 59,
+    "avg_fill_rate": 0.9887005649717514,
+    "potential_data_start_row": null,
+    "first_10_rows_summary": [
+      {
+        "row": 0,
+        "non_empty": 6,
+        "numeric": 0,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 1,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 2,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 3,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 4,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 5,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 6,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 7,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 8,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      },
+      {
+        "row": 9,
+        "non_empty": 6,
+        "numeric": 1,
+        "fill_rate": 1.0
+      }
+    ]
+  }
+}

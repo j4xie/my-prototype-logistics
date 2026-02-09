@@ -100,7 +100,7 @@ export function WHInboundListScreen() {
         id: b.id,
         batchNumber: b.batchNumber || b.id,
         material: b.materialName || '原材料',
-        materialType: b.storageType === 'frozen' ? '冻品' : b.storageType === 'fresh' ? '鲜品' : '干货',
+        materialType: b.storageType?.toLowerCase() === 'frozen' ? '冻品' : b.storageType?.toLowerCase() === 'fresh' ? '鲜品' : '干货',
         supplier: b.supplierName || b.supplierId || '未知供应商',
         quantity: b.inboundQuantity || 0,
         status: mapBatchStatusToInbound(b.status),

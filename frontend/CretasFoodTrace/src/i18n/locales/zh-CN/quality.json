@@ -354,7 +354,8 @@
       "myRecords": "我的记录",
       "settings": "设置",
       "help": "帮助中心",
-      "about": "关于"
+      "about": "关于",
+      "language": "语言设置"
     },
     "confirmLogout": "确认退出",
     "confirmLogoutMessage": "确定要退出登录吗？",

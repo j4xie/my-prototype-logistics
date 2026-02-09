@@ -171,7 +171,7 @@ export function WSHomeScreen() {
       }
 
       // 获取下一批任务（待开始的批次）
-      const pendingRes = await processingApiClient.getBatches({ status: 'PENDING', page: 1, size: 1 });
+      const pendingRes = await processingApiClient.getBatches({ status: 'PLANNED', page: 1, size: 1 });
       if (pendingRes.success && pendingRes.data?.content?.length > 0) {
         const batch = pendingRes.data.content[0];
         if (batch) {

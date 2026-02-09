@@ -28,7 +28,7 @@ export default function WhitelistListScreen() {
 
   const loadData = useCallback(async () => {
     try {
-      const res = await whitelistApiClient.getWhitelist({ page: 0, size: 100 });
+      const res = await whitelistApiClient.getWhitelist({ page: 1, size: 100 });
       // API 直接返回 PageResponse
       if (res?.content) {
         // Map WhitelistDTO to WhitelistEntry

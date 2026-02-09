@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   Image,
   Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -53,6 +54,12 @@ export default function QIProfileScreen() {
   });
 
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (window.confirm(t('profile.confirmLogoutMessage'))) {
+        logout();
+      }
+      return;
+    }
     Alert.alert(t('profile.confirmLogout'), t('profile.confirmLogoutMessage'), [
       { text: t('camera.cancel'), style: 'cancel' },
       {

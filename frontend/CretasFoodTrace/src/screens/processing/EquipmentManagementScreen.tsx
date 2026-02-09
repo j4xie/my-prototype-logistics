@@ -119,14 +119,13 @@ export default function EquipmentManagementScreen() {
       if (typeFilter !== 'all') params.type = typeFilter;
       if (searchQuery.trim()) params.keyword = searchQuery.trim();
 
-      const response = await equipmentApiClient.getEquipments(params);
-      const data = (response as any).data;
+      const result = await equipmentApiClient.getEquipments(params);
       let equipmentList: Equipment[] = [];
 
-      if (Array.isArray(data)) {
-        equipmentList = data;
-      } else if (data && typeof data === 'object') {
-        equipmentList = data.content || data.items || [];
+      if (result && result.content) {
+        equipmentList = result.content;
+      } else if (Array.isArray(result)) {
+        equipmentList = result as unknown as Equipment[];
       }
 
       setEquipments(equipmentList);

@@ -105,7 +105,8 @@
       "notificationSettings": "Notification Settings",
       "settings": "System Settings",
       "about": "About",
-      "logout": "Logout"
+      "logout": "Logout",
+      "language": "Language"
     }
   },
   "workers": {

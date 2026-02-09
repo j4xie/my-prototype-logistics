@@ -128,7 +128,7 @@ export function InventoryAlertScreen() {
       id: batch.id,
       batchNumber: batch.batchNumber,
       materialName: batch.materialName || "未知物料",
-      materialType: batch.storageType === "fresh" ? "鲜品" : batch.storageType === "frozen" ? "冻品" : "干货",
+      materialType: batch.storageType?.toLowerCase() === "fresh" ? "鲜品" : batch.storageType?.toLowerCase() === "frozen" ? "冻品" : "干货",
       alertType,
       level,
       quantity: batch.remainingQuantity || 0,

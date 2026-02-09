@@ -115,11 +115,11 @@ class IntentAnalysisApiClient {
     size = 20,
     factoryId?: string
   ): Promise<SuggestionListResponse> {
-    const response = await apiClient.get<SuggestionListResponse>(
+    const response = await apiClient.get<{ code: number; data: SuggestionListResponse; message: string; success: boolean }>(
       `${this.getBasePath(factoryId)}/suggestions/create-intent`,
       { params: { page, size } }
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -130,11 +130,11 @@ class IntentAnalysisApiClient {
     size = 20,
     factoryId?: string
   ): Promise<SuggestionListResponse> {
-    const response = await apiClient.get<SuggestionListResponse>(
+    const response = await apiClient.get<{ code: number; data: SuggestionListResponse; message: string; success: boolean }>(
       `${this.getBasePath(factoryId)}/suggestions/update-intent`,
       { params: { page, size } }
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -145,11 +145,11 @@ class IntentAnalysisApiClient {
     size = 20,
     factoryId?: string
   ): Promise<SuggestionListResponse> {
-    const response = await apiClient.get<SuggestionListResponse>(
+    const response = await apiClient.get<{ code: number; data: SuggestionListResponse; message: string; success: boolean }>(
       `${this.getBasePath(factoryId)}/suggestions`,
       { params: { page, size, status: 'PENDING' } }
     );
-    return response;
+    return response.data;
   }
 
   /**
@@ -159,10 +159,10 @@ class IntentAnalysisApiClient {
     suggestionId: string,
     factoryId?: string
   ): Promise<IntentOptimizationSuggestion> {
-    const response = await apiClient.get<IntentOptimizationSuggestion>(
+    const response = await apiClient.get<{ code: number; data: IntentOptimizationSuggestion; message: string; success: boolean }>(
       `${this.getBasePath(factoryId)}/suggestions/${suggestionId}`
     );
-    return response;
+    return response.data;
   }
 
   // ========== 审批接口 ==========
@@ -215,10 +215,10 @@ class IntentAnalysisApiClient {
    * 获取建议统计
    */
   async getSuggestionStats(factoryId?: string): Promise<SuggestionStats> {
-    const response = await apiClient.get<SuggestionStats>(
+    const response = await apiClient.get<{ code: number; data: SuggestionStats; message: string; success: boolean }>(
       `${this.getBasePath(factoryId)}/suggestions/stats`
     );
-    return response;
+    return response.data;
   }
 
   // ========== 批量操作接口 ==========

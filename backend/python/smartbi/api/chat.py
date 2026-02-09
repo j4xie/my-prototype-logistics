@@ -20,7 +20,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 # Services
-from services.cross_analyzer import CrossAnalyzer, DrillDownResult
+from services.cross_analyzer import CrossAnalyzer, DrillDownResult, DimensionHierarchy
 from services.industry_benchmark import (
     IndustryBenchmark,
     IndustryCategory,
@@ -49,6 +49,10 @@ class DrillDownRequest(BaseModel):
     measures: List[str] = Field(default=["amount", "revenue", "profit"], description="Measures to aggregate")
     aggregation: str = Field(default="sum", description="Aggregation method")
     data: Optional[List[Dict[str, Any]]] = Field(None, description="Data to analyze (if not from cache)")
+    # P4: Multi-level drill-down fields
+    hierarchy_type: Optional[str] = Field(None, description="Hierarchy type: time, geography, organization, product")
+    current_level: Optional[int] = Field(None, description="Current level index in hierarchy")
+    breadcrumb: Optional[List[Dict[str, str]]] = Field(default=None, description="Breadcrumb trail")
 
 
 class DrillDownResponse(BaseModel):
@@ -58,6 +62,12 @@ class DrillDownResponse(BaseModel):
     result: Optional[Dict[str, Any]] = None
     chart_config: Optional[Dict[str, Any]] = None
     processing_time_ms: int = 0
+    # P4: Multi-level drill-down fields
+    available_dimensions: List[str] = []
+    hierarchy: Optional[Dict[str, Any]] = None
+    breadcrumb: List[Dict[str, str]] = []
+    current_level: Optional[int] = None
+    max_level: Optional[int] = None
 
 
 class BenchmarkRequest(BaseModel):
@@ -211,19 +221,75 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
 
+        # P4: Determine child dimension via hierarchy or auto-detection
+        detected_hierarchy = auto_detect_hierarchy(df.columns.tolist())
+        child_dimension = None
+        hierarchy_info = None
+        new_breadcrumb = list(request.breadcrumb or [])
+
+        if request.hierarchy_type and request.hierarchy_type in DimensionHierarchy.HIERARCHIES:
+            # Explicit hierarchy provided
+            levels = DimensionHierarchy.HIERARCHIES[request.hierarchy_type]["levels"]
+            current_lvl = request.current_level or 0
+            # Map level names to actual column names in data
+            level_columns = _map_hierarchy_to_columns(levels, df.columns.tolist())
+            if current_lvl + 1 < len(level_columns):
+                child_dimension = level_columns[current_lvl + 1]
+            hierarchy_info = {
+                "type": request.hierarchy_type,
+                "levels": level_columns,
+                "current_level": current_lvl + 1,
+                "max_level": len(level_columns) - 1
+            }
+        elif detected_hierarchy and request.filter_value:
+            # Auto-detected hierarchy
+            h_type, h_levels = detected_hierarchy
+            current_dim_idx = -1
+            for i, lvl in enumerate(h_levels):
+                if lvl == request.dimension:
+                    current_dim_idx = i
+                    break
+            if current_dim_idx >= 0 and current_dim_idx + 1 < len(h_levels):
+                child_dimension = h_levels[current_dim_idx + 1]
+                hierarchy_info = {
+                    "type": h_type,
+                    "levels": h_levels,
+                    "current_level": current_dim_idx + 1,
+                    "max_level": len(h_levels) - 1
+                }
+
         # Perform drill-down
         analyzer = CrossAnalyzer()
 
         if request.filter_value:
-            # Filter on parent value and break down by dimension
-            result = await analyzer.drill_down(
-                df=df,
-                parent_dimension=request.dimension,
-                parent_value=request.filter_value,
-                child_dimension=request.dimension,  # Same dimension, filtered
-                measures=valid_measures,
-                aggregation=request.aggregation
-            )
+            # Determine the target dimension for breakdown
+            drill_child = child_dimension or request.dimension
+            if child_dimension and child_dimension != request.dimension:
+                # True hierarchical drill-down: filter parent, break down by child
+                result = await analyzer.drill_down(
+                    df=df,
+                    parent_dimension=request.dimension,
+                    parent_value=request.filter_value,
+                    child_dimension=child_dimension,
+                    measures=valid_measures,
+                    aggregation=request.aggregation
+                )
+            else:
+                # Same dimension filter (original behavior)
+                result = await analyzer.drill_down(
+                    df=df,
+                    parent_dimension=request.dimension,
+                    parent_value=request.filter_value,
+                    child_dimension=request.dimension,
+                    measures=valid_measures,
+                    aggregation=request.aggregation
+                )
+
+            # Update breadcrumb
+            new_breadcrumb.append({
+                "dimension": request.dimension,
+                "value": request.filter_value
+            })
         else:
             # Simple aggregation by dimension
             agg_funcs = {m: request.aggregation for m in valid_measures}
@@ -242,7 +308,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
                     "dimension": request.dimension,
                     "unique_values": len(grouped),
                     "total_records": len(df),
-                    "measure_totals": {m: grouped[m].sum() for m in valid_measures}
+                    "measure_totals": {m: float(grouped[m].sum()) for m in valid_measures}
                 }
             )
 
@@ -251,12 +317,20 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
                 request.dimension, valid_measures, grouped
             )
 
+        # P4: Detect available dimensions for further drill-down
+        available_dims = _find_available_dimensions(df, request.dimension, valid_measures)
+
         return DrillDownResponse(
             success=result.success,
             error=result.error,
             result=result.to_dict() if result.success else None,
             chart_config=result.chart_config,
-            processing_time_ms=int((time.time() - start_time) * 1000)
+            processing_time_ms=int((time.time() - start_time) * 1000),
+            available_dimensions=available_dims,
+            hierarchy=hierarchy_info,
+            breadcrumb=new_breadcrumb,
+            current_level=hierarchy_info["current_level"] if hierarchy_info else None,
+            max_level=hierarchy_info["max_level"] if hierarchy_info else None
         )
 
     except Exception as e:
@@ -628,3 +702,106 @@ def _generate_bar_chart_config(
             "trigger": "axis"
         }
     }
+
+
+# P4: Hierarchy keyword mappings for auto-detection
+_HIERARCHY_KEYWORDS = {
+    "time": {
+        "年": 0, "年度": 0, "year": 0,
+        "季": 1, "季度": 1, "quarter": 1,
+        "月": 2, "月份": 2, "month": 2,
+        "周": 3, "week": 3,
+        "日": 4, "日期": 4, "天": 4, "day": 4, "date": 4,
+    },
+    "geography": {
+        "国家": 0, "country": 0,
+        "区域": 1, "大区": 1, "region": 1,
+        "省": 2, "省份": 2, "province": 2,
+        "市": 3, "城市": 3, "city": 3,
+        "区": 4, "区县": 4, "district": 4,
+    },
+    "organization": {
+        "公司": 0, "company": 0,
+        "事业部": 1, "division": 1,
+        "部门": 2, "department": 2, "dept": 2,
+        "团队": 3, "team": 3, "组": 3,
+    },
+    "product": {
+        "大类": 0, "品类": 0, "category": 0,
+        "小类": 1, "子类": 1, "subcategory": 1,
+        "产品": 2, "product": 2, "商品": 2,
+        "SKU": 3, "sku": 3, "规格": 3,
+    },
+    "financial": {
+        "项目": 0, "会计科目": 0, "科目": 0,
+        "明细": 1, "子项目": 1, "子科目": 1,
+        "行次": 2,
+    },
+}
+
+
+def auto_detect_hierarchy(columns: List[str]) -> Optional[tuple]:
+    """
+    Scan column names to detect which hierarchy they belong to.
+    Returns (hierarchy_type, matched_columns_sorted_by_level) or None.
+    """
+    best_match = None
+    best_count = 0
+
+    for h_type, keyword_map in _HIERARCHY_KEYWORDS.items():
+        matched = []
+        # Sort by keyword length descending to avoid ambiguous substring matches
+        sorted_keywords = sorted(keyword_map.items(), key=lambda x: len(x[0]), reverse=True)
+        for col in columns:
+            col_lower = col.lower().strip()
+            for keyword, level in sorted_keywords:
+                if keyword in col_lower or col_lower == keyword:
+                    matched.append((level, col))
+                    break
+
+        if len(matched) >= 2 and len(matched) > best_count:
+            best_count = len(matched)
+            # Sort by level, extract column names
+            matched.sort(key=lambda x: x[0])
+            best_match = (h_type, [m[1] for m in matched])
+
+    return best_match
+
+
+def _map_hierarchy_to_columns(levels: List[str], columns: List[str]) -> List[str]:
+    """Map hierarchy level names to actual DataFrame column names"""
+    result = []
+    col_lower_map = {c.lower(): c for c in columns}
+    for level in levels:
+        if level in columns:
+            result.append(level)
+        elif level.lower() in col_lower_map:
+            result.append(col_lower_map[level.lower()])
+        else:
+            # Try keyword matching
+            for col in columns:
+                if level.lower() in col.lower():
+                    result.append(col)
+                    break
+    return result
+
+
+def _find_available_dimensions(
+    df: 'pd.DataFrame',
+    current_dimension: str,
+    current_measures: List[str]
+) -> List[str]:
+    """
+    Find other categorical columns that could be drilled into.
+    Excludes current dimension and numeric measures.
+    """
+    available = []
+    for col in df.columns:
+        if col == current_dimension or col in current_measures:
+            continue
+        # Check if column is categorical (non-numeric with reasonable cardinality)
+        if df[col].dtype == 'object' or str(df[col].dtype) == 'category':
+            nunique = df[col].nunique()
+            if 2 <= nunique <= 50:
+                available.append(col)
+    return available[:8]  # Limit to 8 suggestions

@@ -144,19 +144,21 @@ class WageApiClient {
     factoryId?: string;
   }): Promise<PieceRateRule[]> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get<PieceRateRule[]>(
+    const response = await apiClient.get<{ code: number; data: PieceRateRule[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/piece-rate-rules`,
       { params: queryParams }
     );
+    return response.data || [];
   }
 
   /**
    * 获取计件规则详情
    */
   async getPieceRateRule(ruleId: number, factoryId?: string): Promise<PieceRateRule> {
-    return await apiClient.get<PieceRateRule>(
+    const response = await apiClient.get<{ code: number; data: PieceRateRule; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/piece-rate-rules/${ruleId}`
     );
+    return response.data;
   }
 
   /**
@@ -166,10 +168,11 @@ class WageApiClient {
     rule: Omit<PieceRateRule, 'id' | 'factoryId'>,
     factoryId?: string
   ): Promise<PieceRateRule> {
-    return await apiClient.post<PieceRateRule>(
+    const response = await apiClient.post<{ code: number; data: PieceRateRule; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/piece-rate-rules`,
       rule
     );
+    return response.data;
   }
 
   /**
@@ -180,10 +183,11 @@ class WageApiClient {
     rule: Partial<PieceRateRule>,
     factoryId?: string
   ): Promise<PieceRateRule> {
-    return await apiClient.put<PieceRateRule>(
+    const response = await apiClient.put<{ code: number; data: PieceRateRule; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/piece-rate-rules/${ruleId}`,
       rule
     );
+    return response.data;
   }
 
   /**
@@ -210,10 +214,11 @@ class WageApiClient {
     },
     factoryId?: string
   ): Promise<WorkerDailyEfficiency> {
-    return await apiClient.post<WorkerDailyEfficiency>(
+    const response = await apiClient.post<{ code: number; data: WorkerDailyEfficiency; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/record`,
       data
     );
+    return response.data;
   }
 
   /**
@@ -223,10 +228,11 @@ class WageApiClient {
     date: string,
     factoryId?: string
   ): Promise<WorkerDailyEfficiency[]> {
-    return await apiClient.get<WorkerDailyEfficiency[]>(
+    const response = await apiClient.get<{ code: number; data: WorkerDailyEfficiency[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/daily`,
       { params: { date } }
     );
+    return response.data || [];
   }
 
   /**
@@ -237,10 +243,11 @@ class WageApiClient {
     date: string,
     factoryId?: string
   ): Promise<WorkerDailyEfficiency | null> {
-    return await apiClient.get<WorkerDailyEfficiency | null>(
+    const response = await apiClient.get<{ code: number; data: WorkerDailyEfficiency | null; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/daily/${workerId}`,
       { params: { date } }
     );
+    return response.data;
   }
 
   /**
@@ -255,10 +262,11 @@ class WageApiClient {
     if (processStageType) {
       params.processStageType = processStageType;
     }
-    return await apiClient.get<WorkerDailyEfficiency[]>(
+    const response = await apiClient.get<{ code: number; data: WorkerDailyEfficiency[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/ranking`,
       { params }
     );
+    return response.data || [];
   }
 
   /**
@@ -270,10 +278,11 @@ class WageApiClient {
     endDate: string,
     factoryId?: string
   ): Promise<EfficiencyTrendData> {
-    return await apiClient.get<EfficiencyTrendData>(
+    const response = await apiClient.get<{ code: number; data: EfficiencyTrendData; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/trend/${workerId}`,
       { params: { startDate, endDate } }
     );
+    return response.data;
   }
 
   /**
@@ -284,10 +293,11 @@ class WageApiClient {
     endDate: string,
     factoryId?: string
   ): Promise<FactoryEfficiencyTrendItem[]> {
-    return await apiClient.get<FactoryEfficiencyTrendItem[]>(
+    const response = await apiClient.get<{ code: number; data: FactoryEfficiencyTrendItem[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/efficiency/factory-trend`,
       { params: { startDate, endDate } }
     );
+    return response.data || [];
   }
 
   // ========== 工资单管理 ==========
@@ -303,10 +313,11 @@ class WageApiClient {
     },
     factoryId?: string
   ): Promise<PayrollRecord> {
-    return await apiClient.post<PayrollRecord>(
+    const response = await apiClient.post<{ code: number; data: PayrollRecord; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/generate`,
       data
     );
+    return response.data;
   }
 
   /**
@@ -319,10 +330,11 @@ class WageApiClient {
     },
     factoryId?: string
   ): Promise<PayrollRecord[]> {
-    return await apiClient.post<PayrollRecord[]>(
+    const response = await apiClient.post<{ code: number; data: PayrollRecord[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/generate-batch`,
       data
     );
+    return response.data || [];
   }
 
   /**
@@ -344,29 +356,32 @@ class WageApiClient {
     totalPages: number;
   }> {
     const { factoryId, ...queryParams } = params || {};
-    return await apiClient.get(
+    const response = await apiClient.get<{ code: number; data: { content: PayrollRecord[]; page: number; size: number; totalElements: number; totalPages: number }; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll`,
       { params: queryParams }
     );
+    return response.data;
   }
 
   /**
    * 获取工资单详情
    */
   async getPayrollById(payrollId: number, factoryId?: string): Promise<PayrollRecord> {
-    return await apiClient.get<PayrollRecord>(
+    const response = await apiClient.get<{ code: number; data: PayrollRecord; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/${payrollId}`
     );
+    return response.data;
   }
 
   /**
    * 审批工资单
    */
   async approvePayroll(payrollId: number, factoryId?: string): Promise<PayrollRecord> {
-    return await apiClient.put<PayrollRecord>(
+    const response = await apiClient.put<{ code: number; data: PayrollRecord; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/${payrollId}/approve`,
       {}
     );
+    return response.data;
   }
 
   /**
@@ -376,29 +391,32 @@ class WageApiClient {
     payrollIds: number[],
     factoryId?: string
   ): Promise<{ totalRequested: number; successCount: number; failedCount: number }> {
-    return await apiClient.put(
+    const response = await apiClient.put<{ code: number; data: { totalRequested: number; successCount: number; failedCount: number }; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/batch-approve`,
       payrollIds
     );
+    return response.data;
   }
 
   /**
    * 标记工资单已发放
    */
   async markPayrollAsPaid(payrollId: number, factoryId?: string): Promise<PayrollRecord> {
-    return await apiClient.put<PayrollRecord>(
+    const response = await apiClient.put<{ code: number; data: PayrollRecord; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/${payrollId}/paid`,
       {}
     );
+    return response.data;
   }
 
   /**
    * 获取待审核工资单数量
    */
   async getPendingPayrollCount(factoryId?: string): Promise<{ pendingCount: number }> {
-    return await apiClient.get<{ pendingCount: number }>(
+    const response = await apiClient.get<{ code: number; data: { pendingCount: number }; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/pending-count`
     );
+    return response.data;
   }
 
   /**
@@ -410,10 +428,11 @@ class WageApiClient {
     limit: number = 10,
     factoryId?: string
   ): Promise<PayrollRecord[]> {
-    return await apiClient.get<PayrollRecord[]>(
+    const response = await apiClient.get<{ code: number; data: PayrollRecord[]; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/payroll/top-earners`,
       { params: { periodStart, periodEnd, limit } }
     );
+    return response.data || [];
   }
 
   // ========== 成本分析 ==========
@@ -426,10 +445,11 @@ class WageApiClient {
     periodEnd: string,
     factoryId?: string
   ): Promise<LaborCostAnalysis> {
-    return await apiClient.get<LaborCostAnalysis>(
+    const response = await apiClient.get<{ code: number; data: LaborCostAnalysis; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/analysis/labor-cost`,
       { params: { periodStart, periodEnd } }
     );
+    return response.data;
   }
 
   /**
@@ -444,10 +464,11 @@ class WageApiClient {
     const params: Record<string, string | number> = { pieceCount };
     if (processStageType) params.processStageType = processStageType;
     if (productTypeId) params.productTypeId = productTypeId;
-    return await apiClient.get(
+    const response = await apiClient.get<{ code: number; data: { pieceCount: number; estimatedWage: number }; message: string; success: boolean }>(
       `${this.getPath(factoryId)}/analysis/estimate-wage`,
       { params }
     );
+    return response.data;
   }
 }
 
