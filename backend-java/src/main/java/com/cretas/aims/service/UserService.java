@@ -156,4 +156,10 @@ public interface UserService {
      * 生成下一个可用工号
      */
     String generateNextEmployeeCode(String factoryId);
+
+    /**
+     * 为新工厂自动创建默认用户账号（幂等操作）
+     * 在 linkSurveyCompany 时触发
+     */
+    List<UserDTO> provisionDefaultUsers(String factoryId);
 }

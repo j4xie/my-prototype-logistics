@@ -10,6 +10,7 @@ import com.cretas.aims.entity.enums.HireType;
 import com.cretas.aims.exception.BusinessException;
 import com.cretas.aims.exception.EntityNotFoundException;
 import com.cretas.aims.mapper.UserMapper;
+import com.cretas.aims.repository.FactoryRepository;
 import com.cretas.aims.repository.UserRepository;
 import com.cretas.aims.service.UserService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -43,14 +45,17 @@ public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     private final UserRepository userRepository;
+    private final FactoryRepository factoryRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final com.cretas.aims.utils.ExcelUtil excelUtil;
 
     // Manual constructor (Lombok @RequiredArgsConstructor not working)
-    public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, PasswordEncoder passwordEncoder,
+    public UserServiceImpl(UserRepository userRepository, FactoryRepository factoryRepository,
+                          UserMapper userMapper, PasswordEncoder passwordEncoder,
                           com.cretas.aims.utils.ExcelUtil excelUtil) {
         this.userRepository = userRepository;
+        this.factoryRepository = factoryRepository;
         this.userMapper = userMapper;
         this.passwordEncoder = passwordEncoder;
         this.excelUtil = excelUtil;
@@ -642,6 +647,64 @@ public class UserServiceImpl implements UserService {
         }
 
         return String.format("%03d", nextCode);
+    }
+
+    @Override
+    @Transactional
+    public List<UserDTO> provisionDefaultUsers(String factoryId) {
+        // Idempotent: skip if factory already has users
+        List<User> existingUsers = userRepository.findByFactoryId(factoryId);
+        if (!existingUsers.isEmpty()) {
+            log.info("Factory {} already has {} users, skipping provisioning", factoryId, existingUsers.size());
+            return Collections.emptyList();
+        }
+
+        // Get factory info for contact details
+        com.cretas.aims.entity.Factory factory = factoryRepository.findById(factoryId)
+                .orElseThrow(() -> new EntityNotFoundException("Factory", factoryId));
+
+        String prefix = factoryId.toLowerCase();
+        String encodedPassword = passwordEncoder.encode("123456");
+        LocalDateTime now = LocalDateTime.now();
+
+        // Define default users: {suffix, roleCode, level, fullName}
+        String[][] defaults = {
+                {"_admin", "factory_super_admin", "0", factory.getContactName() != null ? factory.getContactName() : "管理员"},
+                {"_workshop", "workshop_supervisor", "20", "车间主管"},
+                {"_worker1", "operator", "30", "操作员"}
+        };
+
+        List<UserDTO> created = new ArrayList<>();
+        for (String[] def : defaults) {
+            String username = prefix + def[0];
+
+            if (userRepository.existsByUsername(username)) {
+                log.warn("Username {} already exists globally, skipping", username);
+                continue;
+            }
+
+            User user = new User();
+            user.setFactoryId(factoryId);
+            user.setUsername(username);
+            user.setPasswordHash(encodedPassword);
+            user.setRoleCode(def[1]);
+            user.setLevel(Integer.parseInt(def[2]));
+            user.setFullName(def[3]);
+            user.setIsActive(true);
+            user.setCreatedAt(now);
+            user.setUpdatedAt(now);
+
+            // Set contact phone for admin user
+            if ("_admin".equals(def[0]) && factory.getContactPhone() != null) {
+                user.setPhone(factory.getContactPhone());
+            }
+
+            User saved = userRepository.save(user);
+            created.add(userMapper.toDTO(saved));
+            log.info("Provisioned user: {} (role={}) for factory {}", username, def[1], factoryId);
+        }
+
+        return created;
     }
 
     /**
