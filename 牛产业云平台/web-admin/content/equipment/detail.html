@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备详情 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+    }
+
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .sidebar-logo i {
+      font-size: 32px;
+      color: var(--primary-color, #666fee);
+    }
+
+    .sidebar-nav {
+      padding: 16px 0;
+    }
+
+    .nav-group {
+      margin-bottom: 8px;
+    }
+
+    .nav-group-title {
+      padding: 12px 24px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 24px;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, var(--primary-color, #666fee), transparent);
+      color: #fff;
+      border-left: 3px solid var(--primary-color, #666fee);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .nav-sub-menu {
+      display: none;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .nav-sub-menu.open {
+      display: block;
+    }
+
+    .nav-sub-item {
+      display: block;
+      padding: 12px 24px 12px 60px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-sub-item:hover,
+    .nav-sub-item.active {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* 主内容区 */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+    }
+
+    /* 顶部导航 */
+    .top-header {
+      background: #fff;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+    }
+
+    .breadcrumb a {
+      color: var(--primary-color, #666fee);
+      text-decoration: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f7fa;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header-btn:hover {
+      background: #e8eaed;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color, #666fee), #8b5cf6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    /* 页面内容 */
+    .page-content {
+      padding: 24px 32px;
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+      text-decoration: none;
+      margin-bottom: 12px;
+    }
+
+    .back-link:hover {
+      color: var(--primary-color, #666fee);
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .page-subtitle {
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .header-btns {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #666;
+    }
+
+    .btn:hover {
+      background: #f5f7fa;
+    }
+
+    .btn.primary {
+      background: linear-gradient(135deg, var(--primary-color, #666fee), #8b5cf6);
+      color: #fff;
+      border: none;
+    }
+
+    .btn.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 111, 238, 0.4);
+    }
+
+    .btn.warning {
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+    }
+
+    .btn.danger {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+    }
+
+    /* 详情布局 */
+    .detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+    }
+
+    .detail-main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .detail-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 卡片样式 */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title i {
+      color: var(--primary-color, #666fee);
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* 设备头部信息 */
+    .equipment-header {
+      display: flex;
+      gap: 24px;
+      padding: 24px;
+    }
+
+    .equipment-image {
+      width: 200px;
+      height: 200px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #64748b, #94a3b8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 64px;
+      flex-shrink: 0;
+    }
+
+    .equipment-info {
+      flex: 1;
+    }
+
+    .equipment-name {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 8px;
+    }
+
+    .equipment-model {
+      color: #666;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .status-badge.running {
+      background: #dcfce7;
+      color: #16a34a;
+    }
+
+    .status-badge.maintenance {
+      background: #fef3c7;
+      color: #d97706;
+    }
+
+    .status-badge.fault {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .status-badge.stopped {
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .equipment-meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 13px;
+      color: #999;
+    }
+
+    .meta-value {
+      font-size: 15px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    /* 信息网格 */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-item:last-child,
+    .info-item:nth-last-child(2) {
+      border-bottom: none;
+    }
+
+    .info-label {
+      font-size: 13px;
+      color: #999;
+    }
+
+    .info-value {
+      font-size: 15px;
+      color: #333;
+    }
+
+    /* 规格参数表 */
+    .spec-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .spec-table th,
+    .spec-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .spec-table th {
+      background: #fafbfc;
+      font-weight: 500;
+      color: #666;
+      width: 30%;
+    }
+
+    .spec-table td {
+      color: #333;
+    }
+
+    /* 厂商信息 */
+    .manufacturer-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .manufacturer-logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e2e8f0;
+      color: var(--primary-color, #666fee);
+      font-size: 24px;
+    }
+
+    .manufacturer-detail h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .manufacturer-detail p {
+      color: #666;
+      font-size: 14px;
+    }
+
+    /* 维护记录 */
+    .maintenance-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .maintenance-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .maintenance-item:last-child {
+      border-bottom: none;
+    }
+
+    .maintenance-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #eef2ff;
+      color: var(--primary-color, #666fee);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .maintenance-content {
+      flex: 1;
+    }
+
+    .maintenance-content h4 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .maintenance-content p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    .maintenance-date {
+      font-size: 12px;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    /* 保修信息 */
+    .warranty-card {
+      background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .warranty-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .warranty-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .warranty-badge.active {
+      background: #16a34a;
+      color: #fff;
+    }
+
+    .warranty-badge.expired {
+      background: #dc2626;
+      color: #fff;
+    }
+
+    .warranty-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .warranty-item {
+      background: rgba(255,255,255,0.6);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .warranty-item label {
+      display: block;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .warranty-item span {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    /* 运行数据 */
+    .runtime-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .runtime-item {
+      text-align: center;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .runtime-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary-color, #666fee);
+    }
+
+    .runtime-label {
+      font-size: 13px;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* 位置信息 */
+    .location-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .location-info i {
+      font-size: 24px;
+      color: #ef4444;
+    }
+
+    .location-detail h4 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    .location-detail p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 操作日志 */
+    .log-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .log-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .log-item:last-child {
+      border-bottom: none;
+    }
+
+    .log-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary-color, #666fee);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .log-content {
+      flex: 1;
+    }
+
+    .log-content p {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .log-meta {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 图片画廊 */
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+
+    .gallery-item i {
+      font-size: 32px;
+      color: #999;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <i class="mdi mdi-cow"></i>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <div class="nav-group-title">概览</div>
+          <a href="../../dashboard.html" class="nav-item">
+            <i class="mdi mdi-view-dashboard"></i>
+            <span>工作台</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">内容管理</div>
+          <div class="nav-item active" onclick="toggleSubMenu(this)">
+            <i class="mdi mdi-cog"></i>
+            <span>设备管理</span>
+            <i class="mdi mdi-chevron-down" style="margin-left: auto;"></i>
+          </div>
+          <div class="nav-sub-menu open">
+            <a href="list.html" class="nav-sub-item active">设备列表</a>
+            <a href="review.html" class="nav-sub-item">设备审核</a>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 顶部导航 -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <a href="../../dashboard.html">首页</a>
+          <i class="mdi mdi-chevron-right"></i>
+          <a href="list.html">设备管理</a>
+          <i class="mdi mdi-chevron-right"></i>
+          <span>设备详情</span>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn">
+            <i class="mdi mdi-magnify"></i>
+          </button>
+          <div class="user-avatar">管</div>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <div class="page-content">
+        <!-- 页面标题 -->
+        <div class="page-header">
+          <div>
+            <a href="list.html" class="back-link">
+              <i class="mdi mdi-arrow-left"></i>
+              返回列表
+            </a>
+            <h1 class="page-title">设备详情</h1>
+            <p class="page-subtitle">查看设备完整信息和运行状态</p>
+          </div>
+          <div class="header-btns">
+            <button class="btn warning" onclick="handleMaintenance()">
+              <i class="mdi mdi-wrench"></i>
+              申请维护
+            </button>
+            <a href="edit.html?id=EQ001" class="btn primary">
+              <i class="mdi mdi-pencil"></i>
+              编辑信息
+            </a>
+          </div>
+        </div>
+
+        <!-- 详情布局 -->
+        <div class="detail-layout">
+          <!-- 主内容区 -->
+          <div class="detail-main">
+            <!-- 设备基本信息 -->
+            <div class="card">
+              <div class="equipment-header">
+                <div class="equipment-image">
+                  <i class="mdi mdi-food-variant"></i>
+                </div>
+                <div class="equipment-info">
+                  <h1 class="equipment-name">智能饲喂机</h1>
+                  <p class="equipment-model">型号：SF-2000A | 编号：EQ001</p>
+                  <div class="status-badge running">
+                    <i class="mdi mdi-check-circle"></i>
+                    正常运行
+                  </div>
+                  <div class="equipment-meta">
+                    <div class="meta-item">
+                      <span class="meta-label">设备类型</span>
+                      <span class="meta-value">饲喂设备</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">采购日期</span>
+                      <span class="meta-value">2023-06-15</span>
+                    </div>
+                    <div class="meta-item">
+                      <span class="meta-label">累计运行</span>
+                      <span class="meta-value">5,280 小时</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 规格参数 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-clipboard-list"></i>
+                  规格参数
+                </div>
+              </div>
+              <div class="card-body">
+                <table class="spec-table">
+                  <tr>
+                    <th>额定功率</th>
+                    <td>5.5 kW</td>
+                  </tr>
+                  <tr>
+                    <th>工作电压</th>
+                    <td>380V / 50Hz</td>
+                  </tr>
+                  <tr>
+                    <th>喂料容量</th>
+                    <td>2000 kg/次</td>
+                  </tr>
+                  <tr>
+                    <th>喂料精度</th>
+                    <td>±0.5%</td>
+                  </tr>
+                  <tr>
+                    <th>外形尺寸</th>
+                    <td>3200 × 1500 × 2100 mm</td>
+                  </tr>
+                  <tr>
+                    <th>整机重量</th>
+                    <td>1850 kg</td>
+                  </tr>
+                  <tr>
+                    <th>适用牛舍</th>
+                    <td>标准牛舍 / 大型牛舍</td>
+                  </tr>
+                  <tr>
+                    <th>控制方式</th>
+                    <td>PLC + 触摸屏控制</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+
+            <!-- 运行数据 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-chart-line"></i>
+                  运行数据
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="runtime-stats">
+                  <div class="runtime-item">
+                    <div class="runtime-value">5,280</div>
+                    <div class="runtime-label">累计运行(小时)</div>
+                  </div>
+                  <div class="runtime-item">
+                    <div class="runtime-value">98.6%</div>
+                    <div class="runtime-label">运行效率</div>
+                  </div>
+                  <div class="runtime-item">
+                    <div class="runtime-value">2</div>
+                    <div class="runtime-label">故障次数</div>
+                  </div>
+                  <div class="runtime-item">
+                    <div class="runtime-value">156</div>
+                    <div class="runtime-label">今日喂料(kg)</div>
+                  </div>
+                  <div class="runtime-item">
+                    <div class="runtime-value">45,680</div>
+                    <div class="runtime-label">本月喂料(kg)</div>
+                  </div>
+                  <div class="runtime-item">
+                    <div class="runtime-value">520,000</div>
+                    <div class="runtime-label">累计喂料(kg)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 设备图片 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-image-multiple"></i>
+                  设备图片
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="image-gallery">
+                  <div class="gallery-item">
+                    <i class="mdi mdi-image"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-image"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-image"></i>
+                  </div>
+                  <div class="gallery-item">
+                    <i class="mdi mdi-image"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 侧边栏 -->
+          <div class="detail-sidebar">
+            <!-- 厂商信息 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-domain"></i>
+                  厂商信息
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="manufacturer-info">
+                  <div class="manufacturer-logo">
+                    <i class="mdi mdi-factory"></i>
+                  </div>
+                  <div class="manufacturer-detail">
+                    <h4>德国克拉斯</h4>
+                    <p>CLAAS KGaA mbH</p>
+                  </div>
+                </div>
+                <div class="info-grid" style="margin-top: 16px;">
+                  <div class="info-item">
+                    <span class="info-label">联系电话</span>
+                    <span class="info-value">400-888-8888</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">售后服务</span>
+                    <span class="info-value">7×24小时</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 位置信息 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-map-marker"></i>
+                  位置信息
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="location-info">
+                  <i class="mdi mdi-map-marker"></i>
+                  <div class="location-detail">
+                    <h4>1号养殖场 - A区</h4>
+                    <p>山东省济南市历城区农业示范园区</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 保修信息 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-shield-check"></i>
+                  保修信息
+                </div>
+              </div>
+              <div class="card-body" style="padding: 16px;">
+                <div class="warranty-card">
+                  <div class="warranty-status">
+                    <span class="warranty-badge active">保修中</span>
+                    <span style="font-size: 14px; color: #16a34a;">剩余 186 天</span>
+                  </div>
+                  <div class="warranty-info">
+                    <div class="warranty-item">
+                      <label>保修期限</label>
+                      <span>3 年</span>
+                    </div>
+                    <div class="warranty-item">
+                      <label>保修到期</label>
+                      <span>2026-06-15</span>
+                    </div>
+                    <div class="warranty-item">
+                      <label>采购金额</label>
+                      <span>¥128,000</span>
+                    </div>
+                    <div class="warranty-item">
+                      <label>保修次数</label>
+                      <span>2 / 不限</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 维护记录 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-wrench"></i>
+                  维护记录
+                </div>
+                <a href="#" style="color: var(--primary-color, #666fee); font-size: 14px;">查看全部</a>
+              </div>
+              <div class="card-body">
+                <div class="maintenance-list">
+                  <div class="maintenance-item">
+                    <div class="maintenance-icon">
+                      <i class="mdi mdi-check"></i>
+                    </div>
+                    <div class="maintenance-content">
+                      <h4>定期保养</h4>
+                      <p>更换润滑油、检查传动部件</p>
+                    </div>
+                    <div class="maintenance-date">2024-11-20</div>
+                  </div>
+                  <div class="maintenance-item">
+                    <div class="maintenance-icon">
+                      <i class="mdi mdi-wrench"></i>
+                    </div>
+                    <div class="maintenance-content">
+                      <h4>故障维修</h4>
+                      <p>更换电机轴承</p>
+                    </div>
+                    <div class="maintenance-date">2024-09-15</div>
+                  </div>
+                  <div class="maintenance-item">
+                    <div class="maintenance-icon">
+                      <i class="mdi mdi-check"></i>
+                    </div>
+                    <div class="maintenance-content">
+                      <h4>定期保养</h4>
+                      <p>清洁过滤器、校准称重系统</p>
+                    </div>
+                    <div class="maintenance-date">2024-06-10</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 操作日志 -->
+            <div class="card">
+              <div class="card-header">
+                <div class="card-title">
+                  <i class="mdi mdi-history"></i>
+                  操作日志
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="log-list">
+                  <div class="log-item">
+                    <div class="log-dot"></div>
+                    <div class="log-content">
+                      <p>管理员 张三 更新了设备信息</p>
+                      <span class="log-meta">2024-12-20 14:30</span>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-dot"></div>
+                    <div class="log-content">
+                      <p>系统自动记录运行数据</p>
+                      <span class="log-meta">2024-12-20 00:00</span>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-dot"></div>
+                    <div class="log-content">
+                      <p>管理员 李四 完成维护保养</p>
+                      <span class="log-meta">2024-11-20 16:45</span>
+                    </div>
+                  </div>
+                  <div class="log-item">
+                    <div class="log-dot"></div>
+                    <div class="log-content">
+                      <p>管理员 李四 提交维护申请</p>
+                      <span class="log-meta">2024-11-18 09:20</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function toggleSubMenu(element) {
+      const subMenu = element.nextElementSibling;
+      if (subMenu && subMenu.classList.contains('nav-sub-menu')) {
+        subMenu.classList.toggle('open');
+      }
+    }
+
+    function handleMaintenance() {
+      if (confirm('确定要申请维护吗？')) {
+        alert('维护申请已提交！');
+      }
+    }
+  </script>
+</body>
+</html>

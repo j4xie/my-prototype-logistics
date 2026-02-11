@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>完善信息 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    .mobile-content {
+      padding: 0;
+    }
+
+    /* 头部信息 */
+    .register-header {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-2xl) var(--spacing-lg);
+      text-align: center;
+    }
+
+    .header-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .header-title {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .header-subtitle {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+    }
+
+    /* 表单容器 */
+    .register-form {
+      padding: var(--spacing-lg);
+    }
+
+    .form-section {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .section-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+      padding-bottom: var(--spacing-sm);
+      border-bottom: 2px solid var(--primary-color);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    .section-icon {
+      font-size: var(--font-size-lg);
+    }
+
+    /* 用户协议 */
+    .agreement-section {
+      padding: var(--spacing-lg);
+      margin-bottom: calc(var(--spacing-lg) + 20px);
+    }
+
+    .agreement-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--spacing-sm);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .agreement-checkbox input[type="checkbox"] {
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .agreement-link {
+      color: var(--primary-color);
+      text-decoration: none;
+    }
+
+    .agreement-link:active {
+      opacity: 0.7;
+    }
+
+    /* 提交按钮 */
+    .submit-section {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 430px;
+      background: var(--bg-white);
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-top: 1px solid var(--border-color);
+      z-index: var(--z-index-sticky);
+      box-sizing: border-box;
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: var(--spacing-lg);
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .submit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* 微信信息展示 */
+    .wechat-info {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      background: rgba(82, 196, 26, 0.1);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .wechat-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: 2px solid var(--success-color);
+    }
+
+    .wechat-details {
+      flex: 1;
+    }
+
+    .wechat-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .wechat-id {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+
+    .verified-badge {
+      background: var(--success-color);
+      color: var(--text-inverse);
+      padding: 4px var(--spacing-sm);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* 表单提示 */
+    .form-tip {
+      background: rgba(24, 144, 255, 0.1);
+      border-left: 3px solid var(--info-color);
+      padding: var(--spacing-md);
+      border-radius: var(--radius-sm);
+      margin-top: var(--spacing-lg);
+    }
+
+    .tip-title {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+      color: var(--info-color);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .tip-content {
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 营业执照上传 */
+    .license-upload {
+      margin-top: var(--spacing-md);
+    }
+
+    .license-upload-label {
+      display: block;
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-sm);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .license-upload-label .required {
+      color: var(--error-color);
+    }
+
+    .license-upload-area {
+      border: 2px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      text-align: center;
+      background: var(--bg-gray);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      position: relative;
+      min-height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .license-upload-area:hover {
+      border-color: var(--primary-color);
+      background: rgba(102, 126, 234, 0.05);
+    }
+
+    .license-upload-area.has-image {
+      padding: 0;
+      border: none;
+      background: transparent;
+    }
+
+    .license-upload-icon {
+      font-size: var(--font-size-4xl);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .license-upload-text {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .license-upload-hint {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .license-preview {
+      position: relative;
+      width: 100%;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .license-preview img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .license-preview-actions {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .license-preview-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .license-preview-btn:active {
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- 顶部导航栏 -->
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">完善信息</div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="mobile-content">
+      <!-- 头部信息 -->
+      <div class="register-header">
+        <div class="header-icon"></div>
+        <div class="header-title">欢迎加入溯源商城</div>
+        <div class="header-subtitle">请完善以下信息以完成注册</div>
+      </div>
+
+      <!-- 注册表单 -->
+      <form id="registerForm" class="register-form" onsubmit="handleSubmit(event)">
+        <!-- 微信账号信息 -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="section-icon">💚</span>
+            微信账号
+          </div>
+
+          <div class="wechat-info">
+            <img
+              src="https://api.dicebear.com/7.x/avataaars/svg?seed=User"
+              alt="微信头像"
+              class="wechat-avatar"
+              id="wechatAvatar"
+            >
+            <div class="wechat-details">
+              <div class="wechat-name" id="wechatName">微信用户</div>
+              <div class="wechat-id">微信已授权</div>
+            </div>
+            <span class="verified-badge">✓ 已验证</span>
+          </div>
+        </div>
+
+        <!-- 公司信息 -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="section-icon">🏢</span>
+            公司信息
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">公司名称</label>
+            <input
+              type="text"
+              class="form-control"
+              name="companyName"
+              data-label="公司名称"
+              placeholder="请输入公司全称"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">统一社会信用代码</label>
+            <input
+              type="text"
+              class="form-control"
+              name="creditCode"
+              data-label="统一社会信用代码"
+              placeholder="18位统一社会信用代码"
+              maxlength="18"
+              required
+            >
+            <div class="form-help">用于企业认证，请确保准确无误</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">公司类型</label>
+            <select class="form-control" name="companyType" data-label="公司类型" required>
+              <option value="">请选择公司类型</option>
+              <option value="manufacturer">生产商/工厂</option>
+              <option value="distributor">经销商</option>
+              <option value="restaurant">餐饮企业</option>
+              <option value="retailer">零售商</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">公司地址</label>
+            <input
+              type="text"
+              class="form-control"
+              name="companyAddress"
+              data-label="公司地址"
+              placeholder="请输入详细地址"
+              required
+            >
+          </div>
+
+          <div class="form-group license-upload">
+            <label class="license-upload-label">
+              <span class="required">*</span> 营业执照照片
+            </label>
+            <div class="license-upload-area" id="licenseUploadArea" onclick="document.getElementById('licenseFileInput').click()">
+              <div id="licenseUploadPlaceholder">
+                <div class="license-upload-icon">📄</div>
+                <div class="license-upload-text">点击上传营业执照</div>
+                <div class="license-upload-hint">支持 JPG、PNG 格式，大小不超过 5MB</div>
+              </div>
+              <div class="license-preview" id="licensePreview" style="display: none;">
+                <img id="licensePreviewImage" src="" alt="营业执照预览">
+                <div class="license-preview-actions">
+                  <button type="button" class="license-preview-btn" onclick="event.stopPropagation(); viewLicenseImage()" title="查看大图">👁️</button>
+                  <button type="button" class="license-preview-btn" onclick="event.stopPropagation(); removeLicenseImage()" title="删除">✕</button>
+                </div>
+              </div>
+            </div>
+            <input type="file" id="licenseFileInput" accept="image/*" onchange="handleLicenseUpload(event)">
+            <div class="form-help" style="margin-top: var(--spacing-xs);">请上传清晰的营业执照照片，确保信息完整可见</div>
+          </div>
+        </div>
+
+        <!-- 联系人信息 -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="section-icon"></span>
+            联系人信息
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">联系人姓名</label>
+            <input
+              type="text"
+              class="form-control"
+              name="contactName"
+              data-label="联系人姓名"
+              placeholder="请输入姓名"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">联系电话</label>
+            <input
+              type="tel"
+              class="form-control"
+              name="contactPhone"
+              data-label="联系电话"
+              placeholder="请输入手机号"
+              pattern="^1[3-9]\d{9}$"
+              required
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">职位</label>
+            <input
+              type="text"
+              class="form-control"
+              name="position"
+              placeholder="例如：采购经理"
+            >
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">邮箱</label>
+            <input
+              type="email"
+              class="form-control"
+              name="email"
+              placeholder="请输入邮箱地址"
+            >
+          </div>
+        </div>
+
+        <!-- 业务需求 -->
+        <div class="form-section">
+          <div class="section-title">
+            <span class="section-icon">📋</span>
+            业务需求
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">主要采购品类</label>
+            <div style="display: flex; flex-wrap: wrap; gap: var(--spacing-sm); margin-top: var(--spacing-sm);">
+              <label class="checkbox-label">
+                <input type="checkbox" name="categories" value="seafood">
+                海鲜水产
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="categories" value="meat">
+                肉类禽蛋
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="categories" value="vegetable">
+                蔬菜果蔬
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="categories" value="grain">
+                粮油米面
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">月均采购量</label>
+            <select class="form-control" name="purchaseVolume">
+              <option value="">请选择</option>
+              <option value="small">500件以下</option>
+              <option value="medium">500-2000件</option>
+              <option value="large">2000-5000件</option>
+              <option value="xlarge">5000件以上</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">备注</label>
+            <textarea
+              class="form-control"
+              name="remarks"
+              rows="3"
+              placeholder="其他需要说明的信息（选填）"
+            ></textarea>
+          </div>
+
+          <div class="form-tip">
+            <div class="tip-title">💡 温馨提示</div>
+            <div class="tip-content">
+              • 提交后平台将在1-3个工作日内审核<br>
+              • 审核通过后即可开始采购产品<br>
+              • 如有疑问请联系客服：400-123-4567
+            </div>
+          </div>
+        </div>
+
+        <!-- 用户协议 -->
+        <div class="agreement-section">
+          <label class="agreement-checkbox">
+            <input type="checkbox" id="agreementCheckbox" required>
+            <span>
+              我已阅读并同意
+              <a href="#" class="agreement-link" onclick="showAgreement(); return false;">《用户服务协议》</a>
+              和
+              <a href="#" class="agreement-link" onclick="showPrivacy(); return false;">《隐私政策》</a>
+            </span>
+          </label>
+        </div>
+      </form>
+
+      <!-- 提交按钮 -->
+      <div class="submit-section">
+        <button type="submit" class="submit-btn" form="registerForm">
+          提交注册
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/formValidator.js"></script>
+  <script src="../../assets/js/stateManager.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadWechatInfo();
+    });
+
+    // ==================== 加载微信信息 ====================
+    function loadWechatInfo() {
+      // 从状态管理获取微信授权信息（模拟）
+      const wechatInfo = globalState.get(StateKeys.WECHAT_INFO, {
+        nickname: '微信用户',
+        avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=User'
+      });
+
+      document.getElementById('wechatName').textContent = wechatInfo.nickname;
+      document.getElementById('wechatAvatar').src = wechatInfo.avatar;
+    }
+
+    // ==================== 营业执照上传 ====================
+    let licenseImageUrl = null;
+
+    function handleLicenseUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        Utils.showToast('请上传图片文件', 'error');
+        return;
+      }
+
+      // 验证文件大小（5MB）
+      if (file.size > 5 * 1024 * 1024) {
+        Utils.showToast('图片大小不能超过5MB', 'error');
+        return;
+      }
+
+      // 读取文件并预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        licenseImageUrl = e.target.result;
+        showLicensePreview(licenseImageUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function showLicensePreview(imageUrl) {
+      const placeholder = document.getElementById('licenseUploadPlaceholder');
+      const preview = document.getElementById('licensePreview');
+      const previewImage = document.getElementById('licensePreviewImage');
+      const uploadArea = document.getElementById('licenseUploadArea');
+
+      placeholder.style.display = 'none';
+      preview.style.display = 'block';
+      previewImage.src = imageUrl;
+      uploadArea.classList.add('has-image');
+    }
+
+    function removeLicenseImage() {
+      licenseImageUrl = null;
+      const placeholder = document.getElementById('licenseUploadPlaceholder');
+      const preview = document.getElementById('licensePreview');
+      const uploadArea = document.getElementById('licenseUploadArea');
+      const fileInput = document.getElementById('licenseFileInput');
+
+      placeholder.style.display = 'block';
+      preview.style.display = 'none';
+      uploadArea.classList.remove('has-image');
+      fileInput.value = '';
+    }
+
+    function viewLicenseImage() {
+      if (!licenseImageUrl) return;
+      // 在新窗口打开大图
+      const newWindow = window.open();
+      newWindow.document.write(`<img src="${licenseImageUrl}" style="max-width: 100%; height: auto;">`);
+    }
+
+    // ==================== 表单提交 ====================
+    async function handleSubmit(event) {
+      event.preventDefault();
+
+      const form = event.target;
+
+      // 检查营业执照
+      if (!licenseImageUrl) {
+        Utils.showToast('请上传营业执照照片', 'error');
+        return;
+      }
+
+      // 表单验证
+      const errors = FormValidator.validate(form);
+      if (errors.length > 0) {
+        FormValidator.showErrors(form, errors);
+        Utils.showToast('请填写必填项', 'error');
+        return;
+      }
+
+      // 检查协议勾选
+      const agreementCheckbox = document.getElementById('agreementCheckbox');
+      if (!agreementCheckbox.checked) {
+        Utils.showToast('请先阅读并同意用户协议', 'error');
+        return;
+      }
+
+      // 收集表单数据
+      const formData = new FormData(form);
+      const registerData = {
+        wechat: globalState.get(StateKeys.WECHAT_INFO),
+        company: {
+          name: formData.get('companyName'),
+          creditCode: formData.get('creditCode'),
+          type: formData.get('companyType'),
+          address: formData.get('companyAddress'),
+          businessLicenseImage: licenseImageUrl
+        },
+        contact: {
+          name: formData.get('contactName'),
+          phone: formData.get('contactPhone'),
+          position: formData.get('position'),
+          email: formData.get('email')
+        },
+        business: {
+          categories: Array.from(form.querySelectorAll('input[name="categories"]:checked'))
+            .map(input => input.value),
+          purchaseVolume: formData.get('purchaseVolume'),
+          remarks: formData.get('remarks')
+        },
+        submitTime: new Date().toISOString()
+      };
+
+      // 提交注册到后端
+      try {
+        Utils.showToast('正在提交注册信息...', 'info');
+        
+        // 调用API创建商家
+        const result = await MockAPI.request('merchants.create', {
+          wechatInfo: registerData.wechat,
+          companyName: registerData.company.name,
+          creditCode: registerData.company.creditCode,
+          companyType: registerData.company.type,
+          address: registerData.company.address,
+          businessLicenseImage: registerData.company.businessLicenseImage,
+          contactName: registerData.contact.name,
+          contactPhone: registerData.contact.phone,
+          position: registerData.contact.position,
+          email: registerData.contact.email,
+          categories: registerData.business.categories,
+          purchaseVolume: registerData.business.purchaseVolume,
+          remarks: registerData.business.remarks
+        });
+
+        if (result.success) {
+          // 保存用户信息
+          const userData = {
+            id: result.data.userId,
+            name: registerData.contact.name,
+            phone: registerData.contact.phone,
+            avatar: registerData.wechat?.avatar || 'https://api.dicebear.com/7.x/avataaars/svg?seed=User',
+            merchantId: result.data.merchantId,
+            merchantStatus: 'pending'
+          };
+          
+          globalState.set(StateKeys.USER, userData);
+          globalState.set(StateKeys.IS_LOGGED_IN, true);
+          globalState.set(StateKeys.MERCHANT_STATUS, 'pending');
+
+          Utils.showToast('注册信息已提交！', 'success');
+
+          // 显示审核提示
+          await Utils.sleep(1500);
+          await Utils.confirm(
+            '您的注册信息已提交，平台将在1-3个工作日内完成审核。审核结果将通过微信通知您。',
+            '提交成功',
+            { confirmText: '知道了', showCancel: false }
+          );
+
+          // 跳转到首页
+          setTimeout(() => {
+            window.location.href = '../home/home.html';
+          }, 1000);
+        } else {
+          throw new Error(result.message || '注册失败');
+        }
+
+      } catch (error) {
+        console.error('注册失败:', error);
+        Utils.showToast('注册失败：' + (error.message || '请重试'), 'error');
+      }
+    }
+
+    // ==================== 显示协议 ====================
+    function showAgreement() {
+      Utils.showToast('用户服务协议页面开发中', 'info');
+    }
+
+    function showPrivacy() {
+      Utils.showToast('隐私政策页面开发中', 'info');
+    }
+  </script>
+</body>
+</html>

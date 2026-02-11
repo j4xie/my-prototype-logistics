@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>审核队列 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 审核类型Tab */
+    .review-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .review-tab {
+      padding: 12px 24px;
+      background: #fff;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .review-tab:hover {
+      transform: translateY(-2px);
+    }
+
+    .review-tab.active {
+      border-color: var(--primary-color);
+      background: #e8f5e9;
+    }
+
+    .review-tab .count {
+      background: #ff4d4f;
+      color: #fff;
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .review-tab.active .count {
+      background: var(--primary-color);
+    }
+
+    /* 审核卡片列表 */
+    .review-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .review-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      gap: 20px;
+      transition: all 0.2s;
+    }
+
+    .review-card:hover {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .review-card.urgent {
+      border-left: 4px solid #ff4d4f;
+    }
+
+    /* 预览图 */
+    .review-preview {
+      width: 180px;
+      height: 135px;
+      background: #f5f5f5;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      flex-shrink: 0;
+    }
+
+    /* 审核内容 */
+    .review-content {
+      flex: 1;
+    }
+
+    .review-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .review-type-tag {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .review-type-tag.cattle {
+      background: #e8f5e9;
+      color: #2E7D32;
+    }
+
+    .review-type-tag.enterprise {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+
+    .review-type-tag.report {
+      background: #fff3e0;
+      color: #e65100;
+    }
+
+    .review-urgent-tag {
+      background: #ff4d4f;
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+    }
+
+    .review-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .review-desc {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .review-info {
+      display: flex;
+      gap: 24px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    .review-info span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* 操作区 */
+    .review-actions {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: flex-end;
+      min-width: 150px;
+    }
+
+    .review-time {
+      text-align: right;
+      font-size: 13px;
+      color: #999;
+    }
+
+    .review-time .wait {
+      color: #ff8f00;
+      font-weight: 500;
+    }
+
+    .review-btns {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .review-btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      border: none;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .review-btn.approve {
+      background: linear-gradient(135deg, #2E7D32, #1B5E20);
+      color: #fff;
+    }
+
+    .review-btn.approve:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+    }
+
+    .review-btn.reject {
+      background: #fff;
+      color: #ff4d4f;
+      border: 1px solid #ff4d4f;
+    }
+
+    .review-btn.reject:hover {
+      background: #fff2f0;
+    }
+
+    .review-btn.detail {
+      background: #f5f5f5;
+      color: #666;
+    }
+
+    .review-btn.detail:hover {
+      background: #e8e8e8;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 14px;
+      color: #999;
+    }
+
+    /* 快速筛选 */
+    .quick-filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .quick-filter {
+      padding: 8px 16px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .quick-filter:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .quick-filter.active {
+      background: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="cattle-manage.html" class="nav-sub-item">活牛信息</a>
+            <a href="review-queue.html" class="nav-sub-item active">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+          </div>
+        </div>
+
+        <a href="../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title">审核队列</h1>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <!-- 审核类型Tab -->
+        <div class="review-tabs">
+          <div class="review-tab active" onclick="switchType('all')">
+            <span><i class="mdi mdi-format-list-checks"></i> 全部</span>
+            <span class="count">28</span>
+          </div>
+          <div class="review-tab" onclick="switchType('cattle')">
+            <span><i class="mdi mdi-cow"></i> 活牛发布</span>
+            <span class="count">15</span>
+          </div>
+          <div class="review-tab" onclick="switchType('enterprise')">
+            <span><i class="mdi mdi-office-building"></i> 企业入驻</span>
+            <span class="count">8</span>
+          </div>
+          <div class="review-tab" onclick="switchType('report')">
+            <span><i class="mdi mdi-alert"></i> 举报处理</span>
+            <span class="count">5</span>
+          </div>
+        </div>
+
+        <!-- 快速筛选 -->
+        <div class="quick-filters">
+          <button class="quick-filter active">全部</button>
+          <button class="quick-filter">紧急优先</button>
+          <button class="quick-filter">等待最久</button>
+          <button class="quick-filter">今日提交</button>
+        </div>
+
+        <!-- 审核卡片列表 -->
+        <div class="review-cards" id="reviewCards">
+          <!-- 紧急审核 -->
+          <div class="review-card urgent">
+            <div class="review-preview"><i class="mdi mdi-cow"></i></div>
+            <div class="review-content">
+              <div class="review-meta">
+                <span class="review-type-tag cattle">活牛发布</span>
+                <span class="review-urgent-tag"><i class="mdi mdi-fire"></i> 紧急</span>
+              </div>
+              <h3 class="review-title">优质西门塔尔牛 500-600斤 50头急售</h3>
+              <p class="review-desc">内蒙古锡林郭勒盟自家养殖场直销，疫苗齐全，可上门看牛，支持检疫运输。价格可议，诚意出售。</p>
+              <div class="review-info">
+                <span><i class="mdi mdi-office-building"></i> 内蒙古草原牧业有限公司</span>
+                <span><i class="mdi mdi-map-marker"></i> 内蒙古·锡林郭勒</span>
+                <span><i class="mdi mdi-account"></i> 张经理</span>
+              </div>
+            </div>
+            <div class="review-actions">
+              <div class="review-time">
+                <div>2024-06-20 14:30</div>
+                <div class="wait">等待 48小时</div>
+              </div>
+              <div class="review-btns">
+                <button class="review-btn approve" onclick="approveItem(1)"><i class="mdi mdi-check"></i> 通过</button>
+                <button class="review-btn reject" onclick="rejectItem(1)"><i class="mdi mdi-close"></i> 拒绝</button>
+                <button class="review-btn detail"><i class="mdi mdi-file-document"></i> 详情</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 普通审核1 -->
+          <div class="review-card">
+            <div class="review-preview"><i class="mdi mdi-office-building"></i></div>
+            <div class="review-content">
+              <div class="review-meta">
+                <span class="review-type-tag enterprise">企业入驻</span>
+              </div>
+              <h3 class="review-title">黑龙江牧原肉牛养殖有限公司</h3>
+              <p class="review-desc">申请入驻平台，主营业务：肉牛养殖、销售。已提交营业执照、动物防疫合格证等资质文件。</p>
+              <div class="review-info">
+                <span><i class="mdi mdi-map-marker"></i> 黑龙江·齐齐哈尔</span>
+                <span><i class="mdi mdi-account"></i> 刘经理 136****4567</span>
+                <span><i class="mdi mdi-file-document-multiple"></i> 已上传5份证件</span>
+              </div>
+            </div>
+            <div class="review-actions">
+              <div class="review-time">
+                <div>2024-06-21 09:15</div>
+                <div class="wait">等待 24小时</div>
+              </div>
+              <div class="review-btns">
+                <button class="review-btn approve" onclick="approveItem(2)"><i class="mdi mdi-check"></i> 通过</button>
+                <button class="review-btn reject" onclick="rejectItem(2)"><i class="mdi mdi-close"></i> 拒绝</button>
+                <button class="review-btn detail"><i class="mdi mdi-file-document"></i> 详情</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 举报处理 -->
+          <div class="review-card">
+            <div class="review-preview"><i class="mdi mdi-alert"></i></div>
+            <div class="review-content">
+              <div class="review-meta">
+                <span class="review-type-tag report">举报处理</span>
+              </div>
+              <h3 class="review-title">用户举报：疑似虚假信息</h3>
+              <p class="review-desc">被举报内容：「夏洛莱公牛 种牛出售」。举报原因：图片与实际不符，怀疑是虚假发布。举报人：河北某养殖场。</p>
+              <div class="review-info">
+                <span><i class="mdi mdi-office-building"></i> 被举报企业：山东金牛畜牧</span>
+                <span><i class="mdi mdi-file-document-edit"></i> 举报次数：3次</span>
+                <span><i class="mdi mdi-clock-outline"></i> 发布于 2024-06-20</span>
+              </div>
+            </div>
+            <div class="review-actions">
+              <div class="review-time">
+                <div>2024-06-21 16:00</div>
+                <div class="wait">等待 12小时</div>
+              </div>
+              <div class="review-btns">
+                <button class="review-btn reject" onclick="handleReport(3, 'confirm')"><i
+                    class="mdi mdi-block-helper"></i> 确认违规</button>
+                <button class="review-btn approve" onclick="handleReport(3, 'dismiss')"><i class="mdi mdi-check"></i>
+                  驳回举报</button>
+                <button class="review-btn detail"><i class="mdi mdi-file-document"></i> 详情</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 普通审核2 -->
+          <div class="review-card">
+            <div class="review-preview"><i class="mdi mdi-cow"></i></div>
+            <div class="review-content">
+              <div class="review-meta">
+                <span class="review-type-tag cattle">活牛发布</span>
+              </div>
+              <h3 class="review-title">利木赞母牛 带犊出售 20头</h3>
+              <p class="review-desc">自家繁殖利木赞母牛，带小牛犊一起出售，小牛3-6个月龄，母牛膘情好，适合继续繁殖。</p>
+              <div class="review-info">
+                <span><i class="mdi mdi-office-building"></i> 河北承德农牧科技</span>
+                <span><i class="mdi mdi-map-marker"></i> 河北·承德</span>
+                <span><i class="mdi mdi-cash"></i> ¥28,000/头</span>
+              </div>
+            </div>
+            <div class="review-actions">
+              <div class="review-time">
+                <div>2024-06-21 16:45</div>
+                <div class="wait">等待 8小时</div>
+              </div>
+              <div class="review-btns">
+                <button class="review-btn approve" onclick="approveItem(4)"><i class="mdi mdi-check"></i> 通过</button>
+                <button class="review-btn reject" onclick="rejectItem(4)"><i class="mdi mdi-close"></i> 拒绝</button>
+                <button class="review-btn detail"><i class="mdi mdi-file-document"></i> 详情</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script>
+    // 切换类型
+    function switchType(type) {
+      document.querySelectorAll('.review-tab').forEach(tab => tab.classList.remove('active'));
+      event.target.closest('.review-tab').classList.add('active');
+      // 这里可以根据类型筛选显示
+    }
+
+    // 快速筛选
+    document.querySelectorAll('.quick-filter').forEach(filter => {
+      filter.addEventListener('click', () => {
+        document.querySelectorAll('.quick-filter').forEach(f => f.classList.remove('active'));
+        filter.classList.add('active');
+      });
+    });
+
+    // 通过
+    function approveItem(id) {
+      if (confirm('确定通过该审核吗？')) {
+        alert('审核已通过');
+        event.target.closest('.review-card').remove();
+      }
+    }
+
+    // 拒绝
+    function rejectItem(id) {
+      const reason = prompt('请输入拒绝原因：');
+      if (reason) {
+        alert('审核已拒绝\n原因：' + reason);
+        event.target.closest('.review-card').remove();
+      }
+    }
+
+    // 处理举报
+    function handleReport(id, action) {
+      if (action === 'confirm') {
+        if (confirm('确认该内容违规？将下架相关内容并通知发布者。')) {
+          alert('已确认违规，内容已下架');
+          event.target.closest('.review-card').remove();
+        }
+      } else {
+        if (confirm('驳回该举报？发布内容将继续展示。')) {
+          alert('举报已驳回');
+          event.target.closest('.review-card').remove();
+        }
+      }
+    }
+
+    // 侧边栏
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    console.log('审核队列加载完成');
+  </script>
+</body>
+
+</html>

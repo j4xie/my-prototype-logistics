@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>种牛审核 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font-family); background: var(--bg-gray); }
+
+    .review-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .review-stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    .stat-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+    }
+    .stat-icon.pending { background: #fff3e0; color: #ff8f00; }
+    .stat-icon.today { background: #e3f2fd; color: #1976d2; }
+    .stat-icon.approved { background: #e8f5e9; color: #2e7d32; }
+    .stat-icon.rejected { background: #ffebee; color: #d32f2f; }
+    .stat-info h3 { font-size: 24px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .stat-info p { font-size: 13px; color: #666; }
+
+    .review-container { display: grid; grid-template-columns: 380px 1fr; gap: 20px; height: calc(100vh - 200px); }
+
+    .review-list-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .list-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .list-header h3 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+    .review-list { flex: 1; overflow-y: auto; }
+
+    .review-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .review-item:hover { background: #fafafa; }
+    .review-item.active { background: #e8f5e9; border-left: 3px solid var(--primary-color); }
+    .review-item-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .review-item-title { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+    .review-item-time { font-size: 12px; color: #999; }
+    .review-item-meta { display: flex; gap: 12px; font-size: 12px; color: #666; }
+    .review-item-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .gene-badge-small { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+    .gene-badge-small.premium { background: #e8f5e9; color: #2e7d32; }
+    .gene-badge-small.excellent { background: #e3f2fd; color: #1976d2; }
+
+    .review-detail-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .detail-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .detail-header h3 { font-size: 16px; font-weight: 600; color: #1a1a1a; }
+    .detail-content { flex: 1; overflow-y: auto; padding: 24px; }
+
+    .info-section { margin-bottom: 24px; }
+    .info-section-title {
+      font-size: 14px; font-weight: 600; color: #1a1a1a;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .info-section-title i { color: var(--primary-color); }
+    .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .info-item { display: flex; flex-direction: column; gap: 4px; }
+    .info-label { font-size: 12px; color: #999; }
+    .info-value { font-size: 14px; color: #1a1a1a; }
+    .info-value.price { color: #e53935; font-weight: 600; }
+
+    .image-preview { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .preview-item {
+      aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--primary-color);
+    }
+
+    .gene-check {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 16px;
+      text-align: center;
+    }
+    .gene-check-item label { font-size: 12px; color: #666; display: block; margin-bottom: 8px; }
+    .gene-check-item .value { font-size: 16px; font-weight: 600; color: var(--primary-color); }
+
+    .review-action-section {
+      border-top: 1px solid #f0f0f0;
+      padding: 20px 24px;
+      background: #fafafa;
+    }
+    .action-title { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 16px; }
+    .reject-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .reason-tag {
+      padding: 6px 14px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .reason-tag:hover, .reason-tag.selected { border-color: #d32f2f; color: #d32f2f; background: #ffebee; }
+
+    .remark-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      resize: none;
+      margin-bottom: 16px;
+    }
+    .remark-input:focus { outline: none; border-color: var(--primary-color); }
+
+    .action-buttons { display: flex; justify-content: flex-end; gap: 12px; }
+    .action-btn {
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .action-btn.reject { background: #fff; border: 1px solid #d32f2f; color: #d32f2f; }
+    .action-btn.reject:hover { background: #d32f2f; color: #fff; }
+    .action-btn.approve { background: var(--primary-color); color: #fff; }
+    .action-btn.approve:hover { background: var(--primary-dark); }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="list.html" class="nav-sub-item active">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="../feed/list.html" class="nav-sub-item">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../settings/category.html" class="nav-sub-item">分类管理</a>
+            <a href="../settings/banner.html" class="nav-sub-item">Banner管理</a>
+            <a href="../settings/users.html" class="nav-sub-item">用户管理</a>
+            <a href="../settings/config.html" class="nav-sub-item">系统配置</a>
+            <a href="../settings/permissions.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+        <a href="../../../index.html" class="nav-item" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title">种牛审核</h1>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <div class="review-stats">
+          <div class="review-stat-card">
+            <div class="stat-icon pending"><i class="mdi mdi-clock-outline"></i></div>
+            <div class="stat-info"><h3>45</h3><p>待审核</p></div>
+          </div>
+          <div class="review-stat-card">
+            <div class="stat-icon today"><i class="mdi mdi-calendar-today"></i></div>
+            <div class="stat-info"><h3>8</h3><p>今日新增</p></div>
+          </div>
+          <div class="review-stat-card">
+            <div class="stat-icon approved"><i class="mdi mdi-check-circle"></i></div>
+            <div class="stat-info"><h3>32</h3><p>今日通过</p></div>
+          </div>
+          <div class="review-stat-card">
+            <div class="stat-icon rejected"><i class="mdi mdi-close-circle"></i></div>
+            <div class="stat-info"><h3>5</h3><p>今日驳回</p></div>
+          </div>
+        </div>
+
+        <div class="review-container">
+          <div class="review-list-wrap">
+            <div class="list-header"><h3>待审核种牛</h3></div>
+            <div class="review-list" id="reviewList"></div>
+          </div>
+
+          <div class="review-detail-wrap">
+            <div class="detail-header">
+              <h3>审核详情</h3>
+              <button style="padding: 8px 16px; background: #f5f5f5; border: none; border-radius: 6px; cursor: pointer;" onclick="viewFullDetail()">
+                <i class="mdi mdi-open-in-new"></i> 完整详情
+              </button>
+            </div>
+            <div class="detail-content">
+              <div class="info-section">
+                <div class="info-section-title"><i class="mdi mdi-dna"></i> 基本信息</div>
+                <div class="info-grid">
+                  <div class="info-item"><span class="info-label">种牛名称</span><span class="info-value" id="detailName">鲁西大黄</span></div>
+                  <div class="info-item"><span class="info-label">种牛编号</span><span class="info-value" id="detailCode">SN-2024-006</span></div>
+                  <div class="info-item"><span class="info-label">品种</span><span class="info-value" id="detailBreed">鲁西黄牛</span></div>
+                  <div class="info-item"><span class="info-label">性别</span><span class="info-value" id="detailGender">公牛</span></div>
+                  <div class="info-item"><span class="info-label">月龄</span><span class="info-value" id="detailAge">36 个月</span></div>
+                  <div class="info-item"><span class="info-label">报价</span><span class="info-value price" id="detailPrice">¥35,000</span></div>
+                  <div class="info-item"><span class="info-label">发布企业</span><span class="info-value" id="detailEnterprise">山东黄牛保种场</span></div>
+                  <div class="info-item"><span class="info-label">提交时间</span><span class="info-value" id="detailTime">2024-06-22 10:30</span></div>
+                </div>
+              </div>
+
+              <div class="info-section">
+                <div class="info-section-title"><i class="mdi mdi-dna"></i> 基因检测</div>
+                <div class="gene-check">
+                  <div class="gene-check-item"><label>生长速度</label><span class="value">B+</span></div>
+                  <div class="gene-check-item"><label>肉质评分</label><span class="value">A</span></div>
+                  <div class="gene-check-item"><label>繁殖能力</label><span class="value">B+</span></div>
+                  <div class="gene-check-item"><label>抗病能力</label><span class="value">A</span></div>
+                  <div class="gene-check-item"><label>综合评级</label><span class="value" style="color: #ff8f00;">标准</span></div>
+                </div>
+              </div>
+
+              <div class="info-section">
+                <div class="info-section-title"><i class="mdi mdi-image-multiple"></i> 图片信息</div>
+                <div class="image-preview">
+                  <div class="preview-item"><i class="mdi mdi-cow"></i></div>
+                  <div class="preview-item"><i class="mdi mdi-cow"></i></div>
+                  <div class="preview-item"><i class="mdi mdi-cow"></i></div>
+                  <div class="preview-item"><i class="mdi mdi-file-document"></i></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="review-action-section">
+              <div class="action-title">审核操作</div>
+              <div class="reject-reasons">
+                <span class="reason-tag" data-reason="系谱信息不完整">系谱信息不完整</span>
+                <span class="reason-tag" data-reason="基因检测未认证">基因检测未认证</span>
+                <span class="reason-tag" data-reason="图片不清晰">图片不清晰</span>
+                <span class="reason-tag" data-reason="信息与证书不符">信息与证书不符</span>
+                <span class="reason-tag" data-reason="价格异常">价格异常</span>
+              </div>
+              <textarea class="remark-input" placeholder="请输入审核备注（选填）" rows="2"></textarea>
+              <div class="action-buttons">
+                <button class="action-btn reject" onclick="rejectItem()"><i class="mdi mdi-close"></i> 驳回</button>
+                <button class="action-btn approve" onclick="approveItem()"><i class="mdi mdi-check"></i> 通过审核</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const reviewData = [
+      { id: 'SN-2024-006', name: '鲁西大黄', breed: '鲁西黄牛', gender: '公', age: 36, gene: 'standard', price: 35000, enterprise: '山东黄牛保种场', time: '2024-06-22 10:30' },
+      { id: 'SN-2024-008', name: '秦川之星', breed: '秦川牛', gender: '母', age: 28, gene: 'excellent', price: 42000, enterprise: '陕西种牛站', time: '2024-06-22 09:15' },
+      { id: 'SN-2024-009', name: '草原雄风', breed: '西门塔尔', gender: '公', age: 30, gene: 'premium', price: 78000, enterprise: '内蒙古种牛繁育中心', time: '2024-06-21 16:20' }
+    ];
+
+    const geneMap = { premium: '特级', excellent: '优良', standard: '标准' };
+    let currentItem = null;
+    let selectedReasons = [];
+
+    function renderList(data) {
+      const list = document.getElementById('reviewList');
+      list.innerHTML = data.map((item, index) => `
+        <div class="review-item ${index === 0 ? 'active' : ''}" data-id="${item.id}" onclick="selectItem('${item.id}')">
+          <div class="review-item-header">
+            <span class="review-item-title">${item.name}</span>
+            <span class="review-item-time">${item.time.split(' ')[0]}</span>
+          </div>
+          <div class="review-item-meta">
+            <span>${item.breed}</span>
+            <span>${item.gender === '公' ? '♂' : '♀'} ${item.age}月龄</span>
+            <span class="gene-badge-small ${item.gene}">${geneMap[item.gene]}</span>
+          </div>
+        </div>
+      `).join('');
+      if (data.length > 0) selectItem(data[0].id);
+    }
+
+    function selectItem(id) {
+      const item = reviewData.find(d => d.id === id);
+      if (!item) return;
+      currentItem = item;
+
+      document.querySelectorAll('.review-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.id === id);
+      });
+
+      document.getElementById('detailName').textContent = item.name;
+      document.getElementById('detailCode').textContent = item.id;
+      document.getElementById('detailBreed').textContent = item.breed;
+      document.getElementById('detailGender').textContent = item.gender === '公' ? '公牛' : '母牛';
+      document.getElementById('detailAge').textContent = item.age + ' 个月';
+      document.getElementById('detailPrice').textContent = '¥' + item.price.toLocaleString();
+      document.getElementById('detailEnterprise').textContent = item.enterprise;
+      document.getElementById('detailTime').textContent = item.time;
+
+      selectedReasons = [];
+      document.querySelectorAll('.reason-tag').forEach(t => t.classList.remove('selected'));
+    }
+
+    document.querySelectorAll('.reason-tag').forEach(tag => {
+      tag.addEventListener('click', function() {
+        this.classList.toggle('selected');
+        const reason = this.dataset.reason;
+        if (this.classList.contains('selected')) {
+          selectedReasons.push(reason);
+        } else {
+          selectedReasons = selectedReasons.filter(r => r !== reason);
+        }
+      });
+    });
+
+    function approveItem() {
+      if (!currentItem) return;
+      if (confirm(`确定通过【${currentItem.name}】的审核吗？`)) {
+        alert('审核已通过！');
+        const index = reviewData.findIndex(d => d.id === currentItem.id);
+        if (index > -1) { reviewData.splice(index, 1); renderList(reviewData); }
+      }
+    }
+
+    function rejectItem() {
+      if (!currentItem) return;
+      if (selectedReasons.length === 0) { alert('请选择至少一个驳回原因'); return; }
+      if (confirm(`确定驳回【${currentItem.name}】吗？`)) {
+        alert('已驳回！');
+        const index = reviewData.findIndex(d => d.id === currentItem.id);
+        if (index > -1) { reviewData.splice(index, 1); renderList(reviewData); }
+      }
+    }
+
+    function viewFullDetail() {
+      if (currentItem) location.href = `detail.html?id=${currentItem.id}`;
+    }
+
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    renderList(reviewData);
+    console.log('种牛审核页面加载完成');
+  </script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>商家工作台 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .dashboard-header {
+      background: var(--bg-dark);
+      padding: 30px 20px;
+      color: white;
+    }
+    .shop-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .shop-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      background: #333;
+      object-fit: cover;
+    }
+    .shop-name {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    .shop-status {
+      font-size: 12px;
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      background: rgba(255,255,255,0.1);
+      padding: 15px;
+      border-radius: 8px;
+    }
+    .stat-item {
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: var(--primary-color);
+    }
+    .stat-label {
+      font-size: 12px;
+      color: rgba(255,255,255,0.7);
+      margin-top: 4px;
+    }
+    
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      padding: 20px;
+    }
+    .menu-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px 10px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .menu-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+      display: block;
+    }
+    .menu-name {
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* Return Button Optimization */
+    .return-bar {
+        padding: 20px;
+    }
+    .btn-return {
+        width: 100%;
+        padding: 12px;
+        background: transparent;
+        color: #666;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="dashboard-header">
+      <div class="shop-info">
+        <img src="https://api.dicebear.com/7.x/initials/svg?seed=Shop" class="shop-avatar">
+        <div>
+          <div class="shop-name">我的店铺 <span class="shop-status">营业中</span></div>
+          <div style="font-size: 12px; color: #aaa; margin-top: 4px;">ID: SHOP8839201</div>
+        </div>
+      </div>
+      
+      <div class="stats-grid">
+        <div class="stat-item" onclick="navigateTo('orders.html')">
+          <div class="stat-value">128</div>
+          <div class="stat-label">今日订单</div>
+        </div>
+        <div class="stat-item" onclick="navigateTo('stats.html')">
+          <div class="stat-value">¥5.8k</div>
+          <div class="stat-label">今日成交</div>
+        </div>
+        <div class="stat-item" onclick="navigateTo('orders.html?status=pending')">
+          <div class="stat-value">12</div>
+          <div class="stat-label">待发货</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="menu-grid">
+      <div class="menu-card" onclick="navigateTo('product-list.html')">
+        <span class="menu-icon">📦</span>
+        <span class="menu-name">商品管理</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('product-edit.html')">
+        <span class="menu-icon">➕</span>
+        <span class="menu-name">发布商品</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('orders.html')">
+        <span class="menu-icon">🧾</span>
+        <span class="menu-name">订单管理</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('staff.html')">
+        <span class="menu-icon">👥</span>
+        <span class="menu-name">员工管理</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('settings.html')">
+        <span class="menu-icon">⚙️</span>
+        <span class="menu-name">店铺设置</span>
+      </div>
+      <div class="menu-card" onclick="navigateTo('stats.html')">
+        <span class="menu-icon">📈</span>
+        <span class="menu-name">经营数据</span>
+      </div>
+      <div class="menu-card" onclick="Utils.showToast('联系平台客服', 'info')">
+        <span class="menu-icon">🎧</span>
+        <span class="menu-name">联系平台</span>
+      </div>
+    </div>
+    
+    <!-- 返回个人中心 -->
+    <div class="return-bar">
+        <button class="btn-return" onclick="navigateTo('../profile/index.html')">
+            <span>←</span> 返回个人中心
+        </button>
+    </div>
+
+  </div>
+
+  <script src="../../assets/js/utils.js"></script>
+  <script>
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>

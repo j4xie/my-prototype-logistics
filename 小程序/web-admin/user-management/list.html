@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理 - 白垩纪食品溯源管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+</head>
+<body>
+  <div class="desktop-container">
+    <!-- Sidebar -->
+        <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="header-title">用户与角色管理</div>
+      </div>
+
+      <div class="desktop-content">
+        <!-- Filter Bar -->
+        <div class="desktop-filters">
+            <div class="desktop-filter-item">
+                <label class="desktop-filter-label">用户类型</label>
+                <select class="desktop-filter-control" id="roleFilter" onchange="renderTable()">
+                    <option value="">全部</option>
+                    <option value="consumer">C端消费者</option>
+                    <option value="merchant_owner">商户店主</option>
+                    <option value="merchant_staff">商户员工</option>
+                    <option value="admin">平台管理员</option>
+                </select>
+            </div>
+            <div class="desktop-filter-item">
+                <label class="desktop-filter-label">搜索</label>
+                <input type="text" class="desktop-filter-control" id="searchInput" placeholder="昵称/手机号" oninput="renderTable()">
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="desktop-table-container">
+            <table class="table" style="width:100%">
+                <thead>
+                    <tr>
+                        <th style="padding:15px;text-align:left;">用户</th>
+                        <th style="padding:15px;text-align:left;">手机号</th>
+                        <th style="padding:15px;text-align:left;">当前角色</th>
+                        <th style="padding:15px;text-align:left;">所属商户/组织</th>
+                        <th style="padding:15px;text-align:left;">注册时间</th>
+                        <th style="padding:15px;text-align:left;">状态</th>
+                        <th style="padding:15px;text-align:left;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <!-- JS Injected -->
+                </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+  <script>
+    const users = [
+        { id: 1, name: '张三', phone: '138****1234', role: 'merchant_owner', org: '我的店铺 (SHOP8839201)', time: '2024-01-15', status: 'active', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Zhang' },
+        { id: 2, name: '李四', phone: '139****5678', role: 'merchant_staff', org: '我的店铺 (SHOP8839201)', time: '2024-02-10', status: 'active', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Li' },
+        { id: 3, name: '王五', phone: '136****9012', role: 'consumer', org: '-', time: '2024-03-05', status: 'active', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Wang' },
+        { id: 4, name: 'Admin', phone: '188****8888', role: 'admin', org: '平台运营部', time: '2023-12-01', status: 'active', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin' }
+    ];
+
+    const roleMap = {
+        consumer: '消费者',
+        merchant_owner: '商户店主',
+        merchant_staff: '商户员工',
+        admin: '平台管理员'
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        renderTable();
+    });
+
+    // Removed inline toggleSidebarGroup
+
+    function renderTable() {
+        const filterRole = document.getElementById('roleFilter').value;
+        const keyword = document.getElementById('searchInput').value.toLowerCase();
+
+        const filtered = users.filter(u => {
+            if (filterRole && u.role !== filterRole) return false;
+            if (keyword && !u.name.toLowerCase().includes(keyword) && !u.phone.includes(keyword)) return false;
+            return true;
+        });
+
+        const tbody = document.getElementById('userTableBody');
+        tbody.innerHTML = filtered.map(u => `
+            <tr style="border-bottom:1px solid #eee;">
+                <td style="padding:15px;display:flex;align-items:center;gap:10px;">
+                    <img src="${u.avatar}" style="width:32px;height:32px;border-radius:50%;">
+                    ${u.name}
+                </td>
+                <td style="padding:15px;">${u.phone}</td>
+                <td style="padding:15px;"><span style="background:#f0f5ff;color:#2f54eb;padding:2px 8px;border-radius:4px;font-size:12px;">${roleMap[u.role]}</span></td>
+                <td style="padding:15px;">${u.org}</td>
+                <td style="padding:15px;">${u.time}</td>
+                <td style="padding:15px;"><span style="color:#52c41a;">正常</span></td>
+                <td style="padding:15px;">
+                    <button class="btn btn-sm btn-default" onclick="Utils.showToast('查看详情', 'info')">详情</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+  </script>
+</body>
+</html>

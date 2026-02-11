@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑屠宰场 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      position: fixed;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 280px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      color: #fff;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .sidebar-logo i {
+      font-size: 32px;
+      color: #666fee;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 16px 0;
+      overflow-y: auto;
+    }
+
+    .nav-section {
+      margin-bottom: 8px;
+    }
+
+    .nav-section-title {
+      padding: 12px 24px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 24px;
+      color: #94a3b8;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.05);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: rgba(102, 111, 238, 0.2);
+      color: #666fee;
+      border-right: 3px solid #666fee;
+    }
+
+    .nav-item i {
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+
+    /* 头部 */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 280px;
+      right: 0;
+      height: 64px;
+      background: #fff;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 99;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .breadcrumb a {
+      color: #64748b;
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      color: #666fee;
+    }
+
+    .breadcrumb i {
+      font-size: 16px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #666fee 0%, #4e54c8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* 主内容区 */
+    .main-content {
+      margin-left: 280px;
+      padding: 88px 32px 120px;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    /* 两栏布局 */
+    .form-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 24px;
+    }
+
+    .form-main {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .form-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* 卡片 */
+    .form-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-header i {
+      font-size: 20px;
+      color: #666fee;
+    }
+
+    .card-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* 表单样式 */
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-row.single {
+      grid-template-columns: 1fr;
+    }
+
+    .form-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #374151;
+    }
+
+    .form-label .required {
+      color: #ef4444;
+      margin-left: 4px;
+    }
+
+    .form-input {
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: #666fee;
+      box-shadow: 0 0 0 3px rgba(102, 111, 238, 0.1);
+    }
+
+    .form-input::placeholder {
+      color: #94a3b8;
+    }
+
+    textarea.form-input {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-select {
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .form-select:focus {
+      border-color: #666fee;
+      box-shadow: 0 0 0 3px rgba(102, 111, 238, 0.1);
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* 地址选择器 */
+    .location-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    /* 产能设置 */
+    .capacity-inputs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .capacity-item {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .capacity-item label {
+      display: block;
+      font-size: 12px;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    .capacity-item input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+      outline: none;
+    }
+
+    .capacity-item input:focus {
+      border-color: #666fee;
+    }
+
+    .capacity-item .unit {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    /* 资质选择 */
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .cert-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .cert-option:hover {
+      border-color: #cbd5e1;
+      background: #f8fafc;
+    }
+
+    .cert-option.selected {
+      border-color: #666fee;
+      background: rgba(102, 111, 238, 0.05);
+    }
+
+    .cert-option input {
+      display: none;
+    }
+
+    .cert-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .cert-icon.haccp {
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      color: #fff;
+    }
+
+    .cert-icon.iso {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+    }
+
+    .cert-icon.halal {
+      background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+      color: #fff;
+    }
+
+    .cert-icon.organic {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+    }
+
+    .cert-icon.export {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #fff;
+    }
+
+    .cert-info h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 2px;
+    }
+
+    .cert-info p {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .cert-check {
+      margin-left: auto;
+      width: 22px;
+      height: 22px;
+      border: 2px solid #e2e8f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition: all 0.2s;
+    }
+
+    .cert-option.selected .cert-check {
+      background: #666fee;
+      border-color: #666fee;
+      color: #fff;
+    }
+
+    /* 工艺流程 */
+    .process-checklist {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .process-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .process-item:hover {
+      background: #f1f5f9;
+    }
+
+    .process-item.selected {
+      background: rgba(102, 111, 238, 0.1);
+    }
+
+    .process-item input {
+      display: none;
+    }
+
+    .process-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      transition: all 0.2s;
+    }
+
+    .process-item.selected .process-checkbox {
+      background: #666fee;
+      border-color: #666fee;
+      color: #fff;
+    }
+
+    .process-item i {
+      font-size: 20px;
+      color: #64748b;
+    }
+
+    .process-item.selected i {
+      color: #666fee;
+    }
+
+    .process-item span {
+      font-size: 14px;
+      color: #374151;
+    }
+
+    /* 图片上传 */
+    .image-upload-area {
+      border: 2px dashed #e2e8f0;
+      border-radius: 12px;
+      padding: 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .image-upload-area:hover {
+      border-color: #666fee;
+      background: rgba(102, 111, 238, 0.02);
+    }
+
+    .image-upload-area i {
+      font-size: 48px;
+      color: #cbd5e1;
+      margin-bottom: 12px;
+    }
+
+    .image-upload-area p {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .image-upload-area span {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+
+    .uploaded-images {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .uploaded-image {
+      position: relative;
+      aspect-ratio: 4/3;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .uploaded-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .uploaded-image .remove-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 24px;
+      height: 24px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .uploaded-image:hover .remove-btn {
+      opacity: 1;
+    }
+
+    /* 联系信息 */
+    .contact-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .contact-item i {
+      width: 40px;
+      height: 40px;
+      background: #f1f5f9;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #64748b;
+    }
+
+    .contact-item input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .contact-item input:focus {
+      border-color: #666fee;
+    }
+
+    /* 状态切换 */
+    .status-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 12px;
+    }
+
+    .status-toggle-info h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+
+    .status-toggle-info p {
+      font-size: 12px;
+      color: #64748b;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 52px;
+      height: 28px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      border-radius: 28px;
+      transition: 0.3s;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 22px;
+      width: 22px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(24px);
+    }
+
+    /* 运营状态选择 */
+    .status-options {
+      display: flex;
+      gap: 12px;
+    }
+
+    .status-option {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .status-option:hover {
+      border-color: #cbd5e1;
+    }
+
+    .status-option.selected {
+      border-color: #666fee;
+      background: rgba(102, 111, 238, 0.05);
+    }
+
+    .status-option input {
+      display: none;
+    }
+
+    .status-option i {
+      font-size: 24px;
+      color: #64748b;
+    }
+
+    .status-option.selected i {
+      color: #666fee;
+    }
+
+    .status-option span {
+      font-size: 13px;
+      font-weight: 500;
+      color: #64748b;
+    }
+
+    .status-option.selected span {
+      color: #666fee;
+    }
+
+    /* 底部操作栏 */
+    .action-bar {
+      position: fixed;
+      bottom: 0;
+      left: 280px;
+      right: 0;
+      height: 72px;
+      background: #fff;
+      border-top: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      z-index: 98;
+    }
+
+    .action-bar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .action-bar-left i {
+      font-size: 18px;
+    }
+
+    .action-bar-right {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #666fee 0%, #4e54c8 100%);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(102, 111, 238, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(102, 111, 238, 0.4);
+    }
+
+    /* 冷库温度设置 */
+    .cold-storage-settings {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .storage-zone {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .storage-zone-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .storage-zone-header i {
+      font-size: 20px;
+      color: #3b82f6;
+    }
+
+    .storage-zone-header h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .temp-range {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .temp-range input {
+      width: 70px;
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .temp-range span {
+      color: #64748b;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 侧边栏 -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="mdi mdi-cow"></i>
+        <span>牛产业云平台</span>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-section-title">内容管理</div>
+        <a href="../cattle/list.html" class="nav-item">
+          <i class="mdi mdi-cow"></i>
+          <span>活牛管理</span>
+        </a>
+        <a href="../breeding/list.html" class="nav-item">
+          <i class="mdi mdi-dna"></i>
+          <span>育种种牛</span>
+        </a>
+        <a href="../beef/list.html" class="nav-item">
+          <i class="mdi mdi-food-steak"></i>
+          <span>牛肉产品</span>
+        </a>
+        <a href="../feed/list.html" class="nav-item">
+          <i class="mdi mdi-barley"></i>
+          <span>饲料产品</span>
+        </a>
+        <a href="../equipment/list.html" class="nav-item">
+          <i class="mdi mdi-tools"></i>
+          <span>设备管理</span>
+        </a>
+        <a href="../farm/list.html" class="nav-item">
+          <i class="mdi mdi-barn"></i>
+          <span>养殖场</span>
+        </a>
+        <a href="list.html" class="nav-item active">
+          <i class="mdi mdi-knife"></i>
+          <span>屠宰场</span>
+        </a>
+      </div>
+      <div class="nav-section">
+        <div class="nav-section-title">系统设置</div>
+        <a href="../settings/category.html" class="nav-item">
+          <i class="mdi mdi-shape"></i>
+          <span>分类管理</span>
+        </a>
+        <a href="../settings/banner.html" class="nav-item">
+          <i class="mdi mdi-image-multiple"></i>
+          <span>Banner管理</span>
+        </a>
+        <a href="../settings/users.html" class="nav-item">
+          <i class="mdi mdi-account-group"></i>
+          <span>用户管理</span>
+        </a>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- 头部 -->
+  <header class="header">
+    <div class="header-left">
+      <div class="breadcrumb">
+        <a href="list.html">屠宰场管理</a>
+        <i class="mdi mdi-chevron-right"></i>
+        <span>编辑屠宰场</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="user-info">
+        <div class="user-avatar">管</div>
+        <span>管理员</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容 -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title">编辑屠宰场信息</h1>
+      <p class="page-subtitle">修改屠宰场的基本信息、资质证书和产能配置</p>
+    </div>
+
+    <div class="form-layout">
+      <!-- 左侧主表单 -->
+      <div class="form-main">
+        <!-- 基本信息 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-information-outline"></i>
+            <h3>基本信息</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">屠宰场名称<span class="required">*</span></label>
+                <input type="text" class="form-input" value="内蒙古草原牛屠宰加工有限公司" placeholder="请输入屠宰场名称">
+              </div>
+              <div class="form-group">
+                <label class="form-label">统一编码<span class="required">*</span></label>
+                <input type="text" class="form-input" value="SL-NM-2024-001" placeholder="自动生成" readonly style="background: #f8fafc;">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">营业执照号</label>
+                <input type="text" class="form-input" value="91150100MA0N1234567" placeholder="请输入营业执照号码">
+              </div>
+              <div class="form-group">
+                <label class="form-label">成立日期</label>
+                <input type="date" class="form-input" value="2018-05-15">
+              </div>
+            </div>
+            <div class="form-row single">
+              <div class="form-group">
+                <label class="form-label">简介描述</label>
+                <textarea class="form-input" rows="4" placeholder="请输入屠宰场简介">内蒙古草原牛屠宰加工有限公司成立于2018年，是一家专业从事肉牛屠宰、加工、冷藏、销售的现代化企业。公司拥有先进的屠宰生产线和完善的冷链物流体系，年屠宰能力达10万头。</textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 位置信息 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-map-marker"></i>
+            <h3>位置信息</h3>
+          </div>
+          <div class="card-body">
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label class="form-label">所在地区<span class="required">*</span></label>
+              <div class="location-row">
+                <select class="form-select">
+                  <option value="">选择省份</option>
+                  <option value="neimenggu" selected>内蒙古自治区</option>
+                  <option value="shandong">山东省</option>
+                  <option value="henan">河南省</option>
+                </select>
+                <select class="form-select">
+                  <option value="">选择城市</option>
+                  <option value="huhhot" selected>呼和浩特市</option>
+                  <option value="baotou">包头市</option>
+                </select>
+                <select class="form-select">
+                  <option value="">选择区县</option>
+                  <option value="saihan" selected>赛罕区</option>
+                  <option value="xincheng">新城区</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">详细地址<span class="required">*</span></label>
+              <input type="text" class="form-input" value="金川工业园区牛产业集中区18号" placeholder="请输入详细地址">
+            </div>
+          </div>
+        </div>
+
+        <!-- 产能配置 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-chart-bar"></i>
+            <h3>产能配置</h3>
+          </div>
+          <div class="card-body">
+            <div class="capacity-inputs">
+              <div class="capacity-item">
+                <label>日屠宰产能</label>
+                <input type="number" value="500" min="0">
+                <div class="unit">头/日</div>
+              </div>
+              <div class="capacity-item">
+                <label>冷库容量</label>
+                <input type="number" value="2000" min="0">
+                <div class="unit">吨</div>
+              </div>
+              <div class="capacity-item">
+                <label>员工人数</label>
+                <input type="number" value="156" min="0">
+                <div class="unit">人</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 冷库温区设置 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-snowflake"></i>
+            <h3>冷库温区设置</h3>
+          </div>
+          <div class="card-body">
+            <div class="cold-storage-settings">
+              <div class="storage-zone">
+                <div class="storage-zone-header">
+                  <i class="mdi mdi-thermometer-low"></i>
+                  <h4>冷藏区</h4>
+                </div>
+                <div class="temp-range">
+                  <input type="number" value="0" step="1">
+                  <span>~</span>
+                  <input type="number" value="4" step="1">
+                  <span>°C</span>
+                </div>
+              </div>
+              <div class="storage-zone">
+                <div class="storage-zone-header">
+                  <i class="mdi mdi-snowflake"></i>
+                  <h4>冷冻区</h4>
+                </div>
+                <div class="temp-range">
+                  <input type="number" value="-18" step="1">
+                  <span>~</span>
+                  <input type="number" value="-25" step="1">
+                  <span>°C</span>
+                </div>
+              </div>
+              <div class="storage-zone">
+                <div class="storage-zone-header">
+                  <i class="mdi mdi-temperature-celsius"></i>
+                  <h4>排酸区</h4>
+                </div>
+                <div class="temp-range">
+                  <input type="number" value="0" step="1">
+                  <span>~</span>
+                  <input type="number" value="4" step="1">
+                  <span>°C</span>
+                </div>
+              </div>
+              <div class="storage-zone">
+                <div class="storage-zone-header">
+                  <i class="mdi mdi-air-conditioner"></i>
+                  <h4>加工车间</h4>
+                </div>
+                <div class="temp-range">
+                  <input type="number" value="10" step="1">
+                  <span>~</span>
+                  <input type="number" value="15" step="1">
+                  <span>°C</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 工艺流程 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-chart-timeline-variant"></i>
+            <h3>工艺流程能力</h3>
+          </div>
+          <div class="card-body">
+            <div class="process-checklist">
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-truck-delivery"></i>
+                <span>活牛接收与检疫</span>
+              </label>
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-sleep"></i>
+                <span>静养待宰</span>
+              </label>
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-lightning-bolt"></i></span>
+                <i class="mdi mdi-knife"></i>
+                <span>人道屠宰</span>
+              </label>
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-content-cut"></i>
+                <span>分割加工</span>
+              </label>
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-timer-sand"></i>
+                <span>排酸熟成</span>
+              </label>
+              <label class="process-item selected">
+                <input type="checkbox" checked>
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-package-variant-closed"></i>
+                <span>真空包装</span>
+              </label>
+              <label class="process-item">
+                <input type="checkbox">
+                <span class="process-checkbox"><i class="mdi mdi-check"></i></span>
+                <i class="mdi mdi-leaf"></i>
+                <span>清真屠宰</span>
+              </label>
+              <label class="process-item">
+                <input type="checkbox">
+                <span class="process-checkbox"><i class="mdi mdi-sprout"></i></span>
+                <i class="mdi mdi-certificate"></i>
+                <span>有机认证加工</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 图片资料 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-image-multiple"></i>
+            <h3>图片资料</h3>
+          </div>
+          <div class="card-body">
+            <div class="image-upload-area">
+              <i class="mdi mdi-cloud-upload"></i>
+              <p>点击或拖拽上传图片</p>
+              <span>支持 JPG、PNG 格式，单张不超过 5MB</span>
+            </div>
+            <div class="uploaded-images">
+              <div class="uploaded-image">
+                <img src="https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400" alt="厂区外观">
+                <span class="remove-btn"><i class="mdi mdi-close"></i></span>
+              </div>
+              <div class="uploaded-image">
+                <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=400" alt="加工车间">
+                <span class="remove-btn"><i class="mdi mdi-close"></i></span>
+              </div>
+              <div class="uploaded-image">
+                <img src="https://images.unsplash.com/photo-1597289124948-688c1a35cb48?w=400" alt="冷库设施">
+                <span class="remove-btn"><i class="mdi mdi-close"></i></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧边栏 -->
+      <div class="form-sidebar">
+        <!-- 运营状态 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-toggle-switch"></i>
+            <h3>运营状态</h3>
+          </div>
+          <div class="card-body">
+            <div class="status-options">
+              <label class="status-option selected" onclick="selectStatus(this, 'operating')">
+                <input type="radio" name="status" value="operating" checked>
+                <i class="mdi mdi-check-circle"></i>
+                <span>正常运营</span>
+              </label>
+              <label class="status-option" onclick="selectStatus(this, 'maintenance')">
+                <input type="radio" name="status" value="maintenance">
+                <i class="mdi mdi-wrench"></i>
+                <span>设备检修</span>
+              </label>
+              <label class="status-option" onclick="selectStatus(this, 'suspended')">
+                <input type="radio" name="status" value="suspended">
+                <i class="mdi mdi-pause-circle"></i>
+                <span>暂停营业</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 资质认证 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-certificate"></i>
+            <h3>资质认证</h3>
+          </div>
+          <div class="card-body">
+            <div class="cert-grid">
+              <label class="cert-option selected" onclick="toggleCert(this)">
+                <input type="checkbox" checked>
+                <div class="cert-icon haccp">
+                  <i class="mdi mdi-shield-check"></i>
+                </div>
+                <div class="cert-info">
+                  <h4>HACCP</h4>
+                  <p>危害分析关键点</p>
+                </div>
+                <span class="cert-check"><i class="mdi mdi-check"></i></span>
+              </label>
+              <label class="cert-option selected" onclick="toggleCert(this)">
+                <input type="checkbox" checked>
+                <div class="cert-icon iso">
+                  <i class="mdi mdi-certificate"></i>
+                </div>
+                <div class="cert-info">
+                  <h4>ISO22000</h4>
+                  <p>食品安全管理</p>
+                </div>
+                <span class="cert-check"><i class="mdi mdi-check"></i></span>
+              </label>
+              <label class="cert-option" onclick="toggleCert(this)">
+                <input type="checkbox">
+                <div class="cert-icon halal">
+                  <i class="mdi mdi-moon-waning-crescent"></i>
+                </div>
+                <div class="cert-info">
+                  <h4>清真认证</h4>
+                  <p>Halal Certificate</p>
+                </div>
+                <span class="cert-check"><i class="mdi mdi-check"></i></span>
+              </label>
+              <label class="cert-option" onclick="toggleCert(this)">
+                <input type="checkbox">
+                <div class="cert-icon organic">
+                  <i class="mdi mdi-leaf"></i>
+                </div>
+                <div class="cert-info">
+                  <h4>有机认证</h4>
+                  <p>Organic Certified</p>
+                </div>
+                <span class="cert-check"><i class="mdi mdi-check"></i></span>
+              </label>
+              <label class="cert-option selected" onclick="toggleCert(this)">
+                <input type="checkbox" checked>
+                <div class="cert-icon export">
+                  <i class="mdi mdi-airplane-takeoff"></i>
+                </div>
+                <div class="cert-info">
+                  <h4>出口资质</h4>
+                  <p>Export Qualified</p>
+                </div>
+                <span class="cert-check"><i class="mdi mdi-check"></i></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 联系方式 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-card-account-phone"></i>
+            <h3>联系方式</h3>
+          </div>
+          <div class="card-body">
+            <div class="contact-inputs">
+              <div class="contact-item">
+                <i class="mdi mdi-account"></i>
+                <input type="text" value="王建国" placeholder="负责人姓名">
+              </div>
+              <div class="contact-item">
+                <i class="mdi mdi-phone"></i>
+                <input type="tel" value="13812345678" placeholder="联系电话">
+              </div>
+              <div class="contact-item">
+                <i class="mdi mdi-email"></i>
+                <input type="email" value="wangjg@nmgcyniu.com" placeholder="电子邮箱">
+              </div>
+              <div class="contact-item">
+                <i class="mdi mdi-web"></i>
+                <input type="url" value="www.nmgcyniu.com" placeholder="企业网站">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 平台展示 -->
+        <div class="form-card">
+          <div class="card-header">
+            <i class="mdi mdi-eye"></i>
+            <h3>平台展示</h3>
+          </div>
+          <div class="card-body">
+            <div class="status-toggle">
+              <div class="status-toggle-info">
+                <h4>在平台展示</h4>
+                <p>开启后将在前台展示此屠宰场</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="status-toggle" style="margin-top: 12px;">
+              <div class="status-toggle-info">
+                <h4>推荐屠宰场</h4>
+                <p>开启后在首页推荐位展示</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="status-toggle" style="margin-top: 12px;">
+              <div class="status-toggle-info">
+                <h4>接受订单</h4>
+                <p>开启后可接收屠宰加工订单</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 底部操作栏 -->
+  <div class="action-bar">
+    <div class="action-bar-left">
+      <i class="mdi mdi-information-outline"></i>
+      <span>最后保存时间：2025-01-18 15:30:22</span>
+    </div>
+    <div class="action-bar-right">
+      <button class="btn btn-secondary" onclick="window.location.href='list.html'">
+        <i class="mdi mdi-close"></i>
+        取消
+      </button>
+      <button class="btn btn-secondary">
+        <i class="mdi mdi-content-save-outline"></i>
+        保存草稿
+      </button>
+      <button class="btn btn-primary">
+        <i class="mdi mdi-check"></i>
+        保存并发布
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 状态选择
+    function selectStatus(element, value) {
+      document.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
+      element.classList.add('selected');
+      element.querySelector('input').checked = true;
+    }
+
+    // 资质认证切换
+    function toggleCert(element) {
+      element.classList.toggle('selected');
+      const checkbox = element.querySelector('input');
+      checkbox.checked = element.classList.contains('selected');
+    }
+
+    // 工艺流程切换
+    document.querySelectorAll('.process-item').forEach(item => {
+      item.addEventListener('click', function() {
+        this.classList.toggle('selected');
+        const checkbox = this.querySelector('input');
+        checkbox.checked = this.classList.contains('selected');
+      });
+    });
+
+    // 图片上传区域点击
+    document.querySelector('.image-upload-area').addEventListener('click', function() {
+      alert('图片上传功能 - 实际项目中会打开文件选择器');
+    });
+
+    // 图片删除
+    document.querySelectorAll('.uploaded-image .remove-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (confirm('确定要删除这张图片吗？')) {
+          this.closest('.uploaded-image').remove();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

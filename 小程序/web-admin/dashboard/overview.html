@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>总览仪表板 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+
+  <style>
+    /* 关键指标卡片 */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .metric-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+
+    .metric-card:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .metric-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .metric-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: var(--font-size-2xl);
+    }
+
+    .metric-icon.primary {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    .metric-icon.success {
+      background: rgba(82, 196, 26, 0.1);
+    }
+
+    .metric-icon.warning {
+      background: rgba(250, 173, 20, 0.1);
+    }
+
+    .metric-icon.danger {
+      background: rgba(245, 34, 45, 0.1);
+    }
+
+    .metric-trend {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+      font-size: var(--font-size-sm);
+    }
+
+    .metric-trend.up {
+      color: var(--success-color);
+    }
+
+    .metric-trend.down {
+      color: var(--error-color);
+    }
+
+    .metric-value {
+      font-size: var(--font-size-3xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .metric-label {
+      font-size: var(--font-size-base);
+      color: var(--text-secondary);
+    }
+
+    /* 图表区域 */
+    .charts-section {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .chart-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-2xl);
+      padding-bottom: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .chart-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+    }
+
+    .chart-filters {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+
+    .chart-filter-btn {
+      padding: var(--spacing-xs) var(--spacing-md);
+      background: var(--bg-gray);
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .chart-filter-btn.active {
+      background: var(--primary-color);
+      color: var(--text-inverse);
+    }
+
+    .chart-placeholder {
+      height: 300px;
+      background: linear-gradient(180deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.02) 100%);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+
+    /* 待办事项 */
+    .todos-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-lg);
+    }
+
+    .todos-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-lg);
+      padding: var(--spacing-2xl);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .todos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .todos-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      color: var(--text-primary);
+    }
+
+    .todos-badge {
+      padding: var(--spacing-xs) var(--spacing-md);
+      background: var(--error-color);
+      color: var(--text-inverse);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    .todo-item {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background var(--transition-base);
+    }
+
+    .todo-item:last-child {
+      border-bottom: none;
+    }
+
+    .todo-item:hover {
+      background: var(--bg-gray);
+    }
+
+    .todo-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .todo-item-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      color: var(--text-primary);
+    }
+
+    .todo-item-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .todo-item-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    /* 活动列表 */
+    .activity-item {
+      display: flex;
+      gap: var(--spacing-md);
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--font-weight-bold);
+      flex-shrink: 0;
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-text {
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .activity-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+  </style>
+</head>
+<body>
+  <!-- #region agent log - body start -->
+  <script>
+    fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:body:start',message:'Body tag started',data:{url: window.location.href},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+  </script>
+  <!-- #endregion -->
+
+  <!-- 桌面端容器 -->
+  <div class="desktop-container">
+    <!-- 顶部导航栏 -->
+    <div class="desktop-header">
+      <div class="desktop-header-left">
+        <div class="desktop-logo">🍱 白垩纪食品溯源</div>
+      </div>
+      <div class="desktop-header-center">
+        <div class="desktop-search">
+          <input type="text" placeholder="搜索商户、产品、订单..." class="desktop-search-input">
+          <button class="desktop-search-btn"></button>
+        </div>
+      </div>
+      <div class="desktop-header-right">
+        <div class="desktop-header-icon" onclick="Utils.showToast('通知功能开发中', 'info')">
+          <span>🔔</span>
+          <span class="desktop-header-badge">5</span>
+        </div>
+        <div class="desktop-header-icon" onclick="Utils.showToast('消息功能开发中', 'info')">
+          <span>✉️</span>
+          <span class="desktop-header-badge">12</span>
+        </div>
+        <div class="desktop-user-menu">
+          <div class="desktop-user-avatar"></div>
+          <div class="desktop-user-info">
+            <div class="desktop-user-name">管理员</div>
+            <div class="desktop-user-role">超级管理员</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 侧边栏 (New Structure) -->
+    <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item active">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <div class="desktop-content">
+        <!-- 页面标题 -->
+        <div class="desktop-page-header">
+          <div>
+            <h1 class="desktop-page-title">总览仪表板</h1>
+            <p class="desktop-page-subtitle">欢迎回来，这是今天的数据概览</p>
+          </div>
+          <div class="desktop-page-actions">
+            <button class="btn btn-default" onclick="loadDashboardData()">🔄 刷新数据</button>
+            <button class="btn btn-primary" onclick="Utils.showToast('导出功能开发中', 'info')">📥 导出报表</button>
+          </div>
+        </div>
+
+        <!-- 关键指标 -->
+        <div class="metrics-grid">
+          <div class="metric-card" onclick="navigateTo('../merchant/list.html')">
+            <div class="metric-header">
+              <div class="metric-icon primary">🏢</div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+12%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="merchantCount">--</div>
+            <div class="metric-label">入驻商户</div>
+          </div>
+
+          <div class="metric-card" onclick="navigateTo('../product-management/list.html')">
+            <div class="metric-header">
+              <div class="metric-icon success">📦</div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+8%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="productCount">--</div>
+            <div class="metric-label">在售产品</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon warning">💰</div>
+              <div class="metric-trend up">
+                <span>↑</span>
+                <span>+24%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="gmvTotal">--</div>
+            <div class="metric-label">本月GMV</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-header">
+              <div class="metric-icon danger">📋</div>
+              <div class="metric-trend down">
+                <span>↓</span>
+                <span>-5%</span>
+              </div>
+            </div>
+            <div class="metric-value" id="orderCount">--</div>
+            <div class="metric-label">本月订单</div>
+          </div>
+        </div>
+
+        <!-- 图表 -->
+        <div class="charts-section">
+          <!-- 订单趋势 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">订单趋势</div>
+              <div class="chart-filters">
+                <button class="chart-filter-btn active">7天</button>
+                <button class="chart-filter-btn">30天</button>
+                <button class="chart-filter-btn">90天</button>
+              </div>
+            </div>
+            <div class="chart-placeholder">
+              📈 订单趋势图 (模拟图表 - 实际应使用 Chart.js 或 ECharts)
+            </div>
+          </div>
+
+          <!-- 产品分类占比 -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <div class="chart-title">产品分类占比</div>
+            </div>
+            <div class="chart-placeholder">
+               饼图 (模拟图表 - 实际应使用 Chart.js 或 ECharts)
+            </div>
+          </div>
+        </div>
+
+        <!-- 待办事项和最近活动 -->
+        <div class="todos-section">
+          <!-- 待办事项 -->
+          <div class="todos-card">
+            <div class="todos-header">
+              <div class="todos-title">待办事项</div>
+              <div class="todos-badge">8</div>
+            </div>
+            <div id="todosContainer">
+              <div class="todo-item" onclick="navigateTo('../merchant/review.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">商户审核</div>
+                  <div class="todo-item-time">2小时前</div>
+                </div>
+                <div class="todo-item-desc">5个商户待审核</div>
+              </div>
+              <div class="todo-item" onclick="navigateTo('../content-control/review-queue.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">内容审核</div>
+                  <div class="todo-item-time">5小时前</div>
+                </div>
+                <div class="todo-item-desc">12条产品文案待审核</div>
+              </div>
+              <div class="todo-item" onclick="navigateTo('../product-management/list.html')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">产品上架</div>
+                  <div class="todo-item-time">1天前</div>
+                </div>
+                <div class="todo-item-desc">8个新产品待上架</div>
+              </div>
+              <div class="todo-item" onclick="Utils.showToast('系统维护功能开发中', 'info')">
+                <div class="todo-item-header">
+                  <div class="todo-item-title">系统维护</div>
+                  <div class="todo-item-time">2天前</div>
+                </div>
+                <div class="todo-item-desc">定期数据备份</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最近活动 -->
+          <div class="todos-card">
+            <div class="todos-header">
+              <div class="todos-title">最近活动</div>
+            </div>
+            <div id="activityContainer">
+              <div class="activity-item">
+                <div class="activity-avatar">张</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>张三</strong> 审核通过了商户 <strong>上海餐饮有限公司</strong></div>
+                  <div class="activity-time">10分钟前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">李</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>李四</strong> 上架了产品 <strong>速冻鱼排</strong></div>
+                  <div class="activity-time">1小时前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">王</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>王五</strong> 更新了知识库文档 <strong>溯源操作指南</strong></div>
+                  <div class="activity-time">3小时前</div>
+                </div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-avatar">赵</div>
+                <div class="activity-content">
+                  <div class="activity-text"><strong>赵六</strong> 处理了内容审核 <strong>12条产品文案</strong></div>
+                  <div class="activity-time">5小时前</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript with cache busting -->
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/mockAPI.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+
+  <script>
+    // #region agent log - script start
+    fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:script:init',message:'Script started',data:{MockDBExists: typeof MockDB !== 'undefined', MockAPIExists: typeof MockAPI !== 'undefined', UtilsExists: typeof Utils !== 'undefined'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      // #region agent log - DOM ready
+      fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:DOMContentLoaded',message:'DOM Content Loaded',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      loadDashboardData();
+    });
+
+    // ==================== 加载仪表板数据 ====================
+    async function loadDashboardData() {
+      try {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:start',message:'Starting data load',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'1'})}).catch(()=>{});
+        // #endregion
+
+        // Changed endpoint to admin.statistics
+        const result = await MockAPI.request('admin.statistics', {
+          type: 'overview',
+          skipError: true
+        });
+
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:result',message:'API Result',data:{result},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'2'})}).catch(()=>{});
+        // #endregion
+
+        if (result && result.data) {
+            // 更新关键指标
+            document.getElementById('merchantCount').textContent = result.data.merchants.total.toLocaleString();
+            document.getElementById('productCount').textContent = result.data.products.total.toLocaleString();
+            document.getElementById('gmvTotal').textContent = `¥${(result.data.orders.gmv / 1000000).toFixed(1)}M`;
+            document.getElementById('orderCount').textContent = result.data.orders.total.toLocaleString();
+            
+            Utils.showToast('数据已刷新', 'success');
+        } else {
+             throw new Error("No data returned");
+        }
+
+      } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/b952d593-1b00-40e1-9ef1-1bf6099c2ae0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'overview.html:loadDashboardData:error',message:'Data load error',data:{error: error.message, stack: error.stack},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'1'})}).catch(()=>{});
+        // #endregion
+        console.error('加载仪表板数据失败:', error);
+        Utils.showToast('加载数据失败: ' + error.message, 'error');
+      }
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+
+    // Removed inline toggleSidebarGroup as it's now in utils.js attached to window
+
+    // ==================== 图表筛选 ====================
+    document.querySelectorAll('.chart-filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        // 移除所有激活状态
+        e.target.parentElement.querySelectorAll('.chart-filter-btn').forEach(b => {
+          b.classList.remove('active');
+        });
+        // 激活当前按钮
+        e.target.classList.add('active');
+        // 重新加载图表数据
+        Utils.showToast(`切换到${e.target.textContent}视图`, 'info');
+      });
+    });
+  </script>
+</body>
+</html>

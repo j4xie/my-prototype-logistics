@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>商户状态管理 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/common.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+  <style>
+    .merchant-header {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      margin-bottom: var(--spacing-lg);
+      border-radius: var(--radius-md);
+    }
+    .merchant-name {
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-sm);
+    }
+    .merchant-id {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+    .status-card {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      border: 2px solid var(--border-color);
+      transition: all 0.3s;
+    }
+    .status-card.active {
+      border-color: var(--primary-color);
+      box-shadow: var(--shadow-md);
+    }
+    .status-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-md);
+    }
+    .status-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-sm);
+    }
+    .status-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin-bottom: var(--spacing-md);
+    }
+    .status-current {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--success-color);
+      color: white;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+    }
+    .action-panel {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-lg);
+    }
+    .panel-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-lg);
+    }
+    .form-section {
+      margin-bottom: var(--spacing-xl);
+    }
+    .section-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      margin-bottom: var(--spacing-md);
+      color: var(--text-primary);
+    }
+    .warning-box {
+      background: #FFF3CD;
+      border-left: 4px solid var(--warning-color);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      border-radius: var(--radius-sm);
+    }
+    .warning-title {
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-xs);
+      color: #856404;
+    }
+    .warning-text {
+      font-size: var(--font-size-sm);
+      color: #856404;
+    }
+    .danger-box {
+      background: #F8D7DA;
+      border-left: 4px solid var(--error-color);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+      border-radius: var(--radius-sm);
+    }
+    .danger-title {
+      font-weight: var(--font-weight-semibold);
+      margin-bottom: var(--spacing-xs);
+      color: #721C24;
+    }
+    .danger-text {
+      font-size: var(--font-size-sm);
+      color: #721C24;
+    }
+    .history-section {
+      background: var(--bg-white);
+      padding: var(--spacing-xl);
+      border-radius: var(--radius-md);
+    }
+    .history-item {
+      padding: var(--spacing-md);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: var(--spacing-xs);
+    }
+    .history-action {
+      font-weight: var(--font-weight-medium);
+    }
+    .history-time {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+    }
+    .history-detail {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+        <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a>
+          <span>/</span>
+          <a href="list.html">商户管理</a>
+          <span>/</span>
+          <span>状态管理</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="window.history.back()">返回</button>
+        </div>
+      </div>
+
+      <div class="desktop-content">
+        <!-- 商户基本信息 -->
+        <div class="merchant-header">
+          <div class="merchant-name">白垩纪（上海）食品有限公司</div>
+          <div class="merchant-id">商户ID：M20240615001</div>
+        </div>
+
+        <!-- 状态选择 -->
+        <div class="status-grid">
+          <div class="status-card active" data-status="active">
+            <div class="status-icon"></div>
+            <div class="status-title">营业中</div>
+            <div class="status-desc">商户正常营业，产品可正常售卖，订单可正常处理</div>
+            <span class="status-current">当前状态</span>
+          </div>
+
+          <div class="status-card" data-status="suspended" onclick="selectStatus('suspended')">
+            <div class="status-icon">⏸️</div>
+            <div class="status-title">暂停营业</div>
+            <div class="status-desc">商户暂停营业，产品下架但保留信息，停止接单</div>
+          </div>
+
+          <div class="status-card" data-status="banned" onclick="selectStatus('banned')">
+            <div class="status-icon">🚫</div>
+            <div class="status-title">封禁</div>
+            <div class="status-desc">违规商户封禁，所有产品下架，禁止接单和登录</div>
+          </div>
+        </div>
+
+        <!-- 操作面板 - 暂停营业 -->
+        <div id="panel-suspended" class="action-panel" style="display: none;">
+          <div class="panel-title">暂停营业</div>
+
+          <div class="warning-box">
+            <div class="warning-title">⚠️ 操作影响</div>
+            <div class="warning-text">
+              • 所有在售产品将自动下架<br>
+              • 停止接收新订单<br>
+              • 现有订单可继续履行<br>
+              • 商户可随时申请恢复营业
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">暂停原因 *</div>
+            <select class="form-control" id="suspendReason">
+              <option value="">请选择原因</option>
+              <option value="merchant_request">商户主动申请</option>
+              <option value="system_upgrade">系统升级维护</option>
+              <option value="certificate_expired">资质证书过期</option>
+              <option value="quality_issue">产品质量问题</option>
+              <option value="other">其他原因</option>
+            </select>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">详细说明</div>
+            <textarea class="form-control" rows="4" id="suspendNote" placeholder="请输入暂停营业的详细说明..."></textarea>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">预计恢复时间</div>
+            <input type="date" class="form-control" id="suspendEndDate">
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-default" onclick="cancelAction()">取消</button>
+            <button class="btn btn-warning" onclick="confirmSuspend()">确认暂停</button>
+          </div>
+        </div>
+
+        <!-- 操作面板 - 封禁 -->
+        <div id="panel-banned" class="action-panel" style="display: none;">
+          <div class="panel-title">封禁商户</div>
+
+          <div class="danger-box">
+            <div class="danger-title">🚫 严重操作警告</div>
+            <div class="danger-text">
+              • 商户账号将被立即封禁，无法登录<br>
+              • 所有产品强制下架，删除展示信息<br>
+              • 停止所有交易和资金结算<br>
+              • 需要管理员审批才能解封<br>
+              • 请谨慎操作，确保违规事实清楚
+            </div>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">封禁原因 *</div>
+            <select class="form-control" id="banReason">
+              <option value="">请选择原因</option>
+              <option value="fake_products">售卖假冒伪劣产品</option>
+              <option value="safety_issue">食品安全问题</option>
+              <option value="fraud">欺诈行为</option>
+              <option value="illegal">违法违规经营</option>
+              <option value="certificate_invalid">资质造假</option>
+              <option value="other">其他严重违规</option>
+            </select>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">违规详情 *</div>
+            <textarea class="form-control" rows="6" id="banDetail" placeholder="请详细描述违规事实、证据、处理依据等信息..."></textarea>
+          </div>
+
+          <div class="form-section">
+            <div class="section-title">封禁期限</div>
+            <select class="form-control" id="banDuration">
+              <option value="7">7天</option>
+              <option value="15">15天</option>
+              <option value="30">30天</option>
+              <option value="90">90天</option>
+              <option value="permanent">永久封禁</option>
+            </select>
+          </div>
+
+          <div class="form-section">
+            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+              <input type="checkbox" id="notifyMerchant">
+              <span>通知商户（发送短信和邮件）</span>
+            </label>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-default" onclick="cancelAction()">取消</button>
+            <button class="btn btn-danger" onclick="confirmBan()">确认封禁</button>
+          </div>
+        </div>
+
+        <!-- 状态变更历史 -->
+        <div class="history-section">
+          <h3 class="panel-title">状态变更历史</h3>
+          <div class="history-item">
+            <div class="history-header">
+              <span class="history-action">恢复营业</span>
+              <span class="history-time">2025-01-10 09:30:15</span>
+            </div>
+            <div class="history-detail">从"暂停营业"恢复为"营业中" | 操作人：平台管理员 | 原因：系统升级完成</div>
+          </div>
+          <div class="history-item">
+            <div class="history-header">
+              <span class="history-action">暂停营业</span>
+              <span class="history-time">2025-01-08 18:00:00</span>
+            </div>
+            <div class="history-detail">从"营业中"变更为"暂停营业" | 操作人：平台管理员 | 原因：平台系统升级维护</div>
+          </div>
+          <div class="history-item">
+            <div class="history-header">
+              <span class="history-action">开始营业</span>
+              <span class="history-time">2024-06-15 10:30:25</span>
+            </div>
+            <div class="history-detail">入驻审核通过，商户正式营业 | 审核人：张管理员</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+  <script>
+    let currentStatus = 'active';
+
+    function selectStatus(status) {
+      // 隐藏所有面板
+      document.querySelectorAll('.action-panel').forEach(panel => {
+        panel.style.display = 'none';
+      });
+      // 移除所有active状态
+      document.querySelectorAll('.status-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      // 显示对应面板
+      document.getElementById('panel-' + status).style.display = 'block';
+      // 添加active状态
+      event.currentTarget.classList.add('active');
+    }
+
+    function cancelAction() {
+      // 隐藏所有面板
+      document.querySelectorAll('.action-panel').forEach(panel => {
+        panel.style.display = 'none';
+      });
+      // 恢复当前状态的active
+      document.querySelectorAll('.status-card').forEach(card => {
+        card.classList.remove('active');
+        if (card.dataset.status === currentStatus) {
+          card.classList.add('active');
+        }
+      });
+    }
+
+    async function confirmSuspend() {
+      const reason = document.getElementById('suspendReason').value;
+      const note = document.getElementById('suspendNote').value;
+      const endDate = document.getElementById('suspendEndDate').value;
+
+      if (!reason) {
+        Utils.showToast('请选择暂停原因', 'error');
+        return;
+      }
+
+      const confirmed = await Utils.confirm(
+        '确认暂停该商户营业？\n暂停后所有产品将下架，停止接单',
+        '确认暂停'
+      );
+
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(1500);
+      Utils.hideLoading();
+
+      Utils.showToast('商户已暂停营业', 'success');
+      await Utils.sleep(1000);
+      window.location.href = 'detail.html';
+    }
+
+    async function confirmBan() {
+      const reason = document.getElementById('banReason').value;
+      const detail = document.getElementById('banDetail').value;
+      const duration = document.getElementById('banDuration').value;
+
+      if (!reason) {
+        Utils.showToast('请选择封禁原因', 'error');
+        return;
+      }
+
+      if (!detail || detail.trim().length < 20) {
+        Utils.showToast('请详细描述违规详情（至少20字）', 'error');
+        return;
+      }
+
+      const confirmed = await Utils.confirm(
+        '⚠️ 严重操作确认\n\n确认封禁该商户？\n这是一个严重操作，将导致：\n- 商户无法登录\n- 所有产品下架\n- 停止交易结算\n\n请确保违规事实清楚',
+        '确认封禁'
+      );
+
+      if (!confirmed) return;
+
+      Utils.showLoading('处理中...');
+      await Utils.sleep(2000);
+      Utils.hideLoading();
+
+      Utils.showToast('商户已封禁', 'success');
+      await Utils.sleep(1000);
+      window.location.href = 'list.html';
+    }
+  </script>
+</body>
+</html>

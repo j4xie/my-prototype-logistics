@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑广告 - 白垩纪管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css?v=ad_update_1">
+  <link rel="stylesheet" href="../../assets/css/common.css?v=ad_update_1">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=ad_update_1">
+  <style>
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0;
+    }
+    .page-subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #D4AF37, #B8960C);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e0e0e0;
+    }
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+
+    /* 表单容器 */
+    .form-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      padding: 32px;
+      max-width: 800px;
+    }
+    .form-section {
+      margin-bottom: 32px;
+    }
+    .form-section:last-child {
+      margin-bottom: 0;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    .form-label .required {
+      color: #ff4d4f;
+      margin-left: 4px;
+    }
+    .form-input,
+    .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .form-input:focus,
+    .form-select:focus {
+      border-color: #D4AF37;
+      box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+    }
+    .form-hint {
+      font-size: 12px;
+      color: #999;
+      margin-top: 6px;
+    }
+
+    /* 图片上传 */
+    .image-upload-area {
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+    .image-upload-area:hover {
+      border-color: #D4AF37;
+      background: #fffef5;
+    }
+    .image-upload-area.has-image {
+      padding: 20px;
+      border-style: solid;
+    }
+    .upload-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+    .upload-text {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .upload-hint {
+      font-size: 12px;
+      color: #999;
+    }
+    .preview-image {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .preview-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    /* 日期选择器行 */
+    .date-row {
+      display: flex;
+      gap: 16px;
+    }
+    .date-row .form-group {
+      flex: 1;
+    }
+
+    /* 表单按钮 */
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #D4AF37;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+    <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item active">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a href="../dashboard/overview.html">首页</a> / 
+            <a href="ad-slots.html">广告位管理</a> / 
+            <a href="#" id="breadcrumbSlotLink">广告管理</a> /
+            <span id="breadcrumbAction">添加广告</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="desktop-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title" id="pageTitle">添加广告</h1>
+            <p class="page-subtitle" id="pageSubtitle">为广告位配置新的广告内容</p>
+          </div>
+        </div>
+        
+        <div class="form-container">
+          <form id="adForm" onsubmit="return handleSubmit(event)">
+            <!-- 广告图片 -->
+            <div class="form-section">
+              <h3 class="section-title">📷 广告图片</h3>
+              <div class="form-group">
+                <label class="form-label">广告图片 <span class="required">*</span></label>
+                <div class="image-upload-area" id="uploadArea" onclick="triggerUpload()">
+                  <div class="upload-icon">📤</div>
+                  <p class="upload-text">点击上传广告图片</p>
+                  <p class="upload-hint">建议尺寸: <span id="recommendedSize">750x300</span>，支持 JPG、PNG 格式</p>
+                </div>
+                <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageSelect(event)">
+                <input type="hidden" id="imageUrl" name="image">
+              </div>
+            </div>
+
+            <!-- 投放商家 -->
+            <div class="form-section">
+              <h3 class="section-title">🏪 投放商家</h3>
+              <div class="form-group">
+                <label class="form-label">选择商家 <span class="required">*</span></label>
+                <select class="form-select" id="merchantSelect" name="merchantId" required onchange="handleMerchantChange()">
+                  <option value="">请选择投放商家</option>
+                </select>
+                <p class="form-hint">选择商家后，可以从该商家的商品列表中选择跳转商品</p>
+              </div>
+            </div>
+
+            <!-- 跳转商品 -->
+            <div class="form-section">
+              <h3 class="section-title">📦 跳转商品</h3>
+              <div class="form-group">
+                <label class="form-label">选择商品 <span class="required">*</span></label>
+                <select class="form-select" id="productSelect" name="productId" required disabled>
+                  <option value="">请先选择商家</option>
+                </select>
+                <p class="form-hint">用户点击广告后将跳转到该商品详情页</p>
+              </div>
+            </div>
+
+            <!-- 投放周期 -->
+            <div class="form-section">
+              <h3 class="section-title">📅 投放周期</h3>
+              <div class="date-row">
+                <div class="form-group">
+                  <label class="form-label">开始日期 <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="startTime" name="startTime" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">结束日期 <span class="required">*</span></label>
+                  <input type="date" class="form-input" id="endTime" name="endTime" required>
+                </div>
+              </div>
+              <p class="form-hint">广告将在设定的周期内展示，过期后自动下架</p>
+            </div>
+
+            <!-- 表单按钮 -->
+            <div class="form-actions">
+              <button type="button" class="btn btn-secondary" onclick="goBack()">取消</button>
+              <button type="submit" class="btn btn-primary" id="submitBtn">保存广告</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../../assets/js/mockData.js?v=ad_update_1"></script>
+  <script src="../../assets/js/mockAPI.js?v=ad_update_1"></script>
+  <script src="../../assets/js/utils.js?v=ad_update_1"></script>
+
+  <script>
+    // 获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const slotId = urlParams.get('slotId');
+    const adId = urlParams.get('adId');
+    const isEdit = !!adId;
+
+    let currentSlot = null;
+    let currentAd = null;
+    let merchants = [];
+    let products = [];
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (!slotId) {
+        Utils.showToast('缺少广告位ID参数', 'error');
+        setTimeout(() => window.location.href = 'ad-slots.html', 1500);
+        return;
+      }
+
+      // 设置默认日期
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startTime').value = today;
+      document.getElementById('startTime').min = today;
+      
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      document.getElementById('endTime').value = nextMonth.toISOString().split('T')[0];
+      document.getElementById('endTime').min = today;
+
+      // 加载数据
+      await loadSlotInfo();
+      await loadMerchants();
+      
+      if (isEdit) {
+        await loadAdDetail();
+        document.getElementById('pageTitle').textContent = '编辑广告';
+        document.getElementById('breadcrumbAction').textContent = '编辑广告';
+        document.getElementById('pageSubtitle').textContent = '修改广告内容和投放设置';
+        document.getElementById('submitBtn').textContent = '保存修改';
+      }
+    });
+
+    // 加载广告位信息
+    async function loadSlotInfo() {
+      try {
+        const result = await MockAPI.request('admin.adSlots.detail', { slotId });
+        currentSlot = result.data;
+        
+        document.getElementById('breadcrumbSlotLink').href = `ad-manage.html?slotId=${slotId}`;
+        document.getElementById('breadcrumbSlotLink').textContent = currentSlot.name;
+        document.getElementById('recommendedSize').textContent = currentSlot.size;
+      } catch (error) {
+        console.error('加载广告位信息失败:', error);
+      }
+    }
+
+    // 加载商家列表
+    async function loadMerchants() {
+      try {
+        const result = await MockAPI.request('admin.merchants.list', { status: 'active' });
+        merchants = result.data.items || result.data || [];
+        
+        const select = document.getElementById('merchantSelect');
+        select.innerHTML = '<option value="">请选择投放商家</option>' +
+          merchants.map(m => `<option value="${m.id}" data-name="${m.name}">${m.name}</option>`).join('');
+      } catch (error) {
+        console.error('加载商家列表失败:', error);
+      }
+    }
+
+    // 商家选择变化
+    async function handleMerchantChange() {
+      const merchantId = document.getElementById('merchantSelect').value;
+      const productSelect = document.getElementById('productSelect');
+      
+      if (!merchantId) {
+        productSelect.innerHTML = '<option value="">请先选择商家</option>';
+        productSelect.disabled = true;
+        return;
+      }
+
+      // 加载商品列表（这里简化处理，实际应该按商家筛选）
+      try {
+        const result = await MockAPI.request('admin.products.list', { merchantId, status: 'active' });
+        products = result.data.items || result.data || MockDB.products || [];
+        
+        productSelect.innerHTML = '<option value="">请选择跳转商品</option>' +
+          products.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name} - ¥${p.wholesalePrice || p.price}</option>`).join('');
+        productSelect.disabled = false;
+      } catch (error) {
+        console.error('加载商品列表失败:', error);
+        // 使用模拟数据
+        products = MockDB.products || [];
+        productSelect.innerHTML = '<option value="">请选择跳转商品</option>' +
+          products.map(p => `<option value="${p.id}" data-name="${p.name}">${p.name} - ¥${p.wholesalePrice || p.price}</option>`).join('');
+        productSelect.disabled = false;
+      }
+    }
+
+    // 加载广告详情（编辑模式）
+    async function loadAdDetail() {
+      try {
+        const result = await MockAPI.request('admin.ads.detail', { adId });
+        currentAd = result.data;
+        
+        // 填充表单
+        if (currentAd.image) {
+          showImagePreview(currentAd.image);
+        }
+        
+        document.getElementById('merchantSelect').value = currentAd.merchantId;
+        await handleMerchantChange();
+        document.getElementById('productSelect').value = currentAd.productId;
+        document.getElementById('startTime').value = currentAd.startTime;
+        document.getElementById('endTime').value = currentAd.endTime;
+        document.getElementById('imageUrl').value = currentAd.image;
+      } catch (error) {
+        console.error('加载广告详情失败:', error);
+        Utils.showToast('加载广告详情失败', 'error');
+      }
+    }
+
+    // 触发图片上传
+    function triggerUpload() {
+      document.getElementById('imageInput').click();
+    }
+
+    // 处理图片选择
+    function handleImageSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      // 验证文件类型
+      if (!file.type.startsWith('image/')) {
+        Utils.showToast('请选择图片文件', 'error');
+        return;
+      }
+
+      // 模拟上传，使用本地预览
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        // 在实际项目中，这里应该上传到服务器并获取URL
+        // 这里使用一个示例图片URL
+        const imageUrl = e.target.result;
+        document.getElementById('imageUrl').value = imageUrl;
+        showImagePreview(imageUrl);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 显示图片预览
+    function showImagePreview(imageUrl) {
+      const uploadArea = document.getElementById('uploadArea');
+      uploadArea.classList.add('has-image');
+      uploadArea.innerHTML = `
+        <img src="${imageUrl}" alt="广告预览" class="preview-image" onerror="this.src='https://via.placeholder.com/400x200?text=Preview'">
+        <div class="preview-actions">
+          <button type="button" class="btn btn-secondary" onclick="event.stopPropagation(); triggerUpload();">更换图片</button>
+          <button type="button" class="btn btn-secondary" onclick="event.stopPropagation(); removeImage();">删除</button>
+        </div>
+      `;
+    }
+
+    // 移除图片
+    function removeImage() {
+      const uploadArea = document.getElementById('uploadArea');
+      uploadArea.classList.remove('has-image');
+      uploadArea.innerHTML = `
+        <div class="upload-icon">📤</div>
+        <p class="upload-text">点击上传广告图片</p>
+        <p class="upload-hint">建议尺寸: <span id="recommendedSize">${currentSlot?.size || '750x300'}</span>，支持 JPG、PNG 格式</p>
+      `;
+      document.getElementById('imageUrl').value = '';
+      document.getElementById('imageInput').value = '';
+    }
+
+    // 返回上一页
+    function goBack() {
+      window.location.href = `ad-manage.html?slotId=${slotId}`;
+    }
+
+    // 处理表单提交
+    async function handleSubmit(event) {
+      event.preventDefault();
+
+      const imageUrl = document.getElementById('imageUrl').value;
+      if (!imageUrl) {
+        Utils.showToast('请上传广告图片', 'error');
+        return false;
+      }
+
+      const merchantSelect = document.getElementById('merchantSelect');
+      const productSelect = document.getElementById('productSelect');
+      const merchantId = merchantSelect.value;
+      const productId = productSelect.value;
+      const merchantName = merchantSelect.options[merchantSelect.selectedIndex].dataset.name;
+      const productName = productSelect.options[productSelect.selectedIndex].dataset.name;
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+
+      // 验证日期
+      if (new Date(endTime) <= new Date(startTime)) {
+        Utils.showToast('结束日期必须晚于开始日期', 'error');
+        return false;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '保存中...';
+
+      try {
+        if (isEdit) {
+          await MockAPI.request('admin.ads.update', {
+            adId,
+            image: imageUrl,
+            merchantId,
+            merchantName,
+            productId,
+            productName,
+            startTime,
+            endTime
+          });
+          Utils.showToast('广告更新成功', 'success');
+        } else {
+          await MockAPI.request('admin.ads.create', {
+            slotId,
+            image: imageUrl,
+            merchantId,
+            merchantName,
+            productId,
+            productName,
+            startTime,
+            endTime
+          });
+          Utils.showToast('广告创建成功', 'success');
+        }
+        
+        setTimeout(() => goBack(), 1000);
+      } catch (error) {
+        Utils.showToast(`保存失败: ${error.message}`, 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = isEdit ? '保存修改' : '保存广告';
+      }
+
+      return false;
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

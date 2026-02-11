@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>广告管理 - 白垩纪管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css?v=ad_update_1">
+  <link rel="stylesheet" href="../../assets/css/common.css?v=ad_update_1">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=ad_update_1">
+  <style>
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a1a;
+      margin: 0;
+    }
+    .page-subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    .slot-info {
+      display: flex;
+      gap: 16px;
+      margin-top: 12px;
+    }
+    .slot-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-size: 13px;
+      color: #666;
+    }
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #D4AF37, #B8960C);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.4);
+    }
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #333;
+      border: 1px solid #e0e0e0;
+    }
+    .btn-secondary:hover {
+      background: #e8e8e8;
+    }
+    .btn-link {
+      background: transparent;
+      color: #D4AF37;
+      padding: 6px 12px;
+    }
+    .btn-link:hover {
+      text-decoration: underline;
+    }
+    .btn-danger {
+      background: transparent;
+      color: #ff4d4f;
+      padding: 6px 12px;
+    }
+    .btn-danger:hover {
+      background: #fff2f0;
+    }
+
+    /* 筛选栏 */
+    .filter-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding: 16px 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .filter-label {
+      font-size: 14px;
+      color: #666;
+    }
+    .filter-select {
+      padding: 8px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+      cursor: pointer;
+      min-width: 120px;
+    }
+
+    /* 广告列表 */
+    .ads-table-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    .ads-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .ads-table th,
+    .ads-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .ads-table th {
+      background: #fafafa;
+      font-weight: 600;
+      color: #666;
+      font-size: 13px;
+    }
+    .ads-table tbody tr:hover {
+      background: #fafafa;
+    }
+    .ad-preview {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .ad-thumb {
+      width: 80px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid #f0f0f0;
+    }
+    .ad-info h4 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #1a1a1a;
+      margin: 0 0 4px 0;
+    }
+    .ad-info p {
+      font-size: 12px;
+      color: #999;
+      margin: 0;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-active {
+      background: #e6f7e6;
+      color: #52c41a;
+    }
+    .status-inactive {
+      background: #fff2e8;
+      color: #fa8c16;
+    }
+    .status-expired {
+      background: #f5f5f5;
+      color: #999;
+    }
+    .date-range {
+      font-size: 13px;
+      color: #666;
+    }
+    .stats-cell {
+      text-align: center;
+    }
+    .stats-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+    }
+    .stats-label {
+      font-size: 11px;
+      color: #999;
+    }
+    .actions-cell {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .empty-text {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* 加载状态 */
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f0f0f0;
+      border-top-color: #D4AF37;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+    <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item active">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="header-left">
+          <div class="breadcrumb">
+            <a href="../dashboard/overview.html">首页</a> / 
+            <a href="ad-slots.html">广告位管理</a> / 
+            <span id="breadcrumbSlotName">广告管理</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="desktop-content">
+        <div class="page-header">
+          <div>
+            <h1 class="page-title" id="pageTitle">广告管理</h1>
+            <p class="page-subtitle" id="pageSubtitle">管理该广告位的所有广告内容</p>
+            <div class="slot-info" id="slotInfo"></div>
+          </div>
+          <div class="header-actions">
+            <button class="btn btn-secondary" onclick="goBack()">← 返回</button>
+            <button class="btn btn-primary" onclick="createAd()">+ 添加广告</button>
+          </div>
+        </div>
+
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <div class="filter-item">
+            <span class="filter-label">状态：</span>
+            <select class="filter-select" id="statusFilter" onchange="filterAds()">
+              <option value="">全部状态</option>
+              <option value="active">投放中</option>
+              <option value="inactive">已暂停</option>
+              <option value="expired">已过期</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- 广告列表 -->
+        <div class="ads-table-container">
+          <table class="ads-table">
+            <thead>
+              <tr>
+                <th>广告内容</th>
+                <th>投放商家</th>
+                <th>跳转商品</th>
+                <th>投放周期</th>
+                <th>状态</th>
+                <th style="text-align: center;">曝光量</th>
+                <th style="text-align: center;">点击量</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="adsTableBody">
+              <tr>
+                <td colspan="8">
+                  <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>加载中...</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="../../assets/js/mockData.js?v=ad_update_1"></script>
+  <script src="../../assets/js/mockAPI.js?v=ad_update_1"></script>
+  <script src="../../assets/js/utils.js?v=ad_update_1"></script>
+
+  <script>
+    // 获取URL参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const slotId = urlParams.get('slotId');
+
+    let currentSlot = null;
+    let allAds = [];
+
+    // 页面初始化
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!slotId) {
+        Utils.showToast('缺少广告位ID参数', 'error');
+        setTimeout(() => goBack(), 1500);
+        return;
+      }
+      loadSlotInfo();
+      loadAds();
+    });
+
+    // 加载广告位信息
+    async function loadSlotInfo() {
+      try {
+        const result = await MockAPI.request('admin.adSlots.detail', { slotId });
+        currentSlot = result.data;
+        
+        document.getElementById('pageTitle').textContent = `${currentSlot.name} - 广告管理`;
+        document.getElementById('breadcrumbSlotName').textContent = currentSlot.name;
+        document.getElementById('slotInfo').innerHTML = `
+          <span class="slot-tag">📐 尺寸: ${currentSlot.size}</span>
+          <span class="slot-tag">📍 位置: ${currentSlot.position}</span>
+          <span class="slot-tag">📊 最大广告数: ${currentSlot.maxAds}</span>
+        `;
+      } catch (error) {
+        console.error('加载广告位信息失败:', error);
+      }
+    }
+
+    // 加载广告列表
+    async function loadAds() {
+      try {
+        const result = await MockAPI.request('admin.ads.list', { slotId });
+        allAds = result.data.items || [];
+        renderAds(allAds);
+      } catch (error) {
+        console.error('加载广告列表失败:', error);
+        document.getElementById('adsTableBody').innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="loading">
+                <p style="color: #ff4d4f;">加载失败: ${error.message}</p>
+                <button class="btn btn-primary" onclick="loadAds()" style="margin-top: 16px;">重试</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    // 筛选广告
+    function filterAds() {
+      const status = document.getElementById('statusFilter').value;
+      const filtered = status ? allAds.filter(ad => ad.status === status) : allAds;
+      renderAds(filtered);
+    }
+
+    // 渲染广告列表
+    function renderAds(ads) {
+      const tbody = document.getElementById('adsTableBody');
+      
+      if (!ads || ads.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8">
+              <div class="empty-state">
+                <div class="empty-icon">📭</div>
+                <p class="empty-text">该广告位暂无广告</p>
+                <button class="btn btn-primary" onclick="createAd()">+ 添加第一个广告</button>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = ads.map(ad => `
+        <tr>
+          <td>
+            <div class="ad-preview">
+              <img src="${ad.image}" alt="广告图片" class="ad-thumb" onerror="this.src='https://via.placeholder.com/80x50?text=No+Image'">
+              <div class="ad-info">
+                <h4>广告 #${ad.id}</h4>
+                <p>创建于 ${formatDate(ad.createTime)}</p>
+              </div>
+            </div>
+          </td>
+          <td>${ad.merchantName || '-'}</td>
+          <td>${ad.productName || '-'}</td>
+          <td>
+            <div class="date-range">
+              ${ad.startTime} 至<br>${ad.endTime}
+            </div>
+          </td>
+          <td>
+            <span class="status-badge status-${ad.status}">${getStatusText(ad.status)}</span>
+          </td>
+          <td class="stats-cell">
+            <div class="stats-value">${formatNumber(ad.impressions || 0)}</div>
+            <div class="stats-label">曝光</div>
+          </td>
+          <td class="stats-cell">
+            <div class="stats-value">${formatNumber(ad.clicks || 0)}</div>
+            <div class="stats-label">点击</div>
+          </td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn btn-link" onclick="editAd(${ad.id})">编辑</button>
+              <button class="btn btn-link" onclick="toggleAdStatus(${ad.id}, '${ad.status}')">
+                ${ad.status === 'active' ? '暂停' : '启用'}
+              </button>
+              <button class="btn btn-danger" onclick="deleteAd(${ad.id})">删除</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 获取状态文本
+    function getStatusText(status) {
+      const map = {
+        'active': '投放中',
+        'inactive': '已暂停',
+        'expired': '已过期'
+      };
+      return map[status] || status;
+    }
+
+    // 格式化日期
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    // 格式化数字
+    function formatNumber(num) {
+      if (num >= 10000) {
+        return (num / 10000).toFixed(1) + '万';
+      }
+      return num.toLocaleString();
+    }
+
+    // 返回上一页
+    function goBack() {
+      window.location.href = 'ad-slots.html';
+    }
+
+    // 创建广告
+    function createAd() {
+      window.location.href = `ad-edit.html?slotId=${slotId}`;
+    }
+
+    // 编辑广告
+    function editAd(adId) {
+      window.location.href = `ad-edit.html?slotId=${slotId}&adId=${adId}`;
+    }
+
+    // 切换广告状态
+    async function toggleAdStatus(adId, currentStatus) {
+      const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+      const actionText = newStatus === 'active' ? '启用' : '暂停';
+      
+      if (!confirm(`确定要${actionText}这个广告吗？`)) return;
+
+      try {
+        await MockAPI.request('admin.ads.update', { adId, status: newStatus });
+        Utils.showToast(`广告已${actionText}`, 'success');
+        loadAds();
+      } catch (error) {
+        Utils.showToast(`操作失败: ${error.message}`, 'error');
+      }
+    }
+
+    // 删除广告
+    async function deleteAd(adId) {
+      if (!confirm('确定要删除这个广告吗？此操作不可恢复。')) return;
+
+      try {
+        await MockAPI.request('admin.ads.delete', { adId });
+        Utils.showToast('广告已删除', 'success');
+        loadAds();
+      } catch (error) {
+        Utils.showToast(`删除失败: ${error.message}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>发布活牛 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 面包屑 */
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .breadcrumb a {
+      color: #666;
+      text-decoration: none;
+    }
+
+    .breadcrumb a:hover {
+      color: var(--primary-color);
+    }
+
+    .breadcrumb span {
+      color: #999;
+    }
+
+    .breadcrumb .current {
+      color: #1a1a1a;
+    }
+
+    /* 表单卡片 */
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      margin-bottom: 20px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-title i {
+      color: var(--primary-color);
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* 表单网格 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group.full-width {
+      grid-column: span 2;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group label .required {
+      color: #e53935;
+      margin-left: 2px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-help {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* 数值输入组 */
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .input-group input {
+      flex: 1;
+    }
+
+    .input-group .unit {
+      font-size: 14px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    /* 范围输入 */
+    .range-input {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .range-input input {
+      flex: 1;
+    }
+
+    .range-input .separator {
+      color: #999;
+    }
+
+    /* 图片上传 */
+    .upload-area {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .upload-item {
+      aspect-ratio: 4/3;
+      background: #fafafa;
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .upload-item:hover {
+      border-color: var(--primary-color);
+      background: #f0fdf4;
+    }
+
+    .upload-item i {
+      font-size: 28px;
+      color: #bbb;
+      margin-bottom: 8px;
+    }
+
+    .upload-item span {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .upload-item.has-image {
+      border-style: solid;
+      border-color: #e0e0e0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-item.has-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .upload-item .remove-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .upload-item.has-image:hover .remove-btn {
+      opacity: 1;
+    }
+
+    /* 企业选择 */
+    .enterprise-select {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .enterprise-select select {
+      flex: 1;
+    }
+
+    .enterprise-select .btn-select {
+      padding: 12px 16px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .enterprise-select .btn-select:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    /* 底部操作栏 */
+    .action-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 20px 24px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .action-bar .btn {
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .action-bar .btn-default {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      color: #666;
+    }
+
+    .action-bar .btn-default:hover {
+      border-color: #999;
+    }
+
+    .action-bar .btn-outline {
+      background: #fff;
+      border: 1px solid var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .action-bar .btn-outline:hover {
+      background: #f0fdf4;
+    }
+
+    .action-bar .btn-primary {
+      background: var(--primary-color);
+      color: #fff;
+    }
+
+    .action-bar .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* 标签选择 */
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag-item {
+      padding: 6px 14px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tag-item:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .tag-item.selected {
+      background: #e8f5e9;
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="list.html" class="nav-sub-item active">活牛信息</a>
+            <a href="../breeding/list.html" class="nav-sub-item">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="../feed/list.html" class="nav-sub-item">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../settings/category.html" class="nav-sub-item">分类管理</a>
+            <a href="../settings/banner.html" class="nav-sub-item">Banner管理</a>
+            <a href="../settings/users.html" class="nav-sub-item">用户管理</a>
+            <a href="../settings/config.html" class="nav-sub-item">系统配置</a>
+            <a href="../settings/permissions.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+
+        <a href="../../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title" id="pageTitle">发布活牛</h1>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <!-- 面包屑 -->
+        <div class="breadcrumb">
+          <a href="list.html">活牛信息管理</a>
+          <span>/</span>
+          <span class="current" id="breadcrumbCurrent">新增发布</span>
+        </div>
+
+        <form id="cattleForm">
+          <!-- 基本信息 -->
+          <div class="form-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="mdi mdi-information-outline"></i>
+                基本信息
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group full-width">
+                  <label>信息标题 <span class="required">*</span></label>
+                  <input type="text" id="title" placeholder="请输入活牛信息标题，如：优质西门塔尔牛 500-600斤" required>
+                  <span class="form-help">标题应简明扼要，包含品种、体重等关键信息，20-50字为佳</span>
+                </div>
+
+                <div class="form-group">
+                  <label>发布企业 <span class="required">*</span></label>
+                  <div class="enterprise-select">
+                    <select id="enterpriseId" required>
+                      <option value="">选择发布企业</option>
+                      <option value="1">内蒙古草原牧业有限公司</option>
+                      <option value="2">吉林长白山养殖场</option>
+                      <option value="3">河北承德农牧</option>
+                      <option value="4">黑龙江牧原肉牛</option>
+                      <option value="5">新疆天山牧场</option>
+                    </select>
+                    <button type="button" class="btn-select" onclick="selectEnterprise()">
+                      <i class="mdi mdi-magnify"></i> 搜索
+                    </button>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>牛品种 <span class="required">*</span></label>
+                  <select id="breed" required>
+                    <option value="">选择品种</option>
+                    <option value="西门塔尔">西门塔尔</option>
+                    <option value="夏洛莱">夏洛莱</option>
+                    <option value="利木赞">利木赞</option>
+                    <option value="安格斯">安格斯</option>
+                    <option value="鲁西黄牛">鲁西黄牛</option>
+                    <option value="秦川牛">秦川牛</option>
+                    <option value="其他">其他</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>数量 <span class="required">*</span></label>
+                  <div class="input-group">
+                    <input type="number" id="count" placeholder="输入数量" min="1" required>
+                    <span class="unit">头</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>单价 <span class="required">*</span></label>
+                  <div class="input-group">
+                    <input type="number" id="price" placeholder="输入单价" min="0" required>
+                    <span class="unit">元/头</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>体重范围 <span class="required">*</span></label>
+                  <div class="range-input">
+                    <input type="number" id="weightMin" placeholder="最小" min="0">
+                    <span class="separator">-</span>
+                    <input type="number" id="weightMax" placeholder="最大" min="0">
+                    <span class="unit">斤</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>月龄范围</label>
+                  <div class="range-input">
+                    <input type="number" id="ageMin" placeholder="最小" min="0">
+                    <span class="separator">-</span>
+                    <input type="number" id="ageMax" placeholder="最大" min="0">
+                    <span class="unit">月</span>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>性别</label>
+                  <select id="gender">
+                    <option value="">选择性别</option>
+                    <option value="公牛">公牛</option>
+                    <option value="母牛">母牛</option>
+                    <option value="公牛为主">公牛为主</option>
+                    <option value="母牛为主">母牛为主</option>
+                    <option value="混合">混合</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>用途</label>
+                  <select id="purpose">
+                    <option value="">选择用途</option>
+                    <option value="育肥">育肥</option>
+                    <option value="繁殖">繁殖</option>
+                    <option value="种牛">种牛</option>
+                    <option value="架子牛">架子牛</option>
+                    <option value="肉牛">肉牛</option>
+                  </select>
+                </div>
+
+                <div class="form-group full-width">
+                  <label>特点标签</label>
+                  <div class="tag-list">
+                    <span class="tag-item" data-value="自繁自育">自繁自育</span>
+                    <span class="tag-item" data-value="疫苗齐全">疫苗齐全</span>
+                    <span class="tag-item" data-value="证件齐全">证件齐全</span>
+                    <span class="tag-item" data-value="品种纯正">品种纯正</span>
+                    <span class="tag-item" data-value="膘情好">膘情好</span>
+                    <span class="tag-item" data-value="可视频看牛">可视频看牛</span>
+                    <span class="tag-item" data-value="提供运输">提供运输</span>
+                    <span class="tag-item" data-value="送货上门">送货上门</span>
+                  </div>
+                  <input type="hidden" id="tags" value="">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 图片信息 -->
+          <div class="form-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="mdi mdi-image-multiple"></i>
+                图片信息
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="upload-area">
+                <div class="upload-item" onclick="uploadImage(this)">
+                  <i class="mdi mdi-camera-plus"></i>
+                  <span>上传主图</span>
+                </div>
+                <div class="upload-item" onclick="uploadImage(this)">
+                  <i class="mdi mdi-image-plus"></i>
+                  <span>添加图片</span>
+                </div>
+                <div class="upload-item" onclick="uploadImage(this)">
+                  <i class="mdi mdi-image-plus"></i>
+                  <span>添加图片</span>
+                </div>
+                <div class="upload-item" onclick="uploadImage(this)">
+                  <i class="mdi mdi-image-plus"></i>
+                  <span>添加图片</span>
+                </div>
+              </div>
+              <span class="form-help" style="margin-top: 12px; display: block;">
+                第一张为主图，建议上传4张以上真实牛只照片，支持jpg/png格式，单张不超过5MB
+              </span>
+            </div>
+          </div>
+
+          <!-- 详细描述 -->
+          <div class="form-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="mdi mdi-text-box-outline"></i>
+                详细描述
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>描述内容 <span class="required">*</span></label>
+                <textarea id="description" placeholder="请详细描述活牛信息，包括：&#10;1. 牛只来源及养殖方式&#10;2. 健康状况及疫苗接种情况&#10;3. 饲养环境及饲料情况&#10;4. 交易方式及运输安排" required></textarea>
+                <span class="form-help">详细的描述有助于提高信息曝光度和询盘率，建议100字以上</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 联系信息 -->
+          <div class="form-card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="mdi mdi-account-box-outline"></i>
+                联系信息
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>联系人 <span class="required">*</span></label>
+                  <input type="text" id="contactName" placeholder="请输入联系人姓名" required>
+                </div>
+                <div class="form-group">
+                  <label>联系电话 <span class="required">*</span></label>
+                  <input type="tel" id="contactPhone" placeholder="请输入联系电话" required>
+                </div>
+                <div class="form-group">
+                  <label>所在省份</label>
+                  <select id="province">
+                    <option value="">选择省份</option>
+                    <option value="内蒙古">内蒙古</option>
+                    <option value="吉林">吉林</option>
+                    <option value="黑龙江">黑龙江</option>
+                    <option value="辽宁">辽宁</option>
+                    <option value="河北">河北</option>
+                    <option value="山东">山东</option>
+                    <option value="河南">河南</option>
+                    <option value="陕西">陕西</option>
+                    <option value="甘肃">甘肃</option>
+                    <option value="新疆">新疆</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>详细地址</label>
+                  <input type="text" id="address" placeholder="请输入详细地址">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 操作栏 -->
+          <div class="action-bar">
+            <button type="button" class="btn btn-default" onclick="goBack()">
+              <i class="mdi mdi-arrow-left"></i> 取消
+            </button>
+            <button type="button" class="btn btn-outline" onclick="saveDraft()">
+              <i class="mdi mdi-content-save-outline"></i> 保存草稿
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="mdi mdi-check"></i> 提交审核
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script>
+    // 检查是否为编辑模式
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('id');
+    const isEditMode = urlParams.get('mode') === 'edit' && editId;
+
+    // 初始化页面
+    function initPage() {
+      if (isEditMode) {
+        document.getElementById('pageTitle').textContent = '编辑活牛信息';
+        document.getElementById('breadcrumbCurrent').textContent = '编辑信息';
+        loadEditData(editId);
+      }
+    }
+
+    // 加载编辑数据
+    function loadEditData(id) {
+      // 模拟数据
+      const data = {
+        title: '优质西门塔尔牛 500-600斤',
+        enterpriseId: '1',
+        breed: '西门塔尔',
+        count: 50,
+        price: 15000,
+        weightMin: 500,
+        weightMax: 600,
+        ageMin: 12,
+        ageMax: 18,
+        gender: '公牛为主',
+        purpose: '育肥',
+        tags: ['自繁自育', '疫苗齐全', '提供运输'],
+        description: '本批次西门塔尔牛共50头，均为自繁自育，来源清晰可追溯。牛只健康状况良好，已完成全部疫苗接种。',
+        contactName: '张经理',
+        contactPhone: '13888888888',
+        province: '内蒙古',
+        address: '呼伦贝尔市新巴尔虎右旗草原牧场'
+      };
+
+      // 填充表单
+      document.getElementById('title').value = data.title;
+      document.getElementById('enterpriseId').value = data.enterpriseId;
+      document.getElementById('breed').value = data.breed;
+      document.getElementById('count').value = data.count;
+      document.getElementById('price').value = data.price;
+      document.getElementById('weightMin').value = data.weightMin;
+      document.getElementById('weightMax').value = data.weightMax;
+      document.getElementById('ageMin').value = data.ageMin;
+      document.getElementById('ageMax').value = data.ageMax;
+      document.getElementById('gender').value = data.gender;
+      document.getElementById('purpose').value = data.purpose;
+      document.getElementById('description').value = data.description;
+      document.getElementById('contactName').value = data.contactName;
+      document.getElementById('contactPhone').value = data.contactPhone;
+      document.getElementById('province').value = data.province;
+      document.getElementById('address').value = data.address;
+
+      // 设置标签
+      data.tags.forEach(tag => {
+        const tagItem = document.querySelector(`.tag-item[data-value="${tag}"]`);
+        if (tagItem) tagItem.classList.add('selected');
+      });
+      updateTags();
+    }
+
+    // 标签选择
+    document.querySelectorAll('.tag-item').forEach(tag => {
+      tag.addEventListener('click', function () {
+        this.classList.toggle('selected');
+        updateTags();
+      });
+    });
+
+    function updateTags() {
+      const selectedTags = [...document.querySelectorAll('.tag-item.selected')]
+        .map(t => t.dataset.value);
+      document.getElementById('tags').value = selectedTags.join(',');
+    }
+
+    // 图片上传
+    function uploadImage(element) {
+      // 模拟上传
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = function (e) {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            element.innerHTML = `
+              <img src="${event.target.result}" alt="预览">
+              <div class="remove-btn" onclick="removeImage(event, this.parentElement)">
+                <i class="mdi mdi-close"></i>
+              </div>
+            `;
+            element.classList.add('has-image');
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    }
+
+    function removeImage(e, element) {
+      e.stopPropagation();
+      element.innerHTML = `
+        <i class="mdi mdi-image-plus"></i>
+        <span>添加图片</span>
+      `;
+      element.classList.remove('has-image');
+    }
+
+    // 表单提交
+    document.getElementById('cattleForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      // 验证
+      const title = document.getElementById('title').value.trim();
+      const enterprise = document.getElementById('enterpriseId').value;
+      const breed = document.getElementById('breed').value;
+      const count = document.getElementById('count').value;
+      const price = document.getElementById('price').value;
+
+      if (!title || !enterprise || !breed || !count || !price) {
+        alert('请填写必填项');
+        return;
+      }
+
+      // 模拟提交
+      if (confirm(isEditMode ? '确定保存修改吗？' : '确定提交审核吗？')) {
+        alert(isEditMode ? '修改已保存！' : '已提交审核，请等待审核结果。');
+        location.href = 'list.html';
+      }
+    });
+
+    // 其他操作
+    function goBack() {
+      if (confirm('确定取消吗？未保存的内容将丢失。')) {
+        location.href = 'list.html';
+      }
+    }
+
+    function saveDraft() {
+      alert('草稿已保存！');
+    }
+
+    function selectEnterprise() {
+      alert('打开企业搜索弹窗');
+    }
+
+    // 侧边栏
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    // 初始化
+    initPage();
+    console.log('发布活牛页面加载完成');
+  </script>
+</body>
+
+</html>
