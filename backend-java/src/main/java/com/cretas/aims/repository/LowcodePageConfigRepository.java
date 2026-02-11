@@ -55,4 +55,27 @@ public interface LowcodePageConfigRepository extends JpaRepository<LowcodePageCo
      * @return 页面配置（如果存在）
      */
     Optional<LowcodePageConfig> findByFactoryIdAndPageId(String factoryId, String pageId);
+
+    /**
+     * 根据工厂ID查找所有页面配置
+     *
+     * @param factoryId 工厂ID
+     * @return 页面配置列表
+     */
+    List<LowcodePageConfig> findByFactoryId(String factoryId);
+
+    /**
+     * 根据工厂ID查找页面配置，按角色筛选（包含指定角色 + 工厂默认配置）
+     * 工厂默认配置: roleCode 为 null 或空字符串
+     *
+     * @param factoryId 工厂ID
+     * @param roleCode 角色代码
+     * @return 页面配置列表
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "SELECT p FROM LowcodePageConfig p WHERE p.factoryId = :factoryId " +
+            "AND (p.roleCode = :roleCode OR p.roleCode IS NULL OR p.roleCode = '')")
+    List<LowcodePageConfig> findByFactoryIdAndRoleCodeOrDefault(
+            @org.springframework.data.repository.query.Param("factoryId") String factoryId,
+            @org.springframework.data.repository.query.Param("roleCode") String roleCode);
 }

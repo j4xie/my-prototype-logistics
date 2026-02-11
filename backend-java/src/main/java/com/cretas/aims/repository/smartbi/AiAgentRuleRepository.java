@@ -85,4 +85,13 @@ public interface AiAgentRuleRepository extends JpaRepository<AiAgentRule, String
      * @return 规则列表
      */
     List<AiAgentRule> findByRuleName(String ruleName);
+
+    /**
+     * 根据工厂ID查找规则（包含指定工厂和默认工厂的所有规则，含禁用的）
+     *
+     * @param factoryId1 工厂ID
+     * @param factoryId2 第二个工厂ID（通常为 "DEFAULT"）
+     * @return 规则列表
+     */
+    List<AiAgentRule> findByFactoryIdOrFactoryId(String factoryId1, String factoryId2);
 }

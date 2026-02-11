@@ -6,6 +6,7 @@ import com.cretas.aims.entity.enums.HireType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -114,46 +115,57 @@ public class User extends BaseEntity {
     @JoinColumn(name = "factory_id", referencedColumnName = "id", insertable = false, updatable = false)
     private Factory factory;
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Session> sessions = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EmployeeWorkSession> workSessions = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "recorder", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialConsumption> materialConsumptions = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "employee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchWorkSession> batchWorkSessions = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<RawMaterialType> createdMaterialTypes = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductType> createdProductTypes = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Supplier> createdSuppliers = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Customer> createdCustomers = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductionPlan> createdProductionPlans = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "createdByUser", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> createdMaterialBatches = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "adjustedBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatchAdjustment> batchAdjustments = new ArrayList<>();
     // 便捷方法

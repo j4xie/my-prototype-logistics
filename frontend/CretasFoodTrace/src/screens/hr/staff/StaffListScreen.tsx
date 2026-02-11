@@ -105,11 +105,11 @@ export default function StaffListScreen() {
     }
   };
 
-  const handleItemPress = (item: StaffListItem) => {
+  const handleItemPress = useCallback((item: StaffListItem) => {
     navigation.navigate('StaffDetail' as any, { staffId: item.id });
-  };
+  }, [navigation]);
 
-  const renderItem = ({ item }: { item: StaffListItem }) => {
+  const renderItem = useCallback(({ item }: { item: StaffListItem }) => {
     const statusConfig = STAFF_STATUS_CONFIG[item.status] || STAFF_STATUS_CONFIG.active;
 
     return (
@@ -148,7 +148,7 @@ export default function StaffListScreen() {
         </Card>
       </TouchableOpacity>
     );
-  };
+  }, [handleItemPress, t]);
 
   // P2 Fix: Memoize statusOptions to avoid recreation on every render
   const statusOptions = useMemo<{ value: StaffStatus | 'all'; label: string }[]>(() => [

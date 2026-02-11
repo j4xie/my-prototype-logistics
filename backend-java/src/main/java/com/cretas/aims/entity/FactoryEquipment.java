@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.cretas.aims.entity.common.UnifiedDeviceType;
 import com.cretas.aims.entity.enums.DeviceCategory;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -207,10 +208,12 @@ public class FactoryEquipment extends BaseEntity {
     private Factory factory;
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchEquipmentUsage> equipmentUsages = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "equipment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<EquipmentMaintenance> maintenanceRecords = new ArrayList<>();
 }

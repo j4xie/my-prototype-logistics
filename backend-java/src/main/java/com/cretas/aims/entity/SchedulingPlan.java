@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
 import java.time.LocalDate;
@@ -54,6 +55,7 @@ public class SchedulingPlan extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "plan", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<LineSchedule> lineSchedules;
 

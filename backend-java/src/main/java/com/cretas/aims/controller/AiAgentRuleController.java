@@ -56,11 +56,7 @@ public class AiAgentRuleController {
     public ResponseEntity<ApiResponse<List<AiAgentRule>>> getAllRulesIncludeDisabled(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 
-        List<AiAgentRule> rules = aiAgentRuleRepository.findAll();
-        // 过滤出属于该工厂或全局的规则
-        rules = rules.stream()
-                .filter(r -> "DEFAULT".equals(r.getFactoryId()) || factoryId.equals(r.getFactoryId()))
-                .toList();
+        List<AiAgentRule> rules = aiAgentRuleRepository.findByFactoryIdOrFactoryId(factoryId, "DEFAULT");
         return ResponseEntity.ok(ApiResponse.success(rules));
     }
 
@@ -279,9 +275,7 @@ public class AiAgentRuleController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getStats(
             @Parameter(description = "工厂ID") @PathVariable String factoryId) {
 
-        List<AiAgentRule> allRules = aiAgentRuleRepository.findAll().stream()
-                .filter(r -> "DEFAULT".equals(r.getFactoryId()) || factoryId.equals(r.getFactoryId()))
-                .toList();
+        List<AiAgentRule> allRules = aiAgentRuleRepository.findByFactoryIdOrFactoryId(factoryId, "DEFAULT");
 
         long activeCount = allRules.stream().filter(AiAgentRule::getIsActive).count();
         long sopUploadCount = aiAgentRuleRepository.countByTriggerTypeAndIsActiveTrue(AiAgentRule.TRIGGER_SOP_UPLOAD);
