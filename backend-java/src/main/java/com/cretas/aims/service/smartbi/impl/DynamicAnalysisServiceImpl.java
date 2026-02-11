@@ -1,8 +1,8 @@
 package com.cretas.aims.service.smartbi.impl;
 
 import com.cretas.aims.client.PythonSmartBIClient;
-import com.cretas.aims.controller.SmartBIController.BackfillResult;
-import com.cretas.aims.controller.SmartBIController.BatchBackfillResult;
+import com.cretas.aims.dto.smartbi.BackfillResult;
+import com.cretas.aims.dto.smartbi.BatchBackfillResult;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgExcelUpload;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
@@ -92,6 +92,29 @@ public class DynamicAnalysisServiceImpl implements DynamicAnalysisService {
                 dataRows, measures, dimensions));
 
         return response;
+    }
+
+    /**
+     * AUDIT-052: Lightweight KPI-only query.
+     * Skips chart generation and AI insights for faster dashboard loading.
+     */
+    @Override
+    @Transactional(value = "smartbiPostgresTransactionManager", readOnly = true)
+    public List<Map<String, Object>> getKPIsOnly(String factoryId, Long uploadId) {
+        log.info("Get KPIs only: factoryId={}, uploadId={}", factoryId, uploadId);
+
+        // Get field definitions
+        List<SmartBiPgFieldDefinition> fields = fieldDefRepository.findByUploadIdOrderByDisplayOrder(uploadId);
+        List<SmartBiPgFieldDefinition> measures = fields.stream()
+                .filter(f -> Boolean.TRUE.equals(f.getIsMeasure()))
+                .collect(Collectors.toList());
+
+        if (measures.isEmpty()) {
+            log.warn("No measure fields found for uploadId={}", uploadId);
+            return java.util.Collections.emptyList();
+        }
+
+        return generateKPIs(factoryId, uploadId, measures);
     }
 
     @Override

@@ -47,6 +47,8 @@ public class Factory extends BaseEntity {
     private Integer employeeCount;
     @Column(name = "subscription_plan")
     private String subscriptionPlan;
+    @Column(name = "survey_company_id")
+    private String surveyCompanyId;
     @Column(name = "contact_name")
     private String contactName;
     @Column(name = "contact_phone")
