@@ -43,15 +43,10 @@ public class LowcodeServiceImpl implements LowcodeService {
 
         if (roleCode != null && !roleCode.isEmpty()) {
             // 按角色筛选：获取指定角色的配置 + 工厂默认配置（roleCode为空）
-            pages = pageConfigRepository.findAll().stream()
-                    .filter(p -> factoryId.equals(p.getFactoryId()))
-                    .filter(p -> roleCode.equals(p.getRoleCode()) || p.getRoleCode() == null || p.getRoleCode().isEmpty())
-                    .collect(Collectors.toList());
+            pages = pageConfigRepository.findByFactoryIdAndRoleCodeOrDefault(factoryId, roleCode);
         } else {
             // 获取工厂所有配置
-            pages = pageConfigRepository.findAll().stream()
-                    .filter(p -> factoryId.equals(p.getFactoryId()))
-                    .collect(Collectors.toList());
+            pages = pageConfigRepository.findByFactoryId(factoryId);
         }
 
         log.debug("找到 {} 个页面配置", pages.size());

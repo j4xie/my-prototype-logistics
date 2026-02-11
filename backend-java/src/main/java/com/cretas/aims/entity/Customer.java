@@ -1,6 +1,7 @@
 package com.cretas.aims.entity;
 
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,6 +102,7 @@ public class Customer extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", referencedColumnName = "id", insertable = false, updatable = false)
     private User createdByUser;
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ShipmentRecord> shipmentRecords = new ArrayList<>();
 }

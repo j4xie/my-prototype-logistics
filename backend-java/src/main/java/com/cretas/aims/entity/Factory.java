@@ -3,6 +3,7 @@ package com.cretas.aims.entity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -77,38 +78,47 @@ public class Factory extends BaseEntity {
     private Integer aiWeeklyQuota = 20;
     // 关联关系 (使用 CascadeType.PERSIST 防止级联删除，使用 @JsonIgnore 防止循环引用)
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<User> users = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<Supplier> suppliers = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<Customer> customers = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<ProductionPlan> productionPlans = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<MaterialBatch> materialBatches = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<RawMaterialType> rawMaterialTypes = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<ProductType> productTypes = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<WorkType> workTypes = new ArrayList<>();
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "factory", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
     private List<FactoryEquipment> equipment = new ArrayList<>();
 }

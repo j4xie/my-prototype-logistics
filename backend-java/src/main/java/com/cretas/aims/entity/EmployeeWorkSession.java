@@ -2,6 +2,7 @@ package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -72,6 +73,7 @@ public class EmployeeWorkSession extends BaseEntity {
     private WorkType workType;
 
     @JsonIgnore
+    @BatchSize(size = 20)
     @OneToMany(mappedBy = "workSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<BatchWorkSession> batchWorkSessions = new ArrayList<>();
 }
