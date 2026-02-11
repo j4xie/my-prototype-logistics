@@ -57,4 +57,26 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * SmartBI Sheet 并行处理线程池
+     *
+     * AUDIT-087: Replaces static ExecutorService in SmartBIUploadFlowServiceImpl.
+     * 5 核心线程，避免 DashScope API 限流；8 最大线程应对突发。
+     * Spring 管理生命周期，应用关闭时自动 graceful shutdown。
+     *
+     * @return 线程池执行器
+     */
+    @Bean(name = "smartbiExecutor")
+    public Executor smartbiExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(8);
+        executor.setQueueCapacity(20);
+        executor.setThreadNamePrefix("SmartBI-Sheet-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(180);
+        executor.initialize();
+        return executor;
+    }
 }

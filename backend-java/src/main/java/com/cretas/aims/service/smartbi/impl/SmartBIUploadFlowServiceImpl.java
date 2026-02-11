@@ -100,14 +100,13 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
     private boolean postgresEnabled;
 
     /**
-     * Sheet 并行处理线程池
-     * 5 个线程，避免 DashScope API 限流
+     * AUDIT-087: Spring-managed sheet processing executor.
+     * Replaces static ExecutorService for proper lifecycle management.
+     * Bean defined in AsyncConfig with name "smartbiExecutor".
      */
-    private static final ExecutorService SHEET_EXECUTOR = Executors.newFixedThreadPool(5, r -> {
-        Thread t = new Thread(r, "sheet-processor");
-        t.setDaemon(true);
-        return t;
-    });
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("smartbiExecutor")
+    private java.util.concurrent.Executor smartbiExecutor;
 
     /**
      * 单个 Sheet 处理超时时间（秒）
@@ -1405,7 +1404,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
         for (SheetConfig config : sheetConfigs) {
             CompletableFuture<SheetUploadResult> future = CompletableFuture.supplyAsync(() ->
                 processSingleSheet(factoryId, fileName, fileBytesRef, sheetInfoRef, config),
-                SHEET_EXECUTOR
+                smartbiExecutor
             ).orTimeout(SHEET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
              .exceptionally(e -> {
                  int sheetIndex = config.getSheetIndex();
@@ -1538,7 +1537,7 @@ public class SmartBIUploadFlowServiceImpl implements SmartBIUploadFlowService {
             CompletableFuture<SheetUploadResult> future = CompletableFuture.supplyAsync(() ->
                 processSingleSheetWithProgress(factoryId, fileName, fileBytesRef, sheetInfoRef, config,
                         totalSheets, completedCount, safeCallback, storedFilePathRef),
-                SHEET_EXECUTOR
+                smartbiExecutor
             ).orTimeout(SHEET_TIMEOUT_SECONDS, TimeUnit.SECONDS)
              .exceptionally(e -> {
                  int sheetIndex = config.getSheetIndex();

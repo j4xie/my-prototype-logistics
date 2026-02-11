@@ -1,7 +1,7 @@
 package com.cretas.aims.service.smartbi;
 
-import com.cretas.aims.controller.SmartBIController.BackfillResult;
-import com.cretas.aims.controller.SmartBIController.BatchBackfillResult;
+import com.cretas.aims.dto.smartbi.BackfillResult;
+import com.cretas.aims.dto.smartbi.BatchBackfillResult;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiDynamicData;
 import com.cretas.aims.entity.smartbi.postgres.SmartBiPgFieldDefinition;
 import org.springframework.data.domain.Page;
@@ -154,6 +154,17 @@ public interface DynamicAnalysisService {
      * @return Dashboard response with KPIs, charts, insights
      */
     DashboardResponse analyzeDynamic(String factoryId, Long uploadId, String analysisType);
+
+    /**
+     * AUDIT-052: Lightweight KPI-only query.
+     * Returns only KPI cards without charts or AI insights.
+     * Much faster than analyzeDynamic() since it skips chart generation and LLM calls.
+     *
+     * @param factoryId Factory ID
+     * @param uploadId Upload record ID
+     * @return List of KPI card maps
+     */
+    List<Map<String, Object>> getKPIsOnly(String factoryId, Long uploadId);
 
     /**
      * Aggregate data by a dimension field
