@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>订单列表 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+
+  <style>
+    /* 筛选栏 */
+    .filter-bar {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-lg);
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+      min-width: 200px;
+    }
+
+    .filter-group.search {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .filter-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .filter-select,
+    .filter-input {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .filter-select:focus,
+    .filter-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .filter-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      margin-left: auto;
+    }
+
+    /* 表格区域 */
+    .table-section {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+    }
+
+    .table-count {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      margin-left: var(--spacing-sm);
+    }
+
+    /* 表格样式 */
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table thead {
+      background: var(--bg-gray);
+    }
+
+    .table th {
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+    }
+
+    .table td {
+      padding: var(--spacing-md) var(--spacing-lg);
+      border-bottom: 1px solid var(--border-color);
+      font-size: var(--font-size-sm);
+      color: var(--text-primary);
+    }
+
+    .table tbody tr:hover {
+      background: var(--bg-gray);
+    }
+
+    /* 状态徽章 */
+    .status-badge {
+      display: inline-block;
+      padding: 4px var(--spacing-sm);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .status-pending { background: rgba(250, 173, 20, 0.1); color: var(--warning-color); }
+    .status-shipping { background: rgba(24, 144, 255, 0.1); color: var(--info-color); }
+    .status-completed { background: rgba(82, 196, 26, 0.1); color: var(--success-color); }
+    .status-cancelled { background: rgba(0, 0, 0, 0.06); color: var(--text-tertiary); }
+
+    /* 操作按钮 */
+    .action-btn {
+      padding: 4px var(--spacing-sm);
+      border: none;
+      background: none;
+      color: var(--primary-color);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: all var(--transition-base);
+    }
+
+    .action-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+    <!-- 侧边栏 (将在最后统一更新) -->
+            <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="header-title">订单列表</div>
+        <div class="header-actions">
+           <button class="btn btn-default" onclick="Utils.showToast('设置', 'info')">设置</button>
+        </div>
+      </div>
+
+      <div class="breadcrumb">
+        <a href="../dashboard/overview.html">首页</a>
+        <span class="breadcrumb-separator">/</span>
+        <span>订单管理</span>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">订单列表</span>
+      </div>
+
+      <div class="desktop-content">
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <div class="filter-group">
+            <label class="filter-label">订单状态</label>
+            <select class="filter-select" id="statusFilter" onchange="renderTable()">
+              <option value="">全部状态</option>
+              <option value="pending">待付款/待发货</option>
+              <option value="shipping">运输中</option>
+              <option value="completed">已完成</option>
+              <option value="cancelled">已取消</option>
+            </select>
+          </div>
+          <div class="filter-group search">
+            <label class="filter-label">搜索</label>
+            <input type="text" class="filter-input" id="searchInput" placeholder="搜索订单号、收货人..." oninput="renderTable()">
+          </div>
+          <div class="filter-actions">
+            <button class="btn btn-default" onclick="resetFilters()">重置</button>
+          </div>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-section">
+          <div class="table-header">
+            <div>
+              <span class="table-title">订单数据</span>
+              <span class="table-count" id="totalCount">(共 0 条)</span>
+            </div>
+          </div>
+          <div class="table-wrapper">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>订单号</th>
+                  <th>下单用户</th>
+                  <th>商品概况</th>
+                  <th>总金额</th>
+                  <th>支付方式</th>
+                  <th>状态</th>
+                  <th>下单时间</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="tableBody">
+                <!-- Data injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+  <script>
+    // Ensure MockDB.orders exists (if empty in mockData.js, we simulate some)
+    if (!MockDB.orders || MockDB.orders.length === 0) {
+        // Generate some mock orders if none exist
+        MockDB.orders = [
+            {
+                id: 1001,
+                user: { name: '张三', phone: '138****1234' },
+                items: [
+                    { name: '流沙黄金麻球咸蛋黄', quantity: 2, price: 294.00 }
+                ],
+                totalAmount: 588.00,
+                status: 'completed',
+                createTime: '2025-01-10 10:30:00',
+                paymentMethod: 'wx_pay',
+                isMerged: false
+            },
+            {
+                id: 1002,
+                user: { name: '李四', phone: '139****5678' },
+                items: [
+                    { name: '鲜活大闸蟹', quantity: 10, price: 58.00 }
+                ],
+                totalAmount: 580.00,
+                status: 'pending',
+                createTime: '2025-01-12 14:20:00',
+                paymentMethod: 'wx_pay',
+                isMerged: true // Merged payment
+            }
+        ];
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderTable();
+    });
+
+    function renderTable() {
+      const statusFilter = document.getElementById('statusFilter').value;
+      const searchInput = document.getElementById('searchInput').value.toLowerCase();
+
+      const filtered = MockDB.orders.filter(order => {
+        if (statusFilter && order.status !== statusFilter) return false;
+        if (searchInput) {
+            const matchId = String(order.id).toLowerCase().includes(searchInput);
+            const matchUser = order.user.name.toLowerCase().includes(searchInput);
+            return matchId || matchUser;
+        }
+        return true;
+      });
+
+      document.getElementById('totalCount').textContent = `(共 ${filtered.length} 条)`;
+      const tbody = document.getElementById('tableBody');
+      
+      if (filtered.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:20px;color:#999;">暂无数据</td></tr>';
+          return;
+      }
+
+      tbody.innerHTML = filtered.map(order => {
+        const statusMap = {
+            'pending': '待处理',
+            'shipping': '运输中',
+            'completed': '已完成',
+            'cancelled': '已取消'
+        };
+        const statusClass = `status-${order.status}`;
+        
+        const firstItem = order.items[0] || { name: '未知商品', quantity: 0 };
+        const itemSummary = order.items.length > 1 
+            ? `${firstItem.name} 等${order.items.length}件` 
+            : `${firstItem.name} x${firstItem.quantity}`;
+
+        return `
+          <tr>
+            <td>${order.id}</td>
+            <td>${order.user.name}<br><span style="color:#999;font-size:12px">${order.user.phone}</span></td>
+            <td>${itemSummary}</td>
+            <td style="font-weight:bold;color:var(--error-color)">¥${order.totalAmount.toFixed(2)}</td>
+            <td>
+                ${order.isMerged ? '<span class="status-badge" style="background:#f0f5ff;color:#2f54eb">合并支付</span>' : '普通支付'}
+            </td>
+            <td><span class="status-badge ${statusClass}">${statusMap[order.status] || order.status}</span></td>
+            <td>${order.createTime}</td>
+            <td>
+              <button class="action-btn" onclick="viewDetail(${order.id})">查看详情</button>
+              ${order.status === 'pending' ? `<button class="action-btn" onclick="shipOrder(${order.id})">发货</button>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function resetFilters() {
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('searchInput').value = '';
+        renderTable();
+    }
+
+    function viewDetail(id) {
+        window.location.href = `detail.html?id=${id}`;
+    }
+
+    function shipOrder(id) {
+        if(confirm('确认发货订单 ' + id + '?')) {
+            const order = MockDB.orders.find(o => o.id === id);
+            if(order) {
+                order.status = 'shipping';
+                renderTable();
+                Utils.showToast('发货成功', 'success');
+            }
+        }
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

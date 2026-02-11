@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>问答对管理 - 溯源商城管理后台</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/common.css?v=1765970711">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+</head>
+<body>
+  <div class="desktop-container">
+        <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <div class="desktop-main">
+      <div class="desktop-header">
+        <div class="breadcrumb">
+          <a href="../dashboard/overview.html">首页</a><span>/</span>
+          <a href="knowledge-base.html">AI知识库</a><span>/</span><span>问答对管理</span>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="importQA()">批量导入</button>
+          <button class="btn btn-primary" onclick="addQA()">+ 添加问答</button>
+        </div>
+      </div>
+
+      <div class="desktop-content">
+        <div style="background: var(--bg-white); border-radius: var(--radius-md);">
+          <table class="table">
+            <thead>
+              <tr><th>问题</th><th>答案</th><th>分类</th><th>点击量</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>如何查看产品的溯源信息？</td>
+                <td>您可以在产品详情页点击"查看溯源"按钮...</td>
+                <td>溯源指南</td>
+                <td>1,256</td>
+                <td>
+                  <button class="btn btn-sm btn-link" onclick="editQA(1)">编辑</button>
+                  <button class="btn btn-sm btn-link" onclick="deleteQA(1)">删除</button>
+                </td>
+              </tr>
+              <tr>
+                <td>阶梯价格是如何计算的？</td>
+                <td>我们的价格采用阶梯定价模式，订购数量越多...</td>
+                <td>产品知识</td>
+                <td>896</td>
+                <td>
+                  <button class="btn btn-sm btn-link" onclick="editQA(2)">编辑</button>
+                  <button class="btn btn-sm btn-link" onclick="deleteQA(2)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+  <script>
+    function importQA() { Utils.showToast('批量导入功能开发中'); }
+    function addQA() { Utils.showToast('添加问答功能开发中'); }
+    function editQA(id) { Utils.showToast('编辑问答功能开发中'); }
+    async function deleteQA(id) {
+      const ok = await Utils.confirm('确认删除该问答对？', '删除问答');
+      if (ok) Utils.showToast('已删除', 'success');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>牛肉产品审核 - 牛产业云平台</title>
+    <link rel="stylesheet" href="../../assets/css/variables.css">
+    <link rel="stylesheet" href="../../assets/css/desktop.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+    <style>
+        /* ========== 页面布局 ========== */
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+            background: var(--bg-gray);
+        }
+
+        /* ========== 侧边栏 ========== */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1B5E20 0%, #2E7D32 100%);
+            color: white;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .sidebar-logo .mdi {
+            font-size: 32px;
+        }
+
+        .sidebar-nav {
+            padding: 16px 0;
+        }
+
+        .nav-group {
+            margin-bottom: 8px;
+        }
+
+        .nav-group-title {
+            padding: 12px 24px;
+            font-size: 12px;
+            text-transform: uppercase;
+            opacity: 0.7;
+            letter-spacing: 1px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            color: rgba(255,255,255,0.85);
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .nav-item:hover {
+            background: rgba(255,255,255,0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border-left: 3px solid white;
+        }
+
+        .nav-item .mdi {
+            font-size: 20px;
+            width: 24px;
+        }
+
+        .nav-sub-menu {
+            display: none;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .nav-sub-menu.expanded {
+            display: block;
+        }
+
+        .nav-sub-menu .nav-item {
+            padding-left: 60px;
+            font-size: 14px;
+        }
+
+        /* ========== 主内容区 ========== */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* ========== 页面头部 ========== */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            background: white;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .review-stats {
+            display: flex;
+            gap: 24px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .stat-item .count {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        .stat-item.warning .count {
+            color: var(--warning-color);
+        }
+
+        /* ========== 审核容器 ========== */
+        .review-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* ========== 左侧列表 ========== */
+        .review-list {
+            width: 400px;
+            background: white;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .list-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .list-header input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .list-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .review-item {
+            display: flex;
+            gap: 12px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .review-item:hover {
+            background: var(--bg-gray);
+        }
+
+        .review-item.active {
+            background: var(--primary-light);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .review-item .thumb {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: var(--bg-gray);
+        }
+
+        .review-item .info {
+            flex: 1;
+        }
+
+        .review-item .title {
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .review-item .meta {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .review-item .time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        /* ========== 右侧详情 ========== */
+        .review-detail {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .detail-header {
+            padding: 20px 24px;
+            background: white;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #1B5E20;
+        }
+
+        .btn-danger {
+            background: #FFEBEE;
+            color: #C62828;
+        }
+
+        .btn-danger:hover {
+            background: #FFCDD2;
+        }
+
+        .btn-outline {
+            background: white;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .detail-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        /* ========== 详情卡片 ========== */
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* ========== 产品展示 ========== */
+        .product-preview {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 24px;
+        }
+
+        .product-image {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .product-info {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .info-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-label {
+            width: 80px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .info-value {
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .info-value.price {
+            color: #E65100;
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        /* ========== 切割等级 ========== */
+        .cut-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            background: #FFF3E0;
+            color: #E65100;
+        }
+
+        /* ========== 溯源检查 ========== */
+        .trace-check {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .trace-check-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .trace-check-header .mdi {
+            font-size: 28px;
+            color: var(--primary-color);
+        }
+
+        .trace-check-header h4 {
+            font-size: 16px;
+            color: var(--primary-dark);
+        }
+
+        .check-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .check-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .check-item .mdi {
+            font-size: 20px;
+        }
+
+        .check-item.pass .mdi {
+            color: var(--success-color);
+        }
+
+        .check-item.fail .mdi {
+            color: var(--danger-color);
+        }
+
+        .check-item.pending .mdi {
+            color: var(--warning-color);
+        }
+
+        .check-item .text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        /* ========== 冷链检查 ========== */
+        .cold-chain-check {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .cold-chain-check-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .cold-chain-check-header .mdi {
+            font-size: 28px;
+            color: #1565C0;
+        }
+
+        .cold-chain-check-header h4 {
+            font-size: 16px;
+            color: #0D47A1;
+        }
+
+        .temp-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        .temp-value {
+            font-size: 36px;
+            font-weight: 600;
+            color: #1565C0;
+        }
+
+        .temp-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .temp-status.normal {
+            background: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        /* ========== 拒绝原因 ========== */
+        .reject-section {
+            display: none;
+            margin-top: 24px;
+        }
+
+        .reject-section.active {
+            display: block;
+        }
+
+        .reject-reasons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .reject-tag {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .reject-tag:hover {
+            border-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .reject-tag.selected {
+            background: #FFEBEE;
+            border-color: #C62828;
+            color: #C62828;
+        }
+
+        .reject-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-height: 100px;
+            resize: vertical;
+            font-size: 14px;
+        }
+
+        /* ========== 企业信息 ========== */
+        .company-info-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: var(--bg-gray);
+            border-radius: 8px;
+        }
+
+        .company-logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .company-logo .mdi {
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+
+        .company-details h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .company-details span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-layout">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    <span class="mdi mdi-cow"></span>
+                    <span>牛产业云平台</span>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-group">
+                    <a href="../../dashboard/overview.html" class="nav-item">
+                        <span class="mdi mdi-view-dashboard"></span>
+                        <span>数据概览</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">企业管理</div>
+                    <a href="../../enterprise/list.html" class="nav-item">
+                        <span class="mdi mdi-domain"></span>
+                        <span>企业列表</span>
+                    </a>
+                    <a href="../../enterprise/review.html" class="nav-item">
+                        <span class="mdi mdi-clipboard-check"></span>
+                        <span>企业审核</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">内容管理</div>
+                    <div class="nav-item" onclick="toggleSubMenu(this)">
+                        <span class="mdi mdi-package-variant"></span>
+                        <span>商品管理</span>
+                        <span class="mdi mdi-chevron-down" style="margin-left:auto"></span>
+                    </div>
+                    <div class="nav-sub-menu expanded">
+                        <a href="../cattle/list.html" class="nav-item">
+                            <span>活牛信息</span>
+                        </a>
+                        <a href="../breeding/list.html" class="nav-item">
+                            <span>育种种牛</span>
+                        </a>
+                        <a href="../beef/list.html" class="nav-item active">
+                            <span>牛肉产品</span>
+                        </a>
+                        <a href="../feed/list.html" class="nav-item">
+                            <span>饲料产品</span>
+                        </a>
+                        <a href="../equipment/list.html" class="nav-item">
+                            <span>设备管理</span>
+                        </a>
+                        <a href="../farm/list.html" class="nav-item">
+                            <span>养殖场</span>
+                        </a>
+                        <a href="../slaughter/list.html" class="nav-item">
+                            <span>屠宰场</span>
+                        </a>
+                    </div>
+                    <a href="../review-queue.html" class="nav-item">
+                        <span class="mdi mdi-clipboard-check-outline"></span>
+                        <span>审核队列</span>
+                    </a>
+                </div>
+
+                <div class="nav-group">
+                    <div class="nav-group-title">系统设置</div>
+                    <a href="../../settings/dictionary.html" class="nav-item">
+                        <span class="mdi mdi-book-alphabet"></span>
+                        <span>字典管理</span>
+                    </a>
+                    <a href="../settings/category.html" class="nav-item">
+                        <span class="mdi mdi-shape"></span>
+                        <span>分类管理</span>
+                    </a>
+                    <a href="../settings/banner.html" class="nav-item">
+                        <span class="mdi mdi-image-multiple"></span>
+                        <span>Banner管理</span>
+                    </a>
+                    <a href="../settings/users.html" class="nav-item">
+                        <span class="mdi mdi-account-group"></span>
+                        <span>用户管理</span>
+                    </a>
+                    <a href="../settings/config.html" class="nav-item">
+                        <span class="mdi mdi-cog"></span>
+                        <span>系统配置</span>
+                    </a>
+                    <a href="../settings/permissions.html" class="nav-item">
+                        <span class="mdi mdi-shield-account"></span>
+                        <span>权限设置</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 主内容区 -->
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="page-title">
+                    <span class="mdi mdi-clipboard-check"></span>
+                    牛肉产品审核
+                </h1>
+                <div class="review-stats">
+                    <div class="stat-item warning">
+                        <span class="mdi mdi-clock-outline"></span>
+                        待审核: <span class="count">12</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="mdi mdi-check-circle-outline"></span>
+                        今日已审: <span class="count">28</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="review-container">
+                <!-- 左侧列表 -->
+                <div class="review-list">
+                    <div class="list-header">
+                        <input type="text" placeholder="搜索产品名称/编号...">
+                        <span class="mdi mdi-magnify" style="color: var(--text-muted);"></span>
+                    </div>
+                    <div class="list-body" id="reviewList">
+                        <!-- 动态渲染 -->
+                    </div>
+                </div>
+
+                <!-- 右侧详情 -->
+                <div class="review-detail">
+                    <div class="detail-header">
+                        <div class="detail-title" id="detailTitle">精选和牛菲力牛排</div>
+                        <div class="detail-actions">
+                            <button class="btn btn-outline" onclick="viewOriginal()">
+                                <span class="mdi mdi-eye"></span>
+                                查看原文
+                            </button>
+                            <button class="btn btn-danger" onclick="showRejectSection()">
+                                <span class="mdi mdi-close-circle"></span>
+                                拒绝
+                            </button>
+                            <button class="btn btn-success" onclick="approveItem()">
+                                <span class="mdi mdi-check-circle"></span>
+                                通过
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="detail-body">
+                        <!-- 产品信息 -->
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <span class="card-title">产品信息</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="product-preview">
+                                    <img src="https://via.placeholder.com/200" alt="" class="product-image">
+                                    <div class="product-info">
+                                        <div class="info-row">
+                                            <span class="info-label">产品编号</span>
+                                            <span class="info-value">BF20251225004</span>
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="info-label">切割部位</span>
+                                            <span class="info-value">菲力/里脊</span>
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="info-label">产品等级</span>
+                                            <span class="cut-badge">
+                                                <span class="mdi mdi-star"></span>精选级
+                                            </span>
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="info-label">规格重量</span>
+                                            <span class="info-value">500g/份</span>
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="info-label">销售价格</span>
+                                            <span class="info-value price">¥688.00</span>
+                                        </div>
+                                        <div class="info-row">
+                                            <span class="info-label">库存数量</span>
+                                            <span class="info-value">200 份</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 溯源检查 -->
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <span class="card-title">溯源信息核验</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="trace-check">
+                                    <div class="trace-check-header">
+                                        <span class="mdi mdi-qrcode-scan"></span>
+                                        <h4>溯源链检查</h4>
+                                    </div>
+                                    <div class="check-grid">
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">来源活牛信息完整</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">屠宰场资质有效</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">检疫证号已验证</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">溯源码已生成</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 冷链检查 -->
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <span class="card-title">冷链配置核验</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="cold-chain-check">
+                                    <div class="cold-chain-check-header">
+                                        <span class="mdi mdi-snowflake"></span>
+                                        <h4>冷链温度设置</h4>
+                                    </div>
+                                    <div class="temp-display">
+                                        <span class="temp-value">-18°C</span>
+                                        <span class="temp-status normal">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            符合标准
+                                        </span>
+                                    </div>
+                                    <div class="check-grid">
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">存储温度: -18°C</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">温度范围: -22°C ~ -15°C</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">包装方式: 真空包装</span>
+                                        </div>
+                                        <div class="check-item pass">
+                                            <span class="mdi mdi-check-circle"></span>
+                                            <span class="text">保质期: 12个月</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 企业信息 -->
+                        <div class="detail-card">
+                            <div class="card-header">
+                                <span class="card-title">发布企业</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="company-info-card">
+                                    <div class="company-logo">
+                                        <span class="mdi mdi-domain"></span>
+                                    </div>
+                                    <div class="company-details">
+                                        <h4>内蒙古草原牧业有限公司</h4>
+                                        <span>认证企业 · 信誉评分: 98分</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 拒绝原因 -->
+                        <div class="reject-section" id="rejectSection">
+                            <div class="detail-card">
+                                <div class="card-header">
+                                    <span class="card-title" style="color: #C62828;">
+                                        <span class="mdi mdi-alert-circle"></span>
+                                        选择拒绝原因
+                                    </span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="reject-reasons">
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">溯源信息不完整</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">检疫证号无法验证</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">产品图片不清晰</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">价格设置不合理</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">冷链温度配置错误</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">切割部位标注不准确</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">来源活牛信息不符</span>
+                                        <span class="reject-tag" onclick="toggleRejectTag(this)">屠宰场资质过期</span>
+                                    </div>
+                                    <textarea class="reject-textarea" placeholder="补充说明（选填）..."></textarea>
+                                    <div style="margin-top: 16px; display: flex; justify-content: flex-end; gap: 12px;">
+                                        <button class="btn btn-outline" onclick="hideRejectSection()">取消</button>
+                                        <button class="btn btn-danger" onclick="confirmReject()">
+                                            <span class="mdi mdi-close-circle"></span>
+                                            确认拒绝
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 切换子菜单
+        function toggleSubMenu(el) {
+            const subMenu = el.nextElementSibling;
+            if (subMenu && subMenu.classList.contains('nav-sub-menu')) {
+                subMenu.classList.toggle('expanded');
+                const chevron = el.querySelector('.mdi-chevron-down');
+                if (chevron) {
+                    chevron.style.transform = subMenu.classList.contains('expanded') ? 'rotate(180deg)' : '';
+                }
+            }
+        }
+
+        // 模拟待审核列表
+        const pendingItems = [
+            {
+                id: 'BF20251225004',
+                title: '精选和牛菲力牛排',
+                company: '内蒙古草原牧业',
+                submitTime: '2025-12-25 09:45',
+                thumb: 'https://via.placeholder.com/60'
+            },
+            {
+                id: 'BF20251225003',
+                title: '澳洲谷饲肋眼牛排',
+                company: '澳洲牧场直营店',
+                submitTime: '2025-12-25 08:30',
+                thumb: 'https://via.placeholder.com/60'
+            },
+            {
+                id: 'BF20251224005',
+                title: '国产黄牛牛腩块',
+                company: '山东泰山牧业',
+                submitTime: '2025-12-24 16:20',
+                thumb: 'https://via.placeholder.com/60'
+            },
+            {
+                id: 'BF20251224006',
+                title: '雪花西冷牛排',
+                company: '北京和牛专卖',
+                submitTime: '2025-12-24 15:10',
+                thumb: 'https://via.placeholder.com/60'
+            },
+            {
+                id: 'BF20251224007',
+                title: '原切牛腱芯',
+                company: '东北牧场直供',
+                submitTime: '2025-12-24 14:05',
+                thumb: 'https://via.placeholder.com/60'
+            }
+        ];
+
+        function renderReviewList() {
+            const list = document.getElementById('reviewList');
+            list.innerHTML = pendingItems.map((item, index) => `
+                <div class="review-item ${index === 0 ? 'active' : ''}" onclick="selectItem(this, '${item.id}')">
+                    <img src="${item.thumb}" alt="" class="thumb">
+                    <div class="info">
+                        <div class="title">${item.title}</div>
+                        <div class="meta">
+                            <span>${item.company}</span>
+                            <span class="time">${item.submitTime}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function selectItem(el, id) {
+            document.querySelectorAll('.review-item').forEach(item => item.classList.remove('active'));
+            el.classList.add('active');
+            const item = pendingItems.find(p => p.id === id);
+            if (item) {
+                document.getElementById('detailTitle').textContent = item.title;
+            }
+            hideRejectSection();
+        }
+
+        function viewOriginal() {
+            alert('查看原始提交数据');
+        }
+
+        function showRejectSection() {
+            document.getElementById('rejectSection').classList.add('active');
+        }
+
+        function hideRejectSection() {
+            document.getElementById('rejectSection').classList.remove('active');
+            document.querySelectorAll('.reject-tag').forEach(tag => tag.classList.remove('selected'));
+        }
+
+        function toggleRejectTag(el) {
+            el.classList.toggle('selected');
+        }
+
+        function approveItem() {
+            if (confirm('确定通过该产品的审核吗？')) {
+                alert('审核通过');
+                location.reload();
+            }
+        }
+
+        function confirmReject() {
+            const selectedReasons = Array.from(document.querySelectorAll('.reject-tag.selected')).map(el => el.textContent);
+            if (selectedReasons.length === 0) {
+                alert('请至少选择一个拒绝原因');
+                return;
+            }
+            if (confirm('确定拒绝该产品吗？')) {
+                alert('已拒绝，原因：' + selectedReasons.join('、'));
+                location.reload();
+            }
+        }
+
+        // 初始化
+        renderReviewList();
+    </script>
+</body>
+</html>

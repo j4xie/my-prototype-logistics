@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑饲料 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--bg-gray);
+    }
+
+    /* 表单布局 */
+    .form-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+    }
+
+    .form-main {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* 卡片 */
+    .form-card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-header h3 {
+      font-size: 15px;
+      color: #1a1a1a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-body {
+      padding: 20px;
+    }
+
+    /* 表单组 */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+
+    .form-group label .required {
+      color: #e53935;
+      margin-left: 4px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 12px 14px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(102, 111, 238, 0.1);
+    }
+
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 图片上传 */
+    .upload-area {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .upload-item {
+      aspect-ratio: 4/3;
+      border: 2px dashed #e0e0e0;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #fafafa;
+    }
+
+    .upload-item:hover {
+      border-color: var(--primary-color);
+      background: #f0f4ff;
+    }
+
+    .upload-item i {
+      font-size: 28px;
+      color: #bbb;
+      margin-bottom: 8px;
+    }
+
+    .upload-item span {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .upload-item.has-image {
+      border-style: solid;
+      background: linear-gradient(135deg, #fff8e1, #ffecb3);
+      position: relative;
+    }
+
+    .upload-item.has-image i {
+      font-size: 36px;
+      color: #ff8f00;
+    }
+
+    .upload-item.has-image .remove-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* 营养成分编辑 */
+    .component-editor {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .component-header {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 40px;
+      gap: 1px;
+      background: #e0e0e0;
+    }
+
+    .component-header span {
+      background: #fafafa;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+    }
+
+    .component-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr 40px;
+      gap: 1px;
+      background: #e0e0e0;
+    }
+
+    .component-row input,
+    .component-row select {
+      border: none;
+      padding: 10px 12px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    .component-row input:focus,
+    .component-row select:focus {
+      outline: none;
+      background: #f0f4ff;
+    }
+
+    .component-row button {
+      background: #fff;
+      border: none;
+      cursor: pointer;
+      color: #999;
+    }
+
+    .component-row button:hover {
+      color: #e53935;
+    }
+
+    .add-component-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 12px;
+      background: #fafafa;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      font-size: 14px;
+      color: var(--primary-color);
+    }
+
+    .add-component-btn:hover {
+      background: #f0f4ff;
+    }
+
+    /* 开关 */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .switch-row:last-child {
+      border-bottom: none;
+    }
+
+    .switch-info h4 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .switch-info p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .switch {
+      width: 44px;
+      height: 24px;
+      background: #e0e0e0;
+      border-radius: 12px;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .switch::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px;
+      left: 2px;
+      transition: all 0.2s;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .switch.active {
+      background: var(--primary-color);
+    }
+
+    .switch.active::after {
+      left: 22px;
+    }
+
+    /* 发布设置 */
+    .publish-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .publish-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .publish-option:hover {
+      border-color: var(--primary-color);
+    }
+
+    .publish-option.selected {
+      border-color: var(--primary-color);
+      background: #f0f4ff;
+    }
+
+    .publish-option input {
+      display: none;
+    }
+
+    .publish-radio {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .publish-option.selected .publish-radio {
+      border-color: var(--primary-color);
+    }
+
+    .publish-option.selected .publish-radio::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      background: var(--primary-color);
+      border-radius: 50%;
+    }
+
+    .publish-info h4 {
+      font-size: 14px;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .publish-info p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 底部操作栏 */
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .form-actions button {
+      flex: 1;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+
+    .btn-save {
+      background: var(--primary-color);
+      color: #fff;
+      border: none;
+    }
+
+    .btn-save:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-draft {
+      background: #fff;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-draft:hover {
+      border-color: var(--primary-color);
+      color: var(--primary-color);
+    }
+
+    .btn-cancel {
+      background: #fff;
+      color: #999;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-cancel:hover {
+      border-color: #999;
+    }
+
+    /* 供应商选择 */
+    .supplier-select {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .supplier-select:hover {
+      background: #f0f0f0;
+    }
+
+    .supplier-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .supplier-info h4 {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .supplier-info p {
+      font-size: 12px;
+      color: #999;
+    }
+
+    .change-btn {
+      margin-left: auto;
+      padding: 6px 12px;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--primary-color);
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <!-- 侧边栏 -->
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="../breeding/list.html" class="nav-sub-item">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="list.html" class="nav-sub-item active">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../settings/category.html" class="nav-sub-item">分类管理</a>
+            <a href="../settings/banner.html" class="nav-sub-item">Banner管理</a>
+            <a href="../settings/users.html" class="nav-sub-item">用户管理</a>
+            <a href="../settings/config.html" class="nav-sub-item">系统配置</a>
+            <a href="../settings/permissions.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+
+        <a href="../../../index.html" class="nav-item"
+          style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- 主内容 -->
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <button class="btn btn-outline" onclick="history.back()">
+            <i class="mdi mdi-arrow-left"></i> 返回
+          </button>
+          <h1 class="desktop-header-title" id="pageTitle">新增饲料产品</h1>
+        </div>
+        <div class="desktop-header-right">
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <form id="feedForm" onsubmit="return handleSubmit(event)">
+          <div class="form-layout">
+            <!-- 左侧主表单 -->
+            <div class="form-main">
+              <!-- 基本信息 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-information"></i> 基本信息</h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-grid">
+                    <div class="form-group full">
+                      <label>产品名称 <span class="required">*</span></label>
+                      <input type="text" id="productName" placeholder="请输入产品名称" required>
+                    </div>
+                    <div class="form-group">
+                      <label>产品类型 <span class="required">*</span></label>
+                      <select id="productType" required>
+                        <option value="">请选择类型</option>
+                        <option value="concentrate">精饲料</option>
+                        <option value="roughage">粗饲料</option>
+                        <option value="additive">添加剂</option>
+                        <option value="premix">预混料</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>品牌名称 <span class="required">*</span></label>
+                      <input type="text" id="brandName" placeholder="请输入品牌名称" required>
+                    </div>
+                    <div class="form-group">
+                      <label>规格包装 <span class="required">*</span></label>
+                      <input type="text" id="specification" placeholder="如：40kg/袋" required>
+                    </div>
+                    <div class="form-group">
+                      <label>单位</label>
+                      <select id="unit">
+                        <option value="袋">袋</option>
+                        <option value="包">包</option>
+                        <option value="桶">桶</option>
+                        <option value="瓶">瓶</option>
+                        <option value="吨">吨</option>
+                        <option value="kg">公斤</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label>销售价格 <span class="required">*</span></label>
+                      <input type="number" id="price" placeholder="请输入价格" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                      <label>库存数量</label>
+                      <input type="number" id="stock" placeholder="请输入库存数量" value="0">
+                    </div>
+                    <div class="form-group">
+                      <label>保质期</label>
+                      <input type="text" id="shelfLife" placeholder="如：6个月">
+                    </div>
+                    <div class="form-group">
+                      <label>适用对象</label>
+                      <select id="targetAnimal">
+                        <option value="">请选择</option>
+                        <option value="肉牛">肉牛</option>
+                        <option value="奶牛">奶牛</option>
+                        <option value="种牛">种牛</option>
+                        <option value="犊牛">犊牛</option>
+                        <option value="通用">通用</option>
+                      </select>
+                    </div>
+                    <div class="form-group full">
+                      <label>储存条件</label>
+                      <input type="text" id="storageCondition" placeholder="如：阴凉干燥处，避免阳光直射">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 产品图片 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-image-multiple"></i> 产品图片</h3>
+                  <span class="form-hint">最多上传6张，建议尺寸800x600</span>
+                </div>
+                <div class="card-body">
+                  <div class="upload-area">
+                    <div class="upload-item has-image">
+                      <i class="mdi mdi-food-variant"></i>
+                      <button type="button" class="remove-btn"><i class="mdi mdi-close"></i></button>
+                    </div>
+                    <div class="upload-item" onclick="uploadImage()">
+                      <i class="mdi mdi-plus"></i>
+                      <span>添加图片</span>
+                    </div>
+                    <div class="upload-item" onclick="uploadImage()">
+                      <i class="mdi mdi-plus"></i>
+                      <span>添加图片</span>
+                    </div>
+                    <div class="upload-item" onclick="uploadImage()">
+                      <i class="mdi mdi-plus"></i>
+                      <span>添加图片</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 营养成分 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-flask"></i> 营养成分</h3>
+                </div>
+                <div class="card-body">
+                  <div class="component-editor">
+                    <div class="component-header">
+                      <span>成分名称</span>
+                      <span>含量</span>
+                      <span>单位</span>
+                      <span>标准范围</span>
+                      <span></span>
+                    </div>
+                    <div class="component-row">
+                      <input type="text" value="粗蛋白">
+                      <input type="text" value="≥18.0">
+                      <select>
+                        <option>%</option>
+                        <option>mg/kg</option>
+                        <option>IU/kg</option>
+                      </select>
+                      <input type="text" value="16-20%">
+                      <button type="button"><i class="mdi mdi-delete"></i></button>
+                    </div>
+                    <div class="component-row">
+                      <input type="text" value="粗脂肪">
+                      <input type="text" value="≥3.5">
+                      <select>
+                        <option>%</option>
+                        <option>mg/kg</option>
+                        <option>IU/kg</option>
+                      </select>
+                      <input type="text" value="3-5%">
+                      <button type="button"><i class="mdi mdi-delete"></i></button>
+                    </div>
+                    <div class="component-row">
+                      <input type="text" value="粗纤维">
+                      <input type="text" value="≤8.0">
+                      <select>
+                        <option>%</option>
+                        <option>mg/kg</option>
+                        <option>IU/kg</option>
+                      </select>
+                      <input type="text" value="5-10%">
+                      <button type="button"><i class="mdi mdi-delete"></i></button>
+                    </div>
+                    <button type="button" class="add-component-btn" onclick="addComponent()">
+                      <i class="mdi mdi-plus"></i> 添加成分
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 产品描述 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-text-box"></i> 产品描述</h3>
+                </div>
+                <div class="card-body">
+                  <div class="form-group">
+                    <label>产品介绍</label>
+                    <textarea id="description" placeholder="请输入产品详细介绍..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>使用方法</label>
+                    <textarea id="usageMethod" placeholder="请输入使用方法..."></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>注意事项</label>
+                    <textarea id="precautions" placeholder="请输入注意事项..."></textarea>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 操作按钮 -->
+              <div class="form-actions">
+                <button type="button" class="btn-cancel" onclick="history.back()">
+                  <i class="mdi mdi-close"></i> 取消
+                </button>
+                <button type="button" class="btn-draft" onclick="saveDraft()">
+                  <i class="mdi mdi-content-save-outline"></i> 保存草稿
+                </button>
+                <button type="submit" class="btn-save">
+                  <i class="mdi mdi-check"></i> 提交保存
+                </button>
+              </div>
+            </div>
+
+            <!-- 右侧边栏 -->
+            <div class="form-sidebar">
+              <!-- 供应商 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-domain"></i> 供应商</h3>
+                </div>
+                <div class="card-body">
+                  <div class="supplier-select">
+                    <div class="supplier-avatar">
+                      <i class="mdi mdi-domain"></i>
+                    </div>
+                    <div class="supplier-info">
+                      <h4>正大集团</h4>
+                      <p>山东省青岛市</p>
+                    </div>
+                    <button type="button" class="change-btn">更换</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 质量认证 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-certificate"></i> 质量认证</h3>
+                </div>
+                <div class="card-body">
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>ISO9001认证</h4>
+                      <p>质量管理体系认证</p>
+                    </div>
+                    <div class="switch active" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>饲料生产许可</h4>
+                      <p>国家饲料生产许可证</p>
+                    </div>
+                    <div class="switch active" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>无抗饲料认证</h4>
+                      <p>无抗生素添加认证</p>
+                    </div>
+                    <div class="switch" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>绿色饲料标识</h4>
+                      <p>绿色环保饲料认证</p>
+                    </div>
+                    <div class="switch" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 发布设置 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-cog"></i> 发布设置</h3>
+                </div>
+                <div class="card-body">
+                  <div class="publish-options">
+                    <label class="publish-option selected">
+                      <input type="radio" name="publishType" value="now" checked>
+                      <div class="publish-radio"></div>
+                      <div class="publish-info">
+                        <h4>立即发布</h4>
+                        <p>审核通过后立即上架</p>
+                      </div>
+                    </label>
+                    <label class="publish-option">
+                      <input type="radio" name="publishType" value="schedule">
+                      <div class="publish-radio"></div>
+                      <div class="publish-info">
+                        <h4>定时发布</h4>
+                        <p>指定时间自动上架</p>
+                      </div>
+                    </label>
+                    <label class="publish-option">
+                      <input type="radio" name="publishType" value="draft">
+                      <div class="publish-radio"></div>
+                      <div class="publish-info">
+                        <h4>保存草稿</h4>
+                        <p>仅保存，不提交审核</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 其他设置 -->
+              <div class="form-card">
+                <div class="card-header">
+                  <h3><i class="mdi mdi-tune"></i> 其他设置</h3>
+                </div>
+                <div class="card-body">
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>推荐展示</h4>
+                      <p>在首页推荐位展示</p>
+                    </div>
+                    <div class="switch" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>允许询价</h4>
+                      <p>用户可发起询价</p>
+                    </div>
+                    <div class="switch active" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                  <div class="switch-row">
+                    <div class="switch-info">
+                      <h4>批量采购</h4>
+                      <p>支持大宗采购议价</p>
+                    </div>
+                    <div class="switch active" onclick="this.classList.toggle('active')"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // 初始化
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('id');
+
+    if (editId) {
+      document.getElementById('pageTitle').textContent = '编辑饲料产品';
+      // 加载现有数据
+      loadFeedData(editId);
+    }
+
+    // 加载数据
+    function loadFeedData(id) {
+      // 模拟加载数据
+      document.getElementById('productName').value = '高蛋白肉牛精饲料';
+      document.getElementById('productType').value = 'concentrate';
+      document.getElementById('brandName').value = '正大康地';
+      document.getElementById('specification').value = '40kg/袋';
+      document.getElementById('price').value = '180';
+      document.getElementById('stock').value = '5000';
+      document.getElementById('shelfLife').value = '6个月';
+      document.getElementById('targetAnimal').value = '肉牛';
+      document.getElementById('storageCondition').value = '阴凉干燥处，避免阳光直射';
+      document.getElementById('description').value = '本产品是专为肉牛育肥期研发的高蛋白精饲料...';
+    }
+
+    // 上传图片
+    function uploadImage() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          alert('已选择图片: ' + file.name);
+        }
+      };
+      input.click();
+    }
+
+    // 添加营养成分
+    function addComponent() {
+      const editor = document.querySelector('.component-editor');
+      const btn = document.querySelector('.add-component-btn');
+      const row = document.createElement('div');
+      row.className = 'component-row';
+      row.innerHTML = `
+        <input type="text" placeholder="成分名称">
+        <input type="text" placeholder="含量">
+        <select>
+          <option>%</option>
+          <option>mg/kg</option>
+          <option>IU/kg</option>
+        </select>
+        <input type="text" placeholder="标准范围">
+        <button type="button" onclick="this.parentElement.remove()"><i class="mdi mdi-delete"></i></button>
+      `;
+      editor.insertBefore(row, btn);
+    }
+
+    // 发布选项切换
+    document.querySelectorAll('.publish-option').forEach(option => {
+      option.addEventListener('click', () => {
+        document.querySelectorAll('.publish-option').forEach(o => o.classList.remove('selected'));
+        option.classList.add('selected');
+      });
+    });
+
+    // 保存草稿
+    function saveDraft() {
+      alert('草稿已保存');
+    }
+
+    // 提交表单
+    function handleSubmit(event) {
+      event.preventDefault();
+      if (confirm('确定提交保存吗？')) {
+        alert('保存成功！');
+        location.href = 'list.html';
+      }
+      return false;
+    }
+
+    // 侧边栏
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    console.log('饲料编辑页加载完成');
+  </script>
+</body>
+
+</html>

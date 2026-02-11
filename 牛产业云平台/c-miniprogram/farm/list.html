@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>养殖场黄页 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #333;
+      /* padding-bottom 由 mobile.css 的 body.has-bottom-nav 统一控制 (75px) */
+    }
+
+    /* 头部 */
+    .header {
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      padding: 12px 16px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      max-width: 428px;
+      margin: 0 auto;
+    }
+
+    .header-title {
+      color: white;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 20px;
+      padding: 8px 16px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      background: transparent;
+    }
+
+    .search-bar input::placeholder {
+      color: #999;
+    }
+
+    .search-icon {
+      color: #999;
+      margin-right: 8px;
+    }
+
+    /* 筛选工具栏 */
+    .filter-toolbar {
+      display: flex;
+      background: white;
+      padding: 12px 16px;
+      margin-top: 98px;
+      border-bottom: 1px solid #eee;
+      position: sticky;
+      top: 98px;
+      z-index: 90;
+    }
+
+    .filter-btn {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #666;
+      padding: 6px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      color: #2E7D32;
+      font-weight: 500;
+    }
+
+    .filter-btn .arrow {
+      margin-left: 4px;
+      font-size: 10px;
+      transition: transform 0.3s;
+    }
+
+    .filter-btn.active .arrow {
+      transform: rotate(180deg);
+    }
+
+    /* 分类横向滚动 */
+    .category-bar {
+      background: white;
+      padding: 12px 0;
+      overflow-x: auto;
+      white-space: nowrap;
+      -webkit-overflow-scrolling: touch;
+      border-bottom: 1px solid #eee;
+    }
+
+    .category-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-item {
+      display: inline-block;
+      padding: 6px 16px;
+      margin: 0 6px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 16px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .category-item:first-child {
+      margin-left: 16px;
+    }
+
+    .category-item:last-child {
+      margin-right: 16px;
+    }
+
+    .category-item.active {
+      background: #E8F5E9;
+      color: #2E7D32;
+      font-weight: 500;
+    }
+
+    /* 筛选面板 */
+    .filter-panel {
+      display: none;
+      background: white;
+      padding: 16px;
+      border-bottom: 1px solid #eee;
+    }
+
+    .filter-panel.show {
+      display: block;
+    }
+
+    .filter-section {
+      margin-bottom: 16px;
+    }
+
+    .filter-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .filter-label {
+      font-size: 13px;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .filter-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-option {
+      padding: 6px 14px;
+      font-size: 13px;
+      color: #666;
+      background: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-option.active {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    /* 养殖场列表 */
+    .farm-list {
+      padding: 12px;
+    }
+
+    .farm-card {
+      background: white;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .farm-banner {
+      height: 140px;
+      background: linear-gradient(135deg, #C8E6C9 0%, #A5D6A7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 60px;
+      position: relative;
+    }
+
+    .farm-verified {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #2E7D32;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .farm-info {
+      padding: 12px;
+    }
+
+    .farm-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+
+    .farm-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .farm-scale {
+      font-size: 12px;
+      color: #2E7D32;
+      background: #E8F5E9;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .farm-location {
+      font-size: 13px;
+      color: #999;
+      margin-top: 6px;
+    }
+
+    .farm-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .farm-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+
+    .farm-tag.breed {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+
+    .farm-tag.cert {
+      background: #FFF3E0;
+      color: #E65100;
+    }
+
+    .farm-tag.service {
+      background: #F3E5F5;
+      color: #7B1FA2;
+    }
+
+    .farm-stats {
+      display: flex;
+      justify-content: space-around;
+      padding: 12px;
+      border-top: 1px solid #f5f5f5;
+      margin-top: 10px;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: #2E7D32;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .farm-actions {
+      display: flex;
+      border-top: 1px solid #f5f5f5;
+    }
+
+    .farm-action {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      font-size: 13px;
+      color: #666;
+      text-decoration: none;
+      border-right: 1px solid #f5f5f5;
+    }
+
+    .farm-action:last-child {
+      border-right: none;
+    }
+
+    .farm-action.primary {
+      color: #2E7D32;
+      font-weight: 500;
+    }
+
+    .farm-action-icon {
+      margin-right: 4px;
+    }
+
+    /* 加载更多 */
+    .load-more {
+      text-align: center;
+      padding: 20px;
+      color: #999;
+      font-size: 14px;
+    }
+
+    /* 地图入口 */
+    .map-entry {
+      background: white;
+      margin: 12px;
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .map-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #2E7D32 0%, #1B5E20 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+    }
+
+    .map-info {
+      flex: 1;
+      margin-left: 12px;
+    }
+
+    .map-title {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .map-desc {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .map-arrow {
+      font-size: 20px;
+      color: #ccc;
+    }
+
+    /* 统计概览 */
+    .stats-overview {
+      display: flex;
+      background: white;
+      margin: 0 12px 12px;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .overview-item {
+      flex: 1;
+      text-align: center;
+    }
+
+    .overview-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: #2E7D32;
+    }
+
+    .overview-label {
+      font-size: 12px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* ==================== MDI 图标标准化 ==================== */
+    .mdi {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      vertical-align: middle;
+      line-height: 1;
+    }
+
+    .nav-item .icon,
+    .nav-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-item .mdi,
+    .nav-icon .mdi {
+      width: 100%;
+      height: 100%;
+      font-size: inherit;
+    }
+
+    .search-icon {
+      display: flex;
+      align-items: center;
+    }
+
+    .map-icon {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+
+<body class="theme-green has-bottom-nav">
+  <!-- 头部 -->
+  <div class="header">
+    <div class="header-title">养殖场黄页</div>
+    <div class="search-bar">
+      <span class="search-icon"><i class="mdi mdi-magnify"></i></span>
+      <input type="text" placeholder="搜索养殖场名称、地区、品种...">
+    </div>
+  </div>
+
+  <!-- 筛选工具栏 -->
+  <div class="filter-toolbar">
+    <button class="filter-btn active" onclick="toggleFilter('region')">
+      地区 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('scale')">
+      规模 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('breed')">
+      品种 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+    <button class="filter-btn" onclick="toggleFilter('more')">
+      更多 <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+    </button>
+  </div>
+
+  <!-- 分类横向滚动 -->
+  <div class="category-bar">
+    <span class="category-item active">全部</span>
+    <span class="category-item">肉牛</span>
+    <span class="category-item">奶牛</span>
+    <span class="category-item">种牛</span>
+    <span class="category-item">牦牛</span>
+    <span class="category-item">水牛</span>
+    <span class="category-item">黄牛</span>
+  </div>
+
+  <!-- 筛选面板 - 地区 -->
+  <div class="filter-panel" id="panel-region">
+    <div class="filter-section">
+      <div class="filter-label">热门地区</div>
+      <div class="filter-options">
+        <span class="filter-option active">全国</span>
+        <span class="filter-option">内蒙古</span>
+        <span class="filter-option">新疆</span>
+        <span class="filter-option">甘肃</span>
+        <span class="filter-option">宁夏</span>
+        <span class="filter-option">青海</span>
+        <span class="filter-option">四川</span>
+        <span class="filter-option">云南</span>
+        <span class="filter-option">河北</span>
+        <span class="filter-option">山东</span>
+        <span class="filter-option">河南</span>
+        <span class="filter-option">东北</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 规模 -->
+  <div class="filter-panel" id="panel-scale">
+    <div class="filter-section">
+      <div class="filter-label">存栏量</div>
+      <div class="filter-options">
+        <span class="filter-option active">不限</span>
+        <span class="filter-option">100头以下</span>
+        <span class="filter-option">100-500头</span>
+        <span class="filter-option">500-1000头</span>
+        <span class="filter-option">1000-5000头</span>
+        <span class="filter-option">5000头以上</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">场地面积</div>
+      <div class="filter-options">
+        <span class="filter-option">不限</span>
+        <span class="filter-option">100亩以下</span>
+        <span class="filter-option">100-500亩</span>
+        <span class="filter-option">500亩以上</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 品种 -->
+  <div class="filter-panel" id="panel-breed">
+    <div class="filter-section">
+      <div class="filter-label">主养品种</div>
+      <div class="filter-options">
+        <span class="filter-option active">不限</span>
+        <span class="filter-option">西门塔尔</span>
+        <span class="filter-option">安格斯</span>
+        <span class="filter-option">夏洛莱</span>
+        <span class="filter-option">利木赞</span>
+        <span class="filter-option">和牛</span>
+        <span class="filter-option">秦川牛</span>
+        <span class="filter-option">鲁西黄牛</span>
+        <span class="filter-option">荷斯坦</span>
+        <span class="filter-option">牦牛</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选面板 - 更多 -->
+  <div class="filter-panel" id="panel-more">
+    <div class="filter-section">
+      <div class="filter-label">认证资质</div>
+      <div class="filter-options">
+        <span class="filter-option">实名认证</span>
+        <span class="filter-option">营业执照</span>
+        <span class="filter-option">动物防疫</span>
+        <span class="filter-option">有机认证</span>
+        <span class="filter-option">绿色食品</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">提供服务</div>
+      <div class="filter-options">
+        <span class="filter-option">活牛交易</span>
+        <span class="filter-option">屠宰加工</span>
+        <span class="filter-option">代养服务</span>
+        <span class="filter-option">技术指导</span>
+        <span class="filter-option">配送服务</span>
+      </div>
+    </div>
+    <div class="filter-section">
+      <div class="filter-label">排序</div>
+      <div class="filter-options">
+        <span class="filter-option active">综合排序</span>
+        <span class="filter-option">距离最近</span>
+        <span class="filter-option">规模最大</span>
+        <span class="filter-option">好评最高</span>
+        <span class="filter-option">最新入驻</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 地图入口 -->
+  <a href="map.html" class="map-entry">
+    <div class="map-icon"><i class="mdi mdi-map-search"></i></div>
+    <div class="map-info">
+      <div class="map-title">地图找场</div>
+      <div class="map-desc">查看附近养殖场分布</div>
+    </div>
+    <span class="map-arrow"><i class="mdi mdi-chevron-right"></i></span>
+  </a>
+
+  <!-- 统计概览 -->
+  <div class="stats-overview">
+    <div class="overview-item">
+      <div class="overview-value">1,286</div>
+      <div class="overview-label">入驻养殖场</div>
+    </div>
+    <div class="overview-item">
+      <div class="overview-value">32万</div>
+      <div class="overview-label">总存栏量</div>
+    </div>
+    <div class="overview-item">
+      <div class="overview-value">28</div>
+      <div class="overview-label">覆盖省份</div>
+    </div>
+  </div>
+
+  <!-- 养殖场列表 -->
+  <div class="farm-list">
+    <!-- 养殖场卡片1 -->
+    <div class="farm-card">
+      <a href="detail.html?id=1">
+        <div class="farm-banner">
+          <i class="mdi mdi-home-variant"></i>
+          <span class="farm-verified"><i class="mdi mdi-check-decagram"></i> 实名认证</span>
+        </div>
+      </a>
+      <div class="farm-info">
+        <div class="farm-header">
+          <div class="farm-name">锡林郭勒草原牧业</div>
+          <span class="farm-scale">大型</span>
+        </div>
+        <div class="farm-location"><i class="mdi mdi-map-marker"></i> 内蒙古锡林郭勒盟正蓝旗</div>
+        <div class="farm-tags">
+          <span class="farm-tag breed">西门塔尔</span>
+          <span class="farm-tag breed">安格斯</span>
+          <span class="farm-tag cert">有机认证</span>
+          <span class="farm-tag service">活牛交易</span>
+        </div>
+        <div class="farm-stats">
+          <div class="stat-item">
+            <div class="stat-value">3,500</div>
+            <div class="stat-label">存栏量(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">15</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">98%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+      <div class="farm-actions">
+        <a href="tel:13800138001" class="farm-action">
+          <span class="farm-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=1" class="farm-action primary">
+          <span class="farm-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 养殖场卡片2 -->
+    <div class="farm-card">
+      <a href="detail.html?id=2">
+        <div class="farm-banner">
+          <i class="mdi mdi-home-modern" style="font-size: 48px; color: #fff;"></i>
+          <span class="farm-verified"><i class="mdi mdi-check-circle"></i> 实名认证</span>
+        </div>
+      </a>
+      <div class="farm-info">
+        <div class="farm-header">
+          <div class="farm-name">天山雪域牧场</div>
+          <span class="farm-scale">中型</span>
+        </div>
+        <div class="farm-location"><i class="mdi mdi-map-marker"></i> 新疆伊犁哈萨克自治州</div>
+        <div class="farm-tags">
+          <span class="farm-tag breed">新疆褐牛</span>
+          <span class="farm-tag breed">哈萨克牛</span>
+          <span class="farm-tag cert">清真认证</span>
+          <span class="farm-tag service">代养服务</span>
+        </div>
+        <div class="farm-stats">
+          <div class="stat-item">
+            <div class="stat-value">1,200</div>
+            <div class="stat-label">存栏量(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">8</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">96%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+      <div class="farm-actions">
+        <a href="tel:13800138002" class="farm-action">
+          <span class="farm-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=2" class="farm-action primary">
+          <span class="farm-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 养殖场卡片3 -->
+    <div class="farm-card">
+      <a href="detail.html?id=3">
+        <div class="farm-banner">
+          <i class="mdi mdi-home-modern" style="font-size: 48px; color: #fff;"></i>
+          <span class="farm-verified"><i class="mdi mdi-check-circle"></i> 实名认证</span>
+        </div>
+      </a>
+      <div class="farm-info">
+        <div class="farm-header">
+          <div class="farm-name">青藏高原牦牛养殖基地</div>
+          <span class="farm-scale">大型</span>
+        </div>
+        <div class="farm-location"><i class="mdi mdi-map-marker"></i> 青海玉树藏族自治州</div>
+        <div class="farm-tags">
+          <span class="farm-tag breed">牦牛</span>
+          <span class="farm-tag cert">有机认证</span>
+          <span class="farm-tag cert">绿色食品</span>
+          <span class="farm-tag service">屠宰加工</span>
+        </div>
+        <div class="farm-stats">
+          <div class="stat-item">
+            <div class="stat-value">5,800</div>
+            <div class="stat-label">存栏量(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">20</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">99%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+      <div class="farm-actions">
+        <a href="tel:13800138003" class="farm-action">
+          <span class="farm-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=3" class="farm-action primary">
+          <span class="farm-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 养殖场卡片4 -->
+    <div class="farm-card">
+      <a href="detail.html?id=4">
+        <div class="farm-banner">
+          <i class="mdi mdi-home-modern" style="font-size: 48px; color: #fff;"></i>
+        </div>
+      </a>
+      <div class="farm-info">
+        <div class="farm-header">
+          <div class="farm-name">甘肃定西肉牛繁育场</div>
+          <span class="farm-scale">中型</span>
+        </div>
+        <div class="farm-location"><i class="mdi mdi-map-marker"></i> 甘肃定西市安定区</div>
+        <div class="farm-tags">
+          <span class="farm-tag breed">西门塔尔</span>
+          <span class="farm-tag breed">夏洛莱</span>
+          <span class="farm-tag service">活牛交易</span>
+          <span class="farm-tag service">技术指导</span>
+        </div>
+        <div class="farm-stats">
+          <div class="stat-item">
+            <div class="stat-value">800</div>
+            <div class="stat-label">存栏量(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">10</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">95%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+      <div class="farm-actions">
+        <a href="tel:13800138004" class="farm-action">
+          <span class="farm-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=4" class="farm-action primary">
+          <span class="farm-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <!-- 养殖场卡片5 -->
+    <div class="farm-card">
+      <a href="detail.html?id=5">
+        <div class="farm-banner">
+          <i class="mdi mdi-home-modern" style="font-size: 48px; color: #fff;"></i>
+          <span class="farm-verified"><i class="mdi mdi-check-circle"></i> 实名认证</span>
+        </div>
+      </a>
+      <div class="farm-info">
+        <div class="farm-header">
+          <div class="farm-name">山东鲁西黄牛养殖合作社</div>
+          <span class="farm-scale">大型</span>
+        </div>
+        <div class="farm-location"><i class="mdi mdi-map-marker"></i> 山东菏泽市郓城县</div>
+        <div class="farm-tags">
+          <span class="farm-tag breed">鲁西黄牛</span>
+          <span class="farm-tag cert">动物防疫</span>
+          <span class="farm-tag service">活牛交易</span>
+          <span class="farm-tag service">配送服务</span>
+        </div>
+        <div class="farm-stats">
+          <div class="stat-item">
+            <div class="stat-value">2,200</div>
+            <div class="stat-label">存栏量(头)</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">12</div>
+            <div class="stat-label">从业年限</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value">97%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+      <div class="farm-actions">
+        <a href="tel:13800138005" class="farm-action">
+          <span class="farm-action-icon"><i class="mdi mdi-phone"></i></span> 电话咨询
+        </a>
+        <a href="detail.html?id=5" class="farm-action primary">
+          <span class="farm-action-icon"><i class="mdi mdi-eye"></i></span> 查看详情
+        </a>
+      </div>
+    </div>
+
+    <div class="load-more">加载更多...</div>
+  </div>
+
+  <!-- 底部导航 -->
+  <nav class="bottom-nav">
+    <a href="../home/home.html" class="nav-item">
+      <span class="nav-icon mdi mdi-home"></span>
+      <span>首页</span>
+    </a>
+    <a href="../cattle/publish.html" class="nav-item">
+      <span class="nav-icon mdi mdi-plus-circle"></span>
+      <span>发布</span>
+    </a>
+    <a href="../ai-rag/chat.html" class="nav-item">
+      <span class="nav-icon mdi mdi-robot"></span>
+      <span>AI</span>
+    </a>
+    <a href="../enterprise/messages.html" class="nav-item">
+      <span class="nav-icon mdi mdi-bell"></span>
+      <span>消息</span>
+    </a>
+    <a href="../enterprise/center.html" class="nav-item">
+      <span class="nav-icon mdi mdi-account"></span>
+      <span>我的</span>
+    </a>
+  </nav>
+
+  <script>
+    // 消息提示
+    function showMessage() {
+      alert('消息功能开发中...');
+    }
+
+    // 分类选择
+    document.querySelectorAll('.category-item').forEach(item => {
+      item.addEventListener('click', function () {
+        document.querySelectorAll('.category-item').forEach(i => i.classList.remove('active'));
+        this.classList.add('active');
+      });
+    });
+
+    // 筛选面板切换
+    let currentPanel = null;
+    function toggleFilter(type) {
+      const panel = document.getElementById('panel-' + type);
+      const btns = document.querySelectorAll('.filter-btn');
+
+      if (currentPanel === type) {
+        panel.classList.remove('show');
+        btns.forEach(btn => btn.classList.remove('active'));
+        currentPanel = null;
+        return;
+      }
+
+      document.querySelectorAll('.filter-panel').forEach(p => p.classList.remove('show'));
+      btns.forEach(btn => btn.classList.remove('active'));
+
+      panel.classList.add('show');
+      event.target.closest('.filter-btn').classList.add('active');
+      currentPanel = type;
+    }
+
+    // 筛选选项选择
+    document.querySelectorAll('.filter-option').forEach(option => {
+      option.addEventListener('click', function () {
+        const parent = this.closest('.filter-section');
+        const label = parent.querySelector('.filter-label')?.textContent;
+
+        if (label?.includes('排序') || label?.includes('存栏量') || label?.includes('面积')) {
+          parent.querySelectorAll('.filter-option').forEach(o => o.classList.remove('active'));
+          this.classList.add('active');
+        } else {
+          this.classList.toggle('active');
+        }
+      });
+    });
+
+    // 搜索
+    document.querySelector('.search-bar input').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        const keyword = this.value.trim();
+        if (keyword) {
+          alert('搜索: ' + keyword);
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

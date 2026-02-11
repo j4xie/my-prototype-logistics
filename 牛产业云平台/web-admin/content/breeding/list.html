@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>育种种牛管理 - 中国牛产业数智云平台</title>
+  <link rel="stylesheet" href="../../../assets/css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.2.96/css/materialdesignicons.min.css">
+  <link rel="stylesheet" href="../../../assets/css/desktop.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: var(--font-family); background: var(--bg-gray); }
+
+    .filter-panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+    }
+    .filter-field { display: flex; flex-direction: column; gap: 6px; }
+    .filter-field label { font-size: 13px; color: #666; }
+    .filter-field select, .filter-field input {
+      padding: 10px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+    .filter-field select:focus, .filter-field input:focus {
+      outline: none;
+      border-color: var(--primary-color);
+    }
+
+    .table-wrap {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+    }
+    .data-table { width: 100%; border-collapse: collapse; }
+    .data-table th, .data-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .data-table th { background: #fafafa; font-weight: 600; font-size: 13px; color: #666; }
+    .data-table td { font-size: 14px; color: #333; }
+    .data-table tbody tr:hover { background: #fafafa; }
+
+    .breeding-info { display: flex; align-items: center; gap: 12px; }
+    .breeding-img {
+      width: 60px; height: 60px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--primary-color);
+    }
+    .breeding-detail h4 { font-size: 14px; color: #1a1a1a; margin-bottom: 4px; }
+    .breeding-detail p { font-size: 12px; color: #999; }
+
+    .gene-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      background: #fff3e0;
+      color: #ff8f00;
+    }
+    .gene-badge.premium { background: #e8f5e9; color: #2e7d32; }
+    .gene-badge.excellent { background: #e3f2fd; color: #1976d2; }
+
+    .status-tag {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-tag.available { background: #e6f7e6; color: #52c41a; }
+    .status-tag.reserved { background: #fff3e0; color: #ff8f00; }
+    .status-tag.sold { background: #f5f5f5; color: #999; }
+    .status-tag.pending { background: #e6f7ff; color: #1890ff; }
+
+    .row-actions { display: flex; gap: 8px; }
+    .row-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .row-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+    .row-btn.danger:hover { border-color: #ff4d4f; color: #ff4d4f; }
+
+    .pagination-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-top: 1px solid #f0f0f0;
+    }
+    .pagination-info { font-size: 14px; color: #666; }
+    .pagination-btns { display: flex; gap: 8px; }
+    .page-btn {
+      padding: 8px 14px;
+      border: 1px solid #e0e0e0;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .page-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+    .page-btn.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+
+    .batch-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 20px;
+      background: #e8f5e9;
+      border-bottom: 1px solid #c8e6c9;
+    }
+    .batch-actions span { font-size: 14px; color: #1a1a1a; }
+    .batch-btn {
+      padding: 6px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--primary-color);
+      background: #fff;
+      color: var(--primary-color);
+      transition: all 0.2s;
+    }
+    .batch-btn:hover { background: var(--primary-color); color: #fff; }
+  </style>
+</head>
+
+<body>
+  <div class="desktop-layout">
+    <aside class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <span><i class="mdi mdi-cow"></i></span>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../../dashboard/overview.html" class="nav-item">
+          <span class="icon"><i class="mdi mdi-chart-bar"></i></span>
+          <span>数据概览</span>
+        </a>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-office-building"></i></span>
+              <span>企业管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../enterprise/list.html" class="nav-sub-item">企业列表</a>
+            <a href="../../enterprise/review.html" class="nav-sub-item">企业审核</a>
+          </div>
+        </div>
+        <div class="nav-group expanded">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-file-document-edit"></i></span>
+              <span>内容管理</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../cattle/list.html" class="nav-sub-item">活牛信息</a>
+            <a href="list.html" class="nav-sub-item active">育种种牛</a>
+            <a href="../beef/list.html" class="nav-sub-item">牛肉产品</a>
+            <a href="../feed/list.html" class="nav-sub-item">饲料产品</a>
+            <a href="../equipment/list.html" class="nav-sub-item">设备管理</a>
+            <a href="../farm/list.html" class="nav-sub-item">养殖场</a>
+            <a href="../slaughter/list.html" class="nav-sub-item">屠宰场</a>
+            <a href="../review-queue.html" class="nav-sub-item">审核队列</a>
+          </div>
+        </div>
+        <div class="nav-group">
+          <div class="nav-group-title">
+            <div class="title-wrap">
+              <span class="icon"><i class="mdi mdi-cog"></i></span>
+              <span>系统设置</span>
+            </div>
+            <span class="arrow"><i class="mdi mdi-menu-down"></i></span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../../settings/dictionary.html" class="nav-sub-item">字典管理</a>
+            <a href="../settings/category.html" class="nav-sub-item">分类管理</a>
+            <a href="../settings/banner.html" class="nav-sub-item">Banner管理</a>
+            <a href="../settings/users.html" class="nav-sub-item">用户管理</a>
+            <a href="../settings/config.html" class="nav-sub-item">系统配置</a>
+            <a href="../settings/permissions.html" class="nav-sub-item">权限设置</a>
+          </div>
+        </div>
+        <a href="../../../index.html" class="nav-item" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+          <span class="icon"><i class="mdi mdi-home"></i></span>
+          <span>返回首页</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="desktop-main">
+      <header class="desktop-header">
+        <div class="desktop-header-left">
+          <h1 class="desktop-header-title">育种种牛管理</h1>
+        </div>
+        <div class="desktop-header-right">
+          <button class="btn btn-primary" onclick="location.href='create.html'">
+            <i class="mdi mdi-plus"></i> 新增种牛
+          </button>
+          <div class="desktop-header-user">
+            <div class="desktop-header-avatar">管</div>
+            <span class="desktop-header-username">管理员</span>
+          </div>
+        </div>
+      </header>
+
+      <div class="desktop-content">
+        <!-- 统计卡片 -->
+        <div class="stats-grid" style="margin-bottom: 20px;">
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e8f5e9;"><i class="mdi mdi-dna"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">1,256</div>
+              <div class="stat-label">总种牛数</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #e3f2fd;"><i class="mdi mdi-gender-male"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">486</div>
+              <div class="stat-label">公牛</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fce4ec;"><i class="mdi mdi-gender-female"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">770</div>
+              <div class="stat-label">母牛</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon" style="background: #fff3e0;"><i class="mdi mdi-star"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">89</div>
+              <div class="stat-label">优质基因</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 筛选面板 -->
+        <div class="filter-panel">
+          <div class="filter-field">
+            <label>关键词</label>
+            <input type="text" placeholder="搜索编号/名称" id="searchKeyword">
+          </div>
+          <div class="filter-field">
+            <label>品种</label>
+            <select id="breedFilter">
+              <option value="">全部品种</option>
+              <option value="西门塔尔">西门塔尔</option>
+              <option value="夏洛莱">夏洛莱</option>
+              <option value="利木赞">利木赞</option>
+              <option value="安格斯">安格斯</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>性别</label>
+            <select id="genderFilter">
+              <option value="">全部</option>
+              <option value="公">公牛</option>
+              <option value="母">母牛</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>基因等级</label>
+            <select id="geneFilter">
+              <option value="">全部等级</option>
+              <option value="premium">特级</option>
+              <option value="excellent">优良</option>
+              <option value="standard">标准</option>
+            </select>
+          </div>
+          <div class="filter-field">
+            <label>状态</label>
+            <select id="statusFilter">
+              <option value="">全部状态</option>
+              <option value="available">可配种</option>
+              <option value="reserved">已预定</option>
+              <option value="sold">已售出</option>
+              <option value="pending">待审核</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="searchBreeding()"><i class="mdi mdi-magnify"></i> 搜索</button>
+        </div>
+
+        <!-- 表格 -->
+        <div class="table-wrap">
+          <div class="batch-actions" id="batchActions" style="display: none;">
+            <span>已选择 <strong id="selectedCount">0</strong> 条</span>
+            <button class="batch-btn" onclick="batchApprove()"><i class="mdi mdi-check"></i> 批量通过</button>
+          </div>
+
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th><input type="checkbox" id="selectAll" onchange="toggleSelectAll()"></th>
+                <th>种牛信息</th>
+                <th>品种</th>
+                <th>性别</th>
+                <th>月龄</th>
+                <th>基因等级</th>
+                <th>报价</th>
+                <th>发布企业</th>
+                <th>状态</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="breedingTableBody"></tbody>
+          </table>
+
+          <div class="pagination-bar">
+            <div class="pagination-info">共 <strong>1,256</strong> 条记录，第 <strong>1</strong> / <strong>63</strong> 页</div>
+            <div class="pagination-btns">
+              <button class="page-btn">上一页</button>
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+              <button class="page-btn">3</button>
+              <button class="page-btn">...</button>
+              <button class="page-btn">63</button>
+              <button class="page-btn">下一页</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const breedingData = [
+      { id: 'SN-2024-001', name: '锡盟一号', breed: '西门塔尔', gender: '公', age: 36, gene: 'premium', price: 85000, enterprise: '内蒙古种牛繁育中心', status: 'available' },
+      { id: 'SN-2024-002', name: '草原之星', breed: '夏洛莱', gender: '公', age: 28, gene: 'excellent', price: 68000, enterprise: '吉林省种畜场', status: 'available' },
+      { id: 'SN-2024-003', name: '金牛母皇', breed: '利木赞', gender: '母', age: 24, gene: 'premium', price: 55000, enterprise: '河北种牛基地', status: 'reserved' },
+      { id: 'SN-2024-004', name: '黑金刚', breed: '安格斯', gender: '公', age: 42, gene: 'premium', price: 120000, enterprise: '黑龙江良种牛场', status: 'available' },
+      { id: 'SN-2024-005', name: '雪域母牛', breed: '西门塔尔', gender: '母', age: 30, gene: 'excellent', price: 48000, enterprise: '新疆天山种业', status: 'available' },
+      { id: 'SN-2024-006', name: '鲁西大黄', breed: '鲁西黄牛', gender: '公', age: 36, gene: 'standard', price: 35000, enterprise: '山东黄牛保种场', status: 'pending' },
+      { id: 'SN-2024-007', name: '秦川红', breed: '秦川牛', gender: '母', age: 26, gene: 'excellent', price: 42000, enterprise: '陕西种牛站', status: 'sold' }
+    ];
+
+    const geneMap = { premium: { text: '特级', class: 'premium' }, excellent: { text: '优良', class: 'excellent' }, standard: { text: '标准', class: '' } };
+    const statusMap = { available: { text: '可配种', class: 'available' }, reserved: { text: '已预定', class: 'reserved' }, sold: { text: '已售出', class: 'sold' }, pending: { text: '待审核', class: 'pending' } };
+
+    function renderTable(data) {
+      const tbody = document.getElementById('breedingTableBody');
+      tbody.innerHTML = data.map(item => `
+        <tr>
+          <td><input type="checkbox" class="row-checkbox" data-id="${item.id}" onchange="updateSelection()"></td>
+          <td>
+            <div class="breeding-info">
+              <div class="breeding-img"><i class="mdi mdi-dna"></i></div>
+              <div class="breeding-detail">
+                <h4>${item.name}</h4>
+                <p>编号: ${item.id}</p>
+              </div>
+            </div>
+          </td>
+          <td>${item.breed}</td>
+          <td><i class="mdi mdi-gender-${item.gender === '公' ? 'male' : 'female'}" style="color: ${item.gender === '公' ? '#1976d2' : '#e91e63'}"></i> ${item.gender}</td>
+          <td>${item.age} 月</td>
+          <td><span class="gene-badge ${geneMap[item.gene].class}">${geneMap[item.gene].text}</span></td>
+          <td style="color: #e53935; font-weight: 600;">¥${item.price.toLocaleString()}</td>
+          <td>${item.enterprise}</td>
+          <td><span class="status-tag ${statusMap[item.status].class}">${statusMap[item.status].text}</span></td>
+          <td>
+            <div class="row-actions">
+              <button class="row-btn" onclick="viewDetail('${item.id}')">详情</button>
+              <button class="row-btn" onclick="viewPedigree('${item.id}')">系谱</button>
+              ${item.status === 'pending' ? `<button class="row-btn" onclick="approveItem('${item.id}')">通过</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function toggleSelectAll() {
+      const selectAll = document.getElementById('selectAll');
+      document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = selectAll.checked);
+      updateSelection();
+    }
+
+    function updateSelection() {
+      const checked = document.querySelectorAll('.row-checkbox:checked');
+      const batchActions = document.getElementById('batchActions');
+      document.getElementById('selectedCount').textContent = checked.length;
+      batchActions.style.display = checked.length > 0 ? 'flex' : 'none';
+    }
+
+    function searchBreeding() { alert('搜索功能'); }
+    function viewDetail(id) { location.href = `detail.html?id=${id}`; }
+    function viewPedigree(id) { alert('查看系谱: ' + id); }
+    function approveItem(id) { if (confirm('确定通过审核吗？')) alert('已通过: ' + id); }
+    function batchApprove() { alert('批量通过'); }
+
+    document.querySelectorAll('.nav-group-title').forEach(title => {
+      title.addEventListener('click', () => title.parentElement.classList.toggle('expanded'));
+    });
+
+    renderTable(breedingData);
+    console.log('育种种牛管理加载完成');
+  </script>
+</body>
+</html>

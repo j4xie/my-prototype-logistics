@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>批次溯源信息 - 溯源商城</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+
+  <style>
+    /* 批次头部 */
+    .batch-header {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-2xl) var(--spacing-lg);
+      text-align: center;
+    }
+
+    .batch-id {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+      margin-bottom: var(--spacing-sm);
+      font-family: monospace;
+    }
+
+    .batch-product-name {
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .batch-meta {
+      display: flex;
+      justify-content: center;
+      gap: var(--spacing-lg);
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+    }
+
+    .batch-meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-xs);
+    }
+
+    /* 状态徽章 */
+    .status-badge {
+      display: inline-block;
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      margin-top: var(--spacing-md);
+    }
+
+    .status-badge.completed {
+      background: rgba(46, 213, 115, 0.2);
+      color: var(--ecommerce-safe);
+    }
+
+    /* 时间线 */
+    .timeline-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .timeline-container {
+      position: relative;
+      padding: var(--spacing-md) 0;
+    }
+
+    .timeline-line {
+      position: absolute;
+      left: 20px;
+      top: 30px;
+      bottom: 30px;
+      width: 2px;
+      background: linear-gradient(180deg, var(--ecommerce-safe) 0%, var(--primary-color) 100%);
+    }
+
+    .timeline-item {
+      position: relative;
+      padding-left: 50px;
+      margin-bottom: var(--spacing-2xl);
+      cursor: pointer;
+    }
+
+    .timeline-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: 12px;
+      top: 0;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--ecommerce-safe);
+      border: 3px solid var(--bg-white);
+      box-shadow: 0 0 0 2px var(--ecommerce-safe);
+      transition: all var(--transition-base);
+    }
+
+    .timeline-item.active .timeline-dot {
+      width: 22px;
+      height: 22px;
+      left: 10px;
+      top: -2px;
+    }
+
+    .timeline-item.pending .timeline-dot {
+      background: var(--bg-gray);
+      box-shadow: 0 0 0 2px var(--bg-gray);
+    }
+
+    .timeline-content {
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      transition: all var(--transition-base);
+    }
+
+    .timeline-item.active .timeline-content,
+    .timeline-item:active .timeline-content {
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.08) 0%, rgba(118, 75, 162, 0.05) 100%);
+      border: 1px solid rgba(102, 126, 234, 0.2);
+    }
+
+    .timeline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .timeline-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+    }
+
+    .timeline-icon {
+      font-size: var(--font-size-xl);
+    }
+
+    .timeline-time {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .timeline-desc {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .timeline-details {
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--border-color);
+      display: none;
+    }
+
+    .timeline-item.expanded .timeline-details {
+      display: block;
+    }
+
+    .detail-row {
+      display: flex;
+      padding: var(--spacing-xs) 0;
+    }
+
+    .detail-label {
+      width: 80px;
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .detail-value {
+      flex: 1;
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+    }
+
+    /* 原料信息 */
+    .materials-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .material-card {
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .material-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .material-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .material-name {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+    }
+
+    .material-badge {
+      padding: 2px var(--spacing-xs);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-xs);
+      background: rgba(46, 213, 115, 0.1);
+      color: var(--ecommerce-safe);
+    }
+
+    .material-info {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* 质检报告 */
+    .quality-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .quality-card {
+      background: linear-gradient(135deg, rgba(46, 213, 115, 0.05) 0%, rgba(46, 213, 115, 0.02) 100%);
+      border: 1px solid rgba(46, 213, 115, 0.2);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-md);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .quality-card:last-child {
+      margin-bottom: 0;
+    }
+
+    .quality-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .quality-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+    }
+
+    .quality-result {
+      padding: var(--spacing-xs) var(--spacing-md);
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-semibold);
+      background: var(--ecommerce-safe);
+      color: var(--text-inverse);
+    }
+
+    .quality-items {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .quality-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .quality-item-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+    }
+
+    .quality-item-value {
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+    }
+
+    /* 认证信息 */
+    .cert-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .cert-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .cert-item {
+      text-align: center;
+      padding: var(--spacing-md);
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+    }
+
+    .cert-icon {
+      font-size: var(--font-size-3xl);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .cert-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-secondary);
+    }
+
+    /* 分享按钮 */
+    .share-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: calc(var(--mobile-tabbar-height) + var(--spacing-md));
+    }
+
+    .share-btn-large {
+      width: 100%;
+      padding: var(--spacing-lg);
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border: none;
+      border-radius: var(--radius-pill);
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-bold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+      cursor: pointer;
+      box-shadow: var(--shadow-md);
+      transition: all var(--transition-base);
+    }
+
+    .share-btn-large:active {
+      transform: scale(0.98);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* 现场实拍 */
+    .evidence-section {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    
+    .video-player-placeholder {
+      width: 100%;
+      height: 200px;
+      background: #000;
+      border-radius: var(--radius-md);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+      background-image: url('https://images.unsplash.com/photo-1565514020176-892eb1036e62?w=800');
+      background-size: cover;
+      background-position: center;
+    }
+    
+    .video-player-placeholder::before {
+       content: '';
+       position: absolute;
+       top: 0; left: 0; right: 0; bottom: 0;
+       background: rgba(0,0,0,0.4);
+    }
+    
+    .play-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255,255,255,0.8);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: var(--primary-color);
+      z-index: 2;
+    }
+    
+    .video-overlay {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      color: white;
+      font-size: 12px;
+      z-index: 2;
+    }
+    
+    .evidence-gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .evidence-img {
+      width: 100%;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <!-- 顶部导航栏 -->
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">批次溯源</div>
+      <div class="mobile-header-action" onclick="handleShare()">📤</div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="mobile-content">
+      <!-- 批次头部 -->
+      <div class="batch-header" id="batchHeader">
+        <div class="batch-id">批次号: <span id="displayBatchId">加载中...</span></div>
+        <h1 class="batch-product-name" id="productName">加载中...</h1>
+        <div class="batch-meta">
+          <div class="batch-meta-item">
+            <span>📅</span>
+            <span id="productionDate">2025-01-05</span>
+          </div>
+          <div class="batch-meta-item">
+            <span>📦</span>
+            <span id="quantity">500kg</span>
+          </div>
+        </div>
+        <div class="status-badge completed" id="statusBadge">✓ 已完成</div>
+      </div>
+      
+      <!-- 现场实拍 (新增) -->
+      <div class="evidence-section">
+        <h2 class="section-title">📹 现场实拍</h2>
+        <!-- 模拟视频播放器 -->
+        <div class="video-player-placeholder" onclick="playVideo()">
+           <div class="play-icon">▶</div>
+           <div class="video-overlay">生产过程监控实录 (2025-01-05 10:30)</div>
+        </div>
+        
+        <h3 class="section-title" style="margin-top: 20px; font-size: 14px; border: none; margin-bottom: 10px;">📸 关键节点存证</h3>
+        <div class="evidence-gallery">
+           <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=200" class="evidence-img" onclick="Utils.showToast('查看大图: 原料检验', 'info')">
+           <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=200" class="evidence-img" onclick="Utils.showToast('查看大图: 加工生产', 'info')">
+           <img src="https://images.unsplash.com/photo-1581092335397-9583eb92d232?w=200" class="evidence-img" onclick="Utils.showToast('查看大图: 成品包装', 'info')">
+        </div>
+      </div>
+
+      <!-- 时间线 -->
+      <div class="timeline-section">
+        <h2 class="section-title">📍 生产时间线</h2>
+        <div class="timeline-container" id="timelineContainer">
+          <!-- 时间线将通过JavaScript动态生成 -->
+        </div>
+      </div>
+
+      <!-- 原料信息 -->
+      <div class="materials-section">
+        <h2 class="section-title">🌾 原料溯源</h2>
+        <div id="materialsContainer">
+          <!-- 原料卡片将通过JavaScript动态生成 -->
+        </div>
+      </div>
+
+      <!-- 质检报告 -->
+      <div class="quality-section">
+        <h2 class="section-title">🔬 质检报告</h2>
+        <div id="qualityContainer">
+          <!-- 质检报告将通过JavaScript动态生成 -->
+        </div>
+      </div>
+
+      <!-- 认证信息 -->
+      <div class="cert-section">
+        <h2 class="section-title">✓ 安全认证</h2>
+        <div class="cert-grid">
+          <div class="cert-item">
+            <div class="cert-icon">✓</div>
+            <div class="cert-label">ISO认证</div>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon">✓</div>
+            <div class="cert-label">HACCP</div>
+          </div>
+          <div class="cert-item">
+            <div class="cert-icon">✓</div>
+            <div class="cert-label">FDA认证</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分享按钮 -->
+      <div class="share-section">
+        <button class="share-btn-large" onclick="handleShare()">
+          <span>📤</span>
+          <span>分享溯源信息</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 底部Tab导航 -->
+    <div class="mobile-tabbar">
+      <div class="tabbar-item" onclick="navigateTo('../home/home.html')">
+        <div class="tabbar-icon">🏠</div>
+        <div class="tabbar-label">首页</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../products/list.html')">
+        <div class="tabbar-icon">📦</div>
+        <div class="tabbar-label">产品</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../orders/list.html')">
+        <div class="tabbar-icon">🧾</div>
+        <div class="tabbar-label">订单</div>
+      </div>
+      <div class="tabbar-item" onclick="navigateTo('../profile/index.html')">
+        <div class="tabbar-icon">👤</div>
+        <div class="tabbar-label">我的</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js"></script>
+  <script src="../../assets/js/mockAPI.js"></script>
+  <script src="../../assets/js/utils.js"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let currentBatch = null;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const batchId = urlParams.get('batchId') || 'FAC001-20250105-001';
+      loadBatchInfo(batchId);
+    });
+
+    // ==================== 加载批次信息 ====================
+    async function loadBatchInfo(batchId) {
+      try {
+        const result = await MockAPI.request('traceability.batch', {
+          batchId: batchId,
+          skipError: true
+        });
+
+        currentBatch = result.data;
+
+        renderBatchHeader();
+        renderTimeline();
+        renderMaterials();
+        renderQualityReports();
+
+      } catch (error) {
+        console.error('加载批次信息失败:', error);
+        Utils.showToast('加载批次信息失败', 'error');
+      }
+    }
+
+    // ==================== 渲染批次头部 ====================
+    function renderBatchHeader() {
+      document.getElementById('displayBatchId').textContent = currentBatch.batchId;
+      document.getElementById('productName').textContent = currentBatch.productName;
+      document.getElementById('productionDate').textContent =
+        Utils.formatDate(new Date(currentBatch.productionDate), 'YYYY-MM-DD');
+      document.getElementById('quantity').textContent = `${currentBatch.quantity}${currentBatch.unit || ''}`;
+
+      // 状态徽章
+      const statusBadge = document.getElementById('statusBadge');
+      if (currentBatch.status === 'completed') {
+        statusBadge.className = 'status-badge completed';
+        statusBadge.textContent = '✓ 已完成';
+      }
+    }
+
+    // ==================== 渲染时间线 ====================
+    function renderTimeline() {
+      const timelineContainer = document.getElementById('timelineContainer');
+
+      const timelineHtml = currentBatch.timeline.map((item, index) => {
+        const isCompleted = item.status === 'completed';
+        const isPending = item.status === 'pending';
+        const statusClass = isPending ? 'pending' : (isCompleted ? 'active' : '');
+
+        return `
+          <div class="timeline-item ${statusClass}" onclick="toggleTimelineItem(${index})">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-header">
+                <div class="timeline-title">${item.stage}</div>
+                <div class="timeline-icon">${item.icon || '📍'}</div>
+              </div>
+              <div class="timeline-time">${Utils.formatDate(new Date(item.timestamp), 'YYYY-MM-DD HH:mm')}</div>
+              <div class="timeline-desc">${item.description || ''}</div>
+              ${item.details ? `
+                <div class="timeline-details">
+                  ${Object.entries(item.details).map(([key, value]) => `
+                    <div class="detail-row">
+                      <div class="detail-label">${key}</div>
+                      <div class="detail-value">${value}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      timelineContainer.innerHTML = `
+        <div class="timeline-line"></div>
+        ${timelineHtml}
+      `;
+    }
+
+    // ==================== 切换时间线项展开/折叠 ====================
+    function toggleTimelineItem(index) {
+      const timelineItems = document.querySelectorAll('.timeline-item');
+      const item = timelineItems[index];
+
+      if (item.classList.contains('expanded')) {
+        item.classList.remove('expanded');
+      } else {
+        // 折叠其他项
+        timelineItems.forEach(i => i.classList.remove('expanded'));
+        // 展开当前项
+        item.classList.add('expanded');
+      }
+    }
+
+    // ==================== 渲染原料信息 ====================
+    function renderMaterials() {
+      const materialsContainer = document.getElementById('materialsContainer');
+
+      // Use rawMaterials to match mock data structure
+      const materials = currentBatch.rawMaterials || currentBatch.materials || [];
+
+      const materialsHtml = materials.map(material => `
+        <div class="material-card">
+          <div class="material-header">
+            <div class="material-name">${material.name}</div>
+            <div class="material-badge">✓ 已验证</div>
+          </div>
+          <div class="material-info">
+            <div>供应商: ${material.supplier}</div>
+            <div>产地: ${material.origin || '-'}</div>
+            <div>批次号: ${material.batchId}</div>
+            <div>生产日期: ${material.productionDate || '-'}</div>
+            <div>过期时间: ${material.expiryDate || '-'}</div>
+            <div>数量: ${material.quantity}${material.unit || 'kg'}</div>
+          </div>
+        </div>
+      `).join('');
+
+      materialsContainer.innerHTML = materialsHtml || '<div style="text-align:center; padding: 20px; color: #999;">暂无原料信息</div>';
+    }
+
+    // ==================== 渲染质检报告 ====================
+    function renderQualityReports() {
+      const qualityContainer = document.getElementById('qualityContainer');
+
+      const qualityHtml = currentBatch.qualityReports.map(report => `
+        <div class="quality-card">
+          <div class="quality-header">
+            <div class="quality-title">${report.stage}</div>
+            <div class="quality-result">${report.result}</div>
+          </div>
+          <div class="quality-items">
+            ${Object.entries(report.tests).map(([key, value]) => `
+              <div class="quality-item">
+                <div class="quality-item-label">${key}</div>
+                <div class="quality-item-value">${value}</div>
+              </div>
+            `).join('')}
+          </div>
+          ${report.certificateImage ? `
+            <div style="margin-top: 15px; border-top: 1px solid rgba(46, 213, 115, 0.2); padding-top: 10px;">
+               <div style="font-size: 12px; color: #666; margin-bottom: 5px;">📜 证书/报告文件</div>
+               <img src="${report.certificateImage}" style="width: 100px; height: 140px; object-fit: cover; border: 1px solid #eee; border-radius: 4px; cursor: pointer;" onclick="Utils.showToast('查看证书大图', 'info')">
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+
+      qualityContainer.innerHTML = qualityHtml;
+    }
+
+    // ==================== 分享 ====================
+    function handleShare() {
+      const shareText = `我在溯源商城系统查看了【${currentBatch.productName}】的完整溯源信息\n\n批次号: ${currentBatch.batchId}\n生产日期: ${Utils.formatDate(new Date(currentBatch.productionDate), 'YYYY-MM-DD')}\n数量: ${currentBatch.quantity}${currentBatch.unit}\n\n全程可追溯，品质有保障！`;
+
+      // 模拟分享
+      Utils.confirm(shareText, '分享溯源信息').then(confirmed => {
+        if (confirmed) {
+          Utils.showToast('分享成功', 'success');
+        }
+      });
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+    
+    function playVideo() {
+      Utils.showToast('正在加载监控视频...', 'info');
+      // 实际开发中这里会弹出一个视频播放模态框或跳转到视频播放页
+    }
+  </script>
+</body>
+</html>

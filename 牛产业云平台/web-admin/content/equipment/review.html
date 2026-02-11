@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设备审核 - 牛产业云平台</title>
+  <link rel="stylesheet" href="../../css/variables.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f7fa;
+      min-height: 100vh;
+    }
+
+    .admin-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* 侧边栏 */
+    .sidebar {
+      width: 280px;
+      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    .sidebar-logo i {
+      font-size: 32px;
+      color: var(--primary-color, #666fee);
+    }
+
+    .sidebar-nav {
+      padding: 16px 0;
+    }
+
+    .nav-group {
+      margin-bottom: 8px;
+    }
+
+    .nav-group-title {
+      padding: 12px 24px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 24px;
+      color: rgba(255,255,255,0.8);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, var(--primary-color, #666fee), transparent);
+      color: #fff;
+      border-left: 3px solid var(--primary-color, #666fee);
+    }
+
+    .nav-item i {
+      margin-right: 12px;
+      font-size: 20px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .nav-item .badge {
+      margin-left: auto;
+      background: #ff6b6b;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .nav-sub-menu {
+      display: none;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .nav-sub-menu.open {
+      display: block;
+    }
+
+    .nav-sub-item {
+      display: block;
+      padding: 12px 24px 12px 60px;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .nav-sub-item:hover,
+    .nav-sub-item.active {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+
+    /* 主内容区 */
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+    }
+
+    /* 顶部导航 */
+    .top-header {
+      background: #fff;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #666;
+    }
+
+    .breadcrumb a {
+      color: var(--primary-color, #666fee);
+      text-decoration: none;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .header-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: #f5f7fa;
+      color: #666;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .header-btn:hover {
+      background: #e8eaed;
+    }
+
+    .header-btn .badge {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 18px;
+      height: 18px;
+      background: #ff6b6b;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary-color, #666fee), #8b5cf6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    /* 页面内容 */
+    .page-content {
+      padding: 24px 32px;
+    }
+
+    .page-header {
+      margin-bottom: 24px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .page-subtitle {
+      color: #666;
+      margin-top: 4px;
+    }
+
+    /* 审核统计 */
+    .review-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid transparent;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    .stat-card.active {
+      border-color: var(--primary-color, #666fee);
+    }
+
+    .stat-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .stat-icon.orange {
+      background: linear-gradient(135deg, #f59e0b, #fbbf24);
+      color: #fff;
+    }
+
+    .stat-icon.green {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: #fff;
+    }
+
+    .stat-icon.red {
+      background: linear-gradient(135deg, #ef4444, #f87171);
+      color: #fff;
+    }
+
+    .stat-icon.blue {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      color: #fff;
+    }
+
+    .stat-info h3 {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a2e;
+    }
+
+    .stat-info p {
+      color: #666;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    /* 审核布局 */
+    .review-layout {
+      display: grid;
+      grid-template-columns: 340px 1fr 400px;
+      gap: 24px;
+    }
+
+    /* 待审核列表 */
+    .pending-list {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      max-height: calc(100vh - 280px);
+      overflow-y: auto;
+    }
+
+    .pending-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 10;
+    }
+
+    .pending-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .pending-count {
+      background: #ff6b6b;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+    }
+
+    .pending-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pending-item:hover {
+      background: #fafbfc;
+    }
+
+    .pending-item.active {
+      background: #eef2ff;
+      border-left: 3px solid var(--primary-color, #666fee);
+    }
+
+    .pending-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .pending-item-name {
+      font-weight: 500;
+      color: #1a1a2e;
+    }
+
+    .pending-item-type {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    .pending-item-info {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: #999;
+    }
+
+    .pending-item-info span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pending-item-date {
+      font-size: 12px;
+      color: #999;
+      margin-top: 8px;
+    }
+
+    /* 预览区域 */
+    .preview-panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .preview-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .preview-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .preview-actions button {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #e2e8f0;
+      background: #fff;
+      color: #666;
+      transition: all 0.2s;
+    }
+
+    .preview-actions button:hover {
+      background: #f5f7fa;
+    }
+
+    .preview-body {
+      padding: 24px;
+      max-height: calc(100vh - 380px);
+      overflow-y: auto;
+    }
+
+    /* 设备预览 */
+    .equipment-preview {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .preview-image {
+      width: 160px;
+      height: 160px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #64748b, #94a3b8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 48px;
+      flex-shrink: 0;
+    }
+
+    .preview-info {
+      flex: 1;
+    }
+
+    .preview-name {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .preview-model {
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    .preview-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .preview-tag {
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      background: #f3f4f6;
+      color: #6b7280;
+    }
+
+    .preview-tag.type {
+      background: #e0f2fe;
+      color: #0284c7;
+    }
+
+    /* 信息表格 */
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 24px;
+    }
+
+    .info-table th,
+    .info-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .info-table th {
+      background: #fafbfc;
+      font-weight: 500;
+      color: #666;
+      width: 30%;
+    }
+
+    .info-table td {
+      color: #333;
+    }
+
+    /* 规格参数预览 */
+    .spec-preview {
+      background: #fafbfc;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .spec-preview h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 12px;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .spec-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .spec-item:last-child {
+      border-bottom: none;
+    }
+
+    .spec-item label {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .spec-item span {
+      color: #333;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    /* 图片画廊 */
+    .image-gallery {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      background: #f0f0f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .gallery-item:hover {
+      transform: scale(1.05);
+    }
+
+    .gallery-item i {
+      font-size: 32px;
+      color: #999;
+    }
+
+    /* 审核面板 */
+    .review-panel {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    .review-panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .review-panel-header h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .review-panel-body {
+      padding: 24px;
+    }
+
+    /* 提交人信息 */
+    .submitter-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .submitter-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+    }
+
+    .submitter-detail h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .submitter-detail p {
+      font-size: 13px;
+      color: #666;
+    }
+
+    /* 厂商信息 */
+    .manufacturer-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .manufacturer-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 8px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #e2e8f0;
+      color: var(--primary-color, #666fee);
+      font-size: 20px;
+    }
+
+    .manufacturer-detail h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a2e;
+    }
+
+    .manufacturer-detail p {
+      font-size: 12px;
+      color: #666;
+    }
+
+    /* 审核历史 */
+    .review-history {
+      margin-bottom: 20px;
+    }
+
+    .review-history h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 12px;
+    }
+
+    .history-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .history-dot.submit {
+      background: #3b82f6;
+    }
+
+    .history-dot.approve {
+      background: #10b981;
+    }
+
+    .history-dot.reject {
+      background: #ef4444;
+    }
+
+    .history-content {
+      flex: 1;
+    }
+
+    .history-content p {
+      font-size: 14px;
+      color: #333;
+    }
+
+    .history-content span {
+      font-size: 12px;
+      color: #999;
+    }
+
+    /* 审核操作 */
+    .review-action {
+      margin-top: 24px;
+    }
+
+    .action-options {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .action-option {
+      flex: 1;
+      padding: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .action-option:hover {
+      border-color: var(--primary-color, #666fee);
+    }
+
+    .action-option.selected.approve {
+      border-color: #10b981;
+      background: #dcfce7;
+    }
+
+    .action-option.selected.reject {
+      border-color: #ef4444;
+      background: #fee2e2;
+    }
+
+    .action-option i {
+      font-size: 24px;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .action-option.approve i {
+      color: #10b981;
+    }
+
+    .action-option.reject i {
+      color: #ef4444;
+    }
+
+    .action-option span {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .action-option.approve span {
+      color: #10b981;
+    }
+
+    .action-option.reject span {
+      color: #ef4444;
+    }
+
+    /* 驳回原因 */
+    .reject-reasons {
+      display: none;
+      margin-bottom: 16px;
+    }
+
+    .reject-reasons.show {
+      display: block;
+    }
+
+    .reject-reasons h4 {
+      font-size: 14px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 12px;
+    }
+
+    .reason-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .reason-tag {
+      padding: 6px 12px;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .reason-tag:hover,
+    .reason-tag.selected {
+      background: #fee2e2;
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+
+    .review-comment {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      resize: vertical;
+      min-height: 100px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .review-comment:focus {
+      border-color: var(--primary-color, #666fee);
+    }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+
+    .submit-btn:disabled {
+      background: #e2e8f0;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .submit-btn.approve {
+      background: linear-gradient(135deg, #10b981, #34d399);
+      color: #fff;
+    }
+
+    .submit-btn.reject {
+      background: linear-gradient(135deg, #ef4444, #f87171);
+      color: #fff;
+    }
+
+    .submit-btn:not(:disabled):hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* 快捷键提示 */
+    .shortcuts {
+      margin-top: 16px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+    }
+
+    .shortcuts h4 {
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 8px;
+    }
+
+    .shortcut-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 4px;
+    }
+
+    .shortcut-item kbd {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="admin-layout">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <i class="mdi mdi-cow"></i>
+          <span>牛产业云平台</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-group">
+          <div class="nav-group-title">概览</div>
+          <a href="../../dashboard.html" class="nav-item">
+            <i class="mdi mdi-view-dashboard"></i>
+            <span>工作台</span>
+          </a>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">内容管理</div>
+          <div class="nav-item active" onclick="toggleSubMenu(this)">
+            <i class="mdi mdi-cog"></i>
+            <span>设备管理</span>
+            <i class="mdi mdi-chevron-down" style="margin-left: auto;"></i>
+          </div>
+          <div class="nav-sub-menu open">
+            <a href="list.html" class="nav-sub-item">设备列表</a>
+            <a href="review.html" class="nav-sub-item active">设备审核</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title">系统设置</div>
+          <a href="../settings/category.html" class="nav-item">
+            <i class="mdi mdi-shape"></i>
+            <span>分类管理</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+      <!-- 顶部导航 -->
+      <header class="top-header">
+        <div class="breadcrumb">
+          <a href="../../dashboard.html">首页</a>
+          <i class="mdi mdi-chevron-right"></i>
+          <a href="list.html">设备管理</a>
+          <i class="mdi mdi-chevron-right"></i>
+          <span>设备审核</span>
+        </div>
+        <div class="header-actions">
+          <button class="header-btn">
+            <i class="mdi mdi-magnify"></i>
+          </button>
+          <button class="header-btn">
+            <i class="mdi mdi-bell-outline"></i>
+            <span class="badge">5</span>
+          </button>
+          <div class="user-avatar">管</div>
+        </div>
+      </header>
+
+      <!-- 页面内容 -->
+      <div class="page-content">
+        <div class="page-header">
+          <h1 class="page-title">设备审核</h1>
+          <p class="page-subtitle">审核新提交的设备信息</p>
+        </div>
+
+        <!-- 审核统计 -->
+        <div class="review-stats">
+          <div class="stat-card active" onclick="filterByStatus('pending')">
+            <div class="stat-icon orange">
+              <i class="mdi mdi-clock-outline"></i>
+            </div>
+            <div class="stat-info">
+              <h3>12</h3>
+              <p>待审核</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStatus('approved')">
+            <div class="stat-icon green">
+              <i class="mdi mdi-check-circle"></i>
+            </div>
+            <div class="stat-info">
+              <h3>156</h3>
+              <p>已通过</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStatus('rejected')">
+            <div class="stat-icon red">
+              <i class="mdi mdi-close-circle"></i>
+            </div>
+            <div class="stat-info">
+              <h3>8</h3>
+              <p>已驳回</p>
+            </div>
+          </div>
+          <div class="stat-card" onclick="filterByStatus('all')">
+            <div class="stat-icon blue">
+              <i class="mdi mdi-format-list-bulleted"></i>
+            </div>
+            <div class="stat-info">
+              <h3>176</h3>
+              <p>全部</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 审核布局 -->
+        <div class="review-layout">
+          <!-- 待审核列表 -->
+          <div class="pending-list">
+            <div class="pending-header">
+              <h3>待审核列表</h3>
+              <span class="pending-count">12</span>
+            </div>
+            <div class="pending-item active" onclick="selectItem(this, 'EQ-NEW-001')">
+              <div class="pending-item-header">
+                <span class="pending-item-name">智能饲喂机 SF-3000</span>
+                <span class="pending-item-type">饲喂设备</span>
+              </div>
+              <div class="pending-item-info">
+                <span><i class="mdi mdi-domain"></i> 德国克拉斯</span>
+                <span><i class="mdi mdi-map-marker"></i> 1号养殖场</span>
+              </div>
+              <div class="pending-item-date">提交时间：2024-12-20 14:30</div>
+            </div>
+            <div class="pending-item" onclick="selectItem(this, 'EQ-NEW-002')">
+              <div class="pending-item-header">
+                <span class="pending-item-name">自动清粪系统 ACM-600</span>
+                <span class="pending-item-type">养殖设备</span>
+              </div>
+              <div class="pending-item-info">
+                <span><i class="mdi mdi-domain"></i> 国产雷沃</span>
+                <span><i class="mdi mdi-map-marker"></i> 2号养殖场</span>
+              </div>
+              <div class="pending-item-date">提交时间：2024-12-20 11:20</div>
+            </div>
+            <div class="pending-item" onclick="selectItem(this, 'EQ-NEW-003')">
+              <div class="pending-item-header">
+                <span class="pending-item-name">环境监测仪 ENV-M200</span>
+                <span class="pending-item-type">环控设备</span>
+              </div>
+              <div class="pending-item-info">
+                <span><i class="mdi mdi-domain"></i> 日本久保田</span>
+                <span><i class="mdi mdi-map-marker"></i> 3号养殖场</span>
+              </div>
+              <div class="pending-item-date">提交时间：2024-12-20 09:15</div>
+            </div>
+            <div class="pending-item" onclick="selectItem(this, 'EQ-NEW-004')">
+              <div class="pending-item-header">
+                <span class="pending-item-name">智能称重系统 WS-2000</span>
+                <span class="pending-item-type">检测设备</span>
+              </div>
+              <div class="pending-item-info">
+                <span><i class="mdi mdi-domain"></i> 德国克拉斯</span>
+                <span><i class="mdi mdi-map-marker"></i> 1号养殖场</span>
+              </div>
+              <div class="pending-item-date">提交时间：2024-12-19 16:45</div>
+            </div>
+            <div class="pending-item" onclick="selectItem(this, 'EQ-NEW-005')">
+              <div class="pending-item-header">
+                <span class="pending-item-name">冷链运输车 CT-L8000</span>
+                <span class="pending-item-type">运输设备</span>
+              </div>
+              <div class="pending-item-info">
+                <span><i class="mdi mdi-domain"></i> 国产北汽</span>
+                <span><i class="mdi mdi-map-marker"></i> 物流中心</span>
+              </div>
+              <div class="pending-item-date">提交时间：2024-12-19 14:20</div>
+            </div>
+          </div>
+
+          <!-- 预览区域 -->
+          <div class="preview-panel">
+            <div class="preview-header">
+              <h3>设备预览</h3>
+              <div class="preview-actions">
+                <button onclick="viewFullDetail()"><i class="mdi mdi-eye"></i> 完整详情</button>
+                <button onclick="compareEquipment()"><i class="mdi mdi-compare"></i> 对比</button>
+              </div>
+            </div>
+            <div class="preview-body">
+              <div class="equipment-preview">
+                <div class="preview-image">
+                  <i class="mdi mdi-food-variant"></i>
+                </div>
+                <div class="preview-info">
+                  <h2 class="preview-name">智能饲喂机 SF-3000</h2>
+                  <p class="preview-model">型号：SF-3000 | 编号：EQ-NEW-001</p>
+                  <div class="preview-tags">
+                    <span class="preview-tag type">饲喂设备</span>
+                    <span class="preview-tag">新增设备</span>
+                    <span class="preview-tag">待审核</span>
+                  </div>
+                </div>
+              </div>
+
+              <table class="info-table">
+                <tr>
+                  <th>设备名称</th>
+                  <td>智能饲喂机 SF-3000</td>
+                </tr>
+                <tr>
+                  <th>设备类型</th>
+                  <td>饲喂设备</td>
+                </tr>
+                <tr>
+                  <th>厂商品牌</th>
+                  <td>德国克拉斯 (CLAAS)</td>
+                </tr>
+                <tr>
+                  <th>采购日期</th>
+                  <td>2024-12-15</td>
+                </tr>
+                <tr>
+                  <th>采购金额</th>
+                  <td>¥168,000</td>
+                </tr>
+                <tr>
+                  <th>安装位置</th>
+                  <td>1号养殖场 - A区 - 1号牛舍</td>
+                </tr>
+                <tr>
+                  <th>保修期限</th>
+                  <td>3年 (至 2027-12-15)</td>
+                </tr>
+              </table>
+
+              <div class="spec-preview">
+                <h4>规格参数</h4>
+                <div class="spec-grid">
+                  <div class="spec-item">
+                    <label>额定功率</label>
+                    <span>7.5 kW</span>
+                  </div>
+                  <div class="spec-item">
+                    <label>工作电压</label>
+                    <span>380V / 50Hz</span>
+                  </div>
+                  <div class="spec-item">
+                    <label>喂料容量</label>
+                    <span>3000 kg/次</span>
+                  </div>
+                  <div class="spec-item">
+                    <label>喂料精度</label>
+                    <span>±0.3%</span>
+                  </div>
+                  <div class="spec-item">
+                    <label>外形尺寸</label>
+                    <span>3600×1800×2400mm</span>
+                  </div>
+                  <div class="spec-item">
+                    <label>整机重量</label>
+                    <span>2200 kg</span>
+                  </div>
+                </div>
+              </div>
+
+              <h4 style="font-size: 14px; margin-bottom: 12px; color: #1a1a2e;">设备图片</h4>
+              <div class="image-gallery">
+                <div class="gallery-item"><i class="mdi mdi-image"></i></div>
+                <div class="gallery-item"><i class="mdi mdi-image"></i></div>
+                <div class="gallery-item"><i class="mdi mdi-image"></i></div>
+                <div class="gallery-item"><i class="mdi mdi-image"></i></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 审核面板 -->
+          <div class="review-panel">
+            <div class="review-panel-header">
+              <h3>审核操作</h3>
+            </div>
+            <div class="review-panel-body">
+              <!-- 提交人信息 -->
+              <div class="submitter-info">
+                <div class="submitter-avatar">张</div>
+                <div class="submitter-detail">
+                  <h4>张经理</h4>
+                  <p>1号养殖场 · 设备采购员</p>
+                </div>
+              </div>
+
+              <!-- 厂商信息 -->
+              <div class="manufacturer-info">
+                <div class="manufacturer-logo">
+                  <i class="mdi mdi-factory"></i>
+                </div>
+                <div class="manufacturer-detail">
+                  <h4>德国克拉斯</h4>
+                  <p>CLAAS KGaA mbH · 国际品牌</p>
+                </div>
+              </div>
+
+              <!-- 审核历史 -->
+              <div class="review-history">
+                <h4>审核历史</h4>
+                <div class="history-item">
+                  <div class="history-dot submit"></div>
+                  <div class="history-content">
+                    <p>张经理 提交了设备信息</p>
+                    <span>2024-12-20 14:30</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 审核操作 -->
+              <div class="review-action">
+                <div class="action-options">
+                  <div class="action-option approve" onclick="selectAction(this, 'approve')">
+                    <i class="mdi mdi-check-circle"></i>
+                    <span>通过</span>
+                  </div>
+                  <div class="action-option reject" onclick="selectAction(this, 'reject')">
+                    <i class="mdi mdi-close-circle"></i>
+                    <span>驳回</span>
+                  </div>
+                </div>
+
+                <div class="reject-reasons" id="rejectReasons">
+                  <h4>驳回原因 (可多选)</h4>
+                  <div class="reason-tags">
+                    <span class="reason-tag" onclick="toggleReason(this)">信息不完整</span>
+                    <span class="reason-tag" onclick="toggleReason(this)">参数有误</span>
+                    <span class="reason-tag" onclick="toggleReason(this)">图片不清晰</span>
+                    <span class="reason-tag" onclick="toggleReason(this)">厂商信息错误</span>
+                    <span class="reason-tag" onclick="toggleReason(this)">价格异常</span>
+                    <span class="reason-tag" onclick="toggleReason(this)">重复提交</span>
+                  </div>
+                </div>
+
+                <textarea class="review-comment" placeholder="请输入审核意见（选填）..."></textarea>
+
+                <button class="submit-btn" id="submitBtn" disabled onclick="submitReview()">
+                  请选择审核结果
+                </button>
+              </div>
+
+              <!-- 快捷键提示 -->
+              <div class="shortcuts">
+                <h4>快捷键</h4>
+                <div class="shortcut-item">
+                  <kbd>A</kbd> <span>通过</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>R</kbd> <span>驳回</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>↑</kbd><kbd>↓</kbd> <span>切换条目</span>
+                </div>
+                <div class="shortcut-item">
+                  <kbd>Enter</kbd> <span>提交审核</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentAction = null;
+
+    function toggleSubMenu(element) {
+      const subMenu = element.nextElementSibling;
+      if (subMenu && subMenu.classList.contains('nav-sub-menu')) {
+        subMenu.classList.toggle('open');
+      }
+    }
+
+    function selectItem(element, id) {
+      document.querySelectorAll('.pending-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      element.classList.add('active');
+      // 加载对应设备信息...
+      console.log('选中设备:', id);
+    }
+
+    function selectAction(element, action) {
+      const submitBtn = document.getElementById('submitBtn');
+      const rejectReasons = document.getElementById('rejectReasons');
+
+      document.querySelectorAll('.action-option').forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      element.classList.add('selected');
+
+      currentAction = action;
+
+      if (action === 'reject') {
+        rejectReasons.classList.add('show');
+        submitBtn.className = 'submit-btn reject';
+        submitBtn.textContent = '确认驳回';
+      } else {
+        rejectReasons.classList.remove('show');
+        submitBtn.className = 'submit-btn approve';
+        submitBtn.textContent = '确认通过';
+      }
+      submitBtn.disabled = false;
+    }
+
+    function toggleReason(element) {
+      element.classList.toggle('selected');
+    }
+
+    function submitReview() {
+      if (!currentAction) return;
+
+      const action = currentAction === 'approve' ? '通过' : '驳回';
+      if (confirm(`确定要${action}该设备吗？`)) {
+        alert(`审核${action}成功！`);
+        // 刷新页面或移除已审核项
+        location.reload();
+      }
+    }
+
+    function viewFullDetail() {
+      window.open('detail.html?id=EQ-NEW-001', '_blank');
+    }
+
+    function compareEquipment() {
+      alert('对比功能开发中...');
+    }
+
+    function filterByStatus(status) {
+      document.querySelectorAll('.stat-card').forEach(card => {
+        card.classList.remove('active');
+      });
+      event.currentTarget.classList.add('active');
+      console.log('筛选状态:', status);
+    }
+
+    // 键盘快捷键
+    document.addEventListener('keydown', function(e) {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+
+      switch(e.key.toLowerCase()) {
+        case 'a':
+          document.querySelector('.action-option.approve').click();
+          break;
+        case 'r':
+          document.querySelector('.action-option.reject').click();
+          break;
+        case 'enter':
+          if (!document.getElementById('submitBtn').disabled) {
+            submitReview();
+          }
+          break;
+        case 'arrowup':
+          e.preventDefault();
+          navigateItems(-1);
+          break;
+        case 'arrowdown':
+          e.preventDefault();
+          navigateItems(1);
+          break;
+      }
+    });
+
+    function navigateItems(direction) {
+      const items = document.querySelectorAll('.pending-item');
+      const current = document.querySelector('.pending-item.active');
+      let index = Array.from(items).indexOf(current);
+      index += direction;
+      if (index >= 0 && index < items.length) {
+        items[index].click();
+        items[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  </script>
+</body>
+</html>

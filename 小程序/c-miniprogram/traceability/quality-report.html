@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>质检报告 - 溯源商城</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .report-header {
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      padding: var(--spacing-xl) var(--spacing-lg);
+      text-align: center;
+    }
+    .report-status {
+      font-size: var(--font-size-3xl);
+      margin-bottom: var(--spacing-sm);
+    }
+    .report-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+    }
+    .info-card {
+      background: var(--bg-white);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
+    }
+    .info-row {
+      display: flex;
+      padding: var(--spacing-md) 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .info-row:last-child {
+      border-bottom: none;
+    }
+    .info-label {
+      width: 100px;
+      color: var(--text-tertiary);
+      font-size: var(--font-size-sm);
+    }
+    .info-value {
+      flex: 1;
+      color: var(--text-primary);
+      font-size: var(--font-size-sm);
+      font-weight: var(--font-weight-medium);
+    }
+    .test-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md);
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-sm);
+    }
+    .test-name {
+      font-size: var(--font-size-base);
+      color: var(--text-primary);
+    }
+    .test-result {
+      font-weight: var(--font-weight-bold);
+    }
+    .test-result.pass {
+      color: var(--success-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+      <div class="mobile-header-back" onclick="window.history.back()">←</div>
+      <div class="mobile-header-title">质检报告</div>
+    </div>
+    <div class="mobile-content">
+      <div class="report-header">
+        <div class="report-status">✅</div>
+        <div class="report-title">质检合格</div>
+      </div>
+      <div class="info-card">
+        <h3 style="margin-bottom: var(--spacing-md);">基本信息</h3>
+        <div class="info-row">
+          <div class="info-label">检测批次</div>
+          <div class="info-value" id="batchId">FAC001-20250105-001</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">检测日期</div>
+          <div class="info-value">2025-01-05</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">检测机构</div>
+          <div class="info-value">国家食品安全检测中心</div>
+        </div>
+        <div class="info-row">
+          <div class="info-label">检测员</div>
+          <div class="info-value">李明 (证书编号: QC-2024-001)</div>
+        </div>
+      </div>
+      <div class="info-card">
+        <h3 style="margin-bottom: var(--spacing-md);">检测项目</h3>
+        <div class="test-item">
+          <div class="test-name">微生物指标</div>
+          <div class="test-result pass">✓ 合格</div>
+        </div>
+        <div class="test-item">
+          <div class="test-name">重金属检测</div>
+          <div class="test-result pass">✓ 合格</div>
+        </div>
+        <div class="test-item">
+          <div class="test-name">农药残留</div>
+          <div class="test-result pass">✓ 合格</div>
+        </div>
+        <div class="test-item">
+          <div class="test-name">添加剂检测</div>
+          <div class="test-result pass">✓ 合格</div>
+        </div>
+        <div class="test-item">
+          <div class="test-name">营养成分</div>
+          <div class="test-result pass">✓ 合格</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../../assets/js/utils.js"></script>
+</body>
+</html>

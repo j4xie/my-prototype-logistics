@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>价格配置 - 白垩纪食品溯源管理后台</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/desktop.css?v=1765970920">
+
+  <style>
+    /* 两栏布局 */
+    .two-column-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: var(--spacing-lg);
+      align-items: start;
+    }
+
+    @media (max-width: 1200px) {
+      .two-column-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 产品信息卡片 */
+    .product-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .product-header {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+
+    .product-image {
+      width: 80px;
+      height: 80px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+      border: 1px solid var(--border-color);
+    }
+
+    .product-details {
+      flex: 1;
+    }
+
+    .product-name {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .product-meta {
+      font-size: var(--font-size-sm);
+      color: var(--text-tertiary);
+      display: flex;
+      gap: var(--spacing-md);
+    }
+
+    /* 价格配置区域 */
+    .price-config-section {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-2xl);
+    }
+
+    .section-title {
+      font-size: var(--font-size-lg);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-lg);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-sm);
+    }
+
+    /* 基础价格 */
+    .base-price-input {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-md);
+      padding: var(--spacing-lg);
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .price-input-wrapper {
+      position: relative;
+      flex: 1;
+      max-width: 300px;
+    }
+
+    .price-input {
+      width: 100%;
+      padding: var(--spacing-md) var(--spacing-md) var(--spacing-md) 40px;
+      border: 2px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-2xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--error-color);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .price-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .price-prefix {
+      position: absolute;
+      left: var(--spacing-md);
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: var(--font-size-xl);
+      font-weight: var(--font-weight-bold);
+      color: var(--error-color);
+    }
+
+    .price-label {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    /* 阶梯价格列表 */
+    .tier-price-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+      margin-bottom: var(--spacing-lg);
+    }
+
+    .tier-price-item {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: flex-start;
+      padding: var(--spacing-lg);
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      border: 2px solid transparent;
+      transition: all var(--transition-base);
+    }
+
+    .tier-price-item:hover {
+      background: rgba(102, 126, 234, 0.05);
+      border-color: var(--primary-color);
+    }
+
+    .tier-number {
+      width: 32px;
+      height: 32px;
+      background: var(--primary-gradient);
+      color: var(--text-inverse);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: var(--font-weight-bold);
+      flex-shrink: 0;
+    }
+
+    .tier-inputs {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: var(--spacing-md);
+      align-items: center;
+    }
+
+    .tier-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+    }
+
+    .tier-input-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      font-weight: var(--font-weight-medium);
+    }
+
+    .tier-input {
+      padding: var(--spacing-sm) var(--spacing-md);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-base);
+      outline: none;
+      transition: border-color var(--transition-base);
+    }
+
+    .tier-input:focus {
+      border-color: var(--primary-color);
+    }
+
+    .tier-input.price {
+      font-weight: var(--font-weight-semibold);
+      color: var(--error-color);
+    }
+
+    .tier-summary {
+      font-size: var(--font-size-sm);
+      color: var(--text-secondary);
+    }
+
+    .tier-actions {
+      display: flex;
+      gap: var(--spacing-xs);
+    }
+
+    .tier-action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: var(--bg-white);
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .tier-action-btn:hover {
+      background: var(--error-color);
+      color: var(--text-inverse);
+      transform: scale(1.1);
+    }
+
+    .add-tier-btn {
+      width: 100%;
+      padding: var(--spacing-lg);
+      border: 2px dashed var(--border-color);
+      background: none;
+      border-radius: var(--radius-md);
+      color: var(--primary-color);
+      cursor: pointer;
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-medium);
+      transition: all var(--transition-base);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--spacing-sm);
+    }
+
+    .add-tier-btn:hover {
+      background: rgba(102, 126, 234, 0.05);
+      border-color: var(--primary-color);
+    }
+
+    /* 价格预览图表 */
+    .price-preview-card {
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      padding: var(--spacing-xl);
+      position: sticky;
+      top: 20px;
+    }
+
+    .preview-title {
+      font-size: var(--font-size-base);
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-primary);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .price-chart {
+      width: 100%;
+      height: 300px;
+      background: var(--bg-gray);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--spacing-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chart-placeholder {
+      text-align: center;
+      color: var(--text-tertiary);
+    }
+
+    .chart-icon {
+      font-size: var(--font-size-4xl);
+      margin-bottom: var(--spacing-sm);
+    }
+
+    /* 价格预览表格 */
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--font-size-sm);
+    }
+
+    .preview-table th,
+    .preview-table td {
+      padding: var(--spacing-sm);
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-table th {
+      font-weight: var(--font-weight-semibold);
+      color: var(--text-secondary);
+      background: var(--bg-gray);
+    }
+
+    .preview-table td {
+      color: var(--text-primary);
+    }
+
+    .preview-price {
+      font-weight: var(--font-weight-bold);
+      color: var(--error-color);
+    }
+
+    .preview-discount {
+      font-size: var(--font-size-xs);
+      color: var(--success-color);
+    }
+
+    /* 保存按钮区域 */
+    .save-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      justify-content: flex-end;
+      padding: var(--spacing-lg);
+      background: var(--bg-white);
+      border-radius: var(--radius-md);
+      margin-top: var(--spacing-lg);
+    }
+
+    /* 简化的价格曲线图 */
+    .simple-chart {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: var(--spacing-md);
+    }
+
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      height: 220px;
+      border-bottom: 2px solid var(--border-color);
+      padding-bottom: var(--spacing-sm);
+    }
+
+    .chart-bar {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--spacing-xs);
+      flex: 1;
+      max-width: 60px;
+    }
+
+    .bar-column {
+      width: 100%;
+      background: var(--primary-gradient);
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      transition: all var(--transition-base);
+      position: relative;
+    }
+
+    .bar-column:hover {
+      filter: brightness(1.1);
+    }
+
+    .bar-value {
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: var(--font-size-xs);
+      font-weight: var(--font-weight-bold);
+      color: var(--error-color);
+      white-space: nowrap;
+    }
+
+    .bar-label {
+      font-size: var(--font-size-xs);
+      color: var(--text-tertiary);
+      margin-top: var(--spacing-xs);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="desktop-container">
+    <!-- 侧边栏 -->
+            <div class="desktop-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🏢 白垩纪管理后台</div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="../dashboard/overview.html" class="nav-item">
+          <span class="icon">📊</span>
+          <span class="text">控制台</span>
+        </a>
+        
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">📦</span>
+                <span class="text">商品与订单</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../product-management/list.html" class="nav-sub-item">商品管理</a>
+            <a href="../orders/list.html" class="nav-sub-item">订单管理</a>
+            <a href="../traceability/batch-list.html" class="nav-sub-item">溯源管理</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🏪</span>
+                <span class="text">运营与内容</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../merchant/list.html" class="nav-sub-item">商户管理</a>
+            <a href="../user-management/list.html" class="nav-sub-item">用户管理</a>
+            <a href="../content-control/review-queue.html" class="nav-sub-item">内容审核</a>
+            <a href="../traffic-ad/ad-slots.html" class="nav-sub-item">广告投放</a>
+          </div>
+        </div>
+
+        <div class="nav-group">
+          <div class="nav-group-title" onclick="toggleSidebarGroup(this)">
+            <div class="title-wrap">
+                <span class="icon">🤖</span>
+                <span class="text">AI与设置</span>
+            </div>
+            <span class="arrow">▼</span>
+          </div>
+          <div class="nav-sub-menu">
+            <a href="../ai-knowledge/knowledge-base.html" class="nav-sub-item">AI知识库</a>
+            <a href="../analytics/traffic-stats.html" class="nav-sub-item">数据分析</a>
+          </div>
+        </div>
+      </nav>
+    </div>
+
+    <!-- 主内容区 -->
+    <div class="desktop-main">
+      <!-- 顶部栏 -->
+      <div class="desktop-header">
+        <div class="header-title">价格配置</div>
+        <div class="header-actions">
+          <button class="btn btn-default" onclick="Utils.showToast('通知功能开发中', 'info')">
+            🔔 通知
+          </button>
+          <button class="btn btn-default" onclick="Utils.showToast('设置功能开发中', 'info')">
+             设置
+          </button>
+        </div>
+      </div>
+
+      <!-- 面包屑 -->
+      <div class="breadcrumb">
+        <a href="../dashboard/overview.html">首页</a>
+        <span class="breadcrumb-separator">/</span>
+        <span>产品管理</span>
+        <span class="breadcrumb-separator">/</span>
+        <a href="list.html">产品列表</a>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-current">价格配置</span>
+      </div>
+
+      <!-- 内容区域 -->
+      <div class="desktop-content">
+        <!-- 产品信息 -->
+        <div class="product-card">
+          <div class="product-header">
+            <img
+              id="productImage"
+              src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=200"
+              alt="产品图片"
+              class="product-image"
+            >
+            <div class="product-details">
+              <div class="product-name" id="productName">速冻鱼排</div>
+              <div class="product-meta">
+                <span>分类：海鲜水产</span>
+                <span>ID: 1</span>
+                <span>库存：850件</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 两栏布局 -->
+        <div class="two-column-layout">
+          <!-- 左侧：价格配置 -->
+          <div>
+            <!-- 基础价格 -->
+            <div class="price-config-section">
+              <div class="section-title">
+                 基础价格
+              </div>
+
+              <div class="base-price-input">
+                <div class="price-label">基础单价</div>
+                <div class="price-input-wrapper">
+                  <span class="price-prefix">¥</span>
+                  <input
+                    type="number"
+                    class="price-input"
+                    id="basePrice"
+                    value="28.00"
+                    step="0.01"
+                    min="0"
+                    oninput="updatePreview()"
+                  >
+                </div>
+                <div style="color: var(--text-tertiary); font-size: var(--font-size-sm);">
+                  / 件
+                </div>
+              </div>
+
+              <!-- 阶梯价格 -->
+              <div class="section-title">
+                 阶梯定价
+              </div>
+
+              <div class="tier-price-list" id="tierList">
+                <!-- 阶梯将通过JavaScript动态生成 -->
+              </div>
+
+              <button type="button" class="add-tier-btn" onclick="addTier()">
+                <span style="font-size: var(--font-size-lg);">➕</span>
+                添加价格阶梯
+              </button>
+
+              <div style="margin-top: var(--spacing-lg); padding: var(--spacing-md); background: rgba(24, 144, 255, 0.1); border-radius: var(--radius-sm);">
+                <div style="font-size: var(--font-size-sm); color: var(--info-color);">
+                  💡 提示：设置批量购买的优惠价格。例如购买100件以上每件26元，购买500件以上每件24元。
+                </div>
+              </div>
+            </div>
+
+            <!-- 保存按钮 -->
+            <div class="save-actions">
+              <button class="btn btn-default" onclick="navigateTo('list.html')">
+                取消
+              </button>
+              <button class="btn btn-primary" onclick="savePrice()">
+                保存价格配置
+              </button>
+            </div>
+          </div>
+
+          <!-- 右侧：价格预览 -->
+          <div class="price-preview-card">
+            <div class="preview-title">📈 价格预览</div>
+
+            <!-- 价格曲线图 -->
+            <div class="price-chart">
+              <div class="simple-chart" id="priceChart">
+                <div class="chart-bars" id="chartBars">
+                  <!-- 柱状图将通过JavaScript动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 价格表格 -->
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>购买数量</th>
+                  <th>单价</th>
+                  <th>优惠</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody">
+                <!-- 表格行将通过JavaScript动态生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="../../assets/js/mockData.js?v=1765970807"></script>
+  <script src="../../assets/js/utils.js?v=1765970711"></script>
+
+  <script>
+    // ==================== 全局状态 ====================
+    let basePrice = 28.00;
+    let priceTiers = [
+      { id: 1, minQty: 100, price: 26.00 },
+      { id: 2, minQty: 500, price: 24.00 }
+    ];
+    let nextTierId = 3;
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProduct();
+      renderTiers();
+      updatePreview();
+    });
+
+    // ==================== 加载产品信息 ====================
+    function loadProduct() {
+      // 从URL参数获取产品ID（模拟）
+      const urlParams = new URLSearchParams(window.location.search);
+      const productId = urlParams.get('id') || 1;
+
+      // 从MockDB获取产品
+      const product = MockDB.products.find(p => p.id == productId);
+
+      if (product) {
+        document.getElementById('productName').textContent = product.name;
+        document.getElementById('productImage').src = product.images[0];
+
+        // 加载现有价格配置
+        if (product.price) {
+          basePrice = product.price.base;
+          document.getElementById('basePrice').value = basePrice.toFixed(2);
+
+          if (product.price.tiers && product.price.tiers.length > 0) {
+            priceTiers = product.price.tiers.map((tier, index) => ({
+              id: index + 1,
+              minQty: tier.minQty,
+              price: tier.price
+            }));
+            nextTierId = priceTiers.length + 1;
+          }
+        }
+      }
+    }
+
+    // ==================== 添加价格阶梯 ====================
+    function addTier() {
+      // 获取上一个阶梯的最低数量
+      const lastTier = priceTiers.length > 0
+        ? priceTiers[priceTiers.length - 1]
+        : null;
+
+      const suggestedMinQty = lastTier ? lastTier.minQty + 100 : 100;
+      const suggestedPrice = lastTier ? lastTier.price - 1 : basePrice - 2;
+
+      priceTiers.push({
+        id: nextTierId++,
+        minQty: suggestedMinQty,
+        price: Math.max(0.01, suggestedPrice)
+      });
+
+      renderTiers();
+      updatePreview();
+    }
+
+    // ==================== 删除价格阶梯 ====================
+    function removeTier(tierId) {
+      priceTiers = priceTiers.filter(t => t.id !== tierId);
+      renderTiers();
+      updatePreview();
+    }
+
+    // ==================== 渲染价格阶梯列表 ====================
+    function renderTiers() {
+      const tierList = document.getElementById('tierList');
+
+      if (priceTiers.length === 0) {
+        tierList.innerHTML = `
+          <div style="text-align: center; padding: var(--spacing-2xl); color: var(--text-tertiary);">
+            <div style="font-size: var(--font-size-3xl); margin-bottom: var(--spacing-sm);"></div>
+            <div>暂无阶梯定价，点击下方按钮添加</div>
+          </div>
+        `;
+        return;
+      }
+
+      tierList.innerHTML = priceTiers.map((tier, index) => {
+        const discount = basePrice > 0
+          ? ((basePrice - tier.price) / basePrice * 100).toFixed(1)
+          : 0;
+
+        return `
+          <div class="tier-price-item">
+            <div class="tier-number">${index + 1}</div>
+            <div class="tier-inputs">
+              <div class="tier-input-group">
+                <label class="tier-input-label">最低购买数量</label>
+                <input
+                  type="number"
+                  class="tier-input"
+                  value="${tier.minQty}"
+                  min="1"
+                  onchange="updateTier(${tier.id}, 'minQty', parseInt(this.value))"
+                >
+              </div>
+              <div class="tier-input-group">
+                <label class="tier-input-label">优惠单价（元）</label>
+                <input
+                  type="number"
+                  class="tier-input price"
+                  value="${tier.price.toFixed(2)}"
+                  step="0.01"
+                  min="0"
+                  onchange="updateTier(${tier.id}, 'price', parseFloat(this.value))"
+                >
+              </div>
+              <div class="tier-summary">
+                购买 ${tier.minQty}+ 件，单价 ¥${tier.price.toFixed(2)}
+                ${discount > 0 ? `<span style="color: var(--success-color);">（省${discount}%）</span>` : ''}
+              </div>
+            </div>
+            <div class="tier-actions">
+              <button
+                type="button"
+                class="tier-action-btn"
+                onclick="removeTier(${tier.id})"
+                title="删除"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 更新价格阶梯 ====================
+    function updateTier(tierId, field, value) {
+      const tier = priceTiers.find(t => t.id === tierId);
+      if (tier) {
+        tier[field] = value;
+
+        // 重新排序（按最低数量）
+        priceTiers.sort((a, b) => a.minQty - b.minQty);
+
+        renderTiers();
+        updatePreview();
+      }
+    }
+
+    // ==================== 更新价格预览 ====================
+    function updatePreview() {
+      // 更新基础价格
+      basePrice = parseFloat(document.getElementById('basePrice').value) || 0;
+
+      // 更新图表
+      renderChart();
+
+      // 更新表格
+      renderPreviewTable();
+    }
+
+    // ==================== 渲染价格图表 ====================
+    function renderChart() {
+      const chartBars = document.getElementById('chartBars');
+
+      // 准备数据点
+      const dataPoints = [
+        { label: '基础', qty: 1, price: basePrice }
+      ];
+
+      priceTiers.forEach(tier => {
+        dataPoints.push({
+          label: `${tier.minQty}+`,
+          qty: tier.minQty,
+          price: tier.price
+        });
+      });
+
+      // 找到最高价格
+      const maxPrice = Math.max(...dataPoints.map(p => p.price));
+
+      // 渲染柱状图
+      chartBars.innerHTML = dataPoints.map(point => {
+        const height = maxPrice > 0 ? (point.price / maxPrice * 100) : 0;
+
+        return `
+          <div class="chart-bar">
+            <div class="bar-column" style="height: ${height}%;">
+              <div class="bar-value">¥${point.price.toFixed(2)}</div>
+            </div>
+            <div class="bar-label">${point.label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==================== 渲染预览表格 ====================
+    function renderPreviewTable() {
+      const tbody = document.getElementById('previewTableBody');
+
+      // 准备表格行
+      const rows = [
+        { qty: '< 100', price: basePrice, discount: 0 }
+      ];
+
+      priceTiers.forEach((tier, index) => {
+        const nextTier = priceTiers[index + 1];
+        const qtyRange = nextTier
+          ? `${tier.minQty} - ${nextTier.minQty - 1}`
+          : `${tier.minQty}+`;
+
+        const discount = basePrice > 0
+          ? ((basePrice - tier.price) / basePrice * 100).toFixed(1)
+          : 0;
+
+        rows.push({
+          qty: qtyRange,
+          price: tier.price,
+          discount: discount
+        });
+      });
+
+      tbody.innerHTML = rows.map(row => `
+        <tr>
+          <td>${row.qty}</td>
+          <td class="preview-price">¥${row.price.toFixed(2)}</td>
+          <td>
+            ${row.discount > 0
+              ? `<span class="preview-discount">-${row.discount}%</span>`
+              : '-'
+            }
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // ==================== 保存价格配置 ====================
+    async function savePrice() {
+      // 验证基础价格
+      if (basePrice <= 0) {
+        Utils.showToast('基础价格必须大于0', 'error');
+        return;
+      }
+
+      // 验证阶梯价格
+      for (const tier of priceTiers) {
+        if (tier.minQty <= 0) {
+          Utils.showToast('阶梯数量必须大于0', 'error');
+          return;
+        }
+        if (tier.price <= 0) {
+          Utils.showToast('阶梯价格必须大于0', 'error');
+          return;
+        }
+        if (tier.price >= basePrice) {
+          Utils.showToast(`阶梯价格（¥${tier.price}）不能大于等于基础价格（¥${basePrice}）`, 'error');
+          return;
+        }
+      }
+
+      // 检查阶梯数量是否重复
+      const qtySet = new Set(priceTiers.map(t => t.minQty));
+      if (qtySet.size !== priceTiers.length) {
+        Utils.showToast('存在重复的阶梯数量', 'error');
+        return;
+      }
+
+      // 保存配置
+      const priceConfig = {
+        base: basePrice,
+        tiers: priceTiers
+          .map(t => ({
+            minQty: t.minQty,
+            price: t.price
+          }))
+          .sort((a, b) => a.minQty - b.minQty)
+      };
+
+      try {
+        Utils.showToast('正在保存...', 'info');
+        await Utils.sleep(1000);
+
+        console.log('保存价格配置:', priceConfig);
+
+        Utils.showToast('价格配置保存成功！', 'success');
+
+        // 2秒后返回列表
+        setTimeout(() => {
+          navigateTo('list.html');
+        }, 2000);
+
+      } catch (error) {
+        console.error('保存失败:', error);
+        Utils.showToast('保存失败，请重试', 'error');
+      }
+    }
+
+    // ==================== 导航函数 ====================
+    function navigateTo(path) {
+      window.location.href = path;
+    }
+  </script>
+</body>
+</html>

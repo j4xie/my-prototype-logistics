@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>经营数据 - 商家中心</title>
+  <link rel="stylesheet" href="../../assets/css/variables.css">
+  <link rel="stylesheet" href="../../assets/css/common.css">
+  <link rel="stylesheet" href="../../assets/css/mobile.css">
+  <style>
+    .stats-container {
+        padding: 15px;
+    }
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .chart-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 15px;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 10px;
+    }
+    .bar-chart {
+        display: flex;
+        align-items: flex-end;
+        height: 150px;
+        gap: 10px;
+        padding-top: 20px;
+        border-bottom: 1px solid #eee;
+    }
+    .bar-item {
+        flex: 1;
+        background: var(--primary-gradient);
+        border-radius: 4px 4px 0 0;
+        position: relative;
+        min-height: 2px;
+    }
+    .bar-label {
+        text-align: center;
+        font-size: 10px;
+        color: #999;
+        margin-top: 5px;
+    }
+    .bar-value {
+        position: absolute;
+        top: -20px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        font-size: 10px;
+        color: #666;
+    }
+    .rank-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f9f9f9;
+    }
+    .rank-num {
+        width: 24px;
+        height: 24px;
+        background: #f0f0f0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        margin-right: 10px;
+        color: #666;
+    }
+    .rank-num.top {
+        background: var(--primary-color);
+        color: black;
+        font-weight: bold;
+    }
+    .rank-name {
+        flex: 1;
+        font-size: 14px;
+    }
+    .rank-sales {
+        font-size: 14px;
+        font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-container">
+    <div class="mobile-header">
+        <div class="mobile-header-left" onclick="history.back()">←</div>
+        <div class="mobile-header-title">经营数据</div>
+        <div class="mobile-header-right"></div>
+    </div>
+
+    <div class="mobile-content" style="padding-top: 60px;">
+        <div class="stats-container">
+            <!-- Sales Trend -->
+            <div class="chart-card">
+                <div class="chart-title">近7日销售额 (元)</div>
+                <div class="bar-chart" id="salesChart">
+                    <!-- JS Injected -->
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 5px;">
+                    <span style="font-size:10px;color:#999;">7天前</span>
+                    <span style="font-size:10px;color:#999;">今天</span>
+                </div>
+            </div>
+
+            <!-- Order Trend -->
+            <div class="chart-card">
+                <div class="chart-title">近7日订单量 (单)</div>
+                <div class="bar-chart" id="orderChart">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="chart-card">
+                <div class="chart-title">热销商品排行</div>
+                <div id="rankList">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        renderCharts();
+        renderRank();
+    });
+
+    function renderCharts() {
+        // Mock Data
+        const salesData = [1200, 1500, 900, 2100, 1800, 3200, 2800];
+        const maxSales = Math.max(...salesData);
+        
+        document.getElementById('salesChart').innerHTML = salesData.map(val => {
+            const h = (val / maxSales) * 100;
+            return `
+                <div style="flex:1;">
+                    <div class="bar-item" style="height: ${h}%;">
+                        <div class="bar-value">${val}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        const orderData = [12, 15, 8, 20, 16, 28, 25];
+        const maxOrders = Math.max(...orderData);
+        
+        document.getElementById('orderChart').innerHTML = orderData.map(val => {
+            const h = (val / maxOrders) * 100;
+            return `
+                <div style="flex:1;">
+                    <div class="bar-item" style="height: ${h}%; background: #888;">
+                        <div class="bar-value">${val}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function renderRank() {
+        const products = [
+            { name: '自产有机大米', sales: 158 },
+            { name: '农家土鸡蛋', sales: 120 },
+            { name: '手工红薯粉', sales: 89 },
+            { name: '走地鸡', sales: 56 },
+            { name: '新鲜蔬菜包', sales: 42 }
+        ];
+
+        document.getElementById('rankList').innerHTML = products.map((p, i) => `
+            <div class="rank-item">
+                <div class="rank-num ${i < 3 ? 'top' : ''}">${i + 1}</div>
+                <div class="rank-name">${p.name}</div>
+                <div class="rank-sales">${p.sales}单</div>
+            </div>
+        `).join('');
+    }
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
