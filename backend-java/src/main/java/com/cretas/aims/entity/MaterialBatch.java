@@ -1,14 +1,19 @@
 package com.cretas.aims.entity;
 
 import com.cretas.aims.entity.enums.MaterialBatchStatus;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import javax.persistence.*;
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 /**
  * 原材料批次实体类
  *
@@ -22,6 +27,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "material_batches",
        indexes = {
            @Index(name = "idx_batch_factory", columnList = "factory_id"),
@@ -222,6 +228,11 @@ public class MaterialBatch extends BaseEntity {
     public LocalDate getInboundDate() {
         return receiptDate;
     }
+
+    // AI-configured custom fields stored as JSONB
+    @Type(type = "jsonb")
+    @Column(name = "custom_fields", columnDefinition = "jsonb")
+    private Map<String, Object> customFields = new HashMap<>();
 
     /**
      * 获取质量等级 (前端使用 qualityGrade)

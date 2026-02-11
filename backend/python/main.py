@@ -76,8 +76,9 @@ except ImportError as e:
     import logging as _log
     _log.getLogger(__name__).warning(f"Scene Intelligence not available: {e}")
 
-# Import Client Requirement API router
-from client_requirement.api import routes as client_requirement_routes
+# Import Client Requirement API router (wizard_api.py is the complete router with
+# legacy endpoints + wizard endpoints + gap-analysis + guide-config)
+from client_requirement import wizard_api as client_requirement_routes
 
 # Configure logging
 logging.basicConfig(
@@ -193,6 +194,11 @@ app.include_router(
     client_requirement_routes.router,
     prefix="/api/client-requirement",
     tags=["Client Requirement"]
+)
+app.include_router(
+    client_requirement_routes.router,
+    prefix="/api/public/client-requirement",
+    tags=["Client Requirement (Public)"]
 )
 
 
