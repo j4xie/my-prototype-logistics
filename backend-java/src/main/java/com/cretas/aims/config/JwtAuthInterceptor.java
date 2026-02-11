@@ -177,7 +177,10 @@ public class JwtAuthInterceptor implements HandlerInterceptor {
                uri.contains("/health") ||
                uri.contains("/upload") ||
                uri.contains("/voice/") ||  // 语音识别接口（不需要工厂权限）
-               uri.startsWith("/api/public/");  // 公开溯源查询接口
+               uri.contains("/link-survey-company") ||  // Python→Java 内部调用
+               uri.contains("/field-visibility/recompute") ||  // Python→Java 内部调用
+               uri.startsWith("/api/public/") ||  // 公开溯源查询接口
+               uri.startsWith("/api/internal/");  // Python→Java 内部入驻调用
     }
 
     /**

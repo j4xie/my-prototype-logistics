@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 工厂入驻向导 - 白垩纪食品溯源系统</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1a5276;
+  --primary-light: #2980b9;
+  --success: #27ae60;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --gray: #95a5a6;
+  --light: #f8f9fa;
+  --border: #e0e0e0;
+  --text: #333;
+  --radius: 8px;
+  --chat-ai: #f0f4ff;
+  --chat-user: #e8f5e9;
+}
+
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", -apple-system, sans-serif;
+  background: #f0f2f5;
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ===== Layout ===== */
+.wizard-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ===== Step Indicator ===== */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0 30px;
+}
+.step-dot {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 600;
+  background: var(--border);
+  color: #999;
+  transition: all 0.3s;
+}
+.step-dot.active { background: var(--primary); color: #fff; }
+.step-dot.completed { background: var(--success); color: #fff; }
+.step-line {
+  width: 40px; height: 2px;
+  background: var(--border);
+  align-self: center;
+  transition: background 0.3s;
+}
+.step-line.completed { background: var(--success); }
+
+/* ===== Cards ===== */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 30px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+.card h2 { font-size: 20px; color: var(--primary); margin-bottom: 16px; }
+.card h3 { font-size: 16px; margin-bottom: 12px; }
+
+/* ===== Forms ===== */
+.form-group { margin-bottom: 18px; }
+.form-group label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; color: #444; }
+.form-group label .req { color: var(--danger); }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 6px;
+  font-size: 14px; transition: border-color 0.2s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  outline: none; border-color: var(--primary);
+}
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 10px 24px; border: none; border-radius: 6px;
+  font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-primary:disabled { background: #bdc3c7; cursor: not-allowed; }
+.btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+.btn-outline:hover { background: #f0f4ff; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: #219a52; }
+.btn-row { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; }
+
+/* ===== Module Cards (Step 2) ===== */
+.module-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.module-card {
+  border: 2px solid var(--border); border-radius: 10px; padding: 18px;
+  cursor: pointer; transition: all 0.2s; position: relative;
+}
+.module-card:hover { border-color: var(--primary-light); }
+.module-card.selected { border-color: var(--primary); background: #f0f4ff; }
+.module-card .icon { font-size: 28px; margin-bottom: 8px; }
+.module-card .name { font-size: 15px; font-weight: 600; }
+.module-card .desc { font-size: 12px; color: #666; margin-top: 4px; }
+.module-card .field-count { font-size: 11px; color: var(--gray); margin-top: 6px; }
+.module-card .check {
+  position: absolute; top: 10px; right: 10px;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--success); color: #fff;
+  display: none; align-items: center; justify-content: center;
+  font-size: 13px;
+}
+.module-card.selected .check { display: flex; }
+
+/* ===== Chat UI (Step 3) ===== */
+.chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--primary); color: #fff;
+  border-radius: 12px 12px 0 0;
+}
+.chat-header .module-label { font-size: 14px; opacity: 0.9; }
+.chat-body {
+  height: 400px; overflow-y: auto; padding: 16px;
+  background: #fafbfc; border-left: 1px solid var(--border); border-right: 1px solid var(--border);
+}
+.chat-msg { margin-bottom: 16px; display: flex; gap: 10px; }
+.chat-msg.ai { flex-direction: row; }
+.chat-msg.user { flex-direction: row-reverse; }
+.chat-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.chat-msg.ai .chat-avatar { background: var(--chat-ai); }
+.chat-msg.user .chat-avatar { background: var(--chat-user); }
+.chat-bubble {
+  max-width: 75%; padding: 10px 14px;
+  border-radius: 12px; font-size: 14px; line-height: 1.6;
+}
+.chat-msg.ai .chat-bubble { background: var(--chat-ai); border-top-left-radius: 4px; }
+.chat-msg.user .chat-bubble { background: var(--chat-user); border-top-right-radius: 4px; }
+
+.quick-replies { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 8px 42px; }
+.quick-reply-btn {
+  padding: 6px 14px; border: 1px solid var(--primary); border-radius: 20px;
+  background: #fff; color: var(--primary); font-size: 13px;
+  cursor: pointer; transition: all 0.2s;
+}
+.quick-reply-btn:hover { background: var(--primary); color: #fff; }
+
+.topics-bar {
+  margin: 8px 0 8px 42px; font-size: 12px; color: #888;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.topics-bar .covered { color: var(--success); }
+.topics-bar .remaining { color: var(--warning); }
+
+.chat-footer {
+  display: flex; gap: 8px; padding: 12px 16px;
+  border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 12px 12px; background: #fff;
+}
+.chat-footer input {
+  flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 14px;
+}
+.chat-footer input:focus { outline: none; border-color: var(--primary); }
+
+.chat-loading {
+  display: flex; align-items: center; gap: 8px; margin: 8px 0 8px 42px;
+  font-size: 13px; color: #888;
+}
+.chat-loading .dots span {
+  display: inline-block; width: 6px; height: 6px;
+  background: #aaa; border-radius: 50%; margin: 0 2px;
+  animation: bounce 1.4s ease-in-out infinite;
+}
+.chat-loading .dots span:nth-child(2) { animation-delay: 0.2s; }
+.chat-loading .dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+}
+
+.module-complete-card {
+  background: #f0fff0; border: 1px solid #c3e6cb; border-radius: 10px;
+  padding: 14px 18px; margin: 12px 0 12px 42px;
+}
+.module-complete-card h4 { color: var(--success); font-size: 14px; margin-bottom: 6px; }
+.module-complete-card p { font-size: 13px; color: #555; }
+
+/* ===== Assessment Table (Step 4) ===== */
+.assess-summary {
+  background: #f0f4ff; border-radius: 8px; padding: 16px; margin-bottom: 20px;
+}
+.assess-summary .confidence {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 12px; font-weight: 600;
+}
+.conf-high { background: #d4edda; color: #155724; }
+.conf-med { background: #fff3cd; color: #856404; }
+.conf-low { background: #f8d7da; color: #721c24; }
+
+.assess-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.assess-table th { background: #f5f5f5; padding: 8px 12px; text-align: left; border-bottom: 2px solid var(--border); }
+.assess-table td { padding: 8px 12px; border-bottom: 1px solid #eee; }
+.assess-table tr:hover { background: #fafafa; }
+
+/* ===== Result (Step 5) ===== */
+.result-card {
+  text-align: center; padding: 40px;
+}
+.result-card .icon { font-size: 60px; margin-bottom: 16px; }
+.result-card h2 { color: var(--success); margin-bottom: 12px; }
+.result-info { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; text-align: left; }
+.result-item { background: var(--light); padding: 12px; border-radius: 8px; }
+.result-item .label { font-size: 12px; color: #888; }
+.result-item .value { font-size: 16px; font-weight: 600; color: var(--primary); }
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+  .form-row { grid-template-columns: 1fr; }
+  .module-grid { grid-template-columns: 1fr; }
+  .chat-body { height: 300px; }
+  .chat-bubble { max-width: 90%; }
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="wizard-container">
+  <!-- Step Indicator -->
+  <div class="step-indicator" id="stepIndicator">
+    <div class="step-dot active" data-step="1">1</div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-step="2">2</div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-step="3">3</div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-step="4">4</div>
+    <div class="step-line"></div>
+    <div class="step-dot" data-step="5">5</div>
+  </div>
+
+  <!-- Step 1: Basic Info -->
+  <div id="step1" class="card">
+    <h2>Step 1: 工厂基本信息</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label><span class="req">*</span> 工厂名称</label>
+        <input id="factoryName" placeholder="如：六膳门食品加工厂">
+      </div>
+      <div class="form-group">
+        <label>联系人</label>
+        <input id="contactName" placeholder="负责人姓名">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>联系电话</label>
+        <input id="contactPhone" placeholder="手机号码">
+      </div>
+      <div class="form-group">
+        <label>行业</label>
+        <select id="industry">
+          <option value="">请选择行业</option>
+          <option value="肉类加工">肉类加工</option>
+          <option value="水产加工">水产加工</option>
+          <option value="乳制品">乳制品</option>
+          <option value="烘焙食品">烘焙食品</option>
+          <option value="果蔬加工">果蔬加工</option>
+          <option value="饮料">饮料</option>
+          <option value="调味品">调味品</option>
+          <option value="冷冻食品">冷冻食品</option>
+          <option value="休闲食品">休闲食品</option>
+          <option value="粮油加工">粮油加工</option>
+          <option value="其他">其他</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>工厂规模</label>
+        <select id="scale">
+          <option value="">请选择</option>
+          <option value="小型(50人以下)">小型 (50人以下)</option>
+          <option value="中型(50-200人)">中型 (50-200人)</option>
+          <option value="大型(200-500人)">大型 (200-500人)</option>
+          <option value="超大型(500人以上)">超大型 (500人以上)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>主要产品</label>
+        <input id="products" placeholder="如：猪肉香肠、腊肉、火腿">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>工厂简介 (可选)</label>
+      <textarea id="description" rows="3" placeholder="简要描述您的工厂情况..."></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goToStep2()">下一步</button>
+    </div>
+  </div>
+
+  <!-- Step 2: Module Selection -->
+  <div id="step2" class="card hidden">
+    <h2>Step 2: 选择功能模块</h2>
+    <p style="color:#666;margin-bottom:16px;">请选择您需要的系统模块（至少选1个），AI将针对选中模块与您深入对话。</p>
+    <div class="module-grid" id="moduleGrid"></div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(1)">上一步</button>
+      <button class="btn btn-primary" id="btnStep2Next" onclick="goToStep3()" disabled>下一步</button>
+    </div>
+  </div>
+
+  <!-- Step 3: AI Chat -->
+  <div id="step3" class="card hidden" style="padding:0;">
+    <div class="chat-header">
+      <div>
+        <strong>AI 需求调研</strong>
+        <div class="module-label" id="chatModuleLabel">模块 1/4: 人效数据采集</div>
+      </div>
+      <button class="btn btn-outline" style="color:#fff;border-color:#fff;padding:6px 14px;font-size:12px;" onclick="skipModule()">跳过此模块</button>
+    </div>
+    <div class="chat-body" id="chatBody"></div>
+    <div class="chat-footer">
+      <input id="chatInput" placeholder="请输入或选择上方快捷回复..." onkeydown="if(event.key==='Enter')sendChat()">
+      <button class="btn btn-primary" onclick="sendChat()">发送</button>
+    </div>
+    <div style="padding:12px 16px;display:flex;gap:12px;justify-content:space-between;">
+      <button class="btn btn-outline" onclick="goToStep(2)">返回模块选择</button>
+      <button class="btn btn-success hidden" id="btnNextModule" onclick="nextModule()">继续下一模块</button>
+      <button class="btn btn-success hidden" id="btnToAssess" onclick="goToStep4()">生成评估报告</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Assessment -->
+  <div id="step4" class="card hidden">
+    <h2>Step 4: AI 评估结果</h2>
+    <div id="assessContent">
+      <div style="text-align:center;padding:40px;color:#888;">
+        <div class="chat-loading"><div class="dots"><span></span><span></span><span></span></div> AI 正在分析对话记录并生成评估...</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goToStep(3)">返回对话</button>
+      <button class="btn btn-success" id="btnFinalize" onclick="goToStep5()" disabled>确认创建工厂</button>
+    </div>
+  </div>
+
+  <!-- Step 5: Result -->
+  <div id="step5" class="card hidden">
+    <div class="result-card" id="resultContent">
+      <div style="text-align:center;padding:40px;color:#888;">
+        <div class="chat-loading"><div class="dots"><span></span><span></span><span></span></div> 正在创建工厂...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== Configuration ==========
+const API_BASE = '/api/public/client-requirement';
+
+// ========== MODULES constant (field catalog) ==========
+const MODULES = [
+  {
+    id: "m0", name: "人效数据采集", icon: "🎯",
+    desc: "视觉识别补充的人工录入字段",
+    sections: [
+      { id: "s-vl-1", title: "工人身份信息", fields: [{name:"工号"},{name:"姓名"},{name:"班组"},{name:"工种/岗位"},{name:"技能等级"},{name:"时薪/日薪"}]},
+      { id: "s-vl-2", title: "考勤打卡", fields: [{name:"打卡日期"},{name:"上班打卡时间"},{name:"下班打卡时间"},{name:"考勤状态"},{name:"打卡方式"}]},
+      { id: "s-vl-3", title: "工时记录", fields: [{name:"生产批次号"},{name:"签入时间"},{name:"签出时间"},{name:"休息时长"},{name:"实际工作时长"}]},
+      { id: "s-vl-4", title: "设备/工位绑定", fields: [{name:"工位编号"},{name:"工位名称"},{name:"绑定设备"},{name:"摄像头ID"}]},
+      { id: "s-vl-5", title: "产量数据", fields: [{name:"产品类型"},{name:"计划产量"},{name:"实际产量"},{name:"合格品数量"},{name:"不良品数量"},{name:"返工数量"}]},
+      { id: "s-vl-6", title: "工序关联", fields: [{name:"工序类型"},{name:"关联批次"},{name:"工序开始时间"},{name:"工序结束时间"}]}
+    ]
+  },
+  {
+    id: "m1", name: "基础数据", icon: "📦",
+    desc: "原材料、产品、供应商、客户、设备",
+    sections: [
+      { id: "s3-1", title: "原材料类型", fields: [{name:"材料编码"},{name:"材料名称"},{name:"材料分类"},{name:"计量单位"},{name:"参考单价"},{name:"存储类型"},{name:"保质期天数"},{name:"最低库存预警"},{name:"最高库存上限"},{name:"备注"}]},
+      { id: "s3-2", title: "产品类型", fields: [{name:"产品编码"},{name:"产品名称"},{name:"产品分类"},{name:"计量单位"},{name:"出厂单价"},{name:"产品规格"},{name:"包装规格"},{name:"保质期天数"},{name:"标准工时"},{name:"工序步骤"},{name:"产品图片"},{name:"备注"}]},
+      { id: "s3-3", title: "供应商信息", fields: [{name:"供应商编码"},{name:"供应商名称"},{name:"联系人"},{name:"联系电话"},{name:"邮箱"},{name:"地址"},{name:"营业执照号"},{name:"经营类型"},{name:"供应材料"},{name:"资质证书"},{name:"付款条件"},{name:"供货周期"},{name:"信用额度"},{name:"供应商评分"}]},
+      { id: "s3-4", title: "客户信息", fields: [{name:"客户编码"},{name:"客户名称"},{name:"客户类型"},{name:"行业"},{name:"联系人"},{name:"联系电话"},{name:"收货地址"},{name:"开票地址"},{name:"税号"},{name:"付款条件"},{name:"信用额度"},{name:"客户评分"}]},
+      { id: "s3-5", title: "设备信息", fields: [{name:"设备编码"},{name:"设备名称"},{name:"设备类型"},{name:"型号"},{name:"制造商"},{name:"序列号"},{name:"购入日期"},{name:"购入价格"},{name:"折旧年限"},{name:"每小时成本"},{name:"功率"},{name:"安装位置"},{name:"保养周期"},{name:"保修到期"}]},
+      { id: "s3-6", title: "产品配方（BOM）", fields: [{name:"产品类型"},{name:"原材料类型"},{name:"标准用量"},{name:"得率"},{name:"参考单价"},{name:"税率"}]}
+    ]
+  },
+  {
+    id: "m2", name: "生产管理", icon: "🏭",
+    desc: "生产计划、批次执行、工序记录、质检",
+    sections: [
+      { id: "s4-2", title: "生产计划", fields: [{name:"计划编号"},{name:"产品类型"},{name:"计划数量"},{name:"计量单位"},{name:"计划开始时间"},{name:"计划结束时间"},{name:"优先级"},{name:"计划状态"},{name:"计划类型"},{name:"来源类型"},{name:"客户订单号"},{name:"客户名称"},{name:"预估材料成本"},{name:"预估人工成本"},{name:"备注"}]},
+      { id: "s4-3", title: "生产批次", fields: [{name:"批次号"},{name:"关联计划"},{name:"产品类型"},{name:"计划产量"},{name:"投入量"},{name:"实际产量"},{name:"良品数量"},{name:"不良品数量"},{name:"得率"},{name:"生产效率"},{name:"批次状态"},{name:"质量状态"},{name:"开始时间"},{name:"结束时间"},{name:"使用设备"},{name:"生产负责人"},{name:"工人数量"},{name:"材料成本"},{name:"人工成本"},{name:"设备成本"},{name:"总成本"},{name:"单位成本"},{name:"备注"}]},
+      { id: "s4-4", title: "工序过程记录", fields: [{name:"关联批次"},{name:"工序类型"},{name:"开始时间"},{name:"结束时间"},{name:"工序时长"},{name:"投入重量"},{name:"产出重量"},{name:"损耗重量"},{name:"损耗率"},{name:"合格数量"},{name:"不合格数量"},{name:"返工数量"},{name:"环境温度"},{name:"产品温度"},{name:"目标温度"},{name:"使用设备"},{name:"设备运行时长"},{name:"设备停机时长"},{name:"设备OEE"},{name:"用水量"},{name:"用电量"},{name:"操作员"},{name:"工人数量"},{name:"pH值"},{name:"盐度"},{name:"ATP检测值"},{name:"备注"}]},
+      { id: "s4-5", title: "原材料消耗记录", fields: [{name:"关联生产批次"},{name:"原材料批次"},{name:"消耗数量"},{name:"单价"},{name:"消耗金额"},{name:"消耗时间"},{name:"记录人"},{name:"备注"}]},
+      { id: "s4-6", title: "质量检验记录", fields: [{name:"关联生产批次"},{name:"质检员"},{name:"检验日期"},{name:"抽样数量"},{name:"合格数量"},{name:"不合格数量"},{name:"合格率"},{name:"检验结论"},{name:"检验详情"}]}
+    ]
+  },
+  {
+    id: "m3", name: "人效管理", icon: "👷",
+    desc: "员工考勤、工时统计、人工成本",
+    sections: [
+      { id: "s5-1", title: "考勤打卡记录", fields: [{name:"员工"},{name:"打卡日期"},{name:"上班打卡时间"},{name:"下班打卡时间"},{name:"休息开始时间"},{name:"休息结束时间"},{name:"工作时长"},{name:"休息时长"},{name:"考勤状态"},{name:"打卡位置"},{name:"打卡设备"}]},
+      { id: "s5-2", title: "生产批次工时记录", fields: [{name:"生产批次"},{name:"员工"},{name:"签入时间"},{name:"签出时间"},{name:"工作时长"},{name:"人工成本"},{name:"分配人"},{name:"状态"},{name:"备注"}]}
+    ]
+  },
+  {
+    id: "m4", name: "仓储物流", icon: "🚚",
+    desc: "原材料入库、成品出货、溯源标签",
+    sections: [
+      { id: "s4-1", title: "原材料入库", fields: [{name:"批次号"},{name:"原材料类型"},{name:"供应商"},{name:"入库数量"},{name:"计量单位"},{name:"单件重量"},{name:"进货单价"},{name:"入库日期"},{name:"生产日期"},{name:"到期日期"},{name:"存储位置"},{name:"质检证书"},{name:"入库状态"},{name:"备注"}]},
+      { id: "s4-7", title: "出货发运记录", fields: [{name:"出货单号"},{name:"客户"},{name:"订单号"},{name:"产品名称"},{name:"出货数量"},{name:"计量单位"},{name:"单价"},{name:"总金额"},{name:"发货日期"},{name:"收货地址"},{name:"物流公司"},{name:"运单号"},{name:"出货状态"},{name:"备注"}]},
+      { id: "s4-8", title: "溯源标签", fields: [{name:"标签编码"},{name:"标签类型"},{name:"关联类型"},{name:"关联批次"},{name:"溯源码"},{name:"二维码内容"},{name:"产品名称"},{name:"产品规格"},{name:"生产日期"},{name:"保质期"},{name:"到期日期"},{name:"标签状态"},{name:"打印次数"},{name:"贴标时间"}]}
+    ]
+  },
+  {
+    id: "m5", name: "其他", icon: "📊",
+    desc: "废弃处置、环境监控",
+    sections: [
+      { id: "s6-1", title: "废弃处置记录", fields: [{name:"处置类型"},{name:"数量"},{name:"原因"},{name:"日期"},{name:"处置方式"},{name:"预估损失"},{name:"实际损失"},{name:"回收价值"},{name:"审批人"},{name:"审批日期"}]},
+      { id: "s7-1", title: "环境监控数据", fields: [{name:"监控设备"},{name:"数据类型"},{name:"监控值"},{name:"位置"},{name:"采集时间"},{name:"数据来源"}]}
+    ]
+  }
+];
+
+const TOTAL_FIELDS = MODULES.reduce((sum, m) => sum + m.sections.reduce((s, sec) => s + sec.fields.length, 0), 0);
+
+// ========== State ==========
+let state = {
+  currentStep: 1,
+  companyId: null,
+  selectedModules: [],
+  // Chat state
+  currentModuleIndex: 0,
+  conversations: {},      // { "m2": [{role, content}, ...] }
+  moduleSummaries: {},     // { "m2": "summary..." }
+  completedModules: [],
+  chatLoading: false,
+  // Assessment
+  assessmentData: null,
+  // Result
+  resultData: null,
+};
+
+// Load from localStorage
+try {
+  const saved = localStorage.getItem('onboarding_wizard_state');
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    Object.assign(state, parsed);
+  }
+} catch(e) {}
+
+function saveState() {
+  try { localStorage.setItem('onboarding_wizard_state', JSON.stringify(state)); } catch(e) {}
+}
+
+// ========== Step Navigation ==========
+function goToStep(n) {
+  state.currentStep = n;
+  saveState();
+  renderStep();
+}
+
+function renderStep() {
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('step' + i).classList.toggle('hidden', i !== state.currentStep);
+  }
+  // Update step indicator
+  document.querySelectorAll('.step-dot').forEach(dot => {
+    const s = parseInt(dot.dataset.step);
+    dot.classList.remove('active', 'completed');
+    if (s === state.currentStep) dot.classList.add('active');
+    else if (s < state.currentStep) dot.classList.add('completed');
+  });
+  document.querySelectorAll('.step-line').forEach((line, i) => {
+    line.classList.toggle('completed', i + 1 < state.currentStep);
+  });
+}
+
+// ========== Step 1 ==========
+function goToStep2() {
+  const name = document.getElementById('factoryName').value.trim();
+  if (!name) { alert('请输入工厂名称'); return; }
+  goToStep(2);
+  renderModuleGrid();
+}
+
+// ========== Step 2: Module Selection ==========
+function renderModuleGrid() {
+  const grid = document.getElementById('moduleGrid');
+  grid.innerHTML = '';
+  MODULES.forEach(m => {
+    const fieldCount = m.sections.reduce((s, sec) => s + sec.fields.length, 0);
+    const selected = state.selectedModules.includes(m.id);
+    const div = document.createElement('div');
+    div.className = 'module-card' + (selected ? ' selected' : '');
+    div.onclick = () => toggleModule(m.id);
+    div.innerHTML = `
+      <div class="check">&#10003;</div>
+      <div class="icon">${m.icon}</div>
+      <div class="name">${m.name}</div>
+      <div class="desc">${m.desc}</div>
+      <div class="field-count">${fieldCount} 个数据字段</div>
+    `;
+    grid.appendChild(div);
+  });
+  updateStep2Btn();
+}
+
+function toggleModule(id) {
+  const idx = state.selectedModules.indexOf(id);
+  if (idx >= 0) state.selectedModules.splice(idx, 1);
+  else state.selectedModules.push(id);
+  saveState();
+  renderModuleGrid();
+}
+
+function updateStep2Btn() {
+  document.getElementById('btnStep2Next').disabled = state.selectedModules.length === 0;
+}
+
+// ========== Step 3: AI Chat ==========
+async function goToStep3() {
+  goToStep(3);
+  state.currentModuleIndex = 0;
+  // Find first non-completed selected module
+  const selectedMods = state.selectedModules.filter(m => !state.completedModules.includes(m));
+  if (selectedMods.length === 0) {
+    // All done
+    goToStep4();
+    return;
+  }
+  await startModuleChat();
+}
+
+function getCurrentModuleId() {
+  const remaining = state.selectedModules.filter(m => !state.completedModules.includes(m));
+  return remaining.length > 0 ? remaining[0] : null;
+}
+
+async function startModuleChat() {
+  const moduleId = getCurrentModuleId();
+  if (!moduleId) { goToStep4(); return; }
+
+  const mod = MODULES.find(m => m.id === moduleId);
+  const completedCount = state.completedModules.length;
+  const totalSelected = state.selectedModules.length;
+  document.getElementById('chatModuleLabel').textContent =
+    `模块 ${completedCount + 1}/${totalSelected}: ${mod ? mod.name : moduleId}`;
+
+  // Initialize conversation for this module if not exists
+  if (!state.conversations[moduleId]) {
+    state.conversations[moduleId] = [];
+  }
+
+  renderChat();
+
+  // If no messages yet, call start-module
+  if (state.conversations[moduleId].length === 0) {
+    state.chatLoading = true;
+    renderChat();
+
+    try {
+      const basicInfo = getBasicInfo();
+      const resp = await fetch(API_BASE + '/wizard/start-module', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyId: state.companyId || 'preview',
+          moduleId: moduleId,
+          selectedModules: state.selectedModules,
+          priorModulesSummary: state.moduleSummaries,
+        })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        const d = data.data;
+        state.conversations[moduleId].push({ role: 'assistant', content: d.message });
+        handleAIResponse(d);
+      }
+    } catch(e) {
+      console.error('Start module chat failed:', e);
+      state.conversations[moduleId].push({ role: 'assistant', content: '您好！请描述一下贵工厂在这个模块方面的基本情况。' });
+    }
+    state.chatLoading = false;
+    saveState();
+    renderChat();
+  }
+}
+
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg || state.chatLoading) return;
+  input.value = '';
+
+  const moduleId = getCurrentModuleId();
+  if (!moduleId) return;
+
+  state.conversations[moduleId].push({ role: 'user', content: msg });
+  state.chatLoading = true;
+  saveState();
+  renderChat();
+
+  try {
+    const resp = await fetch(API_BASE + '/wizard/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyId: state.companyId || 'preview',
+        moduleId: moduleId,
+        message: msg,
+        conversationHistory: state.conversations[moduleId],
+      })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      const d = data.data;
+      state.conversations[moduleId].push({ role: 'assistant', content: d.message });
+      handleAIResponse(d);
+    }
+  } catch(e) {
+    state.conversations[moduleId].push({ role: 'assistant', content: '抱歉，暂时无法连接AI服务。请稍后重试。' });
+  }
+
+  state.chatLoading = false;
+  saveState();
+  renderChat();
+}
+
+function sendQuickReply(text) {
+  document.getElementById('chatInput').value = text;
+  sendChat();
+}
+
+let lastAIResponse = null;
+
+function handleAIResponse(d) {
+  lastAIResponse = d;
+  if (d.moduleComplete) {
+    const moduleId = getCurrentModuleId();
+    if (moduleId && d.moduleSummary) {
+      state.moduleSummaries[moduleId] = d.moduleSummary;
+    }
+    if (moduleId && !state.completedModules.includes(moduleId)) {
+      state.completedModules.push(moduleId);
+    }
+    saveState();
+  }
+  updateChatButtons();
+}
+
+function updateChatButtons() {
+  const remaining = state.selectedModules.filter(m => !state.completedModules.includes(m));
+  const btnNext = document.getElementById('btnNextModule');
+  const btnAssess = document.getElementById('btnToAssess');
+
+  if (lastAIResponse && lastAIResponse.moduleComplete) {
+    if (remaining.length > 0) {
+      btnNext.classList.remove('hidden');
+      btnAssess.classList.add('hidden');
+    } else {
+      btnNext.classList.add('hidden');
+      btnAssess.classList.remove('hidden');
+    }
+  } else {
+    btnNext.classList.add('hidden');
+    btnAssess.classList.add('hidden');
+  }
+}
+
+function skipModule() {
+  const moduleId = getCurrentModuleId();
+  if (moduleId && !state.completedModules.includes(moduleId)) {
+    state.completedModules.push(moduleId);
+    state.moduleSummaries[moduleId] = '(跳过)';
+  }
+  saveState();
+  nextModule();
+}
+
+async function nextModule() {
+  lastAIResponse = null;
+  document.getElementById('btnNextModule').classList.add('hidden');
+  const remaining = state.selectedModules.filter(m => !state.completedModules.includes(m));
+  if (remaining.length === 0) {
+    goToStep4();
+  } else {
+    await startModuleChat();
+  }
+}
+
+function renderChat() {
+  const body = document.getElementById('chatBody');
+  const moduleId = getCurrentModuleId();
+  if (!moduleId) { body.innerHTML = ''; return; }
+
+  const msgs = state.conversations[moduleId] || [];
+  let html = '';
+
+  msgs.forEach((msg, i) => {
+    const isAI = msg.role === 'assistant';
+    html += `<div class="chat-msg ${isAI ? 'ai' : 'user'}">
+      <div class="chat-avatar">${isAI ? '🤖' : '👤'}</div>
+      <div class="chat-bubble">${escapeHtml(msg.content)}</div>
+    </div>`;
+  });
+
+  // Quick replies
+  if (lastAIResponse && lastAIResponse.suggestedReplies && lastAIResponse.suggestedReplies.length > 0 && !state.chatLoading) {
+    html += '<div class="quick-replies">';
+    lastAIResponse.suggestedReplies.forEach(r => {
+      html += `<button class="quick-reply-btn" onclick="sendQuickReply('${escapeAttr(r)}')">${escapeHtml(r)}</button>`;
+    });
+    html += '</div>';
+  }
+
+  // Topics bar
+  if (lastAIResponse && (lastAIResponse.topicsCovered?.length || lastAIResponse.topicsRemaining?.length)) {
+    html += '<div class="topics-bar">';
+    if (lastAIResponse.topicsCovered?.length) {
+      html += `<span class="covered">&#10003; 已覆盖: ${lastAIResponse.topicsCovered.join(', ')}</span>`;
+    }
+    if (lastAIResponse.topicsRemaining?.length) {
+      html += `<span class="remaining">&#9679; 待了解: ${lastAIResponse.topicsRemaining.join(', ')}</span>`;
+    }
+    html += '</div>';
+  }
+
+  // Module complete card
+  if (lastAIResponse && lastAIResponse.moduleComplete) {
+    const summary = lastAIResponse.moduleSummary || state.moduleSummaries[moduleId] || '';
+    html += `<div class="module-complete-card">
+      <h4>&#10003; 模块调研完成</h4>
+      <p>${escapeHtml(summary)}</p>
+    </div>`;
+  }
+
+  // Loading indicator
+  if (state.chatLoading) {
+    html += `<div class="chat-loading"><div class="dots"><span></span><span></span><span></span></div> AI 正在思考...</div>`;
+  }
+
+  body.innerHTML = html;
+  body.scrollTop = body.scrollHeight;
+  updateChatButtons();
+}
+
+// ========== Step 4: Assessment ==========
+async function goToStep4() {
+  goToStep(4);
+  document.getElementById('btnFinalize').disabled = true;
+
+  try {
+    const resp = await fetch(API_BASE + '/wizard/assess', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyId: state.companyId || 'preview',
+        selectedModules: state.selectedModules,
+        allConversations: state.conversations,
+      })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      state.assessmentData = data.data;
+      saveState();
+      renderAssessment(data.data);
+      document.getElementById('btnFinalize').disabled = false;
+    } else {
+      document.getElementById('assessContent').innerHTML =
+        `<div style="color:red;padding:20px;">评估失败: ${data.message || '未知错误'}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('assessContent').innerHTML =
+      `<div style="color:red;padding:20px;">无法连接AI服务: ${e.message}</div>`;
+  }
+}
+
+function renderAssessment(data) {
+  const confClass = data.confidence >= 0.8 ? 'conf-high' : data.confidence >= 0.6 ? 'conf-med' : 'conf-low';
+  let html = `
+    <div class="assess-summary">
+      <strong>${escapeHtml(data.summary || '')}</strong>
+      <span class="confidence ${confClass}" style="margin-left:12px;">
+        置信度: ${Math.round((data.confidence || 0) * 100)}%
+      </span>
+    </div>
+  `;
+
+  // Module insights
+  if (data.moduleInsights && Object.keys(data.moduleInsights).length > 0) {
+    html += '<h3 style="margin-top:16px;">模块洞察</h3>';
+    for (const [mid, insight] of Object.entries(data.moduleInsights)) {
+      const mod = MODULES.find(m => m.id === mid);
+      html += `<div style="padding:8px 12px;margin:4px 0;background:#f9f9f9;border-radius:6px;">
+        <strong>${mod ? mod.icon + ' ' + mod.name : mid}:</strong> ${escapeHtml(insight)}
+      </div>`;
+    }
+  }
+
+  // Field assessment table
+  if (data.items && data.items.length > 0) {
+    html += `<h3 style="margin-top:20px;">字段评估 (${data.items.length} 项)</h3>
+    <div style="max-height:300px;overflow-y:auto;">
+    <table class="assess-table">
+      <thead><tr><th>模块</th><th>字段</th><th>适用</th><th>置信度</th><th>输入方式</th><th>理由</th></tr></thead>
+      <tbody>`;
+    data.items.forEach(item => {
+      const confC = item.confidence >= 0.8 ? 'conf-high' : item.confidence >= 0.6 ? 'conf-med' : 'conf-low';
+      html += `<tr>
+        <td>${escapeHtml(item.section || '')}</td>
+        <td>${escapeHtml(item.fieldName || '')}</td>
+        <td>${item.applicable ? '&#10003;' : '&#10007;'}</td>
+        <td><span class="confidence ${confC}" style="font-size:11px;">${Math.round(item.confidence * 100)}%</span></td>
+        <td>${escapeHtml(item.inputMode || '')}</td>
+        <td style="font-size:12px;color:#666;">${escapeHtml(item.reasoning || '')}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+  }
+
+  // Stage templates
+  if (data.stageTemplates && data.stageTemplates.length > 0) {
+    html += '<h3 style="margin-top:20px;">工序模板</h3><div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    data.stageTemplates.forEach(s => {
+      const style = s.isKey ? 'background:#e3f2fd;border:1px solid #90caf9;' : 'background:#f5f5f5;border:1px solid #ddd;';
+      html += `<div style="${style}padding:6px 12px;border-radius:6px;font-size:13px;">
+        ${s.order}. ${escapeHtml(s.displayName || s.stageName)}${s.isKey ? ' <strong>(关键)</strong>' : ''}
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  document.getElementById('assessContent').innerHTML = html;
+}
+
+// ========== Step 5: Finalize ==========
+async function goToStep5() {
+  goToStep(5);
+
+  // First ensure company exists
+  if (!state.companyId) {
+    try {
+      const resp = await fetch(API_BASE + '/wizard/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(getBasicInfo())
+      });
+      const data = await resp.json();
+      if (data.success) {
+        state.companyId = data.data.companyId;
+        saveState();
+      }
+    } catch(e) {
+      console.error('Failed to create company:', e);
+    }
+  }
+
+  try {
+    const resp = await fetch(API_BASE + '/wizard/finalize', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        companyId: state.companyId,
+        assessmentData: state.assessmentData || {},
+      })
+    });
+    const data = await resp.json();
+    if (data.success) {
+      state.resultData = data.data;
+      saveState();
+      renderResult(data.data);
+    } else {
+      document.getElementById('resultContent').innerHTML =
+        `<div style="color:red;padding:20px;">创建失败: ${escapeHtml(data.message || '未知错误')}</div>`;
+    }
+  } catch(e) {
+    document.getElementById('resultContent').innerHTML =
+      `<div style="color:red;padding:20px;">连接失败: ${e.message}</div>`;
+  }
+}
+
+function renderResult(data) {
+  const users = data.users || [];
+  let usersHtml = '';
+  if (users.length > 0) {
+    usersHtml = users.map(u => `<div style="font-size:13px;">${u.username || u.name} (密码: 123456)</div>`).join('');
+  } else {
+    usersHtml = '<div style="font-size:13px;color:#888;">默认用户已创建（密码: 123456）</div>';
+  }
+
+  document.getElementById('resultContent').innerHTML = `
+    <div class="icon">&#10003;</div>
+    <h2>工厂创建成功!</h2>
+    <p style="color:#666;">您的工厂已成功入驻白垩纪食品溯源系统</p>
+    <div class="result-info">
+      <div class="result-item">
+        <div class="label">工厂 ID</div>
+        <div class="value">${escapeHtml(data.factoryId || '')}</div>
+      </div>
+      <div class="result-item">
+        <div class="label">表单模板</div>
+        <div class="value">${data.formTemplatesCreated || 0} 个</div>
+      </div>
+      <div class="result-item">
+        <div class="label">预警规则</div>
+        <div class="value">${data.alertsCreated || 0} 条</div>
+      </div>
+      <div class="result-item">
+        <div class="label">默认用户</div>
+        <div class="value">${usersHtml}</div>
+      </div>
+    </div>
+    <div style="margin-top:24px;">
+      <button class="btn btn-primary" onclick="resetWizard()">创建另一个工厂</button>
+    </div>
+  `;
+}
+
+function resetWizard() {
+  state = {
+    currentStep: 1,
+    companyId: null,
+    selectedModules: [],
+    currentModuleIndex: 0,
+    conversations: {},
+    moduleSummaries: {},
+    completedModules: [],
+    chatLoading: false,
+    assessmentData: null,
+    resultData: null,
+  };
+  localStorage.removeItem('onboarding_wizard_state');
+  // Clear form inputs
+  document.getElementById('factoryName').value = '';
+  document.getElementById('contactName').value = '';
+  document.getElementById('contactPhone').value = '';
+  document.getElementById('industry').value = '';
+  document.getElementById('scale').value = '';
+  document.getElementById('products').value = '';
+  document.getElementById('description').value = '';
+  goToStep(1);
+}
+
+// ========== Helpers ==========
+function getBasicInfo() {
+  return {
+    factoryName: document.getElementById('factoryName').value.trim(),
+    contactName: document.getElementById('contactName').value.trim(),
+    contactPhone: document.getElementById('contactPhone').value.trim(),
+    industry: document.getElementById('industry').value,
+    scale: document.getElementById('scale').value,
+    products: document.getElementById('products').value.trim(),
+    description: document.getElementById('description').value.trim(),
+  };
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escapeAttr(str) {
+  if (!str) return '';
+  return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+// ========== Init ==========
+renderStep();
+if (state.currentStep === 2) renderModuleGrid();
+</script>
+</body>
+</html>

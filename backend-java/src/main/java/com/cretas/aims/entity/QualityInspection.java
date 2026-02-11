@@ -2,10 +2,15 @@ package com.cretas.aims.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import javax.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.HashMap;
+import java.util.Map;
 /**
  * 质量检验实体类
  *
@@ -20,6 +25,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @Builder
 @Entity
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "quality_inspections",
        indexes = {
            @Index(name = "idx_inspection_factory", columnList = "factory_id"),
@@ -98,6 +104,12 @@ public class QualityInspection extends BaseEntity {
         if (rate >= 70) return "C";
         return "D";
     }
+
+    // AI-configured custom fields stored as JSONB
+    @Type(type = "jsonb")
+    @Column(name = "custom_fields", columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, Object> customFields = new HashMap<>();
 
     // 关联关系 (使用 @JsonIgnore 防止循环引用)
     @JsonIgnore

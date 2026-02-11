@@ -3,17 +3,21 @@ package com.cretas.aims.entity;
 import com.cretas.aims.entity.enums.ProductionBatchStatus;
 import com.cretas.aims.entity.enums.QualityStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import javax.persistence.*;
 import javax.validation.constraints.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 /**
  * 生产批次实体
@@ -25,6 +29,7 @@ import java.util.Map;
 @Data
 @EqualsAndHashCode(callSuper = true)  // 继承 BaseEntity，需要调用 super
 @Entity
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @Table(name = "production_batches",
        indexes = {
            @Index(name = "idx_batch_factory", columnList = "factory_id"),
@@ -230,6 +235,17 @@ public class ProductionBatch extends BaseEntity {
      */
     @Column(name = "photo_completed_stages", columnDefinition = "JSON")
     private String photoCompletedStages;
+
+    // ==================== AI Onboarding: Custom Fields ====================
+
+    /**
+     * AI-configured custom fields stored as JSONB.
+     * e.g. {"drying_temp": 85, "seasoning_code": "A-003"}
+     */
+    @Type(type = "jsonb")
+    @Column(name = "custom_fields", columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, Object> customFields = new HashMap<>();
 
     // ==========================================
     // 注意: createdAt 和 updatedAt 字段已从 BaseEntity 继承
