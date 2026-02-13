@@ -91,6 +91,16 @@ _archived/
 screenshots/
 audit-screenshots/
 
+# 但保留项目资产PNG
+!platform/assets/images/**/*.png
+!frontend/CretasFoodTrace/assets/**/*.png
+!frontend/CretasFoodTrace/android/app/src/main/res/**/*.png
+!frontend/CretasFoodTrace/ios/**/*.png
+!MallCenter/**/public/**/*.png
+!MallCenter/**/src/assets/**/*.png
+!MallCenter/**/doc/**/*.png
+!assets/**/*.png
+
 # 运维脚本中的大文件目录
 scripts/finetune/models/
 scripts/food-kb/models/
