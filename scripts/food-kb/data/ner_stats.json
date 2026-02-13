@@ -1,0 +1,22 @@
+{
+  "total_sentences": 116,
+  "total_entities": 240,
+  "avg_entities_per_sentence": 2.07,
+  "empty_sentences": 0,
+  "entity_type_distribution": {
+    "PROCESS_PARAM": 36,
+    "ORG": 32,
+    "PRODUCT": 30,
+    "EQUIPMENT": 24,
+    "NUTRIENT": 20,
+    "ADDITIVE": 17,
+    "CERT": 17,
+    "STANDARD": 14,
+    "HAZARD": 14,
+    "TEST_METHOD": 11,
+    "MICROBE": 9,
+    "INGREDIENT": 9,
+    "REGULATION": 7
+  },
+  "failed_count": 105
+}

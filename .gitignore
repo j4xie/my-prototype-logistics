@@ -92,8 +92,9 @@ screenshots/
 audit-screenshots/
 
 # 运维脚本中的大文件目录
-scripts/finetune/
-scripts/food-kb/
+scripts/finetune/models/
+scripts/food-kb/models/
+scripts/food-kb/__pycache__/
 
 # 大文件和数据目录
 backend/java/

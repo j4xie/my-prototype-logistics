@@ -1,0 +1,66 @@
+{
+  "total_queries": 60,
+  "top_k": 5,
+  "threshold": 0.5,
+  "hit_rate": 1.0,
+  "recall@k": 1.0,
+  "mrr": 0.9708,
+  "ndcg@k": 0.9782,
+  "avg_top1_similarity": 0.797,
+  "avg_latency_ms": 1412.2,
+  "domain_breakdown": {
+    "additive": {
+      "total": 12,
+      "recall@k": 1.0,
+      "mrr": 0.9583,
+      "avg_similarity": 0.775
+    },
+    "contaminant": {
+      "total": 8,
+      "recall@k": 1.0,
+      "mrr": 1.0,
+      "avg_similarity": 0.7882
+    },
+    "cross": {
+      "total": 10,
+      "recall@k": 1.0,
+      "mrr": 0.925,
+      "avg_similarity": 0.7804
+    },
+    "haccp": {
+      "total": 6,
+      "recall@k": 1.0,
+      "mrr": 1.0,
+      "avg_similarity": 0.8007
+    },
+    "microbe": {
+      "total": 10,
+      "recall@k": 1.0,
+      "mrr": 1.0,
+      "avg_similarity": 0.8252
+    },
+    "process": {
+      "total": 8,
+      "recall@k": 1.0,
+      "mrr": 0.9375,
+      "avg_similarity": 0.7983
+    },
+    "standard": {
+      "total": 6,
+      "recall@k": 1.0,
+      "mrr": 1.0,
+      "avg_similarity": 0.8281
+    }
+  },
+  "difficulty_breakdown": {
+    "normal": {
+      "total": 50,
+      "recall@k": 1.0
+    },
+    "hard": {
+      "total": 10,
+      "recall@k": 1.0
+    }
+  },
+  "missed_queries": []
+}
