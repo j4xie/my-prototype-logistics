@@ -132,3 +132,5 @@ frontend/CretasFoodTrace/hr-i18n-*.json
 frontend/CretasFoodTrace/warehouse-*.json
 frontend/CretasFoodTrace/migrate-*.sh~$*
 nul
+scripts/run_new_server.py
+scripts/run_old_server.py
