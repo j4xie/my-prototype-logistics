@@ -1,10 +1,10 @@
 """Run command on old server via Alibaba Cloud RunCommand API"""
-import sys, json, base64, time, os
+import sys, json, base64, time
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.request import CommonRequest
 
-AK_OLD = (os.environ.get('ALIYUN_OLD_AK_ID', ''), os.environ.get('ALIYUN_OLD_AK_SECRET', ''))
-INSTANCE_OLD = os.environ.get('ALIYUN_OLD_INSTANCE', 'i-uf60ay6ti5cm40j7jvh9')
+AK_OLD = ('LTAI5tP5K5K51ApJs2QHsV3P', 'll4JbUK1tbgXbnGk789T4XTX1QEWLd')
+INSTANCE_OLD = 'i-uf60ay6ti5cm40j7jvh9'
 
 def run(script, timeout=120):
     client = AcsClient(AK_OLD[0], AK_OLD[1], 'cn-shanghai')
