@@ -1,0 +1,14 @@
+[Unit]
+Description=Cretas Embedding gRPC Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/www/wwwroot/embedding-service
+ExecStart=/usr/bin/java -jar -Xmx512M embedding-service-1.0.0.jar --grpc.server.port=9090 --embedding.model-path=/www/wwwroot/cretas/models/gte-base-zh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
