@@ -1,0 +1,39 @@
+[
+  {
+    "name": "GTE-base-zh (current)",
+    "model_id": "thenlper/gte-base-zh",
+    "load_time_s": 2.28,
+    "memory_mb": 506.8,
+    "actual_dim": 768,
+    "latency_mean_ms": 29.6,
+    "latency_p95_ms": 41.27,
+    "latency_p99_ms": 45.6,
+    "batch_1000_time_s": 0.64,
+    "throughput_qps": 1561.9,
+    "semantic_pos_sim": 0.7133,
+    "semantic_neg_sim": 0.4247,
+    "semantic_gap": 0.2886,
+    "semantic_pairs": 20
+  },
+  {
+    "name": "BGE-M3",
+    "model_id": "BAAI/bge-m3",
+    "error": "Due to a serious vulnerability issue in `torch.load`, even with `weights_only=True`, we now require users to upgrade torch to at least v2.6 in order to use the function. This version restriction does not apply when loading files with safetensors.\nSee the vulnerability report here https://nvd.nist.gov/vuln/detail/CVE-2025-32434"
+  },
+  {
+    "name": "Qwen3-Embedding-0.6B",
+    "model_id": "Qwen/Qwen3-Embedding-0.6B",
+    "load_time_s": 3.28,
+    "memory_mb": 2315.7,
+    "actual_dim": 1024,
+    "latency_mean_ms": 74.41,
+    "latency_p95_ms": 94.79,
+    "latency_p99_ms": 117.73,
+    "batch_1000_time_s": 2.25,
+    "throughput_qps": 444.6,
+    "semantic_pos_sim": 0.7285,
+    "semantic_neg_sim": 0.4477,
+    "semantic_gap": 0.2808,
+    "semantic_pairs": 20
+  }
+]
