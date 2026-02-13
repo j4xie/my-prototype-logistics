@@ -9,12 +9,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Core modules (always available)
-from . import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, cross_sheet, yoy, statistical, analysis_cache, ai_proxy
+from . import excel, field, metrics, forecast, insight, chart, analysis, ml, linucb, chat, db_analysis, cross_sheet, yoy, statistical, analysis_cache, ai_proxy, benchmark
 
 __all__ = [
     "excel", "field", "metrics", "forecast", "insight", "chart",
     "analysis", "ml", "linucb", "chat", "db_analysis", "cross_sheet", "yoy", "statistical",
-    "analysis_cache", "ai_proxy"
+    "analysis_cache", "ai_proxy", "benchmark"
 ]
 
 # Optional: classifier module (requires torch + transformers)

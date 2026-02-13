@@ -3,7 +3,9 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { get } from '@/api/request';
+import { ElMessage } from 'element-plus';
 import { TrendCharts, DataAnalysis, Histogram, PieChart, Timer, Sunny } from '@element-plus/icons-vue';
+import { formatNumber } from '@/utils/format-number';
 
 const authStore = useAuthStore();
 const permissionStore = usePermissionStore();
@@ -71,6 +73,7 @@ async function loadOverviewData() {
     }
   } catch (error) {
     console.error('加载概览数据失败:', error);
+    ElMessage.error('加载概览数据失败，请稍后重试');
   } finally {
     loading.value = false;
   }
@@ -87,15 +90,11 @@ async function loadTrendData() {
     }
   } catch (error) {
     console.error('加载趋势数据失败:', error);
+    ElMessage.error('加载趋势数据失败，请稍后重试');
   }
 }
 
-function formatNumber(num: number): string {
-  if (num >= 10000) {
-    return (num / 10000).toFixed(1) + '万';
-  }
-  return num.toLocaleString();
-}
+// formatNumber imported from @/utils/format-number
 
 function formatPercent(num: number): string {
   return (num * 100).toFixed(1) + '%';
@@ -225,7 +224,7 @@ function formatPercent(num: number): string {
           <el-card shadow="hover">
             <el-icon size="32"><DataAnalysis /></el-icon>
             <h3>AI分析报告</h3>
-            <p>智能分析报告和异常检测</p>
+            <p>数据分析报告和异常检测</p>
           </el-card>
         </router-link>
       </el-col>
@@ -275,7 +274,7 @@ function formatPercent(num: number): string {
   text-align: center;
   margin-bottom: 16px;
   border-radius: 12px;
-  transition: all 0.3s;
+  transition: all var(--transition-fast, 0.2s ease);
 
   &:hover {
     transform: translateY(-4px);
@@ -300,6 +299,7 @@ function formatPercent(num: number): string {
     font-weight: 700;
     color: #303133;
     line-height: 1.2;
+    font-variant-numeric: tabular-nums;
   }
 
   .stat-label {
@@ -366,12 +366,12 @@ function formatPercent(num: number): string {
       text-align: center;
       padding: 24px;
       cursor: pointer;
-      transition: all 0.3s;
+      transition: all var(--transition-base, 0.3s ease);
       border-radius: 12px;
 
       &:hover {
         transform: translateY(-4px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+        box-shadow: var(--shadow-xl);
       }
 
       .el-icon {

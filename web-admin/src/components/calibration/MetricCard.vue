@@ -144,7 +144,7 @@ export default {
   border-radius: 12px;
   border: 1px solid;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast, 0.2s ease);
   overflow: hidden;
   min-height: 140px;
   display: flex;
@@ -153,7 +153,7 @@ export default {
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
   }
 
   &.is-loading {

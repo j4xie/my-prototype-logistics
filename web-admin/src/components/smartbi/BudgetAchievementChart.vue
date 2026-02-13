@@ -5,7 +5,7 @@
  * Style: FanSoft-inspired budget completion dashboard
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 import KPICard from './KPICard.vue';
 import type { TrendDirection, StatusType } from './KPICard.vue';
@@ -352,7 +352,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event
@@ -499,7 +499,7 @@ defineExpose({
 .budget-achievement-chart {
   width: 100%;
   background: #fff;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 20px;
 
   .chart-header {
@@ -543,7 +543,7 @@ defineExpose({
       rgba(245, 108, 108, 0.08) 75%,
       rgba(245, 108, 108, 0.08) 100%
     );
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     position: relative;
 
     &::before {
@@ -570,7 +570,7 @@ defineExpose({
         color: #606266;
         background: #fff;
         padding: 4px 12px;
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
         border: 1px solid #ebeef5;
       }
 
@@ -578,9 +578,9 @@ defineExpose({
         font-size: 16px;
         font-weight: 700;
         padding: 6px 14px;
-        border-radius: 16px;
+        border-radius: var(--radius-xl);
         background: #fff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-md);
 
         &.status-success {
           color: #67c23a;
@@ -606,7 +606,7 @@ defineExpose({
     gap: 16px;
     padding: 12px 16px;
     background: #f8f9fa;
-    border-radius: 6px;
+    border-radius: var(--radius-md);
     margin-bottom: 16px;
     flex-wrap: wrap;
 
@@ -659,7 +659,7 @@ defineExpose({
           position: absolute;
           bottom: -22px;
           font-size: 10px;
-          color: #909399;
+          color: var(--color-text-secondary);
           white-space: nowrap;
           opacity: 0;
           visibility: hidden;
@@ -672,7 +672,7 @@ defineExpose({
       display: flex;
       gap: 12px;
       font-size: 12px;
-      color: #909399;
+      color: var(--color-text-secondary);
 
       .legend-item {
         display: flex;

@@ -130,8 +130,8 @@ async def parse_rule(request: RuleParseRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Rule parse error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Rule parse error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.post("/state-machine/parse")
@@ -149,8 +149,8 @@ async def parse_state_machine(request: StateMachineParseRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"State machine parse error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"State machine parse error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.get("/rule/health")
@@ -181,8 +181,8 @@ async def classify_intent(request: IntentClassifyRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Intent classify error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Intent classify error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.post("/intent/clarify")
@@ -200,8 +200,8 @@ async def clarify_intent(request: IntentClarifyRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Intent clarify error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Intent clarify error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.get("/intent/health")
@@ -232,8 +232,8 @@ async def parse_data_operation(request: DataOperationParseRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Data operation parse error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Data operation parse error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.post("/form/generate-schema")
@@ -252,8 +252,8 @@ async def generate_form_schema(request: FormSchemaRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Form schema generate error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Form schema generate error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}
 
 
 @router.post("/factory/batch-initialize")
@@ -281,5 +281,5 @@ async def batch_initialize_factory(request: FactoryInitRequest):
             "elapsed_ms": int((time.time() - start) * 1000)
         }
     except Exception as e:
-        logger.error(f"Factory batch initialize error: {e}")
-        return {"success": False, "message": str(e), "data": None}
+        logger.error(f"Factory batch initialize error: {e}", exc_info=True)
+        return {"success": False, "message": "处理失败，请稍后重试", "data": None}

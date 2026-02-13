@@ -31,6 +31,7 @@ python-dotenv>=0.19.0
 # PostgreSQL (for dynamic data storage)
 sqlalchemy>=1.4.0,<2.0.0
 psycopg2-binary>=2.9.0,<3.0.0
+asyncpg>=0.27.0,<1.0.0
 
 # Pydantic settings (for environment variable loading)
 pydantic-settings>=2.0.0 ; python_version >= "3.9"

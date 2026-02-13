@@ -1,0 +1,762 @@
+{
+  "timestamp": "2026-02-10T19:30:11.209455",
+  "test": "v5_round33_iot_device_management",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "scale": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "camera": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "temperature": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "sensor": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "config": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "datacollect": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "maintenance": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "connectivity": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "analytics": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 17,
+    "CLASSIFIER": 6,
+    "NONE": 23,
+    "SEMANTIC": 4
+  },
+  "results": [
+    {
+      "query": "查看电子秤列表",
+      "status": "PASS",
+      "intent": "SCALE_LIST_DEVICES",
+      "confidence": 0.98,
+      "expected": [
+        "SCALE_LIST_DEVICES",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "scale",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 487
+    },
+    {
+      "query": "秤的读数是多少",
+      "status": "PASS",
+      "intent": "SCALE_DEVICE_DETAIL",
+      "confidence": 0.7471778392791748,
+      "expected": [
+        "SCALE_DEVICE_DETAIL",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "scale",
+      "method": "CLASSIFIER",
+      "latency_ms": 614
+    },
+    {
+      "query": "今天的称重记录",
+      "status": "PASS",
+      "intent": "SCALE_LIST_DEVICES",
+      "confidence": 0.98,
+      "expected": [
+        "SCALE_DEVICE_DETAIL",
+        "REPORT_PRODUCTION",
+        "SCALE_LIST_DEVICES",
+        null
+      ],
+      "category": "scale",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "校准电子秤",
+      "status": "PASS",
+      "intent": "SCALE_DEVICE_DETAIL",
+      "confidence": 0.98,
+      "expected": [
+        "SCALE_DEVICE_DETAIL",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "scale",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "电子秤连接状态",
+      "status": "PASS",
+      "intent": "SCALE_DEVICE_DETAIL",
+      "confidence": 0.98,
+      "expected": [
+        "SCALE_LIST_DEVICES",
+        "EQUIPMENT_STATUS_QUERY",
+        "SCALE_DEVICE_DETAIL",
+        null
+      ],
+      "category": "scale",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 446
+    },
+    {
+      "query": "添加一台新的电子秤",
+      "status": "PASS",
+      "intent": "SCALE_ADD_DEVICE",
+      "confidence": 0.8661381006240845,
+      "expected": [
+        "SCALE_ADD_DEVICE_VISION",
+        "SCALE_ADD_DEVICE",
+        null
+      ],
+      "category": "scale",
+      "method": "CLASSIFIER",
+      "latency_ms": 668
+    },
+    {
+      "query": "摄像头列表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 843
+    },
+    {
+      "query": "调出昨天的视频回放",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 787
+    },
+    {
+      "query": "打开实时监控画面",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 1372
+    },
+    {
+      "query": "摄像头运行状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 1047
+    },
+    {
+      "query": "查询今天上午的录像",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 1324
+    },
+    {
+      "query": "抓拍当前画面",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "camera",
+      "method": null,
+      "latency_ms": 803
+    },
+    {
+      "query": "温度传感器读数",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.870018482208252,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "temperature",
+      "method": "CLASSIFIER",
+      "latency_ms": 787
+    },
+    {
+      "query": "冷库现在温度多少",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "COLD_CHAIN_ALERT",
+        null
+      ],
+      "category": "temperature",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "查看温度变化曲线",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "temperature",
+      "method": null,
+      "latency_ms": 809
+    },
+    {
+      "query": "温度异常报警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_ALERT",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "temperature",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "温度探头需要校准",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.8949130773544312,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "temperature",
+      "method": "CLASSIFIER",
+      "latency_ms": 1214
+    },
+    {
+      "query": "传感器状态查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "sensor",
+      "method": null,
+      "latency_ms": 672
+    },
+    {
+      "query": "湿度传感器读数",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.828876256942749,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "sensor",
+      "method": "CLASSIFIER",
+      "latency_ms": 1386
+    },
+    {
+      "query": "压力传感器数据",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "sensor",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 471
+    },
+    {
+      "query": "流量计当前读数",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "sensor",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "液位计报警了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "COLD_CHAIN_ALERT",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "sensor",
+      "method": null,
+      "latency_ms": 790
+    },
+    {
+      "query": "振动传感器异常",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "sensor",
+      "method": null,
+      "latency_ms": 796
+    },
+    {
+      "query": "修改设备配置参数",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_UPDATE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATUS_UPDATE",
+        null
+      ],
+      "category": "config",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 441
+    },
+    {
+      "query": "设备参数设置",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_UPDATE",
+      "confidence": 0.85,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATUS_UPDATE",
+        null
+      ],
+      "category": "config",
+      "method": "SEMANTIC",
+      "latency_ms": 637
+    },
+    {
+      "query": "注册新设备到系统",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SCALE_ADD_DEVICE_VISION",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "config",
+      "method": null,
+      "latency_ms": 805
+    },
+    {
+      "query": "把传感器绑定到A车间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "config",
+      "method": null,
+      "latency_ms": 788
+    },
+    {
+      "query": "删除离线设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "config",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "数据采集状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "datacollect",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "修改采集频率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "datacollect",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "传感器数据上传失败了",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "datacollect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461
+    },
+    {
+      "query": "查看实时采集数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "datacollect",
+      "method": "SEMANTIC",
+      "latency_ms": 601
+    },
+    {
+      "query": "数据采集断点怎么处理",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "datacollect",
+      "method": "SEMANTIC",
+      "latency_ms": 689
+    },
+    {
+      "query": "手动补录昨天的数据",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "datacollect",
+      "method": null,
+      "latency_ms": 679
+    },
+    {
+      "query": "设备巡检计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "maintenance",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "设备保养记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "maintenance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "更换温度传感器",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "maintenance",
+      "method": null,
+      "latency_ms": 810
+    },
+    {
+      "query": "设备维修记录查询",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "maintenance",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "备件更换登记",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "maintenance",
+      "method": null,
+      "latency_ms": 698
+    },
+    {
+      "query": "设备在线状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "connectivity",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "网络连接异常",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "connectivity",
+      "method": null,
+      "latency_ms": 700
+    },
+    {
+      "query": "通信故障排查",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.6339442729949951,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "connectivity",
+      "method": "CLASSIFIER",
+      "latency_ms": 619
+    },
+    {
+      "query": "信号强度太弱了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "connectivity",
+      "method": null,
+      "latency_ms": 625
+    },
+    {
+      "query": "重新连接设备",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "connectivity",
+      "method": null,
+      "latency_ms": 736
+    },
+    {
+      "query": "设备运行时间统计",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "各设备利用率排名",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "设备故障率统计分析",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_ALERT_LIST",
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "设备MTBF是多少",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.92,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "analytics",
+      "method": "SEMANTIC",
+      "latency_ms": 653
+    },
+    {
+      "query": "设备剩余寿命预测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "analytics",
+      "method": null,
+      "latency_ms": 772
+    },
+    {
+      "query": "车间设备能耗统计",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "analytics",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    }
+  ]
+}

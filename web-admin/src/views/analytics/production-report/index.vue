@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 interface ProductionData {
   productTypeId: string;
@@ -101,7 +101,7 @@ async function loadProductionData() {
 function initChart() {
   const chartEl = document.getElementById('production-bar-chart');
   if (chartEl) {
-    productionChart = echarts.init(chartEl);
+    productionChart = echarts.init(chartEl, 'cretas');
   }
 }
 

@@ -105,7 +105,7 @@ async def detect_fields(request: FieldDetectionRequest):
         raise
     except Exception as e:
         logger.error(f"Field detection error: {e}", exc_info=True)
-        return FieldDetectionResponse(success=False, error=str(e))
+        return FieldDetectionResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/map", response_model=FieldMappingResponse)
@@ -133,7 +133,7 @@ async def map_fields(request: FieldMappingRequest):
         raise
     except Exception as e:
         logger.error(f"Field mapping error: {e}", exc_info=True)
-        return FieldMappingResponse(success=False, error=str(e))
+        return FieldMappingResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/chart-config", response_model=ChartConfigResponse)
@@ -161,7 +161,7 @@ async def recommend_chart_config(request: ChartConfigRequest):
         raise
     except Exception as e:
         logger.error(f"Chart config recommendation error: {e}", exc_info=True)
-        return ChartConfigResponse(success=False, error=str(e))
+        return ChartConfigResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.get("/types")

@@ -438,7 +438,7 @@ async def get_finance_overview(request: FinanceOverviewRequest):
         raise
     except Exception as e:
         logger.error(f"Finance overview error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/profit-trend", response_model=AnalysisResponse)
@@ -472,7 +472,7 @@ async def get_profit_trend(request: ProfitTrendRequest):
         raise
     except Exception as e:
         logger.error(f"Profit trend error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/cost-structure", response_model=AnalysisResponse)
@@ -505,7 +505,7 @@ async def get_cost_structure(request: CostStructureRequest):
         raise
     except Exception as e:
         logger.error(f"Cost structure error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/budget-waterfall", response_model=AnalysisResponse)
@@ -538,7 +538,7 @@ async def get_budget_waterfall(request: BudgetWaterfallRequest):
         raise
     except Exception as e:
         logger.error(f"Budget waterfall error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/budget-vs-actual", response_model=AnalysisResponse)
@@ -570,7 +570,7 @@ async def get_budget_vs_actual(request: BudgetVsActualRequest):
         raise
     except Exception as e:
         logger.error(f"Budget vs actual error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/yoy-mom", response_model=AnalysisResponse)
@@ -605,7 +605,7 @@ async def get_yoy_mom_comparison(request: YoYMoMRequest):
         raise
     except Exception as e:
         logger.error(f"YoY/MoM comparison error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/category-comparison", response_model=AnalysisResponse)
@@ -639,7 +639,7 @@ async def get_category_comparison(request: CategoryComparisonRequest):
         raise
     except Exception as e:
         logger.error(f"Category comparison error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 # ============================================================================
@@ -676,7 +676,7 @@ async def get_sales_kpis(request: SalesKPIsRequest):
         raise
     except Exception as e:
         logger.error(f"Sales KPIs error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/sales/ranking/salesperson", response_model=AnalysisResponse)
@@ -711,7 +711,7 @@ async def get_salesperson_ranking(request: RankingRequest):
         raise
     except Exception as e:
         logger.error(f"Salesperson ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/sales/ranking/product", response_model=AnalysisResponse)
@@ -746,7 +746,7 @@ async def get_product_ranking(request: RankingRequest):
         raise
     except Exception as e:
         logger.error(f"Product ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/sales/trend", response_model=AnalysisResponse)
@@ -780,7 +780,7 @@ async def get_sales_trend(request: SalesTrendRequest):
         raise
     except Exception as e:
         logger.error(f"Sales trend error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/sales/region-distribution", response_model=AnalysisResponse)
@@ -812,7 +812,7 @@ async def get_region_distribution(request: RegionDistributionRequest):
         raise
     except Exception as e:
         logger.error(f"Region distribution error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/sales/customer-analysis", response_model=AnalysisResponse)
@@ -846,7 +846,7 @@ async def get_customer_analysis(request: CustomerAnalysisRequest):
         raise
     except Exception as e:
         logger.error(f"Customer analysis error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 # ============================================================================
@@ -887,7 +887,7 @@ async def get_department_ranking(request: DepartmentRankingRequest):
         raise
     except Exception as e:
         logger.error(f"Department ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/department/detail", response_model=AnalysisResponse)
@@ -920,7 +920,7 @@ async def get_department_detail(request: DepartmentDetailRequest):
         raise
     except Exception as e:
         logger.error(f"Department detail error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/department/completion-rates", response_model=AnalysisResponse)
@@ -954,7 +954,7 @@ async def get_department_completion_rates(request: DepartmentCompletionRatesRequ
         raise
     except Exception as e:
         logger.error(f"Department completion rates error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/department/efficiency-matrix", response_model=AnalysisResponse)
@@ -987,7 +987,7 @@ async def get_department_efficiency_matrix(request: DepartmentEfficiencyMatrixRe
         raise
     except Exception as e:
         logger.error(f"Department efficiency matrix error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/department/trend-comparison", response_model=AnalysisResponse)
@@ -1021,7 +1021,7 @@ async def get_department_trend_comparison(request: DepartmentTrendComparisonRequ
         raise
     except Exception as e:
         logger.error(f"Department trend comparison error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/department/share-trend", response_model=AnalysisResponse)
@@ -1055,7 +1055,7 @@ async def get_department_share_trend(request: DepartmentShareTrendRequest):
         raise
     except Exception as e:
         logger.error(f"Department share trend error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 # ============================================================================
@@ -1097,7 +1097,7 @@ async def get_region_ranking(request: RegionRankingRequest):
         raise
     except Exception as e:
         logger.error(f"Region ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/province-ranking", response_model=AnalysisResponse)
@@ -1133,7 +1133,7 @@ async def get_province_ranking(request: ProvinceRankingRequest):
         raise
     except Exception as e:
         logger.error(f"Province ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/city-ranking", response_model=AnalysisResponse)
@@ -1171,7 +1171,7 @@ async def get_city_ranking(request: CityRankingRequest):
         raise
     except Exception as e:
         logger.error(f"City ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/detail", response_model=AnalysisResponse)
@@ -1204,7 +1204,7 @@ async def get_region_detail(request: RegionDetailRequest):
         raise
     except Exception as e:
         logger.error(f"Region detail error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/trend", response_model=AnalysisResponse)
@@ -1240,7 +1240,7 @@ async def get_region_trend(request: RegionTrendRequest):
         raise
     except Exception as e:
         logger.error(f"Region trend error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/heatmap", response_model=AnalysisResponse)
@@ -1274,7 +1274,7 @@ async def get_geographic_heatmap_data(request: GeographicHeatmapRequest):
         raise
     except Exception as e:
         logger.error(f"Geographic heatmap error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/opportunity-scores", response_model=AnalysisResponse)
@@ -1307,7 +1307,7 @@ async def get_region_opportunity_scores(request: RegionOpportunityScoresRequest)
         raise
     except Exception as e:
         logger.error(f"Region opportunity scores error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/region/hierarchy", response_model=AnalysisResponse)
@@ -1339,7 +1339,7 @@ async def get_hierarchy_data(request: HierarchyDataRequest):
         raise
     except Exception as e:
         logger.error(f"Hierarchy data error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 # ============================================================================
@@ -1376,7 +1376,7 @@ async def get_receivable_aging(request: ReceivableAgingRequest):
         raise
     except Exception as e:
         logger.error(f"Receivable aging error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/ar-metrics", response_model=AnalysisResponse)
@@ -1407,7 +1407,7 @@ async def get_receivable_metrics(request: ReceivableMetricsRequest):
         raise
     except Exception as e:
         logger.error(f"Receivable metrics error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/overdue-customers", response_model=AnalysisResponse)
@@ -1441,7 +1441,7 @@ async def get_overdue_customer_ranking(request: OverdueCustomerRankingRequest):
         raise
     except Exception as e:
         logger.error(f"Overdue customer ranking error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/ap-aging", response_model=AnalysisResponse)
@@ -1474,7 +1474,7 @@ async def get_payable_aging(request: PayableAgingRequest):
         raise
     except Exception as e:
         logger.error(f"Payable aging error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/budget-execution-waterfall", response_model=AnalysisResponse)
@@ -1507,7 +1507,7 @@ async def get_budget_execution_waterfall(request: BudgetExecutionWaterfallReques
         raise
     except Exception as e:
         logger.error(f"Budget execution waterfall error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/budget-achievement", response_model=AnalysisResponse)
@@ -1541,7 +1541,7 @@ async def get_budget_achievement_by_period(request: BudgetAchievementByPeriodReq
         raise
     except Exception as e:
         logger.error(f"Budget achievement by period error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.post("/finance/multi-year-comparison", response_model=AnalysisResponse)
@@ -1577,7 +1577,7 @@ async def get_multi_year_comparison(request: MultiYearComparisonRequest):
         raise
     except Exception as e:
         logger.error(f"Multi-year comparison error: {e}", exc_info=True)
-        return AnalysisResponse(success=False, error=str(e))
+        return AnalysisResponse(success=False, error="处理失败，请稍后重试")
 
 
 # ============================================================================

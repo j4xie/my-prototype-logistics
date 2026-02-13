@@ -6,6 +6,9 @@ import AppHeader from './AppHeader.vue';
 
 const appStore = useAppStore();
 
+// SmartBI pages with heavy ECharts — preserve state across navigation
+const keepAliveViews = ['SmartBIAnalysis'];
+
 const mainStyle = computed(() => ({
   marginLeft: `${appStore.currentSidebarWidth}px`,
   transition: 'margin-left 0.3s'
@@ -26,7 +29,9 @@ const mainStyle = computed(() => ({
       <main class="app-content">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
-            <component :is="Component" />
+            <keep-alive :include="keepAliveViews" :max="5">
+              <component :is="Component" />
+            </keep-alive>
           </transition>
         </router-view>
       </main>

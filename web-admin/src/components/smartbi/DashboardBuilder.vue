@@ -66,6 +66,7 @@ const emit = defineEmits<{
   (e: 'layout-change', layout: DashboardLayout): void;
   (e: 'save', layout: DashboardLayout): void;
   (e: 'card-configure', card: DashboardCard): void;
+  (e: 'mode-change', mode: 'standard' | 'layout'): void;
 }>();
 
 // State
@@ -78,9 +79,15 @@ const resizingCard = ref<DashboardCard | null>(null);
 const resizeStartPos = ref({ x: 0, y: 0, w: 0, h: 0 });
 const dropTarget = ref<{ x: number; y: number } | null>(null);
 const gridRef = ref<HTMLElement | null>(null);
+const showGridOverlay = ref(true);
+const showAlignmentGuides = ref(false);
+const alignmentGuides = ref<{ type: 'h' | 'v'; position: number }[]>([]);
 
 // Computed
 const isEditable = computed(() => props.editable && !previewMode.value);
+
+// Base unit for vertical snapping (pixels)
+const ROW_SNAP_UNIT = 60;
 
 const gridRows = computed(() => {
   if (internalLayout.value.cards.length === 0) return 4;
@@ -326,13 +333,44 @@ function handleResizeMove(e: MouseEvent) {
   const maxW = Math.min(chartDef?.maxWidth || props.columns, props.columns - card.x);
   const maxH = chartDef?.maxHeight || 6;
 
-  const newW = Math.max(minW, Math.min(maxW, resizeStartPos.value.w + deltaW));
-  const newH = Math.max(minH, Math.min(maxH, resizeStartPos.value.h + deltaH));
+  let newW = Math.max(minW, Math.min(maxW, resizeStartPos.value.w + deltaW));
+  let newH = Math.max(minH, Math.min(maxH, resizeStartPos.value.h + deltaH));
+
+  // Snap height to ROW_SNAP_UNIT multiples
+  const pixelHeight = newH * props.rowHeight + (newH - 1) * 12;
+  const snappedPixelHeight = Math.round(pixelHeight / ROW_SNAP_UNIT) * ROW_SNAP_UNIT;
+  newH = Math.max(minH, Math.round(snappedPixelHeight / (props.rowHeight + 12)));
+
+  // Show alignment guides
+  showAlignmentGuides.value = true;
+  updateAlignmentGuides(card, newW, newH);
 
   if (isPositionValid(card.x, card.y, newW, newH, card.id)) {
     card.w = newW;
     card.h = newH;
   }
+}
+
+// Update alignment guides based on card position/size
+function updateAlignmentGuides(card: DashboardCard, w: number, h: number) {
+  const guides: { type: 'h' | 'v'; position: number }[] = [];
+
+  // Find other cards at same Y positions (horizontal alignment)
+  internalLayout.value.cards.forEach(other => {
+    if (other.id === card.id) return;
+
+    // Top edge alignment
+    if (Math.abs(card.y - other.y) < 0.5) {
+      guides.push({ type: 'h', position: card.y });
+    }
+
+    // Bottom edge alignment
+    if (Math.abs((card.y + h) - (other.y + other.h)) < 0.5) {
+      guides.push({ type: 'h', position: card.y + h });
+    }
+  });
+
+  alignmentGuides.value = guides;
 }
 
 function handleResizeEnd() {
@@ -341,6 +379,8 @@ function handleResizeEnd() {
   }
 
   resizingCard.value = null;
+  showAlignmentGuides.value = false;
+  alignmentGuides.value = [];
   document.removeEventListener('mousemove', handleResizeMove);
   document.removeEventListener('mouseup', handleResizeEnd);
 }
@@ -376,6 +416,33 @@ function duplicateCard(card: DashboardCard) {
 // Toolbar actions
 function togglePreviewMode() {
   previewMode.value = !previewMode.value;
+
+  // Emit mode change event
+  emit('mode-change', previewMode.value ? 'standard' : 'layout');
+
+  // If switching to standard mode, resize all ECharts instances after DOM update
+  if (previewMode.value) {
+    nextTick(() => {
+      setTimeout(() => {
+        resizeAllCharts();
+      }, 100);
+    });
+  }
+}
+
+// Resize all ECharts instances
+function resizeAllCharts() {
+  if (typeof window === 'undefined' || !(window as any).echarts) return;
+
+  const echarts = (window as any).echarts;
+  const containers = document.querySelectorAll('.card-content [_echarts_instance_]');
+
+  containers.forEach((container) => {
+    const instance = echarts.getInstanceByDom(container);
+    if (instance) {
+      instance.resize();
+    }
+  });
 }
 
 function resetLayout() {
@@ -416,10 +483,126 @@ function addChartToLayout(chart: ChartDefinition) {
   }
 }
 
+// Template presets
+interface LayoutPreset {
+  name: string;
+  description: string;
+  apply: () => void;
+}
+
+const layoutPresets: LayoutPreset[] = [
+  {
+    name: '2x2 均等',
+    description: '4个图表均等分布',
+    apply: () => applyPreset2x2()
+  },
+  {
+    name: '1大+3小',
+    description: '1个大图表+3个小图表',
+    apply: () => applyPresetLargeSmall()
+  },
+  {
+    name: '仪表板',
+    description: 'KPI卡片+图表',
+    apply: () => applyPresetDashboard()
+  },
+  {
+    name: '全宽堆叠',
+    description: '所有图表全宽垂直堆叠',
+    apply: () => applyPresetFullWidth()
+  }
+];
+
+function applyPreset2x2() {
+  const cards = internalLayout.value.cards.slice(0, 4);
+  if (cards.length === 0) return;
+
+  const positions = [
+    { x: 0, y: 0, w: 6, h: 2 },
+    { x: 6, y: 0, w: 6, h: 2 },
+    { x: 0, y: 2, w: 6, h: 2 },
+    { x: 6, y: 2, w: 6, h: 2 }
+  ];
+
+  cards.forEach((card, i) => {
+    Object.assign(card, positions[i]);
+  });
+
+  emitLayoutChange();
+}
+
+function applyPresetLargeSmall() {
+  const cards = internalLayout.value.cards.slice(0, 4);
+  if (cards.length === 0) return;
+
+  const positions = [
+    { x: 0, y: 0, w: 8, h: 3 },
+    { x: 8, y: 0, w: 4, h: 1 },
+    { x: 8, y: 1, w: 4, h: 1 },
+    { x: 8, y: 2, w: 4, h: 1 }
+  ];
+
+  cards.forEach((card, i) => {
+    Object.assign(card, positions[i]);
+  });
+
+  emitLayoutChange();
+}
+
+function applyPresetDashboard() {
+  const cards = internalLayout.value.cards.slice(0, 6);
+  if (cards.length === 0) return;
+
+  const positions = [
+    { x: 0, y: 0, w: 3, h: 1 }, // KPI 1
+    { x: 3, y: 0, w: 3, h: 1 }, // KPI 2
+    { x: 6, y: 0, w: 3, h: 1 }, // KPI 3
+    { x: 9, y: 0, w: 3, h: 1 }, // KPI 4
+    { x: 0, y: 1, w: 6, h: 2 }, // Chart 1
+    { x: 6, y: 1, w: 6, h: 2 }  // Chart 2
+  ];
+
+  cards.forEach((card, i) => {
+    Object.assign(card, positions[i]);
+  });
+
+  emitLayoutChange();
+}
+
+function applyPresetFullWidth() {
+  const cards = internalLayout.value.cards;
+  if (cards.length === 0) return;
+
+  cards.forEach((card, i) => {
+    card.x = 0;
+    card.y = i * 2;
+    card.w = 12;
+    card.h = 2;
+  });
+
+  emitLayoutChange();
+}
+
+function applyLayoutPreset(preset: LayoutPreset) {
+  preset.apply();
+}
+
 // Watch for external layout changes
 watch(() => props.layout, (newLayout) => {
   internalLayout.value = { ...newLayout, cards: [...newLayout.cards.map(c => ({ ...c }))] };
 }, { deep: true });
+
+// Watch for preview mode changes to handle ECharts resize
+watch(() => previewMode.value, (isPreview) => {
+  if (isPreview) {
+    // Switching to standard mode - resize charts after DOM update
+    nextTick(() => {
+      setTimeout(() => {
+        resizeAllCharts();
+      }, 100);
+    });
+  }
+});
 
 // Cleanup
 onUnmounted(() => {
@@ -495,6 +678,30 @@ defineExpose({
         </div>
 
         <div class="toolbar-right">
+          <el-dropdown
+            v-if="editable && !previewMode && internalLayout.cards.length > 0"
+            trigger="click"
+            @command="applyLayoutPreset"
+          >
+            <el-button :icon="Grid" size="small">
+              模板
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item
+                  v-for="preset in layoutPresets"
+                  :key="preset.name"
+                  :command="preset"
+                >
+                  <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 600;">{{ preset.name }}</span>
+                    <span style="font-size: 11px; color: #909399;">{{ preset.description }}</span>
+                  </div>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+
           <el-button
             :type="previewMode ? 'primary' : 'default'"
             :icon="previewMode ? Edit : View"
@@ -528,11 +735,35 @@ defineExpose({
       <div
         ref="gridRef"
         class="dashboard-grid"
+        :class="{ 'show-grid-overlay': showGridOverlay && isEditable }"
         :style="gridStyle"
         @dragover="handleGridDragOver"
         @dragleave="handleGridDragLeave"
         @drop="handleGridDrop"
       >
+        <!-- Grid overlay for visual snapping -->
+        <div v-if="showGridOverlay && isEditable" class="grid-overlay">
+          <div
+            v-for="row in gridRows"
+            :key="`row-${row}`"
+            class="grid-line-h"
+            :style="{ top: `${row * (props.rowHeight + 12)}px` }"
+          />
+        </div>
+
+        <!-- Alignment guides -->
+        <div
+          v-for="(guide, idx) in alignmentGuides"
+          :key="`guide-${idx}`"
+          class="alignment-guide"
+          :class="`guide-${guide.type}`"
+          :style="
+            guide.type === 'h'
+              ? { top: `${guide.position * (props.rowHeight + 12) + 12}px` }
+              : { left: `${guide.position * ((100 - 24 - 132) / 12 + 12)}px` }
+          "
+        />
+
         <!-- Drop indicator -->
         <div
           v-if="dropTarget && isEditable"
@@ -600,7 +831,9 @@ defineExpose({
           <div
             v-if="isEditable"
             class="resize-handle resize-se"
+            :class="{ 'is-active': resizingCard?.id === card.id }"
             @mousedown.prevent.stop="handleResizeStart($event, card, 'se')"
+            title="拖动调整大小"
           />
         </div>
 
@@ -790,11 +1023,52 @@ defineExpose({
   flex: 1;
   position: relative;
   overflow: auto;
-  background:
-    linear-gradient(90deg, #ebeef5 1px, transparent 1px),
-    linear-gradient(#ebeef5 1px, transparent 1px);
-  background-size: calc((100% - 24px - 132px) / 12 + 12px) calc(100px + 12px);
-  background-position: 12px 12px;
+  background: #f5f7fa;
+
+  &.show-grid-overlay {
+    background:
+      linear-gradient(90deg, #ebeef5 1px, transparent 1px),
+      linear-gradient(#ebeef5 1px, transparent 1px);
+    background-size: calc((100% - 24px - 132px) / 12 + 12px) calc(100px + 12px);
+    background-position: 12px 12px;
+  }
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+
+  .grid-line-h {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    height: 1px;
+    background: rgba(64, 158, 255, 0.15);
+  }
+}
+
+.alignment-guide {
+  position: absolute;
+  background: #409eff;
+  pointer-events: none;
+  z-index: 10;
+
+  &.guide-h {
+    left: 12px;
+    right: 12px;
+    height: 2px;
+  }
+
+  &.guide-v {
+    top: 12px;
+    bottom: 12px;
+    width: 2px;
+  }
 }
 
 .drop-indicator {
@@ -913,29 +1187,61 @@ defineExpose({
 .resize-handle {
   position: absolute;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, background-color 0.2s ease;
 
   &.resize-se {
     bottom: 0;
     right: 0;
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
     cursor: se-resize;
+    border-radius: 0 0 8px 0;
 
     &::before {
       content: '';
       position: absolute;
-      bottom: 4px;
-      right: 4px;
-      width: 8px;
-      height: 8px;
-      border-right: 2px solid #c0c4cc;
-      border-bottom: 2px solid #c0c4cc;
+      bottom: 6px;
+      right: 6px;
+      width: 12px;
+      height: 12px;
+      border-right: 3px solid #c0c4cc;
+      border-bottom: 3px solid #c0c4cc;
+      transition: border-color 0.2s ease;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      background: transparent;
+      transition: background-color 0.2s ease;
+      border-radius: 0 0 8px 0;
     }
   }
 
-  &:hover::before {
-    border-color: #409eff;
+  &:hover {
+    &::before {
+      border-color: #409eff;
+    }
+
+    &::after {
+      background: rgba(64, 158, 255, 0.1);
+    }
+  }
+
+  &.is-active {
+    opacity: 1 !important;
+
+    &::before {
+      border-color: #409eff;
+    }
+
+    &::after {
+      background: rgba(64, 158, 255, 0.2);
+    }
   }
 }
 

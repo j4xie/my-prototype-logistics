@@ -113,6 +113,11 @@ public interface BatchWorkSessionRepository extends JpaRepository<BatchWorkSessi
         @Param("endTime") LocalDateTime endTime);
 
     /**
+     * Count check-ins within a time range (for daily summary)
+     */
+    long countByCheckInTimeBetween(LocalDateTime start, LocalDateTime end);
+
+    /**
      * 统计员工已完成的批次工作会话数
      */
     @Query("SELECT COUNT(bws) FROM BatchWorkSession bws " +

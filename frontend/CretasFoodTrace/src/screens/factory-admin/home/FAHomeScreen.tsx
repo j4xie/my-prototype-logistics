@@ -20,6 +20,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Icon } from 'react-native-paper';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import Animated, {
   useSharedValue,
@@ -35,6 +36,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { dashboardAPI, DashboardOverviewData, AlertsDashboardData } from '../../../services/api/dashboardApiClient';
 import { aiApiClient } from '../../../services/api/aiApiClient';
 import { useHomeLayoutStore } from '../../../store/homeLayoutStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import type { HomeModule, StatCardConfig, QuickActionConfig } from '../../../types/decoration';
 import { DEFAULT_HOME_LAYOUT } from '../../../types/decoration';
 import { useShallow } from 'zustand/react/shallow';
@@ -123,6 +125,7 @@ interface AIInsight {
 export function FAHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
   const { t } = useTranslation('home');
 
   // 状态
@@ -374,6 +377,11 @@ export function FAHomeScreen() {
       yesterdayStats?.totalBatches
     );
 
+    // Screen guard mapping for stat cards
+    const statCardScreenGuard: Record<string, string> = {
+      todayAlerts: 'AIAlerts',
+    };
+
     return [
       {
         id: 'todayProduction',
@@ -409,7 +417,10 @@ export function FAHomeScreen() {
         color: alertsSummary?.criticalAlerts && alertsSummary.criticalAlerts > 0 ? '#e53e3e' : '#a0aec0',
         onPress: () => navigation.navigate('AIAlerts'),
       },
-    ];
+    ].filter(card => {
+      const screenName = statCardScreenGuard[card.id];
+      return !screenName || isScreenEnabled(screenName);
+    });
   };
 
   // 快捷操作数据已移至 renderQuickActionsModule 函数内部
@@ -681,6 +692,15 @@ export function FAHomeScreen() {
     </TouchableOpacity>
   );
 
+  // Screen guard mapping for quick actions
+  const quickActionScreenGuard: Record<string, string> = {
+    dataReport: 'AIReport',
+    staffManagement: 'EmployeeList',
+    inventory: 'InventoryList',
+    qualityCheck: 'QualityCheck',
+    systemConfig: 'SystemSettings',
+  };
+
   // 所有可用的快捷操作（用于添加弹窗）
   const allQuickActions = [
     {
@@ -737,7 +757,10 @@ export function FAHomeScreen() {
         navigation.getParent()?.navigate('FAManagementTab', { screen: 'QualityCheck' });
       },
     },
-  ];
+  ].filter(action => {
+    const screenName = quickActionScreenGuard[action.id];
+    return !screenName || isScreenEnabled(screenName);
+  });
 
   // 渲染快捷操作模块 - 从 config.actions 读取操作配置
   const renderQuickActionsModule = (module: HomeModule, index: number) => {
@@ -891,6 +914,24 @@ export function FAHomeScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#667eea" />
           <Text style={styles.loadingText}>{t('loading')}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 错误状态
+  if (error && !overviewData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+          <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>{error}</Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#667eea', borderRadius: 6 }}
+            onPress={() => loadData()}
+          >
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );

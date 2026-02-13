@@ -1,5 +1,5 @@
 /**
- * SmartBI 智能分析路由模块
+ * SmartBI 智能BI路由模块
  * 面向财务主管的经营分析工具
  */
 import type { RouteRecordRaw } from 'vue-router';
@@ -10,7 +10,7 @@ const smartBIRoutes: RouteRecordRaw[] = [
     path: 'smart-bi',
     name: 'SmartBI',
     redirect: '/smart-bi/dashboard',
-    meta: { requiresAuth: true, title: '智能分析', icon: 'TrendCharts', module: 'analytics' },
+    meta: { requiresAuth: true, title: '智能BI', icon: 'TrendCharts', module: 'analytics' },
     children: [
       {
         path: 'dashboard',
@@ -37,10 +37,40 @@ const smartBIRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, title: 'AI问答', icon: 'ChatDotRound', module: 'analytics' },
       },
       {
+        path: 'query-templates',
+        name: 'SmartBIQueryTemplates',
+        component: () => import('@/views/smart-bi/QueryTemplateManager.vue'),
+        meta: { requiresAuth: true, title: '查询模板管理', icon: 'Tickets', module: 'analytics' },
+      },
+      {
         path: 'analysis',
         name: 'SmartBIAnalysis',
         component: () => import('@/views/smart-bi/SmartBIAnalysis.vue'),
         meta: { requiresAuth: true, title: '智能数据分析', icon: 'DataAnalysis', module: 'analytics' },
+      },
+      {
+        path: 'upload',
+        name: 'SmartBIExcelUpload',
+        component: () => import('@/views/smart-bi/ExcelUpload.vue'),
+        meta: { requiresAuth: true, title: 'Excel上传', icon: 'Upload', module: 'analytics' },
+      },
+      {
+        path: 'data-completeness',
+        name: 'SmartBIDataCompleteness',
+        component: () => import('@/views/smart-bi/DataCompletenessView.vue'),
+        meta: { requiresAuth: true, title: '数据完整度', icon: 'Checked', module: 'analytics' },
+      },
+      {
+        path: 'food-kb-feedback',
+        name: 'SmartBIFoodKBFeedback',
+        component: () => import('@/views/smart-bi/FoodKBFeedback.vue'),
+        meta: { requiresAuth: true, title: '知识库反馈', icon: 'ChatDotRound', module: 'analytics' },
+      },
+      {
+        path: 'calibration',
+        name: 'SmartBICalibration',
+        component: () => import('@/views/calibration/CalibrationListView.vue'),
+        meta: { requiresAuth: true, title: '行为校准监控', icon: 'Aim', module: 'analytics' },
       },
     ],
   },

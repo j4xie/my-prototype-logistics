@@ -40,6 +40,17 @@ public class MobileController {
     private final MobileService mobileService;
     private final EquipmentAlertRepository equipmentAlertRepository;
 
+    // ==================== 健康检查 ====================
+
+    @GetMapping("/health")
+    @Operation(summary = "健康检查", description = "公开端点，无需认证")
+    public Map<String, Object> health() {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", "UP");
+        result.put("timestamp", System.currentTimeMillis());
+        return result;
+    }
+
     // ==================== 认证相关接口 ====================
 
     @PostMapping("/auth/unified-login")

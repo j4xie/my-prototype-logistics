@@ -1,0 +1,103 @@
+{
+  "consolidation_plan": {
+    "analysis_date": "2026-02-11",
+    "total_intents_before": 179,
+    "total_intents_after_phase_1_2": 173,
+    "recommended_actions": 6
+  },
+  "phase_1_perfect_duplicates": {
+    "time_hours": 1.5,
+    "intents_to_remove": 2,
+    "merges": [
+      {
+        "remove": "HR_EMPLOYEE_DELETE",
+        "keep": "HR_DELETE_EMPLOYEE",
+        "reason": "Word order reversal (100% match)",
+        "training_rows": 40
+      },
+      {
+        "remove": "NOTIFICATION_WECHAT_SEND",
+        "keep": "NOTIFICATION_SEND_WECHAT",
+        "reason": "Word order reversal (100% match)",
+        "training_rows": 25
+      }
+    ]
+  },
+  "phase_2_generic_alerts": {
+    "time_hours": 2.5,
+    "intents_to_remove": 4,
+    "context": "Equipment-scoped alerts exist; generic variants redundant",
+    "merges": [
+      {
+        "remove": "ALERT_ACKNOWLEDGE",
+        "keep": "EQUIPMENT_ALERT_ACKNOWLEDGE",
+        "training_rows": 35
+      },
+      {
+        "remove": "ALERT_LIST",
+        "keep": "EQUIPMENT_ALERT_LIST",
+        "training_rows": 35
+      },
+      {
+        "remove": "ALERT_RESOLVE",
+        "keep": "EQUIPMENT_ALERT_RESOLVE",
+        "training_rows": 20
+      },
+      {
+        "remove": "ALERT_STATS",
+        "keep": "EQUIPMENT_ALERT_STATS",
+        "training_rows": 15
+      }
+    ]
+  },
+  "phase_3_optional_filters": {
+    "time_hours": 2.5,
+    "intents_to_remove": 3,
+    "status": "DEFER",
+    "context": "Low priority filter consolidation",
+    "merges": [
+      {
+        "remove": "EXCLUDE_SELECTED",
+        "keep": "SYSTEM_FILTER_EXCLUDE_SELECTED"
+      },
+      {
+        "remove": "FILTER_EXCLUDE_SELECTED",
+        "keep": "SYSTEM_FILTER_EXCLUDE_SELECTED"
+      },
+      {
+        "remove": "UI_EXCLUDE_SELECTED",
+        "keep": "SYSTEM_FILTER_EXCLUDE_SELECTED"
+      }
+    ]
+  },
+  "phase_4_optional_shipment": {
+    "time_hours": 1,
+    "intents_to_remove": 1,
+    "status": "DEFER",
+    "merges": [
+      {
+        "remove": "SHIPMENT_STATUS_UPDATE",
+        "keep": "SHIPMENT_UPDATE",
+        "training_rows": 15
+      }
+    ]
+  },
+  "keep_both": [
+    {
+      "pair": "EQUIPMENT_START / EQUIPMENT_CAMERA_START",
+      "reason": "Device-specific"
+    },
+    {
+      "pair": "SCALE_ADD_DEVICE / SCALE_ADD_DEVICE_VISION",
+      "reason": "Different tech"
+    },
+    {
+      "pair": "MEDIA_PLAY / MEDIA_PLAY_MUSIC",
+      "reason": "Music has distinct logic"
+    },
+    {
+      "pair": "ISAPI_CONFIG_FIELD_DETECTION / ISAPI_CONFIG_LINE_DETECTION",
+      "reason": "Different CV tasks"
+    }
+  ]
+}

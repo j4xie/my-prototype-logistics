@@ -18,7 +18,7 @@ import java.util.Map;
  * 根据意图类型将 resultData 转换为自然语言文本
  *
  * @author Cretas Team
- * @version 1.0.0
+ * @version 2.0.0 (v6 enhanced)
  * @since 2026-01-18
  */
 @Slf4j
@@ -42,7 +42,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
 
         try {
             // 根据意图分类选择格式化器
-            return switch (intentCategory) {
+            String formatted = switch (intentCategory) {
                 case "SHIPMENT" -> formatShipmentResult(intentCode, resultData);
                 case "MATERIAL" -> formatMaterialResult(intentCode, resultData);
                 case "QUALITY" -> formatQualityResult(intentCode, resultData);
@@ -51,8 +51,29 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
                 case "HR" -> formatHRResult(intentCode, resultData);
                 case "CRM" -> formatCRMResult(intentCode, resultData);
                 case "ALERT" -> formatAlertResult(intentCode, resultData);
+                case "EQUIPMENT" -> formatEquipmentResult(intentCode, resultData);
                 default -> formatGenericResult(resultData);
             };
+
+            // Fallback: if formatter returned null or short text (<50 chars = B-grade), try handler message
+            if (formatted == null || formatted.length() < 50) {
+                String handlerMsg = response.getMessage();
+                if (handlerMsg != null && handlerMsg.length() >= 50) {
+                    return handlerMsg;
+                }
+                // If handler message is also short, try generic extraction
+                if (formatted == null || formatted.length() < 30) {
+                    String generic = formatGenericResult(resultData);
+                    if (generic != null && generic.length() > (formatted != null ? formatted.length() : 0)) {
+                        return generic;
+                    }
+                    // Last resort: use handler message even if < 50
+                    if (handlerMsg != null && handlerMsg.length() > (formatted != null ? formatted.length() : 0)) {
+                        return handlerMsg;
+                    }
+                }
+            }
+            return formatted;
         } catch (Exception e) {
             log.warn("格式化结果失败: intentCode={}, error={}", intentCode, e.getMessage());
             return response.getMessage();
@@ -155,7 +176,6 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
 
     private String formatTraceResult(Map<String, Object> data) {
         StringBuilder sb = new StringBuilder("溯源信息：\n");
-        // 简化溯源结果展示
         String batchNumber = getString(data, "batchNumber");
         if (batchNumber != null) {
             sb.append(String.format("批次号：%s\n", batchNumber));
@@ -314,52 +334,460 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
     // ==================== 报表 格式化 ====================
 
     private String formatReportResult(String intentCode, Object resultData) {
-        Map<String, Object> data = asMap(resultData);
-        if (data == null) return null;
+        Map<String, Object> topLevel = asMap(resultData);
+        if (topLevel == null) return null;
+
+        // Report intents nest metrics under a "data" sub-key:
+        // resultData = { reportType, period, data: { totalOutput, ... }, startDate, endDate }
+        Map<String, Object> data = asMap(topLevel.get("data"));
+        if (data == null) data = topLevel; // Fallback to top-level if no nested "data"
+
+        String period = getString(topLevel, "period");
+        String startDate = getString(topLevel, "startDate");
+        String endDate = getString(topLevel, "endDate");
+        String periodLabel = buildPeriodLabel(period, startDate, endDate);
 
         return switch (intentCode) {
-            case "REPORT_INVENTORY" -> formatInventoryReport(data);
-            case "REPORT_PRODUCTION" -> formatProductionReport(data);
-            default -> formatGenericList(data);
+            case "REPORT_INVENTORY" -> formatInventoryReport(data, periodLabel);
+            case "REPORT_PRODUCTION" -> formatProductionReport(data, periodLabel);
+            case "REPORT_FINANCE" -> formatFinanceReport(data, periodLabel);
+            case "REPORT_QUALITY" -> formatQualityReport(data, periodLabel);
+            case "REPORT_EFFICIENCY" -> formatEfficiencyReport(data, periodLabel);
+            case "REPORT_KPI" -> formatKPIReport(data);
+            case "REPORT_DASHBOARD_OVERVIEW" -> formatDashboardReport(data);
+            case "REPORT_ANOMALY" -> formatAnomalyReport(data);
+            case "REPORT_TRENDS" -> formatTrendsReport(data);
+            case "COST_QUERY" -> formatCostQueryResult(topLevel);
+            case "SCHEDULING_LIST" -> formatSchedulingListResult(topLevel);
+            default -> formatReportGeneric(data);
         };
     }
 
-    private String formatInventoryReport(Map<String, Object> data) {
-        StringBuilder sb = new StringBuilder("库存报表：\n\n");
-
-        List<Map<String, Object>> items = getList(data, "items");
-        if (items != null) {
-            for (Map<String, Object> item : items) {
-                String name = getString(item, "materialName");
-                BigDecimal stock = getBigDecimal(item, "currentStock");
-                String unit = getString(item, "unit");
-                sb.append(String.format("• %s：%s %s\n",
-                        name != null ? name : "未知",
-                        stock != null ? QUANTITY_FORMATTER.format(stock) : "?",
-                        unit != null ? unit : ""));
-            }
+    private String buildPeriodLabel(String period, String startDate, String endDate) {
+        if (period == null) return "";
+        String periodName = switch (period) {
+            case "today" -> "今日";
+            case "week" -> "本周";
+            case "month" -> "本月";
+            case "quarter" -> "本季度";
+            case "year" -> "本年";
+            default -> period;
+        };
+        if (startDate != null && endDate != null) {
+            String start = startDate.length() >= 10 ? startDate.substring(5) : startDate;
+            String end = endDate.length() >= 10 ? endDate.substring(5) : endDate;
+            return periodName + " (" + start + " ~ " + end + ")";
         }
+        return periodName;
+    }
+
+    private String formatInventoryReport(Map<String, Object> data, String periodLabel) {
+        StringBuilder sb = new StringBuilder("库存报告");
+        if (!periodLabel.isEmpty()) sb.append(" (").append(periodLabel).append(")");
+        sb.append("\n");
+        boolean hasMetrics = false;
 
         BigDecimal totalValue = getBigDecimal(data, "totalValue");
         if (totalValue != null) {
-            sb.append(String.format("\n库存总价值：¥%s", AMOUNT_FORMATTER.format(totalValue)));
+            sb.append("库存总价值: ¥").append(AMOUNT_FORMATTER.format(totalValue));
+            hasMetrics = true;
         }
 
+        Object typeDist = data.get("typeDistribution");
+        if (typeDist instanceof Map) {
+            Map<?, ?> distMap = (Map<?, ?>) typeDist;
+            if (hasMetrics) sb.append(" | ");
+            sb.append("材料种类: ").append(distMap.size()).append("种");
+            hasMetrics = true;
+        }
+
+        Object lowStockObj = data.get("lowStockItems");
+        if (lowStockObj instanceof List) {
+            List<?> lowStockList = (List<?>) lowStockObj;
+            if (!lowStockList.isEmpty()) {
+                sb.append("\n低库存预警: ").append(lowStockList.size()).append("项");
+                hasMetrics = true;
+            }
+        } else {
+            Integer lowStock = getInteger(data, "lowStockItems");
+            if (lowStock != null && lowStock > 0) {
+                sb.append("\n低库存预警: ").append(lowStock).append("项");
+                hasMetrics = true;
+            }
+        }
+
+        Integer expiring = getInteger(data, "expiringBatches");
+        Integer expired = getInteger(data, "expiredBatches");
+        if ((expiring != null && expiring > 0) || (expired != null && expired > 0)) {
+            sb.append("\n");
+            if (expiring != null && expiring > 0) sb.append("即将过期: ").append(expiring).append("批");
+            if (expired != null && expired > 0) {
+                if (expiring != null && expiring > 0) sb.append(" | ");
+                sb.append("已过期: ").append(expired).append("批");
+            }
+            hasMetrics = true;
+        }
+
+        Integer totalBatches = getInteger(data, "totalBatches");
+        if (totalBatches != null) {
+            sb.append("\n原料批次总数: ").append(totalBatches);
+            hasMetrics = true;
+        }
+
+        if (!hasMetrics) return null;
         return sb.toString();
     }
 
-    private String formatProductionReport(Map<String, Object> data) {
-        StringBuilder sb = new StringBuilder("生产报表：\n");
+    @SuppressWarnings("unchecked")
+    private String formatProductionReport(Map<String, Object> data, String periodLabel) {
+        StringBuilder sb = new StringBuilder("生产报表");
+        if (!periodLabel.isEmpty()) sb.append(" (").append(periodLabel).append(")");
+        sb.append("\n");
+        boolean hasMetrics = false;
+
+        BigDecimal totalOutput = getBigDecimal(data, "totalOutput");
+        if (totalOutput != null) {
+            sb.append("总产量: ").append(QUANTITY_FORMATTER.format(totalOutput)).append(" kg");
+            hasMetrics = true;
+        }
+
+        Object dailyObj = data.get("dailyOutput");
+        if (dailyObj instanceof List) {
+            List<Map<String, Object>> daily = (List<Map<String, Object>>) dailyObj;
+            if (!daily.isEmpty()) {
+                double maxOutput = 0, minOutput = Double.MAX_VALUE;
+                String maxDate = null;
+                for (Map<String, Object> d : daily) {
+                    Double output = getDouble(d, "output");
+                    if (output != null) {
+                        if (output > maxOutput) { maxOutput = output; maxDate = getString(d, "date"); }
+                        if (output < minOutput) minOutput = output;
+                    }
+                }
+                if (maxOutput > 0 && maxDate != null) {
+                    sb.append("\n最高产量: ").append(QUANTITY_FORMATTER.format(maxOutput))
+                      .append(" kg (").append(maxDate.length() >= 10 ? maxDate.substring(5) : maxDate).append(")");
+                }
+                hasMetrics = true;
+            }
+        }
 
         Integer totalBatches = getInteger(data, "totalBatches");
-        BigDecimal totalOutput = getBigDecimal(data, "totalOutput");
-        Double avgEfficiency = getDouble(data, "avgEfficiency");
+        Integer completedBatches = getInteger(data, "completedBatches");
+        if (totalBatches != null) {
+            sb.append("\n批次: ").append(totalBatches);
+            if (completedBatches != null) sb.append(" | 已完成: ").append(completedBatches);
+            hasMetrics = true;
+        }
 
-        if (totalBatches != null) sb.append(String.format("• 生产批次：%d 批\n", totalBatches));
-        if (totalOutput != null) sb.append(String.format("• 总产量：%s\n", QUANTITY_FORMATTER.format(totalOutput)));
-        if (avgEfficiency != null) sb.append(String.format("• 平均效率：%.1f%%", avgEfficiency));
+        Double avgEfficiency = getDouble(data, "averageEfficiency");
+        if (avgEfficiency == null) avgEfficiency = getDouble(data, "avgEfficiency");
+        if (avgEfficiency != null) {
+            sb.append("\n平均效率: ").append(String.format("%.1f%%", avgEfficiency));
+            hasMetrics = true;
+        }
 
+        if (!hasMetrics) {
+            sb.append("暂无生产数据");
+            return sb.toString();
+        }
         return sb.toString();
+    }
+
+    private String formatFinanceReport(Map<String, Object> data, String periodLabel) {
+        StringBuilder sb = new StringBuilder("财务报告");
+        if (!periodLabel.isEmpty()) sb.append(" (").append(periodLabel).append(")");
+        sb.append("\n");
+        boolean hasMetrics = false;
+
+        BigDecimal totalRevenue = getBigDecimal(data, "totalRevenue");
+        BigDecimal totalProfit = getBigDecimal(data, "totalProfit");
+        Double profitMargin = getDouble(data, "profitMargin");
+        BigDecimal materialCost = getBigDecimal(data, "materialCost");
+        BigDecimal laborCost = getBigDecimal(data, "laborCost");
+        BigDecimal equipmentCost = getBigDecimal(data, "equipmentCost");
+        BigDecimal otherCost = getBigDecimal(data, "otherCost");
+
+        if (totalRevenue != null) {
+            sb.append("总收入: ¥").append(AMOUNT_FORMATTER.format(totalRevenue));
+            hasMetrics = true;
+        }
+        if (totalProfit != null) {
+            if (hasMetrics) sb.append(" | ");
+            sb.append("净利润: ¥").append(AMOUNT_FORMATTER.format(totalProfit));
+            hasMetrics = true;
+        }
+        if (profitMargin != null) {
+            sb.append(" | 利润率: ").append(String.format("%.2f%%", profitMargin));
+            hasMetrics = true;
+        }
+        if (materialCost != null || laborCost != null || equipmentCost != null) {
+            sb.append("\n成本构成:");
+            if (materialCost != null) sb.append(" 材料¥").append(AMOUNT_FORMATTER.format(materialCost));
+            if (laborCost != null) sb.append(" | 人工¥").append(AMOUNT_FORMATTER.format(laborCost));
+            if (equipmentCost != null) sb.append(" | 设备¥").append(AMOUNT_FORMATTER.format(equipmentCost));
+            if (otherCost != null) sb.append(" | 其他¥").append(AMOUNT_FORMATTER.format(otherCost));
+            hasMetrics = true;
+        }
+
+        if (!hasMetrics) return null;
+        return sb.toString();
+    }
+
+    private String formatQualityReport(Map<String, Object> data, String periodLabel) {
+        StringBuilder sb = new StringBuilder("质检报告");
+        if (!periodLabel.isEmpty()) sb.append(" (").append(periodLabel).append(")");
+        sb.append("\n");
+        boolean hasMetrics = false;
+
+        Double totalProduction = getDouble(data, "totalProduction");
+        Double qualifiedProduction = getDouble(data, "qualifiedProduction");
+        Double qualityRate = getDouble(data, "qualityRate");
+        Double firstPassRate = getDouble(data, "firstPassRate");
+        Double reworkRate = getDouble(data, "reworkRate");
+
+        if (totalProduction != null) {
+            sb.append("总检测量: ").append(QUANTITY_FORMATTER.format(totalProduction)).append(" kg");
+            hasMetrics = true;
+        }
+        if (qualifiedProduction != null) {
+            sb.append(" | 合格: ").append(QUANTITY_FORMATTER.format(qualifiedProduction)).append(" kg");
+            hasMetrics = true;
+        }
+        if (firstPassRate != null) {
+            sb.append("\n一次通过率: ").append(String.format("%.1f%%", firstPassRate));
+            hasMetrics = true;
+        }
+        if (reworkRate != null) {
+            sb.append(" | 返工率: ").append(String.format("%.1f%%", reworkRate));
+            hasMetrics = true;
+        }
+        if (qualityRate != null) {
+            sb.append(" | 综合合格率: ").append(String.format("%.1f%%", qualityRate));
+            hasMetrics = true;
+        }
+
+        if (!hasMetrics) return null;
+        return sb.toString();
+    }
+
+    private String formatEfficiencyReport(Map<String, Object> data, String periodLabel) {
+        StringBuilder sb = new StringBuilder("效率分析报告");
+        if (!periodLabel.isEmpty()) sb.append(" (").append(periodLabel).append(")");
+        sb.append("\n");
+        boolean hasMetrics = false;
+
+        BigDecimal totalOutput = getBigDecimal(data, "totalOutput");
+        Double oee = getDouble(data, "equipmentOEE");
+        Double avgEff = getDouble(data, "averageEfficiency");
+
+        if (totalOutput != null) {
+            sb.append("总产量: ").append(QUANTITY_FORMATTER.format(totalOutput)).append(" kg");
+            hasMetrics = true;
+        }
+        if (oee != null) {
+            if (hasMetrics) sb.append(" | ");
+            sb.append("设备综合效率(OEE): ").append(String.format("%.1f%%", oee));
+            hasMetrics = true;
+        }
+        if (avgEff != null) {
+            if (hasMetrics) sb.append(" | ");
+            sb.append("平均效率: ").append(String.format("%.1f%%", avgEff));
+            hasMetrics = true;
+        }
+
+        if (!hasMetrics) return null;
+        return sb.toString();
+    }
+
+    private String formatKPIReport(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder("KPI指标报告\n");
+        boolean hasMetrics = false;
+
+        Double prodEff = getDouble(data, "productionEfficiency");
+        Double qualityRate = getDouble(data, "qualityRate");
+        Double deliveryOnTime = getDouble(data, "deliveryOnTime");
+        Double oee = getDouble(data, "equipmentOEE");
+        Double maintenance = getDouble(data, "maintenanceCompliance");
+        Double laborProd = getDouble(data, "laborProductivity");
+
+        if (prodEff != null) { sb.append("生产效率: ").append(String.format("%.1f%%", prodEff)); hasMetrics = true; }
+        if (qualityRate != null) { sb.append(" | 质量合格率: ").append(String.format("%.1f%%", qualityRate)); hasMetrics = true; }
+        if (deliveryOnTime != null) { sb.append(" | 准时交付: ").append(String.format("%.1f%%", deliveryOnTime)); hasMetrics = true; }
+        if (oee != null) { sb.append("\n设备OEE: ").append(String.format("%.1f%%", oee)); hasMetrics = true; }
+        if (maintenance != null) { sb.append(" | 维护达标率: ").append(String.format("%.1f%%", maintenance)); hasMetrics = true; }
+        if (laborProd != null) { sb.append("\n人员生产力: ").append(String.format("%.1f%%", laborProd)); hasMetrics = true; }
+
+        if (!hasMetrics) return null;
+        return sb.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String formatDashboardReport(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder("仪表盘总览\n");
+        boolean hasMetrics = false;
+
+        Object summaryObj = data.get("summary");
+        if (summaryObj instanceof Map) {
+            Map<String, Object> summary = (Map<String, Object>) summaryObj;
+            Integer totalBatches = getInteger(summary, "totalBatches");
+            Integer activeBatches = getInteger(summary, "activeBatches");
+            if (totalBatches != null) {
+                sb.append("生产批次: ").append(totalBatches);
+                if (activeBatches != null) sb.append(" | 进行中: ").append(activeBatches);
+                sb.append("\n");
+                hasMetrics = true;
+            }
+        }
+        Object todayObj = data.get("todayStats");
+        if (todayObj instanceof Map) {
+            Map<String, Object> today = (Map<String, Object>) todayObj;
+            BigDecimal output = getBigDecimal(today, "todayOutputKg");
+            if (output != null) {
+                sb.append("今日产量: ").append(QUANTITY_FORMATTER.format(output)).append(" kg");
+                hasMetrics = true;
+            }
+        }
+
+        if (!hasMetrics) return null;
+        return sb.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String formatAnomalyReport(Map<String, Object> data) {
+        Integer totalAnomalies = getInteger(data, "totalAnomalies");
+        if (totalAnomalies == null) return null;
+
+        StringBuilder sb = new StringBuilder("异常检测报告\n");
+        if (totalAnomalies == 0) {
+            sb.append("未发现异常，生产运行正常");
+        } else {
+            sb.append("发现 ").append(totalAnomalies).append(" 项异常");
+            Object anomaliesObj = data.get("anomalies");
+            if (anomaliesObj instanceof List) {
+                sb.append(":\n");
+                List<Map<String, Object>> anomalies = (List<Map<String, Object>>) anomaliesObj;
+                for (Map<String, Object> anomaly : anomalies) {
+                    String level = getString(anomaly, "level");
+                    String title = getString(anomaly, "title");
+                    String icon = "CRITICAL".equals(level) ? "[严重]" : "WARNING".equals(level) ? "[警告]" : "[提醒]";
+                    sb.append(icon).append(" ").append(title != null ? title : "未知异常").append("\n");
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    @SuppressWarnings("unchecked")
+    private String formatTrendsReport(Map<String, Object> data) {
+        Object trendDataObj = data.get("trendData");
+        if (!(trendDataObj instanceof List)) return null;
+
+        List<Map<String, Object>> trendData = (List<Map<String, Object>>) trendDataObj;
+        if (trendData.isEmpty()) return null;
+
+        StringBuilder sb = new StringBuilder("趋势分析\n");
+        sb.append("数据点: ").append(trendData.size()).append("个");
+        BigDecimal first = getBigDecimal(trendData.get(0), "value");
+        BigDecimal last = getBigDecimal(trendData.get(trendData.size() - 1), "value");
+        if (first != null && last != null) {
+            sb.append(" | 起始: ").append(QUANTITY_FORMATTER.format(first));
+            sb.append(" | 最新: ").append(QUANTITY_FORMATTER.format(last));
+        }
+        return sb.toString();
+    }
+
+    private String formatCostQueryResult(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder("成本分析报告");
+        String period = getString(data, "period");
+        if (period != null) sb.append(" (").append(period).append(")");
+        sb.append("\n");
+
+        String dimension = getString(data, "dimension");
+        if (dimension != null) {
+            String dimLabel = switch (dimension) {
+                case "overall" -> "综合分析";
+                case "trend" -> "趋势分析";
+                case "material" -> "材料成本";
+                case "labor" -> "人工成本";
+                case "equipment" -> "设备成本";
+                default -> dimension;
+            };
+            sb.append("分析维度: ").append(dimLabel).append("\n");
+        }
+
+        Object analysis = data.get("analysis");
+        if (analysis != null) {
+            String text = String.valueOf(analysis).trim();
+            String[] lines = text.split("\n");
+            int addedLines = 0;
+            for (String line : lines) {
+                String trimmed = line.trim();
+                if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith("---")) continue;
+                trimmed = trimmed.replaceAll("\\*\\*", "");
+                if (trimmed.length() > 2) {
+                    sb.append(trimmed.length() > 80 ? trimmed.substring(0, 80) + "..." : trimmed).append("\n");
+                    if (++addedLines >= 3) break;
+                }
+            }
+        }
+        return sb.length() > 20 ? sb.toString() : null;
+    }
+
+    private String formatSchedulingListResult(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder("排班计划");
+        String startDate = getString(data, "startDate");
+        String endDate = getString(data, "endDate");
+        if (startDate != null && endDate != null) {
+            sb.append(" (").append(startDate).append(" ~ ").append(endDate).append(")");
+        }
+        sb.append("\n");
+
+        Integer total = getInteger(data, "totalElements");
+        if (total != null) sb.append("共 ").append(total).append(" 个排班计划\n");
+
+        List<Map<String, Object>> content = getList(data, "content");
+        if (content != null && !content.isEmpty()) {
+            int shown = 0;
+            for (Map<String, Object> plan : content) {
+                if (shown >= 5) break;
+                String name = getString(plan, "planName");
+                String date = getString(plan, "planDate");
+                String status = getString(plan, "status");
+                sb.append(String.format("%d. %s | %s | %s\n", ++shown,
+                        name != null ? name : "-",
+                        date != null ? date : "-",
+                        status != null ? status : "-"));
+            }
+            if (content.size() > 5) sb.append("... 还有 ").append(content.size() - 5).append(" 个");
+        } else {
+            sb.append("当前时间段暂无排班计划");
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Generic report formatter: tries to extract any numeric metrics from the data map.
+     * Returns null if no meaningful data found, allowing the handler's message to pass through.
+     */
+    private String formatReportGeneric(Map<String, Object> data) {
+        StringBuilder sb = new StringBuilder();
+        int metricCount = 0;
+        for (Map.Entry<String, Object> entry : data.entrySet()) {
+            Object val = entry.getValue();
+            if (val instanceof Number && metricCount < 6) {
+                double dval = ((Number) val).doubleValue();
+                if (dval != 0.0) {
+                    if (metricCount > 0) sb.append(" | ");
+                    sb.append(entry.getKey()).append(": ").append(QUANTITY_FORMATTER.format(dval));
+                    metricCount++;
+                }
+            }
+        }
+        if (metricCount > 0) {
+            return sb.toString();
+        }
+        return null;
     }
 
     // ==================== HR 格式化 ====================
@@ -369,7 +797,7 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (data == null) return null;
 
         return switch (intentCode) {
-            case "ATTENDANCE_TODAY", "ATTENDANCE_QUERY" -> formatAttendanceResult(data);
+            case "ATTENDANCE_TODAY", "ATTENDANCE_QUERY", "ATTENDANCE_STATS" -> formatAttendanceResult(data);
             case "WORKER_QUERY" -> formatWorkerList(data);
             default -> formatGenericList(data);
         };
@@ -378,14 +806,24 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
     private String formatAttendanceResult(Map<String, Object> data) {
         StringBuilder sb = new StringBuilder();
 
-        Integer total = getInteger(data, "totalWorkers");
-        Integer present = getInteger(data, "presentCount");
-        Integer absent = getInteger(data, "absentCount");
-        Integer late = getInteger(data, "lateCount");
-        Double attendanceRate = getDouble(data, "attendanceRate");
-        String message = getString(data, "message");
+        // ATTENDANCE_STATS nests data under "metrics"; ATTENDANCE_TODAY uses top-level
+        Map<String, Object> metrics = asMap(data.get("metrics"));
+        Map<String, Object> src = metrics != null ? metrics : data;
 
-        if (message != null) {
+        Integer total = getInteger(src, "totalWorkers");
+        Integer present = getInteger(src, "presentCount");
+        Integer absent = getInteger(src, "absentCount");
+        Integer late = getInteger(src, "lateCount");
+        Double attendanceRate = getDouble(src, "attendanceRate");
+        Integer workingDays = getInteger(src, "workingDays");
+        Integer earlyLeave = getInteger(src, "earlyLeaveCount");
+        String message = getString(data, "message");
+        String startDate = getString(data, "startDate");
+        String endDate = getString(data, "endDate");
+
+        if (startDate != null && endDate != null) {
+            sb.append("考勤统计 (").append(startDate).append(" ~ ").append(endDate).append(")\n\n");
+        } else if (message != null) {
             sb.append(message).append("\n\n");
         } else {
             sb.append("今日出勤情况：\n\n");
@@ -395,6 +833,8 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (present != null) sb.append(String.format("• 实到人数：%d 人\n", present));
         if (absent != null && absent > 0) sb.append(String.format("• 缺勤人数：%d 人\n", absent));
         if (late != null && late > 0) sb.append(String.format("• 迟到人数：%d 人\n", late));
+        if (earlyLeave != null && earlyLeave > 0) sb.append(String.format("• 早退人数：%d 人\n", earlyLeave));
+        if (workingDays != null) sb.append(String.format("• 工作日数：%d 天\n", workingDays));
         if (attendanceRate != null) sb.append(String.format("• 出勤率：%.1f%%", attendanceRate));
 
         return sb.toString();
@@ -428,26 +868,27 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
         if (data == null) return null;
 
         return switch (intentCode) {
-            case "CUSTOMER_ACTIVE", "CUSTOMER_QUERY" -> formatCustomerList(data);
+            case "CUSTOMER_LIST", "CUSTOMER_ACTIVE", "CUSTOMER_QUERY" -> formatCustomerList(data);
             default -> formatGenericList(data);
         };
     }
 
     private String formatCustomerList(Map<String, Object> data) {
         List<Map<String, Object>> content = getList(data, "content");
+        // CRM handler uses "customers" key instead of "content"
+        if (content == null) content = getList(data, "customers");
         Integer total = getInteger(data, "totalElements");
-        String message = getString(data, "message");
+        if (total == null) total = getInteger(data, "total");
 
         if (content == null || content.isEmpty()) {
-            return message != null ? message : "暂无客户信息";
+            if (total != null && total > 0) {
+                return String.format("客户列表查询完成，共 %d 位客户（详情请在客户管理页面查看）", total);
+            }
+            return "客户列表查询完成，暂无客户数据。请先在客户管理中添加客户信息。";
         }
 
         StringBuilder sb = new StringBuilder();
-        if (message != null) {
-            sb.append(message).append("\n\n");
-        } else {
-            sb.append(String.format("查询到 %d 位客户：\n\n", total != null ? total : content.size()));
-        }
+        sb.append(String.format("客户列表（共 %d 位客户）\n\n", total != null ? total : content.size()));
 
         int count = 0;
         for (Map<String, Object> customer : content) {
@@ -465,14 +906,61 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
 
     // ==================== 告警 格式化 ====================
 
+    @SuppressWarnings("unchecked")
     private String formatAlertResult(String intentCode, Object resultData) {
         Map<String, Object> data = asMap(resultData);
         if (data == null) return null;
 
+        return switch (intentCode) {
+            case "ALERT_STATS" -> formatAlertStats(data);
+            default -> formatAlertList(data);
+        };
+    }
+
+    private String formatAlertStats(Map<String, Object> data) {
+        Map<String, Object> stats = asMap(data.get("statistics"));
+        if (stats != null) data = stats;
+
+        Integer total = getInteger(data, "total");
+        if (total == null) return null;
+
+        Integer critical = getInteger(data, "critical");
+        Integer warning = getInteger(data, "warning");
+        Integer resolved = getInteger(data, "resolved");
+        int pending = total - (resolved != null ? resolved : 0);
+
+        StringBuilder sb = new StringBuilder("告警统计\n");
+        sb.append("总计: ").append(total);
+        if (resolved != null) sb.append(" | 已处理: ").append(resolved);
+        sb.append(" | 待处理: ").append(pending);
+
+        if (critical != null && critical > 0) {
+            sb.append("\n紧急告警: ").append(critical).append("条");
+        }
+        if (warning != null && warning > 0) {
+            sb.append(" | 警告: ").append(warning).append("条");
+        }
+
+        if (total > 0 && resolved != null) {
+            double resolveRate = (double) resolved / total * 100;
+            sb.append("\n处理率: ").append(String.format("%.0f%%", resolveRate));
+        }
+
+        return sb.toString();
+    }
+
+    private String formatAlertList(Map<String, Object> data) {
         List<Map<String, Object>> alerts = getList(data, "content");
         if (alerts == null) alerts = getList(data, "alerts");
+        if (alerts == null) alerts = getList(data, "activeAlerts");
+
+        Integer total = getInteger(data, "total");
+        Integer totalActive = getInteger(data, "totalActive");
 
         if (alerts == null || alerts.isEmpty()) {
+            if (total != null && total > 0) {
+                return String.format("共 %d 条告警记录（详情请在告警页面查看）", total);
+            }
             return "当前没有未处理的告警";
         }
 
@@ -489,6 +977,98 @@ public class ResultFormatterServiceImpl implements ResultFormatterService {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    // ==================== 设备 格式化 ====================
+
+    private String formatEquipmentResult(String intentCode, Object resultData) {
+        Map<String, Object> data = asMap(resultData);
+        if (data == null) return null;
+
+        return switch (intentCode) {
+            case "EQUIPMENT_STATUS_QUERY", "EQUIPMENT_STATS" -> formatEquipmentStats(data);
+            case "EQUIPMENT_LIST" -> formatEquipmentList(data);
+            default -> formatEquipmentStats(data);
+        };
+    }
+
+    private String formatEquipmentStats(Map<String, Object> data) {
+        // Handler nests data under "statistics" and "healthAssessment" sub-keys
+        Map<String, Object> stats = asMap(data.get("statistics"));
+        Map<String, Object> health = asMap(data.get("healthAssessment"));
+        Map<String, Object> statusDist = stats != null ? asMap(stats.get("statusDistribution")) : null;
+
+        Integer totalCount = getInteger(data, "totalCount");
+        if (totalCount == null && stats != null) totalCount = getInteger(stats, "totalEquipment");
+        if (totalCount == null && health != null) totalCount = getInteger(health, "totalEquipment");
+
+        Integer runningCount = getInteger(data, "runningCount");
+        if (runningCount == null && statusDist != null) runningCount = getInteger(statusDist, "running");
+
+        Integer idleCount = statusDist != null ? getInteger(statusDist, "idle") : null;
+
+        Integer maintenanceCount = getInteger(data, "maintenanceCount");
+        if (maintenanceCount == null && statusDist != null) maintenanceCount = getInteger(statusDist, "maintenance");
+        if (maintenanceCount == null && health != null) maintenanceCount = getInteger(health, "maintenanceCount");
+
+        Integer faultCount = getInteger(data, "faultCount");
+        String availabilityRate = health != null ? getString(health, "availabilityRate") : null;
+        Double utilizationRate = getDouble(data, "utilizationRate");
+
+        if (totalCount == null && runningCount == null && utilizationRate == null && availabilityRate == null) {
+            return null;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("设备运行统计：\n\n");
+        if (totalCount != null) sb.append(String.format("• 设备总数：%d 台\n", totalCount));
+        if (runningCount != null) sb.append(String.format("• 运行中：%d 台\n", runningCount));
+        if (idleCount != null) sb.append(String.format("• 空闲：%d 台\n", idleCount));
+        if (maintenanceCount != null && maintenanceCount > 0) sb.append(String.format("• 维护中：%d 台\n", maintenanceCount));
+        if (faultCount != null && faultCount > 0) sb.append(String.format("• 故障：%d 台\n", faultCount));
+        if (utilizationRate != null) sb.append(String.format("• 利用率：%.1f%%\n", utilizationRate));
+        if (availabilityRate != null) sb.append(String.format("• 可用率：%s", availabilityRate));
+
+        return sb.toString();
+    }
+
+    private String formatEquipmentList(Map<String, Object> data) {
+        List<Map<String, Object>> equipment = getList(data, "content");
+        if (equipment == null) equipment = getList(data, "equipment");
+
+        if (equipment == null || equipment.isEmpty()) {
+            return "暂无设备信息";
+        }
+
+        StringBuilder sb = new StringBuilder(String.format("查询到 %d 台设备：\n\n", equipment.size()));
+        int count = 0;
+        for (Map<String, Object> eq : equipment) {
+            if (count >= 5) break;
+            String name = getString(eq, "name");
+            if (name == null) name = getString(eq, "equipmentName");
+            String status = getString(eq, "status");
+            String code = getString(eq, "equipmentCode");
+            sb.append(String.format("%d. %s", ++count, name != null ? name : "未知设备"));
+            if (code != null) sb.append(String.format(" (%s)", code));
+            if (status != null) sb.append(String.format(" [%s]", translateEquipmentStatus(status)));
+            sb.append("\n");
+        }
+        if (equipment.size() > 5) {
+            sb.append("... 还有 ").append(equipment.size() - 5).append(" 台");
+        }
+        return sb.toString();
+    }
+
+    private String translateEquipmentStatus(String status) {
+        if (status == null) return "未知";
+        return switch (status.toLowerCase()) {
+            case "running", "active" -> "运行中";
+            case "idle", "inactive" -> "空闲";
+            case "maintenance" -> "维护中";
+            case "fault" -> "故障";
+            case "offline", "scrapped" -> "离线";
+            default -> status;
+        };
     }
 
     // ==================== 通用格式化 ====================

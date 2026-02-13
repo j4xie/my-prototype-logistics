@@ -5,7 +5,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Alert,
 } from 'react-native';
@@ -77,11 +77,11 @@ export default function WhitelistListScreen() {
     ]);
   };
 
-  const filteredData = whitelist.filter(item =>
+  const filteredData = useMemo(() => whitelist.filter(item =>
     item.phoneNumber?.includes(searchQuery) || item.presetRoleName?.includes(searchQuery)
-  );
+  ), [whitelist, searchQuery]);
 
-  const renderItem = ({ item }: { item: WhitelistEntry }) => {
+  const renderItem = useCallback(({ item }: { item: WhitelistEntry }) => {
     const config = WHITELIST_STATUS_CONFIG[item.status] || WHITELIST_STATUS_CONFIG.pending;
     return (
       <Card style={styles.card}>
@@ -99,7 +99,7 @@ export default function WhitelistListScreen() {
         </Card.Content>
       </Card>
     );
-  };
+  }, [t, handleDelete]);
 
   if (loading) return <View style={styles.loading}><ActivityIndicator size="large" color={HR_THEME.primary} /></View>;
 

@@ -8,6 +8,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "react-native-paper";
 import { WarehouseManagerTabParamList } from "../types/navigation";
+import { useFactoryFeatureStore } from "../store/factoryFeatureStore";
 
 // 导入5个Stack导航器
 import WHHomeStackNavigator from "./warehouse/WHHomeStackNavigator";
@@ -25,6 +26,8 @@ const TAB_COLORS = {
 };
 
 export function WarehouseManagerTabNavigator() {
+  const { isScreenEnabled } = useFactoryFeatureStore();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -58,6 +61,7 @@ export function WarehouseManagerTabNavigator() {
       />
 
       {/* 入库Tab */}
+      {isScreenEnabled('InboundManagement') && (
       <Tab.Screen
         name="WHInboundTab"
         component={WHInboundStackNavigator}
@@ -68,8 +72,10 @@ export function WarehouseManagerTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 出货Tab */}
+      {isScreenEnabled('OutboundManagement') && (
       <Tab.Screen
         name="WHOutboundTab"
         component={WHOutboundStackNavigator}
@@ -80,6 +86,7 @@ export function WarehouseManagerTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 库存Tab */}
       <Tab.Screen

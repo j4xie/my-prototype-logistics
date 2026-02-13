@@ -3,7 +3,7 @@
     <el-card class="upload-card">
       <template #header>
         <div class="card-header">
-          <span class="title">📊 智能数据分析</span>
+          <span class="title"><span class="section-badge section-badge--chart"></span> 智能数据分析</span>
           <div class="header-actions">
             <el-select
               v-if="uploadBatches.length > 1"
@@ -15,13 +15,16 @@
               <el-option
                 v-for="(batch, idx) in uploadBatches"
                 :key="idx"
-                :label="`${batch.fileName} (${batch.sheetCount} Sheets)`"
+                :label="formatBatchLabel(batch)"
                 :value="idx"
               >
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span>{{ batch.fileName }}</span>
+                  <span>
+                    <el-tag v-if="isAutoSyncBatch(batch)" size="small" type="success" style="margin-right: 6px;">自动同步</el-tag>
+                    {{ safeBatchName(batch) }}
+                  </span>
                   <span style="color: #909399; font-size: 12px; margin-left: 12px;">
-                    {{ batch.uploadTime }} · {{ batch.sheetCount }} Sheets
+                    {{ batch.uploadTime }} · {{ batch.sheetCount }} 表
                   </span>
                 </div>
               </el-option>
@@ -38,13 +41,31 @@
               <el-icon><DataAnalysis /></el-icon>
               因果分析
             </el-button>
+            <el-button v-if="uploadedSheets.length > 0" @click="openShareDialog" type="default" size="small" plain>
+              <el-icon><Share /></el-icon>
+              分享
+            </el-button>
             <el-button v-if="canUpload && uploadedSheets.length > 0" @click="resetUpload" type="warning" size="small">
               <el-icon><Upload /></el-icon>
               上传新文件
             </el-button>
+            <el-button v-if="uploadedSheets.length > 0" @click="startDemoTour" circle size="small" title="功能引导">
+              <el-icon><QuestionFilled /></el-icon>
+            </el-button>
           </div>
         </div>
       </template>
+
+      <!-- Python 服务降级警告 -->
+      <el-alert
+        v-if="pythonUnavailable"
+        title="AI 分析服务暂时不可用"
+        description="Python SmartBI 服务无法连接，智能图表推荐和 AI 洞察功能暂时禁用。已上传的数据仍可正常查看。"
+        type="warning"
+        :closable="true"
+        show-icon
+        style="margin-bottom: 12px;"
+      />
 
       <!-- 上传/空数据区域 -->
       <div v-if="uploadedSheets.length === 0 && !uploading" class="upload-section">
@@ -89,7 +110,7 @@
           </el-button>
         </template>
         <!-- 只读用户：提示 -->
-        <el-empty v-else description="暂无分析数据，请联系管理员上传 Excel 文件" />
+        <SmartBIEmptyState v-else type="no-upload" @action="() => {}" />
       </div>
 
       <!-- 上传进度 (SSE 流式) -->
@@ -100,7 +121,7 @@
         <!-- 详细进度面板 -->
         <div v-if="sheetProgressList.length > 0" class="sheet-progress-panel">
           <div class="progress-header">
-            <span>📊 Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
+            <span><span class="section-badge section-badge--chart"></span> Sheet 处理进度 ({{ completedSheetCount }}/{{ totalSheetCount }})</span>
             <el-tag v-if="dictionaryHits > 0" type="success" size="small">
               字典命中: {{ dictionaryHits }}
             </el-tag>
@@ -129,14 +150,41 @@
         </div>
       </div>
 
+      <!-- Demo 缓存提示条 -->
+      <div v-if="usingDemoCache && uploadedSheets.length > 0 && !uploading" class="demo-cache-banner">
+        <div class="cache-banner-left">
+          <el-icon><CircleCheckFilled /></el-icon>
+          <span>已从缓存加载「{{ demoCacheFileName }}」的分析结果，无需等待</span>
+        </div>
+        <el-button type="primary" link size="small" @click="refreshFromServer">
+          <el-icon><Refresh /></el-icon>
+          从服务器刷新
+        </el-button>
+      </div>
+
       <!-- 结果展示 -->
-      <div v-if="uploadedSheets.length > 0 && !uploading" class="result-section">
+      <div v-if="uploadedSheets.length > 0 && !uploading" v-loading="batchSwitching" element-loading-text="正在切换数据源..." class="result-section">
         <el-alert
           :title="`成功处理 ${uploadResult.totalSheets} 个 Sheet，共 ${uploadResult.totalSavedRows} 行数据`"
           type="success"
           :closable="false"
           show-icon
         />
+
+        <!-- P1: 食品行业分析模板 -->
+        <div v-if="foodIndustryDetection?.is_food_industry" class="industry-templates-bar">
+          <span class="templates-label">食品行业模板:</span>
+          <el-tag
+            v-for="tpl in foodTemplates"
+            :key="tpl.id"
+            :type="activeTemplate === tpl.id ? 'primary' : 'success'"
+            :effect="activeTemplate === tpl.id ? 'dark' : 'plain'"
+            class="template-chip"
+            @click="applyTemplate(tpl)"
+          >
+            {{ tpl.name }}
+          </el-tag>
+        </div>
 
         <el-tabs v-model="activeTab" class="sheet-tabs">
           <el-tab-pane
@@ -240,8 +288,11 @@
                 />
               </div>
 
-              <!-- KPI 统计卡片 -->
-              <div v-if="sheet.flowResult?.kpiSummary" class="kpi-section">
+              <!-- KPI 统计卡片 — skeleton while enriching, real cards once loaded -->
+              <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.kpiSummary" class="kpi-section">
+                <ChartSkeleton type="kpi" />
+              </div>
+              <div v-else-if="sheet.flowResult?.kpiSummary" class="kpi-section">
                 <div class="kpi-grid">
                   <KPICard
                     v-for="kpi in getSheetKPIs(sheet)"
@@ -251,6 +302,7 @@
                     :unit="kpi.unit"
                     :trend="kpi.trend"
                     :trendValue="kpi.trendValue"
+                    :changeRate="kpi.changeRate"
                     :status="kpi.status"
                     :displayMode="kpi.displayMode"
                     :sparklineData="kpi.sparklineData"
@@ -276,6 +328,21 @@
                       @click="handleRefreshAnalysis(sheet)"
                       style="margin-left: 8px;"
                     >刷新分析</el-button>
+                    <!-- Q2: Auto-refresh dropdown -->
+                    <el-dropdown v-if="hasChartData(sheet)" @command="setAutoRefresh" trigger="click" style="margin-left: 4px;">
+                      <el-button size="small" :type="autoRefreshInterval > 0 ? 'success' : 'default'">
+                        <el-icon><Timer /></el-icon>
+                        {{ autoRefreshInterval > 0 ? `${autoRefreshInterval/1000}s` : '自动' }}
+                      </el-button>
+                      <template #dropdown>
+                        <el-dropdown-menu>
+                          <el-dropdown-item :command="0">关闭自动刷新</el-dropdown-item>
+                          <el-dropdown-item :command="30000">每 30 秒</el-dropdown-item>
+                          <el-dropdown-item :command="60000">每 1 分钟</el-dropdown-item>
+                          <el-dropdown-item :command="300000">每 5 分钟</el-dropdown-item>
+                        </el-dropdown-menu>
+                      </template>
+                    </el-dropdown>
                     <!-- P6: 编排模式切换 -->
                     <el-switch
                       v-if="hasChartData(sheet)"
@@ -287,13 +354,71 @@
                     />
                   </div>
                 </div>
-                <div v-if="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)" class="chart-loading">
-                  <el-icon class="is-loading" :size="32"><Loading /></el-icon>
-                  <p>正在通过 AI 生成图表...</p>
+
+                <!-- Global Filter Bar (Power BI / Tableau style) -->
+                <div v-if="hasChartData(sheet)" class="global-filter-bar">
+                  <el-icon class="filter-bar-icon"><Filter /></el-icon>
+                  <el-select
+                    v-model="globalFilterDimension"
+                    placeholder="维度筛选"
+                    size="small"
+                    clearable
+                    filterable
+                    style="width: 140px"
+                    @change="handleGlobalFilterChange(sheet)"
+                  >
+                    <el-option
+                      v-for="col in getFilterableDimensions(sheet)"
+                      :key="col"
+                      :label="col"
+                      :value="col"
+                    />
+                  </el-select>
+                  <el-select
+                    v-if="globalFilterDimension"
+                    v-model="globalFilterValues"
+                    placeholder="选择值"
+                    size="small"
+                    multiple
+                    filterable
+                    collapse-tags
+                    collapse-tags-tooltip
+                    :max-collapse-tags="2"
+                    style="width: 240px"
+                    @change="handleGlobalFilterApply(sheet)"
+                  >
+                    <el-option
+                      v-for="val in getDimensionValues(sheet, globalFilterDimension)"
+                      :key="val"
+                      :label="val"
+                      :value="val"
+                    />
+                  </el-select>
+                  <el-button
+                    v-if="globalFilterDimension || globalFilterValues.length"
+                    size="small"
+                    type="info"
+                    link
+                    @click="clearGlobalFilter(sheet)"
+                  >清除筛选</el-button>
+                  <span v-if="globalFilterValues.length" class="filter-count-badge">
+                    已筛选 {{ globalFilterValues.length }} 项
+                  </span>
+                  <span v-if="filteredRawData" class="filter-count-badge filter-data-badge">
+                    数据过滤: {{ filteredRowCount }}/{{ totalRowCount }} 行
+                  </span>
                 </div>
 
-                <!-- P6: 编排模式 — DashboardBuilder -->
-                <div v-else-if="layoutEditMode" class="builder-wrapper">
+                <div v-if="enrichingSheets.has(sheet.sheetIndex) && !hasChartData(sheet)" class="chart-skeleton-wrapper">
+                  <div v-if="enrichPhases.get(sheet.sheetIndex)?.chartsTotal" class="chart-progress-hint">
+                    图表加载中 {{ enrichPhases.get(sheet.sheetIndex)?.charts || 0 }}/{{ enrichPhases.get(sheet.sheetIndex)?.chartsTotal }}...
+                  </div>
+                  <ChartSkeleton type="chart" />
+                  <ChartSkeleton type="chart" />
+                </div>
+
+                <!-- P6: 编排模式 — DashboardBuilder (v-show preserves ECharts DOM) -->
+                <div v-show="layoutEditMode && hasChartData(sheet)" class="builder-wrapper">
                   <DashboardBuilder
                     :layout="getCachedLayout(sheet)"
                     :available-charts="availableChartDefinitions"
@@ -308,8 +433,40 @@
                   </DashboardBuilder>
                 </div>
 
-                <!-- 标准模式 -->
-                <div v-else class="chart-dashboard">
+                <!-- 标准模式 (v-show preserves ECharts DOM) -->
+                <div v-show="!layoutEditMode || !hasChartData(sheet)" class="chart-dashboard">
+                  <!-- Chart action bar -->
+                  <div class="chart-action-bar">
+                    <el-button
+                      size="small"
+                      type="primary"
+                      plain
+                      :loading="refreshAllChartsLoading"
+                      @click="handleRefreshAllCharts(sheet)"
+                    >
+                      <el-icon><Refresh /></el-icon>
+                      换一批图表
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="success"
+                      plain
+                      @click="handleExportExcel(sheet)"
+                    >
+                      <el-icon><Download /></el-icon>
+                      导出 Excel
+                    </el-button>
+                    <el-button
+                      size="small"
+                      type="warning"
+                      plain
+                      @click="handleExportPDF(sheet)"
+                    >
+                      <el-icon><Document /></el-icon>
+                      导出 PDF
+                    </el-button>
+                    <span class="chart-count-hint">{{ getSheetCharts(sheet).length }} 个图表</span>
+                  </div>
                   <!-- Cross-chart filter bar -->
                   <div v-if="activeFilter" class="chart-filter-bar">
                     <el-icon><Filter /></el-icon>
@@ -319,17 +476,41 @@
                   <div v-for="(chart, idx) in getSheetCharts(sheet)" :key="idx" class="chart-grid-item">
                     <div class="chart-title-row">
                       <div class="chart-title" style="margin-bottom:0">{{ chart.title || '数据分析' }}</div>
-                      <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)">
-                        <el-button :icon="Download" circle size="small" />
-                        <template #dropdown>
-                          <el-dropdown-menu>
-                            <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
-                            <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
-                          </el-dropdown-menu>
-                        </template>
-                      </el-dropdown>
+                      <div class="chart-controls">
+                        <ChartTypeSelector
+                          :current-type="chart.chartType"
+                          :numeric-columns="getSheetColumns(sheet).filter(c => c.type === 'numeric').map(c => c.name)"
+                          :categorical-columns="getSheetColumns(sheet).filter(c => c.type === 'categorical').map(c => c.name)"
+                          :date-columns="getSheetColumns(sheet).filter(c => c.type === 'date').map(c => c.name)"
+                          :row-count="sheet.flowResult?.kpiSummary?.rowCount || 0"
+                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
+                          @switch-type="(type: string) => handleSwitchChartType(sheet, idx, type)"
+                          @refresh="handleRefreshChart(sheet, idx)"
+                        />
+                        <ChartConfigPanel
+                          :columns="getSheetColumns(sheet)"
+                          :current-config="{ chartType: chart.chartType, xField: chart.xField, yFields: [] }"
+                          :loading="switchingChart?.sheetIndex === sheet.sheetIndex && switchingChart?.chartIndex === idx"
+                          @apply="(config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }) => handleApplyChartConfig(sheet, idx, config)"
+                        />
+                        <el-dropdown class="chart-export-btn" trigger="click" @command="(cmd: string) => handleChartExport(cmd, sheet.sheetIndex, idx, chart.title)">
+                          <el-button :icon="Download" circle size="small" />
+                          <template #dropdown>
+                            <el-dropdown-menu>
+                              <el-dropdown-item command="png">导出 PNG</el-dropdown-item>
+                              <el-dropdown-item command="svg">导出 SVG</el-dropdown-item>
+                            </el-dropdown-menu>
+                          </template>
+                        </el-dropdown>
+                      </div>
                     </div>
                     <div :id="`chart-${sheet.sheetIndex}-${idx}`" class="chart-container"></div>
+                    <!-- P1.3: "查看更多" 按钮 (截断数据时显示) -->
+                    <div v-if="chart.totalItems" class="chart-view-more">
+                      <el-button type="primary" link size="small" @click="handleViewMoreData(sheet, idx, chart)">
+                        查看更多 (共 {{ chart.totalItems }} 项，当前显示 {{ getDisplayedCount(chart) }} 项)
+                      </el-button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -349,7 +530,7 @@
                       <span v-if="kpi.trendValue" class="inline-kpi-trend" :class="kpi.trend">{{ kpi.trendValue }}</span>
                     </div>
                   </div>
-                  <!-- Risk/Opportunity tags -->
+                  <!-- Risk/Opportunity/Sensitivity tags -->
                   <div v-if="getStructuredInsight(sheet)" class="summary-tags">
                     <el-tag v-if="getStructuredInsight(sheet)?.riskAlerts?.length" type="danger" size="small" effect="plain">
                       {{ getStructuredInsight(sheet)!.riskAlerts.length }} 个风险
@@ -357,9 +538,60 @@
                     <el-tag v-if="getStructuredInsight(sheet)?.opportunities?.length" type="success" size="small" effect="plain">
                       {{ getStructuredInsight(sheet)!.opportunities.length }} 个机会
                     </el-tag>
+                    <el-tag v-if="getSensitivityAnalysis(sheet)?.length" type="warning" size="small" effect="plain">
+                      {{ getSensitivityAnalysis(sheet)!.length }} 项敏感性
+                    </el-tag>
                   </div>
                 </div>
               </div>
+
+              <!-- A6: 食品行业标准参考面板 -->
+              <el-collapse v-if="foodIndustryDetection?.is_food_industry && enrichedSheets.has(sheet.sheetIndex)" class="food-industry-panel">
+                <el-collapse-item>
+                  <template #title>
+                    <div class="food-industry-header">
+                      <el-tag type="success" size="small" effect="dark" style="margin-right: 8px;">
+                        食品行业
+                      </el-tag>
+                      <span>食品行业标准参考</span>
+                      <el-tag v-if="foodIndustryDetection.confidence > 0.5" type="info" size="small" style="margin-left: 8px;">
+                        置信度 {{ (foodIndustryDetection.confidence * 100).toFixed(0) }}%
+                      </el-tag>
+                    </div>
+                  </template>
+                  <div class="food-standards-content">
+                    <div v-if="foodIndustryDetection.suggested_standards?.length" class="standards-section">
+                      <h4>相关食品安全标准</h4>
+                      <ul>
+                        <li v-for="std in foodIndustryDetection.suggested_standards" :key="std">{{ std }}</li>
+                      </ul>
+                    </div>
+                    <div v-if="foodIndustryDetection.suggested_benchmarks?.length" class="benchmarks-section">
+                      <h4>建议对标指标</h4>
+                      <el-tag
+                        v-for="bm in foodIndustryDetection.suggested_benchmarks"
+                        :key="bm"
+                        size="small"
+                        type="info"
+                        style="margin: 2px 4px;"
+                      >
+                        {{ bm.replace(/_/g, ' ') }}
+                      </el-tag>
+                    </div>
+                    <div v-if="foodIndustryDetection.matched_keywords?.length" class="keywords-section">
+                      <h4>匹配关键词</h4>
+                      <el-tag
+                        v-for="kw in foodIndustryDetection.matched_keywords.slice(0, 10)"
+                        :key="kw"
+                        size="small"
+                        style="margin: 2px 4px;"
+                      >
+                        {{ kw }}
+                      </el-tag>
+                    </div>
+                  </div>
+                </el-collapse-item>
+              </el-collapse>
 
               <!-- AI 分析 -->
               <div v-if="sheet.flowResult?.aiAnalysis || sheet.flowResult?.chartConfig?.aiAnalysis || enrichingSheets.has(sheet.sheetIndex)" class="ai-analysis-section">
@@ -372,10 +604,9 @@
 
                 <!-- 回退：纯文本展示 -->
                 <template v-else>
-                  <h3>🤖 AI 智能分析</h3>
-                  <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis" class="chart-loading">
-                    <el-icon class="is-loading" :size="24"><Loading /></el-icon>
-                    <p>正在生成 AI 分析洞察...</p>
+                  <h3><span class="section-badge section-badge--ai"></span> AI 智能分析</h3>
+                  <div v-if="enrichingSheets.has(sheet.sheetIndex) && !sheet.flowResult?.aiAnalysis">
+                    <ChartSkeleton type="ai" />
                   </div>
                   <el-card v-else shadow="never" class="analysis-card">
                     <div class="analysis-content" v-html="formatAnalysis(getAIAnalysis(sheet))"></div>
@@ -385,6 +616,25 @@
                 <div v-if="getCacheHint(sheet)" class="cache-hint">
                   {{ getCacheHint(sheet) }}
                 </div>
+              </div>
+
+              <!-- 敏感性分析 -->
+              <div v-if="getSensitivityAnalysis(sheet)?.length" class="sensitivity-analysis-section">
+                <h4 style="margin: 16px 0 8px; color: var(--el-text-color-primary); font-size: 14px;">
+                  <el-icon style="margin-right: 4px; vertical-align: middle;"><Warning /></el-icon>
+                  关键驱动因素敏感性分析
+                </h4>
+                <el-table
+                  :data="getSensitivityAnalysis(sheet)"
+                  size="small"
+                  stripe
+                  :border="false"
+                  style="width: 100%;"
+                >
+                  <el-table-column prop="factor" label="驱动因素" min-width="120" />
+                  <el-table-column prop="current_value" label="当前值" min-width="100" />
+                  <el-table-column prop="impact_description" label="变动影响" min-width="240" />
+                </el-table>
               </div>
 
               <!-- 无数据提示 -->
@@ -398,7 +648,7 @@
 
               <!-- 数据预览 -->
               <div v-else class="data-preview-section">
-                <h3>📋 数据预览</h3>
+                <h3><span class="section-badge section-badge--data"></span> 数据预览</h3>
                 <el-button @click="loadSheetData(sheet)" type="primary" size="small">
                   查看原始数据
                 </el-button>
@@ -501,6 +751,45 @@
 
     <el-empty v-else description="暂无分析结果" />
   </el-drawer>
+
+  <!-- 分享链接对话框 -->
+  <el-dialog v-model="shareDialogVisible" title="分享分析报告" width="500px">
+    <div v-if="!shareLink" style="text-align: center; padding: 20px;">
+      <p style="margin-bottom: 16px; color: #606266;">生成公开链接，无需登录即可查看分析报告</p>
+      <el-form label-width="80px" style="max-width: 380px; margin: 0 auto;">
+        <el-form-item label="标题">
+          <el-input v-model="shareTitle" placeholder="分析报告标题" />
+        </el-form-item>
+        <el-form-item label="有效期">
+          <el-select v-model="shareTTL" style="width: 100%">
+            <el-option :value="1" label="1 天" />
+            <el-option :value="7" label="7 天" />
+            <el-option :value="30" label="30 天" />
+            <el-option :value="90" label="90 天" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <el-button type="primary" @click="createShareLink" :loading="shareCreating">
+        <el-icon><Link /></el-icon> 生成分享链接
+      </el-button>
+    </div>
+    <div v-else style="text-align: center; padding: 20px;">
+      <el-result icon="success" title="分享链接已生成" sub-title="复制链接发送给他人即可查看">
+        <template #extra>
+          <el-input v-model="shareFullUrl" readonly style="margin-bottom: 12px;">
+            <template #append>
+              <el-button @click="copyShareLink">
+                <el-icon><CopyDocument /></el-icon>
+              </el-button>
+            </template>
+          </el-input>
+          <div style="color: #909399; font-size: 12px;">
+            有效期 {{ shareTTL }} 天 · 到期自动失效
+          </div>
+        </template>
+      </el-result>
+    </div>
+  </el-dialog>
 
   <!-- 综合分析对话框 -->
   <el-dialog v-model="crossSheetVisible" title="全 Sheet 综合分析" width="90%" top="3vh" fullscreen>
@@ -728,26 +1017,48 @@
       </div>
     </div>
   </el-dialog>
+
+  <!-- Demo 演示引导 -->
+  <DemoTour
+    ref="demoTourRef"
+    :data-ready="tourDataReady"
+  />
+
+  <!-- Q5: Keyboard shortcuts help overlay -->
+  <ShortcutsHelpOverlay :visible="showShortcutsHelp" :shortcuts="shortcutsList" @close="showShortcutsHelp = false" />
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'SmartBIAnalysis' });
 import { ref, reactive, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { usePermissionStore } from '@/store/modules/permission';
 import { post } from '@/api/request';
-import { getUploadTableData, getUploadHistory, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload } from '@/api/smartbi';
-import type { UploadHistoryItem, EnrichResult, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult } from '@/api/smartbi';
+import { getUploadTableData, getUploadHistory, enrichSheetAnalysis, getSmartKPIs, chartDrillDown, crossSheetAnalysis, yoyComparison, renameMeaninglessColumns, statisticalAnalysis, invalidateAnalysisCache, retrySheetUpload, smartRecommendChart, buildChart, checkPythonHealth, humanizeColumnName, FOOD_TEMPLATES, mapColumnsToTemplate, detectFoodIndustryLocal } from '@/api/smartbi';
+import type { FoodTemplate } from '@/api/smartbi';
+import type { UploadHistoryItem, EnrichResult, EnrichProgress, ColumnSummary, StructuredAIData, SmartKPI, DrillDownResult as DrillDownResultType, CrossSheetResult as CrossSheetResultType, FinancialMetrics, YoYResult, YoYComparisonItem, StatisticalResult, PythonHealthStatus } from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
-import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, WarningFilled } from '@element-plus/icons-vue';
+import { UploadFilled, Upload, Refresh, CircleCheckFilled, CircleCloseFilled, Loading, List, Document, Tickets, InfoFilled, ArrowRight, Pointer, DataAnalysis, TrendCharts, Download, Filter, Warning, WarningFilled, QuestionFilled, Share, CopyDocument, Link, Timer } from '@element-plus/icons-vue';
 import type { UploadFile, UploadUserFile, UploadInstance } from 'element-plus';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
+import { defineAsyncComponent } from 'vue';
 import KPICard from '@/components/smartbi/KPICard.vue';
 import AIInsightPanel from '@/components/smartbi/AIInsightPanel.vue';
-import YoYMoMComparisonChart from '@/components/smartbi/YoYMoMComparisonChart.vue';
-import DashboardBuilder from '@/components/smartbi/DashboardBuilder.vue';
+import ChartSkeleton from '@/components/smartbi/ChartSkeleton.vue';
+// T3.1: Lazy-load rarely-used components — only loaded when user triggers them
+const YoYMoMComparisonChart = defineAsyncComponent(() => import('@/components/smartbi/YoYMoMComparisonChart.vue'));
+const ChartTypeSelector = defineAsyncComponent(() => import('@/components/smartbi/ChartTypeSelector.vue'));
+const ChartConfigPanel = defineAsyncComponent(() => import('@/components/smartbi/ChartConfigPanel.vue'));
+const DashboardBuilder = defineAsyncComponent(() => import('@/components/smartbi/DashboardBuilder.vue'));
+const DemoTour = defineAsyncComponent(() => import('@/components/smartbi/DemoTour.vue'));
+const SmartBIEmptyState = defineAsyncComponent(() => import('@/components/smartbi/SmartBIEmptyState.vue'));
+const ShortcutsHelpOverlay = defineAsyncComponent(() => import('@/components/smartbi/ShortcutsHelpOverlay.vue'));
 import type { DashboardLayout, DashboardCard, ChartDefinition } from '@/components/smartbi/DashboardBuilder.vue';
 import type { ComparisonData } from '@/components/smartbi/YoYMoMComparisonChart.vue';
 import type { AIInsight } from '@/components/smartbi/AIInsightPanel.vue';
+import { saveDemoCache, loadDemoCache } from '@/utils/demo-cache';
+import type { DemoCacheData } from '@/utils/demo-cache';
+import { useSmartBIShortcuts } from '@/composables/useSmartBIShortcuts';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -761,10 +1072,46 @@ interface UploadBatch {
   sheetCount: number;
   totalRows: number;
   uploads: UploadHistoryItem[];
+  uploadId?: number;
+  id?: number;
 }
 const uploadBatches = ref<UploadBatch[]>([]);
 const selectedBatchIndex = ref<number>(0);
 const historyLoading = ref(false);
+const batchSwitching = ref(false);  // U6: loading feedback when switching data source
+
+// Python 服务健康状态
+const pythonHealthStatus = ref<PythonHealthStatus | null>(null);
+const pythonUnavailable = computed(() => {
+  if (!pythonHealthStatus.value) return false;
+  return !pythonHealthStatus.value.available;
+});
+
+/** Null-safe batch file name — fallback chain handles null/undefined from API or cache */
+const safeBatchName = (batch: UploadBatch): string => {
+  const candidates = [
+    batch.fileName,
+    (batch as Record<string, unknown>).batchName as string | undefined,
+    (batch as Record<string, unknown>).originalFileName as string | undefined,
+  ];
+  for (const name of candidates) {
+    if (name && name !== 'null' && name !== 'undefined' && name.trim() !== '') return name;
+  }
+  // Last resort: generate from upload time or batch id
+  if (batch.uploadTime) return `Excel_${batch.uploadTime.replace(/[- :]/g, '')}`;
+  const batchId = (batch as Record<string, unknown>).uploadId ?? (batch as Record<string, unknown>).id;
+  return batchId ? `Upload #${batchId}` : 'Excel数据';
+};
+/** 判断批次是否来自自动同步 (detectedTableType === 'AUTO_PRODUCTION') */
+const isAutoSyncBatch = (batch: UploadBatch): boolean => {
+  return batch.uploads.some(u => u.tableType === 'AUTO_PRODUCTION');
+};
+
+/** Formatted label for dropdown: "[自动同步] 文件名 (N 表)" or "文件名 (N 表)" */
+const formatBatchLabel = (batch: UploadBatch): string => {
+  const prefix = isAutoSyncBatch(batch) ? '[自动同步] ' : '';
+  return `${prefix}${safeBatchName(batch)} (${batch.sheetCount} 表)`;
+};
 
 // 上传相关
 const uploadRef = ref<UploadInstance>();
@@ -789,7 +1136,7 @@ interface SheetResult {
     chartConfig?: any;
     aiAnalysis?: string;
     recommendedTemplates?: any[];
-    charts?: Array<{ chartType: string; title: string; config: Record<string, unknown> }>;
+    charts?: Array<{ chartType: string; title: string; config: Record<string, unknown>; totalItems?: number }>;
     kpiSummary?: { rowCount: number; columnCount: number; columns: ColumnSummary[] };
     structuredAI?: StructuredAIData;
   };
@@ -840,10 +1187,32 @@ const retryingSheets = reactive<Record<number, boolean>>({});
 // Enrichment 状态 (前端驱动的图表/AI补充)
 const enrichingSheets = ref<Set<number>>(new Set());
 const enrichedSheets = ref<Set<number>>(new Set());
+// P0: Progressive rendering phase tracking
+interface EnrichPhaseState {
+  kpi: boolean;
+  charts: number;       // count of charts loaded so far
+  chartsTotal: number;  // expected total charts
+  ai: boolean;
+}
+const enrichPhases = ref<Map<number, EnrichPhaseState>>(new Map());
 // R-21: 缓存 enrichment 获取的原始数据，避免 drill-down 重复请求
 const sheetRawDataCache = new Map<number, Record<string, unknown>[]>();
 // 缓存时间戳：uploadId → cachedAt ISO string
 const cachedAtMap = ref<Map<number, string>>(new Map());
+
+// A6: 食品行业检测结果
+const foodIndustryDetection = ref<{
+  is_food_industry: boolean;
+  confidence: number;
+  detected_categories: string[];
+  matched_keywords: string[];
+  suggested_benchmarks: string[];
+  suggested_standards: string[];
+} | null>(null);
+
+// P1: 食品行业模板
+const foodTemplates = FOOD_TEMPLATES;
+const activeTemplate = ref<string>('');
 
 // 下钻分析状态
 const drillDownVisible = ref(false);
@@ -864,7 +1233,84 @@ interface DrillLevel {
 const drillStack = ref<DrillLevel[]>([]);
 const currentDrillSheet = ref<SheetResult | null>(null);
 
+// Global filter state
+const globalFilterDimension = ref('');
+const globalFilterValues = ref<string[]>([]);
+
+// Q1: Data filtering state
+const filteredRawData = ref<Record<string, any>[] | null>(null);
+const totalRowCount = ref(0);
+const filteredRowCount = ref(0);
+
+// Q2: Auto-refresh state
+const autoRefreshInterval = ref<number>(0);
+let autoRefreshTimer: ReturnType<typeof setInterval> | null = null;
+
 // 综合分析状态
+// ========== Share Dialog ==========
+const shareDialogVisible = ref(false);
+const shareLink = ref('');
+const shareFullUrl = ref('');
+const shareTitle = ref('');
+const shareTTL = ref(7);
+const shareCreating = ref(false);
+
+const openShareDialog = () => {
+  shareLink.value = '';
+  shareFullUrl.value = '';
+  const batch = uploadBatches.value[selectedBatchIndex.value];
+  shareTitle.value = batch?.fileName || batch?.batchName || '数据分析报告';
+  shareTTL.value = 7;
+  shareDialogVisible.value = true;
+};
+
+const createShareLink = async () => {
+  const batch = uploadBatches.value[selectedBatchIndex.value];
+  if (!batch?.uploadId && !batch?.id) {
+    ElMessage.warning('请先选择一个上传数据');
+    return;
+  }
+  shareCreating.value = true;
+  try {
+    const fId = factoryId.value || 'F001';
+    const uploadId = batch.uploadId || batch.id;
+    const resp = await post(`/${fId}/smart-bi/share`, {
+      uploadId,
+      title: shareTitle.value,
+      ttlDays: shareTTL.value,
+      sheetIndex: activeTab.value,
+    });
+    if (resp.success) {
+      const token = resp.data.token;
+      shareLink.value = token;
+      shareFullUrl.value = `${window.location.origin}/smart-bi/share/${token}`;
+    } else {
+      ElMessage.error(resp.message || '创建分享链接失败');
+    }
+  } catch (e: unknown) {
+    ElMessage.error('创建分享链接失败');
+    console.error('Share link creation failed:', e);
+  } finally {
+    shareCreating.value = false;
+  }
+};
+
+const copyShareLink = async () => {
+  try {
+    await navigator.clipboard.writeText(shareFullUrl.value);
+    ElMessage.success('链接已复制到剪贴板');
+  } catch {
+    // Fallback for older browsers
+    const input = document.createElement('input');
+    input.value = shareFullUrl.value;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    ElMessage.success('链接已复制');
+  }
+};
+
 const crossSheetVisible = ref(false);
 const crossSheetLoading = ref(false);
 const crossSheetResult = ref<CrossSheetResultType | null>(null);
@@ -991,6 +1437,136 @@ const loadSavedLayout = (uploadId: number): DashboardLayout | null => {
   }
 };
 
+// ========== Demo 缓存 & Tour 引导 ==========
+const usingDemoCache = ref(false);
+const demoCacheFileName = ref('');
+const demoTourRef = ref<InstanceType<typeof DemoTour> | null>(null);
+const tourDataReady = ref(false);
+
+// (DemoTour 通过 CSS 选择器自动定位目标元素，无需手动传 ref)
+
+/** 构建 DemoCacheData 用于保存 */
+const buildDemoCacheData = (): DemoCacheData | null => {
+  if (uploadedSheets.value.length === 0 || !uploadResult.value) return null;
+  const batch = uploadBatches.value[selectedBatchIndex.value];
+  return {
+    uploadBatch: {
+      fileName: batch ? safeBatchName(batch) : 'unknown',
+      uploadTime: batch?.uploadTime || new Date().toISOString(),
+      sheetCount: uploadedSheets.value.length,
+      totalRows: uploadResult.value.totalSavedRows,
+    },
+    sheets: uploadedSheets.value.map(s => ({
+      sheetIndex: s.sheetIndex,
+      sheetName: s.sheetName,
+      success: s.success,
+      message: s.message,
+      detectedDataType: s.detectedDataType,
+      savedRows: s.savedRows,
+      uploadId: s.uploadId,
+      tableType: s.tableType,
+      flowResult: s.flowResult ? {
+        recommendedChartType: s.flowResult.recommendedChartType,
+        chartConfig: s.flowResult.chartConfig,
+        aiAnalysis: s.flowResult.aiAnalysis,
+        charts: s.flowResult.charts,
+        kpiSummary: s.flowResult.kpiSummary,
+        structuredAI: s.flowResult.structuredAI,
+        financialMetrics: (s.flowResult as any).financialMetrics,
+      } : undefined,
+    })),
+    uploadResult: {
+      totalSheets: uploadResult.value.totalSheets,
+      successCount: uploadResult.value.successCount,
+      failedCount: uploadResult.value.failedCount,
+      requiresConfirmationCount: uploadResult.value.requiresConfirmationCount,
+      totalSavedRows: uploadResult.value.totalSavedRows,
+      message: uploadResult.value.message,
+    },
+    indexMetadata: indexMetadata.value || undefined,
+  };
+};
+
+/** 检查当前数据是否 "enrichment 完成" (至少一半 sheet 有图表) 并自动缓存 */
+const tryAutoSaveDemoCache = () => {
+  const dataSheetList = uploadedSheets.value.filter(s => !isIndexSheet(s) && s.success);
+  if (dataSheetList.length === 0) return;
+  const enrichedCount = dataSheetList.filter(s => hasChartData(s) && s.flowResult?.aiAnalysis).length;
+  // 至少一半的 sheet 完成了 enrichment 才缓存
+  if (enrichedCount < Math.ceil(dataSheetList.length / 2)) return;
+
+  const firstUploadId = uploadedSheets.value.find(s => s.uploadId)?.uploadId;
+  if (!firstUploadId) return;
+
+  const cacheData = buildDemoCacheData();
+  if (cacheData) {
+    saveDemoCache(firstUploadId, cacheData);
+  }
+};
+
+/** 从缓存恢复数据 */
+const restoreFromDemoCache = (): boolean => {
+  const cached = loadDemoCache();
+  if (!cached) return false;
+
+  // 恢复 sheets
+  uploadedSheets.value = cached.sheets.map(s => ({
+    ...s,
+    tableType: s.tableType as SheetResult['tableType'],
+  }));
+
+  // 恢复 uploadResult
+  uploadResult.value = {
+    ...cached.uploadResult,
+    results: uploadedSheets.value,
+  };
+
+  // 恢复 indexMetadata
+  if (cached.indexMetadata) {
+    indexMetadata.value = cached.indexMetadata;
+  }
+
+  // 恢复批次信息
+  uploadBatches.value = [{
+    fileName: cached.uploadBatch.fileName,
+    uploadTime: cached.uploadBatch.uploadTime,
+    sheetCount: cached.uploadBatch.sheetCount,
+    totalRows: cached.uploadBatch.totalRows,
+    uploadId: cached.uploadId,
+    id: cached.uploadId,
+    uploads: [] as UploadHistoryItem[],
+  }];
+  selectedBatchIndex.value = 0;
+
+  // 设置 active tab
+  const firstSuccess = uploadedSheets.value.find(s => s.success && !isIndexSheet(s as SheetResult));
+  activeTab.value = String((firstSuccess || uploadedSheets.value[0]).sheetIndex);
+
+  usingDemoCache.value = true;
+  demoCacheFileName.value = cached.uploadBatch.fileName;
+
+  return true;
+};
+
+/** 重新触发 Tour 引导 */
+const startDemoTour = () => {
+  demoTourRef.value?.startTour();
+};
+
+/** 刷新数据 (清除缓存，重新从服务器加载) */
+const refreshFromServer = () => {
+  usingDemoCache.value = false;
+  demoCacheFileName.value = '';
+  uploadedSheets.value = [];
+  uploadResult.value = null;
+  enrichedSheets.value = new Set();
+  enrichingSheets.value = new Set();
+  enrichPhases.value = new Map();
+  activeTab.value = '';
+  tourDataReady.value = false;
+  loadHistory();
+};
+
 // ========== Cross-chart filter state (Phase 3.4) ==========
 const activeFilter = ref<{ dimension: string; value: string } | null>(null);
 
@@ -998,7 +1574,7 @@ const activeFilter = ref<{ dimension: string; value: string } | null>(null);
 let renderDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 // 获取 Sheet 的所有图表（多图表优先，单图表兼容）
-const getSheetCharts = (sheet: SheetResult): Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string }> => {
+const getSheetCharts = (sheet: SheetResult): Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string; totalItems?: number }> => {
   if (sheet.flowResult?.charts?.length) return sheet.flowResult.charts;
   if (sheet.flowResult?.chartConfig) return [{ chartType: 'bar', title: '数据分析', config: sheet.flowResult.chartConfig }];
   return [];
@@ -1093,6 +1669,11 @@ const getStructuredInsight = (sheet: SheetResult): AIInsight | null => {
     suggestions: { title: '改进建议', items: suggestions },
     generatedAt: new Date().toISOString()
   };
+};
+
+// 获取敏感性分析数据
+const getSensitivityAnalysis = (sheet: SheetResult): Array<{ factor: string; current_value: string; impact_description: string }> | undefined => {
+  return sheet.flowResult?.structuredAI?.sensitivityAnalysis;
 };
 
 // 获取 Sheet 显示名称（优先使用索引页的报表名）
@@ -1377,15 +1958,7 @@ const handleSSEEvent = (event: any) => {
     // 捕获索引元数据
     if (result.indexMetadata) {
       indexMetadata.value = result.indexMetadata;
-      console.log('=== INDEX METADATA ===');
-      console.log('indexMetadata:', JSON.stringify(result.indexMetadata, null, 2));
     }
-
-    // DEBUG: 打印返回数据
-    console.log('=== COMPLETE EVENT ===');
-    console.log('uploadedSheets:', JSON.stringify(uploadedSheets.value, null, 2));
-    console.log('First sheet flowResult:', uploadedSheets.value[0]?.flowResult);
-    console.log('First sheet chartConfig:', uploadedSheets.value[0]?.flowResult?.chartConfig);
 
     if (uploadedSheets.value.length > 0) {
       // Prefer first successful sheet as active tab
@@ -1502,96 +2075,348 @@ const applyAnomalyOverlay = (opts: Record<string, unknown>, anomalies: Record<st
   }
 };
 
-// P1: 图表轴标签万/亿自动格式化
-// 从 Python chart_builder 的 yAxis.name (如 " (万)") 中提取量级，注入 axisLabel.formatter
+// 综合图表增强：DataZoom + 标签自适应 + 近零值 + 零值标签隐藏 + 图例人性化 + 离群值 + 万/亿格式化
 const enhanceChartOption = (opts: Record<string, unknown>): void => {
-  // Helper: extract max absolute value from all series data
-  const getSeriesMaxValue = (o: Record<string, unknown>): number => {
+  // Helper: extract all numeric values from series data
+  const getSeriesStats = (o: Record<string, unknown>): { max: number; min: number; count: number; nonZeroMin: number; zeroCount: number; median: number } => {
     const series = (o as any).series;
-    if (!Array.isArray(series)) return 0;
-    let maxVal = 0;
+    if (!Array.isArray(series)) return { max: 0, min: 0, count: 0, nonZeroMin: Infinity, zeroCount: 0, median: 0 };
+    let maxVal = 0, minVal = Infinity, count = 0, nonZeroMin = Infinity, zeroCount = 0;
+    const allValues: number[] = [];
     for (const s of series) {
       const data = s?.data;
       if (!Array.isArray(data)) continue;
       for (const d of data) {
-        const v = typeof d === 'number' ? Math.abs(d) : (Array.isArray(d) ? Math.abs(Number(d[1]) || 0) : Math.abs(Number(d?.value) || 0));
-        if (v > maxVal) maxVal = v;
+        const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number(d?.value) || 0);
+        const abs = Math.abs(v);
+        allValues.push(abs);
+        if (abs > maxVal) maxVal = abs;
+        if (abs < minVal) minVal = abs;
+        if (abs > 0 && abs < nonZeroMin) nonZeroMin = abs;
+        if (v === 0) zeroCount++;
+        count++;
       }
     }
-    return maxVal;
+    // Compute median for outlier detection
+    allValues.sort((a, b) => a - b);
+    const median = allValues.length > 0 ? allValues[Math.floor(allValues.length / 2)] : 0;
+    return { max: maxVal, min: minVal, count, nonZeroMin, zeroCount, median };
   };
 
+  const stats = getSeriesStats(opts);
+  const xAxis = (opts as any).xAxis;
   const yAxis = (opts as any).yAxis;
-  if (!yAxis || typeof yAxis.name !== 'string') return;
+  const series = (opts as any).series;
+  const chartType = Array.isArray(series) ? series[0]?.type : '';
 
-  // Parse suffix: " (万)" or " (亿)"
-  const match = yAxis.name.match(/\(([万亿])\)/);
-  if (!match) return;
-
-  const suffix = match[1];
-  const divisor = suffix === '亿' ? 1e8 : 1e4;
-
-  // Skip division if data values suggest they're already in 万/亿 units.
-  // If suffix is 万 and maxVal < 10000, data is likely already scaled (e.g., 100万 = real 100).
-  // If suffix is 亿 and maxVal < 10000, same logic. Only divide raw values (>= 10000).
-  const seriesMax = getSeriesMaxValue(opts);
-  const shouldDivide = seriesMax >= 1e4;
-
-  yAxis.axisLabel = yAxis.axisLabel || {};
-  if (!yAxis.axisLabel.formatter) {
-    yAxis.axisLabel.formatter = (value: number) => {
-      if (value === 0) return '0';
-      if (!shouldDivide) {
-        return Number.isInteger(value) ? `${value}${suffix}` : `${value.toFixed(1)}${suffix}`;
+  // === D2: 图例名称人性化 ===
+  if (Array.isArray(series)) {
+    for (const s of series) {
+      if (s.name && typeof s.name === 'string') {
+        s.name = humanizeColumnName(s.name);
       }
-      const scaled = value / divisor;
-      return Number.isInteger(scaled) ? `${scaled}${suffix}` : `${scaled.toFixed(1)}${suffix}`;
+    }
+  }
+  // Legend data humanization
+  const legend = (opts as any).legend;
+  if (legend && Array.isArray(legend.data)) {
+    legend.data = legend.data.map((item: any) => {
+      if (typeof item === 'string') return humanizeColumnName(item);
+      if (item && typeof item.name === 'string') {
+        item.name = humanizeColumnName(item.name);
+        return item;
+      }
+      return item;
+    });
+  }
+
+  // === P1.1: 食品行业语义配色 ===
+  if (Array.isArray(series) && chartType !== 'pie') {
+    const semanticColorMap: Array<{ pattern: RegExp; colors: string[] }> = [
+      { pattern: /收入|营收|销售额|revenue/i, colors: ['#52c41a', '#73d13d'] },
+      { pattern: /成本|费用|支出|cost|expense/i, colors: ['#ff4d4f', '#ff7875'] },
+      { pattern: /利润|净利|毛利|profit/i, colors: ['#1890ff', '#40a9ff'] },
+      { pattern: /率|比例|占比|ratio|margin|rate/i, colors: ['#722ed1', '#9254de'] },
+    ];
+    for (const s of series) {
+      if (!s.name || typeof s.name !== 'string') continue;
+      if (s.itemStyle?.color) continue; // Don't override explicit colors
+      for (const rule of semanticColorMap) {
+        if (rule.pattern.test(s.name)) {
+          s.itemStyle = s.itemStyle || {};
+          s.itemStyle.color = rule.colors[0];
+          if (s.lineStyle) s.lineStyle.color = rule.colors[0];
+          if (s.areaStyle) {
+            s.areaStyle.color = {
+              type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+              colorStops: [
+                { offset: 0, color: rule.colors[0] + '40' },
+                { offset: 1, color: rule.colors[0] + '08' },
+              ]
+            };
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  // === DataZoom — 数据量>30时自动启用 slider+inside ===
+  if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data) && xAxis.data.length > 30) {
+    const dataLen = xAxis.data.length;
+    const endPercent = Math.min(100, Math.round((25 / dataLen) * 100));
+    if (!(opts as any).dataZoom) {
+      (opts as any).dataZoom = [
+        { type: 'slider', show: true, xAxisIndex: 0, start: 0, end: endPercent, height: 20, bottom: 8 },
+        { type: 'inside', xAxisIndex: 0, start: 0, end: endPercent }
+      ];
+      const grid = (opts as any).grid || {};
+      const curBottom = typeof grid.bottom === 'number' ? grid.bottom : 50;
+      grid.bottom = Math.max(curBottom, 60);
+      (opts as any).grid = grid;
+    }
+  }
+
+  // === X轴标签自适应 — interval + rotate + formatter截断 ===
+  if (xAxis && xAxis.type === 'category' && Array.isArray(xAxis.data)) {
+    const dataLen = xAxis.data.length;
+    xAxis.axisLabel = xAxis.axisLabel || {};
+    if (dataLen > 15 && !xAxis.axisLabel.rotate) {
+      xAxis.axisLabel.rotate = dataLen > 50 ? 60 : (dataLen > 30 ? 50 : 45);
+    }
+    if (dataLen > 20 && xAxis.axisLabel.interval === undefined) {
+      xAxis.axisLabel.interval = Math.max(0, Math.ceil(dataLen / 8) - 1);
+    }
+    // D5: 标签截断 — 瀑布图/横向图用18字符，其他用10字符
+    if (!xAxis.axisLabel.formatter) {
+      const isWaterfall = Array.isArray(series) && series.some((s: any) => s.type === 'bar' && s.stack);
+      const maxLen = isWaterfall ? 18 : 10;
+      xAxis.axisLabel.formatter = (val: string) => {
+        const str = String(val);
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(5, 10);
+        if (/^\d{4}-\d{2}$/.test(str)) return str.slice(5) + '月';
+        return str.length > maxLen ? str.slice(0, maxLen) + '…' : str;
+      };
+    }
+    xAxis.axisLabel.hideOverlap = true;
+  }
+
+  // === D1+D7: 零值标签隐藏 + 标签防重叠 ===
+  if (Array.isArray(series)) {
+    for (const s of series) {
+      // Hide zero-value bar/line labels to reduce visual noise
+      if ((s.type === 'bar' || s.type === 'line') && s.label && s.label.show) {
+        const origFormatter = s.label.formatter;
+        s.label.formatter = (params: any) => {
+          const val = typeof params.value === 'number' ? params.value :
+                      (Array.isArray(params.value) ? Number(params.value[1]) : Number(params.value));
+          // Hide zero or near-zero labels
+          if (val === 0 || (Math.abs(val) < 0.01 && Math.abs(val) > 0)) return '';
+          // If there was an original formatter, apply it
+          if (typeof origFormatter === 'function') return origFormatter(params);
+          // ECharts template strings like "{c}万" — substitute placeholders
+          if (typeof origFormatter === 'string') {
+            return origFormatter
+              .replace(/\{a\}/g, params.seriesName || '')
+              .replace(/\{b\}/g, params.name || '')
+              .replace(/\{c\}/g, String(val))
+              .replace(/\{d\}/g, String(params.percent ?? ''));
+          }
+          // Default: smart number formatting
+          const abs = Math.abs(val);
+          if (abs >= 1e4) return `${(val / 1e4).toFixed(abs >= 1e5 ? 0 : 2)}万`;
+          if (abs >= 1000) return `${(val / 1000).toFixed(1)}K`;
+          return Number.isInteger(val) ? String(val) : val.toFixed(2);
+        };
+      }
+      if (s.label && s.label.show && !s.labelLayout) {
+        s.labelLayout = { hideOverlap: true };
+      }
+    }
+    // sampling for large datasets
+    if (stats.count > 100) {
+      for (const s of series) {
+        if ((s.type === 'line' || s.type === 'bar') && !s.sampling) {
+          s.sampling = 'lttb';
+        }
+      }
+    }
+  }
+
+  // === D6: 饼图图例长文本截断 ===
+  if (chartType === 'pie' && legend) {
+    legend.formatter = (name: string) => {
+      return name.length > 16 ? name.slice(0, 14) + '…' : name;
     };
+    legend.tooltip = { show: true }; // hover to see full name
+  }
+
+  // === D3: 极端离群值检测 ===
+  // 当最大值 > 10x 中位数时，在 tooltip 中提示
+  if (chartType === 'bar' && stats.median > 0 && stats.max > stats.median * 10) {
+    (opts as any).tooltip = (opts as any).tooltip || {};
+    const origTipFormatter = (opts as any).tooltip.formatter;
+    if (!origTipFormatter) {
+      (opts as any).tooltip.formatter = (params: any) => {
+        const p = Array.isArray(params) ? params[0] : params;
+        const val = typeof p.value === 'number' ? p.value : (Array.isArray(p.value) ? p.value[1] : p.value);
+        const numVal = Number(val);
+        const base = `${p.marker || ''}${p.seriesName}: <b>${numVal.toLocaleString()}</b>`;
+        if (Math.abs(numVal) > stats.median * 10) {
+          return `${p.name}<br/>${base}<br/><span style="color:#ff6b35;font-size:11px">⚠ 离群值 (${(numVal / stats.median).toFixed(0)}x 中位数)</span>`;
+        }
+        return `${p.name}<br/>${base}`;
+      };
+    }
+  }
+
+  // === 近零值智能处理 ===
+  if (yAxis && chartType !== 'pie' && stats.max > 0 && stats.nonZeroMin < Infinity) {
+    const ratio = stats.max / stats.nonZeroMin;
+    // Case 1: Extreme range → enable scale for better resolution
+    if (ratio > 100 && stats.nonZeroMin < stats.max * 0.01) {
+      yAxis.scale = true;
+      if (!yAxis.splitNumber) yAxis.splitNumber = 8;
+    }
+    // Case 2: Value concentration — 80% of values in 10% of range
+    if (stats.count > 5 && Array.isArray(series)) {
+      const allValues: number[] = [];
+      for (const s of series) {
+        if (!Array.isArray(s?.data)) continue;
+        for (const d of s.data) {
+          const v = typeof d === 'number' ? d : (Array.isArray(d) ? Number(d[1]) || 0 : Number(d?.value) || 0);
+          if (v !== 0) allValues.push(Math.abs(v));
+        }
+      }
+      if (allValues.length > 5) {
+        allValues.sort((a, b) => a - b);
+        const rangeTotal = allValues[allValues.length - 1] - allValues[0];
+        if (rangeTotal > 0) {
+          // Check if 80% of values fall within 10% of range
+          const p10 = allValues[Math.floor(allValues.length * 0.1)];
+          const p90 = allValues[Math.floor(allValues.length * 0.9)];
+          const innerRange = p90 - p10;
+          if (innerRange < rangeTotal * 0.1) {
+            yAxis.scale = true;
+            if (!yAxis.splitNumber) yAxis.splitNumber = 6;
+          }
+        }
+      }
+    }
+  }
+
+  // === 万/亿 axis formatter ===
+  if (yAxis && typeof yAxis.name === 'string') {
+    const match = yAxis.name.match(/\(([万亿])\)/);
+    if (match) {
+      const suffix = match[1];
+      const divisor = suffix === '亿' ? 1e8 : 1e4;
+      const minThreshold = suffix === '亿' ? 1e8 : 1e4;
+
+      if (stats.max < minThreshold) {
+        yAxis.name = yAxis.name.replace(/\s*\([万亿]\)/, '');
+      } else {
+        yAxis.axisLabel = yAxis.axisLabel || {};
+        if (!yAxis.axisLabel.formatter) {
+          yAxis.axisLabel.formatter = (value: number) => {
+            if (value === 0) return '0';
+            const scaled = value / divisor;
+            return Number.isInteger(scaled) ? `${scaled}${suffix}` : `${scaled.toFixed(1)}${suffix}`;
+          };
+        }
+      }
+    }
   }
 
   // Scatter charts: also format xAxis if values are large
-  const xAxis = (opts as any).xAxis;
   if (xAxis && xAxis.type === 'value' && typeof xAxis.name === 'string') {
     const xMatch = xAxis.name.match(/\(([万亿])\)/);
     if (xMatch) {
       const xSuffix = xMatch[1];
       const xDivisor = xSuffix === '亿' ? 1e8 : 1e4;
-      const xShouldDivide = seriesMax >= 1e4;
-      xAxis.axisLabel = xAxis.axisLabel || {};
-      if (!xAxis.axisLabel.formatter) {
-        xAxis.axisLabel.formatter = (value: number) => {
-          if (value === 0) return '0';
-          if (!xShouldDivide) {
-            return Number.isInteger(value) ? `${value}${xSuffix}` : `${value.toFixed(1)}${xSuffix}`;
-          }
-          const scaled = value / xDivisor;
-          return Number.isInteger(scaled) ? `${scaled}${xSuffix}` : `${scaled.toFixed(1)}${xSuffix}`;
-        };
+      const xMinThreshold = xSuffix === '亿' ? 1e8 : 1e4;
+      if (stats.max < xMinThreshold) {
+        xAxis.name = xAxis.name.replace(/\s*\([万亿]\)/, '');
+      } else {
+        xAxis.axisLabel = xAxis.axisLabel || {};
+        if (!xAxis.axisLabel.formatter) {
+          xAxis.axisLabel.formatter = (value: number) => {
+            if (value === 0) return '0';
+            const scaled = value / xDivisor;
+            return Number.isInteger(scaled) ? `${scaled}${xSuffix}` : `${scaled.toFixed(1)}${xSuffix}`;
+          };
+        }
       }
     }
   }
 };
 
 // 渲染当前激活 Tab 的所有图表（多图表仪表板 — 8-benchmark upgrade）
+// T5.2: Intersection Observer — only render charts when they enter the viewport
+let chartObserver: IntersectionObserver | null = null;
+const pendingChartConfigs = new Map<string, { chart: any; idx: number; sheet: any }>();
+
+function getOrCreateChartObserver(): IntersectionObserver {
+  if (chartObserver) return chartObserver;
+  chartObserver = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const dom = entry.target as HTMLElement;
+        const chartId = dom.id;
+        const pending = pendingChartConfigs.get(chartId);
+        if (!pending) continue;
+        // Render now that it's visible
+        renderSingleChart(dom, pending.chart, pending.idx, pending.sheet);
+        pendingChartConfigs.delete(chartId);
+        chartObserver?.unobserve(dom); // stop observing once rendered
+      }
+    },
+    { rootMargin: '200px', threshold: 0.01 } // trigger 200px before entering viewport
+  );
+  return chartObserver;
+}
+
 const renderActiveCharts = () => {
-  const t0 = performance.now();
   const activeSheetIndex = parseInt(activeTab.value);
   const activeSheet = uploadedSheets.value.find(s => s.sheetIndex === activeSheetIndex);
   if (!activeSheet) return;
 
   const charts = getSheetCharts(activeSheet);
-  console.log(`[Render] Rendering ${charts.length} charts for sheet ${activeSheetIndex}`);
+  const observer = getOrCreateChartObserver();
 
   charts.forEach((chart, idx) => {
     const chartId = `chart-${activeSheet.sheetIndex}-${idx}`;
     const dom = document.getElementById(chartId);
-    if (!dom) {
-      console.warn(`Chart container not found: ${chartId}`);
-      return;
-    }
+    if (!dom) return;
 
     const config = chart.config;
     if (!config || isChartDataEmpty(config)) return;
+
+    // T5.2: First chart (hero) renders immediately, rest observe for viewport entry
+    if (idx === 0) {
+      renderSingleChart(dom, chart, idx, activeSheet);
+    } else {
+      // Check if already in viewport (scrolled into view)
+      const rect = dom.getBoundingClientRect();
+      const inViewport = rect.top < window.innerHeight + 200 && rect.bottom > -200;
+      if (inViewport) {
+        renderSingleChart(dom, chart, idx, activeSheet);
+      } else {
+        pendingChartConfigs.set(chartId, { chart, idx, sheet: activeSheet });
+        observer.observe(dom);
+      }
+    }
+  });
+};
+
+/** Render a single chart into its DOM container */
+function renderSingleChart(dom: HTMLElement, chart: any, idx: number, activeSheet: any) {
+    const config = chart.config;
+    if (!config || isChartDataEmpty(config)) return;
+
+    // Get all charts for cross-chart hover interactions
+    const charts = getSheetCharts(activeSheet);
 
     let echartsOptions = resolveEChartsOptions(config);
     if (!echartsOptions) return;
@@ -1599,6 +2424,48 @@ const renderActiveCharts = () => {
     // Process __FUNC__ animation delay strings
     echartsOptions = processEChartsOptions(echartsOptions);
     enhanceChartOption(echartsOptions);
+
+    // D4: 全零图表检测 — 当95%+数据为零时添加提示水印
+    const eSeries = (echartsOptions as any).series;
+    if (Array.isArray(eSeries) && eSeries[0]?.type !== 'pie') {
+      let totalVals = 0, zeroVals = 0;
+      for (const s of eSeries) {
+        if (!Array.isArray(s?.data)) continue;
+        for (const d of s.data) {
+          totalVals++;
+          const v = typeof d === 'number' ? d : Number(d?.value ?? d?.[1] ?? 0);
+          if (v === 0) zeroVals++;
+        }
+      }
+      if (totalVals > 5 && zeroVals / totalVals > 0.9) {
+        // Add watermark-style hint
+        (echartsOptions as any).graphic = [
+          {
+            type: 'text',
+            left: 'center',
+            top: '38%',
+            style: {
+              text: '本项数据集中在少数项目',
+              fontSize: 13,
+              fill: 'rgba(150,150,150,0.6)',
+              fontWeight: 'normal',
+            },
+            silent: true,
+          },
+          {
+            type: 'text',
+            left: 'center',
+            top: '46%',
+            style: {
+              text: '可拖动下方滑块或切换维度查看',
+              fontSize: 11,
+              fill: 'rgba(180,180,180,0.5)',
+            },
+            silent: true,
+          }
+        ];
+      }
+    }
 
     // Apply anomaly overlay if available
     const anomalies = (config as any).anomalies || (chart as any).anomalies;
@@ -1610,7 +2477,7 @@ const renderActiveCharts = () => {
       // ECharts instance reuse (Phase 2.2) — avoid dispose+init cycle
       let instance = echarts.getInstanceByDom(dom);
       if (!instance) {
-        instance = echarts.init(dom);
+        instance = echarts.init(dom, 'cretas');
       }
       instance.setOption(echartsOptions, { notMerge: true });
 
@@ -1651,13 +2518,58 @@ const renderActiveCharts = () => {
           handleChartDrillDown(activeSheet, idx, params);
         }
       });
-    } catch (error) {
-      console.error(`Failed to render chart ${chartId}:`, error);
-    }
-  });
 
-  console.log(`[Perf] renderActiveCharts took ${(performance.now() - t0).toFixed(1)}ms`);
-};
+      // P0-B: Throttled hover cross-filtering with dispatchAction (100ms throttle)
+      let hoverThrottleTimer: ReturnType<typeof setTimeout> | null = null;
+      instance.off('mouseover');
+      instance.on('mouseover', (params: any) => {
+        const hoverValue = params.name || params.seriesName;
+        if (!hoverValue) return;
+        if (hoverThrottleTimer) return; // throttle: skip if pending
+        hoverThrottleTimer = setTimeout(() => { hoverThrottleTimer = null; }, 100);
+        charts.forEach((_c, sibIdx) => {
+          if (sibIdx === idx) return;
+          const sibId = `chart-${activeSheet.sheetIndex}-${sibIdx}`;
+          const sibDom = document.getElementById(sibId);
+          if (!sibDom) return;
+          const sibInstance = echarts.getInstanceByDom(sibDom);
+          if (!sibInstance) return;
+          const sibOpt = sibInstance.getOption() as any;
+          // Bar/line: match xAxis by name (not index — safe with DataZoom)
+          const xData = sibOpt?.xAxis?.[0]?.data;
+          if (Array.isArray(xData)) {
+            const matchIdx = xData.indexOf(hoverValue);
+            if (matchIdx >= 0) {
+              sibInstance.dispatchAction({ type: 'highlight', dataIndex: matchIdx });
+            }
+          }
+          // Pie: match by name
+          const sibSeries = sibOpt?.series;
+          if (Array.isArray(sibSeries)) {
+            sibSeries.forEach((s: any) => {
+              if (s.type === 'pie' && Array.isArray(s.data)) {
+                const pieIdx = s.data.findIndex((d: any) => d.name === hoverValue);
+                if (pieIdx >= 0) sibInstance.dispatchAction({ type: 'highlight', dataIndex: pieIdx });
+              }
+            });
+          }
+        });
+      });
+      instance.off('mouseout');
+      instance.on('mouseout', () => {
+        charts.forEach((_c, sibIdx) => {
+          if (sibIdx === idx) return;
+          const sibId = `chart-${activeSheet.sheetIndex}-${sibIdx}`;
+          const sibDom = document.getElementById(sibId);
+          if (!sibDom) return;
+          const sibInstance = echarts.getInstanceByDom(sibDom);
+          if (sibInstance) sibInstance.dispatchAction({ type: 'downplay' });
+        });
+      });
+    } catch (error) {
+      console.error(`Failed to render chart chart-${activeSheet.sheetIndex}-${idx}:`, error);
+    }
+}
 
 // 向后兼容：旧版渲染入口
 const renderActiveChart = () => renderActiveCharts();
@@ -1687,7 +2599,7 @@ watch(layoutEditMode, (isBuilder) => {
           if (!dom) return;
           try {
             let instance = echarts.getInstanceByDom(dom);
-            if (!instance) instance = echarts.init(dom);
+            if (!instance) instance = echarts.init(dom, 'cretas');
             const config = charts[i].config;
             if (config) {
               instance.setOption(processEChartsOptions(config as Record<string, unknown>), { notMerge: true });
@@ -1721,10 +2633,22 @@ watch(layoutEditMode, (isBuilder) => {
   }
 });
 
-watch(activeTab, () => {
+watch(activeTab, (newTab, oldTab) => {
   // Clear active filter on tab switch
   activeFilter.value = null;
+  globalFilterDimension.value = '';
+  globalFilterValues.value = [];
   layoutEditMode.value = false; // P6: reset to standard mode on tab switch
+
+  // T4.1: Clear ECharts instances for previous tab but DON'T dispose —
+  // instances are reused on tab switch back (avoid dispose+init cycle ~500ms overhead).
+  // Instances are disposed only when component unmounts or after 60s idle.
+  if (oldTab) {
+    document.querySelectorAll(`[id^="chart-${oldTab}-"]`).forEach(dom => {
+      const inst = echarts.getInstanceByDom(dom as HTMLElement);
+      if (inst) inst.clear(); // clear options but keep instance alive for reuse
+    });
+  }
 
   if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
   renderDebounceTimer = setTimeout(() => {
@@ -1802,9 +2726,8 @@ const renderChart = (sheet: SheetResult) => {
     if (existingInstance) {
       existingInstance.dispose();
     }
-    const myChart = echarts.init(chartDom);
+    const myChart = echarts.init(chartDom, 'cretas');
     myChart.setOption(echartsOptions);
-    console.log(`Chart ${chartId} rendered successfully`);
   } catch (error) {
     console.error('Failed to render chart:', error);
   }
@@ -1812,7 +2735,6 @@ const renderChart = (sheet: SheetResult) => {
 
 // 根据数据构建基础 ECharts 配置
 const buildBasicOptions = (chartType: string, data: any): any => {
-  console.log('buildBasicOptions:', chartType, data);
 
   // 从数据中提取可能的字段
   if (!data || typeof data !== 'object') return null;
@@ -1921,66 +2843,206 @@ const isChartDataEmpty = (chartConfig: any): boolean => {
   return false;
 };
 
-// 通过前端驱动 Python 服务补充 Sheet 的图表和 AI 分析
+// P2.1: 使用 idle callback 预缓存下一个 sheet
+const idleEnrichNext = (currentSheetIndex: number) => {
+  // Polyfill for requestIdleCallback (not available in all browsers)
+  const idleCb = (window as any).requestIdleCallback || ((fn: Function) => setTimeout(fn, 2000));
+
+  idleCb(() => {
+    // 仅在网络空闲时预加载（没有其他正在进行的 enrichment）
+    if (enrichingSheets.value.size > 0) {
+      return;
+    }
+
+    // 查找下一个未 enriched 的 sheet
+    const nextSheet = uploadedSheets.value.find(
+      s => s.sheetIndex > currentSheetIndex
+        && !enrichedSheets.value.has(s.sheetIndex)
+        && !enrichingSheets.value.has(s.sheetIndex)
+        && !isIndexSheet(s)
+        && s.uploadId
+    );
+
+    if (nextSheet?.uploadId) {
+      console.log(`[P2.1] Pre-caching next sheet: ${nextSheet.sheetName} (index ${nextSheet.sheetIndex})`);
+
+      // 静默预加载（无加载 UI）
+      enrichSheetAnalysis(nextSheet.uploadId).then(result => {
+        if (result && result.success) {
+          const sheet = uploadedSheets.value.find(s => s.sheetIndex === nextSheet.sheetIndex);
+          if (sheet) {
+            if (!sheet.flowResult) {
+              sheet.flowResult = {};
+            }
+            // 更新多图表数据
+            if (result.charts?.length) {
+              sheet.flowResult.charts = result.charts;
+              sheet.flowResult.chartConfig = result.charts[0].config; // 向后兼容
+            }
+            // 更新 KPI 摘要
+            if (result.kpiSummary) {
+              sheet.flowResult.kpiSummary = result.kpiSummary;
+            }
+            // 更新 AI 分析
+            if (result.aiAnalysis) {
+              sheet.flowResult.aiAnalysis = result.aiAnalysis;
+            }
+            // 更新结构化 AI
+            if (result.structuredAI) {
+              sheet.flowResult.structuredAI = result.structuredAI;
+            }
+            // 缓存原始数据
+            if (result.rawData?.length && nextSheet.uploadId) {
+              sheetRawDataCache.set(nextSheet.uploadId, result.rawData);
+            }
+
+            // 标记为已 enriched
+            enrichedSheets.value.add(nextSheet.sheetIndex);
+            console.log(`[P2.1] Pre-cache complete for sheet ${nextSheet.sheetIndex}`);
+          }
+        }
+      }).catch(err => {
+        // 静默忽略预缓存错误（不影响用户体验）
+        console.warn(`[P2.1] Pre-cache failed for sheet ${nextSheet.sheetIndex}:`, err);
+      });
+    }
+  });
+};
+
+// 通过前端驱动 Python 服务补充 Sheet 的图表和 AI 分析 (P0: 渐进式渲染)
 const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
   const sheetIndex = sheet.sheetIndex;
   const uploadId = sheet.uploadId;
   if (!uploadId || enrichingSheets.value.has(sheetIndex)) return;
 
   enrichingSheets.value.add(sheetIndex);
+  // Initialize progressive phase tracking
+  enrichPhases.value.set(sheetIndex, { kpi: false, charts: 0, chartsTotal: 0, ai: false });
 
   try {
-    console.log(`[Enrich] Starting enrichment for sheet ${sheetIndex} (uploadId=${uploadId})${forceRefresh ? ' [FORCE REFRESH]' : ''}`);
-    const result: EnrichResult = await enrichSheetAnalysis(uploadId, forceRefresh);
+    const result: EnrichResult = await enrichSheetAnalysis(uploadId, forceRefresh, (progress: EnrichProgress) => {
+      const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
+      if (!currentSheet) return;
+      if (!currentSheet.flowResult) currentSheet.flowResult = {};
+
+      const phase = enrichPhases.value.get(sheetIndex);
+
+      if (progress.phase === 'kpi' && progress.partial.kpiSummary) {
+        currentSheet.flowResult.kpiSummary = progress.partial.kpiSummary;
+        if (progress.partial.financialMetrics !== undefined) {
+          currentSheet.flowResult.financialMetrics = progress.partial.financialMetrics;
+        }
+        if (phase) {
+          phase.kpi = true;
+          phase.chartsTotal = progress.partial.chartsTotal || 0;
+        }
+      }
+
+      if (progress.phase === 'chart-single' && progress.partial.charts?.length) {
+        currentSheet.flowResult.charts = progress.partial.charts;
+        currentSheet.flowResult.chartConfig = progress.partial.charts[0].config;
+        if (phase) phase.charts = progress.partial.charts.length;
+        // Render charts immediately if this is the active tab
+        if (parseInt(activeTab.value) === sheetIndex) {
+          nextTick(() => renderActiveCharts());
+        }
+      }
+
+      // T1.1: Handle streaming AI text chunks — show progressively before final parse
+      if (progress.phase === 'ai-streaming' && progress.partial.aiStreamChunk) {
+        if (!currentSheet.flowResult._streamingAIText) {
+          currentSheet.flowResult._streamingAIText = '';
+        }
+        currentSheet.flowResult._streamingAIText += progress.partial.aiStreamChunk;
+        // Show raw streaming text as preview (will be replaced by structured result)
+        currentSheet.flowResult.aiAnalysis = currentSheet.flowResult._streamingAIText;
+      }
+
+      if (progress.phase === 'ai') {
+        if (progress.partial.aiAnalysis) {
+          currentSheet.flowResult.aiAnalysis = progress.partial.aiAnalysis;
+        }
+        if (progress.partial.structuredAI) {
+          currentSheet.flowResult.structuredAI = progress.partial.structuredAI;
+        }
+        // Clear streaming preview
+        delete currentSheet.flowResult._streamingAIText;
+        if (phase) phase.ai = true;
+      }
+    });
 
     if (result.success) {
       const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
       if (currentSheet) {
-        if (!currentSheet.flowResult) {
-          currentSheet.flowResult = {};
-        }
-        // 多图表数据
+        if (!currentSheet.flowResult) currentSheet.flowResult = {};
+        // Final sync — ensure all data is set (handles cache-hit path where onProgress fires 'complete' only)
         if (result.charts?.length) {
           currentSheet.flowResult.charts = result.charts;
-          currentSheet.flowResult.chartConfig = result.charts[0].config; // 向后兼容
+          currentSheet.flowResult.chartConfig = result.charts[0].config;
         } else if (result.chartConfig) {
           currentSheet.flowResult.chartConfig = result.chartConfig;
         }
-        // KPI 摘要
-        if (result.kpiSummary) {
-          currentSheet.flowResult.kpiSummary = result.kpiSummary;
-        }
-        if (result.aiAnalysis) {
-          currentSheet.flowResult.aiAnalysis = result.aiAnalysis;
-        }
-        // 结构化 AI 数据
-        if (result.structuredAI) {
-          currentSheet.flowResult.structuredAI = result.structuredAI;
+        if (result.kpiSummary) currentSheet.flowResult.kpiSummary = result.kpiSummary;
+        if (result.aiAnalysis) currentSheet.flowResult.aiAnalysis = result.aiAnalysis;
+        if (result.structuredAI) currentSheet.flowResult.structuredAI = result.structuredAI;
+        // Persist rawData for cross-filtering & Excel export
+        if (result.rawData?.length && uploadId) {
+          sheetRawDataCache.set(uploadId, result.rawData);
+        } else if (uploadId && !sheetRawDataCache.has(uploadId)) {
+          getUploadTableData(uploadId, 0, 2000).then(res => {
+            if (res.success && res.data?.data?.length) {
+              sheetRawDataCache.set(uploadId, res.data.data as Record<string, unknown>[]);
+            }
+          }).catch(() => {});
         }
       }
       enrichedSheets.value.add(sheetIndex);
+      // Mark all phases complete
+      const phase = enrichPhases.value.get(sheetIndex);
+      if (phase) { phase.kpi = true; phase.ai = true; phase.charts = phase.chartsTotal; }
+
+      // A6: Run food industry detection on first enriched sheet
+      if (!foodIndustryDetection.value) {
+        // Try rawData from enrichment result, sheetRawDataCache, or fetch
+        let detectData = result.rawData;
+        if (!detectData?.length && uploadId && sheetRawDataCache.has(uploadId)) {
+          detectData = sheetRawDataCache.get(uploadId);
+        }
+        if (!detectData?.length && uploadId) {
+          // Cache hit path — rawData not available, fetch minimal sample for detection
+          try {
+            const tableRes = await getUploadTableData(uploadId, 0, 20);
+            if (tableRes.success && tableRes.data?.data?.length) {
+              detectData = tableRes.data.data as Record<string, unknown>[];
+            }
+          } catch { /* non-critical */ }
+        }
+        if (detectData?.length) {
+          const colNames = Object.keys(detectData[0]);
+          const sampleRows = detectData.slice(0, 15);
+          foodIndustryDetection.value = detectFoodIndustryLocal(colNames, sampleRows);
+        }
+      }
+
       // Track cache status for UI hint
       if (result.cached && result.cachedAt) {
         cachedAtMap.value.set(uploadId, result.cachedAt);
       } else {
         cachedAtMap.value.delete(uploadId);
       }
-      console.log(`[Enrich] Sheet ${sheetIndex} enriched${result.cached ? ' (from cache)' : ''}: ${result.charts?.length || 0} charts, KPI: ${!!result.kpiSummary}, AI: ${!!result.aiAnalysis}`);
 
-      // 如果当前 tab 就是这个 sheet，立即渲染图表
+      // Render charts (final pass)
       if (parseInt(activeTab.value) === sheetIndex) {
         await nextTick();
         renderActiveCharts();
       }
 
-      // U1: 后台预取下一个未 enrich 的 sheet，减少 tab 切换等待
-      const nextUnenriched = uploadedSheets.value.find(
-        s => s.sheetIndex > sheetIndex && !enrichedSheets.value.has(s.sheetIndex)
-          && !enrichingSheets.value.has(s.sheetIndex) && !isIndexSheet(s) && s.uploadId
-      );
-      if (nextUnenriched) {
-        setTimeout(() => enrichSheet(nextUnenriched), 500);
+      if (!tourDataReady.value && hasChartData(sheet) && result.aiAnalysis) {
+        tourDataReady.value = true;
       }
+
+      tryAutoSaveDemoCache();
+      idleEnrichNext(sheetIndex);
     } else {
       console.warn(`[Enrich] Sheet ${sheetIndex} enrichment failed:`, result.error);
       ElMessage.warning(`Sheet "${sheet.sheetName}" 图表增强失败: ${result.error || '未知错误'}`);
@@ -1991,6 +3053,278 @@ const enrichSheet = async (sheet: SheetResult, forceRefresh = false) => {
   } finally {
     enrichingSheets.value.delete(sheetIndex);
   }
+};
+
+// ========== P1: Template Application ==========
+
+/** Apply a food industry analysis template to the active sheet */
+const applyTemplate = async (template: FoodTemplate) => {
+  const sheetIndex = parseInt(activeTab.value);
+  const sheet = uploadedSheets.value.find(s => s.sheetIndex === sheetIndex);
+  if (!sheet?.uploadId) {
+    ElMessage.warning('请先选择一个数据表');
+    return;
+  }
+
+  activeTemplate.value = template.id;
+  enrichingSheets.value.add(sheetIndex);
+
+  try {
+    // Get raw data (from cache or fetch)
+    let rawData = sheetRawDataCache.get(sheet.uploadId);
+    if (!rawData) {
+      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
+      if (!tableRes.success || !tableRes.data?.data?.length) {
+        ElMessage.warning('无法获取表格数据');
+        return;
+      }
+      rawData = renameMeaninglessColumns(tableRes.data.data as Record<string, unknown>[]);
+      sheetRawDataCache.set(sheet.uploadId, rawData);
+    }
+
+    // Detect label field for column mapping
+    const allKeys = Object.keys(rawData[0]);
+    const catCols = allKeys.filter(k => {
+      const vals = rawData!.slice(0, 10).map(r => r[k]);
+      return vals.every(v => typeof v === 'string' || v == null);
+    });
+    const labelField = catCols[0] || allKeys[0];
+
+    // Map template columns to actual data columns
+    const plans = mapColumnsToTemplate(rawData, template, labelField);
+    if (!plans || plans.length === 0) {
+      ElMessage.warning(`模板 "${template.name}" 无法匹配当前数据列，请检查数据格式`);
+      return;
+    }
+
+    // Build charts from template plan (skip recommendChart)
+    const charts: Array<{ chartType: string; title: string; config: Record<string, unknown>; xField?: string }> = [];
+    for (const plan of plans) {
+      const res = await buildChart({
+        chartType: plan.chartType,
+        data: plan.data,
+        xField: plan.xField,
+        yFields: plan.yFields,
+        title: plan.title,
+      });
+      if (res.success && res.option) {
+        charts.push({ chartType: plan.chartType, title: plan.title, config: res.option, xField: plan.xField });
+      }
+    }
+
+    if (charts.length === 0) {
+      ElMessage.warning('模板图表构建失败');
+      return;
+    }
+
+    // Apply to sheet
+    if (!sheet.flowResult) sheet.flowResult = {};
+    sheet.flowResult.charts = charts;
+    sheet.flowResult.chartConfig = charts[0].config;
+    enrichedSheets.value.add(sheetIndex);
+
+    await nextTick();
+    renderActiveCharts();
+    ElMessage.success(`已应用模板 "${template.name}"，生成 ${charts.length} 个图表`);
+  } catch (error) {
+    console.error('Template apply error:', error);
+    ElMessage.error('模板应用失败');
+  } finally {
+    enrichingSheets.value.delete(sheetIndex);
+  }
+};
+
+// ========== Chart Switching & Refresh (Phase 3) ==========
+
+/** Track which chart is currently being switched/refreshed */
+const switchingChart = ref<{ sheetIndex: number; chartIndex: number } | null>(null);
+
+/** Switch a single chart's type */
+const handleSwitchChartType = async (sheet: SheetResult, chartIndex: number, newType: string) => {
+  const charts = getSheetCharts(sheet);
+  const chart = charts[chartIndex];
+  if (!chart || !sheet.uploadId) return;
+
+  switchingChart.value = { sheetIndex: sheet.sheetIndex, chartIndex };
+  try {
+    // Get raw data for chart rebuilding, use cache if available
+    let rawData = sheetRawDataCache.get(sheet.uploadId);
+    if (!rawData) {
+      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
+      if (!tableRes.success || !tableRes.data?.data?.length) return;
+      rawData = renameMeaninglessColumns(tableRes.data.data as Record<string, unknown>[]);
+      sheetRawDataCache.set(sheet.uploadId, rawData);
+    }
+
+    const result = await buildChart({
+      chartType: newType,
+      data: rawData.slice(0, 200),
+      xField: chart.xField,
+      yFields: undefined,
+      title: chart.title
+    });
+
+    if (result.success && result.option) {
+      const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheet.sheetIndex);
+      if (currentSheet?.flowResult?.charts?.[chartIndex]) {
+        currentSheet.flowResult.charts[chartIndex] = {
+          ...currentSheet.flowResult.charts[chartIndex],
+          chartType: newType,
+          config: result.option
+        };
+        await nextTick();
+        renderActiveCharts();
+      }
+    } else {
+      ElMessage.warning('切换图表类型失败: ' + (result.error || '未知错误'));
+    }
+  } catch (e) {
+    console.error('Chart type switch failed:', e);
+    ElMessage.warning('图表切换失败');
+  } finally {
+    switchingChart.value = null;
+  }
+};
+
+/** Refresh a single chart with a new random recommendation */
+const handleRefreshChart = async (sheet: SheetResult, chartIndex: number) => {
+  const charts = getSheetCharts(sheet);
+  const chart = charts[chartIndex];
+  if (!chart || !sheet.uploadId) return;
+
+  switchingChart.value = { sheetIndex: sheet.sheetIndex, chartIndex };
+  try {
+    let rawData = sheetRawDataCache.get(sheet.uploadId);
+    if (!rawData) {
+      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
+      if (!tableRes.success || !tableRes.data?.data?.length) return;
+      rawData = renameMeaninglessColumns(tableRes.data.data as Record<string, unknown>[]);
+      sheetRawDataCache.set(sheet.uploadId, rawData);
+    }
+
+    // Get current chart types to exclude
+    const currentTypes = charts.map(c => c.chartType);
+
+    const recRes = await smartRecommendChart({
+      data: rawData.slice(0, 100),
+      excludeTypes: currentTypes,
+      maxRecommendations: 3
+    });
+
+    if (recRes.success && recRes.recommendations?.length) {
+      const rec = recRes.recommendations[0];
+      const buildRes = await buildChart({
+        chartType: rec.chartType,
+        data: rawData.slice(0, 200),
+        xField: rec.xField,
+        yFields: rec.yFields,
+        title: rec.title || chart.title
+      });
+
+      if (buildRes.success && buildRes.option) {
+        const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheet.sheetIndex);
+        if (currentSheet?.flowResult?.charts?.[chartIndex]) {
+          currentSheet.flowResult.charts[chartIndex] = {
+            chartType: rec.chartType,
+            title: rec.title || chart.title,
+            config: buildRes.option,
+            xField: rec.xField
+          };
+          await nextTick();
+          renderActiveCharts();
+        }
+      }
+    } else {
+      ElMessage.info('暂无更多推荐图表类型');
+    }
+  } catch (e) {
+    console.error('Chart refresh failed:', e);
+  } finally {
+    switchingChart.value = null;
+  }
+};
+
+/** Refresh ALL charts for a sheet ("换一批") */
+const refreshAllChartsLoading = ref(false);
+const handleRefreshAllCharts = async (sheet: SheetResult) => {
+  if (!sheet.uploadId || refreshAllChartsLoading.value) return;
+  refreshAllChartsLoading.value = true;
+  try {
+    // Force refresh the entire enrichment with cache invalidation
+    await invalidateAnalysisCache(sheet.uploadId);
+    enrichedSheets.value.delete(sheet.sheetIndex);
+    await enrichSheet(sheet, true);
+    ElMessage.success('图表已刷新');
+  } catch (e) {
+    console.error('Refresh all charts failed:', e);
+    ElMessage.warning('图表刷新失败');
+  } finally {
+    refreshAllChartsLoading.value = false;
+  }
+};
+
+/** Rebuild chart with custom axis config (Phase 4) */
+const handleApplyChartConfig = async (
+  sheet: SheetResult,
+  chartIndex: number,
+  config: { xField: string; yFields: string[]; seriesField?: string; aggregation?: string }
+) => {
+  const charts = getSheetCharts(sheet);
+  const chart = charts[chartIndex];
+  if (!chart || !sheet.uploadId) return;
+
+  switchingChart.value = { sheetIndex: sheet.sheetIndex, chartIndex };
+  try {
+    let rawData = sheetRawDataCache.get(sheet.uploadId);
+    if (!rawData) {
+      const tableRes = await getUploadTableData(sheet.uploadId, 0, 2000);
+      if (!tableRes.success || !tableRes.data?.data?.length) return;
+      rawData = renameMeaninglessColumns(tableRes.data.data as Record<string, unknown>[]);
+      sheetRawDataCache.set(sheet.uploadId, rawData);
+    }
+
+    const result = await buildChart({
+      chartType: chart.chartType,
+      data: rawData.slice(0, 200),
+      xField: config.xField,
+      yFields: config.yFields,
+      title: chart.title
+    });
+
+    if (result.success && result.option) {
+      const currentSheet = uploadedSheets.value.find(s => s.sheetIndex === sheet.sheetIndex);
+      if (currentSheet?.flowResult?.charts?.[chartIndex]) {
+        currentSheet.flowResult.charts[chartIndex] = {
+          ...currentSheet.flowResult.charts[chartIndex],
+          config: result.option,
+          xField: config.xField
+        };
+        // Save config to localStorage for persistence
+        const key = `chart-config-${sheet.uploadId}-${chartIndex}`;
+        localStorage.setItem(key, JSON.stringify(config));
+        await nextTick();
+        renderActiveCharts();
+      }
+    } else {
+      ElMessage.warning('配置应用失败: ' + (result.error || ''));
+    }
+  } catch (e) {
+    console.error('Apply chart config failed:', e);
+  } finally {
+    switchingChart.value = null;
+  }
+};
+
+/** Get column info for chart config panel */
+const getSheetColumns = (sheet: SheetResult): Array<{ name: string; type: 'numeric' | 'categorical' | 'date' }> => {
+  const kpi = sheet.flowResult?.kpiSummary;
+  if (!kpi?.columns) return [];
+  return kpi.columns.map(col => ({
+    name: col.name,
+    type: ['int64', 'float64', 'number', 'int32', 'float32'].includes(col.type) ? 'numeric' as const
+      : col.type === 'datetime64' ? 'date' as const
+      : 'categorical' as const
+  }));
 };
 
 // 图表下钻处理
@@ -2190,7 +3524,7 @@ const renderDrillDownChart = async (config: Record<string, unknown>, registerCli
 
   try {
     let instance = echarts.getInstanceByDom(dom);
-    if (!instance) instance = echarts.init(dom);
+    if (!instance) instance = echarts.init(dom, 'cretas');
     instance.setOption(processEChartsOptions(config), { notMerge: true });
 
     if (registerClick) {
@@ -2266,6 +3600,21 @@ const renderDrillDownChart = async (config: Record<string, unknown>, registerCli
   }
 };
 
+// ========== P1.3: View More (truncated chart data) ==========
+const getDisplayedCount = (chart: { chartType: string; config: Record<string, unknown> }): number => {
+  const opt = chart.config as any;
+  if (chart.chartType === 'pie') {
+    return opt?.series?.[0]?.data?.length ?? 0;
+  }
+  return opt?.xAxis?.data?.length ?? opt?.dataset?.source?.length ?? 0;
+};
+
+const handleViewMoreData = (sheet: SheetResult, chartIdx: number, chart: { chartType: string; title: string; totalItems?: number }) => {
+  // Show the raw data tab for this sheet, which contains all rows
+  loadSheetData(sheet);
+  ElMessage.info(`图表"${chart.title}"显示了前 ${getDisplayedCount(chart as any)} 项，完整 ${chart.totalItems} 项数据可在下方原始数据中查看`);
+};
+
 // ========== Chart Export (Phase 3.3 — industry standard, 8/8 benchmarks) ==========
 const handleChartExport = (command: string, sheetIndex: number, chartIdx: number, chartTitle?: string) => {
   const chartId = `chart-${sheetIndex}-${chartIdx}`;
@@ -2299,6 +3648,375 @@ const handleChartExport = (command: string, sheetIndex: number, chartIdx: number
   }
 };
 
+// ========== Excel Export (SheetJS) ==========
+const handleExportExcel = async (sheet: SheetResult) => {
+  try {
+    const XLSX = await import('xlsx');
+    const wb = XLSX.utils.book_new();
+
+    // 1. Data sheet — use cached rawData or fetch
+    let rawData = sheetRawDataCache.get(sheet.uploadId!);
+    if (!rawData?.length) {
+      const tableRes = await getUploadTableData(sheet.uploadId!, 0, 5000);
+      if (tableRes.success && tableRes.data?.data?.length) {
+        rawData = tableRes.data.data as Record<string, unknown>[];
+        sheetRawDataCache.set(sheet.uploadId!, rawData);
+      }
+    }
+    if (rawData?.length) {
+      const ws = XLSX.utils.json_to_sheet(rawData);
+      XLSX.utils.book_append_sheet(wb, ws, sheet.sheetName || '数据');
+    }
+
+    // 2. KPI summary sheet
+    const kpi = sheet.flowResult?.kpiSummary;
+    if (kpi?.columns?.length) {
+      const kpiRows = kpi.columns
+        .filter(c => ['int64', 'float64', 'number', 'int32', 'float32'].includes(c.type))
+        .map(c => ({
+          指标: c.name,
+          类型: c.type,
+          最小值: c.min ?? '',
+          最大值: c.max ?? '',
+          平均值: c.mean != null ? Math.round(c.mean * 100) / 100 : '',
+          合计: c.sum ?? '',
+        }));
+      if (kpiRows.length) {
+        const kpiWs = XLSX.utils.json_to_sheet(kpiRows);
+        XLSX.utils.book_append_sheet(wb, kpiWs, 'KPI汇总');
+      }
+    }
+
+    // 3. AI analysis sheet
+    const ai = sheet.flowResult?.aiAnalysis;
+    if (ai) {
+      const aiWs = XLSX.utils.aoa_to_sheet([['AI 智能分析'], [''], ...ai.split('\n').map(line => [line])]);
+      XLSX.utils.book_append_sheet(wb, aiWs, 'AI分析');
+    }
+
+    const fileName = `${sheet.sheetName || '分析报告'}-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    ElMessage.success(`已导出 Excel: ${fileName}`);
+  } catch (error) {
+    console.error('Excel export failed:', error);
+    ElMessage.error('Excel 导出失败');
+  }
+};
+
+// ========== PDF Export (ECharts getDataURL + jsPDF + Chinese Font) ==========
+let cachedChineseFont: string | null = null;
+
+const loadChineseFont = async (): Promise<string | null> => {
+  if (cachedChineseFont) return cachedChineseFont;
+  try {
+    const resp = await fetch('/fonts/simhei-subset.ttf');
+    if (!resp.ok) return null;
+    const buf = await resp.arrayBuffer();
+    const bytes = new Uint8Array(buf);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    cachedChineseFont = btoa(binary);
+    return cachedChineseFont;
+  } catch {
+    return null;
+  }
+};
+
+const handleExportPDF = async (sheet: SheetResult) => {
+  try {
+    const { default: jsPDF } = await import('jspdf');
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yOffset = 15;
+
+    // Load and register Chinese font
+    const fontBase64 = await loadChineseFont();
+    const hasChinese = !!fontBase64;
+    if (fontBase64) {
+      doc.addFileToVFS('SimHei-subset.ttf', fontBase64);
+      doc.addFont('SimHei-subset.ttf', 'SimHei', 'normal');
+      doc.setFont('SimHei');
+    }
+
+    // Title
+    doc.setFontSize(18);
+    doc.text(sheet.sheetName || 'SmartBI 分析报告', pageWidth / 2, yOffset, { align: 'center' });
+    yOffset += 10;
+
+    doc.setFontSize(10);
+    doc.text(new Date().toISOString().slice(0, 10), pageWidth / 2, yOffset, { align: 'center' });
+    yOffset += 10;
+
+    // KPI section
+    const kpi = sheet.flowResult?.kpiSummary;
+    if (kpi?.columns?.length) {
+      doc.setFontSize(14);
+      doc.text('关键指标摘要', 15, yOffset);
+      yOffset += 8;
+      doc.setFontSize(9);
+      const numericCols = kpi.columns.filter(c => ['int64', 'float64', 'number', 'int32', 'float32'].includes(c.type));
+      for (const col of numericCols.slice(0, 6)) {
+        const sumVal = col.sum != null ? Number(col.sum).toLocaleString('zh-CN') : 'N/A';
+        doc.text(`${col.name}: ${sumVal}`, 15, yOffset);
+        yOffset += 5;
+      }
+      yOffset += 5;
+    }
+
+    // Chart images
+    const charts = getSheetCharts(sheet);
+    for (let i = 0; i < charts.length; i++) {
+      const chartId = `chart-${sheet.sheetIndex}-${i}`;
+      const dom = document.getElementById(chartId);
+      if (!dom) continue;
+      const instance = echarts.getInstanceByDom(dom);
+      if (!instance) continue;
+
+      const imgData = instance.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' });
+      const imgWidth = pageWidth - 30;
+      const imgHeight = imgWidth * 0.6;
+
+      if (yOffset + imgHeight > 280) {
+        doc.addPage();
+        yOffset = 15;
+        if (hasChinese) doc.setFont('SimHei');
+      }
+
+      doc.setFontSize(11);
+      doc.text(charts[i].title || `图表 ${i + 1}`, 15, yOffset);
+      yOffset += 6;
+      doc.addImage(imgData, 'PNG', 15, yOffset, imgWidth, imgHeight);
+      yOffset += imgHeight + 10;
+    }
+
+    // AI analysis text
+    const ai = sheet.flowResult?.aiAnalysis;
+    if (ai) {
+      if (yOffset > 200) {
+        doc.addPage();
+        yOffset = 15;
+        if (hasChinese) doc.setFont('SimHei');
+      }
+      doc.setFontSize(14);
+      doc.text('AI 智能分析', 15, yOffset);
+      yOffset += 8;
+      doc.setFontSize(9);
+      const plainText = ai.replace(/\*\*/g, '').replace(/#{1,3}\s*/g, '');
+      const lines = doc.splitTextToSize(plainText, pageWidth - 30);
+      for (const line of lines) {
+        if (yOffset > 280) {
+          doc.addPage();
+          yOffset = 15;
+          if (hasChinese) doc.setFont('SimHei');
+        }
+        doc.text(line, 15, yOffset);
+        yOffset += 4.5;
+      }
+    }
+
+    // Footer
+    const totalPages = doc.getNumberOfPages();
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      if (hasChinese) doc.setFont('SimHei');
+      doc.setFontSize(8);
+      doc.setTextColor(150);
+      doc.text(`Cretas SmartBI · 第 ${p}/${totalPages} 页`, pageWidth / 2, 290, { align: 'center' });
+      doc.setTextColor(0);
+    }
+
+    const fileName = `${sheet.sheetName || 'SmartBI'}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    doc.save(fileName);
+    ElMessage.success(`已导出 PDF: ${fileName}`);
+  } catch (error) {
+    console.error('PDF export failed:', error);
+    ElMessage.error('PDF 导出失败');
+  }
+};
+
+// ========== Global Filter Bar ==========
+const filterDimensionsLoading = ref(false);
+// T3.2: Memoize dimension computation — avoid recalculating on every re-render
+const _dimensionCache = new Map<number, string[]>();
+
+const getFilterableDimensions = (sheet: SheetResult): string[] => {
+  const uploadId = sheet.uploadId!;
+  // Return cached result if available
+  if (_dimensionCache.has(uploadId)) return _dimensionCache.get(uploadId)!;
+
+  const rawData = sheetRawDataCache.get(uploadId);
+  if (!rawData?.length) {
+    // Lazy-load rawData on first filter interaction
+    if (!filterDimensionsLoading.value && uploadId) {
+      filterDimensionsLoading.value = true;
+      getUploadTableData(uploadId, 0, 2000).then(res => {
+        if (res.success && res.data?.data?.length) {
+          sheetRawDataCache.set(uploadId, res.data.data as Record<string, unknown>[]);
+          _dimensionCache.delete(uploadId); // invalidate cache so next call recomputes
+        }
+      }).finally(() => { filterDimensionsLoading.value = false; });
+    }
+    return [];
+  }
+  const allKeys = Object.keys(rawData[0]);
+  const dims: string[] = [];
+  for (const key of allKeys) {
+    const uniqueVals = new Set(rawData.map(r => String(r[key] ?? '')));
+    if (uniqueVals.size < 2) continue;
+    // Check if column is mostly numeric
+    const numericCount = rawData.filter(r => !isNaN(Number(r[key]))).length;
+    const isNumeric = numericCount >= rawData.length * 0.8;
+    // Include non-numeric columns with reasonable cardinality (up to 300 for large tables)
+    if (!isNumeric && uniqueVals.size <= 300) {
+      dims.push(key);
+    }
+  }
+  // Fallback: if no categorical columns found, offer the first non-numeric column regardless
+  if (dims.length === 0) {
+    for (const key of allKeys) {
+      const numericCount = rawData.filter(r => !isNaN(Number(r[key]))).length;
+      if (numericCount < rawData.length * 0.5) {
+        dims.push(key);
+        break;
+      }
+    }
+  }
+  _dimensionCache.set(uploadId, dims);
+  return dims;
+};
+
+const getDimensionValues = (sheet: SheetResult, dimension: string): string[] => {
+  const rawData = sheetRawDataCache.get(sheet.uploadId!);
+  if (!rawData?.length || !dimension) return [];
+  const vals = [...new Set(rawData.map(r => String(r[dimension] ?? '')))].filter(Boolean);
+  return vals.sort().slice(0, 100); // cap at 100 to keep dropdown usable
+};
+
+const handleGlobalFilterChange = (_sheet: SheetResult) => {
+  globalFilterValues.value = [];
+  filteredRawData.value = null;
+  totalRowCount.value = 0;
+  filteredRowCount.value = 0;
+};
+
+// Q1: Data filtering with debounce
+let filterDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+const applyDataFilter = async (sheet: SheetResult) => {
+  const rawData = sheetRawDataCache.get(sheet.uploadId!);
+  if (!rawData || !globalFilterDimension.value || globalFilterValues.value.length === 0) {
+    filteredRawData.value = null;
+    totalRowCount.value = 0;
+    filteredRowCount.value = 0;
+    return;
+  }
+
+  const filtered = rawData.filter(row => {
+    const val = String(row[globalFilterDimension.value] ?? '');
+    return globalFilterValues.value.includes(val);
+  });
+
+  totalRowCount.value = rawData.length;
+  filteredRowCount.value = filtered.length;
+  filteredRawData.value = filtered;
+
+  // Re-render charts with filtered data by calling Python chart builder
+  await rebuildChartsWithData(sheet, filtered);
+};
+
+const rebuildChartsWithData = async (sheet: SheetResult, data: Record<string, unknown>[]) => {
+  if (!sheet.uploadId || data.length === 0) return;
+
+  enrichingSheets.value.add(sheet.sheetIndex);
+
+  try {
+    // Call buildChart API with filtered data to generate new charts
+    const chartPromises = [];
+    const columns = Object.keys(data[0] || {});
+    const numericCols = columns.filter(col => {
+      const vals = data.map(r => r[col]).filter(v => v != null);
+      return vals.every(v => !isNaN(Number(v)));
+    });
+    const categoricalCols = columns.filter(col => !numericCols.includes(col));
+
+    // Build 2-3 charts with filtered data
+    if (categoricalCols.length > 0 && numericCols.length > 0) {
+      // Bar chart
+      chartPromises.push(buildChart({
+        data,
+        chartType: 'bar',
+        xField: categoricalCols[0],
+        yFields: [numericCols[0]],
+      }));
+
+      // Pie chart if we have categorical data
+      if (numericCols.length > 0) {
+        chartPromises.push(buildChart({
+          data,
+          chartType: 'pie',
+          xField: categoricalCols[0],
+          yFields: [numericCols[0]],
+        }));
+      }
+    }
+
+    const results = await Promise.allSettled(chartPromises);
+    const newCharts = results
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled' && r.value?.success)
+      .map(r => r.value.data);
+
+    if (newCharts.length > 0) {
+      // Update flowResult with new charts
+      sheet.flowResult = {
+        ...sheet.flowResult,
+        charts: newCharts,
+      };
+
+      // Re-render charts
+      await nextTick();
+      renderActiveCharts();
+    } else {
+      ElMessage.warning('无法为筛选后的数据生成图表');
+    }
+  } catch (error) {
+    console.error('Failed to rebuild charts with filtered data:', error);
+    ElMessage.warning('图表重建失败，请稍后重试');
+  } finally {
+    enrichingSheets.value.delete(sheet.sheetIndex);
+  }
+};
+
+const handleGlobalFilterApply = (sheet: SheetResult) => {
+  if (!globalFilterDimension.value || !globalFilterValues.value.length) {
+    filteredRawData.value = null;
+    totalRowCount.value = 0;
+    filteredRowCount.value = 0;
+    nextTick(() => renderActiveCharts());
+    return;
+  }
+
+  // Debounce to avoid rapid re-filtering
+  if (filterDebounceTimer) clearTimeout(filterDebounceTimer);
+  filterDebounceTimer = setTimeout(() => {
+    applyDataFilter(sheet);
+  }, 300);
+};
+
+const clearGlobalFilter = (sheet: SheetResult) => {
+  globalFilterDimension.value = '';
+  globalFilterValues.value = [];
+  filteredRawData.value = null;
+  totalRowCount.value = 0;
+  filteredRowCount.value = 0;
+
+  // Reset to original data - trigger re-enrichment
+  if (sheet.uploadId) {
+    enrichSheet(sheet);
+  }
+};
+
 // ========== Cross-chart linked filter (Phase 3.4 — Power BI + Superset + Tableau) ==========
 const applyChartFilter = (sheet: SheetResult, params: any) => {
   const filterValue = params.name || params.seriesName || '';
@@ -2314,6 +4032,14 @@ const applyChartFilter = (sheet: SheetResult, params: any) => {
     if (xName) { dimension = xName; break; }
   }
 
+  // Q1: Ctrl+click triggers global filter data filtering
+  if (params.event?.event?.ctrlKey || params.event?.event?.metaKey) {
+    globalFilterDimension.value = dimension || '项目';
+    globalFilterValues.value = [filterValue];
+    handleGlobalFilterApply(sheet);
+    return;
+  }
+
   // Toggle filter if same value
   if (activeFilter.value?.value === filterValue && activeFilter.value?.dimension === dimension) {
     activeFilter.value = null;
@@ -2322,8 +4048,6 @@ const applyChartFilter = (sheet: SheetResult, params: any) => {
   }
 
   // Re-render all charts with filter applied
-  // Note: actual data filtering would require re-calling buildCharts with filtered data
-  // For now we visually highlight the filtered category via ECharts emphasis
   nextTick(() => renderActiveCharts());
 };
 
@@ -2351,7 +4075,11 @@ const waitForElement = (id: string, timeout = 2000): Promise<HTMLElement | null>
 // ========== Cleanup on unmount (Phase 2.2 — prevent memory leaks) ==========
 onBeforeUnmount(() => {
   if (renderDebounceTimer) clearTimeout(renderDebounceTimer);
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
   window.removeEventListener('resize', handleResize);
+  // T5.2: Disconnect intersection observer
+  if (chartObserver) { chartObserver.disconnect(); chartObserver = null; }
+  pendingChartConfigs.clear();
   // Dispose all ECharts instances
   document.querySelectorAll('[id^="chart-"]').forEach(dom => {
     const instance = echarts.getInstanceByDom(dom as HTMLElement);
@@ -2412,7 +4140,7 @@ const renderCrossSheetCharts = async (charts: Array<{ chartType: string; title: 
       const options = resolveEChartsOptions(config);
       if (options) {
         let instance = echarts.getInstanceByDom(dom);
-        if (!instance) instance = echarts.init(dom);
+        if (!instance) instance = echarts.init(dom, 'cretas');
         const processed = processEChartsOptions(options);
         enhanceChartOption(processed);
         instance.setOption(processed, { notMerge: true });
@@ -2525,7 +4253,7 @@ const renderStatHeatmap = async (matrix: Record<string, Record<string, number>>)
     const dom = document.getElementById('stat-heatmap-chart');
     if (!dom) return;
     let instance = echarts.getInstanceByDom(dom);
-    if (!instance) instance = echarts.init(dom);
+    if (!instance) instance = echarts.init(dom, 'cretas');
 
     const measures = Object.keys(matrix);
     const data: [number, number, number][] = [];
@@ -2612,6 +4340,7 @@ const resetUpload = () => {
   indexMetadata.value = null;
   enrichedSheets.value = new Set();
   enrichingSheets.value = new Set();
+  enrichPhases.value = new Map();
 };
 
 // 重试失败的 Sheet
@@ -2673,6 +4402,8 @@ const makeBatch = (uploads: UploadHistoryItem[]): UploadBatch => {
     uploadTime,
     sheetCount: uploads.length,
     totalRows: uploads.reduce((sum, u) => sum + (u.rowCount || 0), 0),
+    uploadId: first.id,
+    id: first.id,
     uploads,
   };
 };
@@ -2682,6 +4413,9 @@ const selectBatch = (index: number) => {
   selectedBatchIndex.value = index;
   const batch = uploadBatches.value[index];
   if (!batch) return;
+
+  // U6: Show loading feedback when switching data source
+  batchSwitching.value = true;
 
   const sorted = [...batch.uploads].sort(
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
@@ -2724,14 +4458,17 @@ const selectBatch = (index: number) => {
     failedCount: 0,
     requiresConfirmationCount: 0,
     totalSavedRows: batch.totalRows,
-    message: `${batch.fileName} (${batch.sheetCount} Sheets, ${batch.totalRows} 行)`,
+    message: `${safeBatchName(batch)} (${batch.sheetCount} 表, ${batch.totalRows} 行)`,
     results: uploadedSheets.value,
   };
 
   enrichedSheets.value = new Set();
   enrichingSheets.value = new Set();
+  enrichPhases.value = new Map();
   activeTab.value = '0';
   nextTick(() => {
+    // U6: Clear loading after DOM updates with new batch data
+    batchSwitching.value = false;
     renderActiveChart();
     // R-11: 自动触发当前 tab sheet 的 enrichment（history 加载后 flowResult 为空）
     const activeSheet = uploadedSheets.value.find(s => s.sheetIndex === 0);
@@ -2769,8 +4506,21 @@ const loadHistory = async () => {
     }
     if (currentBatch.length > 0) batches.push(makeBatch(currentBatch));
 
-    uploadBatches.value = batches;
-    if (batches.length > 0) selectBatch(0);
+    // 如果已从 demo 缓存恢复了数据，保留缓存中的 uploadId，只追加服务器批次
+    if (usingDemoCache.value) {
+      // 保留当前缓存批次（第一个），追加服务器批次到后面
+      const cached = uploadBatches.value[0];
+      if (cached) {
+        uploadBatches.value = [cached, ...batches];
+      } else {
+        uploadBatches.value = batches;
+      }
+    } else {
+      uploadBatches.value = batches;
+      if (batches.length > 0) {
+        selectBatch(0);
+      }
+    }
   } catch (error) {
     console.error('加载历史记录失败:', error);
   } finally {
@@ -2786,8 +4536,76 @@ const handleResize = () => {
   });
 };
 
+// Q2: Auto-refresh timer methods
+const setAutoRefresh = (interval: number) => {
+  autoRefreshInterval.value = interval;
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+  if (interval > 0) {
+    autoRefreshTimer = setInterval(() => {
+      const sheet = currentSheet.value;
+      if (sheet) handleRefreshAnalysis(sheet);
+    }, interval);
+  }
+};
+
+// Q5: Keyboard shortcuts integration
+const currentSheet = computed(() => {
+  const idx = parseInt(activeTab.value);
+  return uploadedSheets.value.find(s => s.sheetIndex === idx) || null;
+});
+
+const switchToPrevSheet = () => {
+  const idx = parseInt(activeTab.value);
+  if (isNaN(idx) || uploadedSheets.value.length === 0) return;
+  const currentIndex = uploadedSheets.value.findIndex(s => s.sheetIndex === idx);
+  if (currentIndex > 0) {
+    activeTab.value = String(uploadedSheets.value[currentIndex - 1].sheetIndex);
+  }
+};
+
+const switchToNextSheet = () => {
+  const idx = parseInt(activeTab.value);
+  if (isNaN(idx) || uploadedSheets.value.length === 0) return;
+  const currentIndex = uploadedSheets.value.findIndex(s => s.sheetIndex === idx);
+  if (currentIndex >= 0 && currentIndex < uploadedSheets.value.length - 1) {
+    activeTab.value = String(uploadedSheets.value[currentIndex + 1].sheetIndex);
+  }
+};
+
+const { showHelp: showShortcutsHelp, shortcuts: shortcutsList } = useSmartBIShortcuts({
+  onPrevSheet: switchToPrevSheet,
+  onNextSheet: switchToNextSheet,
+  onRefresh: () => { const s = currentSheet.value; if (s) handleRefreshAnalysis(s); },
+  onExport: () => { const s = currentSheet.value; if (s) handleExportExcel(s); },
+  onShare: openShareDialog,
+  onToggleLayout: () => { layoutEditMode.value = !layoutEditMode.value; },
+  onHelp: () => { showShortcutsHelp.value = !showShortcutsHelp.value; },
+});
+
 onMounted(() => {
-  loadHistory();
+  // 后台检查 Python 服务健康状态
+  checkPythonHealth().then(res => {
+    if (res?.data) pythonHealthStatus.value = res.data;
+  }).catch(() => {
+    // 检查失败不阻塞页面加载
+  });
+
+  // Demo 缓存快速恢复: 如果有缓存，跳过网络请求直接渲染
+  const restoredFromCache = restoreFromDemoCache();
+  if (restoredFromCache) {
+    nextTick(() => {
+      renderActiveChart();
+      // 如果缓存中的 sheet 已有图表数据，标记 tour ready
+      const activeSheet = uploadedSheets.value.find(s => s.sheetIndex === parseInt(activeTab.value));
+      if (activeSheet && hasChartData(activeSheet)) {
+        tourDataReady.value = true;
+      }
+      // 后台静默刷新: 异步加载服务端历史，不影响当前渲染
+      loadHistory();
+    });
+  } else {
+    loadHistory();
+  }
   window.addEventListener('resize', handleResize);
 });
 </script>
@@ -2952,8 +4770,60 @@ onMounted(() => {
     }
   }
 
+  .demo-cache-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    border: 1px solid #86efac;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #166534;
+
+    .cache-banner-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .el-icon {
+        color: #22c55e;
+        font-size: 16px;
+      }
+    }
+  }
+
   .result-section {
     margin-top: 20px;
+
+    .industry-templates-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      margin-top: 12px;
+      background: linear-gradient(135deg, #f0f9eb 0%, #e1f3d8 100%);
+      border-radius: 8px;
+      border: 1px solid #e1f3d8;
+      flex-wrap: wrap;
+
+      .templates-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #67c23a;
+        white-space: nowrap;
+      }
+
+      .template-chip {
+        cursor: pointer;
+        transition: all 0.2s;
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 2px 6px rgba(103, 194, 58, 0.3);
+        }
+      }
+    }
 
     .sheet-tabs {
       margin-top: 24px;
@@ -3067,6 +4937,22 @@ onMounted(() => {
           @media (min-width: 1400px) { grid-template-columns: repeat(3, 1fr); }
           @media (max-width: 900px) { grid-template-columns: 1fr; }
 
+          .chart-action-bar {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 4px;
+            padding: 8px 12px;
+            background: #f5f7fa;
+            border-radius: 6px;
+          }
+
+          .chart-count-hint {
+            font-size: 12px;
+            color: #909399;
+          }
+
           .chart-grid-item {
             background: #fff;
             border-radius: 12px;
@@ -3075,6 +4961,10 @@ onMounted(() => {
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
+            /* T5.1: CSS containment — prevents layout recalc cascade between chart cards */
+            contain: layout style paint;
+            content-visibility: auto;
+            contain-intrinsic-size: auto 360px;
 
             &:hover {
               box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.06);
@@ -3105,7 +4995,19 @@ onMounted(() => {
               transition: opacity 0.2s;
             }
 
+            .chart-controls {
+              display: flex;
+              gap: 4px;
+              align-items: center;
+              opacity: 0;
+              transition: opacity 0.2s;
+            }
+
             &:hover .chart-export-btn {
+              opacity: 1;
+            }
+
+            &:hover .chart-controls {
               opacity: 1;
             }
 
@@ -3147,6 +5049,36 @@ onMounted(() => {
           }
         }
 
+        .global-filter-bar {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 8px 16px;
+          margin-bottom: 12px;
+          background: linear-gradient(135deg, #f0f5ff 0%, #e6f0ff 100%);
+          border: 1px solid #d6e4ff;
+          border-radius: 8px;
+          font-size: 13px;
+
+          .filter-bar-icon {
+            color: #4080ff;
+            font-size: 16px;
+          }
+
+          .filter-count-badge {
+            padding: 2px 10px;
+            background: #4080ff;
+            color: white;
+            border-radius: 10px;
+            font-size: 12px;
+
+            &.filter-data-badge {
+              background: #67c23a;
+              margin-left: 8px;
+            }
+          }
+        }
+
         .chart-container {
           width: 100%;
           height: 500px;
@@ -3165,6 +5097,26 @@ onMounted(() => {
             margin-top: 12px;
             font-size: 14px;
           }
+        }
+
+        .chart-skeleton-wrapper {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+          gap: 16px;
+
+          .chart-progress-hint {
+            grid-column: 1 / -1;
+            text-align: center;
+            color: #909399;
+            font-size: 13px;
+            padding: 4px 0;
+            animation: pulse-opacity 1.5s ease-in-out infinite;
+          }
+        }
+
+        @keyframes pulse-opacity {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
         }
       }
 
@@ -3693,5 +5645,69 @@ onMounted(() => {
       min-height: 200px;
     }
   }
+}
+
+// A6: 食品行业标准参考面板
+.food-industry-panel {
+  margin-bottom: 20px;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  overflow: hidden;
+
+  :deep(.el-collapse-item__header) {
+    background: linear-gradient(135deg, #f6ffed 0%, #fcffe6 100%);
+    padding: 0 16px;
+    height: 44px;
+    border-bottom: none;
+  }
+
+  :deep(.el-collapse-item__wrap) {
+    border-top: 1px solid #d9f7be;
+  }
+
+  .food-industry-header {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #389e0d;
+  }
+
+  .food-standards-content {
+    padding: 16px;
+
+    .standards-section,
+    .benchmarks-section,
+    .keywords-section {
+      margin-bottom: 14px;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+
+      h4 {
+        font-size: 13px;
+        font-weight: 600;
+        color: #1f2937;
+        margin: 0 0 8px;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        color: #4b5563;
+        font-size: 13px;
+        line-height: 1.8;
+      }
+    }
+  }
+}
+
+// P1.3: 查看更多按钮
+.chart-view-more {
+  text-align: center;
+  padding: 6px 0 2px;
+  border-top: 1px dashed #e5e7eb;
+  margin-top: 4px;
 }
 </style>

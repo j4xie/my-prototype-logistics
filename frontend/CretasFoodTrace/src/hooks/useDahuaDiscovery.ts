@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform, Alert } from 'react-native';
+import { useAuthStore } from '../store/authStore';
 import {
   DahuaModule,
   DahuaDevice,
@@ -244,8 +245,12 @@ export function useDahuaDiscovery(): UseDahuaDiscoveryResult {
                 discoveredAt: existingDevice.discoveredAt,
               };
 
-              // Get factoryId from device context or use default
-              const factoryId = 'F001'; // Default factoryId, should be passed from context in real app
+              // Get factoryId from auth store
+              const factoryId = useAuthStore.getState().getFactoryId();
+              if (!factoryId) {
+                console.warn('[useDahuaDiscovery] 无法获取factoryId，跳过设备导入');
+                return { ...result, autoImported: false };
+              }
               const importedDevice = await dahuaApiClient.importDahuaDevice(
                 factoryId,
                 discoveredDevice,

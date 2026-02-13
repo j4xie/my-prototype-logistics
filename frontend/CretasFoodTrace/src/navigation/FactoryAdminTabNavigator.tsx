@@ -7,6 +7,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Icon } from "react-native-paper";
 import { FactoryAdminTabParamList } from "../types/navigation";
+import { useFactoryFeatureStore } from "../store/factoryFeatureStore";
 
 // 导入6个Stack导航器
 import FAHomeStackNavigator from "./factory-admin/FAHomeStackNavigator";
@@ -25,6 +26,8 @@ const TAB_COLORS = {
 };
 
 export function FactoryAdminTabNavigator() {
+  const { isScreenEnabled } = useFactoryFeatureStore();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -58,6 +61,7 @@ export function FactoryAdminTabNavigator() {
       />
 
       {/* AI分析Tab */}
+      {isScreenEnabled('AIAnalysis') && (
       <Tab.Screen
         name="FAAITab"
         component={FAAIStackNavigator}
@@ -68,8 +72,10 @@ export function FactoryAdminTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 报表Tab */}
+      {isScreenEnabled('Reports') && (
       <Tab.Screen
         name="FAReportsTab"
         component={FAReportsStackNavigator}
@@ -80,8 +86,10 @@ export function FactoryAdminTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 智能分析Tab (SmartBI) */}
+      {isScreenEnabled('SmartBI') && (
       <Tab.Screen
         name="FASmartBITab"
         component={SmartBIStackNavigator}
@@ -92,6 +100,7 @@ export function FactoryAdminTabNavigator() {
           ),
         }}
       />
+      )}
 
       {/* 管理Tab */}
       <Tab.Screen

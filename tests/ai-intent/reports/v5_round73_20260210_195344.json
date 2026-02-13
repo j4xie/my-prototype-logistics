@@ -1,0 +1,867 @@
+{
+  "timestamp": "2026-02-10T19:53:44.250103",
+  "test": "v5_round73_training_skills_management",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "skill_query": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "training_plan": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "training_record": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "certification": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "assessment": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "onboarding": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "safety_training": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "promotion": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "team_building": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 40,
+    "CLASSIFIER": 10
+  },
+  "results": [
+    {
+      "query": "员工技能查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "技能矩阵",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 680
+    },
+    {
+      "query": "岗位能力要求",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 1189
+    },
+    {
+      "query": "技能等级分布",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "多技能工有哪些",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 1177
+    },
+    {
+      "query": "技能考核情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_EFFICIENCY",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "skill_query",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "培训计划安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 680
+    },
+    {
+      "query": "本月培训安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 660
+    },
+    {
+      "query": "新员工培训计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 651
+    },
+    {
+      "query": "在职培训怎么安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 676
+    },
+    {
+      "query": "培训日程表",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 651
+    },
+    {
+      "query": "预约培训课程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PLAN_UPDATE",
+        "HR_EMPLOYEE_LIST",
+        "SCHEDULING_SET_MANUAL",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "training_plan",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "培训记录查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "training_record",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "培训历史记录",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.690069854259491,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "training_record",
+      "method": "CLASSIFIER",
+      "latency_ms": 631
+    },
+    {
+      "query": "已完成的培训",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "training_record",
+      "method": null,
+      "latency_ms": 723
+    },
+    {
+      "query": "员工培训档案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "training_record",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "培训参与记录查看",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.5434820055961609,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_HISTORY",
+        null
+      ],
+      "category": "training_record",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "资格证书查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "certification",
+      "method": null,
+      "latency_ms": 707
+    },
+    {
+      "query": "上岗证办理",
+      "status": "PASS",
+      "intent": "CLOCK_IN",
+      "confidence": 0.8718723058700562,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        "CLOCK_IN",
+        null
+      ],
+      "category": "certification",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "持证上岗检查",
+      "status": "PASS",
+      "intent": "CLOCK_IN",
+      "confidence": 0.589708149433136,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        "CLOCK_IN",
+        null
+      ],
+      "category": "certification",
+      "method": "CLASSIFIER",
+      "latency_ms": 664
+    },
+    {
+      "query": "证书快过期了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "certification",
+      "method": null,
+      "latency_ms": 651
+    },
+    {
+      "query": "员工资质查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "certification",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "证书管理系统",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "certification",
+      "method": null,
+      "latency_ms": 630
+    },
+    {
+      "query": "技能评估结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "assessment",
+      "method": null,
+      "latency_ms": 695
+    },
+    {
+      "query": "考核结果查看",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.8811200857162476,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "assessment",
+      "method": "CLASSIFIER",
+      "latency_ms": 630
+    },
+    {
+      "query": "绩效评价报告",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9406030178070068,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "assessment",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "能力测试成绩",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "assessment",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "考试成绩查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_EFFICIENCY",
+        "HR_EMPLOYEE_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "assessment",
+      "method": null,
+      "latency_ms": 680
+    },
+    {
+      "query": "入职培训流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "onboarding",
+      "method": null,
+      "latency_ms": 616
+    },
+    {
+      "query": "新人带教安排",
+      "status": "PASS",
+      "intent": "TASK_ASSIGN_EMPLOYEE",
+      "confidence": 0.5611000657081604,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "TASK_ASSIGN_EMPLOYEE",
+        null
+      ],
+      "category": "onboarding",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "入职手续办理",
+      "status": "PASS",
+      "intent": "CLOCK_IN",
+      "confidence": 0.6914829015731812,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CLOCK_IN",
+        null
+      ],
+      "category": "onboarding",
+      "method": "CLASSIFIER",
+      "latency_ms": 660
+    },
+    {
+      "query": "试用期评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "onboarding",
+      "method": null,
+      "latency_ms": 671
+    },
+    {
+      "query": "转正评估申请",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.5870455503463745,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "onboarding",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "新员工入职流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_CREATE",
+        "HR_EMPLOYEE_LIST",
+        "PLAN_UPDATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "onboarding",
+      "method": null,
+      "latency_ms": 623
+    },
+    {
+      "query": "安全培训记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "safety_training",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "安全教育考核",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "safety_training",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "安全知识培训",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "safety_training",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "应急演练安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "safety_training",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "消防培训计划",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "HR_EMPLOYEE_LIST",
+        null
+      ],
+      "category": "safety_training",
+      "method": null,
+      "latency_ms": 665
+    },
+    {
+      "query": "晋升评审结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 631
+    },
+    {
+      "query": "升职条件查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 704
+    },
+    {
+      "query": "职级调整申请",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 610
+    },
+    {
+      "query": "岗位晋升流程",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "薪资调整审批",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "加薪申请查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PLAN_UPDATE",
+        "REPORT_KPI",
+        null
+      ],
+      "category": "promotion",
+      "method": null,
+      "latency_ms": 812
+    },
+    {
+      "query": "团队建设活动",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "team_building",
+      "method": null,
+      "latency_ms": 805
+    },
+    {
+      "query": "班组管理情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "team_building",
+      "method": null,
+      "latency_ms": 778
+    },
+    {
+      "query": "团队协作评估",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "team_building",
+      "method": null,
+      "latency_ms": 701
+    },
+    {
+      "query": "组织架构查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "team_building",
+      "method": null,
+      "latency_ms": 665
+    },
+    {
+      "query": "部门人员情况",
+      "status": "PASS",
+      "intent": "ATTENDANCE_DEPARTMENT",
+      "confidence": 0.642177402973175,
+      "expected": [
+        "HR_EMPLOYEE_LIST",
+        "ATTENDANCE_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ATTENDANCE_DEPARTMENT",
+        null
+      ],
+      "category": "team_building",
+      "method": "CLASSIFIER",
+      "latency_ms": 642
+    }
+  ]
+}

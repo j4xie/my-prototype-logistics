@@ -5,7 +5,7 @@
  * @since 2025-12-29
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View, FlatList, StyleSheet, RefreshControl, TouchableOpacity, Alert,
 } from 'react-native';
@@ -66,12 +66,12 @@ export default function DepartmentListScreen() {
     ]);
   };
 
-  const filteredData = departments.filter(item =>
+  const filteredData = useMemo(() => departments.filter(item =>
     item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.managerName?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [departments, searchQuery]);
 
-  const renderItem = ({ item }: { item: Department }) => (
+  const renderItem = useCallback(({ item }: { item: Department }) => (
     <TouchableOpacity onPress={() => navigation.navigate('DepartmentDetail' as any, { departmentId: item.id })}>
       <Card style={styles.card}>
         <Card.Content style={styles.cardContent}>
@@ -109,7 +109,7 @@ export default function DepartmentListScreen() {
         </Card.Content>
       </Card>
     </TouchableOpacity>
-  );
+  ), [navigation, t, handleDelete]);
 
   if (loading) {
     return (

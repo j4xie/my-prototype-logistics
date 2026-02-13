@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -189,14 +189,14 @@ export default function MaterialConsumptionHistoryScreen() {
   };
 
   // Filter data based on search query
-  const filteredConsumptions = consumptions.filter((item) => {
+  const filteredConsumptions = useMemo(() => consumptions.filter((item) => {
     const searchLower = searchQuery.toLowerCase();
     const batchIdMatch = item.batchId?.toLowerCase().includes(searchLower);
     const productionBatchMatch = item.productionBatchId?.toLowerCase().includes(searchLower);
     const materialTypeMatch = item.materialTypeName?.toLowerCase().includes(searchLower);
 
     return batchIdMatch || productionBatchMatch || materialTypeMatch;
-  });
+  }), [consumptions, searchQuery]);
 
   // Render stats summary
   const renderStats = () => {
@@ -227,7 +227,7 @@ export default function MaterialConsumptionHistoryScreen() {
   };
 
   // Render item
-  const renderItem = ({ item }: { item: MaterialConsumption }) => (
+  const renderItem = useCallback(({ item }: { item: MaterialConsumption }) => (
     <Surface style={styles.card} elevation={1}>
       <View style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
@@ -281,7 +281,7 @@ export default function MaterialConsumptionHistoryScreen() {
         )}
       </View>
     </Surface>
-  );
+  ), [formatCurrency, formatDate, t]);
 
   // Empty state
   const renderEmpty = () => (

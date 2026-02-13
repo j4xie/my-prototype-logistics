@@ -1,0 +1,185 @@
+/**
+ * Shared Dashboard CSS
+ * Common styles used across all Dashboard*.vue components.
+ * Extracted from DashboardAdmin, DashboardFinance, DashboardHR,
+ * DashboardProduction, DashboardWarehouse, DashboardDefault.
+ *
+ * AUDIT-069: Eliminates ~80 lines of duplicated CSS per file.
+ *
+ * Usage:
+ *   <style lang="scss" scoped>
+ *     @import './dashboard-shared.scss';
+ *     // ... unique styles for this dashboard
+ *   </style>
+ */
+
+// ==================== Welcome Section ====================
+.welcome-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .welcome-info {
+    h1 {
+      font-size: 24px;
+      color: #333;
+      margin: 0 0 8px;
+    }
+
+    p {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0;
+      color: #999;
+      font-size: 14px;
+    }
+  }
+}
+
+// ==================== Stat Cards ====================
+.stat-cards {
+  margin-bottom: 24px;
+
+  .stat-card {
+    margin-bottom: 20px;
+    cursor: pointer;
+    transition: transform 0.2s;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  .stat-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .stat-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .stat-title {
+    font-size: 14px;
+    color: var(--color-text-secondary);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: var(--font-size-2xl);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+
+    small,
+    .stat-unit {
+      font-size: 14px;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+  }
+}
+
+// ==================== Quick Actions ====================
+.quick-actions-card {
+  margin-bottom: 24px;
+
+  .quick-actions {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .action-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: #f5f7fa;
+    }
+
+    span {
+      font-size: 14px;
+      color: #606266;
+    }
+  }
+}
+
+// ==================== Card Header ====================
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+// ==================== Overview Content ====================
+.overview-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .overview-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed #ebeef5;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      color: var(--color-text-secondary);
+      font-size: 14px;
+    }
+
+    .value {
+      font-size: 16px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      color: #303133;
+
+      &.text-success {
+        color: #67c23a;
+      }
+
+      &.text-danger {
+        color: #f56c6c;
+      }
+    }
+  }
+}
+
+// ==================== Common Card Spacing ====================
+.el-card {
+  margin-bottom: 20px;
+}
+
+// ==================== Responsive ====================
+@media (max-width: 768px) {
+  .stat-cards .stat-value {
+    font-size: 22px;
+  }
+}

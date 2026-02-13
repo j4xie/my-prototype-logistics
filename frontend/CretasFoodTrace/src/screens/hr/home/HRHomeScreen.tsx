@@ -30,6 +30,7 @@ import { useTranslation } from 'react-i18next';
 
 import { hrApiClient } from '../../../services/api/hrApiClient';
 import { useAuthStore } from '../../../store/authStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import {
   HR_THEME,
   HR_QUICK_ACTIONS,
@@ -77,14 +78,17 @@ const StatCard: React.FC<StatCardProps> = ({
 export default function HRHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const { user } = useAuthStore();
+  const { isScreenEnabled, getEnabledQuickActions } = useFactoryFeatureStore();
   const { t } = useTranslation('hr');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<HRDashboardStats | null>(null);
   const [anomalies, setAnomalies] = useState<AttendanceAnomaly[]>([]);
 
   const loadData = useCallback(async () => {
     try {
+      setError(null);
       const [dashboardData, anomalyData] = await Promise.all([
         hrApiClient.getDashboardData(),
         hrApiClient.getTodayAnomalies(),
@@ -104,8 +108,9 @@ export default function HRHomeScreen() {
         }));
         setAnomalies(mappedAnomalies);
       }
-    } catch (error) {
-      console.error(t('messages.loadFailed'), error);
+    } catch (err) {
+      console.error(t('messages.loadFailed'), err);
+      setError('加载失败');
       Alert.alert(t('messages.error'), t('messages.retryLater'));
     } finally {
       setLoading(false);
@@ -133,6 +138,22 @@ export default function HRHomeScreen() {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={HR_THEME.primary} />
         <Text style={styles.loadingText}>{t('home.loading')}</Text>
+      </View>
+    );
+  }
+
+  // 错误状态
+  if (error && !stats) {
+    return (
+      <View style={styles.loadingContainer}>
+        <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+        <Text style={[styles.loadingText, { color: '#606266', marginTop: 12 }]}>加载失败，请检查网络</Text>
+        <TouchableOpacity
+          style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#8B5CF6', borderRadius: 6 }}
+          onPress={() => loadData()}
+        >
+          <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -175,6 +196,7 @@ export default function HRHomeScreen() {
             color={HR_THEME.success}
             subtext={`${t('home.stats.totalStaff')} ${stats?.totalStaff ?? 0}`}
           />
+          {isScreenEnabled('AttendanceManagement') && (
           <StatCard
             title={t('home.stats.lateToday')}
             value={stats?.lateCount ?? 0}
@@ -182,6 +204,8 @@ export default function HRHomeScreen() {
             color={HR_THEME.warning}
             onPress={() => navigation.navigate('AttendanceAnomaly' as any)}
           />
+          )}
+          {isScreenEnabled('WhitelistManagement') && (
           <StatCard
             title={t('home.stats.pendingWhitelist')}
             value={stats?.whitelistPending ?? 0}
@@ -189,6 +213,8 @@ export default function HRHomeScreen() {
             color={HR_THEME.primary}
             onPress={() => navigation.navigate('WhitelistList' as any)}
           />
+          )}
+          {isScreenEnabled('NewHireTracking') && (
           <StatCard
             title={t('home.stats.thisMonthNewHires')}
             value={stats?.thisMonthNewHires ?? 0}
@@ -200,6 +226,7 @@ export default function HRHomeScreen() {
             }
             onPress={() => navigation.navigate('NewHires')}
           />
+          )}
         </View>
 
         {/* 出勤率 */}
@@ -226,7 +253,19 @@ export default function HRHomeScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('home.quickActions.title')}</Text>
           <View style={styles.quickActions}>
-            {HR_QUICK_ACTIONS.map((action) => (
+            {HR_QUICK_ACTIONS.filter((action) => {
+              const QUICK_ACTION_GUARD: Record<string, string> = {
+                'new-hires': 'NewHireTracking',
+              };
+              if (QUICK_ACTION_GUARD[action.id] && !isScreenEnabled(QUICK_ACTION_GUARD[action.id])) {
+                return false;
+              }
+              const enabledQA = getEnabledQuickActions();
+              if (enabledQA.length > 0 && !enabledQA.includes(action.id)) {
+                return false;
+              }
+              return true;
+            }).map((action) => (
               <TouchableOpacity
                 key={action.id}
                 style={styles.quickActionItem}
@@ -251,6 +290,7 @@ export default function HRHomeScreen() {
         </View>
 
         {/* 考勤异常 */}
+        {isScreenEnabled('AttendanceManagement') && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>{t('home.anomaly.title')}</Text>
@@ -303,6 +343,7 @@ export default function HRHomeScreen() {
             })
           )}
         </View>
+        )}
 
         <View style={styles.bottomSpacer} />
       </ScrollView>

@@ -1,0 +1,810 @@
+{
+  "timestamp": "2026-02-10T18:29:03.057908",
+  "test": "v5_round36_label_printing",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "label_generation": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "barcode_qr": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "print_management": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "product_labels": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "shipping_labels": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "compliance_labels": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "label_query": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "smart_labels": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "label_errors": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "CLASSIFIER": 11,
+    "NONE": 33,
+    "PHRASE_MATCH": 6
+  },
+  "results": [
+    {
+      "query": "生成产品标签",
+      "status": "PASS",
+      "intent": "PRODUCT_UPDATE",
+      "confidence": 0.6388417482376099,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_QUERY",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "label_generation",
+      "method": "CLASSIFIER",
+      "latency_ms": 586
+    },
+    {
+      "query": "打印批次标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        null
+      ],
+      "category": "label_generation",
+      "method": null,
+      "latency_ms": 669
+    },
+    {
+      "query": "标签模板管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "label_generation",
+      "method": null,
+      "latency_ms": 603
+    },
+    {
+      "query": "自定义标签格式",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "label_generation",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "标签内容编辑",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "label_generation",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "二维码标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "TRACE_QUERY",
+        null
+      ],
+      "category": "label_generation",
+      "method": null,
+      "latency_ms": 648
+    },
+    {
+      "query": "扫描条码",
+      "status": "PASS",
+      "intent": "SCALE_ADD_DEVICE_VISION",
+      "confidence": 0.9179417490959167,
+      "expected": [
+        "TRACE_QUERY",
+        "LABEL_QUERY",
+        "PRODUCT_QUERY",
+        "SCALE_ADD_DEVICE_VISION",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "生成二维码",
+      "status": "PASS",
+      "intent": "SCALE_ADD_DEVICE_VISION",
+      "confidence": 0.6186332702636719,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "TRACE_QUERY",
+        "SCALE_ADD_DEVICE_VISION",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": "CLASSIFIER",
+      "latency_ms": 600
+    },
+    {
+      "query": "条码查询产品",
+      "status": "PASS",
+      "intent": "PRODUCT_TYPE_QUERY",
+      "confidence": 0.6001633405685425,
+      "expected": [
+        "PRODUCT_QUERY",
+        "TRACE_QUERY",
+        "LABEL_QUERY",
+        "PRODUCT_TYPE_QUERY",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": "CLASSIFIER",
+      "latency_ms": 737
+    },
+    {
+      "query": "批次条码打印",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "条码扫描入库",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_QUERY",
+        "LABEL_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": null,
+      "latency_ms": 673
+    },
+    {
+      "query": "二维码溯源",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_QUERY",
+        "LABEL_QUERY",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "barcode_qr",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "打印机状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "SCALE_LIST_DEVICES",
+        null
+      ],
+      "category": "print_management",
+      "method": null,
+      "latency_ms": 776
+    },
+    {
+      "query": "打印队列查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "print_management",
+      "method": null,
+      "latency_ms": 754
+    },
+    {
+      "query": "取消打印任务",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CANCEL",
+      "confidence": 0.521309494972229,
+      "expected": [
+        "LABEL_PRINT",
+        "PROCESSING_BATCH_CANCEL",
+        null
+      ],
+      "category": "print_management",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "打印机设置",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "SCALE_LIST_DEVICES",
+        null
+      ],
+      "category": "print_management",
+      "method": null,
+      "latency_ms": 620
+    },
+    {
+      "query": "批量打印标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        null
+      ],
+      "category": "print_management",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "打印历史记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "print_management",
+      "method": null,
+      "latency_ms": 598
+    },
+    {
+      "query": "营养标签生成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "product_labels",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "配料表标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_QUERY",
+        null
+      ],
+      "category": "product_labels",
+      "method": null,
+      "latency_ms": 1055
+    },
+    {
+      "query": "过敏原标签",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "FOOD_SAFETY_CERT_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "product_labels",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 439
+    },
+    {
+      "query": "保质期标签",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.5134117603302002,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_QUERY",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "product_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "产品规格标签",
+      "status": "PASS",
+      "intent": "PRODUCT_UPDATE",
+      "confidence": 0.8211248517036438,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_QUERY",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "product_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 591
+    },
+    {
+      "query": "发货标签打印",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.7455614805221558,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 587
+    },
+    {
+      "query": "物流单号标签",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.5293586254119873,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        "TRACE_QUERY",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "收货地址标签",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.5233924984931946,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "包装箱标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "出库单标签",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "运单打印",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "shipping_labels",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "食品安全认证标签",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "compliance_labels",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "有机认证标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "compliance_labels",
+      "method": null,
+      "latency_ms": 639
+    },
+    {
+      "query": "检验合格标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "compliance_labels",
+      "method": null,
+      "latency_ms": 606
+    },
+    {
+      "query": "生产许可标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "compliance_labels",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "追溯码标签",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_QUERY",
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "compliance_labels",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "查看标签详情",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "LABEL_PRINT",
+        "PRODUCT_QUERY",
+        null
+      ],
+      "category": "label_query",
+      "method": null,
+      "latency_ms": 601
+    },
+    {
+      "query": "标签打印记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "label_query",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "最近打印的标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "label_query",
+      "method": null,
+      "latency_ms": 1505
+    },
+    {
+      "query": "哪些批次没贴标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "label_query",
+      "method": null,
+      "latency_ms": 643
+    },
+    {
+      "query": "标签库存查询",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "LABEL_QUERY",
+        "INVENTORY_QUERY",
+        "INVENTORY_LIST",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "label_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 425
+    },
+    {
+      "query": "标签使用统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "label_query",
+      "method": null,
+      "latency_ms": 594
+    },
+    {
+      "query": "NFC标签写入",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "SCALE_LIST_DEVICES",
+        null
+      ],
+      "category": "smart_labels",
+      "method": null,
+      "latency_ms": 781
+    },
+    {
+      "query": "RFID标签管理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "LABEL_GENERATE",
+        "SCALE_LIST_DEVICES",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "smart_labels",
+      "method": null,
+      "latency_ms": 597
+    },
+    {
+      "query": "电子标签更新",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_PRINT",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "smart_labels",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "智能标签读取",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_QUERY",
+        "TRACE_QUERY",
+        "SCALE_LIST_DEVICES",
+        null
+      ],
+      "category": "smart_labels",
+      "method": null,
+      "latency_ms": 600
+    },
+    {
+      "query": "温度标签监测",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.9031139016151428,
+      "expected": [
+        "LABEL_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "SCALE_LIST_DEVICES",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "smart_labels",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "标签打印错误",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "label_errors",
+      "method": null,
+      "latency_ms": 679
+    },
+    {
+      "query": "标签内容有误",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_GENERATE",
+        "LABEL_QUERY",
+        "PRODUCT_UPDATE",
+        null
+      ],
+      "category": "label_errors",
+      "method": null,
+      "latency_ms": 622
+    },
+    {
+      "query": "重新打印标签",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_GENERATE",
+        null
+      ],
+      "category": "label_errors",
+      "method": null,
+      "latency_ms": 671
+    },
+    {
+      "query": "标签粘贴不上",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "label_errors",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "标签模糊看不清",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "LABEL_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "label_errors",
+      "method": null,
+      "latency_ms": 654
+    }
+  ]
+}

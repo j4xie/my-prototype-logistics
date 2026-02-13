@@ -1,0 +1,800 @@
+{
+  "timestamp": "2026-02-10T17:02:10.767873",
+  "test": "v5_round17_equipment_iot_operations",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "status": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "maint": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "sensor": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "alarm": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "line": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "energy": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "cal": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "predict": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "spare": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 20,
+    "SEMANTIC": 3,
+    "CLASSIFIER": 9,
+    "NONE": 18
+  },
+  "results": [
+    {
+      "query": "所有设备的运行状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "status-overview",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "设备OEE是多少",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.92,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY"
+      ],
+      "category": "status-oee",
+      "method": "SEMANTIC",
+      "latency_ms": 655
+    },
+    {
+      "query": "设备稼动率查询",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.9225595593452454,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY"
+      ],
+      "category": "status-utilization",
+      "method": "CLASSIFIER",
+      "latency_ms": 616
+    },
+    {
+      "query": "目前有多少设备在线",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.5774204134941101,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "status-online",
+      "method": "CLASSIFIER",
+      "latency_ms": 599
+    },
+    {
+      "query": "哪些设备处于停机状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_MAINTENANCE"
+      ],
+      "category": "status-stopped",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "各设备负载情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "status-load",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "查看设备维修记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "maint-history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    },
+    {
+      "query": "下周的设备保养计划",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "maint-schedule",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 434
+    },
+    {
+      "query": "预防性维护任务清单",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.9279269576072693,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST"
+      ],
+      "category": "maint-preventive",
+      "method": "CLASSIFIER",
+      "latency_ms": 636
+    },
+    {
+      "query": "3号灌装机故障历史",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST"
+      ],
+      "category": "maint-fault-history",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 437
+    },
+    {
+      "query": "待处理的维修工单有哪些",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST"
+      ],
+      "category": "maint-workorders",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "备件库存够不够维修用",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "maint-spares-stock",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "传感器数据汇总",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        "COLD_CHAIN_TEMPERATURE"
+      ],
+      "category": "sensor-overview",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "冷库温度传感器当前读数",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "sensor-temperature",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 454
+    },
+    {
+      "query": "锅炉压力传感器是否正常",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "sensor-pressure",
+      "method": null,
+      "latency_ms": 659
+    },
+    {
+      "query": "电机振动检测数据",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_ALERT_LIST"
+      ],
+      "category": "sensor-vibration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "管道流量计读数多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "sensor-flowmeter",
+      "method": null,
+      "latency_ms": 685
+    },
+    {
+      "query": "储罐液位是否达到警戒线",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "sensor-level",
+      "method": null,
+      "latency_ms": 625
+    },
+    {
+      "query": "当前设备有什么告警",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "ALERT_ACTIVE"
+      ],
+      "category": "alarm-current",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "过去一周的报警历史",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.6897855401039124,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "ALERT_STATS"
+      ],
+      "category": "alarm-history",
+      "method": "CLASSIFIER",
+      "latency_ms": 624
+    },
+    {
+      "query": "未处理的设备告警有几条",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_LIST"
+      ],
+      "category": "alarm-unhandled",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 456
+    },
+    {
+      "query": "告警阈值设置是否合理",
+      "status": "PASS",
+      "intent": "RULE_CONFIG",
+      "confidence": 0.93,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "alarm-threshold",
+      "method": "SEMANTIC",
+      "latency_ms": 693
+    },
+    {
+      "query": "有没有紧急设备告警",
+      "status": "PASS",
+      "intent": "EQUIPMENT_ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_ACTIVE",
+        "ALERT_LIST"
+      ],
+      "category": "alarm-urgent",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "本月告警趋势怎么样",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "EQUIPMENT_ALERT_LIST",
+        "REPORT_TRENDS"
+      ],
+      "category": "alarm-trend",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 505
+    },
+    {
+      "query": "哪条产线在停机",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STOP",
+      "confidence": 0.8582028150558472,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STOP"
+      ],
+      "category": "line-downtime",
+      "method": "CLASSIFIER",
+      "latency_ms": 634
+    },
+    {
+      "query": "A线换线需要多长时间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "line-changeover",
+      "method": null,
+      "latency_ms": 685
+    },
+    {
+      "query": "各产线效率对比",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        "EQUIPMENT_STATS",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "line-efficiency",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 446
+    },
+    {
+      "query": "瓶颈工序在哪里",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "line-bottleneck",
+      "method": null,
+      "latency_ms": 720
+    },
+    {
+      "query": "产线节拍时间是多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "line-takt",
+      "method": null,
+      "latency_ms": 639
+    },
+    {
+      "query": "今天工厂耗电量多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        "REPORT_PRODUCTION",
+        null
+      ],
+      "category": "energy-electricity",
+      "method": null,
+      "latency_ms": 688
+    },
+    {
+      "query": "本月用水量统计",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY",
+        null
+      ],
+      "category": "energy-water",
+      "method": null,
+      "latency_ms": 632
+    },
+    {
+      "query": "蒸汽用量是否超标",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "energy-steam",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "各车间能耗统计对比",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "energy-comparison",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "空压机压力是否正常",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_ALERT_LIST",
+        "COLD_CHAIN_TEMPERATURE",
+        null
+      ],
+      "category": "energy-compressor",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "设备校准到期提醒",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.7827956676483154,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "cal-due",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "电子秤校准记录",
+      "status": "PASS",
+      "intent": "SCALE_DEVICE_DETAIL",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "SCALE_DEVICE_DETAIL"
+      ],
+      "category": "cal-scale",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 436
+    },
+    {
+      "query": "温度计校准是否过期",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.5046871900558472,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "cal-thermometer",
+      "method": "CLASSIFIER",
+      "latency_ms": 615
+    },
+    {
+      "query": "在用计量器具清单",
+      "status": "PASS",
+      "intent": "SCALE_LIST_DEVICES",
+      "confidence": 0.7109851241111755,
+      "expected": [
+        "EQUIPMENT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "SCALE_LIST_DEVICES"
+      ],
+      "category": "cal-instruments",
+      "method": "CLASSIFIER",
+      "latency_ms": 616
+    },
+    {
+      "query": "哪些设备校准即将到期",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.7016884684562683,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "cal-expiring",
+      "method": "CLASSIFIER",
+      "latency_ms": 596
+    },
+    {
+      "query": "设备寿命预测分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "predict-lifespan",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "有没有设备故障预警",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_ACTIVE",
+        "EQUIPMENT_MAINTENANCE",
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "predict-early-warning",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "设备健康度评分",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        null
+      ],
+      "category": "predict-health",
+      "method": null,
+      "latency_ms": 704
+    },
+    {
+      "query": "异常检测结果有哪些",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.9500000000000001,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "ALERT_LIST",
+        "ALERT_ACTIVE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "predict-anomaly",
+      "method": "SEMANTIC",
+      "latency_ms": 623
+    },
+    {
+      "query": "设备运行数据有没有趋势异常",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_ALERT_LIST",
+        "EQUIPMENT_STATS",
+        "ALERT_STATS",
+        "REPORT_TRENDS"
+      ],
+      "category": "predict-trend-anomaly",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "查询备件库存情况",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "spare-query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "今天工具领用记录",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CONSUME",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_BATCH_CONSUME",
+        null
+      ],
+      "category": "spare-tool-checkout",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 460
+    },
+    {
+      "query": "上月备件消耗排名",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_INVENTORY",
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "spare-consumption",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "模具寿命还剩多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "spare-mold-life",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "刀具更换记录查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "spare-tool-change",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "需要申购哪些备件",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "EQUIPMENT_MAINTENANCE",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "spare-procurement",
+      "method": null,
+      "latency_ms": 678
+    }
+  ]
+}

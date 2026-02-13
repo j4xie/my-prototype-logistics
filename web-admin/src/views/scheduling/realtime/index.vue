@@ -14,7 +14,7 @@ import {
 } from '@/api/scheduling';
 import { ElMessage } from 'element-plus';
 import { Refresh, Warning, User, Timer, TrendCharts } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -107,10 +107,10 @@ async function loadData(silent = false) {
 
 function initCharts() {
   if (progressContainer.value) {
-    progressChart.value = echarts.init(progressContainer.value);
+    progressChart.value = echarts.init(progressContainer.value, 'cretas');
   }
   if (probabilityContainer.value) {
-    probabilityChart.value = echarts.init(probabilityContainer.value);
+    probabilityChart.value = echarts.init(probabilityContainer.value, 'cretas');
   }
 
   window.addEventListener('resize', () => {

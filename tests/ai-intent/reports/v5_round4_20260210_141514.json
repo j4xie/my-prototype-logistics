@@ -1,0 +1,654 @@
+{
+  "timestamp": "2026-02-10T14:15:14.809273",
+  "test": "v5_round4",
+  "total": 48,
+  "pass": 47,
+  "fail": 1,
+  "error": 0,
+  "pass_rate": 97.91666666666666,
+  "category_breakdown": {
+    "urgent": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "jargon": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "entity": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "dialect": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "question": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "multi": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "time": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "action": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "compare": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "correct": {
+      "pass": 3,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 27,
+    "CLASSIFIER": 16,
+    "SEMANTIC": 2,
+    "NONE": 3
+  },
+  "results": [
+    {
+      "query": "急！设备坏了",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "urgent-equip-down",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "赶紧查一下库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.8734161853790283,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "urgent-check-inv",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "快看看有没有告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE"
+      ],
+      "category": "urgent-check-alert",
+      "method": "SEMANTIC"
+    },
+    {
+      "query": "出事了，质检不合格",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_DISPOSITION_EXECUTE"
+      ],
+      "category": "urgent-quality-fail",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "完蛋了订单超时了",
+      "status": "PASS",
+      "intent": "ORDER_STATUS",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_STATUS",
+        "ORDER_LIST",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "urgent-order-late",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "HACCP审核记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS"
+      ],
+      "category": "jargon-haccp",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "CCP点检测数据",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY"
+      ],
+      "category": "jargon-ccp",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "GMP检查报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS"
+      ],
+      "category": "jargon-gmp",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "BOM物料清单",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY"
+      ],
+      "category": "jargon-bom",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "WMS出入库流水",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "jargon-wms",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "A线今天产了多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.709301233291626,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "entity-line-a",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "车间二的设备状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_LIST"
+      ],
+      "category": "entity-workshop2",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "面粉还剩多少",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.5205170512199402,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY"
+      ],
+      "category": "entity-flour",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "张三今天来了吗",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.9022930860519409,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_HISTORY"
+      ],
+      "category": "entity-person",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "BN20260209001批次状态",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.6442079544067383,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST"
+      ],
+      "category": "entity-batch-id",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "活儿干到哪了",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "dialect-progress",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "料够不够用",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_LOW_STOCK_ALERT",
+        "REPORT_INVENTORY"
+      ],
+      "category": "dialect-material-enough",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "人到齐了没",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "dialect-all-present",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "货发了吗",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY"
+      ],
+      "category": "dialect-shipped",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "钱收了没",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "CUSTOMER_PURCHASE_HISTORY"
+      ],
+      "category": "dialect-payment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "为什么产量下降了",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.6060385704040527,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "question-why-prod-drop",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "质量问题出在哪里",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY"
+      ],
+      "category": "question-quality-root",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "怎么提高设备利用率",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATS",
+        "REPORT_EFFICIENCY"
+      ],
+      "category": "question-improve-util",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "谁负责这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST"
+      ],
+      "category": "question-who-owns",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "这个月目标完成了吗",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.9479926824569702,
+      "expected": [
+        "REPORT_KPI",
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "question-target-met",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "今天产量和质检数据",
+      "status": "FAIL",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION",
+        "QUALITY_STATS"
+      ],
+      "category": "multi-prod-quality",
+      "method": null
+    },
+    {
+      "query": "上周出勤率和加班情况",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "ATTENDANCE_HISTORY"
+      ],
+      "category": "multi-attend-overtime",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "库存低于安全线的原料",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.8074886798858643,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT",
+        "REPORT_INVENTORY"
+      ],
+      "category": "multi-low-stock",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "效率最高的产线是哪条",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.8871328830718994,
+      "expected": [
+        "REPORT_EFFICIENCY",
+        "EQUIPMENT_STATS",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "multi-best-line",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "哪个供应商交货最准时",
+      "status": "PASS",
+      "intent": "SUPPLIER_RANKING",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST",
+        "SUPPLIER_RANKING"
+      ],
+      "category": "multi-best-supplier",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "上周一的产量",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.8724529147148132,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "time-specific-day",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "今天早班的出勤",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.8546097278594971,
+      "expected": [
+        "ATTENDANCE_TODAY",
+        "ATTENDANCE_STATS"
+      ],
+      "category": "time-shift",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "最近一个月的告警趋势",
+      "status": "PASS",
+      "intent": "ALERT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_STATS",
+        "ALERT_LIST"
+      ],
+      "category": "time-month-trend",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "去年同期销售对比",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.923963189125061,
+      "expected": [
+        "REPORT_TRENDS",
+        "REPORT_FINANCE"
+      ],
+      "category": "time-yoy",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "下周的排产计划",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.5902860164642334,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "time-next-week",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "帮我导出今天的产量报表",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY"
+      ],
+      "category": "action-export-report",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "把这批原料标记为不合格",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.8294438719749451,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_EXECUTE"
+      ],
+      "category": "action-mark-reject",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "通知仓库准备出货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY"
+      ],
+      "category": "action-notify-ship",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "关闭这条告警",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_RESOLVE",
+        "ALERT_LIST"
+      ],
+      "category": "action-close-alert",
+      "method": "SEMANTIC"
+    },
+    {
+      "query": "更新设备维护记录",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATUS_UPDATE"
+      ],
+      "category": "action-update-maint",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "A线和B线的产量对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_TRENDS"
+      ],
+      "category": "compare-lines",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "今天和昨天的出勤率对比",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.7234233617782593,
+      "expected": [
+        "ATTENDANCE_STATS",
+        "REPORT_TRENDS"
+      ],
+      "category": "compare-attend",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "各车间的质检合格率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY"
+      ],
+      "category": "compare-quality-dept",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "本月各产品的销售排名",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "compare-sales-rank",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "供应商价格对比",
+      "status": "PASS",
+      "intent": "SUPPLIER_EVALUATE",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "SUPPLIER_LIST"
+      ],
+      "category": "compare-supplier-price",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "不对，我要查的是上个月的",
+      "status": "PASS",
+      "intent": "NONE",
+      "confidence": null,
+      "expected": [
+        "REPORT_PRODUCTION",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "NONE"
+      ],
+      "category": "correct-wrong-month",
+      "method": null
+    },
+    {
+      "query": "不是这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.686226487159729,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "NONE"
+      ],
+      "category": "correct-wrong-batch",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "我说的不是告警，是质检",
+      "status": "PASS",
+      "intent": "NONE",
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "NONE"
+      ],
+      "category": "correct-not-alert",
+      "method": null
+    }
+  ]
+}

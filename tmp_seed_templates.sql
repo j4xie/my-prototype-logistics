@@ -1,0 +1,9 @@
+INSERT INTO form_templates (id, name, entity_type, schema_json, is_active, version, source, created_at, updated_at)
+VALUES
+  (gen_random_uuid(), E'\u5B9E\u65F6\u751F\u4EA7\u8FDB\u5EA6\u4E0A\u62A5', 'PRODUCTION_PROGRESS_REPORT',
+   '{"fields":[{"key":"processCategory","label":"processCategory","type":"select","required":true,"options_source":"product_catalog"},{"key":"reportDate","label":"reportDate","type":"date","required":true},{"key":"carrierSerialNo","label":"carrierSerialNo","type":"integer","required":true},{"key":"quantity","label":"quantity","type":"integer","required":true},{"key":"photos","label":"photos","type":"photo_array","required":true,"max":10},{"key":"notes","label":"notes","type":"text","required":false}]}',
+   true, 1, 'MANUAL', NOW(), NOW()),
+  (gen_random_uuid(), E'\u751F\u4EA7\u5DE5\u65F6\u4E0A\u62A5', 'PRODUCTION_HOURS_REPORT',
+   '{"fields":[{"key":"reportDate","label":"reportDate","type":"date","required":true},{"key":"productName","label":"productName","type":"select","required":true,"options_source":"product_catalog"},{"key":"hourEntries","label":"hourEntries","type":"table","required":true,"columns":[{"key":"fullTimeWorkers","label":"fullTimeWorkers","type":"integer"},{"key":"fullTimeHours","label":"fullTimeHours","type":"decimal"},{"key":"hourlyWorkers","label":"hourlyWorkers","type":"integer"},{"key":"hourlyHours","label":"hourlyHours","type":"decimal"},{"key":"dailyWorkers","label":"dailyWorkers","type":"integer"},{"key":"dailyHours","label":"dailyHours","type":"decimal"}]},{"key":"productionStartTime","label":"productionStartTime","type":"time","required":true},{"key":"productionEndTime","label":"productionEndTime","type":"time","required":true},{"key":"operationVolume","label":"operationVolume","type":"decimal","required":true},{"key":"notes","label":"notes","type":"text","required":false}]}',
+   true, 1, 'MANUAL', NOW(), NOW())
+ON CONFLICT DO NOTHING;

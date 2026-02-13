@@ -86,6 +86,39 @@ _archived/
 # APK 文件（太大，使用 Git LFS 或单独管理）
 *.apk
 
+# 截图和PNG文件
+*.png
+screenshots/
+audit-screenshots/
+
+# 运维脚本（含凭证，不推送到GitHub）
+scripts/
+
+# 大文件和数据目录
+backend/java/
+backend/python/smartbi/exports/
+backend/python/smartbi/services/temp_frames/
+backend/python/smartbi/smartbi_cache/
+backend/python/smartbi/Test.xlsx
+backend/python/smartbi/test_complex_5sheets.xlsx
+tests/emulator-hermes/
+test-ai-chat/
+uploads/
+web-admin-dist.tar.gz
+*.tar.gz
+*.patch
+
+# 备份目录
+.backup-v21/
+
+# 临时分析和调试文件
+*.xml
+configs.json
+1.md
+redundancy_analysis.txt
+rag_test_results.py
+CUsersStevemy-prototype-logisticstmp_login.json
+
 # 产品图片目录（不推送到仓库）
 MallCenter/product image/
 

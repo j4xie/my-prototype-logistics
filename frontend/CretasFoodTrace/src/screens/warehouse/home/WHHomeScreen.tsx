@@ -31,9 +31,11 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { WHHomeStackParamList } from '../../../types/navigation';
 import { useAuthStore } from '../../../store/authStore';
+import { useFactoryFeatureStore } from '../../../store/factoryFeatureStore';
 import { dashboardAPI } from '../../../services/api/dashboardApiClient';
 import { shipmentApiClient, ShipmentRecord } from '../../../services/api/shipmentApiClient';
 import { materialBatchApiClient, MaterialBatch } from '../../../services/api/materialBatchApiClient';
@@ -92,11 +94,13 @@ export default function WHHomeScreen() {
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
   const { user } = useAuthStore();
+  const { isScreenEnabled } = useFactoryFeatureStore();
 
   // 状态
   const [activeTab, setActiveTab] = useState<'outbound' | 'inbound'>('outbound');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // 数据
   const [outboundTasks, setOutboundTasks] = useState<OutboundTask[]>([]);
@@ -113,6 +117,7 @@ export default function WHHomeScreen() {
   // 加载数据
   const loadData = useCallback(async () => {
     try {
+      setError(null);
       logger.info('[WHHomeScreen] 开始加载仓储首页数据');
 
       // 并行加载所有数据
@@ -238,9 +243,10 @@ export default function WHHomeScreen() {
         { id: '2', name: '冷冻区 B区', currentTemp: -18, unit: '°C', status: 'normal' },
       ]);
 
-    } catch (error) {
-      logger.error('[WHHomeScreen] 加载数据失败:', error);
-      handleError(error, { title: t('messages.loadFailed') });
+    } catch (err) {
+      logger.error('[WHHomeScreen] 加载数据失败:', err);
+      setError('加载失败');
+      handleError(err, { title: t('messages.loadFailed') });
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -452,6 +458,24 @@ export default function WHHomeScreen() {
     );
   }
 
+  // 错误状态
+  if (error && outboundTasks.length === 0 && inboundTasks.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <MaterialCommunityIcons name="cloud-off-outline" size={48} color="#C0C4CC" />
+          <Text style={{ color: '#606266', marginTop: 12, fontSize: 14 }}>加载失败，请检查网络</Text>
+          <TouchableOpacity
+            style={{ marginTop: 16, paddingHorizontal: 20, paddingVertical: 8, backgroundColor: '#10b981', borderRadius: 6 }}
+            onPress={() => loadData()}
+          >
+            <Text style={{ color: '#fff', fontSize: 14, fontWeight: '500' }}>重试</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
@@ -482,25 +506,29 @@ export default function WHHomeScreen() {
         }
       >
         {/* 任务Tab切换 */}
+        {(isScreenEnabled('OutboundManagement') || isScreenEnabled('InboundManagement')) && (
         <View style={styles.tabContainer}>
           <SegmentedButtons
             value={activeTab}
             onValueChange={(value) => setActiveTab(value as 'outbound' | 'inbound')}
             buttons={[
-              {
-                value: 'outbound',
+              ...(isScreenEnabled('OutboundManagement') ? [{
+                value: 'outbound' as const,
                 label: `${t('home.tabs.outbound')} (${outboundTasks.length})`,
-              },
-              {
-                value: 'inbound',
+              }] : []),
+              ...(isScreenEnabled('InboundManagement') ? [{
+                value: 'inbound' as const,
                 label: `${t('home.tabs.inbound')} (${inboundTasks.length})`,
-              },
+              }] : []),
             ]}
             style={styles.segmentedButtons}
           />
         </View>
+        )}
 
         {/* 任务列表 */}
+        {((activeTab === 'outbound' && isScreenEnabled('OutboundManagement')) ||
+          (activeTab === 'inbound' && isScreenEnabled('InboundManagement'))) && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -517,6 +545,7 @@ export default function WHHomeScreen() {
             ? outboundTasks.map(renderOutboundCard)
             : inboundTasks.map(renderInboundCard)}
         </View>
+        )}
 
         {/* 今日统计 */}
         <View style={styles.statsGrid}>
@@ -558,6 +587,7 @@ export default function WHHomeScreen() {
         </View>
 
         {/* 库存预警 */}
+        {isScreenEnabled('AlertHandling') && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text variant="titleMedium" style={styles.sectionTitle}>
@@ -602,8 +632,10 @@ export default function WHHomeScreen() {
             </TouchableOpacity>
           ))}
         </View>
+        )}
 
         {/* 温控监控 */}
+        {isScreenEnabled('TempMonitoring') && (
         <TouchableOpacity
           onPress={() => navigation.navigate('TempMonitor')}
         >
@@ -656,6 +688,7 @@ export default function WHHomeScreen() {
             </View>
           </Surface>
         </TouchableOpacity>
+        )}
 
         <View style={{ height: 20 }} />
       </ScrollView>

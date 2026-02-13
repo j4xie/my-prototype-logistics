@@ -1,0 +1,848 @@
+{
+  "timestamp": "2026-02-10T20:53:13.905132",
+  "test": "v5_round96_batch_traceability_genealogy",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "trace_forward": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "trace_backward": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "trace_full": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "batch_genealogy": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "lot_tracking": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "material_trace": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "process_trace": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "recall_trace": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "blockchain": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 31,
+    "NONE": 16,
+    "CLASSIFIER": 2,
+    "SEMANTIC": 1
+  },
+  "results": [
+    {
+      "query": "正向追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "TRACE_PUBLIC",
+        "PROCESSING_BATCH_LIST",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "trace_forward",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "批次去向",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "PROCESSING_BATCH_DETAIL",
+        "SHIPMENT_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "trace_forward",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "产品流向",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "SHIPMENT_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "trace_forward",
+      "method": null,
+      "latency_ms": 600
+    },
+    {
+      "query": "下游客户",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "CUSTOMER_SEARCH",
+        "SHIPMENT_QUERY",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "trace_forward",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "发货去向",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        null
+      ],
+      "category": "trace_forward",
+      "method": null,
+      "latency_ms": 708
+    },
+    {
+      "query": "成品追踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "PROCESSING_BATCH_LIST",
+        "SHIPMENT_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "trace_forward",
+      "method": null,
+      "latency_ms": 666
+    },
+    {
+      "query": "反向追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "TRACE_PUBLIC",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "trace_backward",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "原料来源",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "trace_backward",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "供应商追踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "TRACE_BATCH",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "trace_backward",
+      "method": null,
+      "latency_ms": 739
+    },
+    {
+      "query": "原料批次",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "trace_backward",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 489
+    },
+    {
+      "query": "来源查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "trace_backward",
+      "method": null,
+      "latency_ms": 1058
+    },
+    {
+      "query": "全链追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_FULL",
+        "TRACE_BATCH",
+        "TRACE_PUBLIC",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 534
+    },
+    {
+      "query": "完整追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_FULL",
+        "TRACE_BATCH",
+        "TRACE_PUBLIC",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "追溯报告",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_FULL",
+        "TRACE_BATCH",
+        "TRACE_PUBLIC",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 440
+    },
+    {
+      "query": "追溯码查询",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "TRACE_PUBLIC",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 474
+    },
+    {
+      "query": "扫码追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "TRACE_PUBLIC",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "二维码溯源",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "TRACE_PUBLIC",
+        null
+      ],
+      "category": "trace_full",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 439
+    },
+    {
+      "query": "批次家谱",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "batch_genealogy",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "批次关系",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "batch_genealogy",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "父批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "batch_genealogy",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 474
+    },
+    {
+      "query": "子批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "batch_genealogy",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "批次拆分",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "batch_genealogy",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "批号跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": null,
+      "latency_ms": 643
+    },
+    {
+      "query": "生产批号",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "TRACE_BATCH",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 449
+    },
+    {
+      "query": "入库批号",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.8451349139213562,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        "INVENTORY_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "发货批号",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": "SEMANTIC",
+      "latency_ms": 612
+    },
+    {
+      "query": "批号规则",
+      "status": "PASS",
+      "intent": "RULE_CONFIG",
+      "confidence": 0.7777144908905029,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "RULE_CONFIG",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": "CLASSIFIER",
+      "latency_ms": 598
+    },
+    {
+      "query": "批号查重",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_LIST",
+        "PROCESSING_BATCH_DETAIL",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "lot_tracking",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "原料追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "原料检验记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "material_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 497
+    },
+    {
+      "query": "原料入厂",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "INVENTORY_QUERY",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "material_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "原料使用记录",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_USE",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_BATCH_USE",
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "material_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 443
+    },
+    {
+      "query": "原料库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "material_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "工序追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "process_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 488
+    },
+    {
+      "query": "加工记录",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        null
+      ],
+      "category": "process_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 475
+    },
+    {
+      "query": "生产参数",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "TRACE_BATCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "process_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 506
+    },
+    {
+      "query": "操作员记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "process_trace",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "环境记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "process_trace",
+      "method": null,
+      "latency_ms": 884
+    },
+    {
+      "query": "设备使用记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "process_trace",
+      "method": null,
+      "latency_ms": 678
+    },
+    {
+      "query": "召回追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "recall_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "问题批次",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_BATCH",
+        "PROCESSING_BATCH_DETAIL",
+        "PROCESSING_BATCH_LIST",
+        "ALERT_LIST",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "recall_trace",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 468
+    },
+    {
+      "query": "影响范围",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "recall_trace",
+      "method": null,
+      "latency_ms": 735
+    },
+    {
+      "query": "召回通知",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "TRACE_BATCH",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "recall_trace",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "召回进度",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "recall_trace",
+      "method": null,
+      "latency_ms": 624
+    },
+    {
+      "query": "区块链溯源",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        null
+      ],
+      "category": "blockchain",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 473
+    },
+    {
+      "query": "防伪验证",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "blockchain",
+      "method": null,
+      "latency_ms": 641
+    },
+    {
+      "query": "溯源上链",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        null
+      ],
+      "category": "blockchain",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 475
+    },
+    {
+      "query": "数据存证",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "blockchain",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 489
+    },
+    {
+      "query": "消费者扫码",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "CUSTOMER_SEARCH",
+        null
+      ],
+      "category": "blockchain",
+      "method": null,
+      "latency_ms": 592
+    },
+    {
+      "query": "公开追溯",
+      "status": "PASS",
+      "intent": "TRACE_BATCH",
+      "confidence": 0.98,
+      "expected": [
+        "TRACE_PUBLIC",
+        "TRACE_BATCH",
+        "TRACE_FULL",
+        null
+      ],
+      "category": "blockchain",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461
+    }
+  ]
+}

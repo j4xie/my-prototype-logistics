@@ -36,7 +36,8 @@
         "USE_BIOMETRIC",
         "USE_FINGERPRINT",
         "RECEIVE_BOOT_COMPLETED",
-        "VIBRATE"
+        "VIBRATE",
+        "NFC"
       ],
       "useNextNotificationsApi": true,
       "config": {

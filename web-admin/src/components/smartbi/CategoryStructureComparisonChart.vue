@@ -10,7 +10,7 @@
  * - Color coding for growth rates (positive=green, negative=red)
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 
 // Types
@@ -483,7 +483,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event
@@ -663,7 +663,7 @@ defineExpose({
 .category-structure-chart {
   width: 100%;
   background: #fff;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 20px;
 
   .chart-header {
@@ -689,7 +689,7 @@ defineExpose({
     .kpi-card {
       padding: 16px;
       background: #f8f9fa;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       border: 1px solid #ebeef5;
       transition: all 0.2s ease;
 
@@ -700,23 +700,24 @@ defineExpose({
 
       &:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        box-shadow: var(--shadow-lg);
       }
 
       .kpi-title {
         font-size: 12px;
-        color: #909399;
+        color: var(--color-text-secondary);
         margin-bottom: 8px;
         font-weight: 500;
       }
 
       .kpi-value {
-        font-size: 24px;
+        font-size: var(--font-size-xl);
         font-weight: 700;
         color: #303133;
         display: flex;
         align-items: baseline;
         gap: 4px;
+        font-variant-numeric: tabular-nums;
 
         &.primary {
           color: #409eff;
@@ -731,7 +732,7 @@ defineExpose({
         }
 
         &.neutral {
-          color: #909399;
+          color: var(--color-text-secondary);
         }
 
         .trend-arrow {
@@ -743,7 +744,7 @@ defineExpose({
         .kpi-unit {
           font-size: 12px;
           font-weight: 400;
-          color: #909399;
+          color: var(--color-text-secondary);
           margin-left: 2px;
         }
       }
@@ -767,7 +768,7 @@ defineExpose({
 
       .ratio {
         font-size: 12px;
-        color: #909399;
+        color: var(--color-text-secondary);
       }
     }
 
@@ -784,7 +785,7 @@ defineExpose({
       }
 
       &.neutral {
-        color: #909399;
+        color: var(--color-text-secondary);
       }
     }
   }

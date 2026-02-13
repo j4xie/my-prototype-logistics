@@ -1,0 +1,230 @@
+================================================================================
+INTENT CONSOLIDATION ANALYSIS - EXECUTIVE SUMMARY
+================================================================================
+Date: 2026-02-11
+Analysis Tool: Semantic Overlap Detection (Jaccard Similarity)
+Total Intents Analyzed: 179
+
+================================================================================
+FINDINGS
+================================================================================
+
+PERFECT DUPLICATES (Jaccard = 1.0)
+----------------------------------
+Count: 2 intents
+Priority: HIGH
+Risk: LOWEST
+
+1. HR_DELETE_EMPLOYEE (keep) <-> HR_EMPLOYEE_DELETE (remove)
+   Type: Word order reversal
+   Impact: -1 intent, -30-50 training rows
+   Time: 30 mins
+
+2. NOTIFICATION_SEND_WECHAT (keep) <-> NOTIFICATION_WECHAT_SEND (remove)
+   Type: Word order reversal
+   Impact: -1 intent, -20-30 training rows
+   Time: 30 mins
+
+PHASE 1 TOTAL: -2 intents (179 → 177), 1-1.5 hours
+
+
+SEMANTIC OVERLAPS - HIGH PRIORITY (Jaccard = 0.67)
+---------------------------------------------------
+Count: 4 intent pairs
+Priority: MEDIUM-HIGH
+Risk: LOW
+Context: Generic alerts vs equipment-scoped alerts
+
+ALERT_ACKNOWLEDGE (remove) <-> EQUIPMENT_ALERT_ACKNOWLEDGE (keep)
+  Reason: All alerts in system are equipment-scoped
+  Impact: -1 intent, -30-40 training rows
+
+ALERT_LIST (remove) <-> EQUIPMENT_ALERT_LIST (keep)
+  Reason: All alerts in system are equipment-scoped
+  Impact: -1 intent, -30-40 training rows
+
+ALERT_RESOLVE (remove) <-> EQUIPMENT_ALERT_RESOLVE (keep)
+  Reason: All alerts in system are equipment-scoped
+  Impact: -1 intent, -15-25 training rows
+
+ALERT_STATS (remove) <-> EQUIPMENT_ALERT_STATS (keep)
+  Reason: All alerts in system are equipment-scoped
+  Impact: -1 intent, -10-20 training rows
+
+PHASE 2 TOTAL: -4 intents (177 → 173), 2-3 hours
+
+
+OPTIONAL CLEANUPS - MEDIUM PRIORITY (Jaccard 0.6-0.75)
+------------------------------------------------------
+
+Filter Intents (Jaccard = 0.75): 4 candidates
+  → Keep: SYSTEM_FILTER_EXCLUDE_SELECTED
+  → Remove: EXCLUDE_SELECTED, FILTER_EXCLUDE_SELECTED, UI_EXCLUDE_SELECTED
+  → Impact: -3 intents, minimal training data
+  → Time: 2-3 hours (need to verify filter contexts)
+
+Shipment Intents (Jaccard = 0.67): 2 candidates
+  → Keep: SHIPMENT_UPDATE
+  → Remove: SHIPMENT_STATUS_UPDATE
+  → Impact: -1 intent, ~10-20 training rows
+  → Time: 1 hour
+
+PHASE 3+4 TOTAL: -4 intents (173 → 169), 3-4 hours
+
+
+NO-MERGE DECISIONS (Distinct Semantics)
+----------------------------------------
+
+EQUIPMENT_START vs EQUIPMENT_CAMERA_START
+  Reason: Camera start is a specific operation
+  Decision: KEEP BOTH
+
+SCALE_ADD_DEVICE vs SCALE_ADD_DEVICE_VISION
+  Reason: Vision-based is different technology
+  Decision: KEEP BOTH
+
+MEDIA_PLAY vs MEDIA_PLAY_MUSIC
+  Reason: Music has playlist/shuffle logic
+  Decision: KEEP BOTH
+
+ISAPI_CONFIG_FIELD_DETECTION vs ISAPI_CONFIG_LINE_DETECTION
+  Reason: Different computer vision tasks
+  Decision: KEEP BOTH
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+IMMEDIATE ACTION (Tier 1 + Tier 2):
+
+Execute Phase 1 + Phase 2 together:
+  1. Remove 2 perfect duplicates
+  2. Remove 4 generic alerts
+  3. Total: -6 intents (179 → 173)
+  4. Time: 3-5 hours (combined)
+  5. Risk: LOWEST (clear duplicates, low semantic ambiguity)
+  6. Benefit: Better training signal, clearer intent namespace
+
+Files to Update:
+  ✓ scripts/finetune/data/label_mapping.json
+  ✓ scripts/finetune/data/training_data.jsonl
+  ✓ Backend code (grep for hardcoded references)
+  ✓ CHANGELOG.md
+
+OPTIONAL ENHANCEMENTS (Tier 3 + Tier 4):
+
+Can defer to later sprint:
+  - Filter consolidation (-3 intents)
+  - Shipment cleanup (-1 intent)
+  - Cumulative impact: 169 intents total
+
+Would require:
+  - Additional verification of filter logic
+  - Potential backend changes
+  - More training data updates
+
+================================================================================
+EXECUTION STEPS
+================================================================================
+
+Phase 1 + Phase 2 Checklist:
+
+1. BACKUP
+   [ ] git tag backup-v1.0-179intents
+   [ ] cp label_mapping.json label_mapping.json.bak
+   [ ] cp training_data.jsonl training_data.jsonl.bak
+
+2. EDIT label_mapping.json
+   [ ] Remove HR_EMPLOYEE_DELETE
+   [ ] Remove NOTIFICATION_WECHAT_SEND
+   [ ] Remove ALERT_ACKNOWLEDGE
+   [ ] Remove ALERT_LIST
+   [ ] Remove ALERT_RESOLVE
+   [ ] Remove ALERT_STATS
+
+3. UPDATE training_data.jsonl
+   [ ] Relabel HR_EMPLOYEE_DELETE → HR_DELETE_EMPLOYEE (~40 rows)
+   [ ] Relabel NOTIFICATION_WECHAT_SEND → NOTIFICATION_SEND_WECHAT (~25 rows)
+   [ ] Relabel ALERT_ACKNOWLEDGE → EQUIPMENT_ALERT_ACKNOWLEDGE (~35 rows)
+   [ ] Relabel ALERT_LIST → EQUIPMENT_ALERT_LIST (~35 rows)
+   [ ] Relabel ALERT_RESOLVE → EQUIPMENT_ALERT_RESOLVE (~20 rows)
+   [ ] Relabel ALERT_STATS → EQUIPMENT_ALERT_STATS (~15 rows)
+
+4. VALIDATE
+   [ ] Check label_mapping.json is valid JSON
+   [ ] Check no undefined labels in training_data.jsonl
+   [ ] Verify counts match expected replacements
+
+5. RETRAIN
+   [ ] python scripts/finetune/train.py --model baseline-next --epochs 3
+   [ ] Compare validation accuracy (should be ≥ baseline)
+
+6. VERIFY CODE
+   [ ] grep -r "HR_EMPLOYEE_DELETE" backend-java/src
+   [ ] grep -r "NOTIFICATION_WECHAT_SEND" backend-java/src
+   [ ] grep -r "ALERT_ACKNOWLEDGE\|ALERT_LIST\|ALERT_RESOLVE\|ALERT_STATS" backend-java/src
+
+7. DOCUMENT
+   [ ] Update CHANGELOG.md with deprecation notice
+   [ ] Update INTENT_REFERENCE.md (if exists)
+
+8. COMMIT
+   [ ] git add scripts/finetune/data/{label_mapping.json,training_data.jsonl}
+   [ ] git commit -m "feat: consolidate 6 duplicate intents (Phase 1+2)"
+   [ ] git push
+
+================================================================================
+EXPECTED OUTCOMES
+================================================================================
+
+Performance Impact:
+  - Model retraining: ~5-15 minutes
+  - Validation accuracy: ≥ current (or +0-1%)
+  - Training efficiency: Improved (clearer signal)
+
+Codebase Impact:
+  - Intent namespace: Cleaner, more semantic
+  - Training data: Consolidated, no contradictions
+  - Backend code: Zero functional changes (mapping handled in label_mapping.json)
+
+Risk Assessment:
+  - Rollback risk: VERY LOW (backups created, git tagged)
+  - Training risk: VERY LOW (clear duplicate removal)
+  - Production risk: NONE (only label consolidation, no logic changes)
+
+Time Investment:
+  - Planning: Already done (this analysis)
+  - Execution: 3-5 hours
+  - Testing: 1-2 hours
+  - Total: 4-7 hours
+
+================================================================================
+METRICS
+================================================================================
+
+Before Consolidation:
+  Total intents: 179
+  Perfect duplicates: 2
+  High-overlap intents: 4
+  Medium-overlap intents: 14
+  Training data rows: ~5000-6000
+
+After Phase 1:
+  Total intents: 177
+  Perfect duplicates: 0 (removed)
+  Rows relabeled: ~50-80
+
+After Phase 1 + Phase 2:
+  Total intents: 173
+  High-overlap intents: 0 (removed)
+  Rows relabeled: ~130-230
+  Model retraining: Complete
+  Validation accuracy: ≥ baseline
+
+Quality Metrics:
+  Jaccard similarity (avg): 0.89+ (higher is more coherent)
+  Intent-to-training-row ratio: More balanced
+  Semantic overlap: Minimized
+  Model training signal: Clearer
+
+================================================================================

@@ -334,6 +334,24 @@ export default function BatchDetailScreen() {
             >
                 成本分析
             </NeoButton>
+
+            <NeoButton
+                variant="outline"
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('AIAnalysis', { batchId: batch.id.toString() })}
+                icon="brain"
+            >
+                AI效率分析
+            </NeoButton>
+
+            <NeoButton
+                variant="outline"
+                style={styles.actionButton}
+                onPress={() => navigation.navigate('LabelScan', { workstationId: 'WS-001', batchNumber: batch.batchNumber })}
+                icon="label-variant-outline"
+            >
+                标签扫描
+            </NeoButton>
           </View>
         </NeoCard>
           </>

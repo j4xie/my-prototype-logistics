@@ -1,0 +1,76 @@
+[
+  {
+    "sheet": "2025年利润表",
+    "problems": [
+      {
+        "type": "中文序号",
+        "example": "一、营业收入",
+        "row": 5
+      },
+      {
+        "type": "空格缩进",
+        "example": "'  主营业务收入'",
+        "row": 6
+      }
+    ],
+    "none_count": 24,
+    "total_cells": 152,
+    "none_ratio": "15.8%",
+    "merged_cells": 7
+  },
+  {
+    "sheet": "销售明细",
+    "problems": [
+      {
+        "type": "数字字符串",
+        "example": "'2025-01-02'",
+        "row": 4
+      }
+    ],
+    "none_count": 72,
+    "total_cells": 540,
+    "none_ratio": "13.3%",
+    "merged_cells": 0
+  },
+  {
+    "sheet": "部门预算对比",
+    "problems": [
+      {
+        "type": "百分比字符串",
+        "example": "17.9%",
+        "row": 4
+      }
+    ],
+    "none_count": 13,
+    "total_cells": 56,
+    "none_ratio": "23.2%",
+    "merged_cells": 1
+  },
+  {
+    "sheet": "产品成本分析",
+    "problems": [
+      {
+        "type": "小数(可能是%)",
+        "example": 0.8,
+        "row": 5
+      },
+      {
+        "type": "百分比字符串",
+        "example": "48%",
+        "row": 5
+      }
+    ],
+    "none_count": 33,
+    "total_cells": 88,
+    "none_ratio": "37.5%",
+    "merged_cells": 4
+  },
+  {
+    "sheet": "待补充数据",
+    "problems": [],
+    "none_count": 16,
+    "total_cells": 24,
+    "none_ratio": "66.7%",
+    "merged_cells": 0
+  }
+]

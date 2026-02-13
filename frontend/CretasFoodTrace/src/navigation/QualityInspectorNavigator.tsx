@@ -17,6 +17,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { QI_COLORS, QualityInspectorStackParamList } from '../types/qualityInspector';
+import { useFactoryFeatureStore } from '../store/factoryFeatureStore';
 
 // Type for Ionicons names
 type IoniconsName = keyof typeof Ionicons.glyphMap;
@@ -258,6 +259,8 @@ function ProfileStack() {
  * 质检模块主导航器
  */
 export default function QualityInspectorNavigator() {
+  const { isScreenEnabled } = useFactoryFeatureStore();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -290,21 +293,25 @@ export default function QualityInspectorNavigator() {
         component={HomeStack}
         options={{ tabBarLabel: '首页' }}
       />
+      {isScreenEnabled('QualityInspection') && (
       <Tab.Screen
         name="QIInspectTab"
         component={InspectStack}
         options={{ tabBarLabel: '质检' }}
       />
+      )}
       <Tab.Screen
         name="QIRecordsTab"
         component={RecordsStack}
         options={{ tabBarLabel: '记录' }}
       />
+      {isScreenEnabled('QualityAnalysis') && (
       <Tab.Screen
         name="QIAnalysisTab"
         component={AnalysisStack}
         options={{ tabBarLabel: '分析' }}
       />
+      )}
       <Tab.Screen
         name="QIProfileTab"
         component={ProfileStack}

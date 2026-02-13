@@ -1,0 +1,795 @@
+{
+  "timestamp": "2026-02-10T18:38:31.688704",
+  "test": "v5_round45_quality_inspection_detail",
+  "total": 50,
+  "pass": 44,
+  "fail": 6,
+  "error": 0,
+  "pass_rate": 88.0,
+  "category_breakdown": {
+    "incoming_qc": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "inprocess_qc": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "final_qc": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "test_methods": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    },
+    "non_conformance": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "quality_analysis": {
+      "pass": 5,
+      "fail": 1,
+      "error": 0
+    },
+    "quality_cert": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "customer_quality": {
+      "pass": 2,
+      "fail": 3,
+      "error": 0
+    },
+    "quality_improvement": {
+      "pass": 4,
+      "fail": 1,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 24,
+    "NONE": 15,
+    "CLASSIFIER": 9,
+    "SEMANTIC": 2
+  },
+  "results": [
+    {
+      "query": "来料检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "原料检测",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "进货检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "来料合格率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "供应商来料质量",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SUPPLIER_EVALUATE",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": null,
+      "latency_ms": 621
+    },
+    {
+      "query": "IQC检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_LIST",
+        null
+      ],
+      "category": "incoming_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "过程检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_LIST",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "巡检记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "工序检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "首件检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 472
+    },
+    {
+      "query": "在线检测",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": null,
+      "latency_ms": 665
+    },
+    {
+      "query": "IPQC结果",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "inprocess_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "成品检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_LIST",
+        null
+      ],
+      "category": "final_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "出厂检验",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "final_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "最终检验结果",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "final_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "OQC报告",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_LIST",
+        null
+      ],
+      "category": "final_qc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "发货前检查",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6944031715393066,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "final_qc",
+      "method": "CLASSIFIER",
+      "latency_ms": 850
+    },
+    {
+      "query": "合格判定",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "final_qc",
+      "method": null,
+      "latency_ms": 706
+    },
+    {
+      "query": "检验方法",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "test_methods",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 435
+    },
+    {
+      "query": "检测标准",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.8519229292869568,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "test_methods",
+      "method": "CLASSIFIER",
+      "latency_ms": 628
+    },
+    {
+      "query": "抽样方案",
+      "status": "FAIL",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.538530707359314,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "test_methods",
+      "method": "CLASSIFIER",
+      "latency_ms": 580
+    },
+    {
+      "query": "AQL标准",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "test_methods",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "检验规程",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "test_methods",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 451
+    },
+    {
+      "query": "不合格品",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.5865796804428101,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "non_conformance",
+      "method": "CLASSIFIER",
+      "latency_ms": 673
+    },
+    {
+      "query": "缺陷类型",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "non_conformance",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "不良原因",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.9036061763763428,
+      "expected": [
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "non_conformance",
+      "method": "CLASSIFIER",
+      "latency_ms": 631
+    },
+    {
+      "query": "返工处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "non_conformance",
+      "method": null,
+      "latency_ms": 677
+    },
+    {
+      "query": "让步接收",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.8506684303283691,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "non_conformance",
+      "method": "CLASSIFIER",
+      "latency_ms": 618
+    },
+    {
+      "query": "报废处理",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.7769430875778198,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "non_conformance",
+      "method": "CLASSIFIER",
+      "latency_ms": 632
+    },
+    {
+      "query": "质量分析报告",
+      "status": "PASS",
+      "intent": "REPORT_QUALITY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 452
+    },
+    {
+      "query": "SPC控制图",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": null,
+      "latency_ms": 759
+    },
+    {
+      "query": "质量趋势",
+      "status": "FAIL",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_TRENDS",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "不良趋势",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_TRENDS",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": null,
+      "latency_ms": 610
+    },
+    {
+      "query": "帕累托分析",
+      "status": "PASS",
+      "intent": "REPORT_TRENDS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "鱼骨图分析",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_STATS",
+        "ALERT_DIAGNOSE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "quality_analysis",
+      "method": null,
+      "latency_ms": 668
+    },
+    {
+      "query": "质量证书",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "quality_cert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 455
+    },
+    {
+      "query": "检验报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_QUERY",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "quality_cert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "COA生成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "FOOD_SAFETY_CERT_QUERY",
+        "LABEL_PRINT",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "quality_cert",
+      "method": null,
+      "latency_ms": 642
+    },
+    {
+      "query": "合格证打印",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "quality_cert",
+      "method": null,
+      "latency_ms": 661
+    },
+    {
+      "query": "检测报告查看",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_QUERY",
+        "FOOD_SAFETY_CERT_QUERY",
+        null
+      ],
+      "category": "quality_cert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 438
+    },
+    {
+      "query": "客户投诉",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "customer_quality",
+      "method": null,
+      "latency_ms": 613
+    },
+    {
+      "query": "客户退货",
+      "status": "FAIL",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ALERT_LIST",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "customer_quality",
+      "method": "SEMANTIC",
+      "latency_ms": 635
+    },
+    {
+      "query": "客诉处理进度",
+      "status": "FAIL",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.5335736274719238,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "customer_quality",
+      "method": "CLASSIFIER",
+      "latency_ms": 579
+    },
+    {
+      "query": "客户满意度",
+      "status": "FAIL",
+      "intent": "CUSTOMER_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "customer_quality",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 432
+    },
+    {
+      "query": "质量反馈",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "customer_quality",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "纠正措施",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_improvement",
+      "method": null,
+      "latency_ms": 701
+    },
+    {
+      "query": "预防措施",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.6809518933296204,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_improvement",
+      "method": "CLASSIFIER",
+      "latency_ms": 579
+    },
+    {
+      "query": "8D报告",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_QUALITY",
+        "ALERT_DIAGNOSE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "quality_improvement",
+      "method": null,
+      "latency_ms": 607
+    },
+    {
+      "query": "质量改进项目",
+      "status": "FAIL",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "quality_improvement",
+      "method": "SEMANTIC",
+      "latency_ms": 584
+    },
+    {
+      "query": "CAPA跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_DISPOSITION_EXECUTE",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "quality_improvement",
+      "method": null,
+      "latency_ms": 632
+    }
+  ]
+}

@@ -209,8 +209,8 @@ async def analyze_from_db(request: AnalyzeRequest):
             )
 
     except Exception as e:
-        logger.error(f"Analysis failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Analysis failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="处理失败，请稍后重试")
 
 
 @router.post("/aggregate", response_model=AggregateResponse)
@@ -253,8 +253,8 @@ async def aggregate_from_db(request: AggregateRequest):
             )
 
     except Exception as e:
-        logger.error(f"Aggregation failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Aggregation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="处理失败，请稍后重试")
 
 
 @router.get("/fields/{upload_id}")
@@ -285,8 +285,8 @@ async def get_field_definitions(upload_id: int):
             }
 
     except Exception as e:
-        logger.error(f"Failed to get fields: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to get fields: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="处理失败，请稍后重试")
 
 
 @router.get("/distinct/{upload_id}")
@@ -320,8 +320,8 @@ async def get_distinct_values(
             }
 
     except Exception as e:
-        logger.error(f"Failed to get distinct values: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Failed to get distinct values: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="处理失败，请稍后重试")
 
 
 @router.get("/health")

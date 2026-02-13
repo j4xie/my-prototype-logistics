@@ -1,0 +1,744 @@
+{
+  "meta": {
+    "title": "AI Intent E2E Test Design - Full Pipeline: Recognition -> Execution -> Response",
+    "created": "2026-02-10",
+    "server": "http://47.100.235.168:10010",
+    "total_intents_available": 183,
+    "intent_categories": ["ALERT", "CONFIG", "CRM", "DATA_OP", "EQUIPMENT", "FINANCE", "FORM", "HR", "ISAPI_SMART", "MATERIAL", "MEDIA", "META", "PROCESSING", "PRODUCTION", "QUALITY", "QUERY", "REPORT", "SCALE", "SHIPMENT", "SMARTBI", "SYSTEM", "USER"]
+  },
+
+  "execution_endpoints": [
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/recognize",
+      "method": "POST",
+      "description": "Intent recognition only (no execution). Returns intent code, confidence, match method.",
+      "auth": "Bearer JWT required",
+      "request_body": {"userInput": "string"},
+      "response_key_fields": ["matched", "intentCode", "intentName", "category", "sensitivityLevel", "confidence", "matchMethod"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/recognize-all",
+      "method": "POST",
+      "description": "Recognize all matching intents (returns list). No execution.",
+      "auth": "Bearer JWT required",
+      "request_body": {"userInput": "string"},
+      "response_key_fields": "List of AIIntentConfig objects"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/execute",
+      "method": "POST",
+      "description": "Full pipeline: recognize intent -> validate (Drools) -> check permissions -> execute handler -> return data. KEY FINDING: When intentCode is provided, it bypasses Drools validation and works. Without intentCode, Drools NPE blocks all executions.",
+      "auth": "Bearer JWT required",
+      "request_body": {
+        "userInput": "string (required)",
+        "intentCode": "string (optional - bypasses recognition if provided)",
+        "entityType": "string (optional)",
+        "entityId": "string (optional)",
+        "context": "object (optional - extra parameters)",
+        "previewOnly": "boolean (default false)",
+        "forceExecute": "boolean (default false)",
+        "sessionId": "string (optional - for multi-round)",
+        "enableThinking": "boolean (default false)",
+        "thinkingBudget": "integer (default 20)",
+        "skipSlotFilling": "boolean (default false)"
+      },
+      "response_key_fields": ["intentRecognized", "intentCode", "intentName", "intentCategory", "sensitivityLevel", "confidence", "matchMethod", "status", "message", "formattedText", "resultData", "suggestedActions", "sessionId", "clarificationQuestions", "missingParameters", "validationViolations", "recommendations", "affectedEntities", "requiresApproval"],
+      "status_values": ["SUCCESS", "FAILED", "VALIDATION_FAILED", "NO_PERMISSION", "NOT_RECOGNIZED", "NEED_MORE_INFO", "NEED_CLARIFICATION", "PENDING_APPROVAL", "EXECUTING", "PREVIEW"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/execute/multi",
+      "method": "POST",
+      "description": "Multi-label intent execution. Uses Sigmoid-based classification to recognize and execute multiple intents from a single input. Note: currently returns NEED_CLARIFICATION for most inputs (multi-label classifier may not be triggered).",
+      "auth": "Bearer JWT required",
+      "request_body": {"userInput": "string"},
+      "response_key_fields": ["multiIntentResult", "subResults"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/execute/stream",
+      "method": "POST",
+      "description": "SSE stream execution. Returns progress events: start, cache_hit/miss, intent_recognized, executing, result, complete, error.",
+      "auth": "Bearer JWT required",
+      "content_type": "text/event-stream",
+      "request_body": {"userInput": "string"}
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/preview",
+      "method": "POST",
+      "description": "Preview mode - recognize and describe what would happen without executing. Returns confirmableAction with a confirmToken.",
+      "auth": "Bearer JWT required",
+      "request_body": {"userInput": "string", "intentCode": "string (optional)"},
+      "note": "Currently returns 'preview mode not yet supported' for many intent types"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/confirm/{confirmToken}",
+      "method": "POST",
+      "description": "Confirm execution of a previously previewed action using the confirmToken.",
+      "auth": "Bearer JWT required"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/params/confirm",
+      "method": "POST",
+      "description": "Confirm LLM-extracted parameters and learn extraction rules. Optionally execute after confirmation.",
+      "auth": "Bearer JWT required",
+      "request_body": {"intentCode": "string", "userInput": "string", "confirmedParams": "object", "executeAfterConfirm": "boolean"}
+    },
+    {
+      "path": "/api/mobile/{factoryId}/ai-intents/{intentCode}/permission",
+      "method": "GET",
+      "description": "Check if a role has permission to execute an intent.",
+      "auth": "Bearer JWT required",
+      "params": {"userRole": "string"},
+      "response_key_fields": ["hasPermission", "requiresApproval", "quotaCost"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/start",
+      "method": "POST",
+      "description": "Start multi-round conversation when intent confidence is low. Returns session ID, candidates, clarification questions.",
+      "auth": "Bearer JWT (also accepts X-User-Id header)",
+      "request_body": {"userInput": "string", "userId": "long (optional)"},
+      "response_key_fields": ["sessionId", "currentRound", "maxRounds", "status", "completed", "message", "candidates", "requiresConfirmation"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/{sessionId}/reply",
+      "method": "POST",
+      "description": "Continue multi-round conversation with user reply.",
+      "auth": "Bearer JWT required",
+      "request_body": {"userReply": "string"},
+      "response_key_fields": ["sessionId", "currentRound", "completed", "message", "intentCode", "confidence"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/{sessionId}/confirm",
+      "method": "POST",
+      "description": "Confirm the intent identified through conversation. Triggers learning.",
+      "auth": "Bearer JWT required",
+      "request_body": {"intentCode": "string"},
+      "response_key_fields": ["success", "message"]
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/{sessionId}/cancel",
+      "method": "POST",
+      "description": "Cancel an active conversation session.",
+      "auth": "Bearer JWT required"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/{sessionId}",
+      "method": "GET",
+      "description": "Get conversation session details.",
+      "auth": "Bearer JWT required"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/active",
+      "method": "GET",
+      "description": "Get active conversation for current user.",
+      "auth": "Bearer JWT (or X-User-Id header)"
+    },
+    {
+      "path": "/api/mobile/{factoryId}/conversation/stats",
+      "method": "GET",
+      "description": "Get conversation statistics.",
+      "auth": "Bearer JWT required",
+      "params": {"days": "int (default 7)"},
+      "response_key_fields": ["totalSessions", "completedCount", "timeoutCount", "cancelledCount", "successRate", "averageRounds"]
+    },
+    {
+      "path": "/api/public/ai-demo/execute",
+      "method": "POST",
+      "description": "Public demo execution (no auth). Only LOW sensitivity intents can execute. MEDIUM/HIGH/CRITICAL return NO_PERMISSION with explanation.",
+      "auth": "None",
+      "request_body": {"userInput": "string", "sessionId": "string (optional)"},
+      "response_key_fields": ["intentRecognized", "intentCode", "status", "message", "sessionId", "confidence", "matchMethod"]
+    },
+    {
+      "path": "/api/public/ai-demo/recognize",
+      "method": "POST",
+      "description": "Public demo recognition only (no auth).",
+      "auth": "None",
+      "request_body": {"userInput": "string", "sessionId": "string (optional)"},
+      "response_key_fields": ["matched", "intentCode", "canExecuteInDemo", "toolName", "matchLayer"]
+    },
+    {
+      "path": "/api/mobile/ai/chat",
+      "method": "POST",
+      "description": "Generic AI chat (direct LLM call via DashScope). Not intent-based.",
+      "auth": "None (no auth check in controller)",
+      "request_body": {"messages": [{"role": "user", "content": "string"}], "temperature": 0.7, "maxTokens": 2000, "model": "qwen-plus"},
+      "response_key_fields": ["content", "tokensUsed", "model", "finishReason"]
+    }
+  ],
+
+  "critical_findings": {
+    "drools_validation_bug": {
+      "description": "When executing WITHOUT explicit intentCode, Drools rule validation throws NPE: 'Cannot invoke ValidationResult.isValid() because result is null'. All natural language executions fail with VALIDATION_FAILED.",
+      "workaround": "Provide intentCode explicitly in the request body to bypass Drools validation and execute directly.",
+      "impact": "ALL natural-language-only executions are blocked on production server",
+      "affected_status": "VALIDATION_FAILED"
+    },
+    "intent_code_bypass": {
+      "description": "When intentCode is provided, the system bypasses intent recognition AND Drools validation, routing directly to the handler. This is the only working execution path.",
+      "tested_codes_success": 22,
+      "tested_codes_failed": 3,
+      "notes": "EQUIPMENT_STATUS_QUERY, ORDER_LIST, ORDER_TODAY fail even with intentCode (missing handler implementation)"
+    },
+    "multi_intent_not_working": {
+      "description": "The /execute/multi endpoint does not trigger multi-label classification. It returns NEED_CLARIFICATION with suggestedActions instead of actually identifying/executing multiple intents."
+    },
+    "conversation_stats": {
+      "total_sessions_30d": 792,
+      "completed": 72,
+      "timeout": 23,
+      "cancelled": 696,
+      "success_rate": "9.1%",
+      "average_rounds": 1.49,
+      "note": "Very low success rate suggests conversation flow needs improvement"
+    }
+  },
+
+  "sample_responses": [
+    {
+      "query": "今天产量",
+      "endpoint": "/ai-intents/execute",
+      "intentCode_provided": false,
+      "response_summary": "Intent recognized as PRODUCTION_STATUS_QUERY (QUERY category). VALIDATION_FAILED due to Drools NPE. No data returned."
+    },
+    {
+      "query": "查看所有批次",
+      "endpoint": "/ai-intents/execute",
+      "intentCode_provided": true,
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "response_summary": "SUCCESS. Returns resultData with content array (batch list), statusSummary, totalPages, pagination. Each batch has batchId, batchNumber, productName, status, actualQuantity, yieldRate."
+    },
+    {
+      "query": "查看库存",
+      "endpoint": "/ai-intents/execute",
+      "intentCode_provided": true,
+      "intentCode": "REPORT_INVENTORY",
+      "response_summary": "SUCCESS. Returns report with reportType, period, data containing inventory metrics. Has queryConditions and pagination."
+    },
+    {
+      "query": "质检记录",
+      "endpoint": "/ai-intents/execute",
+      "intentCode_provided": true,
+      "intentCode": "QUALITY_CHECK_QUERY",
+      "response_summary": "SUCCESS. Returns quality check records with pagination, each record has inspection details."
+    },
+    {
+      "query": "帮我看看数据",
+      "endpoint": "/conversation/start",
+      "response_summary": "Starts conversation. Returns sessionId, 5 candidate intents with 0.3 confidence each, clarification message asking user to choose. Status: ACTIVE, round 1/5."
+    },
+    {
+      "query": "产品类型查询 (as reply)",
+      "endpoint": "/conversation/{sessionId}/reply",
+      "response_summary": "Continues conversation to round 2. Still ACTIVE with same candidates (conversation re-recognition did not improve). Needs better reply matching."
+    }
+  ],
+
+  "test_plan": [
+    {
+      "id": "DATA-01",
+      "query": "查看所有批次",
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "expected_behavior": "SUCCESS with resultData containing content array of batch records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData != null", "resultData.content is array", "resultData.content[0].batchNumber exists"]
+    },
+    {
+      "id": "DATA-02",
+      "query": "查看原料批次",
+      "intentCode": "MATERIAL_BATCH_QUERY",
+      "expected_behavior": "SUCCESS with material batch list data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData != null", "resultData.content is array"]
+    },
+    {
+      "id": "DATA-03",
+      "query": "低库存预警",
+      "intentCode": "MATERIAL_LOW_STOCK_ALERT",
+      "expected_behavior": "SUCCESS with warnings list and total count",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.warnings is array", "resultData.total >= 0"]
+    },
+    {
+      "id": "DATA-04",
+      "query": "过期原料查询",
+      "intentCode": "MATERIAL_EXPIRED_QUERY",
+      "expected_behavior": "SUCCESS with expired batches list",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.batches is array"]
+    },
+    {
+      "id": "DATA-05",
+      "query": "今天考勤情况",
+      "intentCode": "ATTENDANCE_TODAY",
+      "expected_behavior": "SUCCESS with today's attendance data including clock times",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.date exists", "resultData.userName exists"]
+    },
+    {
+      "id": "DATA-06",
+      "query": "考勤记录",
+      "intentCode": "ATTENDANCE_HISTORY",
+      "expected_behavior": "SUCCESS with paginated attendance history",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.hasMore is boolean", "resultData.currentPage >= 1"]
+    },
+    {
+      "id": "DATA-07",
+      "query": "考勤统计",
+      "intentCode": "ATTENDANCE_STATS",
+      "expected_behavior": "SUCCESS with metrics and department ranking",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.metrics exists", "resultData.departmentRanking exists"]
+    },
+    {
+      "id": "DATA-08",
+      "query": "产量报告",
+      "intentCode": "REPORT_PRODUCTION",
+      "expected_behavior": "SUCCESS with production report data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.reportType exists", "resultData.data exists"]
+    },
+    {
+      "id": "DATA-09",
+      "query": "质检报告",
+      "intentCode": "REPORT_QUALITY",
+      "expected_behavior": "SUCCESS with quality report data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.reportType exists"]
+    },
+    {
+      "id": "DATA-10",
+      "query": "库存报告",
+      "intentCode": "REPORT_INVENTORY",
+      "expected_behavior": "SUCCESS with inventory report data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.reportType == 'inventory' or similar"]
+    },
+    {
+      "id": "DATA-11",
+      "query": "KPI报告",
+      "intentCode": "REPORT_KPI",
+      "expected_behavior": "SUCCESS with KPI metrics",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.data exists"]
+    },
+    {
+      "id": "DATA-12",
+      "query": "仪表盘数据",
+      "intentCode": "REPORT_DASHBOARD_OVERVIEW",
+      "expected_behavior": "SUCCESS with dashboard overview data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.data exists"]
+    },
+    {
+      "id": "DATA-13",
+      "query": "质检记录",
+      "intentCode": "QUALITY_CHECK_QUERY",
+      "expected_behavior": "SUCCESS with quality check records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "DATA-14",
+      "query": "质检统计",
+      "intentCode": "QUALITY_STATS",
+      "expected_behavior": "SUCCESS with quality statistics",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.summary exists", "resultData.rates exists"]
+    },
+    {
+      "id": "DATA-15",
+      "query": "出货查询",
+      "intentCode": "SHIPMENT_QUERY",
+      "expected_behavior": "SUCCESS with shipment records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "DATA-16",
+      "query": "出货统计",
+      "intentCode": "SHIPMENT_STATS",
+      "expected_behavior": "SUCCESS with shipment statistics",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.summary exists", "resultData.stats exists"]
+    },
+    {
+      "id": "DATA-17",
+      "query": "告警列表",
+      "intentCode": "ALERT_LIST",
+      "expected_behavior": "SUCCESS with alert records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "DATA-18",
+      "query": "告警统计",
+      "intentCode": "ALERT_STATS",
+      "expected_behavior": "SUCCESS with alert statistics and health assessment",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.statistics exists", "resultData.healthAssessment exists"]
+    },
+    {
+      "id": "DATA-19",
+      "query": "客户列表",
+      "intentCode": "CUSTOMER_LIST",
+      "expected_behavior": "SUCCESS with customer records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array", "resultData.totalElements >= 0"]
+    },
+    {
+      "id": "DATA-20",
+      "query": "供应商列表",
+      "intentCode": "SUPPLIER_LIST",
+      "expected_behavior": "SUCCESS with supplier records",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "CONV-01",
+      "query": "帮我看看数据",
+      "endpoint": "/conversation/start",
+      "expected_behavior": "Start conversation with low confidence. Returns sessionId, candidates, clarification message.",
+      "category": "CONVERSATION",
+      "validation": ["success == true", "data.sessionId exists", "data.status == ACTIVE", "data.candidates.length > 0", "data.currentRound == 1"]
+    },
+    {
+      "id": "CONV-02",
+      "query": "帮我处理一下",
+      "endpoint": "/conversation/start",
+      "expected_behavior": "Ambiguous input triggers conversation with multiple candidate intents",
+      "category": "CONVERSATION",
+      "validation": ["data.sessionId exists", "data.candidates.length >= 3"]
+    },
+    {
+      "id": "CONV-03",
+      "query": "数据",
+      "endpoint": "/conversation/start",
+      "expected_behavior": "Single vague word triggers conversation",
+      "category": "CONVERSATION",
+      "validation": ["data.status == ACTIVE", "data.message is not empty"]
+    },
+    {
+      "id": "CONV-04",
+      "query": "我想做点什么",
+      "endpoint": "/conversation/start",
+      "expected_behavior": "Very vague input, system should present options",
+      "category": "CONVERSATION",
+      "validation": ["data.candidates.length > 0", "data.requiresConfirmation == true"]
+    },
+    {
+      "id": "CONV-05",
+      "query": "Reply: 产品类型查询",
+      "endpoint": "/conversation/{sessionId}/reply",
+      "expected_behavior": "User reply should narrow down candidates or complete the conversation",
+      "category": "CONVERSATION",
+      "validation": ["data.currentRound >= 2"]
+    },
+    {
+      "id": "CONV-06",
+      "query": "Confirm: PRODUCT_TYPE_QUERY",
+      "endpoint": "/conversation/{sessionId}/confirm",
+      "expected_behavior": "Confirm intent ends conversation and triggers learning",
+      "category": "CONVERSATION",
+      "validation": ["success == true"]
+    },
+    {
+      "id": "CONV-07",
+      "query": "Cancel conversation",
+      "endpoint": "/conversation/{sessionId}/cancel",
+      "expected_behavior": "Cancel active conversation",
+      "category": "CONVERSATION",
+      "validation": ["success == true"]
+    },
+    {
+      "id": "CONV-08",
+      "query": "Get conversation stats",
+      "endpoint": "/conversation/stats?days=7",
+      "expected_behavior": "Returns conversation statistics for last 7 days",
+      "category": "CONVERSATION",
+      "validation": ["data.totalSessions >= 0", "data.successRate >= 0"]
+    },
+    {
+      "id": "CONV-09",
+      "query": "Get active session",
+      "endpoint": "/conversation/active",
+      "expected_behavior": "Returns active session if exists, or hasActiveSession=false",
+      "category": "CONVERSATION",
+      "validation": ["success == true", "hasActiveSession is boolean"]
+    },
+    {
+      "id": "CONV-10",
+      "query": "Get non-existent session",
+      "endpoint": "/conversation/non-existent-id",
+      "expected_behavior": "Returns success=false with message about session not found",
+      "category": "CONVERSATION",
+      "validation": ["success == false"]
+    },
+    {
+      "id": "PERM-01",
+      "query": "删除用户",
+      "role": "quality_inspector",
+      "intentCode": "USER_DELETE",
+      "expected_behavior": "NO_PERMISSION - quality inspector cannot delete users (CRITICAL sensitivity)",
+      "category": "PERMISSION",
+      "validation": ["status == NO_PERMISSION", "message contains role requirement"]
+    },
+    {
+      "id": "PERM-02",
+      "query": "创建用户",
+      "role": "quality_inspector",
+      "intentCode": "USER_CREATE",
+      "expected_behavior": "NO_PERMISSION - quality inspector cannot create users (HIGH sensitivity)",
+      "category": "PERMISSION",
+      "validation": ["status == NO_PERMISSION"]
+    },
+    {
+      "id": "PERM-03",
+      "query": "批量删除数据",
+      "role": "quality_inspector",
+      "intentCode": "DATA_BATCH_DELETE",
+      "expected_behavior": "NO_PERMISSION - quality inspector cannot batch delete (CRITICAL sensitivity)",
+      "category": "PERMISSION",
+      "validation": ["status == NO_PERMISSION"]
+    },
+    {
+      "id": "PERM-04",
+      "query": "质检记录",
+      "role": "quality_inspector",
+      "intentCode": "QUALITY_CHECK_QUERY",
+      "expected_behavior": "SUCCESS - quality inspector CAN access quality check data (LOW sensitivity)",
+      "category": "PERMISSION",
+      "validation": ["status == SUCCESS", "resultData != null"]
+    },
+    {
+      "id": "PERM-05",
+      "query": "查看批次 (cross-role check)",
+      "role": "warehouse_manager",
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "expected_behavior": "SUCCESS - warehouse manager can view batches",
+      "category": "PERMISSION",
+      "validation": ["status == SUCCESS", "resultData != null"]
+    },
+    {
+      "id": "ERR-01",
+      "query": "",
+      "expected_behavior": "NEED_CLARIFICATION - empty input handled gracefully",
+      "category": "ERROR_HANDLING",
+      "validation": ["status == NEED_CLARIFICATION", "message is not empty", "suggestedActions exists"]
+    },
+    {
+      "id": "ERR-02",
+      "query": "test",
+      "intentCode": "NON_EXISTENT_INTENT",
+      "expected_behavior": "FAILED with message about intent not found",
+      "category": "ERROR_HANDLING",
+      "validation": ["status == FAILED", "message contains 'not found' or similar"]
+    },
+    {
+      "id": "ERR-03",
+      "query": "查看批次",
+      "auth": "none",
+      "expected_behavior": "HTTP 401 Unauthorized",
+      "category": "ERROR_HANDLING",
+      "validation": ["HTTP status == 401"]
+    },
+    {
+      "id": "ERR-04",
+      "query": "查看批次",
+      "factoryId": "WRONG_FACTORY",
+      "expected_behavior": "HTTP 403 Forbidden - factory mismatch with token",
+      "category": "ERROR_HANDLING",
+      "validation": ["HTTP status == 403"]
+    },
+    {
+      "id": "ERR-05",
+      "query": "asdfghjklqwertyu",
+      "expected_behavior": "NEED_CLARIFICATION - gibberish input handled gracefully, not recognized",
+      "category": "ERROR_HANDLING",
+      "validation": ["intentRecognized == false", "status == NEED_CLARIFICATION"]
+    },
+    {
+      "id": "RECOG-01",
+      "query": "查看这个月的产量",
+      "expected_behavior": "Recognized as REPORT_PRODUCTION with CLASSIFIER method, ~0.91 confidence",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == REPORT_PRODUCTION", "confidence > 0.8"]
+    },
+    {
+      "id": "RECOG-02",
+      "query": "删除所有用户",
+      "expected_behavior": "Recognized as USER_DELETE with PHRASE_MATCH, sensitivity=CRITICAL",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == USER_DELETE", "sensitivityLevel == CRITICAL"]
+    },
+    {
+      "id": "RECOG-03",
+      "query": "生产线1号设备是什么状态",
+      "expected_behavior": "Recognized as EQUIPMENT_STATUS_QUERY with PHRASE_MATCH",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == EQUIPMENT_STATUS_QUERY"]
+    },
+    {
+      "id": "RECOG-04",
+      "query": "如何提高生产效率",
+      "expected_behavior": "Recognized as REPORT_EFFICIENCY (advisory query treated as report)",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true"]
+    },
+    {
+      "id": "RECOG-05",
+      "query": "原材料快过期了吗",
+      "expected_behavior": "Recognized as MATERIAL_EXPIRING_ALERT with ~0.86 confidence",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == MATERIAL_EXPIRING_ALERT"]
+    },
+    {
+      "id": "RECOG-06",
+      "query": "今天谁迟到了",
+      "expected_behavior": "Recognized as ATTENDANCE_ANOMALY with PHRASE_MATCH, sensitivity=MEDIUM",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == ATTENDANCE_ANOMALY"]
+    },
+    {
+      "id": "RECOG-07",
+      "query": "添加一个新的秤设备",
+      "expected_behavior": "Recognized as SCALE_ADD_DEVICE with CLASSIFIER method, sensitivity=MEDIUM",
+      "category": "RECOGNITION_ACCURACY",
+      "validation": ["matched == true", "intentCode == SCALE_ADD_DEVICE", "sensitivityLevel == MEDIUM"]
+    },
+    {
+      "id": "DROOLS-01",
+      "query": "查看所有批次",
+      "intentCode_provided": false,
+      "expected_behavior": "VALIDATION_FAILED due to Drools NPE (known bug). This verifies the bug is still present.",
+      "category": "DROOLS_VALIDATION_BUG",
+      "validation": ["status == VALIDATION_FAILED", "validationViolations[0].message contains 'result is null'"]
+    },
+    {
+      "id": "DROOLS-02",
+      "query": "查看所有批次",
+      "intentCode_provided": true,
+      "intentCode": "PROCESSING_BATCH_LIST",
+      "expected_behavior": "SUCCESS - bypasses Drools when intentCode is provided",
+      "category": "DROOLS_VALIDATION_BUG",
+      "validation": ["status == SUCCESS", "resultData != null"]
+    },
+    {
+      "id": "EXTRA-01",
+      "query": "秤设备列表",
+      "intentCode": "SCALE_LIST_DEVICES",
+      "expected_behavior": "SUCCESS with scale device list",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "EXTRA-02",
+      "query": "产品类型",
+      "intentCode": "PRODUCT_TYPE_QUERY",
+      "expected_behavior": "SUCCESS with product type list",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData.content is array"]
+    },
+    {
+      "id": "EXTRA-03",
+      "query": "效率报告",
+      "intentCode": "REPORT_EFFICIENCY",
+      "expected_behavior": "SUCCESS with efficiency report data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS", "resultData != null"]
+    },
+    {
+      "id": "EXTRA-04",
+      "query": "异常报告",
+      "intentCode": "REPORT_ANOMALY",
+      "expected_behavior": "SUCCESS with anomaly detection report",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS"]
+    },
+    {
+      "id": "EXTRA-05",
+      "query": "趋势报告",
+      "intentCode": "REPORT_TRENDS",
+      "expected_behavior": "SUCCESS with trend data",
+      "category": "DATA_RETRIEVAL",
+      "validation": ["status == SUCCESS"]
+    },
+    {
+      "id": "PUBLIC-01",
+      "query": "今天产量多少",
+      "endpoint": "/api/public/ai-demo/execute",
+      "expected_behavior": "Intent recognized (PRODUCTION_STATUS_QUERY), LOW sensitivity, but execution FAILED because QUERY category handler not implemented in public demo path",
+      "category": "PUBLIC_DEMO",
+      "validation": ["intentRecognized == true", "sensitivityLevel == LOW", "sessionId starts with 'demo-'"]
+    },
+    {
+      "id": "PUBLIC-02",
+      "query": "删除用户",
+      "endpoint": "/api/public/ai-demo/execute",
+      "expected_behavior": "Intent recognized but NO_PERMISSION (CRITICAL sensitivity blocked in demo mode)",
+      "category": "PUBLIC_DEMO",
+      "validation": ["intentRecognized == true", "status == NO_PERMISSION"]
+    },
+    {
+      "id": "PUBLIC-03",
+      "query": "查看批次",
+      "endpoint": "/api/public/ai-demo/recognize",
+      "expected_behavior": "Recognized with canExecuteInDemo field indicating demo permission",
+      "category": "PUBLIC_DEMO",
+      "validation": ["matched == true", "canExecuteInDemo is boolean", "toolName exists"]
+    }
+  ],
+
+  "test_accounts": {
+    "factory_admin": {"username": "factory_admin1", "password": "123456", "role": "factory_super_admin", "factoryId": "F001"},
+    "workshop_supervisor": {"username": "workshop_sup1", "password": "123456", "role": "workshop_supervisor", "factoryId": "F001"},
+    "warehouse_manager": {"username": "warehouse_mgr1", "password": "123456", "role": "warehouse_manager", "factoryId": "F001"},
+    "quality_inspector": {"username": "quality_insp1", "password": "123456", "role": "quality_inspector", "factoryId": "F001"},
+    "dispatcher": {"username": "dispatcher1", "password": "123456", "role": "dispatcher", "factoryId": "F001"},
+    "hr_admin": {"username": "hr_admin1", "password": "123456", "role": "hr_admin", "factoryId": "F001"},
+    "platform_admin": {"username": "platform_admin", "password": "123456", "role": "platform_admin", "factoryId": null}
+  },
+
+  "verified_working_intent_codes": [
+    "PROCESSING_BATCH_LIST",
+    "MATERIAL_BATCH_QUERY",
+    "MATERIAL_LOW_STOCK_ALERT",
+    "MATERIAL_EXPIRED_QUERY",
+    "ATTENDANCE_TODAY",
+    "ATTENDANCE_HISTORY",
+    "ATTENDANCE_STATS",
+    "REPORT_PRODUCTION",
+    "REPORT_QUALITY",
+    "REPORT_INVENTORY",
+    "REPORT_KPI",
+    "REPORT_DASHBOARD_OVERVIEW",
+    "QUALITY_CHECK_QUERY",
+    "QUALITY_STATS",
+    "SHIPMENT_QUERY",
+    "SHIPMENT_STATS",
+    "ALERT_LIST",
+    "ALERT_STATS",
+    "SCALE_LIST_DEVICES",
+    "CUSTOMER_LIST",
+    "SUPPLIER_LIST",
+    "PRODUCT_TYPE_QUERY"
+  ],
+
+  "known_failing_intent_codes": {
+    "EQUIPMENT_STATUS_QUERY": "Returns 'unsupported category type QUERY' - handler not implemented",
+    "PRODUCTION_STATUS_QUERY": "Returns 'unsupported category type QUERY' - handler not implemented",
+    "PROCESSING_BATCH_DETAIL": "FAILED - possibly requires entityId parameter",
+    "ORDER_LIST": "FAILED - handler missing or broken",
+    "ORDER_TODAY": "FAILED - handler missing or broken",
+    "WORKER_LIST_QUERY": "Intent config not found - not in database"
+  },
+
+  "implementation_notes": {
+    "two_phase_execution": "Tests should use TWO calls: (1) /recognize to get intentCode, (2) /execute with intentCode to bypass Drools bug",
+    "drools_workaround": "Always include intentCode in execute requests until Drools NPE is fixed",
+    "conversation_flow": "Full flow: POST /conversation/start -> POST /conversation/{sid}/reply (1-5 rounds) -> POST /conversation/{sid}/confirm OR /cancel",
+    "permission_testing": "Login as different roles and test same intentCode. LOW sensitivity = all roles. MEDIUM = most. HIGH/CRITICAL = admin only.",
+    "pagination": "Most list endpoints return {content, totalPages, hasMore, currentPage}. Default page=1, size=10.",
+    "response_format": "Outer: {code:200, success:true, data:{...}}. Inner data is IntentExecuteResponse with status, resultData, etc."
+  }
+}

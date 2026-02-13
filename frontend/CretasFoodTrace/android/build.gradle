@@ -33,5 +33,21 @@ allprojects {
   }
 }
 
+// CMake path length workaround for Windows (MAX_PATH 250 chars)
+subprojects { subproject ->
+    def applyCmakeWorkaround = {
+        def androidExt = subproject.extensions.findByName('android')
+        if (androidExt != null) {
+            try {
+                if (androidExt.externalNativeBuild?.cmake?.path != null) {
+                    androidExt.externalNativeBuild.cmake.buildStagingDirectory = file("C:/b/${subproject.name}")
+                }
+            } catch (Exception ignored) {}
+        }
+    }
+    try { subproject.afterEvaluate { applyCmakeWorkaround() } }
+    catch (Exception e) { applyCmakeWorkaround() }
+}
+
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"

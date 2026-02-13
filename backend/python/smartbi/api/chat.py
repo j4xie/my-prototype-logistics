@@ -107,18 +107,34 @@ class RootCauseResponse(BaseModel):
 
 
 class GeneralAnalysisRequest(BaseModel):
-    """Request for general analysis"""
-    sheet_id: str = Field(..., description="Sheet identifier")
-    query: str = Field(..., description="Analysis query/question")
+    """Request for general analysis (accepts both Python and Java field names)"""
+    sheet_id: Optional[str] = Field(None, description="Sheet identifier (optional for standalone queries)")
+    query: Optional[str] = Field(None, description="Analysis query/question")
+    message: Optional[str] = Field(None, description="Alias for query (Java compat)")
     data: Optional[List[Dict[str, Any]]] = Field(None, description="Data to analyze")
     context: Optional[Dict[str, Any]] = Field(None, description="Additional context")
+    fields: Optional[List[Dict[str, str]]] = Field(None, description="Field mappings")
+    table_type: Optional[str] = Field(None, description="Table type hint")
+    user_id: Optional[str] = Field(None, description="User ID (Java compat)")
+    session_id: Optional[str] = Field(None, description="Session ID (Java compat)")
+    enable_thinking: Optional[bool] = Field(None, description="Enable thinking mode (Java compat)")
+    thinking_budget: Optional[int] = Field(None, description="Thinking budget (Java compat)")
+
+    @property
+    def effective_query(self) -> str:
+        return self.query or self.message or ""
 
 
 class GeneralAnalysisResponse(BaseModel):
-    """Response for general analysis"""
+    """Response for general analysis (includes Java-compat fields)"""
     success: bool
     error: Optional[str] = None
     answer: str = ""
+    aiAnalysis: Optional[str] = None
+    reasoningContent: Optional[str] = None
+    thinkingEnabled: Optional[bool] = None
+    sessionId: Optional[str] = None
+    messageCount: Optional[int] = None
     insights: List[Dict[str, Any]] = []
     charts: List[Dict[str, Any]] = []
     processing_time_ms: int = 0
@@ -337,7 +353,7 @@ async def drill_down(request: DrillDownRequest) -> DrillDownResponse:
         logger.error(f"Drill-down failed: {e}", exc_info=True)
         return DrillDownResponse(
             success=False,
-            error=str(e),
+            error="AI对话处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -398,7 +414,7 @@ async def benchmark(request: BenchmarkRequest) -> BenchmarkResponse:
         logger.error(f"Benchmark failed: {e}", exc_info=True)
         return BenchmarkResponse(
             success=False,
-            error=str(e),
+            error="AI对话处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -510,7 +526,7 @@ async def root_cause(request: RootCauseRequest) -> RootCauseResponse:
         logger.error(f"Root cause analysis failed: {e}", exc_info=True)
         return RootCauseResponse(
             success=False,
-            error=str(e),
+            error="AI对话处理失败，请稍后重试",
             kpi=request.kpi,
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
@@ -532,15 +548,70 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
     start_time = time.time()
 
     try:
-        # Get data
+        # Get data from request, cache, or latest upload
         data = request.data
-        if not data:
+        if not data and request.sheet_id:
             data = get_sheet_data(request.sheet_id)
 
         if not data:
+            # Try to get latest uploaded data from database
+            try:
+                from smartbi.config import get_postgres_url
+                import asyncpg
+                import asyncio
+
+                pg_url = get_postgres_url()
+                if pg_url:
+                    conn = await asyncpg.connect(pg_url)
+                    try:
+                        # Get the most recent upload
+                        row = await conn.fetchrow(
+                            "SELECT id FROM smart_bi_pg_excel_uploads ORDER BY created_at DESC LIMIT 1"
+                        )
+                        if row:
+                            upload_id = row['id']
+                            rows = await conn.fetch(
+                                "SELECT row_data FROM smart_bi_pg_dynamic_data WHERE upload_id = $1 LIMIT 200",
+                                upload_id
+                            )
+                            if rows:
+                                import json
+                                data = [json.loads(r['row_data']) if isinstance(r['row_data'], str) else r['row_data'] for r in rows]
+                                logger.info(f"[general_analysis] Loaded {len(data)} rows from latest upload {upload_id}")
+                    finally:
+                        await conn.close()
+            except Exception as e:
+                logger.warning(f"Failed to load latest upload data: {e}")
+
+        if not data:
+            # No SmartBI data — but if there's a message/query, use LLM to analyze it directly
+            # (Java cost analysis sends formatted cost data as the message text)
+            query = request.effective_query
+            if query and len(query) > 20:
+                # Use LLM to analyze the text directly
+                try:
+                    insight_gen = InsightGenerator()
+                    llm_result = await insight_gen.generate_text_analysis(query)
+                    answer = llm_result if llm_result else "分析完成，暂无更多见解。"
+                    return GeneralAnalysisResponse(
+                        success=True,
+                        answer=answer,
+                        aiAnalysis=answer,
+                        sessionId=request.session_id,
+                        thinkingEnabled=request.enable_thinking,
+                        insights=[],
+                        charts=[],
+                        processing_time_ms=int((time.time() - start_time) * 1000)
+                    )
+                except Exception as e:
+                    logger.warning(f"Direct LLM analysis failed: {e}")
+                    # Fall through to no-data response
+
             return GeneralAnalysisResponse(
-                success=False,
-                error=f"No data found for sheet {request.sheet_id}",
+                success=True,
+                answer="暂无可分析的数据。请先上传 Excel 文件或在「智能数据分析」页面选择数据源后，再使用 AI 问答功能。",
+                insights=[],
+                charts=[],
                 processing_time_ms=int((time.time() - start_time) * 1000)
             )
 
@@ -548,11 +619,12 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         df = pd.DataFrame(data)
 
         # Use insight generator for analysis
+        query = request.effective_query
         insight_gen = InsightGenerator()
         insights_result = await insight_gen.generate_insights(
             df,
             context=request.context,
-            query=request.query
+            query=query
         )
 
         # Format response
@@ -561,7 +633,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
 
         # Generate charts based on query type
         charts = []
-        if "趋势" in request.query or "变化" in request.query:
+        if "趋势" in query or "变化" in query:
             # Suggest trend chart
             numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
             if numeric_cols:
@@ -571,13 +643,16 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
                     "data": df[numeric_cols[0]].tolist()
                 })
 
-        if "对比" in request.query or "比较" in request.query:
+        if "对比" in query or "比较" in query:
             # Suggest comparison chart
             charts.append({"type": "bar", "title": "对比分析"})
 
         return GeneralAnalysisResponse(
             success=True,
             answer=answer,
+            aiAnalysis=answer,
+            sessionId=request.session_id,
+            thinkingEnabled=request.enable_thinking,
             insights=insights,
             charts=charts,
             processing_time_ms=int((time.time() - start_time) * 1000)
@@ -587,7 +662,7 @@ async def general_analysis(request: GeneralAnalysisRequest) -> GeneralAnalysisRe
         logger.error(f"General analysis failed: {e}", exc_info=True)
         return GeneralAnalysisResponse(
             success=False,
-            error=str(e),
+            error="AI对话处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 
@@ -653,7 +728,7 @@ async def multi_dimension_analysis(
         logger.error(f"Multi-dimension analysis failed: {e}", exc_info=True)
         return MultiDimensionResponse(
             success=False,
-            error=str(e),
+            error="AI对话处理失败，请稍后重试",
             processing_time_ms=int((time.time() - start_time) * 1000)
         )
 

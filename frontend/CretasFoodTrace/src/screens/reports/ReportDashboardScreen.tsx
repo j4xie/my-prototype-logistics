@@ -14,6 +14,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
+import { useFactoryFeatureStore } from '../../store/factoryFeatureStore';
 import { ReportScreenProps } from '../../types/navigation';
 import { reportApiClient } from '../../services/api/reportApiClient';
 import { dashboardAPI } from '../../services/api/dashboardApiClient';
@@ -21,6 +22,7 @@ import { wageApiClient } from '../../services/api/wageApiClient';
 import type { LaborCostAnalysis } from '../../services/api/wageApiClient';
 import { getFactoryId } from '../../types/auth';
 import { logger } from '../../utils/logger';
+import { formatNumberWithCommas } from '../../utils/formatters';
 
 const reportDashboardLogger = logger.createContextLogger('ReportDashboard');
 
@@ -31,6 +33,7 @@ const reportDashboardLogger = logger.createContextLogger('ReportDashboard');
 export default function ReportDashboardScreen() {
   const navigation = useNavigation<ReportScreenProps<'ReportDashboard'>['navigation']>();
   const { user } = useAuthStore();
+  const { isReportEnabled } = useFactoryFeatureStore();
   const { t } = useTranslation('reports');
 
   const [loading, setLoading] = useState(true);
@@ -243,7 +246,7 @@ export default function ReportDashboardScreen() {
     if (value >= 10000) {
       return `¥${(value / 10000).toFixed(1)}万`;
     }
-    return `¥${value.toLocaleString()}`;
+    return `¥${formatNumberWithCommas(value)}`;
   };
 
   /**
@@ -286,242 +289,289 @@ export default function ReportDashboardScreen() {
         ) : (
           <>
             {/* 生产概览 */}
-            <Card
-              style={styles.card}
-              mode="elevated"
-              onPress={() => navigation.navigate('ProductionReport')}
-            >
-              <Card.Title
-                title="生产概览"
-                titleVariant="titleMedium"
-                left={(props) => <Icon {...props} source="factory" color="#2196F3" />}
-                right={() => <Icon source="chevron-right" size={24} color="#999" />}
-              />
-              <Card.Content>
-                {productionData ? (
-                  <View style={styles.metricsGrid}>
-                    <View style={styles.metricItem}>
-                      <Text style={[styles.metricValue, { color: '#2196F3' }]}>
-                        {productionData.totalBatches}
-                      </Text>
-                      <Text style={styles.metricLabel}>总批次</Text>
+            {isReportEnabled('production') && (
+              <Card
+                style={styles.card}
+                mode="elevated"
+                onPress={() => navigation.navigate('ProductionReport')}
+              >
+                <Card.Title
+                  title="生产概览"
+                  titleVariant="titleMedium"
+                  left={(props) => <Icon {...props} source="factory" color="#2196F3" />}
+                  right={() => <Icon source="chevron-right" size={24} color="#999" />}
+                />
+                <Card.Content>
+                  {productionData ? (
+                    <View style={styles.metricsGrid}>
+                      <View style={styles.metricItem}>
+                        <Text style={[styles.metricValue, { color: '#2196F3' }]}>
+                          {productionData.totalBatches}
+                        </Text>
+                        <Text style={styles.metricLabel}>总批次</Text>
+                      </View>
+                      <View style={styles.metricItem}>
+                        <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
+                          {productionData.completedBatches}
+                        </Text>
+                        <Text style={styles.metricLabel}>已完成</Text>
+                      </View>
+                      <View style={styles.metricItem}>
+                        <Text style={[styles.metricValue, { color: getStatusColor(productionData.completionRate) }]}>
+                          {(productionData.completionRate ?? 0).toFixed(1)}%
+                        </Text>
+                        <Text style={styles.metricLabel}>完成率</Text>
+                      </View>
+                      <View style={styles.metricItem}>
+                        <Text style={[styles.metricValue, { color: '#9C27B0' }]}>
+                          {formatNumberWithCommas(productionData.totalOutput)}
+                        </Text>
+                        <Text style={styles.metricLabel}>总产出</Text>
+                      </View>
                     </View>
-                    <View style={styles.metricItem}>
-                      <Text style={[styles.metricValue, { color: '#4CAF50' }]}>
-                        {productionData.completedBatches}
-                      </Text>
-                      <Text style={styles.metricLabel}>已完成</Text>
-                    </View>
-                    <View style={styles.metricItem}>
-                      <Text style={[styles.metricValue, { color: getStatusColor(productionData.completionRate) }]}>
-                        {(productionData.completionRate ?? 0).toFixed(1)}%
-                      </Text>
-                      <Text style={styles.metricLabel}>完成率</Text>
-                    </View>
-                    <View style={styles.metricItem}>
-                      <Text style={[styles.metricValue, { color: '#9C27B0' }]}>
-                        {productionData.totalOutput.toLocaleString()}
-                      </Text>
-                      <Text style={styles.metricLabel}>总产出</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noDataText}>暂无生产数据</Text>
-                )}
-              </Card.Content>
-            </Card>
+                  ) : (
+                    <Text style={styles.noDataText}>暂无生产数据</Text>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
 
             {/* 质量概览 */}
-            <Card
-              style={styles.card}
-              mode="elevated"
-              onPress={() => navigation.navigate('QualityReport')}
-            >
-              <Card.Title
-                title="质量概览"
-                titleVariant="titleMedium"
-                left={(props) => <Icon {...props} source="check-circle" color="#4CAF50" />}
-                right={() => <Icon source="chevron-right" size={24} color="#999" />}
-              />
-              <Card.Content>
-                {qualityData ? (
-                  <>
-                    <View style={styles.metricsRow}>
-                      <View style={styles.metricItemSmall}>
-                        <Text style={styles.metricValueSmall}>{qualityData.totalInspected}</Text>
-                        <Text style={styles.metricLabelSmall}>检验数</Text>
+            {isReportEnabled('quality') && (
+              <Card
+                style={styles.card}
+                mode="elevated"
+                onPress={() => navigation.navigate('QualityReport')}
+              >
+                <Card.Title
+                  title="质量概览"
+                  titleVariant="titleMedium"
+                  left={(props) => <Icon {...props} source="check-circle" color="#4CAF50" />}
+                  right={() => <Icon source="chevron-right" size={24} color="#999" />}
+                />
+                <Card.Content>
+                  {qualityData ? (
+                    <>
+                      <View style={styles.metricsRow}>
+                        <View style={styles.metricItemSmall}>
+                          <Text style={styles.metricValueSmall}>{qualityData.totalInspected}</Text>
+                          <Text style={styles.metricLabelSmall}>检验数</Text>
+                        </View>
+                        <View style={styles.metricItemSmall}>
+                          <Text style={[styles.metricValueSmall, { color: '#4CAF50' }]}>{qualityData.passed}</Text>
+                          <Text style={styles.metricLabelSmall}>合格</Text>
+                        </View>
+                        <View style={styles.metricItemSmall}>
+                          <Text style={[styles.metricValueSmall, { color: '#F44336' }]}>{qualityData.failed}</Text>
+                          <Text style={styles.metricLabelSmall}>不合格</Text>
+                        </View>
                       </View>
-                      <View style={styles.metricItemSmall}>
-                        <Text style={[styles.metricValueSmall, { color: '#4CAF50' }]}>{qualityData.passed}</Text>
-                        <Text style={styles.metricLabelSmall}>合格</Text>
+                      <View style={styles.progressRow}>
+                        <Text style={styles.progressLabel}>合格率</Text>
+                        <Text style={[styles.progressValue, { color: getStatusColor(qualityData.passRate, 95) }]}>
+                          {(qualityData.passRate ?? 0).toFixed(1)}%
+                        </Text>
                       </View>
-                      <View style={styles.metricItemSmall}>
-                        <Text style={[styles.metricValueSmall, { color: '#F44336' }]}>{qualityData.failed}</Text>
-                        <Text style={styles.metricLabelSmall}>不合格</Text>
-                      </View>
-                    </View>
-                    <View style={styles.progressRow}>
-                      <Text style={styles.progressLabel}>合格率</Text>
-                      <Text style={[styles.progressValue, { color: getStatusColor(qualityData.passRate, 95) }]}>
-                        {(qualityData.passRate ?? 0).toFixed(1)}%
-                      </Text>
-                    </View>
-                    <ProgressBar
-                      progress={(qualityData.passRate ?? 0) / 100}
-                      color={getStatusColor(qualityData.passRate, 95)}
-                      style={styles.progressBar}
-                    />
-                  </>
-                ) : (
-                  <Text style={styles.noDataText}>暂无质量数据</Text>
-                )}
-              </Card.Content>
-            </Card>
+                      <ProgressBar
+                        progress={(qualityData.passRate ?? 0) / 100}
+                        color={getStatusColor(qualityData.passRate, 95)}
+                        style={styles.progressBar}
+                      />
+                    </>
+                  ) : (
+                    <Text style={styles.noDataText}>暂无质量数据</Text>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
 
             {/* 效率概览 */}
-            <Card
-              style={styles.card}
-              mode="elevated"
-              onPress={() => navigation.navigate('EfficiencyReport')}
-            >
-              <Card.Title
-                title="效率概览"
-                titleVariant="titleMedium"
-                left={(props) => <Icon {...props} source="speedometer" color="#9C27B0" />}
-                right={() => <Icon source="chevron-right" size={24} color="#999" />}
-              />
-              <Card.Content>
-                {efficiencyData ? (
-                  <>
-                    <View style={styles.efficiencyRow}>
-                      <Text style={styles.efficiencyLabel}>设备OEE</Text>
-                      <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentOEE, 85) }]}>
-                        {(efficiencyData.equipmentOEE ?? 0).toFixed(1)}%
-                      </Text>
-                    </View>
-                    <ProgressBar
-                      progress={(efficiencyData.equipmentOEE ?? 0) / 100}
-                      color={getStatusColor(efficiencyData.equipmentOEE, 85)}
-                      style={styles.progressBar}
-                    />
-                    <View style={styles.efficiencyRow}>
-                      <Text style={styles.efficiencyLabel}>设备利用率</Text>
-                      <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentUtilization) }]}>
-                        {(efficiencyData.equipmentUtilization ?? 0).toFixed(1)}%
-                      </Text>
-                    </View>
-                    <ProgressBar
-                      progress={(efficiencyData.equipmentUtilization ?? 0) / 100}
-                      color={getStatusColor(efficiencyData.equipmentUtilization)}
-                      style={styles.progressBar}
-                    />
-                    <View style={styles.efficiencyRow}>
-                      <Text style={styles.efficiencyLabel}>综合效率</Text>
-                      <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.overallEfficiency) }]}>
-                        {(efficiencyData.overallEfficiency ?? 0).toFixed(1)}%
-                      </Text>
-                    </View>
-                    <ProgressBar
-                      progress={(efficiencyData.overallEfficiency ?? 0) / 100}
-                      color={getStatusColor(efficiencyData.overallEfficiency)}
-                      style={styles.progressBar}
-                    />
-                  </>
-                ) : (
-                  <Text style={styles.noDataText}>暂无效率数据</Text>
-                )}
-              </Card.Content>
-            </Card>
+            {isReportEnabled('efficiency') && (
+              <Card
+                style={styles.card}
+                mode="elevated"
+                onPress={() => navigation.navigate('EfficiencyReport')}
+              >
+                <Card.Title
+                  title="效率概览"
+                  titleVariant="titleMedium"
+                  left={(props) => <Icon {...props} source="speedometer" color="#9C27B0" />}
+                  right={() => <Icon source="chevron-right" size={24} color="#999" />}
+                />
+                <Card.Content>
+                  {efficiencyData ? (
+                    <>
+                      <View style={styles.efficiencyRow}>
+                        <Text style={styles.efficiencyLabel}>设备OEE</Text>
+                        <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentOEE, 85) }]}>
+                          {(efficiencyData.equipmentOEE ?? 0).toFixed(1)}%
+                        </Text>
+                      </View>
+                      <ProgressBar
+                        progress={(efficiencyData.equipmentOEE ?? 0) / 100}
+                        color={getStatusColor(efficiencyData.equipmentOEE, 85)}
+                        style={styles.progressBar}
+                      />
+                      <View style={styles.efficiencyRow}>
+                        <Text style={styles.efficiencyLabel}>设备利用率</Text>
+                        <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.equipmentUtilization) }]}>
+                          {(efficiencyData.equipmentUtilization ?? 0).toFixed(1)}%
+                        </Text>
+                      </View>
+                      <ProgressBar
+                        progress={(efficiencyData.equipmentUtilization ?? 0) / 100}
+                        color={getStatusColor(efficiencyData.equipmentUtilization)}
+                        style={styles.progressBar}
+                      />
+                      <View style={styles.efficiencyRow}>
+                        <Text style={styles.efficiencyLabel}>综合效率</Text>
+                        <Text style={[styles.efficiencyValue, { color: getStatusColor(efficiencyData.overallEfficiency) }]}>
+                          {(efficiencyData.overallEfficiency ?? 0).toFixed(1)}%
+                        </Text>
+                      </View>
+                      <ProgressBar
+                        progress={(efficiencyData.overallEfficiency ?? 0) / 100}
+                        color={getStatusColor(efficiencyData.overallEfficiency)}
+                        style={styles.progressBar}
+                      />
+                    </>
+                  ) : (
+                    <Text style={styles.noDataText}>暂无效率数据</Text>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
 
             {/* 成本概览 */}
+            {isReportEnabled('cost') && (
+              <Card
+                style={styles.card}
+                mode="elevated"
+                onPress={() => navigation.navigate('CostReport')}
+              >
+                <Card.Title
+                  title="成本概览"
+                  titleVariant="titleMedium"
+                  left={(props) => <Icon {...props} source="currency-usd" color="#FF9800" />}
+                  right={() => <Icon source="chevron-right" size={24} color="#999" />}
+                />
+                <Card.Content>
+                  {costData ? (
+                    <View style={styles.costGrid}>
+                      <View style={styles.costItem}>
+                        <Text style={[styles.costValue, { color: '#F44336' }]}>
+                          {formatCurrency(costData.totalCost)}
+                        </Text>
+                        <Text style={styles.costLabel}>总成本</Text>
+                      </View>
+                      <View style={styles.costItem}>
+                        <Text style={[styles.costValue, { color: '#FF9800' }]}>
+                          {formatCurrency(costData.materialCost)}
+                        </Text>
+                        <Text style={styles.costLabel}>材料</Text>
+                      </View>
+                      <View style={styles.costItem}>
+                        <Text style={[styles.costValue, { color: '#2196F3' }]}>
+                          {formatCurrency(costData.laborCost)}
+                        </Text>
+                        <Text style={styles.costLabel}>人工</Text>
+                      </View>
+                      <View style={styles.costItem}>
+                        <Text style={[styles.costValue, { color: '#9C27B0' }]}>
+                          {formatCurrency(costData.overheadCost)}
+                        </Text>
+                        <Text style={styles.costLabel}>制造费用</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.noDataText}>暂无成本数据</Text>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* 人效概览 */}
+            {isReportEnabled('personnel') && (
+              <Card
+                style={styles.card}
+                mode="elevated"
+                onPress={() => navigation.navigate('PersonnelReport')}
+              >
+                <Card.Title
+                  title="人效概览"
+                  titleVariant="titleMedium"
+                  left={(props) => <Icon {...props} source="account-group" color="#795548" />}
+                  right={() => <Icon source="chevron-right" size={24} color="#999" />}
+                />
+                <Card.Content>
+                  {laborCostAnalysis ? (
+                    <View style={styles.laborGrid}>
+                      <View style={styles.laborItem}>
+                        <Text style={[styles.laborValue, { color: '#795548' }]}>
+                          {laborCostAnalysis.workerCount ?? 0}
+                        </Text>
+                        <Text style={styles.laborLabel}>工人数</Text>
+                      </View>
+                      <View style={styles.laborItem}>
+                        <Text style={[styles.laborValue, { color: '#2196F3' }]}>
+                          {formatNumberWithCommas(laborCostAnalysis.totalPieceCount ?? 0)}
+                        </Text>
+                        <Text style={styles.laborLabel}>总计件</Text>
+                      </View>
+                      <View style={styles.laborItem}>
+                        <Text style={[styles.laborValue, { color: '#4CAF50' }]}>
+                          {(laborCostAnalysis.averageEfficiency ?? 0).toFixed(1)}
+                        </Text>
+                        <Text style={styles.laborLabel}>件/小时</Text>
+                      </View>
+                      <View style={styles.laborItem}>
+                        <Text style={[styles.laborValue, { color: '#FF9800' }]}>
+                          ¥{(laborCostAnalysis.costPerPiece ?? 0).toFixed(2)}
+                        </Text>
+                        <Text style={styles.laborLabel}>单件成本</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={styles.noDataText}>暂无人效数据</Text>
+                  )}
+                </Card.Content>
+              </Card>
+            )}
+
+            {/* 生产分析 & 人效分析 */}
             <Card
               style={styles.card}
               mode="elevated"
-              onPress={() => navigation.navigate('CostReport')}
+              onPress={() => navigation.navigate('ProductionAnalysis')}
             >
               <Card.Title
-                title="成本概览"
+                title="生产数据分析"
                 titleVariant="titleMedium"
-                left={(props) => <Icon {...props} source="currency-usd" color="#FF9800" />}
+                left={(props) => <Icon {...props} source="chart-bar" color="#5470c6" />}
                 right={() => <Icon source="chevron-right" size={24} color="#999" />}
               />
               <Card.Content>
-                {costData ? (
-                  <View style={styles.costGrid}>
-                    <View style={styles.costItem}>
-                      <Text style={[styles.costValue, { color: '#F44336' }]}>
-                        {formatCurrency(costData.totalCost)}
-                      </Text>
-                      <Text style={styles.costLabel}>总成本</Text>
-                    </View>
-                    <View style={styles.costItem}>
-                      <Text style={[styles.costValue, { color: '#FF9800' }]}>
-                        {formatCurrency(costData.materialCost)}
-                      </Text>
-                      <Text style={styles.costLabel}>材料</Text>
-                    </View>
-                    <View style={styles.costItem}>
-                      <Text style={[styles.costValue, { color: '#2196F3' }]}>
-                        {formatCurrency(costData.laborCost)}
-                      </Text>
-                      <Text style={styles.costLabel}>人工</Text>
-                    </View>
-                    <View style={styles.costItem}>
-                      <Text style={[styles.costValue, { color: '#9C27B0' }]}>
-                        {formatCurrency(costData.overheadCost)}
-                      </Text>
-                      <Text style={styles.costLabel}>制造费用</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noDataText}>暂无成本数据</Text>
-                )}
+                <Text style={{ color: '#666', fontSize: 13 }}>
+                  产量趋势 · 良率分析 · 产品对比 · 工序分布
+                </Text>
               </Card.Content>
             </Card>
 
-            {/* 人效概览 */}
             <Card
               style={styles.card}
               mode="elevated"
-              onPress={() => navigation.navigate('PersonnelReport')}
+              onPress={() => navigation.navigate('EfficiencyAnalysis')}
             >
               <Card.Title
-                title="人效概览"
+                title="人效分析"
                 titleVariant="titleMedium"
-                left={(props) => <Icon {...props} source="account-group" color="#795548" />}
+                left={(props) => <Icon {...props} source="account-clock" color="#667eea" />}
                 right={() => <Icon source="chevron-right" size={24} color="#999" />}
               />
               <Card.Content>
-                {laborCostAnalysis ? (
-                  <View style={styles.laborGrid}>
-                    <View style={styles.laborItem}>
-                      <Text style={[styles.laborValue, { color: '#795548' }]}>
-                        {laborCostAnalysis.workerCount ?? 0}
-                      </Text>
-                      <Text style={styles.laborLabel}>工人数</Text>
-                    </View>
-                    <View style={styles.laborItem}>
-                      <Text style={[styles.laborValue, { color: '#2196F3' }]}>
-                        {(laborCostAnalysis.totalPieceCount ?? 0).toLocaleString()}
-                      </Text>
-                      <Text style={styles.laborLabel}>总计件</Text>
-                    </View>
-                    <View style={styles.laborItem}>
-                      <Text style={[styles.laborValue, { color: '#4CAF50' }]}>
-                        {(laborCostAnalysis.averageEfficiency ?? 0).toFixed(1)}
-                      </Text>
-                      <Text style={styles.laborLabel}>件/小时</Text>
-                    </View>
-                    <View style={styles.laborItem}>
-                      <Text style={[styles.laborValue, { color: '#FF9800' }]}>
-                        ¥{(laborCostAnalysis.costPerPiece ?? 0).toFixed(2)}
-                      </Text>
-                      <Text style={styles.laborLabel}>单件成本</Text>
-                    </View>
-                  </View>
-                ) : (
-                  <Text style={styles.noDataText}>暂无人效数据</Text>
-                )}
+                <Text style={{ color: '#666', fontSize: 13 }}>
+                  人效排名 · 工时分布 · 效率趋势 · 交叉分析
+                </Text>
               </Card.Content>
             </Card>
 
@@ -546,13 +596,15 @@ export default function ReportDashboardScreen() {
                   >
                     KPI指标
                   </Chip>
-                  <Chip
-                    icon="gauge"
-                    style={styles.reportChip}
-                    onPress={() => navigation.navigate('OeeReport')}
-                  >
-                    OEE分析
-                  </Chip>
+                  {isReportEnabled('efficiency') && (
+                    <Chip
+                      icon="gauge"
+                      style={styles.reportChip}
+                      onPress={() => navigation.navigate('OeeReport')}
+                    >
+                      OEE分析
+                    </Chip>
+                  )}
                   <Chip
                     icon="truck-delivery"
                     style={styles.reportChip}

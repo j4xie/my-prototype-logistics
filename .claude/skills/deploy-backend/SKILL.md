@@ -45,13 +45,13 @@ allowed-tools:
 
 ```bash
 # 仅重启服务
-ssh root@139.196.165.140 "bash /www/wwwroot/cretas/restart.sh"
+ssh root@47.100.235.168 "bash /www/wwwroot/cretas/restart.sh"
 
 # 查看日志
-ssh root@139.196.165.140 "tail -50 /www/wwwroot/cretas/cretas-backend.log"
+ssh root@47.100.235.168 "tail -50 /www/wwwroot/cretas/cretas-backend.log"
 
 # 健康检查
-curl http://139.196.165.140:10010/api/mobile/health
+curl http://47.100.235.168:10010/api/mobile/health
 ```
 
 ## 配置信息

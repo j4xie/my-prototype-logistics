@@ -3,10 +3,16 @@
  * SmartBI 经营驾驶舱
  * 展示企业经营核心 KPI、排行榜、趋势图表和 AI 洞察
  */
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
+import {
+  getUploadHistory,
+  getDynamicAnalysis,
+  type UploadHistoryItem,
+  type DynamicAnalysisResponse,
+} from '@/api/smartbi';
 import { ElMessage } from 'element-plus';
 import {
   TrendCharts,
@@ -18,9 +24,13 @@ import {
   ArrowDown,
   Medal,
   Location,
-  Goods
+  Goods,
+  Upload,
+  Document
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
+import { CHART_COLORS } from '@/constants/chart-colors';
+import SmartBIEmptyState from '@/components/smartbi/SmartBIEmptyState.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -28,66 +38,13 @@ const factoryId = computed(() => authStore.factoryId);
 
 // ==================== 类型定义 ====================
 
-// 后端返回的 KPI 卡片
-interface KPICard {
-  key: string;
-  title: string;
-  value: string;
-  rawValue: number;
-  unit: string;
-  change: number;
-  changeRate: number;
-  trend: 'up' | 'down' | 'flat';
-  status: 'green' | 'yellow' | 'red';
-  compareText: string;
-}
-
-// 后端返回的排行项
-interface RankingItem {
-  rank: number;
-  name: string;
-  value: number;
-  target: number;
-  completionRate: number;
-  alertLevel: 'RED' | 'YELLOW' | 'GREEN';
-}
-
-// 后端返回的 AI 洞察
-interface AIInsightResponse {
-  level: 'RED' | 'YELLOW' | 'GREEN' | 'INFO';
-  category: string;
-  message: string;
-  relatedEntity: string;
-  actionSuggestion: string;
-}
-
-// 后端返回的图表配置
-interface ChartConfig {
-  chartType: string;
-  title: string;
-  xAxis?: { data: string[] };
-  yAxis?: { name: string };
-  series: Array<{
-    name: string;
-    type: string;
-    data: number[];
-    yAxisIndex?: number;
-  }>;
-  legend?: { data: string[] };
-}
-
-// 后端返回的 Dashboard 响应
-interface DashboardResponse {
-  period: string;
-  startDate: string;
-  endDate: string;
-  kpiCards: KPICard[];
-  rankings: Record<string, RankingItem[]>;
-  charts: Record<string, ChartConfig>;
-  aiInsights: AIInsightResponse[];
-  alerts: Array<{ level: string; message: string }>;
-  generatedAt: string;
-}
+import type {
+  KPICard,
+  RankingItem,
+  AIInsightResponse,
+  DashboardChartConfig as ChartConfig,
+  DashboardResponse
+} from '@/types/smartbi';
 
 // 前端使用的部门排行数据
 interface DepartmentRank {
@@ -119,41 +76,74 @@ const loading = ref(false);
 const hasError = ref(false);
 const errorMessage = ref('');
 
+// 数据源选择 — default empty, will be set after loading sources
+const dataSources = ref<UploadHistoryItem[]>([]);
+const selectedDataSource = ref<string>('');
+
+// Dynamic data AI insights (from uploaded Excel)
+const dynamicInsights = ref<string[]>([]);
+
 // Dashboard 数据
 const dashboardData = ref<DashboardResponse | null>(null);
 
 // KPI 数据 (从 kpiCards 提取)
 const kpiData = computed(() => {
-  if (!dashboardData.value?.kpiCards) {
-    return {
-      totalRevenue: 0,
-      revenueGrowth: 0,
-      totalProfit: 0,
-      profitGrowth: 0,
-      orderCount: 0,
-      orderGrowth: 0,
-      customerCount: 0,
-      customerGrowth: 0
-    };
+  const defaultKpi = {
+    totalRevenue: null as number | null,
+    revenueGrowth: 0,
+    totalProfit: null as number | null,
+    profitGrowth: 0,
+    orderCount: null as number | null,
+    orderGrowth: 0,
+    customerCount: null as number | null,
+    customerGrowth: 0
+  };
+
+  if (!dashboardData.value?.kpiCards || dashboardData.value.kpiCards.length === 0) {
+    return defaultKpi;
   }
 
   const cards = dashboardData.value.kpiCards;
   const findCard = (key: string) => cards.find(c => c.key === key);
+  // Also match by title text for dynamic data where key might be the title itself
+  const findByTitle = (keyword: string) => cards.find(c =>
+    (c.title || '').toLowerCase().includes(keyword)
+  );
 
-  const salesCard = findCard('SALES_AMOUNT') || findCard('REVENUE') || findCard('销售额');
-  const profitCard = findCard('PROFIT') || findCard('PROFIT_AMOUNT') || findCard('利润');
-  const orderCard = findCard('ORDER_COUNT') || findCard('ORDERS') || findCard('订单数');
-  const customerCard = findCard('CUSTOMER_COUNT') || findCard('ACTIVE_CUSTOMERS') || findCard('客户数');
+  const salesCard = findCard('SALES_AMOUNT') || findCard('REVENUE') || findCard('销售额')
+    || findByTitle('销售') || findByTitle('收入') || findByTitle('revenue');
+  const profitCard = findCard('PROFIT') || findCard('PROFIT_AMOUNT') || findCard('利润')
+    || findByTitle('利润') || findByTitle('profit');
+  const orderCard = findCard('ORDER_COUNT') || findCard('ORDERS') || findCard('订单数')
+    || findByTitle('订单') || findByTitle('order');
+  const customerCard = findCard('CUSTOMER_COUNT') || findCard('ACTIVE_CUSTOMERS') || findCard('客户数')
+    || findByTitle('客户') || findByTitle('customer');
+
+  // If no recognized KPI cards matched but we have kpiCards, use them in order as fallback
+  const hasMatch = salesCard || profitCard || orderCard || customerCard;
+  if (!hasMatch && cards.length > 0) {
+    // Map first N cards to KPI slots by position
+    return {
+      totalRevenue: cards[0]?.rawValue ?? null,
+      revenueGrowth: cards[0]?.changeRate ?? 0,
+      totalProfit: cards[1]?.rawValue ?? null,
+      profitGrowth: cards[1]?.changeRate ?? 0,
+      orderCount: cards[2]?.rawValue ?? null,
+      orderGrowth: cards[2]?.changeRate ?? 0,
+      customerCount: cards[3]?.rawValue ?? null,
+      customerGrowth: cards[3]?.changeRate ?? 0
+    };
+  }
 
   return {
-    totalRevenue: salesCard?.rawValue || 0,
-    revenueGrowth: salesCard?.changeRate || 0,
-    totalProfit: profitCard?.rawValue || 0,
-    profitGrowth: profitCard?.changeRate || 0,
-    orderCount: orderCard?.rawValue || 0,
-    orderGrowth: orderCard?.changeRate || 0,
-    customerCount: customerCard?.rawValue || 0,
-    customerGrowth: customerCard?.changeRate || 0
+    totalRevenue: salesCard?.rawValue ?? null,
+    revenueGrowth: salesCard?.changeRate ?? 0,
+    totalProfit: profitCard?.rawValue ?? null,
+    profitGrowth: profitCard?.changeRate ?? 0,
+    orderCount: orderCard?.rawValue ?? null,
+    orderGrowth: orderCard?.changeRate ?? 0,
+    customerCount: customerCard?.rawValue ?? null,
+    customerGrowth: customerCard?.changeRate ?? 0
   };
 });
 
@@ -204,6 +194,19 @@ const aiInsights = computed<AIInsight[]>(() => {
   }));
 });
 
+// Detect if dashboard has any meaningful data (from system or dynamic source)
+const hasData = computed(() => {
+  const kd = kpiData.value;
+  // Check if any KPI has a non-null value (including zero, which is valid data)
+  return kd.totalRevenue !== null || kd.totalProfit !== null || kd.orderCount !== null || kd.customerCount !== null
+    || dynamicInsights.value.length > 0
+    || (dashboardData.value?.kpiCards && dashboardData.value.kpiCards.length > 0);
+});
+
+function goToUpload() {
+  router.push({ name: 'SmartBIAnalysis' });
+}
+
 // 快捷问答
 const quickQuestions = [
   '本月销售额如何?',
@@ -212,20 +215,31 @@ const quickQuestions = [
   '客户增长情况怎样?'
 ];
 
+// 图表 DOM refs
+const trendChartRef = ref<HTMLDivElement | null>(null);
+const pieChartRef = ref<HTMLDivElement | null>(null);
+
 // 图表实例
 let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 
 // ==================== 生命周期 ====================
 
-onMounted(() => {
-  loadDashboardData();
+onMounted(async () => {
+  // Load upload list in background (for the dropdown)
+  loadDataSources();
+
+  // Always default to system data for reliable KPI display
+  selectedDataSource.value = 'system';
+  await loadDashboardData();
 });
 
-// 监听 dashboardData 变化，更新图表
+// 监听 dashboardData 变化，更新图表 (use nextTick to ensure DOM refs are ready)
 watch(dashboardData, (newData) => {
   if (newData) {
-    initCharts(newData.charts);
+    nextTick(() => {
+      initCharts(newData.charts);
+    });
   }
 }, { deep: true });
 
@@ -245,7 +259,13 @@ async function loadDashboardData() {
     const response = await get(`/${factoryId.value}/smart-bi/dashboard/executive?period=month`);
 
     if (response.success && response.data) {
-      dashboardData.value = response.data as DashboardResponse;
+      // Handle double-wrapped response: interceptor wraps {code,data:{...}} into {success,data:{code,data:{...}}}
+      const raw = response.data as Record<string, unknown>;
+      const actualData = (raw.data && typeof raw.data === 'object' && !Array.isArray(raw.data) && raw.code)
+        ? raw.data
+        : raw;
+      dashboardData.value = actualData as DashboardResponse;
+      console.log('[Dashboard] Loaded data:', Object.keys(actualData));
     } else {
       throw new Error(response.message || '获取驾驶舱数据失败');
     }
@@ -260,6 +280,146 @@ async function loadDashboardData() {
   }
 }
 
+// ==================== 数据源管理 ====================
+
+async function loadDataSources() {
+  try {
+    const res = await getUploadHistory();
+    if (res.success && res.data) {
+      dataSources.value = res.data.filter(
+        (item: UploadHistoryItem) => item.status === 'COMPLETED' || item.status === 'SUCCESS'
+      );
+    }
+  } catch (error) {
+    console.warn('加载数据源列表失败:', error);
+  }
+}
+
+async function onDataSourceChange(sourceId: string) {
+  if (sourceId === 'system') {
+    dynamicInsights.value = [];
+    await loadDashboardData();
+  } else {
+    await loadDynamicDashboardData(Number(sourceId));
+  }
+}
+
+/**
+ * Load dashboard data from an uploaded Excel source via dynamic analysis API.
+ * Maps the dynamic analysis response (kpiCards, charts, insights) into the
+ * same DashboardResponse shape so existing KPI/chart rendering works unchanged.
+ */
+async function loadDynamicDashboardData(uploadId: number) {
+  loading.value = true;
+  hasError.value = false;
+  errorMessage.value = '';
+  dynamicInsights.value = [];
+
+  try {
+    const res = await getDynamicAnalysis(uploadId, 'finance');
+
+    if (res.success && res.data) {
+      const data = res.data as DynamicAnalysisResponse;
+
+      // Map dynamic kpiCards → DashboardResponse.kpiCards format
+      const kpiCards: KPICard[] = (data.kpiCards || []).map(kpi => ({
+        key: detectKpiKey(kpi.title || ''),
+        title: kpi.title || '',
+        displayValue: kpi.value != null ? String(kpi.value) : String(kpi.rawValue ?? 0),
+        rawValue: kpi.rawValue ?? 0,
+        changeRate: 0,
+        unit: '',
+        trend: 'stable' as const,
+        sparklineData: [],
+      }));
+
+      // Map dynamic charts → DashboardResponse.charts
+      const charts: Record<string, ChartConfig> = {};
+      if (data.charts && data.charts.length > 0) {
+        data.charts.forEach((chart, idx) => {
+          const labels = chart.data?.labels || [];
+          const datasets = chart.data?.datasets || [];
+          const key = idx === 0 ? 'sales_trend' : 'category_distribution';
+
+          if (chart.type === 'pie' && datasets.length > 0) {
+            charts[key] = {
+              chartType: 'pie',
+              title: chart.title || '',
+              xAxis: { data: labels },
+              series: [{
+                name: chart.title || 'Distribution',
+                type: 'pie',
+                data: labels.map((label, i) => ({
+                  name: label,
+                  value: datasets[0]?.data?.[i] || 0,
+                })),
+              }],
+            } as unknown as ChartConfig;
+          } else {
+            charts[key] = {
+              chartType: chart.type || 'bar',
+              title: chart.title || '',
+              xAxis: { type: 'category', data: labels },
+              series: datasets.map(ds => ({
+                name: ds.label || '',
+                type: chart.type || 'bar',
+                data: ds.data || [],
+              })),
+            } as unknown as ChartConfig;
+          }
+        });
+      }
+
+      // Store AI insights from dynamic source
+      if (data.insights && data.insights.length > 0) {
+        dynamicInsights.value = data.insights;
+      }
+
+      // Build DashboardResponse from dynamic data
+      dashboardData.value = {
+        kpiCards,
+        charts,
+        rankings: {},
+        aiInsights: data.insights?.map(msg => ({
+          level: 'INFO',
+          category: '数据洞察',
+          message: msg,
+          actionSuggestion: '',
+        })) || [],
+        suggestions: [],
+        lastUpdated: new Date().toISOString(),
+      } as unknown as DashboardResponse;
+
+      console.log('[Dashboard] Loaded dynamic data from upload:', uploadId, 'KPIs:', kpiCards.length, 'Charts:', Object.keys(charts).length);
+    } else {
+      throw new Error(res.message || '加载上传数据分析失败');
+    }
+  } catch (error) {
+    console.error('加载动态驾驶舱数据失败:', error);
+    hasError.value = true;
+    errorMessage.value = error instanceof Error ? error.message : '加载数据失败';
+    ElMessage.error(errorMessage.value);
+    dashboardData.value = null;
+  } finally {
+    loading.value = false;
+  }
+}
+
+/**
+ * Detect KPI key from title text for mapping to existing dashboard KPI slots.
+ */
+function detectKpiKey(title: string): string {
+  const t = title.toLowerCase();
+  if (t.includes('收入') || t.includes('销售') || t.includes('revenue') || t.includes('sales')) return 'SALES_AMOUNT';
+  if (t.includes('净利') || t.includes('profit')) return 'PROFIT';
+  if (t.includes('毛利') && !t.includes('率')) return 'PROFIT';
+  if (t.includes('订单') || t.includes('order')) return 'ORDER_COUNT';
+  if (t.includes('客户') || t.includes('customer')) return 'CUSTOMER_COUNT';
+  if (t.includes('成本') || t.includes('cost')) return 'TOTAL_COST';
+  if (t.includes('利润')) return 'PROFIT';
+  return title;
+}
+
 // ==================== 图表初始化 ====================
 
 function initCharts(charts?: Record<string, ChartConfig>) {
@@ -268,13 +428,12 @@ function initCharts(charts?: Record<string, ChartConfig>) {
 }
 
 function initTrendChart(chartConfig?: ChartConfig) {
-  const trendChartDom = document.getElementById('trend-chart');
-  if (!trendChartDom) return;
+  if (!trendChartRef.value) return;
 
   if (trendChart) {
     trendChart.dispose();
   }
-  trendChart = echarts.init(trendChartDom);
+  trendChart = echarts.init(trendChartRef.value, 'cretas');
 
   // 如果有后端数据，使用后端数据
   if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
@@ -356,13 +515,12 @@ function initTrendChart(chartConfig?: ChartConfig) {
 }
 
 function initPieChart(chartConfig?: ChartConfig) {
-  const pieChartDom = document.getElementById('pie-chart');
-  if (!pieChartDom) return;
+  if (!pieChartRef.value) return;
 
   if (pieChart) {
     pieChart.dispose();
   }
-  pieChart = echarts.init(pieChartDom);
+  pieChart = echarts.init(pieChartRef.value, 'cretas');
 
   // 如果有后端数据，使用后端数据
   if (chartConfig && chartConfig.series && chartConfig.series.length > 0) {
@@ -428,8 +586,7 @@ function initPieChart(chartConfig?: ChartConfig) {
 }
 
 function getPieColor(index: number): string {
-  const colors = ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399', '#00d4ff', '#ff6b6b', '#ffd93d'];
-  return colors[index % colors.length];
+  return CHART_COLORS[index % CHART_COLORS.length];
 }
 
 function handleResize() {
@@ -459,11 +616,20 @@ function getCategoryTitle(level: string): string {
   }
 }
 
-function formatMoney(value: number): string {
-  if (value >= 10000) {
+function formatMoney(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '--';
+  if (Math.abs(value) >= 10000) {
     return (value / 10000).toFixed(1) + '万';
   }
   return value.toLocaleString();
+}
+
+/**
+ * Format KPI display value - shows actual number including 0, or '--' if null/no-data
+ */
+function formatKpiValue(value: number | null | undefined): string {
+  if (value === null || value === undefined) return '--';
+  return formatMoney(value);
 }
 
 function formatPercent(value: number): string {
@@ -476,14 +642,22 @@ function getGrowthClass(value: number): string {
 
 function goToAIQuery(question?: string) {
   if (question) {
-    router.push({ name: 'SmartBIAIQuery', query: { q: question } });
+    router.push({ name: 'SmartBIQuery', query: { q: question } });
   } else {
-    router.push({ name: 'SmartBIAIQuery' });
+    router.push({ name: 'SmartBIQuery' });
   }
 }
 
 function getInsightTagType(type: string): 'success' | 'warning' | 'danger' | 'info' {
   return type as 'success' | 'warning' | 'danger' | 'info';
+}
+
+function handleRefresh() {
+  if (selectedDataSource.value && selectedDataSource.value !== 'system') {
+    loadDynamicDashboardData(Number(selectedDataSource.value));
+  } else {
+    loadDashboardData();
+  }
 }
 
 // ==================== 生命周期清理 ====================
@@ -502,17 +676,49 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="smart-bi-dashboard">
+  <div class="smart-bi-dashboard" role="main" aria-label="经营驾驶舱">
     <div class="page-header">
       <div class="header-left">
         <h1>经营驾驶舱</h1>
         <span class="subtitle">Smart BI - Business Intelligence Dashboard</span>
       </div>
       <div class="header-right">
-        <el-button type="primary" :icon="Refresh" @click="loadDashboardData" :loading="loading">刷新数据</el-button>
+        <el-button type="primary" :icon="Refresh" @click="handleRefresh" :loading="loading">刷新数据</el-button>
         <el-button type="success" :icon="ChatDotRound" @click="goToAIQuery()">AI 问答</el-button>
       </div>
     </div>
+
+    <!-- 数据源选择器 -->
+    <el-card class="datasource-card">
+      <div class="datasource-bar">
+        <div class="datasource-item">
+          <span class="datasource-label">
+            <el-icon><Document /></el-icon>
+            数据源
+          </span>
+          <el-select
+            v-model="selectedDataSource"
+            placeholder="选择数据源"
+            style="width: 280px"
+            @change="onDataSourceChange"
+          >
+            <el-option label="系统数据" value="system" />
+            <el-option
+              v-for="ds in dataSources"
+              :key="ds.id"
+              :label="`${ds.fileName}${ds.sheetName ? ' - ' + ds.sheetName : ''}`"
+              :value="String(ds.id)"
+            >
+              <div class="datasource-option">
+                <span>{{ ds.fileName }}</span>
+                <span class="datasource-meta">{{ ds.sheetName }} · {{ ds.rowCount }}行</span>
+              </div>
+            </el-option>
+          </el-select>
+        </div>
+        <el-tag v-if="selectedDataSource && selectedDataSource !== 'system'" type="success" size="small">来自上传数据</el-tag>
+      </div>
+    </el-card>
 
     <!-- 错误状态 -->
     <el-alert
@@ -523,10 +729,19 @@ onMounted(() => {
       closable
       class="error-alert"
       @close="hasError = false"
+    >
+      <el-button size="small" type="primary" @click="handleRefresh" style="margin-top: 8px;">重试</el-button>
+    </el-alert>
+
+    <!-- Empty state guidance when no data -->
+    <SmartBIEmptyState
+      v-if="!loading && !hasError && !hasData"
+      type="no-data"
+      @action="goToUpload"
     />
 
     <!-- KPI 卡片区 -->
-    <el-row :gutter="16" class="kpi-section" v-loading="loading">
+    <el-row :gutter="16" class="kpi-section" v-loading="loading" aria-label="KPI指标" aria-live="polite" :aria-busy="loading">
       <el-col :xs="24" :sm="12" :md="6">
         <el-card class="kpi-card revenue">
           <div class="kpi-icon">
@@ -534,14 +749,14 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">本月销售额</div>
-            <div class="kpi-value">{{ kpiData.totalRevenue > 0 ? formatMoney(kpiData.totalRevenue) : '--' }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth)" v-if="kpiData.totalRevenue > 0">
+            <div class="kpi-value">{{ formatKpiValue(kpiData.totalRevenue) }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.revenueGrowth)" v-if="kpiData.totalRevenue !== null && kpiData.revenueGrowth !== 0">
               <el-icon v-if="kpiData.revenueGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.revenueGrowth) }}</span>
-              <span class="vs-label">vs 上月</span>
+              <span class="vs-label">环比</span>
             </div>
-            <div class="kpi-trend" v-else>
+            <div class="kpi-trend" v-else-if="kpiData.totalRevenue === null">
               <span class="vs-label">暂无数据</span>
             </div>
           </div>
@@ -554,14 +769,14 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">本月利润</div>
-            <div class="kpi-value">{{ kpiData.totalProfit > 0 ? formatMoney(kpiData.totalProfit) : '--' }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth)" v-if="kpiData.totalProfit > 0">
+            <div class="kpi-value">{{ formatKpiValue(kpiData.totalProfit) }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.profitGrowth)" v-if="kpiData.totalProfit !== null && kpiData.profitGrowth !== 0">
               <el-icon v-if="kpiData.profitGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.profitGrowth) }}</span>
-              <span class="vs-label">vs 上月</span>
+              <span class="vs-label">环比</span>
             </div>
-            <div class="kpi-trend" v-else>
+            <div class="kpi-trend" v-else-if="kpiData.totalProfit === null">
               <span class="vs-label">暂无数据</span>
             </div>
           </div>
@@ -574,14 +789,14 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">订单数量</div>
-            <div class="kpi-value">{{ kpiData.orderCount > 0 ? kpiData.orderCount.toLocaleString() : '--' }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)" v-if="kpiData.orderCount > 0">
+            <div class="kpi-value">{{ formatKpiValue(kpiData.orderCount) }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.orderGrowth)" v-if="kpiData.orderCount !== null && kpiData.orderGrowth !== 0">
               <el-icon v-if="kpiData.orderGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.orderGrowth) }}</span>
-              <span class="vs-label">vs 上月</span>
+              <span class="vs-label">环比</span>
             </div>
-            <div class="kpi-trend" v-else>
+            <div class="kpi-trend" v-else-if="kpiData.orderCount === null">
               <span class="vs-label">暂无数据</span>
             </div>
           </div>
@@ -594,14 +809,14 @@ onMounted(() => {
           </div>
           <div class="kpi-content">
             <div class="kpi-label">活跃客户</div>
-            <div class="kpi-value">{{ kpiData.customerCount > 0 ? kpiData.customerCount.toLocaleString() : '--' }}</div>
-            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth)" v-if="kpiData.customerCount > 0">
+            <div class="kpi-value">{{ formatKpiValue(kpiData.customerCount) }}</div>
+            <div class="kpi-trend" :class="getGrowthClass(kpiData.customerGrowth)" v-if="kpiData.customerCount !== null && kpiData.customerGrowth !== 0">
               <el-icon v-if="kpiData.customerGrowth >= 0"><ArrowUp /></el-icon>
               <el-icon v-else><ArrowDown /></el-icon>
               <span>{{ formatPercent(kpiData.customerGrowth) }}</span>
-              <span class="vs-label">vs 上月</span>
+              <span class="vs-label">环比</span>
             </div>
-            <div class="kpi-trend" v-else>
+            <div class="kpi-trend" v-else-if="kpiData.customerCount === null">
               <span class="vs-label">暂无数据</span>
             </div>
           </div>
@@ -610,7 +825,7 @@ onMounted(() => {
     </el-row>
 
     <!-- 排行榜区 -->
-    <el-row :gutter="16" class="ranking-section" v-loading="loading">
+    <el-row :gutter="16" class="ranking-section" v-loading="loading" aria-label="排行榜">
       <el-col :xs="24" :md="12">
         <el-card class="ranking-card">
           <template #header>
@@ -637,7 +852,7 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <el-empty v-else description="暂无部门排行数据" :image-size="80" />
+          <SmartBIEmptyState v-else type="no-data" :show-action="false" />
         </el-card>
       </el-col>
       <el-col :xs="24" :md="12">
@@ -664,13 +879,13 @@ onMounted(() => {
               </div>
             </div>
           </div>
-          <el-empty v-else description="暂无区域排行数据" :image-size="80" />
+          <SmartBIEmptyState v-else type="no-data" :show-action="false" />
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 图表区 -->
-    <el-row :gutter="16" class="chart-section">
+    <el-row :gutter="16" class="chart-section" aria-label="图表区域">
       <el-col :xs="24" :lg="14">
         <el-card class="chart-card">
           <template #header>
@@ -679,7 +894,7 @@ onMounted(() => {
               <span>销售趋势</span>
             </div>
           </template>
-          <div id="trend-chart" class="chart-container"></div>
+          <div ref="trendChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
       <el-col :xs="24" :lg="10">
@@ -690,13 +905,13 @@ onMounted(() => {
               <span>产品类别占比</span>
             </div>
           </template>
-          <div id="pie-chart" class="chart-container"></div>
+          <div ref="pieChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- AI 洞察区 -->
-    <el-row :gutter="16" class="insight-section">
+    <el-row :gutter="16" class="insight-section" aria-label="AI智能洞察" aria-live="polite" :aria-busy="loading">
       <el-col :span="24">
         <el-card class="insight-card" v-loading="loading">
           <template #header>
@@ -720,13 +935,13 @@ onMounted(() => {
               </span>
             </div>
           </div>
-          <el-empty v-else description="暂无 AI 洞察数据" :image-size="80" />
+          <SmartBIEmptyState v-else type="no-analysis" :show-action="false" />
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 快捷问答入口 -->
-    <el-row :gutter="16" class="quick-qa-section">
+    <el-row :gutter="16" class="quick-qa-section" aria-label="快捷问答">
       <el-col :span="24">
         <el-card class="quick-qa-card">
           <template #header>
@@ -772,7 +987,7 @@ onMounted(() => {
 
     .subtitle {
       font-size: 13px;
-      color: #909399;
+      color: var(--color-text-secondary);
     }
   }
 
@@ -782,8 +997,58 @@ onMounted(() => {
   }
 }
 
+// 数据源选择器
+.datasource-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+
+  .datasource-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .datasource-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .datasource-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 13px;
+      color: #606266;
+      white-space: nowrap;
+    }
+  }
+}
+
+.datasource-option {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+
+  .datasource-meta {
+    font-size: 12px;
+    color: #909399;
+  }
+}
+
 .error-alert {
   margin-bottom: 16px;
+}
+
+.empty-state-card {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  text-align: center;
+  padding: 20px 0;
 }
 
 // KPI 卡片区
@@ -796,9 +1061,9 @@ onMounted(() => {
 }
 
 .kpi-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   border: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-md);
   display: flex;
   padding: 20px;
   gap: 16px;
@@ -813,7 +1078,7 @@ onMounted(() => {
   .kpi-icon {
     width: 56px;
     height: 56px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -845,13 +1110,14 @@ onMounted(() => {
 
     .kpi-label {
       font-size: 13px;
-      color: #909399;
+      color: var(--color-text-secondary);
       margin-bottom: 4px;
     }
 
     .kpi-value {
-      font-size: 26px;
+      font-size: var(--font-size-2xl);
       font-weight: 600;
+      font-variant-numeric: tabular-nums;
       color: #303133;
       margin-bottom: 4px;
     }
@@ -888,7 +1154,7 @@ onMounted(() => {
 }
 
 .ranking-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 
   .card-header {
     display: flex;
@@ -916,14 +1182,14 @@ onMounted(() => {
     .rank-badge {
       width: 24px;
       height: 24px;
-      border-radius: 6px;
+      border-radius: var(--radius-md);
       display: flex;
       align-items: center;
       justify-content: center;
       font-size: 12px;
       font-weight: 600;
       background: #f0f2f5;
-      color: #909399;
+      color: var(--color-text-secondary);
 
       &.rank-1 {
         background: linear-gradient(135deg, #FFD700, #FFA500);
@@ -953,7 +1219,7 @@ onMounted(() => {
 
       .rank-value {
         font-size: 12px;
-        color: #909399;
+        color: var(--color-text-secondary);
       }
     }
 
@@ -1005,7 +1271,7 @@ onMounted(() => {
 
         .percent {
           font-size: 12px;
-          color: #909399;
+          color: var(--color-text-secondary);
           margin-left: 8px;
         }
       }
@@ -1023,7 +1289,7 @@ onMounted(() => {
 }
 
 .chart-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 
   .card-header {
     display: flex;
@@ -1048,7 +1314,7 @@ onMounted(() => {
 }
 
 .insight-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 
   .card-header {
     display: flex;
@@ -1088,7 +1354,7 @@ onMounted(() => {
 
       .insight-suggestion {
         font-size: 13px;
-        color: #909399;
+        color: var(--color-text-secondary);
         font-style: italic;
         width: 100%;
         padding-left: 60px;
@@ -1099,7 +1365,7 @@ onMounted(() => {
 
 // 快捷问答区
 .quick-qa-card {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 
   .card-header {
     display: flex;
@@ -1129,7 +1395,7 @@ onMounted(() => {
 
   .kpi-card {
     .kpi-content .kpi-value {
-      font-size: 22px;
+      font-size: var(--font-size-xl);
     }
   }
 }

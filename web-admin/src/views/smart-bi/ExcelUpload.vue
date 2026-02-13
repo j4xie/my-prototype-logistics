@@ -30,7 +30,7 @@ import {
   TrendCharts
 } from '@element-plus/icons-vue';
 import { KPICard, AIInsightPanel } from '@/components/smartbi';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 const router = useRouter();
 
@@ -258,7 +258,7 @@ function renderCharts() {
       oldChart.dispose();
     }
 
-    const chart = echarts.init(chartDom);
+    const chart = echarts.init(chartDom, 'cretas');
     chartInstances.set(chartId, chart);
     chart.setOption(config.option as echarts.EChartsOption);
   });

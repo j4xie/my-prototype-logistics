@@ -2,13 +2,15 @@
  * 应用根导航器
  * 处理认证状态和角色路由
  */
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
 import { useAuthStore } from "../store/authStore";
-import { getUserRole } from "../types/auth";
+import { useFactoryFeatureStore } from "../store/factoryFeatureStore";
+import { getUserRole, getFactoryId } from "../types/auth";
 import { theme } from "../theme";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { logger } from "../utils/logger";
@@ -114,8 +116,27 @@ function RoleBasedNavigator() {
   return <MainNavigator />;
 }
 
+function FeatureLoadingScreen() {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+      <ActivityIndicator size="large" color="#4A7C59" />
+    </View>
+  );
+}
+
 export function AppNavigator() {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
+  const { loaded: featuresLoaded, loadFeatures } = useFactoryFeatureStore();
+
+  // App启动时恢复工厂特性配置（防止persist恢复后权限绕过）
+  useEffect(() => {
+    if (isAuthenticated && user && !featuresLoaded) {
+      const factoryId = getFactoryId(user);
+      if (factoryId) {
+        loadFeatures(factoryId);
+      }
+    }
+  }, [isAuthenticated, user, featuresLoaded]);
 
   return (
     <PaperProvider theme={theme}>
@@ -149,8 +170,14 @@ export function AppNavigator() {
                 component={ForgotPasswordScreen}
               />
             </>
+          ) : !featuresLoaded ? (
+            // 已登录但特性配置未加载 - 等待加载完成
+            <Stack.Screen
+              name="Loading"
+              component={FeatureLoadingScreen}
+            />
           ) : (
-            // 已登录 - 根据角色显示不同界面
+            // 已登录且特性已加载 - 根据角色显示不同界面
             <Stack.Screen
               name="Main"
               component={RoleBasedNavigator}

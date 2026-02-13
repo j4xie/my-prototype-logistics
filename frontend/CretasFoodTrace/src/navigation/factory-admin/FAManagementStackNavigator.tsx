@@ -66,6 +66,9 @@ import { EquipmentAnalysisScreen } from "../../screens/factory-admin/equipment/E
 // 统一多品牌设备发现
 import { UnifiedDeviceDiscoveryScreen } from "../../screens/factory-admin/camera/UnifiedDeviceDiscoveryScreen";
 
+// NFC 标签管理
+import NfcTagManagementScreen from "../../screens/processing/NfcTagManagementScreen";
+
 const Stack = createNativeStackNavigator<FAManagementStackParamList>();
 
 export function FAManagementStackNavigator() {
@@ -342,6 +345,13 @@ export function FAManagementStackNavigator() {
         name="UnifiedDeviceDiscovery"
         component={UnifiedDeviceDiscoveryScreen}
         options={{ title: "设备发现" }}
+      />
+
+      {/* NFC 标签管理 */}
+      <Stack.Screen
+        name="NfcTagManagement"
+        component={NfcTagManagementScreen}
+        options={{ title: "NFC标签管理" }}
       />
     </Stack.Navigator>
   );

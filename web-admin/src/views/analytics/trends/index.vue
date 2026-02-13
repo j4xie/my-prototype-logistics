@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '@/store/modules/auth';
 import { get } from '@/api/request';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 const authStore = useAuthStore();
 const factoryId = computed(() => authStore.factoryId);
@@ -72,13 +72,13 @@ function initCharts() {
   const costEl = document.getElementById('cost-chart');
 
   if (productionEl) {
-    productionChart = echarts.init(productionEl);
+    productionChart = echarts.init(productionEl, 'cretas');
   }
   if (qualityEl) {
-    qualityChart = echarts.init(qualityEl);
+    qualityChart = echarts.init(qualityEl, 'cretas');
   }
   if (costEl) {
-    costChart = echarts.init(costEl);
+    costChart = echarts.init(costEl, 'cretas');
   }
 }
 

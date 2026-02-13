@@ -16,10 +16,13 @@ import HRWhitelistStackNavigator from './hr/HRWhitelistStackNavigator';
 import HRProfileStackNavigator from './hr/HRProfileStackNavigator';
 
 import { HR_THEME, type HRTabParamList } from '../types/hrNavigation';
+import { useFactoryFeatureStore } from '../store/factoryFeatureStore';
 
 const Tab = createBottomTabNavigator<HRTabParamList>();
 
 export default function HRTabNavigator() {
+  const { isScreenEnabled } = useFactoryFeatureStore();
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -72,6 +75,7 @@ export default function HRTabNavigator() {
           ),
         }}
       />
+      {isScreenEnabled('AttendanceManagement') && (
       <Tab.Screen
         name="AttendanceTab"
         component={HRAttendanceStackNavigator}
@@ -88,6 +92,8 @@ export default function HRTabNavigator() {
           ),
         }}
       />
+      )}
+      {isScreenEnabled('WhitelistManagement') && (
       <Tab.Screen
         name="WhitelistTab"
         component={HRWhitelistStackNavigator}
@@ -104,6 +110,7 @@ export default function HRTabNavigator() {
           ),
         }}
       />
+      )}
       <Tab.Screen
         name="ProfileTab"
         component={HRProfileStackNavigator}

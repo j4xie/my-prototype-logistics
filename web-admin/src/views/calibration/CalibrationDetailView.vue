@@ -32,7 +32,7 @@ import {
   Document,
   InfoFilled
 } from '@element-plus/icons-vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 
 const route = useRoute();
 const router = useRouter();
@@ -229,13 +229,13 @@ function generateMockHistory(): CalibrationHistoryItem[] {
 function initCharts() {
   // 雷达图
   if (radarContainer.value) {
-    radarChart.value = echarts.init(radarContainer.value);
+    radarChart.value = echarts.init(radarContainer.value, 'cretas');
     updateRadarChart();
   }
 
   // 趋势图
   if (trendContainer.value) {
-    trendChart.value = echarts.init(trendContainer.value);
+    trendChart.value = echarts.init(trendContainer.value, 'cretas');
     updateTrendChart();
   }
 

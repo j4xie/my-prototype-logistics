@@ -1,0 +1,882 @@
+{
+  "timestamp": "2026-02-10T20:44:47.682660",
+  "test": "v5_round91_laboratory_testing",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "sample_mgmt": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "lab_equipment": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "test_method": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "result_report": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "micro_test": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "chem_test": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "sensory_eval": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "outsource_test": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "lab_compliance": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 24,
+    "CLASSIFIER": 10,
+    "PHRASE_MATCH": 9,
+    "SEMANTIC": 7
+  },
+  "results": [
+    {
+      "query": "查看样品管理记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": null,
+      "latency_ms": 665
+    },
+    {
+      "query": "今天的取样记录有哪些",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": null,
+      "latency_ms": 633
+    },
+    {
+      "query": "查询样品编号SP20260210",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": null,
+      "latency_ms": 712
+    },
+    {
+      "query": "留样管理情况汇总",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": null,
+      "latency_ms": 697
+    },
+    {
+      "query": "样品入库登记",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.794524610042572,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": "CLASSIFIER",
+      "latency_ms": 628
+    },
+    {
+      "query": "到期样品销毁清单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_QUALITY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "sample_mgmt",
+      "method": null,
+      "latency_ms": 693
+    },
+    {
+      "query": "实验室设备运行状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "lab_equipment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "仪器校准到期提醒",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.7683047652244568,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "ALERT_LIST",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_EXPIRING_ALERT",
+        null
+      ],
+      "category": "lab_equipment",
+      "method": "CLASSIFIER",
+      "latency_ms": 649
+    },
+    {
+      "query": "试剂库存管理查询",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "lab_equipment",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 488
+    },
+    {
+      "query": "实验室温湿度监控数据",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.9127357006072998,
+      "expected": [
+        "COLD_CHAIN_TEMPERATURE",
+        "EQUIPMENT_STATUS_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "lab_equipment",
+      "method": "CLASSIFIER",
+      "latency_ms": 631
+    },
+    {
+      "query": "查看设备校验证书",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.93,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_MAINTENANCE",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "lab_equipment",
+      "method": "SEMANTIC",
+      "latency_ms": 1398
+    },
+    {
+      "query": "查看当前使用的检测方法",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "test_method",
+      "method": null,
+      "latency_ms": 1662
+    },
+    {
+      "query": "GB标准检测方法查询",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.6395372748374939,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "test_method",
+      "method": "CLASSIFIER",
+      "latency_ms": 635
+    },
+    {
+      "query": "方法验证报告查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "test_method",
+      "method": null,
+      "latency_ms": 647
+    },
+    {
+      "query": "检测限是多少",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.92,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "test_method",
+      "method": "SEMANTIC",
+      "latency_ms": 638
+    },
+    {
+      "query": "方法偏差分析结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "test_method",
+      "method": null,
+      "latency_ms": 1413
+    },
+    {
+      "query": "分析方法适用性评估",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.5857389569282532,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "test_method",
+      "method": "CLASSIFIER",
+      "latency_ms": 919
+    },
+    {
+      "query": "查看今天的检测结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "result_report",
+      "method": null,
+      "latency_ms": 689
+    },
+    {
+      "query": "生成本批次检测报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "result_report",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 472
+    },
+    {
+      "query": "COA证书出具情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "result_report",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "导出检测数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "result_report",
+      "method": "SEMANTIC",
+      "latency_ms": 613
+    },
+    {
+      "query": "检测结果审核流程",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6216839551925659,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "result_report",
+      "method": "CLASSIFIER",
+      "latency_ms": 622
+    },
+    {
+      "query": "微生物检测结果汇总",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "micro_test",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "菌落总数检测超标了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "micro_test",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "大肠菌群检测报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "micro_test",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 474
+    },
+    {
+      "query": "致病菌检测有没有异常",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "micro_test",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "霉菌酵母计数结果查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "micro_test",
+      "method": null,
+      "latency_ms": 654
+    },
+    {
+      "query": "沙门氏菌检出情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "micro_test",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "化学检测指标查看",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.7703436017036438,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "chem_test",
+      "method": "CLASSIFIER",
+      "latency_ms": 613
+    },
+    {
+      "query": "重金属检测是否合格",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.9700000000000001,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "chem_test",
+      "method": "SEMANTIC",
+      "latency_ms": 625
+    },
+    {
+      "query": "农残检测结果查询",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "chem_test",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "添加剂含量检测数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "chem_test",
+      "method": "SEMANTIC",
+      "latency_ms": 609
+    },
+    {
+      "query": "理化指标检测报告",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "chem_test",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 467
+    },
+    {
+      "query": "感官评价结果查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": null,
+      "latency_ms": 664
+    },
+    {
+      "query": "产品色泽检测记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "气味检测有没有异味",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_QUERY",
+      "confidence": 0.92,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_STATS",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": "SEMANTIC",
+      "latency_ms": 640
+    },
+    {
+      "query": "本批次口感评分多少",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": null,
+      "latency_ms": 699
+    },
+    {
+      "query": "外观检查合格率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "质地评估结果分析",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EVALUATE",
+      "confidence": 0.6620869040489197,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "QUALITY_CHECK_EXECUTE",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        "QUALITY_DISPOSITION_EVALUATE",
+        null
+      ],
+      "category": "sensory_eval",
+      "method": "CLASSIFIER",
+      "latency_ms": 628
+    },
+    {
+      "query": "外检委托单查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "outsource_test",
+      "method": null,
+      "latency_ms": 1661
+    },
+    {
+      "query": "第三方检测进度跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "SUPPLIER_EVALUATE",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "outsource_test",
+      "method": null,
+      "latency_ms": 693
+    },
+    {
+      "query": "外送样品物流状态",
+      "status": "PASS",
+      "intent": "SHIPMENT_STATUS_UPDATE",
+      "confidence": 0.5982980132102966,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "SUPPLIER_EVALUATE",
+        "SHIPMENT_STATUS_UPDATE",
+        null
+      ],
+      "category": "outsource_test",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "外检报告接收情况",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "SUPPLIER_EVALUATE",
+        "QUALITY_STATS",
+        null
+      ],
+      "category": "outsource_test",
+      "method": null,
+      "latency_ms": 923
+    },
+    {
+      "query": "检测费用统计",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.93,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SUPPLIER_EVALUATE",
+        null
+      ],
+      "category": "outsource_test",
+      "method": "SEMANTIC",
+      "latency_ms": 648
+    },
+    {
+      "query": "实验室资质查看",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": null,
+      "latency_ms": 681
+    },
+    {
+      "query": "CNAS认证状态查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "REPORT_QUALITY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": null,
+      "latency_ms": 658
+    },
+    {
+      "query": "实验室内部审核记录",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.6808260679244995,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "QUALITY_CHECK_EXECUTE",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": "CLASSIFIER",
+      "latency_ms": 653
+    },
+    {
+      "query": "能力验证参加结果",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_TRENDS",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": null,
+      "latency_ms": 871
+    },
+    {
+      "query": "实验室安全检查记录",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "REPORT_QUALITY",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": null,
+      "latency_ms": 854
+    },
+    {
+      "query": "实验室原始记录查询",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUALITY_CHECK_QUERY",
+        "QUALITY_STATS",
+        "REPORT_QUALITY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "lab_compliance",
+      "method": null,
+      "latency_ms": 878
+    }
+  ]
+}

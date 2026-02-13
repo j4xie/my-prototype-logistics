@@ -108,6 +108,10 @@ export type ProcessingStackParamList = {
   // AI语音质检 - Phase 4
   VoiceInspection: undefined;                          // 语音质检主屏幕
 
+  // 报工 - Work Reporting
+  ScanReport: undefined;
+  TeamBatchReport: undefined;
+
   // 标签扫描 - 通用组件
   LabelScan: {
     workstationId: string;
@@ -225,6 +229,9 @@ export type ReportStackParamList = {
   CostVarianceReport: undefined;
   CapacityUtilizationReport: undefined;
   OnTimeDeliveryReport: undefined;
+  // 独立生产分析 & 人效分析 (2026-02-13)
+  ProductionAnalysis: undefined;
+  EfficiencyAnalysis: undefined;
 };
 
 // ==================== Admin模块导航参数 ====================
@@ -356,6 +363,8 @@ export type FAManagementStackParamList = {
   LabelRecognitionMonitor: undefined;
   // 统一多品牌设备发现
   UnifiedDeviceDiscovery: undefined;
+  // NFC 标签管理 (factory_admin)
+  NfcTagManagement: undefined;
 };
 
 export type FAProfileStackParamList = {
@@ -407,6 +416,14 @@ export type WSHomeStackParamList = {
   TaskGuide: { batchId: string; batchNumber: string };
   TaskGuideStep2: { batchId: string; batchNumber: string };
   TaskGuideStep3: { batchId: string; batchNumber: string };
+  // 快捷操作入口
+  ScanReport: undefined;
+  TeamBatchReport: undefined;
+  LabelScan: { workstationId: string; batchNumber?: string };
+  DraftReports: undefined;
+  // 生产报工
+  DynamicReport: { reportType: 'PROGRESS' | 'HOURS' };
+  NfcCheckin: undefined;
 };
 
 export type WSBatchesStackParamList = {
@@ -418,6 +435,25 @@ export type WSBatchesStackParamList = {
   MaterialConsumption: { batchId: string };
   QualityCreate: { batchId: string };
   QualityDetail: { inspectionId: string };
+  // 报工 - Work Reporting
+  ScanReport: undefined;
+  TeamBatchReport: undefined;
+  // 报工成功页
+  ScanReportSuccess: {
+    batchNumber: string;
+    outputQuantity: number;
+    goodQuantity: number;
+    defectQuantity: number;
+  };
+  // 草稿管理
+  DraftReports: undefined;
+  // 标签扫描 (from WSBatches context)
+  LabelScan: {
+    workstationId: string;
+    batchNumber?: string;
+  };
+  // AI效率分析 (from BatchDetail context)
+  AIAnalysis: { batchId: string };
 };
 
 export type WSWorkersStackParamList = {

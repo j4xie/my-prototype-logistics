@@ -1,0 +1,817 @@
+{
+  "timestamp": "2026-02-10T18:54:28.067186",
+  "test": "v5_round46_shipment_delivery",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "shipment_create": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "shipment_query": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "delivery_confirm": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "logistics": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "return_exchange": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "packing": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "shipping_doc": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "delivery_schedule": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "shipping_alert": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 8,
+    "CLASSIFIER": 15,
+    "NONE": 21,
+    "SEMANTIC": 6
+  },
+  "results": [
+    {
+      "query": "安排发货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "shipment_create",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 475
+    },
+    {
+      "query": "创建发货单",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "shipment_create",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 482
+    },
+    {
+      "query": "发一批货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.8404428362846375,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "shipment_create",
+      "method": "CLASSIFIER",
+      "latency_ms": 621
+    },
+    {
+      "query": "出库发货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.8364649415016174,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "shipment_create",
+      "method": "CLASSIFIER",
+      "latency_ms": 743
+    },
+    {
+      "query": "打包发货",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.7565332651138306,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipment_create",
+      "method": "CLASSIFIER",
+      "latency_ms": 608
+    },
+    {
+      "query": "准备装车",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipment_create",
+      "method": null,
+      "latency_ms": 603
+    },
+    {
+      "query": "发货记录",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_BY_DATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "shipment_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "今天发了几单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_BY_DATE",
+        "SHIPMENT_QUERY",
+        "ORDER_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "shipment_query",
+      "method": null,
+      "latency_ms": 652
+    },
+    {
+      "query": "待发货订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST",
+        "ORDER_STATUS",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "shipment_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 429
+    },
+    {
+      "query": "发货状态",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "shipment_query",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 465
+    },
+    {
+      "query": "物流跟踪",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "shipment_query",
+      "method": null,
+      "latency_ms": 683
+    },
+    {
+      "query": "运输进度",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.5339450836181641,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "shipment_query",
+      "method": "CLASSIFIER",
+      "latency_ms": 869
+    },
+    {
+      "query": "签收确认",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "delivery_confirm",
+      "method": null,
+      "latency_ms": 728
+    },
+    {
+      "query": "到货确认",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.7045361995697021,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "MATERIAL_BATCH_CREATE",
+        null
+      ],
+      "category": "delivery_confirm",
+      "method": "CLASSIFIER",
+      "latency_ms": 1096
+    },
+    {
+      "query": "收货验收",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.5105133652687073,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "QUALITY_CHECK_EXECUTE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_confirm",
+      "method": "CLASSIFIER",
+      "latency_ms": 704
+    },
+    {
+      "query": "客户已签收",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "delivery_confirm",
+      "method": null,
+      "latency_ms": 646
+    },
+    {
+      "query": "配送完成",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "delivery_confirm",
+      "method": null,
+      "latency_ms": 665
+    },
+    {
+      "query": "物流费用",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "logistics",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "运费计算",
+      "status": "PASS",
+      "intent": "COST_QUERY",
+      "confidence": 0.5092201232910156,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "COST_QUERY",
+        null
+      ],
+      "category": "logistics",
+      "method": "CLASSIFIER",
+      "latency_ms": 580
+    },
+    {
+      "query": "配送路线",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "logistics",
+      "method": null,
+      "latency_ms": 951
+    },
+    {
+      "query": "物流商选择",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "logistics",
+      "method": null,
+      "latency_ms": 612
+    },
+    {
+      "query": "装车清单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "logistics",
+      "method": null,
+      "latency_ms": 795
+    },
+    {
+      "query": "车辆安排",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "logistics",
+      "method": null,
+      "latency_ms": 769
+    },
+    {
+      "query": "退货申请",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_QUERY",
+        "ORDER_STATUS",
+        "QUALITY_CHECK_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "return_exchange",
+      "method": "SEMANTIC",
+      "latency_ms": 654
+    },
+    {
+      "query": "换货处理",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_STATUS_UPDATE",
+        "SHIPMENT_CREATE",
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "return_exchange",
+      "method": "SEMANTIC",
+      "latency_ms": 620
+    },
+    {
+      "query": "退回入库",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "MATERIAL_BATCH_CREATE",
+        "SHIPMENT_STATUS_UPDATE",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "return_exchange",
+      "method": null,
+      "latency_ms": 1185
+    },
+    {
+      "query": "退货原因",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.6061936020851135,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "ALERT_LIST",
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "return_exchange",
+      "method": "CLASSIFIER",
+      "latency_ms": 648
+    },
+    {
+      "query": "退款处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ORDER_STATUS",
+        "SHIPMENT_STATUS_UPDATE",
+        null
+      ],
+      "category": "return_exchange",
+      "method": null,
+      "latency_ms": 645
+    },
+    {
+      "query": "包装方式",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "QUALITY_CHECK_QUERY",
+        null
+      ],
+      "category": "packing",
+      "method": null,
+      "latency_ms": 912
+    },
+    {
+      "query": "装箱清单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "packing",
+      "method": null,
+      "latency_ms": 926
+    },
+    {
+      "query": "包装材料",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "packing",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "外箱标识",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "LABEL_PRINT",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "packing",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "托盘码放",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "packing",
+      "method": null,
+      "latency_ms": 770
+    },
+    {
+      "query": "包装检查",
+      "status": "PASS",
+      "intent": "QUALITY_CHECK_EXECUTE",
+      "confidence": 0.8340317010879517,
+      "expected": [
+        "QUALITY_CHECK_EXECUTE",
+        "QUALITY_CHECK_QUERY",
+        "SHIPMENT_QUERY",
+        null
+      ],
+      "category": "packing",
+      "method": "CLASSIFIER",
+      "latency_ms": 725
+    },
+    {
+      "query": "发货单打印",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "LABEL_PRINT",
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        null
+      ],
+      "category": "shipping_doc",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 430
+    },
+    {
+      "query": "送货单",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.6530991792678833,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "shipping_doc",
+      "method": "CLASSIFIER",
+      "latency_ms": 593
+    },
+    {
+      "query": "装箱单",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "LABEL_PRINT",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "shipping_doc",
+      "method": null,
+      "latency_ms": 698
+    },
+    {
+      "query": "提货单",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.5766754150390625,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "shipping_doc",
+      "method": "CLASSIFIER",
+      "latency_ms": 623
+    },
+    {
+      "query": "运输单据",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.793445348739624,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "LABEL_PRINT",
+        null
+      ],
+      "category": "shipping_doc",
+      "method": "CLASSIFIER",
+      "latency_ms": 591
+    },
+    {
+      "query": "发货排期",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_BY_DATE",
+        "SHIPMENT_CREATE",
+        "ORDER_LIST",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": "SEMANTIC",
+      "latency_ms": 607
+    },
+    {
+      "query": "配送计划",
+      "status": "PASS",
+      "intent": "SHIPMENT_CREATE",
+      "confidence": 0.7308494448661804,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_CREATE",
+        "ORDER_LIST",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": "CLASSIFIER",
+      "latency_ms": 587
+    },
+    {
+      "query": "到货时间",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "ORDER_STATUS",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": "SEMANTIC",
+      "latency_ms": 583
+    },
+    {
+      "query": "预计送达",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "ORDER_STATUS",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": null,
+      "latency_ms": 609
+    },
+    {
+      "query": "运输时效",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_QUERY",
+        "SHIPMENT_BY_DATE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "紧急配送",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "SHIPMENT_CREATE",
+        "SHIPMENT_QUERY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "delivery_schedule",
+      "method": null,
+      "latency_ms": 616
+    },
+    {
+      "query": "延迟发货",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_LIST",
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "shipping_alert",
+      "method": "SEMANTIC",
+      "latency_ms": 615
+    },
+    {
+      "query": "配送异常",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        null
+      ],
+      "category": "shipping_alert",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 431
+    },
+    {
+      "query": "温度超标",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.919347882270813,
+      "expected": [
+        "COLD_CHAIN_ALERT",
+        "COLD_CHAIN_TEMPERATURE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "shipping_alert",
+      "method": "CLASSIFIER",
+      "latency_ms": 693
+    },
+    {
+      "query": "货损报告",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.93,
+      "expected": [
+        "ALERT_LIST",
+        "SHIPMENT_QUERY",
+        "QUALITY_CHECK_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        null
+      ],
+      "category": "shipping_alert",
+      "method": "SEMANTIC",
+      "latency_ms": 607
+    },
+    {
+      "query": "丢件处理",
+      "status": "PASS",
+      "intent": "QUALITY_DISPOSITION_EXECUTE",
+      "confidence": 0.5303071141242981,
+      "expected": [
+        "ALERT_LIST",
+        "SHIPMENT_QUERY",
+        "SHIPMENT_STATUS_UPDATE",
+        "QUALITY_DISPOSITION_EXECUTE",
+        null
+      ],
+      "category": "shipping_alert",
+      "method": "CLASSIFIER",
+      "latency_ms": 779
+    }
+  ]
+}

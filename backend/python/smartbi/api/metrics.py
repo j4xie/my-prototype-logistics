@@ -107,7 +107,7 @@ async def calculate_metrics(request: MetricCalculationRequest):
         raise
     except Exception as e:
         logger.error(f"Metric calculation error: {e}", exc_info=True)
-        return MetricCalculationResponse(success=False, error=str(e))
+        return MetricCalculationResponse(success=False, error="处理失败，请稍后重试")
 
 
 @router.get("/available", response_model=List[MetricInfo])
@@ -232,5 +232,5 @@ async def calculate_batch(requests: List[MetricCalculationRequest]):
         logger.error(f"Batch metric calculation error: {e}", exc_info=True)
         return {
             "success": False,
-            "error": str(e)
+            "error": "处理失败，请稍后重试"
         }

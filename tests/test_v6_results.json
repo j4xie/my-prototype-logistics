@@ -1,0 +1,82 @@
+[
+  {
+    "query": "库存报告",
+    "expected": "REPORT_INVENTORY",
+    "intent": "REPORT_INVENTORY",
+    "ft_len": 59,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "本周考勤统计",
+    "expected": "ATTENDANCE_STATS",
+    "intent": "ATTENDANCE_STATS",
+    "ft_len": 53,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "客户列表",
+    "expected": "CUSTOMER_LIST",
+    "intent": "CUSTOMER_LIST",
+    "ft_len": 155,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "成本分析",
+    "expected": "COST_QUERY",
+    "intent": "COST_QUERY",
+    "ft_len": 59,
+    "grade": "A",
+    "status": "COMPLETED"
+  },
+  {
+    "query": "排班计划",
+    "expected": "SCHEDULING_LIST",
+    "intent": "SCHEDULING_LIST",
+    "ft_len": 52,
+    "grade": "A",
+    "status": "COMPLETED"
+  },
+  {
+    "query": "设备运行状况",
+    "expected": "EQUIPMENT_STATUS_QUERY",
+    "intent": "EQUIPMENT_STATS",
+    "ft_len": 60,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "产量报表",
+    "expected": "REPORT_PRODUCTION",
+    "intent": "REPORT_PRODUCTION",
+    "ft_len": 56,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "财务报告",
+    "expected": "REPORT_FINANCE",
+    "intent": "REPORT_FINANCE",
+    "ft_len": 137,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "质量报告",
+    "expected": "REPORT_QUALITY",
+    "intent": "REPORT_QUALITY",
+    "ft_len": 100,
+    "grade": "A",
+    "status": "SUCCESS"
+  },
+  {
+    "query": "效率报告",
+    "expected": "REPORT_EFFICIENCY",
+    "intent": "REPORT_EFFICIENCY",
+    "ft_len": 58,
+    "grade": "A",
+    "status": "SUCCESS"
+  }
+]

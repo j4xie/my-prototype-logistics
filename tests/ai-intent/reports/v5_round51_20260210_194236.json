@@ -1,0 +1,724 @@
+{
+  "timestamp": "2026-02-10T19:42:36.998925",
+  "test": "v5_round51_error_recovery_retry",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "retry_request": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "error_diagnosis": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "fallback": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "correction": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "status_check": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "help_request": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "timeout": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "data_issue": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "permission_error": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "NONE": 27,
+    "CLASSIFIER": 12,
+    "PHRASE_MATCH": 11
+  },
+  "results": [
+    {
+      "query": "再查一次",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "retry_request",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "重新查询",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.8580970764160156,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "retry_request",
+      "method": "CLASSIFIER",
+      "latency_ms": 638
+    },
+    {
+      "query": "刷新数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        null
+      ],
+      "category": "retry_request",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 453
+    },
+    {
+      "query": "重新加载",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        null
+      ],
+      "category": "retry_request",
+      "method": null,
+      "latency_ms": 655
+    },
+    {
+      "query": "再试一下",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        null
+      ],
+      "category": "retry_request",
+      "method": null,
+      "latency_ms": 822
+    },
+    {
+      "query": "查询失败重试",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "QUERY_RETRY_LAST",
+        null
+      ],
+      "category": "retry_request",
+      "method": null,
+      "latency_ms": 708
+    },
+    {
+      "query": "为什么出错了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": null,
+      "latency_ms": 837
+    },
+    {
+      "query": "错误原因",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.9014747142791748,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": "CLASSIFIER",
+      "latency_ms": 661
+    },
+    {
+      "query": "失败原因分析",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.8772954940795898,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": "CLASSIFIER",
+      "latency_ms": 638
+    },
+    {
+      "query": "问题诊断",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.9109804034233093,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": "CLASSIFIER",
+      "latency_ms": 634
+    },
+    {
+      "query": "根因分析",
+      "status": "PASS",
+      "intent": "ALERT_DIAGNOSE",
+      "confidence": 0.9226009249687195,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": "CLASSIFIER",
+      "latency_ms": 630
+    },
+    {
+      "query": "异常排查",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "error_diagnosis",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 485
+    },
+    {
+      "query": "换个方式查",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.8590115904808044,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST"
+      ],
+      "category": "fallback",
+      "method": "CLASSIFIER",
+      "latency_ms": 819
+    },
+    {
+      "query": "有没有替代方案",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "fallback",
+      "method": null,
+      "latency_ms": 848
+    },
+    {
+      "query": "手动查询",
+      "status": "PASS",
+      "intent": "SCHEDULING_SET_MANUAL",
+      "confidence": 0.6097617149353027,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SCHEDULING_SET_MANUAL"
+      ],
+      "category": "fallback",
+      "method": "CLASSIFIER",
+      "latency_ms": 792
+    },
+    {
+      "query": "离线查看",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "fallback",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 479
+    },
+    {
+      "query": "导出后查看",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "fallback",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "刚才查错了",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.7982072234153748,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST"
+      ],
+      "category": "correction",
+      "method": "CLASSIFIER",
+      "latency_ms": 612
+    },
+    {
+      "query": "不是这个批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_DETAIL",
+      "confidence": 0.686226487159729,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST",
+        "PROCESSING_BATCH_DETAIL"
+      ],
+      "category": "correction",
+      "method": "CLASSIFIER",
+      "latency_ms": 639
+    },
+    {
+      "query": "搞错了重来",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST"
+      ],
+      "category": "correction",
+      "method": null,
+      "latency_ms": 859
+    },
+    {
+      "query": "修正查询条件",
+      "status": "PASS",
+      "intent": "CONDITION_SWITCH",
+      "confidence": 0.8760433197021484,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST",
+        "CONDITION_SWITCH"
+      ],
+      "category": "correction",
+      "method": "CLASSIFIER",
+      "latency_ms": 724
+    },
+    {
+      "query": "更正数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "correction",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 1470
+    },
+    {
+      "query": "输入有误",
+      "status": "PASS",
+      "intent": "FORM_GENERATION",
+      "confidence": 0.6745833158493042,
+      "expected": [
+        null,
+        "FORM_GENERATION"
+      ],
+      "category": "correction",
+      "method": "CLASSIFIER",
+      "latency_ms": 651
+    },
+    {
+      "query": "现在好了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_ACTIVE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "status_check",
+      "method": null,
+      "latency_ms": 691
+    },
+    {
+      "query": "恢复了没",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_ACTIVE",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "status_check",
+      "method": null,
+      "latency_ms": 775
+    },
+    {
+      "query": "问题解决了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_ACTIVE"
+      ],
+      "category": "status_check",
+      "method": null,
+      "latency_ms": 702
+    },
+    {
+      "query": "服务正常了吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_ACTIVE"
+      ],
+      "category": "status_check",
+      "method": null,
+      "latency_ms": 626
+    },
+    {
+      "query": "连接正常吗",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_ACTIVE"
+      ],
+      "category": "status_check",
+      "method": null,
+      "latency_ms": 1385
+    },
+    {
+      "query": "还有问题吗",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_ACTIVE",
+        "ALERT_LIST"
+      ],
+      "category": "status_check",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 445
+    },
+    {
+      "query": "不会操作",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "help_request",
+      "method": null,
+      "latency_ms": 660
+    },
+    {
+      "query": "怎么查",
+      "status": "PASS",
+      "intent": "QUERY_RETRY_LAST",
+      "confidence": 0.6319581866264343,
+      "expected": [
+        null,
+        "QUERY_RETRY_LAST"
+      ],
+      "category": "help_request",
+      "method": "CLASSIFIER",
+      "latency_ms": 647
+    },
+    {
+      "query": "教我用",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "help_request",
+      "method": null,
+      "latency_ms": 1358
+    },
+    {
+      "query": "使用帮助",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "help_request",
+      "method": null,
+      "latency_ms": 1441
+    },
+    {
+      "query": "操作指南",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "help_request",
+      "method": null,
+      "latency_ms": 682
+    },
+    {
+      "query": "等太久了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "timeout",
+      "method": null,
+      "latency_ms": 674
+    },
+    {
+      "query": "加载太慢",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "timeout",
+      "method": null,
+      "latency_ms": 625
+    },
+    {
+      "query": "响应超时",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_LIST"
+      ],
+      "category": "timeout",
+      "method": null,
+      "latency_ms": 676
+    },
+    {
+      "query": "一直在转",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "timeout",
+      "method": null,
+      "latency_ms": 635
+    },
+    {
+      "query": "卡住了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY"
+      ],
+      "category": "timeout",
+      "method": null,
+      "latency_ms": 674
+    },
+    {
+      "query": "数据不对",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_DIAGNOSE",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 447
+    },
+    {
+      "query": "数字有问题",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST"
+      ],
+      "category": "data_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 483
+    },
+    {
+      "query": "怎么是空的",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "data_issue",
+      "method": null,
+      "latency_ms": 644
+    },
+    {
+      "query": "没有数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "数据缺失",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 458
+    },
+    {
+      "query": "数据异常",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        null,
+        "ALERT_DIAGNOSE",
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW"
+      ],
+      "category": "data_issue",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 481
+    },
+    {
+      "query": "看不了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "permission_error",
+      "method": null,
+      "latency_ms": 678
+    },
+    {
+      "query": "没有权限",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "permission_error",
+      "method": null,
+      "latency_ms": 916
+    },
+    {
+      "query": "被拒绝了",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "permission_error",
+      "method": null,
+      "latency_ms": 637
+    },
+    {
+      "query": "访问受限",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null,
+        "FACTORY_SETTINGS"
+      ],
+      "category": "permission_error",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "无法操作",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        null
+      ],
+      "category": "permission_error",
+      "method": null,
+      "latency_ms": 684
+    }
+  ]
+}

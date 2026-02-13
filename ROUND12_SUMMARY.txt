@@ -1,0 +1,74 @@
+ROUND 12 FAILURE CATEGORIZATION - SUMMARY TABLE
+================================================
+
+ # | Input                      | Got              | Expected              | Category    | Fix Required
+---|-------------------------------|-----------------|----------------------|------------|---------------------------------------------------
+ 1 | 仓储情况怎么样              | REPORT_DASH...  | REPORT_INVENTORY     | TEST_FIX   | Accept - "情况怎么样" is generic status inquiry
+ 2 | 库房状态查一下              | None            | REPORT_INVENTORY     | PHRASE_FIX | Add: "库房状态", "库房" → REPORT_INVENTORY
+ 3 | 人力配置如何                | None            | ATTENDANCE_STATS     | PHRASE_FIX | Add: "人力配置", "人力" → ATTENDANCE_STATS
+ 4 | 员工到岗情况                | None            | ATTENDANCE_TODAY     | PHRASE_FIX | Add: "员工到岗", "到岗" → ATTENDANCE_TODAY
+ 5 | 产线设备怎样                | None            | EQUIPMENT_STATUS_Q...| PHRASE_FIX | Add: "产线设备" → EQUIPMENT_STATUS_QUERY
+ 6 | 工人迟到了                  | ATTENDANCE_H... | ATTENDANCE_TODAY     | BOTH       | TEST_FIX: History is valid. Or PHRASE_FIX: add phrase
+ 7 | 这批货有问题                | ALERT_LIST      | QUALITY_CHECK_QUERY  | TEST_FIX   | Accept - Issues are alerts. Or add override phrase
+ 8 | 今天用了多少吨面粉          | None            | MATERIAL_BATCH_Q...  | PHRASE_FIX | Add: "面粉", "用了多少" → MATERIAL_BATCH_QUERY
+ 9 | 废品率几个点                | None            | QUALITY_STATS        | PHRASE_FIX | Add: "废品率" → QUALITY_STATS
+10 | 良率多少                    | None            | QUALITY_STATS        | PHRASE_FIX | Add: "良率" → QUALITY_STATS
+11 | 月初到现在的销售额          | None            | REPORT_FINANCE       | PHRASE_FIX | Add: "销售额", "销售收入" → REPORT_FINANCE
+12 | 仓管员的操作记录            | PROCESSING_...  | REPORT_INVENTORY     | TEST_FIX   | Accept - or add warehouse-specific phrase
+13 | 质检员检了多少批            | QUALITY_CHECK_E.| QUALITY_STATS        | BOTH       | TEST_FIX: "检" could mean execute. Or PHRASE_FIX
+14 | 调度员排班情况              | None            | ATTENDANCE_STATS     | PHRASE_FIX | Add: "排班" → ATTENDANCE_STATS
+15 | 换成月度的                  | ATTENDANCE_M... | None                 | TEST_FIX   | Accept - "月度"→monthly is correct; expect None only if no context
+
+
+CATEGORY BREAKDOWN
+==================
+
+PHRASE_FIX (9 failures):     #2, 3, 4, 5, 8, 9, 10, 11, 14
+  → Missing domain keywords in phrase mapping
+  → Solution: Add ~15 new phrase mappings to IntentKnowledgeBase
+
+TEST_FIX (4 failures):       #1, 7, 12, 15
+  → System's answer is defensible/reasonable
+  → Solution: Accept expected result or update test case
+
+BOTH (2 failures):           #6, 13
+  → Can be fixed either way depending on use case priority
+  → #6:  past tense vs. present context
+  → #13: action verb (execute) vs. stat query
+
+
+IMPACT ASSESSMENT
+=================
+
+HIGH PRIORITY PHRASES (3):
+  - "库房" / "库房状态" → warehouse inventory queries
+  - "销售额" / "销售收入" → finance queries
+
+MEDIUM PRIORITY PHRASES (6):
+  - HR: "人力", "排班" → attendance/staffing
+  - Quality: "废品率", "良率" → quality stats
+  - Attendance: "到岗" → today's attendance
+
+LOW PRIORITY PHRASES (3):
+  - Material-specific: "面粉", "用了多少" → material consumption
+  - Product-specific: "产线设备" → production equipment
+
+
+CLASSIFIER BEHAVIOR OBSERVATIONS
+=================================
+
+1. Phrase matching uses LONGEST MATCH heuristic
+   → "有问题" (3 chars) beats generic classification
+   → "产品有问题" (5 chars) would override
+
+2. Action verb disambiguation not perfect
+   → "检" (check) → QUALITY_CHECK_EXECUTE (action)
+   → "检了多少" should → QUALITY_STATS (query), not execute
+
+3. Generic status indicators ("情况怎么样")
+   → Soft-match to REPORT_DASHBOARD_OVERVIEW
+   → OK for generic queries, but domain-specific phrases would help
+
+4. Domain keywords (库房, 人力) work IF in phrase map
+   → Library GRAPEFilter has "库房" but IntentKnowledgeBase doesn't
+   → Sync needed between domain keywords and phrase mappings

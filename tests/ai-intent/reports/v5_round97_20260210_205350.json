@@ -1,0 +1,875 @@
+{
+  "timestamp": "2026-02-10T20:53:50.284312",
+  "test": "v5_round97_system_integration_api",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "category_breakdown": {
+    "erp_sync": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "wms_integration": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "mes_connect": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "iot_device": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "api_monitor": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "data_exchange": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "middleware": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    },
+    "third_party": {
+      "pass": 5,
+      "fail": 0,
+      "error": 0
+    },
+    "system_health": {
+      "pass": 6,
+      "fail": 0,
+      "error": 0
+    }
+  },
+  "method_distribution": {
+    "PHRASE_MATCH": 20,
+    "NONE": 28,
+    "CLASSIFIER": 2
+  },
+  "results": [
+    {
+      "query": "ERP同步",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "erp_sync",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 444
+    },
+    {
+      "query": "ERP数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "PRODUCTION_STATUS_QUERY",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "erp_sync",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 466
+    },
+    {
+      "query": "SAP接口",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "erp_sync",
+      "method": null,
+      "latency_ms": 664
+    },
+    {
+      "query": "系统对接",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "erp_sync",
+      "method": null,
+      "latency_ms": 614
+    },
+    {
+      "query": "数据同步",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "erp_sync",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 461
+    },
+    {
+      "query": "接口状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "erp_sync",
+      "method": null,
+      "latency_ms": 689
+    },
+    {
+      "query": "WMS对接",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "INVENTORY_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "wms_integration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 450
+    },
+    {
+      "query": "仓储接口",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "INVENTORY_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "wms_integration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "库存同步",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "wms_integration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "出入库同步",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "INVENTORY_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "MATERIAL_BATCH_QUERY",
+        "PROCESSING_BATCH_LIST",
+        null
+      ],
+      "category": "wms_integration",
+      "method": null,
+      "latency_ms": 633
+    },
+    {
+      "query": "WMS状态",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "INVENTORY_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "REPORT_INVENTORY",
+        null
+      ],
+      "category": "wms_integration",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 481
+    },
+    {
+      "query": "MES连接",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "mes_connect",
+      "method": null,
+      "latency_ms": 703
+    },
+    {
+      "query": "生产数据采集",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "SCALE_ADD_DEVICE_VISION",
+        null
+      ],
+      "category": "mes_connect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "实时采集",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        "SCALE_ADD_DEVICE_VISION",
+        null
+      ],
+      "category": "mes_connect",
+      "method": null,
+      "latency_ms": 625
+    },
+    {
+      "query": "数据上传",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "mes_connect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 464
+    },
+    {
+      "query": "MES报工",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "PROCESSING_BATCH_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "mes_connect",
+      "method": null,
+      "latency_ms": 670
+    },
+    {
+      "query": "工序数据",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "PROCESSING_BATCH_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "mes_connect",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 469
+    },
+    {
+      "query": "IoT设备",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SCALE_ADD_DEVICE_VISION",
+        "ISAPI_QUERY_CAPABILITIES",
+        "EQUIPMENT_LIST",
+        null
+      ],
+      "category": "iot_device",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 449
+    },
+    {
+      "query": "传感器数据",
+      "status": "PASS",
+      "intent": "COLD_CHAIN_TEMPERATURE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "COLD_CHAIN_TEMPERATURE",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SCALE_ADD_DEVICE_VISION",
+        null
+      ],
+      "category": "iot_device",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 462
+    },
+    {
+      "query": "设备联网",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "iot_device",
+      "method": null,
+      "latency_ms": 647
+    },
+    {
+      "query": "数据采集器",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "SCALE_ADD_DEVICE_VISION",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "iot_device",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 476
+    },
+    {
+      "query": "PLC连接",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "iot_device",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "API监控",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 701
+    },
+    {
+      "query": "接口调用",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ISAPI_QUERY_CAPABILITIES",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 698
+    },
+    {
+      "query": "接口错误",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 630
+    },
+    {
+      "query": "响应超时",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 679
+    },
+    {
+      "query": "调用频率",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "EQUIPMENT_STATUS_QUERY",
+        "ISAPI_QUERY_CAPABILITIES",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 608
+    },
+    {
+      "query": "接口日志",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ALERT_LIST",
+        "ISAPI_QUERY_CAPABILITIES",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "api_monitor",
+      "method": null,
+      "latency_ms": 657
+    },
+    {
+      "query": "数据交换",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "data_exchange",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 470
+    },
+    {
+      "query": "数据推送",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "CONFIG_RESET",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "data_exchange",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "数据接收",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "INVENTORY_QUERY",
+        "MATERIAL_BATCH_QUERY",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "data_exchange",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 459
+    },
+    {
+      "query": "数据格式",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "data_exchange",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 441
+    },
+    {
+      "query": "数据映射",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "data_exchange",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 514
+    },
+    {
+      "query": "中间件",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "middleware",
+      "method": null,
+      "latency_ms": 629
+    },
+    {
+      "query": "消息队列",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "middleware",
+      "method": null,
+      "latency_ms": 653
+    },
+    {
+      "query": "数据总线",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "middleware",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 463
+    },
+    {
+      "query": "事件驱动",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "middleware",
+      "method": null,
+      "latency_ms": 627
+    },
+    {
+      "query": "异步处理",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "PRODUCTION_STATUS_QUERY",
+        null
+      ],
+      "category": "middleware",
+      "method": null,
+      "latency_ms": 670
+    },
+    {
+      "query": "队列积压",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "ALERT_LIST",
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "middleware",
+      "method": null,
+      "latency_ms": 650
+    },
+    {
+      "query": "第三方系统",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "third_party",
+      "method": null,
+      "latency_ms": 663
+    },
+    {
+      "query": "外部接口",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ISAPI_QUERY_CAPABILITIES",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "third_party",
+      "method": null,
+      "latency_ms": 675
+    },
+    {
+      "query": "合作伙伴接口",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "ISAPI_QUERY_CAPABILITIES",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        null
+      ],
+      "category": "third_party",
+      "method": null,
+      "latency_ms": 656
+    },
+    {
+      "query": "EDI",
+      "status": "PASS",
+      "intent": "MRP_CALCULATION",
+      "confidence": 0.6278578639030457,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "MRP_CALCULATION",
+        null
+      ],
+      "category": "third_party",
+      "method": "CLASSIFIER",
+      "latency_ms": 625
+    },
+    {
+      "query": "电子数据交换",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "CONFIG_RESET",
+        "FACTORY_NOTIFICATION_CONFIG",
+        "EQUIPMENT_STATUS_QUERY",
+        null
+      ],
+      "category": "third_party",
+      "method": null,
+      "latency_ms": 647
+    },
+    {
+      "query": "系统健康",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "CONFIG_RESET",
+        null
+      ],
+      "category": "system_health",
+      "method": null,
+      "latency_ms": 685
+    },
+    {
+      "query": "服务状态",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "ISAPI_QUERY_CAPABILITIES",
+        null
+      ],
+      "category": "system_health",
+      "method": null,
+      "latency_ms": 1050
+    },
+    {
+      "query": "数据库连接",
+      "status": "PASS",
+      "intent": "REPORT_DASHBOARD_OVERVIEW",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "CONFIG_RESET",
+        "ALERT_LIST",
+        null
+      ],
+      "category": "system_health",
+      "method": "PHRASE_MATCH",
+      "latency_ms": 478
+    },
+    {
+      "query": "磁盘空间",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "system_health",
+      "method": null,
+      "latency_ms": 734
+    },
+    {
+      "query": "CPU使用率",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATS",
+      "confidence": 0.564021110534668,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "PRODUCTION_STATUS_QUERY",
+        "EQUIPMENT_STATS",
+        null
+      ],
+      "category": "system_health",
+      "method": "CLASSIFIER",
+      "latency_ms": 703
+    },
+    {
+      "query": "内存占用",
+      "status": "PASS",
+      "intent": null,
+      "confidence": null,
+      "expected": [
+        "REPORT_DASHBOARD_OVERVIEW",
+        "EQUIPMENT_STATUS_QUERY",
+        "ALERT_LIST",
+        "INVENTORY_QUERY",
+        null
+      ],
+      "category": "system_health",
+      "method": null,
+      "latency_ms": 772
+    }
+  ]
+}

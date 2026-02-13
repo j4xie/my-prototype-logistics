@@ -7,6 +7,7 @@
 import { createApp } from 'vue';
 import App from './App.vue';
 import './style.css';
+import { registerEChartsTheme } from './utils/echarts-theme';
 
 // 异步引导函数
 async function bootstrap() {
@@ -42,7 +43,10 @@ async function bootstrap() {
   setupRouterGuards(router);
   app.use(router);
 
-  // 6. 挂载应用
+  // 6. Register ECharts theme (before any chart component mounts)
+  registerEChartsTheme();
+
+  // 7. 挂载应用
   app.mount('#app');
 }
 

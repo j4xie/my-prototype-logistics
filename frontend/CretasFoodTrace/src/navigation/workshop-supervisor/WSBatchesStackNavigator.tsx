@@ -18,6 +18,16 @@ import MaterialConsumptionScreen from "../../screens/workshop-supervisor/batches
 // 复用现有详情页
 import BatchDetailScreen from "../../screens/processing/BatchDetailScreen";
 
+// 报工页面
+import ScanReportScreen from "../../screens/processing/ScanReportScreen";
+import TeamBatchReportScreen from "../../screens/processing/TeamBatchReportScreen";
+import ScanReportSuccessScreen from "../../screens/processing/ScanReportSuccessScreen";
+import DraftReportsScreen from "../../screens/processing/DraftReportsScreen";
+
+// 标签扫描 + AI分析
+import LabelScanScreen from "../../screens/shared/LabelScanScreen";
+import AIAnalysisScreen from "../../screens/processing/AIAnalysisScreen";
+
 // 质检相关 - 已迁移至 QualityInspectorNavigator
 // import CreateQualityRecordScreen from "../../screens/processing/CreateQualityRecordScreen";
 // import QualityInspectionDetailScreen from "../../screens/processing/QualityInspectionDetailScreen";
@@ -67,6 +77,38 @@ export function WSBatchesStackNavigator() {
         name="MaterialConsumption"
         component={MaterialConsumptionScreen}
         options={{ title: "原料消耗" }}
+      />
+
+      {/* 报工 */}
+      <Stack.Screen
+        name="ScanReport"
+        component={ScanReportScreen}
+        options={{ title: "扫码报工" }}
+      />
+      <Stack.Screen
+        name="TeamBatchReport"
+        component={TeamBatchReportScreen}
+        options={{ title: "班组报工" }}
+      />
+      <Stack.Screen
+        name="ScanReportSuccess"
+        component={ScanReportSuccessScreen}
+        options={{ title: "报工成功" }}
+      />
+      <Stack.Screen
+        name="DraftReports"
+        component={DraftReportsScreen}
+        options={{ title: "草稿管理" }}
+      />
+      <Stack.Screen
+        name="LabelScan"
+        component={LabelScanScreen}
+        options={{ title: "标签扫描" }}
+      />
+      <Stack.Screen
+        name="AIAnalysis"
+        component={AIAnalysisScreen}
+        options={{ title: "AI效率分析" }}
       />
 
       {/* 质检已迁移至 QualityInspectorNavigator */}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   StyleSheet,
@@ -296,15 +296,15 @@ export default function EquipmentAlertsScreen() {
   const activeCount = alerts.filter((a) => a.status === 'active').length;
 
   // Filter data based on search query
-  const filteredAlerts = alerts.filter(
+  const filteredAlerts = useMemo(() => alerts.filter(
     (item) =>
       item.equipmentName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.alertType.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.message.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [alerts, searchQuery]);
 
   // Render item
-  const renderItem = ({ item }: { item: EquipmentAlert }) => (
+  const renderItem = useCallback(({ item }: { item: EquipmentAlert }) => (
     <TouchableOpacity onPress={() => handleAlertPress(item)}>
       <Surface style={styles.card} elevation={1}>
         <View style={styles.cardHeader}>
@@ -419,7 +419,7 @@ export default function EquipmentAlertsScreen() {
         </View>
       </Surface>
     </TouchableOpacity>
-  );
+  ), [handleAlertPress, handleAcknowledge, handleResolve, getLevelIcon, getLevelColor, getLevelLabel, getStatusColor, getStatusLabel, t]);
 
   // Empty state
   const renderEmpty = () => (

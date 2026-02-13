@@ -1,0 +1,565 @@
+{
+  "timestamp": "2026-02-10T16:17:30.025972",
+  "total": 50,
+  "pass": 50,
+  "fail": 0,
+  "error": 0,
+  "pass_rate": 100.0,
+  "results": [
+    {
+      "query": "帮我建一个生产批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "A1-create-batch",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "建一个生产批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "A1-create-batch",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "帮我建生产批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "A1-create-batch",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "原料出入库记录",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "A2-inbound-record",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "入库记录",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "A2-inbound-record",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "低库存提醒",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "A3-low-stock",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "低库存预警",
+      "status": "PASS",
+      "intent": "MATERIAL_LOW_STOCK_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_LOW_STOCK_ALERT"
+      ],
+      "category": "A3-low-stock",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "盘点库存",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "A4-inventory-check",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "最近发货量怎么样",
+      "status": "PASS",
+      "intent": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_STATS"
+      ],
+      "category": "A5-shipment-stats",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "发货量",
+      "status": "PASS",
+      "intent": "SHIPMENT_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_STATS"
+      ],
+      "category": "A5-shipment-stats",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "发货量对比",
+      "status": "PASS",
+      "intent": "SHIPMENT_STATS",
+      "confidence": 0.8735432624816895,
+      "expected": [
+        "SHIPMENT_STATS"
+      ],
+      "category": "A5-shipment-stats",
+      "method": "CLASSIFIER"
+    },
+    {
+      "query": "谁还没来上班",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "A6-who-absent",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "谁没来",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "A6-who-absent",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "上个月出勤率",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS"
+      ],
+      "category": "A8-attendance-rate",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "工人出勤率",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS"
+      ],
+      "category": "A8-attendance-rate",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "出勤率",
+      "status": "PASS",
+      "intent": "ATTENDANCE_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_STATS"
+      ],
+      "category": "A8-attendance-rate",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "待发货的订单有几个",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST"
+      ],
+      "category": "B1-pending-shipment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "待发货订单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST"
+      ],
+      "category": "B1-pending-shipment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "帮我安排一下明天的排产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "B2-scheduling",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "安排排产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "B2-scheduling",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "排产",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "B2-scheduling",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "这周产量比上周怎样",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION"
+      ],
+      "category": "B3-production-compare",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "产量对比",
+      "status": "PASS",
+      "intent": "REPORT_PRODUCTION",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_PRODUCTION"
+      ],
+      "category": "B3-production-compare",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "客户下单了没",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST"
+      ],
+      "category": "B4-customer-order",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "客户下单",
+      "status": "PASS",
+      "intent": "ORDER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ORDER_LIST"
+      ],
+      "category": "B4-customer-order",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "上线人数",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "B5-headcount",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "上岗人数",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "B5-headcount",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "到岗几人",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "B5-headcount",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "今天出勤情况",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "reg-attendance",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "今天谁来了",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "reg-attendance",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "今天到岗情况",
+      "status": "PASS",
+      "intent": "ATTENDANCE_TODAY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_TODAY"
+      ],
+      "category": "reg-attendance",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "查看设备运行状态",
+      "status": "PASS",
+      "intent": "EQUIPMENT_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_STATUS_QUERY",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "reg-equipment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "设备故障率统计",
+      "status": "PASS",
+      "intent": "EQUIPMENT_MAINTENANCE",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_MAINTENANCE",
+        "EQUIPMENT_STATS"
+      ],
+      "category": "reg-equipment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "今天产量多少",
+      "status": "PASS",
+      "intent": "PRODUCTION_STATUS_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "PRODUCTION_STATUS_QUERY",
+        "REPORT_PRODUCTION"
+      ],
+      "category": "reg-production",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "生产批次列表",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_LIST"
+      ],
+      "category": "reg-batch-list",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "质检合格率",
+      "status": "PASS",
+      "intent": "QUALITY_STATS",
+      "confidence": 0.98,
+      "expected": [
+        "QUALITY_STATS"
+      ],
+      "category": "reg-quality",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "发货进度",
+      "status": "PASS",
+      "intent": "SHIPMENT_QUERY",
+      "confidence": 0.98,
+      "expected": [
+        "SHIPMENT_QUERY"
+      ],
+      "category": "reg-shipment",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "库存有多少",
+      "status": "PASS",
+      "intent": "REPORT_INVENTORY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_INVENTORY",
+        "MATERIAL_BATCH_QUERY"
+      ],
+      "category": "reg-inventory",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "打卡",
+      "status": "PASS",
+      "intent": "CLOCK_IN",
+      "confidence": 0.98,
+      "expected": [
+        "CLOCK_IN"
+      ],
+      "category": "reg-clockin",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "下班了",
+      "status": "PASS",
+      "intent": "CLOCK_OUT",
+      "confidence": 0.98,
+      "expected": [
+        "CLOCK_OUT"
+      ],
+      "category": "reg-clockout",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "告警列表",
+      "status": "PASS",
+      "intent": "ALERT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "ALERT_LIST",
+        "ALERT_ACTIVE"
+      ],
+      "category": "reg-alert",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "原料入库",
+      "status": "PASS",
+      "intent": "MATERIAL_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_BATCH_CREATE"
+      ],
+      "category": "reg-material-create",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "新建批次",
+      "status": "PASS",
+      "intent": "PROCESSING_BATCH_CREATE",
+      "confidence": 0.98,
+      "expected": [
+        "PROCESSING_BATCH_CREATE"
+      ],
+      "category": "reg-batch-create",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "考勤历史",
+      "status": "PASS",
+      "intent": "ATTENDANCE_HISTORY",
+      "confidence": 0.98,
+      "expected": [
+        "ATTENDANCE_HISTORY"
+      ],
+      "category": "reg-attendance-hist",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "供应商列表",
+      "status": "PASS",
+      "intent": "SUPPLIER_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "SUPPLIER_LIST"
+      ],
+      "category": "reg-supplier",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "临期原料",
+      "status": "PASS",
+      "intent": "MATERIAL_EXPIRING_ALERT",
+      "confidence": 0.98,
+      "expected": [
+        "MATERIAL_EXPIRING_ALERT"
+      ],
+      "category": "reg-expiring",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "KPI指标",
+      "status": "PASS",
+      "intent": "REPORT_KPI",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_KPI"
+      ],
+      "category": "reg-kpi",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "财务报表",
+      "status": "PASS",
+      "intent": "REPORT_FINANCE",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_FINANCE"
+      ],
+      "category": "reg-finance",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "生产效率",
+      "status": "PASS",
+      "intent": "REPORT_EFFICIENCY",
+      "confidence": 0.98,
+      "expected": [
+        "REPORT_EFFICIENCY"
+      ],
+      "category": "reg-efficiency",
+      "method": "PHRASE_MATCH"
+    },
+    {
+      "query": "设备列表",
+      "status": "PASS",
+      "intent": "EQUIPMENT_LIST",
+      "confidence": 0.98,
+      "expected": [
+        "EQUIPMENT_LIST"
+      ],
+      "category": "reg-equip-list",
+      "method": "PHRASE_MATCH"
+    }
+  ]
+}

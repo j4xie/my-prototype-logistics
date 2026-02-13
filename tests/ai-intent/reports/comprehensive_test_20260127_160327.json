@@ -1,0 +1,727 @@
+{
+  "summary": {
+    "total": 500,
+    "correct": 451,
+    "accuracy": 90.2,
+    "seed": 11111,
+    "elapsed": 27.322921752929688
+  },
+  "method_stats": {
+    "PHRASE_MATCH": {
+      "total": 446,
+      "correct": 426
+    },
+    "CLASSIFIER": {
+      "total": 45,
+      "correct": 25
+    },
+    "NONE": {
+      "total": 4,
+      "correct": 0
+    },
+    "SEMANTIC": {
+      "total": 5,
+      "correct": 0
+    }
+  },
+  "intent_stats": {
+    "EQUIPMENT_STATUS_QUERY": {
+      "total": 14,
+      "correct": 10
+    },
+    "ATTENDANCE_HISTORY": {
+      "total": 14,
+      "correct": 12
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "total": 13,
+      "correct": 13
+    },
+    "SHIPMENT_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "QUALITY_STATS": {
+      "total": 13,
+      "correct": 13
+    },
+    "TRACE_FULL": {
+      "total": 13,
+      "correct": 13
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "total": 13,
+      "correct": 10
+    },
+    "TRACE_BATCH": {
+      "total": 13,
+      "correct": 13
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "total": 13,
+      "correct": 7
+    },
+    "EQUIPMENT_LIST": {
+      "total": 14,
+      "correct": 14
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "total": 14,
+      "correct": 14
+    },
+    "QUALITY_CHECK_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "total": 14,
+      "correct": 7
+    },
+    "REPORT_TRENDS": {
+      "total": 14,
+      "correct": 14
+    },
+    "ATTENDANCE_TODAY": {
+      "total": 14,
+      "correct": 14
+    },
+    "ALERT_LIST": {
+      "total": 13,
+      "correct": 13
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "total": 14,
+      "correct": 14
+    },
+    "COST_QUERY": {
+      "total": 13,
+      "correct": 13
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "total": 13,
+      "correct": 13
+    },
+    "REPORT_EFFICIENCY": {
+      "total": 14,
+      "correct": 14
+    },
+    "CLOCK_OUT": {
+      "total": 13,
+      "correct": 13
+    },
+    "ATTENDANCE_STATS": {
+      "total": 14,
+      "correct": 10
+    },
+    "PROCESSING_BATCH_TIMELINE": {
+      "total": 14,
+      "correct": 14
+    },
+    "EQUIPMENT_STATS": {
+      "total": 14,
+      "correct": 9
+    },
+    "PROCESSING_BATCH_LIST": {
+      "total": 14,
+      "correct": 6
+    },
+    "CLOCK_IN": {
+      "total": 14,
+      "correct": 14
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "total": 14,
+      "correct": 14
+    },
+    "SUPPLIER_LIST": {
+      "total": 13,
+      "correct": 13
+    },
+    "ALERT_STATS": {
+      "total": 13,
+      "correct": 12
+    },
+    "REPORT_PRODUCTION": {
+      "total": 14,
+      "correct": 14
+    },
+    "REPORT_KPI": {
+      "total": 14,
+      "correct": 11
+    },
+    "SHIPMENT_STATS": {
+      "total": 13,
+      "correct": 13
+    },
+    "ALERT_ACTIVE": {
+      "total": 13,
+      "correct": 13
+    },
+    "REPORT_INVENTORY": {
+      "total": 14,
+      "correct": 14
+    },
+    "QUALITY_CHECK_EXECUTE": {
+      "total": 13,
+      "correct": 10
+    },
+    "REPORT_FINANCE": {
+      "total": 14,
+      "correct": 11
+    }
+  },
+  "confusion_pairs": [
+    [
+      "PROCESSING_BATCH_LIST->MATERIAL_BATCH_QUERY",
+      8
+    ],
+    [
+      "MATERIAL_BATCH_CREATE->MATERIAL_BATCH_QUERY",
+      6
+    ],
+    [
+      "EQUIPMENT_STATS->REPORT_EFFICIENCY",
+      5
+    ],
+    [
+      "PROCESSING_BATCH_CREATE->PROCESSING_BATCH_LIST",
+      5
+    ],
+    [
+      "ATTENDANCE_STATS->ATTENDANCE_TODAY",
+      4
+    ],
+    [
+      "EQUIPMENT_STATUS_QUERY->EQUIPMENT_STATS",
+      3
+    ],
+    [
+      "REPORT_KPI->ATTENDANCE_STATS",
+      3
+    ],
+    [
+      "REPORT_FINANCE->None",
+      3
+    ],
+    [
+      "MATERIAL_LOW_STOCK_ALERT->MATERIAL_BATCH_QUERY",
+      3
+    ],
+    [
+      "QUALITY_CHECK_EXECUTE->QUALITY_CHECK_QUERY",
+      3
+    ],
+    [
+      "PROCESSING_BATCH_CREATE->MATERIAL_BATCH_QUERY",
+      2
+    ],
+    [
+      "ATTENDANCE_HISTORY->CLOCK_IN",
+      2
+    ],
+    [
+      "EQUIPMENT_STATUS_QUERY->None",
+      1
+    ],
+    [
+      "ALERT_STATS->ALERT_LIST",
+      1
+    ]
+  ],
+  "failures": [
+    {
+      "id": 328,
+      "userInput": "查一下新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 496,
+      "userInput": "查一下开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 217,
+      "userInput": "新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 350,
+      "userInput": "查一下考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8429521322250366,
+      "error": null
+    },
+    {
+      "id": 193,
+      "userInput": "看看机器正常吗",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 344,
+      "userInput": "请帮我设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 384,
+      "userInput": "看看在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 439,
+      "userInput": "查一下新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 276,
+      "userInput": "帮我查一下考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8429521322250366,
+      "error": null
+    },
+    {
+      "id": 492,
+      "userInput": "看看设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 347,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 115,
+      "userInput": "关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": "ATTENDANCE_STATS",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8964319229125977,
+      "error": null
+    },
+    {
+      "id": 199,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 381,
+      "userInput": "帮我查一下设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 341,
+      "userInput": "设备上周状态",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 459,
+      "userInput": "开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "error": null
+    },
+    {
+      "id": 69,
+      "userInput": "帮我查一下新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 153,
+      "userInput": "查一下收支情况",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 486,
+      "userInput": "收支情况上周",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 437,
+      "userInput": "原料不够了",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 337,
+      "userInput": "帮我查一下关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": "ATTENDANCE_STATS",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8977171182632446,
+      "error": null
+    },
+    {
+      "id": 196,
+      "userInput": "看看设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 200,
+      "userInput": "请帮我开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "error": null
+    },
+    {
+      "id": 89,
+      "userInput": "开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "error": null
+    },
+    {
+      "id": 310,
+      "userInput": "查一下在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 458,
+      "userInput": "查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 190,
+      "userInput": "请帮我收支情况昨天",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "correct": false,
+      "matchMethod": null,
+      "confidence": null,
+      "error": null
+    },
+    {
+      "id": 245,
+      "userInput": "开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": "QUALITY_CHECK_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 348,
+      "userInput": "请帮我开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "error": null
+    },
+    {
+      "id": 51,
+      "userInput": "帮我查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 54,
+      "userInput": "查一下考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8429521322250366,
+      "error": null
+    },
+    {
+      "id": 356,
+      "userInput": "查一下开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": "QUALITY_CHECK_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7550759315490723,
+      "error": null
+    },
+    {
+      "id": 400,
+      "userInput": "查一下原料不够了",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.9673299789428711,
+      "error": null
+    },
+    {
+      "id": 18,
+      "userInput": "请帮我打卡记录",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "CLOCK_IN",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 304,
+      "userInput": "查一下机器正常吗",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 143,
+      "userInput": "帮我查一下新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 252,
+      "userInput": "查一下原料不够了",
+      "expected": "MATERIAL_LOW_STOCK_ALERT",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.9673299789428711,
+      "error": null
+    },
+    {
+      "id": 99,
+      "userInput": "请帮我今天告警数量",
+      "expected": "ALERT_STATS",
+      "actual": "ALERT_LIST",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 11,
+      "userInput": "看看设备利用率",
+      "expected": "EQUIPMENT_STATS",
+      "actual": "REPORT_EFFICIENCY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 311,
+      "userInput": "看看开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 8,
+      "userInput": "请帮我机器正常吗",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATS",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 60,
+      "userInput": "开始检验",
+      "expected": "QUALITY_CHECK_EXECUTE",
+      "actual": "QUALITY_CHECK_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 236,
+      "userInput": "看看在产批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 263,
+      "userInput": "看看关键绩效指标",
+      "expected": "REPORT_KPI",
+      "actual": "ATTENDANCE_STATS",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8726624846458435,
+      "error": null
+    },
+    {
+      "id": 421,
+      "userInput": "帮我查一下当前批次",
+      "expected": "PROCESSING_BATCH_LIST",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.7935649156570435,
+      "error": null
+    },
+    {
+      "id": 422,
+      "userInput": "请帮我开一个新批次",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "correct": false,
+      "matchMethod": "SEMANTIC",
+      "confidence": 0.93,
+      "error": null
+    },
+    {
+      "id": 32,
+      "userInput": "看看新增原料",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 499,
+      "userInput": "请帮我打卡记录",
+      "expected": "ATTENDANCE_HISTORY",
+      "actual": "CLOCK_IN",
+      "correct": false,
+      "matchMethod": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "error": null
+    },
+    {
+      "id": 17,
+      "userInput": "查一下考勤分析",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "correct": false,
+      "matchMethod": "CLASSIFIER",
+      "confidence": 0.8429521322250366,
+      "error": null
+    }
+  ]
+}

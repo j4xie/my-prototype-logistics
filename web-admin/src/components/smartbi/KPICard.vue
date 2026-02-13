@@ -97,9 +97,21 @@ const trendColors: Record<TrendDirection, string> = {
 
 // Format value based on format type
 const formattedValue = computed(() => {
-  const val = typeof props.value === 'number' ? props.value : parseFloat(props.value);
+  // Null/undefined guard — display placeholder
+  if (props.value == null) return '\u2014';
 
-  if (isNaN(val)) return props.value;
+  // If value is a string that isn't a valid number (e.g. "N/A", "—", "无数据"), display as-is
+  if (typeof props.value === 'string') {
+    const trimmed = props.value.trim();
+    if (trimmed === '') return '\u2014';
+    const parsed = Number(trimmed);
+    if (!Number.isFinite(parsed)) return trimmed;
+  }
+
+  const val = typeof props.value === 'number' ? props.value : parseFloat(String(props.value));
+
+  // NaN guard after parsing
+  if (!Number.isFinite(val)) return '\u2014';
 
   let formatted: string;
 
@@ -129,9 +141,10 @@ const formattedValue = computed(() => {
 
 // Calculate progress if target is set
 const progressPercent = computed(() => {
-  if (props.targetValue === undefined) return 0;
-  const val = typeof props.value === 'number' ? props.value : parseFloat(props.value);
-  if (isNaN(val)) return 0;
+  if (props.targetValue == null || props.targetValue === 0) return 0;
+  if (props.value == null) return 0;
+  const val = typeof props.value === 'number' ? props.value : parseFloat(String(props.value));
+  if (!Number.isFinite(val)) return 0;
   return Math.min((val / props.targetValue) * 100, 100);
 });
 
@@ -181,16 +194,25 @@ const sparklineColor = computed(() => {
 
 // Period-over-period change display (FineBI + Power BI + Grafana)
 const formattedChange = computed(() => {
-  if (props.changeRate == null) return null;
+  if (props.changeRate == null || !Number.isFinite(props.changeRate)) return null;
+  // Guard: extreme values are data artifacts, not real time trends
+  // For financial data, real MoM changes rarely exceed ±80%
+  if (Math.abs(props.changeRate) >= 80) return null;
   const sign = props.changeRate > 0 ? '+' : '';
   return `${sign}${props.changeRate.toFixed(1)}%`;
 });
 
 const changeColor = computed(() => {
-  if (props.changeRate == null) return '#909399';
+  if (props.changeRate == null || !Number.isFinite(props.changeRate)) return '#909399';
   if (props.changeRate > 0) return '#059669';
   if (props.changeRate < 0) return '#dc2626';
   return '#909399';
+});
+
+// Guard: hide trend when changeRate is extreme (data artifact)
+const isReasonableTrend = computed(() => {
+  if (props.changeRate == null) return true; // no changeRate = rely on trend prop
+  return Math.abs(props.changeRate) < 80;
 });
 
 // Progress bar display mode color
@@ -261,7 +283,7 @@ function handleClick() {
         </span>
         <span>{{ title }}</span>
       </div>
-      <div v-if="trend || formattedChange" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
+      <div v-if="isReasonableTrend && (trend || formattedChange)" class="kpi-trend" :style="{ color: formattedChange ? changeColor : trendColors[trend!] }">
         <span class="trend-arrow">
           <template v-if="(changeRate != null ? changeRate > 0 : trend === 'up')">&#9650;</template>
           <template v-else-if="(changeRate != null ? changeRate < 0 : trend === 'down')">&#9660;</template>
@@ -302,9 +324,9 @@ function handleClick() {
             <span v-if="unit" class="kpi-unit">{{ unit }}</span>
           </div>
 
-          <!-- Sparkline Mode: Mini Chart -->
+          <!-- Sparkline Mode: Mini Chart — guarded against empty/undefined/non-array sparklineData -->
           <svg
-            v-if="displayMode === 'sparkline' && sparklineData && sparklineData.length >= 2"
+            v-if="displayMode === 'sparkline' && Array.isArray(sparklineData) && sparklineData.length >= 2 && sparklinePath"
             class="sparkline-chart"
             width="50"
             height="20"
@@ -342,11 +364,11 @@ function handleClick() {
       {{ subtitle }}
     </div>
 
-    <!-- Benchmark comparison (P1) -->
-    <div v-if="benchmarkLabel" class="kpi-benchmark">
+    <!-- Benchmark comparison (P1) — hidden entirely if no benchmark data -->
+    <div v-if="benchmarkLabel && benchmarkLabel.trim() !== ''" class="kpi-benchmark">
       <span class="benchmark-label">{{ benchmarkLabel }}</span>
       <span
-        v-if="benchmarkGap != null"
+        v-if="benchmarkGap != null && Number.isFinite(benchmarkGap)"
         class="benchmark-gap"
         :class="{ positive: benchmarkGap >= 0, negative: benchmarkGap < 0 }"
       >
@@ -378,7 +400,7 @@ function handleClick() {
         ></div>
       </div>
       <div class="progress-label">
-        <span>{{ progressPercent.toFixed(0) }}% of target</span>
+        <span>达标率 {{ progressPercent.toFixed(0) }}%</span>
         <span>{{ targetValue }}{{ unit }}</span>
       </div>
     </div>

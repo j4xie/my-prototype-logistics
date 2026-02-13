@@ -1,0 +1,1317 @@
+{
+  "timestamp": "20260129_085324",
+  "summary": {
+    "total": 2000,
+    "passed": 1639,
+    "failed": 361,
+    "accuracy": 81.95
+  },
+  "by_category": {
+    "production": {
+      "passed": 121,
+      "failed": 60,
+      "total": 181
+    },
+    "shipment": {
+      "passed": 149,
+      "failed": 32,
+      "total": 181
+    },
+    "alert": {
+      "passed": 165,
+      "failed": 15,
+      "total": 180
+    },
+    "report": {
+      "passed": 252,
+      "failed": 67,
+      "total": 319
+    },
+    "customer": {
+      "passed": 90,
+      "failed": 48,
+      "total": 138
+    },
+    "material": {
+      "passed": 197,
+      "failed": 31,
+      "total": 228
+    },
+    "attendance": {
+      "passed": 195,
+      "failed": 32,
+      "total": 227
+    },
+    "equipment": {
+      "passed": 144,
+      "failed": 38,
+      "total": 182
+    },
+    "quality": {
+      "passed": 111,
+      "failed": 26,
+      "total": 137
+    },
+    "supplier": {
+      "passed": 88,
+      "failed": 2,
+      "total": 90
+    },
+    "cost": {
+      "passed": 42,
+      "failed": 4,
+      "total": 46
+    },
+    "trace": {
+      "passed": 85,
+      "failed": 6,
+      "total": 91
+    }
+  },
+  "by_difficulty": {
+    "medium": {
+      "passed": 1522,
+      "failed": 333,
+      "total": 1855
+    },
+    "easy": {
+      "passed": 117,
+      "failed": 28,
+      "total": 145
+    }
+  },
+  "by_intent": {
+    "PROCESSING_BATCH_TIMELINE": {
+      "passed": 46,
+      "failed": 0,
+      "total": 46
+    },
+    "SHIPMENT_QUERY": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "ALERT_LIST": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "REPORT_FINANCE": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "CUSTOMER_ACTIVE": {
+      "passed": 27,
+      "failed": 18,
+      "total": 45
+    },
+    "ALERT_DIAGNOSE": {
+      "passed": 38,
+      "failed": 7,
+      "total": 45
+    },
+    "MATERIAL_BATCH_CREATE": {
+      "passed": 45,
+      "failed": 1,
+      "total": 46
+    },
+    "ATTENDANCE_ANOMALY": {
+      "passed": 45,
+      "failed": 1,
+      "total": 46
+    },
+    "PROCESSING_BATCH_START": {
+      "passed": 23,
+      "failed": 22,
+      "total": 45
+    },
+    "MATERIAL_BATCH_QUERY": {
+      "passed": 43,
+      "failed": 3,
+      "total": 46
+    },
+    "REPORT_TRENDS": {
+      "passed": 30,
+      "failed": 15,
+      "total": 45
+    },
+    "EQUIPMENT_MAINTENANCE": {
+      "passed": 38,
+      "failed": 8,
+      "total": 46
+    },
+    "ATTENDANCE_STATS": {
+      "passed": 28,
+      "failed": 17,
+      "total": 45
+    },
+    "MATERIAL_UPDATE": {
+      "passed": 27,
+      "failed": 19,
+      "total": 46
+    },
+    "SHIPMENT_STATS": {
+      "passed": 32,
+      "failed": 13,
+      "total": 45
+    },
+    "CLOCK_IN": {
+      "passed": 46,
+      "failed": 0,
+      "total": 46
+    },
+    "QUALITY_CRITICAL_ITEMS": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "SUPPLIER_EVALUATE": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "QUALITY_STATS": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "REPORT_DASHBOARD_OVERVIEW": {
+      "passed": 45,
+      "failed": 1,
+      "total": 46
+    },
+    "PRODUCTION_STATUS_QUERY": {
+      "passed": 23,
+      "failed": 22,
+      "total": 45
+    },
+    "REPORT_EFFICIENCY": {
+      "passed": 42,
+      "failed": 3,
+      "total": 45
+    },
+    "SHIPMENT_CREATE": {
+      "passed": 32,
+      "failed": 13,
+      "total": 45
+    },
+    "QUALITY_CHECK_QUERY": {
+      "passed": 33,
+      "failed": 13,
+      "total": 46
+    },
+    "EQUIPMENT_STATUS_QUERY": {
+      "passed": 38,
+      "failed": 8,
+      "total": 46
+    },
+    "COST_QUERY": {
+      "passed": 42,
+      "failed": 4,
+      "total": 46
+    },
+    "TRACE_BATCH": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "ALERT_STATS": {
+      "passed": 37,
+      "failed": 8,
+      "total": 45
+    },
+    "CUSTOMER_PURCHASE_HISTORY": {
+      "passed": 38,
+      "failed": 9,
+      "total": 47
+    },
+    "MATERIAL_EXPIRING_ALERT": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "REPORT_INVENTORY": {
+      "passed": 37,
+      "failed": 8,
+      "total": 45
+    },
+    "SUPPLIER_LIST": {
+      "passed": 43,
+      "failed": 2,
+      "total": 45
+    },
+    "SHIPMENT_STATUS_UPDATE": {
+      "passed": 40,
+      "failed": 6,
+      "total": 46
+    },
+    "EQUIPMENT_ALERT_LIST": {
+      "passed": 44,
+      "failed": 1,
+      "total": 45
+    },
+    "CUSTOMER_STATS": {
+      "passed": 25,
+      "failed": 21,
+      "total": 46
+    },
+    "EQUIPMENT_ALERT_STATS": {
+      "passed": 24,
+      "failed": 21,
+      "total": 45
+    },
+    "MATERIAL_LOW_STOCK_ALERT": {
+      "passed": 37,
+      "failed": 8,
+      "total": 45
+    },
+    "ATTENDANCE_TODAY": {
+      "passed": 40,
+      "failed": 5,
+      "total": 45
+    },
+    "REPORT_KPI": {
+      "passed": 31,
+      "failed": 14,
+      "total": 45
+    },
+    "REPORT_ANOMALY": {
+      "passed": 34,
+      "failed": 13,
+      "total": 47
+    },
+    "TRACE_FULL": {
+      "passed": 40,
+      "failed": 6,
+      "total": 46
+    },
+    "ALERT_RESOLVE": {
+      "passed": 45,
+      "failed": 0,
+      "total": 45
+    },
+    "CLOCK_OUT": {
+      "passed": 36,
+      "failed": 9,
+      "total": 45
+    },
+    "PROCESSING_BATCH_CREATE": {
+      "passed": 29,
+      "failed": 16,
+      "total": 45
+    }
+  },
+  "methods": {
+    "PHRASE_MATCH": 1507,
+    "CLASSIFIER": 322,
+    "SEMANTIC": 44
+  },
+  "failed_cases": [
+    {
+      "id": 14,
+      "input": "看看保养记录查询呢",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 17,
+      "input": "我想查各部门考勤这个月吧",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 22,
+      "input": "我想查今日出货量",
+      "expected": "SHIPMENT_STATS",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 30,
+      "input": "看看在产情况吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "CLASSIFIER",
+      "confidence": 0.7448452711105347,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 37,
+      "input": "帮我查一下本月质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 39,
+      "input": "批次开工呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.96,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 64,
+      "input": "查一下设备故障呢",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 66,
+      "input": "查一下启动批次呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 74,
+      "input": "我要看在产情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 99,
+      "input": "我想查开始生产呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 110,
+      "input": "查一下设备利用率最近",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "EQUIPMENT_STATS",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 123,
+      "input": "我想查检验报告查询呢",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "CLASSIFIER",
+      "confidence": 0.9175326228141785,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 128,
+      "input": "我想查生产状况吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.99,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 129,
+      "input": "帮我查一下开始生产呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 138,
+      "input": "考勤明细吧",
+      "expected": "ATTENDANCE_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 152,
+      "input": "查一下各部门考勤昨天呢",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 167,
+      "input": "看看库存够不够呢",
+      "expected": "REPORT_INVENTORY",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 173,
+      "input": "查一下执行生产任务呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 198,
+      "input": "帮我查一下最近生产状况吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 214,
+      "input": "看看各部门考勤昨天呢",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 215,
+      "input": "新建生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.96,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 220,
+      "input": "新建生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.96,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 228,
+      "input": "我想查设备故障上周吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 229,
+      "input": "看看设备故障本周吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 234,
+      "input": "帮我查一下费用统计呢",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "cost",
+      "error": null
+    },
+    {
+      "id": 237,
+      "input": "帮我看看开始新批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 258,
+      "input": "我要看本周质量报表",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 259,
+      "input": "我想查各部门考勤",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_STATS_BY_DEPT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 265,
+      "input": "新建生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.96,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 280,
+      "input": "我要看保养记录查询呢",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 295,
+      "input": "查一下机器运行正常吗吧",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 298,
+      "input": "设备这个月状态呢",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 317,
+      "input": "我要看在产情况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 319,
+      "input": "我要看新建生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 333,
+      "input": "帮我看看登记生产批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 356,
+      "input": "帮我看看记录下班",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 371,
+      "input": "我想查检验报告查询呢",
+      "expected": "QUALITY_CHECK_QUERY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "CLASSIFIER",
+      "confidence": 0.9175326228141785,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 373,
+      "input": "我想查考勤明细",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "method": "CLASSIFIER",
+      "confidence": 0.7755407094955444,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 387,
+      "input": "看看开始生产呢",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 400,
+      "input": "看看库存够不够吧",
+      "expected": "REPORT_INVENTORY",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 403,
+      "input": "我想查生产任务进度吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 409,
+      "input": "设备运转怎么样吧",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 418,
+      "input": "查一下设备异常统计",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": "('Connection aborted.', ConnectionResetError(10054, '远程主机强迫关闭了一个现有的连接。', None, 10054, None))"
+    },
+    {
+      "id": 424,
+      "input": "帮我看看最近生产状况呢",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 425,
+      "input": "我想查这个月生产状况",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.99,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 449,
+      "input": "看看库存够不够",
+      "expected": "REPORT_INVENTORY",
+      "actual": "MATERIAL_LOW_STOCK_ALERT",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.92,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 484,
+      "input": "帮我看看设备利用率上周",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": "EQUIPMENT_STATS",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 491,
+      "input": "我想查设备故障这个月吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 495,
+      "input": "批次原料查询吧",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 519,
+      "input": "帮我查一下费用统计吧",
+      "expected": "COST_QUERY",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "cost",
+      "error": null
+    },
+    {
+      "id": 538,
+      "input": "看看机器运行正常吗呢",
+      "expected": "EQUIPMENT_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 543,
+      "input": "创建批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.96,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 590,
+      "input": "看看保养记录查询吧",
+      "expected": "EQUIPMENT_MAINTENANCE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 601,
+      "input": "帮我看看最近质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 620,
+      "input": "看看生产任务进度",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 629,
+      "input": "我想查发货订单统计呢",
+      "expected": "SHIPMENT_STATS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 631,
+      "input": "看看创建批次呢",
+      "expected": "PROCESSING_BATCH_CREATE",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 640,
+      "input": "看看生产任务进度吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 643,
+      "input": "我要看设备故障吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 661,
+      "input": "我要看最近质量报表吧",
+      "expected": "QUALITY_STATS",
+      "actual": "REPORT_QUALITY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "quality",
+      "error": null
+    },
+    {
+      "id": 675,
+      "input": "查一下设备故障昨天吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.85,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 677,
+      "input": "帮我查一下生产任务进度吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 693,
+      "input": "帮我看看发货订单统计呢",
+      "expected": "SHIPMENT_STATS",
+      "actual": "ORDER_LIST",
+      "method": "CLASSIFIER",
+      "confidence": 0.7100071310997009,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 700,
+      "input": "查看供应商吧",
+      "expected": "SUPPLIER_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "supplier",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 701,
+      "input": "我要看KPI报表吧",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 702,
+      "input": "我要看新原料入库",
+      "expected": "MATERIAL_BATCH_CREATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "material",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 703,
+      "input": "看看变化趋势分析呢",
+      "expected": "REPORT_TRENDS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 704,
+      "input": "帮我看看签退",
+      "expected": "CLOCK_OUT",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 705,
+      "input": "我想查供应商名单吧",
+      "expected": "SUPPLIER_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "supplier",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 706,
+      "input": "我想查库存报表这周吧",
+      "expected": "REPORT_INVENTORY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 707,
+      "input": "查一下设备利用率上周吧",
+      "expected": "REPORT_EFFICIENCY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 708,
+      "input": "查一下故障诊断吧",
+      "expected": "ALERT_DIAGNOSE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "alert",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 709,
+      "input": "更新发货状态呢",
+      "expected": "SHIPMENT_STATUS_UPDATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 710,
+      "input": "今天出勤情况呢",
+      "expected": "ATTENDANCE_TODAY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 711,
+      "input": "我想查今日告警数量吧",
+      "expected": "ALERT_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "alert",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 712,
+      "input": "帮我查一下设备告警列表呢",
+      "expected": "EQUIPMENT_ALERT_LIST",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "equipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 713,
+      "input": "查一下缺勤人员名单吧",
+      "expected": "ATTENDANCE_ANOMALY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 714,
+      "input": "发货统计今日吧",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 715,
+      "input": "帮我查一下优质客户名单",
+      "expected": "CUSTOMER_ACTIVE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "customer",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 716,
+      "input": "查一下收支情况",
+      "expected": "REPORT_FINANCE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 717,
+      "input": "看看原料批次上周呢",
+      "expected": "MATERIAL_BATCH_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "material",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 718,
+      "input": "查一下出货报表吧",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 719,
+      "input": "我要看考勤明细吧",
+      "expected": "ATTENDANCE_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "attendance",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 720,
+      "input": "客户订单历史吧",
+      "expected": "CUSTOMER_PURCHASE_HISTORY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "customer",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 721,
+      "input": "我要看发货状态变更吧",
+      "expected": "SHIPMENT_STATUS_UPDATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 722,
+      "input": "帮我查一下出货报表",
+      "expected": "SHIPMENT_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 723,
+      "input": "看看更新发货状态",
+      "expected": "SHIPMENT_STATUS_UPDATE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "shipment",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 724,
+      "input": "关键绩效数据吧",
+      "expected": "REPORT_KPI",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "report",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 725,
+      "input": "生产进度今天",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "production",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by NewConnectionError(\"HTTPConnection(host='47.100.235.168', port=10010): Failed to establish a new connection: [WinError 10061] 由于目标计算机积极拒绝，无法连接。\"))"
+    },
+    {
+      "id": 726,
+      "input": "常购客户",
+      "expected": "CUSTOMER_ACTIVE",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "customer",
+      "error": "HTTPConnectionPool(host='47.100.235.168', port=10010): Max retries exceeded with url: /api/mobile/F001/ai-intents/recognize (Caused by ConnectTimeoutError(<HTTPConnection(host='47.100.235.168', port=10010) at 0x1c1df1a4dd0>, 'Connection to 47.100.235.168 timed out. (connect timeout=60)'))"
+    },
+    {
+      "id": 732,
+      "input": "设备故障这周吧",
+      "expected": "EQUIPMENT_ALERT_STATS",
+      "actual": "EQUIPMENT_ALERT_LIST",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "equipment",
+      "error": null
+    },
+    {
+      "id": 735,
+      "input": "看看数据趋势最近",
+      "expected": "REPORT_TRENDS",
+      "actual": "REPORT_DASHBOARD_OVERVIEW",
+      "method": "CLASSIFIER",
+      "confidence": 0.9331318736076355,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 738,
+      "input": "我要看执行生产任务吧",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "CLASSIFIER",
+      "confidence": 0.8962593078613281,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 739,
+      "input": "关键绩效数据",
+      "expected": "REPORT_KPI",
+      "actual": "EQUIPMENT_STOP",
+      "method": "CLASSIFIER",
+      "confidence": 0.7497364282608032,
+      "category": "report",
+      "error": null
+    },
+    {
+      "id": 746,
+      "input": "帮我看看出勤率统计吧",
+      "expected": "ATTENDANCE_STATS",
+      "actual": "ATTENDANCE_TODAY",
+      "method": "CLASSIFIER",
+      "confidence": 0.8062942624092102,
+      "category": "attendance",
+      "error": null
+    },
+    {
+      "id": 750,
+      "input": "看看产线运行情况吧",
+      "expected": "PRODUCTION_STATUS_QUERY",
+      "actual": "EQUIPMENT_STATUS_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "production",
+      "error": null
+    },
+    {
+      "id": 758,
+      "input": "帮我看看原料信息变更",
+      "expected": "MATERIAL_UPDATE",
+      "actual": "MATERIAL_BATCH_QUERY",
+      "method": "PHRASE_MATCH",
+      "confidence": 0.98,
+      "category": "material",
+      "error": null
+    },
+    {
+      "id": 761,
+      "input": "帮我查一下客户情况汇总吧",
+      "expected": "CUSTOMER_STATS",
+      "actual": null,
+      "method": null,
+      "confidence": 0,
+      "category": "customer",
+      "error": null
+    },
+    {
+      "id": 765,
+      "input": "帮我看看登记发货",
+      "expected": "SHIPMENT_CREATE",
+      "actual": "MATERIAL_BATCH_CREATE",
+      "method": "CLASSIFIER",
+      "confidence": 0.9654467105865479,
+      "category": "shipment",
+      "error": null
+    },
+    {
+      "id": 766,
+      "input": "看看执行生产任务",
+      "expected": "PROCESSING_BATCH_START",
+      "actual": "PROCESSING_BATCH_LIST",
+      "method": "CLASSIFIER",
+      "confidence": 0.8962593078613281,
+      "category": "production",
+      "error": null
+    }
+  ],
+  "latency_stats": {
+    "avg": 806.9458385026479,
+    "min": 434.9944591522217,
+    "max": 15643.95546913147
+  }
+}

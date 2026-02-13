@@ -4,7 +4,7 @@
  * Features: Row/column dimensions, color gradient, value display
  */
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue';
-import * as echarts from 'echarts';
+import echarts from '@/utils/echarts';
 import type { EChartsOption, ECharts } from 'echarts';
 
 // Types
@@ -214,7 +214,7 @@ const chartOptions = computed<EChartsOption>(() => {
 function initChart() {
   if (!chartRef.value) return;
 
-  chartInstance.value = echarts.init(chartRef.value);
+  chartInstance.value = echarts.init(chartRef.value, 'cretas');
   chartInstance.value.setOption(chartOptions.value);
 
   // Click event
