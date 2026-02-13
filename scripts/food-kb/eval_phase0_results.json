@@ -1,0 +1,321 @@
+{
+  "test_type": "Phase 0 — Real User Style Baseline Verification",
+  "total_queries": 20,
+  "top_k": 5,
+  "threshold": 0.5,
+  "hit_rate": 1.0,
+  "recall@k": 1.0,
+  "mrr": 0.9417,
+  "ndcg@k": 0.9565,
+  "avg_top1_similarity": 0.6906,
+  "avg_latency_ms": 464.5,
+  "style_breakdown": {
+    "口语化": {
+      "total": 4,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.7494
+    },
+    "否定式": {
+      "total": 2,
+      "recall": 1.0,
+      "mrr": 0.6667,
+      "avg_sim": 0.6795
+    },
+    "场景化": {
+      "total": 5,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.6856
+    },
+    "多意图": {
+      "total": 2,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.662
+    },
+    "对比式": {
+      "total": 1,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.6228
+    },
+    "模糊": {
+      "total": 3,
+      "recall": 1.0,
+      "mrr": 0.8333,
+      "avg_sim": 0.6509
+    },
+    "简称": {
+      "total": 1,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.8425
+    },
+    "追问式": {
+      "total": 1,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.6215
+    },
+    "错别字": {
+      "total": 1,
+      "recall": 1.0,
+      "mrr": 1.0,
+      "avg_sim": 0.6648
+    }
+  },
+  "comparison_with_dev_queries": {
+    "dev_mrr": 1.0,
+    "dev_ndcg": 1.0,
+    "dev_queries": 60,
+    "real_mrr": 0.9417,
+    "real_ndcg": 0.9565,
+    "real_queries": 20,
+    "mrr_gap": 0.0583,
+    "verdict": "MODERATE_GAP"
+  },
+  "missed_queries": [],
+  "all_results": [
+    {
+      "query": "我们做火腿肠的，那个防腐用的东西最多能放多少",
+      "persona": "车间主管",
+      "style": "口语化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7338,
+      "top1_title": "GB 2760-2024 食品添加剂使用标准 - 防腐剂部分",
+      "latency_ms": 614.7,
+      "notes": "不说'山梨酸'而说'防腐的东西'，测试语义理解能力"
+    },
+    {
+      "query": "酸奶里面可以加什么让它变稠一点",
+      "persona": "车间主管",
+      "style": "口语化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6999,
+      "top1_title": "增稠剂-羧甲基纤维素钠(CMC)使用规范 (#1)",
+      "latency_ms": 515.5,
+      "notes": "不用专业术语'增稠剂'，用口语'变稠一点'"
+    },
+    {
+      "query": "做饼干用的那种膨松的粉有没有限量要求",
+      "persona": "普通员工",
+      "style": "口语化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7734,
+      "top1_title": "食品膨松剂种类与无铝趋势",
+      "latency_ms": 402.4,
+      "notes": "'膨松的粉'=泡打粉/膨松剂，完全口语化"
+    },
+    {
+      "query": "冷库温度到底设多少度合适，肉类和蔬菜一样吗",
+      "persona": "仓储主管",
+      "style": "场景化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7219,
+      "top1_title": "食品冷库设计与管理规范",
+      "latency_ms": 502.4,
+      "notes": "实际操作问题，不是'冷链运输温度控制'这种教科书表述"
+    },
+    {
+      "query": "车间工人手上有伤口还能不能上班",
+      "persona": "车间主管",
+      "style": "场景化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6388,
+      "top1_title": "人员卫生操作规程",
+      "latency_ms": 369.6,
+      "notes": "日常管理场景，涉及从业人员健康管理"
+    },
+    {
+      "query": "客户投诉说吃了我们的东西拉肚子怎么处理",
+      "persona": "工厂管理员",
+      "style": "场景化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6235,
+      "top1_title": "食品安全信息公开与舆情处置",
+      "latency_ms": 361.7,
+      "notes": "食品安全事件的实际应对场景"
+    },
+    {
+      "query": "供应商送来的原料怎么验收才算合格",
+      "persona": "采购员",
+      "style": "场景化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7009,
+      "top1_title": "肉类原料入库验收SOP",
+      "latency_ms": 356.5,
+      "notes": "日常采购验收场景"
+    },
+    {
+      "query": "肉里面加什么能保持红色",
+      "persona": "车间主管",
+      "style": "模糊",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 2,
+      "top1_sim": 0.597,
+      "top1_title": "食品中常见非法添加物及鉴别方法",
+      "latency_ms": 597.1,
+      "notes": "不知道'亚硝酸盐护色'这个概念，只描述效果"
+    },
+    {
+      "query": "食品上面要贴什么标签",
+      "persona": "普通员工",
+      "style": "模糊",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7464,
+      "top1_title": "食品安全法 - 食品标签标识要求",
+      "latency_ms": 475.8,
+      "notes": "极度模糊的查询，只知道要贴标签但不知道具体要求"
+    },
+    {
+      "query": "过期的标准还能用吗",
+      "persona": "质检员",
+      "style": "模糊",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6093,
+      "top1_title": "新零售生鲜超市肉类入库验收标准 (#1)",
+      "latency_ms": 547.0,
+      "notes": "问的是标准更新/废止问题但表述极度模糊"
+    },
+    {
+      "query": "食品安全法对添加剂有什么规定",
+      "persona": "工厂管理员",
+      "style": "简称",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.8425,
+      "top1_title": "食品安全法 - 食品添加剂管理规定",
+      "latency_ms": 498.7,
+      "notes": "正常查询但可能匹配法规或添加剂标准"
+    },
+    {
+      "query": "苯甲酸纳能不能放在酱油里面",
+      "persona": "车间主管",
+      "style": "错别字",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6648,
+      "top1_title": "防腐剂-苯甲酸及其钠盐使用规范与限量",
+      "latency_ms": 454.2,
+      "notes": "'苯甲酸纳'是常见错误写法(正确:苯甲酸钠)，测试容错"
+    },
+    {
+      "query": "我们要办SC证需要哪些材料，是不是还得做HACCP",
+      "persona": "工厂管理员",
+      "style": "多意图",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7134,
+      "top1_title": "食品生产许可管理办法 - SC证申请条件与流程",
+      "latency_ms": 489.2,
+      "notes": "两个问题混在一起：SC证申请+HACCP关系"
+    },
+    {
+      "query": "出口到日本的水产品重金属和农药残留限量分别是多少",
+      "persona": "采购员",
+      "style": "多意图",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6105,
+      "top1_title": "进出口食品安全管理办法 - 出口食品管理",
+      "latency_ms": 517.1,
+      "notes": "跨多个维度: 出口+水产+重金属+农残"
+    },
+    {
+      "query": "哪些防腐剂是不允许在婴儿食品里用的",
+      "persona": "质检员",
+      "style": "否定式",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6785,
+      "top1_title": "防腐剂-苯甲酸及其钠盐使用规范与限量",
+      "latency_ms": 448.3,
+      "notes": "反向提问'不允许'，而非'允许使用哪些'"
+    },
+    {
+      "query": "生产车间不能使用什么材质的设备",
+      "persona": "车间主管",
+      "style": "否定式",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 3,
+      "top1_sim": 0.6806,
+      "top1_title": "GB 14881-2013 食品生产通用卫生规范",
+      "latency_ms": 421.2,
+      "notes": "否定式查询，实际想知道设备材质要求"
+    },
+    {
+      "query": "除了温度还有什么办法能控制细菌",
+      "persona": "质检员",
+      "style": "追问式",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6215,
+      "top1_title": "GB 31654-2021 餐饮服务通用卫生规范 - 温度与消毒控制",
+      "latency_ms": 357.2,
+      "notes": "像是对话中的追问，缺少上下文(哪种细菌/哪种食品)"
+    },
+    {
+      "query": "有机蔬菜和普通蔬菜在农残标准上有区别吗",
+      "persona": "采购员",
+      "style": "对比式",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.6228,
+      "top1_title": "农药残留检测与MRL标准",
+      "latency_ms": 463.4,
+      "notes": "对比类查询，需要综合有机认证+农残标准两个领域"
+    },
+    {
+      "query": "网上卖食品需要什么资质",
+      "persona": "工厂管理员",
+      "style": "场景化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7429,
+      "top1_title": "网络食品安全管理",
+      "latency_ms": 376.5,
+      "notes": "电商食品冷门分类，知识库可能覆盖薄弱"
+    },
+    {
+      "query": "转基因的食品是不是必须标出来",
+      "persona": "普通员工",
+      "style": "口语化",
+      "hit": true,
+      "relevant_found": true,
+      "relevant_rank": 1,
+      "top1_sim": 0.7904,
+      "top1_title": "转基因食品安全评估与标识管理 (#1)",
+      "latency_ms": 522.0,
+      "notes": "GMO标签法规，冷门但重要的话题"
+    }
+  ]
+}

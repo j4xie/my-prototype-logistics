@@ -1,0 +1,308 @@
+{
+  "description": "50 new food domain intent labels to extend the existing 179-class label mapping",
+  "base_offset": 179,
+  "food_intents": {
+    "FOOD_ADDITIVE_QUERY": {
+      "id": 179,
+      "name": "食品添加剂查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "查询食品添加剂使用规范、限量、适用范围"
+    },
+    "FOOD_ADDITIVE_SAFETY": {
+      "id": 180,
+      "name": "添加剂安全性评估",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "评估添加剂的安全性和健康影响"
+    },
+    "FOOD_ADDITIVE_ALTERNATIVE": {
+      "id": 181,
+      "name": "添加剂替代方案",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "推荐天然或替代添加剂方案"
+    },
+    "FOOD_ADDITIVE_INTERACTION": {
+      "id": 182,
+      "name": "添加剂相互作用",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "分析多种添加剂间的相互作用和配伍禁忌"
+    },
+    "FOOD_STANDARD_LOOKUP": {
+      "id": 183,
+      "name": "GB标准查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "查询食品安全国家标准的具体条款内容"
+    },
+    "FOOD_REGULATION_QUERY": {
+      "id": 184,
+      "name": "食品法规查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "查询食品安全法、实施条例等法规内容"
+    },
+    "FOOD_LABEL_REVIEW": {
+      "id": 185,
+      "name": "食品标签审核",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "审核食品标签是否符合GB 7718/28050等标准"
+    },
+    "FOOD_REGULATION_PENALTY": {
+      "id": 186,
+      "name": "法规处罚查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "查询食品安全违法行为的处罚规定"
+    },
+    "FOOD_HACCP_GUIDE": {
+      "id": 187,
+      "name": "HACCP指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "HACCP体系建立和实施指导"
+    },
+    "FOOD_HACCP_CCP": {
+      "id": 188,
+      "name": "关键控制点分析",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "CCP识别、临界限值设定、监控方案"
+    },
+    "FOOD_CERT_GUIDE": {
+      "id": 189,
+      "name": "认证体系指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "HACCP/ISO 22000/BRC等认证体系对比和指导"
+    },
+    "FOOD_AUDIT_PREP": {
+      "id": 190,
+      "name": "审核准备指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品安全审核准备工作和常见不合格项"
+    },
+    "FOOD_PROCESS_PARAM": {
+      "id": 191,
+      "name": "工艺参数咨询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "查询食品加工工艺参数（温度、时间、压力等）"
+    },
+    "FOOD_PROCESS_OPTIMIZATION": {
+      "id": 192,
+      "name": "工艺优化建议",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "提供工艺流程优化和改进建议"
+    },
+    "FOOD_PROCESS_TROUBLESHOOT": {
+      "id": 193,
+      "name": "工艺故障排查",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "诊断生产工艺问题的可能原因和解决方案"
+    },
+    "FOOD_THERMAL_CALC": {
+      "id": 194,
+      "name": "热处理计算",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "杀菌F值、D值、Z值计算和热处理工艺设计"
+    },
+    "FOOD_SAFETY_CHECK": {
+      "id": 195,
+      "name": "食品安全检查",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "出厂检验项目、检测频率、检验标准"
+    },
+    "FOOD_RECALL_QUERY": {
+      "id": 196,
+      "name": "召回信息查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品召回流程、法规要求和案例查询"
+    },
+    "FOOD_ALLERGEN_CHECK": {
+      "id": 197,
+      "name": "过敏原检查",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品过敏原识别、标注要求和交叉污染控制"
+    },
+    "FOOD_CONTAMINATION_ASSESS": {
+      "id": 198,
+      "name": "污染评估",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "交叉污染风险评估、环境监控方案"
+    },
+    "FOOD_NUTRITION_CALC": {
+      "id": 199,
+      "name": "营养成分计算",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "配方营养成分计算和营养标签制作"
+    },
+    "FOOD_FORMULA_DESIGN": {
+      "id": 200,
+      "name": "配方设计指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品配方设计要点和配方优化建议"
+    },
+    "FOOD_SHELF_LIFE": {
+      "id": 201,
+      "name": "保质期评估",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "保质期测试方法和影响因素分析"
+    },
+    "FOOD_NUTRITION_LABEL": {
+      "id": 202,
+      "name": "营养标签指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "GB 28050营养标签通则相关指导"
+    },
+    "FOOD_MICROBE_QUERY": {
+      "id": 203,
+      "name": "微生物知识查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品微生物特性、危害和控制措施"
+    },
+    "FOOD_TEST_METHOD": {
+      "id": 204,
+      "name": "检测方法查询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品检测方法标准和操作要点"
+    },
+    "FOOD_SAMPLING_PLAN": {
+      "id": 205,
+      "name": "抽样方案",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品检验抽样方案设计和样品量确定"
+    },
+    "FOOD_EQUIPMENT_GUIDE": {
+      "id": 206,
+      "name": "设备使用指南",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品加工设备操作规程和注意事项"
+    },
+    "FOOD_CIP_GUIDE": {
+      "id": 207,
+      "name": "CIP清洗指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "CIP清洗流程、清洗剂浓度和验证方法"
+    },
+    "FOOD_EQUIPMENT_VALIDATION": {
+      "id": 208,
+      "name": "设备验证",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品加工设备验证、校准和确认"
+    },
+    "FOOD_GMP_GUIDE": {
+      "id": 209,
+      "name": "GMP指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品生产通用卫生规范(GB 14881)相关指导"
+    },
+    "FOOD_PEST_CONTROL": {
+      "id": 210,
+      "name": "虫害控制",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品工厂虫害防治方案和监控措施"
+    },
+    "FOOD_WATER_QUALITY": {
+      "id": 211,
+      "name": "水质管理",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "生产用水质量标准和水处理方案"
+    },
+    "FOOD_WASTE_MANAGEMENT": {
+      "id": 212,
+      "name": "废物管理",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品废弃物处理和污水排放规范"
+    },
+    "FOOD_TRACEABILITY_GUIDE": {
+      "id": 213,
+      "name": "溯源指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品溯源体系建设和一物一码实施"
+    },
+    "FOOD_SUPPLIER_AUDIT": {
+      "id": 214,
+      "name": "供应商审核",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "原料供应商审核要点和资质要求"
+    },
+    "FOOD_COLD_CHAIN": {
+      "id": 215,
+      "name": "冷链管理",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "冷链运输温度控制和断链应急处理"
+    },
+    "FOOD_DAIRY_GUIDE": {
+      "id": 216,
+      "name": "乳制品指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "乳制品加工工艺和质量控制"
+    },
+    "FOOD_MEAT_GUIDE": {
+      "id": 217,
+      "name": "肉制品指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "肉制品加工工艺和添加剂使用"
+    },
+    "FOOD_BAKERY_GUIDE": {
+      "id": 218,
+      "name": "烘焙指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "烘焙产品工艺参数和配方设计"
+    },
+    "FOOD_BEVERAGE_GUIDE": {
+      "id": 219,
+      "name": "饮料指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "饮料生产工艺和标准要求"
+    },
+    "FOOD_FROZEN_GUIDE": {
+      "id": 220,
+      "name": "速冻食品指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "速冻食品生产工艺和冷链要求"
+    },
+    "FOOD_TRAINING_GUIDE": {
+      "id": 221,
+      "name": "培训指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品从业人员培训内容和健康管理"
+    },
+    "FOOD_COMPLIANCE_CHECK": {
+      "id": 222,
+      "name": "合规检查",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品生产许可(SC)和日常监管检查"
+    },
+    "FOOD_RND_CONSULT": {
+      "id": 223,
+      "name": "研发咨询",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品新产品研发技术咨询"
+    },
+    "FOOD_PACKAGING_GUIDE": {
+      "id": 224,
+      "name": "包装指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品包装材料标准和包装工艺"
+    },
+    "FOOD_SENSORY_EVAL": {
+      "id": 225,
+      "name": "感官评价",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品感官评价方法和标准"
+    },
+    "FOOD_EXPORT_GUIDE": {
+      "id": 226,
+      "name": "出口指导",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品出口认证和目标国标准对接"
+    },
+    "FOOD_RISK_ASSESSMENT": {
+      "id": 227,
+      "name": "风险评估",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品安全风险评估方法和流程"
+    },
+    "FOOD_INCIDENT_RESPONSE": {
+      "id": 228,
+      "name": "应急处置",
+      "category": "FOOD_KNOWLEDGE",
+      "description": "食品安全事故应急预案和处置流程"
+    }
+  },
+  "total_new_intents": 50,
+  "total_labels_after_merge": 229
+}

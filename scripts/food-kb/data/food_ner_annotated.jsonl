@@ -1,0 +1,116 @@
+{"text": "根据GB2760-2024标准，酸奶中山梨酸钾的最大使用量为0.075g/kg。", "labels": ["O", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O", "B-PRD", "I-PRD", "O", "B-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "苯甲酸钠是常用的防腐剂，不得用于婴幼儿食品中。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "碳酸饮料中柠檬酸的添加量一般控制在0.1%-0.3%之间。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "阿斯巴甜作为甜味剂，其甜度是蔗糖的200倍。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "卡拉胶在乳制品中用作增稠剂和稳定剂。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "黄原胶在低pH值条件下仍然保持良好的增稠效果。", "labels": ["B-ADD", "I-ADD", "I-ADD", "O", "O", "B-PRM", "I-PRM", "I-PRM", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "单硬脂酸甘油酯是常用的乳化剂。", "labels": ["B-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "TBHQ是一种高效的油脂抗氧化剂。", "labels": ["B-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "琼脂作为增稠剂在果冻生产中不可缺少。", "labels": ["B-ADD", "I-ADD", "O", "O", "O", "O", "O", "O", "B-PRD", "I-PRD", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "纳他霉素可用于干酪表面防腐处理。", "labels": ["B-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "B-PRD", "I-PRD", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "特丁基对苯二酚的使用量不得超过0.2g/kg油脂。", "labels": ["B-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O"]}
+{"text": "GB 14881-2013规定了食品生产通用卫生规范。", "labels": ["B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "根据GB 4789.2-2022检测菌落总数时应使用平板计数法。", "labels": ["O", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "B-MIC", "I-MIC", "I-MIC", "I-MIC", "O", "O", "O", "O", "B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O"]}
+{"text": "GB/T 22000等同采用ISO 22000食品安全管理体系标准。", "labels": ["B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "B-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "O"]}
+{"text": "GB 29921-2021规定了预包装食品中致病菌限量。", "labels": ["B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O", "B-PRD", "I-PRD", "I-PRD", "I-PRD", "I-PRD", "O", "B-MIC", "I-MIC", "I-MIC", "O", "O", "O"]}
+{"text": "参照GB 5009.3测定食品中水分含量。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "GB 7718-2011规定了预包装食品标签通则。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "GB 2761规定了食品中真菌毒素限量。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "SB/T 10439是酱油行业推荐标准。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "GB 31621规定了食品经营过程卫生规范。", "labels": ["B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "杀菌釜的工作压力应保持在0.15MPa左右。", "labels": ["B-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O"]}
+{"text": "均质机在乳制品加工中用于改善产品质地和稳定性。", "labels": ["B-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "冻干机的真空度应达到10Pa以下。", "labels": ["B-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O"]}
+{"text": "金属探测器安装在包装线末端用于异物检测。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "巴氏杀菌机的清洗周期不应超过8小时。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "X射线异物检测仪可检测0.5mm以上的金属和骨头异物。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "真空包装机在肉制品车间使用率最高。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "管式超高温灭菌机的连续运行时间可达24小时。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "逆流式冷却塔用于UHT后的快速冷却。", "labels": ["B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "B-PRM", "I-PRM", "I-PRM", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "灌装机的无菌环境需要层流罩保护。", "labels": ["B-EQP", "I-EQP", "I-EQP", "O", "O", "O", "O", "O", "O", "O", "B-EQP", "I-EQP", "I-EQP", "O", "O", "O"]}
+{"text": "板式换热器在CIP清洗中起关键作用。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "旋转蒸发仪用于食品风味物质的浓缩提取。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "自动称量配料系统减少了人为误差。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "超声波清洗机用于果蔬表面农残去除。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "罐头食品灭菌的F值应达到3分钟以上。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "O", "O", "O"]}
+{"text": "喷雾干燥进风温度180℃，出风温度85℃。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "大豆分离蛋白在肉制品中用作填充和保水剂。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "脱脂奶粉是酸奶生产的常用原料。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "全麦粉保留了麸皮和胚芽的全部营养成分。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "棕榈油因其氧化稳定性好常用于油炸食品。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "菜籽油富含不饱和脂肪酸。", "labels": ["B-ING", "I-ING", "I-ING", "O", "O", "B-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "O"]}
+{"text": "木薯淀粉在珍珠奶茶制作中必不可少。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "海藻酸钠从褐藻中提取，用于食品凝胶化。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRD", "I-PRD", "O", "O", "O", "O"]}
+{"text": "椰浆是东南亚料理的重要配料。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "麦芽糊精常作为食品的载体和填充剂。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "霉菌产生的黄曲霉毒素B1是强致癌物。", "labels": ["B-MIC", "I-MIC", "O", "O", "O", "B-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "O", "O", "O", "O", "O", "O"]}
+{"text": "铜绿假单胞菌是瓶装水中的指示微生物。", "labels": ["B-MIC", "I-MIC", "I-MIC", "I-MIC", "I-MIC", "I-MIC", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "甲醛不得作为食品保鲜剂使用。", "labels": ["B-HAZ", "I-HAZ", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "多氯联苯属于持久性有机污染物。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "吊白块(甲醛次硫酸氢钠)是非法食品添加物。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "组胺在不新鲜的鱼类中含量升高。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "瘦肉精(盐酸克伦特罗)严禁在养殖中使用。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "原子吸收光谱法用于食品中重金属的检测。", "labels": ["B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "国标直接干燥法是测定水分含量的标准方法。", "labels": ["B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O", "O", "O", "B-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O"]}
+{"text": "腐乳的发酵周期通常为3-6个月。", "labels": ["B-PRD", "I-PRD", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "辣条(调味面制品)的食品安全标准已统一。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "酱油按工艺分为酿造酱油和配制酱油。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "牛肉干的水分含量应控制在25%以下。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "速溶咖啡的生产采用喷雾干燥或冻干工艺。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "有机认证禁止使用化学合成农药和化肥。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "QS标志已被SC标志替代。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "B-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O"]}
+{"text": "FSSC 22000是全球食品安全倡议认可的认证方案。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "BRC认证是英国零售商协会的食品安全标准。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "IFS认证在欧洲食品供应链中广泛采用。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O"]}
+{"text": "清真认证(Halal)需要专门的宗教机构审核。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O"]}
+{"text": "犹太洁食认证(Kosher)在全球食品贸易中越来越重要。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "GFSI认可的认证方案包括BRC、IFS、FSSC22000等。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-CRT", "I-CRT", "I-CRT", "O", "B-CRT", "I-CRT", "I-CRT", "O", "B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O"]}
+{"text": "出口食品企业需要获得海关注册备案。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O"]}
+{"text": "FDA注册是向美国出口食品的前提条件。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "GAP认证关注农业良好生产规范。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "食品安全法第三十四条列举了禁止生产经营的食品。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "农产品质量安全法规定了农产品产地环境要求。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "食品安全法实施条例细化了食品标签标识要求。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "进出口食品安全管理办法适用于进出口食品检验检疫。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "反食品浪费法从法律层面制止了食品浪费行为。", "labels": ["B-REG", "I-REG", "I-REG", "I-REG", "I-REG", "I-REG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "DHA对婴幼儿大脑发育至关重要。", "labels": ["B-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "叶酸在孕早期对预防神经管缺陷有重要作用。", "labels": ["B-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "铁缺乏是全球最常见的营养缺乏症。", "labels": ["B-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "锌参与多种酶的活性调节。", "labels": ["B-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "维生素D有助于钙的吸收和骨骼健康。", "labels": ["B-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "B-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "硒是重要的抗氧化微量元素。", "labels": ["B-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "维生素A对视力和免疫功能至关重要。", "labels": ["B-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "钠的每日摄入量不应超过2000mg。", "labels": ["B-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "膳食纤维的每日推荐摄入量为25-30g。", "labels": ["B-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "ω-3脂肪酸对心血管健康有益。", "labels": ["B-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "维生素B12主要存在于动物性食品中。", "labels": ["B-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "国家市场监管总局负责食品安全综合监管。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "FDA(美国食品药品监督管理局)对进口食品有严格要求。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "WHO(世界卫生组织)发布了食品安全五大要点。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "中国食品工业协会是食品行业的自律性组织。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "疾控中心负责食品安全风险监测和评估。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "国家食品安全风险评估中心开展食品安全风险评估。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "中国检验检疫科学研究院提供食品检测技术支持。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "FAO(联合国粮农组织)关注全球食品安全和营养。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "国际食品法典委员会(CAC)制定国际食品标准。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "欧洲食品安全局(EFSA)负责欧盟食品安全评估。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "B-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "中国农业科学院在农产品质量安全领域有深入研究。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "世界动物卫生组织(WOAH)关注动物源性食品安全。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "B-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "O"]}
+{"text": "国家粮食和物资储备局负责粮食质量安全监管。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "B-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "O", "O", "O"]}
+{"text": "中国海关总署负责进出口食品检验检疫。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O"]}
+{"text": "国家卫生健康委员会负责制定食品安全国家标准。", "labels": ["B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O"]}
+{"text": "根据食品安全法和GB 2760-2024，国家市场监管总局要求酸奶中山梨酸钾不得超过0.075g/kg。", "labels": ["O", "O", "B-REG", "I-REG", "I-REG", "I-REG", "I-REG", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "B-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "I-ORG", "O", "O", "B-PRD", "I-PRD", "O", "B-ADD", "I-ADD", "I-ADD", "I-ADD", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "使用巴氏杀菌机在72℃/15秒条件下处理鲜牛奶，需符合GB 19645标准。", "labels": ["O", "O", "B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O", "O", "O", "B-ING", "I-ING", "I-ING", "O", "O", "O", "O", "B-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "I-STD", "O", "O", "O"]}
+{"text": "ISO22000认证要求企业使用金属探测器检测火腿肠中的异物。", "labels": ["B-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "I-CRT", "O", "O", "O", "O", "O", "O", "B-EQP", "I-EQP", "I-EQP", "I-EQP", "I-EQP", "O", "O", "B-PRD", "I-PRD", "I-PRD", "O", "O", "O", "O", "O"]}
+{"text": "凯氏定氮法检测婴幼儿配方奶粉中蛋白质含量应不低于12g/100g。", "labels": ["B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O", "O", "B-PRD", "I-PRD", "I-PRD", "I-PRD", "I-PRD", "I-PRD", "I-PRD", "O", "B-NUT", "I-NUT", "I-NUT", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
+{"text": "FDA规定出口酱油中3-MCPD的含量需用高效液相色谱法(HPLC)检测。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "O", "O", "O", "B-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "I-HAZ", "O", "O", "O", "O", "O", "B-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "I-TST", "O", "O", "O"]}
+{"text": "大肠杆菌O157:H7和沙门氏菌是冷冻水饺中的重点检测对象。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "乳酸杆菌在42℃发酵8小时后酸奶的pH值降至4.2-4.4。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "均质机将脱脂奶粉与全麦粉混合均匀用于特殊营养食品生产。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "HACCP认证要求在杀菌釜达到121℃/15min时记录F值。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "WHO建议每日钠摄入量不超过2000mg以预防高血压。", "labels": ["B-ORG", "I-ORG", "I-ORG", "O", "O", "O", "O", "B-NUT", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "O", "B-HAZ", "I-HAZ", "I-HAZ", "O"]}
+{"text": "食品召回管理办法规定检出李斯特菌的即食海参必须24小时内启动召回。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "超声波清洗机配合臭氧发生器可有效去除果蔬表面的农药残留。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "SC认证审查中要求企业的真空包装机和X射线异物检测仪定期校准。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "冻干机在-40℃条件下将鱼胶原蛋白的水分活度降至0.2以下。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O", "O"]}
+{"text": "喷雾干燥进风温度180℃可将乳清蛋白粉的水分含量降至5%以下。", "labels": ["O", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "O", "O", "B-PRD", "I-PRD", "I-PRD", "I-PRD", "I-PRD", "O", "O", "O", "O", "O", "O", "O", "B-PRM", "I-PRM", "I-PRM", "I-PRM", "O"]}
